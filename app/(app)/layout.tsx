@@ -20,8 +20,10 @@ import {
   FileText,
   PanelLeftClose,
   UserPlus,
+  Users,
   Check,
-  Loader2
+  Loader2,
+  AlertCircle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ReachProvider } from '@/lib/reach-context';
@@ -55,7 +57,8 @@ const pathnameMap: Record<string, string> = {
   prospecting: 'Workflows',
   intelligence: 'Prompts',
   integrations: 'Integrations',
-  settings: 'Settings'
+  settings: 'Settings',
+  team: 'Équipe'
 };
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
@@ -109,16 +112,33 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     localStorage.setItem('minerva_sidebar_collapsed', String(nextState));
   };
 
+  const [inviteError, setInviteError] = useState('');
+
   const handleInviteSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inviteEmail.trim()) return;
     setIsSendingInvite(true);
-    await new Promise((resolve) => setTimeout(resolve, 1200));
+    setInviteError('');
+
+    const res = await fetch('/api/team/invite', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: inviteEmail.trim(), role: inviteRole }),
+    });
+
+    const data = await res.json();
     setIsSendingInvite(false);
+
+    if (!res.ok) {
+      setInviteError(data.error || 'Erreur lors de l\'envoi');
+      return;
+    }
+
     setInviteSuccess(true);
-    await new Promise((resolve) => setTimeout(resolve, 1200));
+    await new Promise((resolve) => setTimeout(resolve, 1500));
     setInviteEmail('');
     setInviteSuccess(false);
+    setInviteError('');
     setShowInviteModal(false);
   };
 
@@ -210,6 +230,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     { name: 'Library', href: '/library', icon: Folder },
     { name: 'Agents', href: '/agents', icon: Sparkles },
     { name: 'Integrations', href: '/integrations', icon: Plug },
+    { name: 'Équipe', href: '/team', icon: Users },
   ];
 
   const recentFiles = [
@@ -593,17 +614,24 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         {showInviteModal && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-xs">
             <form onSubmit={handleInviteSubmit} className="w-full max-w-sm bg-white border border-[#e6e5e0] rounded-xl p-5 space-y-4 shadow-xl animate-in fade-in zoom-in-95 duration-150 text-left">
-              <div className="space-y-1">
-                <h3 className="text-sm font-bold text-[#26251e] flex items-center gap-2">
-                  <UserPlus className="w-4 h-4 text-[#059669]" />
-                  <span>Inviter des Collaborateurs</span>
-                </h3>
-                <p className="text-xs text-[#7a7a76]">Ajoutez des membres d&apos;équipe pour collaborer sur vos campagnes de prospection.</p>
+              <div className="flex items-start justify-between">
+                <div className="space-y-1">
+                  <h3 className="text-sm font-bold text-[#26251e] flex items-center gap-2">
+                    <UserPlus className="w-4 h-4 text-[#059669]" />
+                    <span>Inviter un collaborateur</span>
+                  </h3>
+                  <p className="text-xs text-[#7a7a76]">Un email d&apos;invitation Supabase sera envoyé.</p>
+                </div>
+                <button type="button" onClick={() => { setShowInviteModal(false); setInviteError(''); }} className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-neutral-100 transition-colors">
+                  <span className="text-[#807d72] text-lg leading-none">&times;</span>
+                </button>
               </div>
 
               {inviteSuccess ? (
                 <div className="py-6 flex flex-col items-center justify-center space-y-2 text-[#059669]">
-                  <Check className="w-8 h-8 rounded-full bg-[#059669]/10 p-1.5 border border-[#059669]/20 animate-bounce" />
+                  <div className="w-12 h-12 rounded-full bg-[#059669]/10 border border-[#059669]/20 flex items-center justify-center">
+                    <Check className="w-6 h-6" />
+                  </div>
                   <p className="text-xs font-bold">Invitation envoyée avec succès !</p>
                 </div>
               ) : (
@@ -615,8 +643,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                       required
                       placeholder="Ex: collaborateur@agence.com"
                       value={inviteEmail}
-                      onChange={(e) => setInviteEmail(e.target.value)}
-                      className="w-full text-xs p-2.5 bg-white border border-[#e6e5e0] rounded-md focus:outline-none focus:ring-1 focus:ring-[#059669]"
+                      onChange={(e) => { setInviteEmail(e.target.value); setInviteError(''); }}
+                      className="w-full text-xs p-2.5 bg-white border border-[#e6e5e0] rounded-full focus:outline-none focus:ring-1 focus:ring-[#059669]"
                     />
                   </div>
 
@@ -628,13 +656,20 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                           key={role}
                           type="button"
                           onClick={() => setInviteRole(role)}
-                          className={`flex-1 py-1.5 text-xs font-semibold rounded-md border text-center transition-colors capitalize ${inviteRole === role ? 'bg-[#059669] border-[#059669] text-white' : 'bg-white border-[#e6e5e0] text-[#555552] hover:bg-slate-50'}`}
+                          className={`flex-1 py-1.5 text-xs font-semibold rounded-full border text-center transition-colors capitalize ${inviteRole === role ? 'bg-[#26251e] border-[#26251e] text-white' : 'bg-white border-[#e6e5e0] text-[#555552] hover:bg-slate-50'}`}
                         >
                           {role}
                         </button>
                       ))}
                     </div>
                   </div>
+
+                  {inviteError && (
+                    <div className="flex items-center gap-2 text-red-600 bg-red-50 border border-red-200 rounded-xl px-3 py-2 text-xs font-semibold">
+                      <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                      {inviteError}
+                    </div>
+                  )}
 
                   <div className="flex justify-end gap-2 text-xs pt-2 border-t border-[#e5e5e0]/60">
                     <Button 
@@ -643,6 +678,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                       onClick={() => {
                         setInviteEmail('');
                         setInviteSuccess(false);
+                        setInviteError('');
                         setShowInviteModal(false);
                       }}
                       className="h-8 text-[#555552]"
@@ -652,7 +688,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                     </Button>
                     <Button 
                       type="submit"
-                      disabled={isSendingInvite}
+                      disabled={isSendingInvite || !inviteEmail.trim()}
                       className="h-8 bg-[#059669] hover:bg-[#047857] text-white font-bold flex items-center gap-1.5"
                     >
                       {isSendingInvite ? (

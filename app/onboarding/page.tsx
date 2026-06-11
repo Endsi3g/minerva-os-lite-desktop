@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import {
   Check,
   Plus,
-  X,
   Loader2,
   Sparkles,
   AlertCircle,

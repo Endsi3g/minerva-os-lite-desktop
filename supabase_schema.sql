@@ -199,6 +199,48 @@ create trigger update_leads_updated_at before update on public.leads
     for each row execute function public.update_updated_at_column();
 
 -- ========================================================
+-- 7. TEAM MEMBERS TABLE
+-- Stores workspace members and pending invitations
+create table if not exists public.team_members (
+    id uuid default gen_random_uuid() primary key,
+    workspace_owner_id uuid references auth.users(id) on delete cascade not null,
+    member_user_id uuid references auth.users(id) on delete set null,
+    email text not null,
+    role text not null default 'editor' check (role in ('admin', 'editor', 'viewer')),
+    status text not null default 'pending' check (status in ('pending', 'active')),
+    invited_by uuid references auth.users(id) on delete set null,
+    invited_at timestamp with time zone default now() not null,
+    joined_at timestamp with time zone
+);
+
+-- Unique constraint: one record per email per workspace
+create unique index if not exists team_members_workspace_email_idx
+    on public.team_members (workspace_owner_id, email);
+
+-- Enable RLS
+alter table public.team_members enable row level security;
+
+-- Workspace owner can see all members of their workspace
+create policy "Owner can select team members" on public.team_members
+    for select using (auth.uid() = workspace_owner_id);
+
+-- Members can see the workspace they belong to
+create policy "Members can see their own membership" on public.team_members
+    for select using (auth.uid() = member_user_id);
+
+-- Owner can insert team members
+create policy "Owner can insert team members" on public.team_members
+    for insert with check (auth.uid() = workspace_owner_id);
+
+-- Owner can update team members (role changes)
+create policy "Owner can update team members" on public.team_members
+    for update using (auth.uid() = workspace_owner_id);
+
+-- Owner can delete team members
+create policy "Owner can delete team members" on public.team_members
+    for delete using (auth.uid() = workspace_owner_id);
+
+-- ========================================================
 -- MIGRATION FOR EXISTING DATABASES
 -- Run this if your settings table already exists:
 -- ALTER TABLE public.settings ADD COLUMN IF NOT EXISTS google_access_token text;
