@@ -1,0 +1,47 @@
+'use client';
+
+import React from 'react';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { FollowUpList } from './follow-up-list';
+import { useReach } from '@/lib/reach-context';
+import { MessageSquareReply } from 'lucide-react';
+
+export function FollowUpListCard() {
+  const { leads } = useReach();
+
+  // Filter leads with nextActionDate <= today AND status is not Won/Lost
+  const todayStr = new Date().toISOString().split('T')[0];
+  const followUpLeads = leads.filter(
+    (lead) => 
+      lead.nextActionDate <= todayStr && 
+      lead.status !== 'Won' && 
+      lead.status !== 'Lost' &&
+      lead.nextAction
+  );
+
+  return (
+    <Card className="border border-border bg-card shadow-sm">
+      <CardHeader className="flex flex-row items-center justify-between pb-3">
+        <div className="flex items-center gap-2.5">
+          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/10 text-primary">
+            <MessageSquareReply className="h-4 w-4" />
+          </div>
+          <div>
+            <CardTitle className="text-base font-semibold font-sans">Relances Dues</CardTitle>
+            <CardDescription className="text-xs">Prospects à relancer en priorité aujourd&apos;hui.</CardDescription>
+          </div>
+        </div>
+        {followUpLeads.length > 0 && (
+          <Badge variant="destructive" className="text-[10px] font-bold px-2 py-0.5 rounded-full">
+            {followUpLeads.length} dû{followUpLeads.length > 1 ? 's' : ''}
+          </Badge>
+        )}
+      </CardHeader>
+      <CardContent>
+        <FollowUpList leads={followUpLeads} />
+      </CardContent>
+    </Card>
+  );
+}
+export default FollowUpListCard;

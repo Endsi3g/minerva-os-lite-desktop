@@ -1,0 +1,99 @@
+import { NextResponse, type NextRequest } from 'next/server';
+import { updateSession } from '@/lib/supabase/middleware';
+
+export async function middleware(request: NextRequest) {
+  const url = request.nextUrl.clone();
+
+  // Allow static files, favicons, public assets to bypass middleware checks
+  if (
+    url.pathname.startsWith('/_next') ||
+    url.pathname === '/favicon.ico' ||
+    url.pathname.endsWith('.png') ||
+    url.pathname.endsWith('.jpg') ||
+    url.pathname.endsWith('.svg') ||
+    url.pathname.startsWith('/api/auth') // Allow auth callback routes
+  ) {
+    return NextResponse.next();
+  }
+
+  // Update session and fetch user
+  let updateResult;
+  try {
+    updateResult = await updateSession(request);
+  } catch {
+    // If Supabase keys are placeholders or not configured, let request through to avoid crashing local build/test
+    return NextResponse.next();
+  }
+
+  const { supabaseResponse, user, supabase } = updateResult;
+  const isLoginPage = url.pathname === '/login';
+
+  // If user is not logged in
+  if (!user) {
+    if (!isLoginPage) {
+      url.pathname = '/login';
+      return NextResponse.redirect(url);
+    }
+    return supabaseResponse;
+  }
+
+  // If user is logged in
+  if (isLoginPage) {
+    url.pathname = '/today';
+    return NextResponse.redirect(url);
+  }
+
+  // Check if onboarding is completed from public.settings
+  let onboardingComplete = false;
+  try {
+    const { data: settings } = await supabase
+      .from('settings')
+      .select('full_name, company_name')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (settings && settings.full_name && settings.company_name) {
+      onboardingComplete = true;
+    }
+  } catch {
+    // Fail-safe to avoid blocking application if DB is in migration or offline during build
+    onboardingComplete = true;
+  }
+
+  const isOnboardingPage = url.pathname === '/onboarding';
+  const isWelcomePage = url.pathname === '/welcome';
+
+  if (!onboardingComplete) {
+    // Logged in but not onboarded: force redirect to welcome/onboarding
+    if (!isOnboardingPage && !isWelcomePage) {
+      url.pathname = '/welcome';
+      return NextResponse.redirect(url);
+    }
+  } else {
+    // Onboarded: don't let them go back to welcome/onboarding
+    if (isOnboardingPage || isWelcomePage) {
+      url.pathname = '/today';
+      return NextResponse.redirect(url);
+    }
+  }
+
+  // Root redirect
+  if (url.pathname === '/') {
+    url.pathname = '/today';
+    return NextResponse.redirect(url);
+  }
+
+  return supabaseResponse;
+}
+
+export const config = {
+  matcher: [
+    /*
+     * Match all request paths except for the ones starting with:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     */
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+  ],
+};
