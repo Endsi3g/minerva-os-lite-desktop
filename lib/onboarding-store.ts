@@ -122,3 +122,72 @@ export const connectIntegration = (id: string) => {
     setStorageItem('minerva_connected_integrations', JSON.stringify(connected));
   }
 };
+
+// Agents store
+export interface Agent {
+  id: string;
+  name: string;
+  description: string;
+  iconType: 'minerva' | 'gradient' | 'black';
+  owner: string;
+  chatsCount: string;
+  lastUsed: string;
+}
+
+export const getAgents = (): Agent[] => {
+  const defaultAgents: Agent[] = [
+    {
+      id: 'tableau-insight',
+      name: 'Tableau Insight Explorer',
+      description: 'Your Tableau companion for data visualization and business intelligence.',
+      iconType: 'minerva',
+      owner: 'Alex Smith',
+      chatsCount: '<10',
+      lastUsed: 'Today, 9:18 PM'
+    },
+    {
+      id: 'health-assistant',
+      name: 'Health Assistant',
+      description: 'Turns ASMobbin onboarding research into structured outputs such as summaries,...',
+      iconType: 'gradient',
+      owner: 'Alex Smith',
+      chatsCount: '<10',
+      lastUsed: 'Today, 9:03 PM'
+    },
+    {
+      id: 'asmobbin-agent',
+      name: 'ASMobbin Agent',
+      description: 'Analyzes ASMobbin Health App onboarding research, summarizes interview findings,...',
+      iconType: 'black',
+      owner: 'Alex Smith',
+      chatsCount: '<10',
+      lastUsed: 'Today, 8:37 PM'
+    }
+  ];
+  
+  const agents = getStorageItem('minerva_agents', JSON.stringify(defaultAgents));
+  try {
+    return JSON.parse(agents) as Agent[];
+  } catch {
+    return defaultAgents;
+  }
+};
+
+export const addAgent = (agent: Omit<Agent, 'id' | 'owner' | 'chatsCount' | 'lastUsed'>) => {
+  const agents = getAgents();
+  const newAgent: Agent = {
+    ...agent,
+    id: 'agent-' + Date.now(),
+    owner: 'Alex Smith',
+    chatsCount: '<10',
+    lastUsed: 'Just now'
+  };
+  agents.push(newAgent);
+  setStorageItem('minerva_agents', JSON.stringify(agents));
+};
+
+export const deleteAgent = (id: string) => {
+  const agents = getAgents();
+  const filtered = agents.filter(a => a.id !== id);
+  setStorageItem('minerva_agents', JSON.stringify(filtered));
+};

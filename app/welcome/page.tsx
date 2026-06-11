@@ -93,7 +93,7 @@ export default function WelcomePage() {
               <Folder className="h-4 w-4 shrink-0 text-[#555552]" />
               <span>Library</span>
             </Link>
-            <Link href="/leads" className="flex items-center gap-2.5 px-2.5 py-1.5 text-xs font-medium text-[#555552] hover:bg-[#e5e5e2]/60 hover:text-[#26251e] rounded-md transition-all">
+            <Link href="/agents" className="flex items-center gap-2.5 px-2.5 py-1.5 text-xs font-medium text-[#555552] hover:bg-[#e5e5e2]/60 hover:text-[#26251e] rounded-md transition-all">
               <Sparkles className="h-4 w-4 shrink-0 text-[#555552]" />
               <span>Agents</span>
             </Link>
