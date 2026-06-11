@@ -1,0 +1,124 @@
+'use client';
+
+// Safe localStorage wrapper to avoid SSR errors
+const getStorageItem = (key: string, defaultValue: string): string => {
+  if (typeof window === 'undefined') return defaultValue;
+  return localStorage.getItem(key) || defaultValue;
+};
+
+const setStorageItem = (key: string, value: string) => {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(key, value);
+    window.dispatchEvent(new Event('minerva_store_update'));
+  }
+};
+
+export interface OnboardingTask {
+  id: string;
+  name: string;
+  pts: number;
+  category: 'chat' | 'workspace';
+}
+
+export const onboardingTasks: OnboardingTask[] = [
+  { id: 'send_first_msg', name: 'Send your first message', pts: 10, category: 'chat' },
+  { id: 'upload_doc', name: 'Upload a document and chat with it', pts: 15, category: 'chat' },
+  { id: 'different_model', name: 'Try out a different model in chat', pts: 10, category: 'chat' },
+  { id: 'web_search', name: 'Run a web search', pts: 15, category: 'chat' },
+  { id: 'data_analysis', name: 'Run data analysis', pts: 20, category: 'chat' },
+  
+  // Set-up workspace tasks
+  { id: 'setup_profile', name: 'Set-up profile', pts: 10, category: 'workspace' },
+  { id: 'setup_integrations', name: 'Connect a data source', pts: 15, category: 'workspace' },
+  { id: 'setup_keys', name: 'Configure API keys', pts: 20, category: 'workspace' },
+];
+
+export const getOnboardingState = (): string[] => {
+  const completed = getStorageItem('minerva_completed_tasks', '[]');
+  try {
+    return JSON.parse(completed) as string[];
+  } catch {
+    return [];
+  }
+};
+
+export const toggleOnboardingTask = (taskId: string) => {
+  const completed = getOnboardingState();
+  const index = completed.indexOf(taskId);
+  if (index > -1) {
+    completed.splice(index, 1);
+  } else {
+    completed.push(taskId);
+  }
+  setStorageItem('minerva_completed_tasks', JSON.stringify(completed));
+};
+
+export const getOnboardingProgress = () => {
+  const completed = getOnboardingState();
+  
+  let score = 0;
+  completed.forEach(id => {
+    const task = onboardingTasks.find(t => t.id === id);
+    if (task) score += task.pts;
+  });
+  
+  const totalTasks = onboardingTasks.length;
+  // Start with 12% default base (representing previous progress or setup profile) if none completed, to match visual mockups
+  const percent = completed.length === 0 ? 12 : Math.round((completed.length / totalTasks) * 100);
+  return { percent, score };
+};
+
+// Folders store
+export const getFolders = (): string[] => {
+  const folders = getStorageItem('minerva_folders', JSON.stringify(['ASMobbin-Onboarding-Research']));
+  try {
+    return JSON.parse(folders) as string[];
+  } catch {
+    return ['ASMobbin-Onboarding-Research'];
+  }
+};
+
+export const addFolder = (name: string) => {
+  const folders = getFolders();
+  if (!folders.includes(name)) {
+    folders.push(name);
+    setStorageItem('minerva_folders', JSON.stringify(folders));
+  }
+};
+
+// Projects store
+export const getProjects = (): string[] => {
+  const projects = getStorageItem('minerva_projects', JSON.stringify([]));
+  try {
+    return JSON.parse(projects) as string[];
+  } catch {
+    return [];
+  }
+};
+
+export const addProject = (name: string) => {
+  const projects = getProjects();
+  if (!projects.includes(name)) {
+    projects.push(name);
+    setStorageItem('minerva_projects', JSON.stringify(projects));
+  }
+};
+
+// Integrations store
+export const getConnectedIntegrations = (): string[] => {
+  const defaultIntegrations = ['google-calendar', 'demo-website-1', 'demo-website-2'];
+  const connected = getStorageItem('minerva_connected_integrations', JSON.stringify(defaultIntegrations));
+  try {
+    return JSON.parse(connected) as string[];
+  } catch {
+    return defaultIntegrations;
+  }
+};
+
+export const connectIntegration = (id: string) => {
+  const connected = getConnectedIntegrations();
+  if (!connected.includes(id)) {
+    connected.push(id);
+    setStorageItem('minerva_connected_integrations', JSON.stringify(connected));
+  }
+};
