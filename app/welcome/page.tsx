@@ -16,7 +16,13 @@ import {
   Settings as SettingsIcon,
   FileText,
   MoreHorizontal,
-  Settings
+  Settings,
+  PanelLeftClose,
+  UserPlus,
+  Bell,
+  Loader2,
+  Check,
+  Menu
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { MinervaIcon } from '@/components/icons';
@@ -31,6 +37,10 @@ import {
 export default function WelcomePage() {
   const router = useRouter();
   
+  // Sidebar states
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
   // Tasks list expand state
   const [chatExpanded, setChatExpanded] = useState(true);
   const [setupExpanded, setSetupExpanded] = useState(false);
@@ -39,6 +49,13 @@ export default function WelcomePage() {
   // Synchronized store hooks
   const [completedTasks, setCompletedTasks] = useState<string[]>([]);
   const [onboarding, setOnboarding] = useState({ percent: 12, score: 0 });
+
+  // Invite Users modal states
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteRole, setInviteRole] = useState<'editor' | 'viewer' | 'admin'>('editor');
+  const [isSendingInvite, setIsSendingInvite] = useState(false);
+  const [inviteSuccess, setInviteSuccess] = useState(false);
 
   useEffect(() => {
     const syncStore = () => {
@@ -49,6 +66,34 @@ export default function WelcomePage() {
     window.addEventListener('minerva_store_update', syncStore);
     return () => window.removeEventListener('minerva_store_update', syncStore);
   }, []);
+
+  useEffect(() => {
+    const collapsed = localStorage.getItem('minerva_sidebar_collapsed') === 'true';
+    if (collapsed) {
+      setTimeout(() => {
+        setIsCollapsed(true);
+      }, 0);
+    }
+  }, []);
+
+  const toggleCollapse = () => {
+    const nextState = !isCollapsed;
+    setIsCollapsed(nextState);
+    localStorage.setItem('minerva_sidebar_collapsed', String(nextState));
+  };
+
+  const handleInviteSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!inviteEmail.trim()) return;
+    setIsSendingInvite(true);
+    await new Promise((resolve) => setTimeout(resolve, 1200));
+    setIsSendingInvite(false);
+    setInviteSuccess(true);
+    await new Promise((resolve) => setTimeout(resolve, 1200));
+    setInviteEmail('');
+    setInviteSuccess(false);
+    setShowInviteModal(false);
+  };
 
   const handleStartChatting = () => {
     router.push('/leads');
@@ -62,115 +107,223 @@ export default function WelcomePage() {
   ];
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-white text-[#26251e] font-sans selection:bg-[#f54e00]/10">
+    <div className="flex h-screen w-screen overflow-hidden bg-white text-[#26251e] font-sans selection:bg-[#059669]/10">
       
+      {/* Mobile Sidebar Overlay */}
+      {sidebarOpen && (
+        <div 
+          className="fixed inset-0 z-40 bg-black/20 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       {/* Sidebar Layout Reproduced */}
-      <aside className="hidden lg:flex flex-col border-r border-[#e5e5e0] bg-[#f4f4f3] w-[240px] shrink-0">
+      <aside className={cn(
+        "fixed inset-y-0 left-0 z-50 flex flex-col border-r border-[#e5e5e0] bg-[#f4f4f3] transition-all duration-300 ease-in-out lg:static lg:relative lg:translate-x-0",
+        isCollapsed ? "lg:w-16" : "lg:w-[240px]",
+        sidebarOpen ? "translate-x-0" : "-translate-x-full"
+      )}>
         
         {/* Sidebar Brand Header */}
-        <div className="flex h-12 items-center border-b border-[#e5e5e0] px-4 justify-between">
+        <div className={cn(
+          "flex h-12 items-center border-b border-[#e5e5e0] px-4 transition-all duration-300",
+          isCollapsed ? "lg:justify-center lg:px-0" : "justify-between"
+        )}>
           <div className="flex items-center gap-2 font-sans font-semibold text-sm tracking-tight text-[#26251e]">
             <MinervaIcon size={20} className="shrink-0" />
-            <div className="flex items-center gap-1 cursor-pointer hover:bg-[#e5e5e2] px-1.5 py-0.5 rounded transition-colors">
-              <span className="font-semibold text-sm text-[#26251e]">Minerva OS Lite</span>
-              <ChevronDown className="h-3 w-3 text-[#7a7a76]" />
-            </div>
-          </div>
-        </div>
-
-        {/* Sidebar Navigation */}
-        <div className="flex-1 overflow-y-auto overflow-x-hidden py-3 space-y-4">
-          <nav className="space-y-[2px] px-3">
-            <Link href="/prospecting" className="flex items-center gap-2.5 px-2.5 py-1.5 text-xs font-medium text-[#555552] hover:bg-[#e5e5e2]/60 hover:text-[#26251e] rounded-md transition-all">
-              <PenSquare className="h-4 w-4 shrink-0 text-[#555552]" />
-              <span>Prospecter</span>
-            </Link>
-            <Link href="/leads" className="flex items-center gap-2.5 px-2.5 py-1.5 text-xs font-medium text-[#555552] hover:bg-[#e5e5e2]/60 hover:text-[#26251e] rounded-md transition-all">
-              <Search className="h-4 w-4 shrink-0 text-[#555552]" />
-              <span>Search</span>
-            </Link>
-            <Link href="/library" className="flex items-center gap-2.5 px-2.5 py-1.5 text-xs font-medium text-[#555552] hover:bg-[#e5e5e2]/60 hover:text-[#26251e] rounded-md transition-all">
-              <Folder className="h-4 w-4 shrink-0 text-[#555552]" />
-              <span>Library</span>
-            </Link>
-            <Link href="/agents" className="flex items-center gap-2.5 px-2.5 py-1.5 text-xs font-medium text-[#555552] hover:bg-[#e5e5e2]/60 hover:text-[#26251e] rounded-md transition-all">
-              <Sparkles className="h-4 w-4 shrink-0 text-[#555552]" />
-              <span>Agents</span>
-            </Link>
-            <Link href="/integrations" className="flex items-center gap-2.5 px-2.5 py-1.5 text-xs font-medium text-[#555552] hover:bg-[#e5e5e2]/60 hover:text-[#26251e] rounded-md transition-all">
-              <Plug className="h-4 w-4 shrink-0 text-[#555552]" />
-              <span>Integrations</span>
-            </Link>
-          </nav>
-
-          {/* Projects Section */}
-          <div className="px-3 space-y-1">
-            <div className="px-2.5 text-[10px] font-bold text-[#7a7a76] uppercase tracking-wider">
-              Projects
-            </div>
-            <Link href="/today" className="flex items-center gap-2.5 px-2.5 py-1.5 text-xs text-[#555552] hover:bg-[#e5e5e2]/60 hover:text-[#26251e] rounded-md transition-all">
-              <FolderPlus className="h-4 w-4 text-[#7a7a76]" />
-              <span>New project</span>
-            </Link>
-          </div>
-
-          {/* Today section */}
-          <div className="px-3 space-y-1">
-            <button 
-              onClick={() => setTodayCollapsed(!todayCollapsed)}
-              className="w-full flex items-center justify-between px-2.5 py-1 text-[10px] font-bold text-[#7a7a76] uppercase tracking-wider hover:text-[#26251e] transition-colors"
-            >
-              <span>Today</span>
-              <ChevronDown className={cn("h-3 w-3 transition-transform duration-200", todayCollapsed && "-rotate-90")} />
-            </button>
-            {!todayCollapsed && (
-              <div className="space-y-[2px] mt-1">
-                {recentFiles.map((file) => (
-                  <Link 
-                    key={file.name}
-                    href={file.href}
-                    className="flex items-center gap-2.5 px-2.5 py-1 text-xs text-[#555552] hover:bg-[#e5e5e2]/60 hover:text-[#26251e] rounded-md transition-colors truncate"
-                  >
-                    <FileText className="h-3.5 w-3.5 text-[#7a7a76] shrink-0" />
-                    <span className="truncate">{file.name}</span>
-                  </Link>
-                ))}
+            {!isCollapsed && (
+              <div className="flex items-center gap-1 cursor-pointer hover:bg-[#e5e5e2] px-1.5 py-0.5 rounded transition-colors">
+                <span className="font-semibold text-sm text-[#26251e]">Minerva OS Lite</span>
+                <ChevronDown className="h-3 w-3 text-[#7a7a76]" />
               </div>
             )}
           </div>
         </div>
 
+        {/* Sidebar Navigation */}
+        <div className="flex-1 overflow-y-auto overflow-x-hidden py-3 space-y-4">
+          <nav className={cn("space-y-[2px]", isCollapsed ? "px-2" : "px-3")}>
+            {[
+              { name: 'Prospecter', href: '/prospecting', icon: PenSquare },
+              { name: 'Search', href: '/leads', icon: Search },
+              { name: 'Library', href: '/library', icon: Folder },
+              { name: 'Agents', href: '/agents', icon: Sparkles },
+              { name: 'Integrations', href: '/integrations', icon: Plug },
+            ].map((item) => {
+              const navLink = (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  className={cn(
+                    "flex items-center rounded-md text-xs font-medium transition-all duration-150",
+                    isCollapsed ? "justify-center p-2" : "gap-2.5 px-2.5 py-1.5",
+                    "text-[#555552] hover:bg-[#e5e5e2]/60 hover:text-[#26251e]"
+                  )}
+                >
+                  <item.icon className="h-4 w-4 shrink-0 text-[#555552]" />
+                  {!isCollapsed && <span className="truncate">{item.name}</span>}
+                </Link>
+              );
+
+              if (isCollapsed) {
+                return (
+                  <div key={item.name} className="relative group">
+                    {navLink}
+                    <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-2 py-1 bg-[#26251e] text-white text-[10px] rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none">
+                      {item.name}
+                    </div>
+                  </div>
+                );
+              }
+
+              return navLink;
+            })}
+          </nav>
+
+          {/* Projects Section */}
+          {!isCollapsed && (
+            <div className="px-3 space-y-1">
+              <div className="px-2.5 text-[10px] font-bold text-[#7a7a76] uppercase tracking-wider">
+                Projects
+              </div>
+              <Link href="/today" className="flex items-center gap-2.5 px-2.5 py-1.5 text-xs text-[#555552] hover:bg-[#e5e5e2]/60 hover:text-[#26251e] rounded-md transition-all">
+                <FolderPlus className="h-4 w-4 text-[#7a7a76]" />
+                <span>New project</span>
+              </Link>
+            </div>
+          )}
+
+          {/* Today section */}
+          {!isCollapsed && (
+            <div className="px-3 space-y-1">
+              <button 
+                onClick={() => setTodayCollapsed(!todayCollapsed)}
+                className="w-full flex items-center justify-between px-2.5 py-1 text-[10px] font-bold text-[#7a7a76] uppercase tracking-wider hover:text-[#26251e] transition-colors"
+              >
+                <span>Today</span>
+                <ChevronDown className={cn("h-3 w-3 transition-transform duration-200", todayCollapsed && "-rotate-90")} />
+              </button>
+              {!todayCollapsed && (
+                <div className="space-y-[2px] mt-1">
+                  {recentFiles.map((file) => (
+                    <Link 
+                      key={file.name}
+                      href={file.href}
+                      className="flex items-center gap-2.5 px-2.5 py-1 text-xs text-[#555552] hover:bg-[#e5e5e2]/60 hover:text-[#26251e] rounded-md transition-colors truncate"
+                    >
+                      <FileText className="h-3.5 w-3.5 text-[#7a7a76] shrink-0" />
+                      <span className="truncate">{file.name}</span>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
         {/* Sidebar Footer */}
         <div className="border-t border-[#e5e5e0] bg-[#f4f4f3] py-2 px-3 space-y-2">
           {/* Onboarding progress card active state */}
-          <button className="w-full text-left p-2.5 bg-white border border-[#e5e5e0] rounded-md transition-all flex flex-col gap-1.5 cursor-default">
-            <div className="flex items-center justify-between text-xs font-bold text-[#26251e]">
-              <span>Get started</span>
-              <ChevronUp className="h-3 w-3 text-[#7a7a76]" />
+          {!isCollapsed ? (
+            <button className="w-full text-left p-2.5 bg-white border border-[#e5e5e0] rounded-md transition-all flex flex-col gap-1.5 cursor-default">
+              <div className="flex items-center justify-between text-xs font-bold text-[#26251e]">
+                <span>Get started</span>
+                <ChevronUp className="h-3 w-3 text-[#7a7a76]" />
+              </div>
+              <div className="text-[10px] text-[#555552]">
+                {onboarding.percent}% done • <span className="text-[#10b981]">{onboarding.percent === 100 ? 'Completed!' : "Let's go!"}</span>
+              </div>
+              <div className="w-full bg-[#e5e5e2] h-1 rounded-full overflow-hidden">
+                <div className="bg-[#10b981] h-full rounded-full" style={{ width: `${onboarding.percent}%`, transition: 'width 0.5s ease-in-out' }} />
+              </div>
+            </button>
+          ) : (
+            <div className="flex h-8 w-8 mx-auto items-center justify-center rounded-md bg-white border border-[#e5e5e0]" title={`Get started: ${onboarding.percent}% done`}>
+              <span className="text-[9px] font-bold text-[#10b981]">{onboarding.percent}%</span>
             </div>
-            <div className="text-[10px] text-[#555552]">
-              {onboarding.percent}% done • <span className="text-[#10b981]">{onboarding.percent === 100 ? 'Completed!' : "Let's go!"}</span>
-            </div>
-            <div className="w-full bg-[#e5e5e2] h-1 rounded-full overflow-hidden">
-              <div className="bg-[#10b981] h-full rounded-full" style={{ width: `${onboarding.percent}%`, transition: 'width 0.5s ease-in-out' }} />
-            </div>
-          </button>
+          )}
 
           {/* Settings row */}
           <div className="flex items-center justify-between">
-            <Link
-              href="/settings"
-              className="flex items-center gap-2.5 text-xs font-semibold text-[#555552] hover:text-[#26251e] hover:bg-[#e5e5e2]/60 px-2 py-1.5 rounded-md transition-colors flex-1"
-            >
-              <SettingsIcon className="h-4 w-4 text-[#555552]" />
-              <span>Settings</span>
-            </Link>
+            {isCollapsed ? (
+              <Link 
+                href="/settings"
+                className="flex h-8 w-8 mx-auto items-center justify-center rounded-md hover:bg-[#e5e5e2] text-[#555552] hover:text-[#26251e]"
+              >
+                <SettingsIcon className="h-4 w-4" />
+              </Link>
+            ) : (
+              <Link
+                href="/settings"
+                className="flex items-center gap-2.5 text-xs font-semibold text-[#555552] hover:text-[#26251e] hover:bg-[#e5e5e2]/60 px-2 py-1.5 rounded-md transition-colors flex-1"
+              >
+                <SettingsIcon className="h-4 w-4 text-[#555552]" />
+                <span>Settings</span>
+              </Link>
+            )}
           </div>
         </div>
 
-      </aside>      {/* Main Page Content Area */}
+      </aside>
+
+      {/* Main Page Content Area */}
       <div className="flex-1 flex flex-col justify-between relative overflow-hidden bg-white">
         
+        {/* Unified App Top Header bar */}
+        <header className="flex h-12 items-center justify-between border-b border-[#e5e5e0] bg-white px-6 shrink-0 z-20 relative">
+          <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="lg:hidden h-8 w-8 text-[#7a7a76] hover:text-[#26251e]"
+              onClick={() => setSidebarOpen(true)}
+            >
+              <Menu className="h-4 w-4" />
+            </Button>
+
+            <button
+              onClick={toggleCollapse}
+              className="h-8 w-8 hidden lg:flex items-center justify-center rounded text-[#7a7a76] hover:bg-[#e5e5e2]/60 transition-colors"
+              aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            >
+              {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
+            </button>
+
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-[#7a7a76]">
+              <Link href="/today" className="hover:text-[#26251e]">Minerva OS Lite</Link>
+              <span className="text-[#e5e5e0] font-normal">/</span>
+              <span className="text-[#26251e] font-bold">Welcome</span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Button 
+              onClick={() => setShowInviteModal(true)}
+              variant="ghost" 
+              size="sm" 
+              className="h-8 text-xs font-semibold text-[#555552] hover:text-[#26251e] hover:bg-[#e5e5e2]/60 flex items-center gap-1.5 rounded-md px-3 border border-[#e5e5e0]"
+            >
+              <UserPlus className="h-3.5 w-3.5" />
+              <span>Invite Users</span>
+            </Button>
+
+            <Button variant="ghost" size="icon" className="text-[#7a7a76] hover:text-[#26251e] h-8 w-8 relative">
+              <Bell className="h-4 w-4" />
+              <span className="absolute top-2 right-2 h-1.5 w-1.5 rounded-full bg-[#10b981]" />
+            </Button>
+
+            <div className="h-4 w-px bg-[#e5e5e0] mx-1" />
+
+            <div className="h-7 w-7 rounded-full overflow-hidden border border-[#e5e5e0] bg-[#e5e5e2] flex items-center justify-center shrink-0">
+              <img 
+                src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=facearea&facepad=2&w=256&h=256&q=80" 
+                alt="Profile" 
+                className="w-full h-full object-cover"
+              />
+            </div>
+          </div>
+        </header>
+
         {/* Inner Grid Pattern Decorative background */}
         <div 
           className="absolute inset-0 opacity-[0.25] pointer-events-none" 
@@ -399,6 +552,89 @@ export default function WelcomePage() {
         </div>
 
       </div>
+
+      {/* Invite Users Modal Overlay */}
+      {showInviteModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-xs">
+          <form onSubmit={handleInviteSubmit} className="w-full max-w-sm bg-white border border-[#e6e5e0] rounded-xl p-5 space-y-4 shadow-xl animate-in fade-in zoom-in-95 duration-150 text-left">
+            <div className="space-y-1">
+              <h3 className="text-sm font-bold text-[#26251e] flex items-center gap-2">
+                <UserPlus className="w-4 h-4 text-[#059669]" />
+                <span>Inviter des Collaborateurs</span>
+              </h3>
+              <p className="text-xs text-[#7a7a76]">Ajoutez des membres d&apos;équipe pour collaborer sur vos campagnes de prospection.</p>
+            </div>
+
+            {inviteSuccess ? (
+              <div className="py-6 flex flex-col items-center justify-center space-y-2 text-[#059669]">
+                <Check className="w-8 h-8 rounded-full bg-[#059669]/10 p-1.5 border border-[#059669]/20 animate-bounce" />
+                <p className="text-xs font-bold">Invitation envoyée avec succès !</p>
+              </div>
+            ) : (
+              <>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Adresse e-mail</label>
+                  <input 
+                    type="email" 
+                    required
+                    placeholder="Ex: collaborateur@agence.com"
+                    value={inviteEmail}
+                    onChange={(e) => setInviteEmail(e.target.value)}
+                    className="w-full text-xs p-2.5 bg-white border border-[#e6e5e0] rounded-md focus:outline-none focus:ring-1 focus:ring-[#059669]"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76] block mb-1">Rôle d&apos;accès</label>
+                  <div className="flex gap-2">
+                    {(['editor', 'viewer', 'admin'] as const).map(role => (
+                      <button
+                        key={role}
+                        type="button"
+                        onClick={() => setInviteRole(role)}
+                        className={`flex-1 py-1.5 text-xs font-semibold rounded-md border text-center transition-colors capitalize ${inviteRole === role ? 'bg-[#059669] border-[#059669] text-white' : 'bg-white border-[#e6e5e0] text-[#555552] hover:bg-slate-50'}`}
+                      >
+                        {role}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-2 text-xs pt-2 border-t border-[#e5e5e0]/60">
+                  <Button 
+                    type="button"
+                    variant="ghost"
+                    onClick={() => {
+                      setInviteEmail('');
+                      setInviteSuccess(false);
+                      setShowInviteModal(false);
+                    }}
+                    className="h-8 text-[#555552]"
+                    disabled={isSendingInvite}
+                  >
+                    Annuler
+                  </Button>
+                  <Button 
+                    type="submit"
+                    disabled={isSendingInvite}
+                    className="h-8 bg-[#059669] hover:bg-[#047857] text-white font-bold flex items-center gap-1.5"
+                  >
+                    {isSendingInvite ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <span>Envoi...</span>
+                      </>
+                    ) : (
+                      <span>Envoyer l&apos;invitation</span>
+                    )}
+                  </Button>
+                </div>
+              </>
+            )}
+          </form>
+        </div>
+      )}
+
     </div>
   );
 }
