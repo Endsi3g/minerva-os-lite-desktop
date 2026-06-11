@@ -7,7 +7,7 @@ This document describes the key features, architecture, and current state of the
 ## 1. Project Overview & Repository
 - **Project Name**: Minerva OS Lite
 - **GitHub Repository**: [https://github.com/Endsi3g/minerva-os-lite-desktop](https://github.com/Endsi3g/minerva-os-lite-desktop)
-- **First Stable Release**: [v1.0.0](https://github.com/Endsi3g/minerva-os-lite-desktop/releases/tag/v1.0.0)
+- **First Stable Release**: [v1.0.1](https://github.com/Endsi3g/minerva-os-lite-desktop/releases/tag/v1.0.1)
 - **Technology Stack**: Next.js 16.2.6 (Turbopack), TypeScript, Tailwind CSS, Supabase, Radix UI, Lucide icons.
 - **Dependency Management**: `pnpm` (run scripts and install commands inside the `Minerva OS Lite/minerva-os-lite-desktop` directory).
 
@@ -18,7 +18,7 @@ This document describes the key features, architecture, and current state of the
 ### 💻 Collapsible Sidebar (Full Screen Toggling)
 - **Controls**: A sidebar toggle button (`PanelLeftClose` / `ChevronRight`) is located in the top application header bar (top-left).
 - **Behavior**: Clicking this toggle collapses the sidebar into an icon-only strip with hover tooltips (`radix-ui` tooltip provider). This gives the user maximum screen space (Full Screen) to edit campaigns or manage connections.
-- **State Persistence**: The collapse/expand state is stored inside `localStorage` under `minerva_sidebar_collapsed` to remain synchronized between pages (e.g., when navigating between `/today` and `/integrations`).
+- **State Persistence**: The collapse/expand state is stored inside `localStorage` under `minerva_sidebar_collapsed` to remain synchronized between pages (e.g., when navigating between `/today`, `/welcome`, and `/integrations`).
 
 ### 🔌 Interactive Integration Creator & Workspace
 - **Add Integration Dialog**: Allows creation of new integration connectors from scratch. Supporting:
