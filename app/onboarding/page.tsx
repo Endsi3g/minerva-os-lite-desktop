@@ -1,49 +1,105 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { 
-  Check, 
-  Plus, 
-  X, 
-  Loader2, 
-  Sparkles, 
+import {
+  Check,
+  Plus,
+  X,
+  Loader2,
+  Sparkles,
   AlertCircle,
   Sliders,
   MapPin,
-  Briefcase
+  Briefcase,
+  ShieldCheck,
+  BarChart3,
+  Zap,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
 import { MinervaIcon } from '@/components/icons';
 
+// ─── Types ────────────────────────────────────────────────────────────────────
 type Step = 'landing' | 'login' | 'otp' | 'selection' | 'workspace' | 'pricing' | 'analytics';
+type Direction = 'forward' | 'backward';
+
+// Steps that show the progress dots (excludes landing)
+const FLOW_STEPS: Step[] = ['login', 'otp', 'selection', 'workspace', 'pricing', 'analytics'];
 
 const PRESET_NICHES = [
-  "Boulangerie",
-  "Coiffure",
-  "Restaurant",
-  "Garage",
-  "Fleuriste",
-  "Plombier",
-  "Cabinet Médical",
-  "Agence Immo"
+  'Boulangerie', 'Coiffure', 'Restaurant', 'Garage',
+  'Fleuriste', 'Plombier', 'Cabinet Médical', 'Agence Immo',
 ];
 
 const PRESET_CITIES = [
-  "Paris",
-  "Lyon",
-  "Marseille",
-  "Bordeaux",
-  "Lille",
-  "Nantes",
-  "Toulouse"
+  'Paris', 'Lyon', 'Marseille', 'Bordeaux', 'Lille', 'Nantes', 'Toulouse',
 ];
 
+// ─── Right Panel Content per Step ─────────────────────────────────────────────
+const RIGHT_PANEL_CONTENT: Record<string, { headline: string; sub: string; badge?: string }> = {
+  login: {
+    headline: 'Bienvenue sur Minerva',
+    sub: 'L\'IA de prospection locale la plus avancée pour les agences françaises.',
+    badge: 'Gratuit pour commencer',
+  },
+  otp: {
+    headline: 'Vérification sécurisée',
+    sub: 'Votre compte est protégé par une authentification en deux étapes.',
+    badge: 'Email vérifié',
+  },
+  selection: {
+    headline: 'Configurez vos agents',
+    sub: 'Choisissez vos niches et villes cibles pour que l\'IA commence à travailler pour vous.',
+    badge: 'Ciblage IA activé',
+  },
+  workspace: {
+    headline: 'Votre espace de travail',
+    sub: 'Centralisez vos prospects, campagnes et insights dans un tableau de bord unifié.',
+    badge: 'Dashboard personnel',
+  },
+  pricing: {
+    headline: 'Choisissez votre plan',
+    sub: 'Commencez gratuitement, montez en puissance quand vous en avez besoin.',
+    badge: 'Sans engagement',
+  },
+  analytics: {
+    headline: 'Aidez-nous à progresser',
+    sub: 'Partagez anonymement vos données d\'usage pour améliorer Minerva pour tous.',
+    badge: 'Données anonymisées',
+  },
+};
+
+// ─── Dot Progress Indicator ────────────────────────────────────────────────────
+function DotProgress({ currentStep }: { currentStep: Step }) {
+  const activeIdx = FLOW_STEPS.indexOf(currentStep);
+  if (activeIdx === -1) return null;
+  return (
+    <div className="flex items-center justify-center gap-2 py-3">
+      {FLOW_STEPS.map((_, idx) => (
+        <span
+          key={idx}
+          className={cn(
+            'rounded-full transition-all duration-300',
+            idx === activeIdx
+              ? 'w-2.5 h-2.5 bg-[#10b981]'
+              : idx < activeIdx
+              ? 'w-1.5 h-1.5 bg-[#10b981]/40'
+              : 'w-1.5 h-1.5 bg-[#e6e5e0]',
+          )}
+        />
+      ))}
+    </div>
+  );
+}
+
+// ─── Main Component ────────────────────────────────────────────────────────────
 export default function OnboardingPage() {
   const router = useRouter();
   const [step, setStep] = useState<Step>('landing');
-  const [animate, setAnimate] = useState(true);
+  const [direction, setDirection] = useState<Direction>('forward');
+  const [slidePhase, setSlidePhase] = useState<'idle' | 'exit' | 'enter'>('idle');
+  const [rightFade, setRightFade] = useState(true);
 
   // Form states
   const [email, setEmail] = useState('');
@@ -51,59 +107,78 @@ export default function OnboardingPage() {
   const [otpCode, setOtpCode] = useState<string[]>(['', '', '', '', '', '']);
   const [fullName, setFullName] = useState('');
   const [workspaceName, setWorkspaceName] = useState('');
-  
-  // Custom Selection step states
+
+  // Selection step
   const [selectedNiches, setSelectedNiches] = useState<string[]>([]);
   const [selectedCities, setSelectedCities] = useState<string[]>([]);
   const [customNiche, setCustomNiche] = useState('');
   const [customCity, setCustomCity] = useState('');
   const [aiTone, setAiTone] = useState<'casual' | 'professional' | 'storytelling'>('professional');
 
-  // Loader & modal states
+  // Loader
   const [creatingWorkspace, setCreatingWorkspace] = useState(false);
   const [isAnnualPlan, setIsAnnualPlan] = useState(true);
 
-  // OTP inputs ref
   const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  // Function declared before useEffect to prevent ESlink hoisting access warnings
-  const checkEmailDomain = (val: string) => {
+  // ── Check email domain ──────────────────────────────────────────────────────
+  const checkEmailDomain = useCallback((val: string) => {
     const domain = val.split('@')[1];
     const personalDomains = [
-      'gmail.com', 'yahoo.com', 'yahoo.fr', 'hotmail.com', 'hotmail.fr', 
-      'outlook.com', 'outlook.fr', 'aol.com', 'icloud.com', 'orange.fr', 
-      'free.fr', 'sfr.fr', 'live.fr', 'wanadoo.fr'
+      'gmail.com','yahoo.com','yahoo.fr','hotmail.com','hotmail.fr',
+      'outlook.com','outlook.fr','aol.com','icloud.com','orange.fr',
+      'free.fr','sfr.fr','live.fr','wanadoo.fr',
     ];
     setIsPersonalEmail(personalDomains.includes(domain?.toLowerCase()));
-  };
+  }, []);
 
-  // Fetch logged-in user email on load to pre-populate
+  // ── Pre-populate from session ───────────────────────────────────────────────
   useEffect(() => {
     const fetchUser = async () => {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        if (user.email) {
-          setEmail(user.email);
-          checkEmailDomain(user.email);
-        }
-        if (user.user_metadata?.full_name) {
-          setFullName(user.user_metadata.full_name);
-        }
+        if (user.email) { setEmail(user.email); checkEmailDomain(user.email); }
+        if (user.user_metadata?.full_name) setFullName(user.user_metadata.full_name);
       }
     };
     fetchUser();
-  }, []);
+  }, [checkEmailDomain]);
 
-  // Handle step transition animations
-  const goToStep = (newStep: Step) => {
-    setAnimate(false);
+  // ── Step transition with slide animation ────────────────────────────────────
+  const goToStep = useCallback((newStep: Step, dir: Direction = 'forward') => {
+    if (step === newStep) return;
+    setDirection(dir);
+    setSlidePhase('exit');
+
+    // Fade out right panel
+    setRightFade(false);
+
     setTimeout(() => {
       setStep(newStep);
-      setAnimate(true);
+      setSlidePhase('enter');
+      setTimeout(() => {
+        setSlidePhase('idle');
+        setRightFade(true);
+      }, 250);
     }, 200);
-  };
+  }, [step]);
 
+  // ── Slide classes ───────────────────────────────────────────────────────────
+  const slideClass = (() => {
+    if (slidePhase === 'idle') return 'opacity-100 translate-x-0';
+    if (slidePhase === 'exit') {
+      return direction === 'forward'
+        ? 'opacity-0 -translate-x-6'
+        : 'opacity-0 translate-x-6';
+    }
+    // enter
+    return direction === 'forward'
+      ? 'opacity-0 translate-x-6'
+      : 'opacity-0 -translate-x-6';
+  })();
+
+  // ── Form helpers ────────────────────────────────────────────────────────────
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
     setEmail(val);
@@ -115,71 +190,47 @@ export default function OnboardingPage() {
     const newOtp = [...otpCode];
     newOtp[index] = value.slice(-1);
     setOtpCode(newOtp);
-
-    // Auto-focus next input
-    if (value && index < 5) {
-      otpRefs.current[index + 1]?.focus();
-    }
+    if (value && index < 5) otpRefs.current[index + 1]?.focus();
   };
 
   const handleOtpKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Backspace') {
-      if (!otpCode[index] && index > 0) {
-        const newOtp = [...otpCode];
-        newOtp[index - 1] = '';
-        setOtpCode(newOtp);
-        otpRefs.current[index - 1]?.focus();
-      }
+    if (e.key === 'Backspace' && !otpCode[index] && index > 0) {
+      const newOtp = [...otpCode];
+      newOtp[index - 1] = '';
+      setOtpCode(newOtp);
+      otpRefs.current[index - 1]?.focus();
     }
   };
 
-  const toggleNiche = (niche: string) => {
-    setSelectedNiches(prev => 
-      prev.includes(niche) ? prev.filter(n => n !== niche) : [...prev, niche]
-    );
-  };
+  const toggleNiche = (niche: string) =>
+    setSelectedNiches((p) => p.includes(niche) ? p.filter((n) => n !== niche) : [...p, niche]);
 
-  const toggleCity = (city: string) => {
-    setSelectedCities(prev => 
-      prev.includes(city) ? prev.filter(c => c !== city) : [...prev, city]
-    );
-  };
+  const toggleCity = (city: string) =>
+    setSelectedCities((p) => p.includes(city) ? p.filter((c) => c !== city) : [...p, city]);
 
   const addCustomNiche = () => {
-    const trimmed = customNiche.trim();
-    if (trimmed && !selectedNiches.includes(trimmed)) {
-      setSelectedNiches(prev => [...prev, trimmed]);
-      setCustomNiche('');
-    }
+    const t = customNiche.trim();
+    if (t && !selectedNiches.includes(t)) { setSelectedNiches((p) => [...p, t]); setCustomNiche(''); }
   };
 
   const addCustomCity = () => {
-    const trimmed = customCity.trim();
-    if (trimmed && !selectedCities.includes(trimmed)) {
-      setSelectedCities(prev => [...prev, trimmed]);
-      setCustomCity('');
-    }
+    const t = customCity.trim();
+    if (t && !selectedCities.includes(t)) { setSelectedCities((p) => [...p, t]); setCustomCity(''); }
   };
 
   const handleCreateWorkspace = async () => {
     setCreatingWorkspace(true);
-    
-    // Simulate server side workspace setup delay
-    await new Promise((resolve) => setTimeout(resolve, 2500));
-    
+    await new Promise((r) => setTimeout(r, 2200));
     setCreatingWorkspace(false);
-    goToStep('pricing');
+    goToStep('pricing', 'forward');
   };
 
   const handleFinalizeOnboarding = async () => {
-    const name = fullName.trim() || "Utilisateur Minerva";
-    const company = workspaceName.trim() || "Mon Workspace";
-    
+    const name = fullName.trim() || 'Utilisateur Minerva';
+    const company = workspaceName.trim() || 'Mon Workspace';
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
-    
     if (user) {
-      // Upsert user settings inside Supabase database settings table
       await supabase.from('settings').upsert({
         user_id: user.id,
         full_name: name,
@@ -188,43 +239,16 @@ export default function OnboardingPage() {
         niches: selectedNiches.length > 0 ? selectedNiches : ['Boulangerie', 'Coiffure'],
         cities: selectedCities.length > 0 ? selectedCities : ['Paris'],
         ai_tone: aiTone === 'casual' ? 'Calme & Conseil' : aiTone === 'professional' ? 'Direct & Closer' : 'Storytelling',
-        ai_density: 'Standard'
+        ai_density: 'Standard',
       });
     }
-
-    // Persist local settings matching old onboarding structure
     const localSettings = {
-      profile: {
-        fullName: name,
-        email: email || "contact@uprising.studio",
-        phone: "+33 6 12 34 56 78",
-        language: "fr",
-        timezone: "Europe/Paris"
-      },
-      prospecting: {
-        niches: selectedNiches,
-        cities: selectedCities,
-        services: { website: true, seoAudit: true, acquisition: false },
-        language: "both"
-      },
-      ai: {
-        tone: aiTone,
-        customization: 'medium',
-        autoInsights: true,
-        autoFollowUps: false
-      },
-      notifications: {
-        reminderOverdue: true,
-        dailyDigest: true,
-        weeklyReport: false,
-        digestTime: "20:00"
-      },
-      appearance: {
-        density: "comfortable",
-        theme: "dark"
-      }
+      profile: { fullName: name, email: email || 'contact@uprising.studio', phone: '+33 6 12 34 56 78', language: 'fr', timezone: 'Europe/Paris' },
+      prospecting: { niches: selectedNiches, cities: selectedCities, services: { website: true, seoAudit: true, acquisition: false }, language: 'both' },
+      ai: { tone: aiTone, customization: 'medium', autoInsights: true, autoFollowUps: false },
+      notifications: { reminderOverdue: true, dailyDigest: true, weeklyReport: false, digestTime: '20:00' },
+      appearance: { density: 'comfortable', theme: 'dark' },
     };
-
     localStorage.setItem('minerva_reach_settings', JSON.stringify(localSettings));
     localStorage.setItem('minerva_welcome_seen', 'true');
     router.refresh();
@@ -232,163 +256,117 @@ export default function OnboardingPage() {
   };
 
   const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-  const isOtpComplete = otpCode.every(code => code !== '');
+  const isOtpComplete = otpCode.every((c) => c !== '');
 
+  // ── Right panel dynamic content ─────────────────────────────────────────────
+  const panelContent = RIGHT_PANEL_CONTENT[step] ?? RIGHT_PANEL_CONTENT['login'];
+
+  // ════════════════════════════════════════════════════════════════════════════
   return (
     <div className="min-h-screen w-screen bg-white text-[#26251e] font-sans selection:bg-[#10b981]/10 flex flex-col justify-between overflow-x-hidden relative">
-      
-      {/* Dynamic Landing Page Layout (Screen 0) */}
+
+      {/* ── LANDING PAGE (Screen 0) ── */}
       {step === 'landing' ? (
         <div className="flex-grow flex flex-col justify-between min-h-screen">
-          {/* Header */}
           <header className="flex h-16 items-center justify-between px-8 md:px-16 border-b border-[#e6e5e0] bg-white">
             <div className="flex items-center gap-2.5 font-bold tracking-tight text-[#26251e]">
               <MinervaIcon size={22} className="text-[#10b981]" />
               <span className="text-sm">Minerva Reach</span>
             </div>
-            
             <nav className="hidden md:flex items-center gap-8 text-xs font-semibold text-[#555552]">
               <span className="cursor-pointer hover:text-[#26251e] transition-colors">Minerva Agents</span>
               <span className="cursor-pointer hover:text-[#26251e] transition-colors">Minerva Learn</span>
               <span className="cursor-pointer hover:text-[#26251e] transition-colors">Mission</span>
               <span className="cursor-pointer hover:text-[#26251e] transition-colors">Careers</span>
             </nav>
-
-            <button 
-              onClick={() => goToStep('login')}
+            <button
+              onClick={() => goToStep('login', 'forward')}
               className="rounded-full bg-[#26251e] hover:bg-[#1a1a19] text-white px-5 py-1.5 text-xs font-bold transition-all"
             >
               Sign in
             </button>
           </header>
 
-          {/* Hero Section */}
           <main className="flex-1 flex flex-col items-center justify-center py-16 px-6 max-w-7xl mx-auto w-full">
-            <h1 className="text-5xl md:text-7xl tracking-tight text-center max-w-4xl text-[#26251e] mb-12 font-light leading-tight font-serif" style={{ fontFamily: 'Georgia, serif' }}>
+            <h1
+              className="text-5xl md:text-7xl tracking-tight text-center max-w-4xl text-[#26251e] mb-12 font-light leading-tight font-serif"
+              style={{ fontFamily: 'Georgia, serif' }}
+            >
               Superintelligence <br className="hidden sm:inline" /> for local sales
             </h1>
-
             <div className="text-[10px] font-bold text-[#807d72] uppercase tracking-widest mb-6">Our products</div>
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-5xl">
-              {/* Product Card 1 */}
+              {/* Card 1 */}
               <div className="bg-[#0c0c0b] text-white rounded-2xl p-8 border border-neutral-800 flex flex-col justify-between aspect-[4/3] relative overflow-hidden group">
                 <div className="space-y-3 relative z-10">
                   <h3 className="text-xl font-bold tracking-tight text-white font-serif" style={{ fontFamily: 'Georgia, serif' }}>Minerva Agents</h3>
                   <p className="text-xs text-neutral-400 max-w-xs leading-relaxed">AI agents designed to autonomously qualify and target local prospecting campaigns for your agency.</p>
                 </div>
-                
                 <div className="flex gap-3 pt-6 relative z-10">
-                  <button 
-                    onClick={() => goToStep('login')}
-                    className="bg-white hover:bg-neutral-100 text-black rounded-full px-5 py-2 text-xs font-bold transition-colors"
-                  >
-                    Explore
-                  </button>
-                  <button 
-                    onClick={() => goToStep('login')}
-                    className="bg-[#10b981] hover:bg-[#0ea5e9] text-black rounded-full px-5 py-2 text-xs font-bold transition-colors"
-                  >
-                    Book an intro
-                  </button>
+                  <button onClick={() => goToStep('login', 'forward')} className="bg-white hover:bg-neutral-100 text-black rounded-full px-5 py-2 text-xs font-bold transition-colors">Explore</button>
+                  <button onClick={() => goToStep('login', 'forward')} className="bg-[#10b981] hover:bg-[#059669] text-black rounded-full px-5 py-2 text-xs font-bold transition-colors">Book an intro</button>
                 </div>
-
-                {/* Mockup screen overlay representation */}
                 <div className="absolute right-[-40px] bottom-[-40px] w-64 h-64 bg-neutral-900 rounded-tl-2xl border-l border-t border-neutral-800 p-4 opacity-75 group-hover:scale-105 transition-transform duration-500 ease-out">
                   <div className="space-y-2">
                     <div className="flex items-center gap-1.5">
-                      <div className="w-2.5 h-2.5 rounded-full bg-red-500" />
-                      <div className="w-2.5 h-2.5 rounded-full bg-yellow-500" />
-                      <div className="w-2.5 h-2.5 rounded-full bg-green-500" />
+                      <div className="w-2.5 h-2.5 rounded-full bg-red-500" /><div className="w-2.5 h-2.5 rounded-full bg-yellow-500" /><div className="w-2.5 h-2.5 rounded-full bg-green-500" />
                     </div>
                     <div className="h-4 bg-neutral-800 rounded w-3/4" />
-                    <div className="h-16 bg-[#10b981]/10 rounded border border-[#10b981]/20 p-2 text-[8px] text-[#10b981] font-mono">
-                      🤖 Qualifying bakeries in Paris...
-                    </div>
+                    <div className="h-16 bg-[#10b981]/10 rounded border border-[#10b981]/20 p-2 text-[8px] text-[#10b981] font-mono">🤖 Qualifying bakeries in Paris...</div>
                   </div>
                 </div>
               </div>
-
-              {/* Product Card 2 */}
+              {/* Card 2 */}
               <div className="bg-[#f7f7f4] text-[#26251e] rounded-2xl p-8 border border-[#e6e5e0] flex flex-col justify-between aspect-[4/3] relative overflow-hidden group">
                 <div className="space-y-3 relative z-10">
                   <h3 className="text-xl font-bold tracking-tight text-[#26251e] font-serif" style={{ fontFamily: 'Georgia, serif' }}>Minerva Learn</h3>
                   <p className="text-xs text-[#807d72] max-w-xs leading-relaxed">AI-native knowledge base and training hub built to scale local prospecting methods.</p>
                 </div>
-
                 <div className="flex gap-3 pt-6 relative z-10">
-                  <button 
-                    onClick={() => goToStep('login')}
-                    className="bg-[#26251e] hover:bg-[#1a1a19] text-white rounded-full px-5 py-2 text-xs font-bold transition-colors"
-                  >
-                    Explore
-                  </button>
-                  <button 
-                    onClick={() => goToStep('login')}
-                    className="bg-white hover:bg-neutral-100 text-[#26251e] border border-[#e6e5e0] rounded-full px-5 py-2 text-xs font-bold transition-colors"
-                  >
-                    Book an intro
-                  </button>
-                </div>
-
-                {/* Mockup screen overlay representation */}
-                <div className="absolute right-[-40px] bottom-[-40px] w-64 h-64 bg-white rounded-tl-2xl border-l border-t border-[#e6e5e0] p-4 opacity-75 group-hover:scale-105 transition-transform duration-500 ease-out">
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-1.5">
-                      <div className="w-2.5 h-2.5 rounded-full bg-neutral-200" />
-                      <div className="w-2.5 h-2.5 rounded-full bg-neutral-200" />
-                    </div>
-                    <div className="h-4 bg-neutral-100 rounded w-2/3" />
-                    <div className="h-20 bg-neutral-50 rounded border border-neutral-200/50 p-2 space-y-1">
-                      <div className="h-2 bg-neutral-200 rounded w-full" />
-                      <div className="h-2 bg-neutral-200 rounded w-5/6" />
-                      <div className="h-2 bg-neutral-200 rounded w-4/5" />
-                    </div>
-                  </div>
+                  <button onClick={() => goToStep('login', 'forward')} className="bg-[#26251e] hover:bg-[#1a1a19] text-white rounded-full px-5 py-2 text-xs font-bold transition-colors">Explore</button>
+                  <button onClick={() => goToStep('login', 'forward')} className="bg-white hover:bg-neutral-100 text-[#26251e] border border-[#e6e5e0] rounded-full px-5 py-2 text-xs font-bold transition-colors">Book an intro</button>
                 </div>
               </div>
             </div>
           </main>
 
-          {/* Footer */}
           <footer className="h-16 flex items-center justify-between px-8 border-t border-[#e6e5e0] text-[10px] text-[#807d72] font-semibold">
-            <div className="flex items-center gap-1.5">
-              <MinervaIcon size={14} className="text-[#10b981]" />
-              <span>Minerva OS</span>
-            </div>
+            <div className="flex items-center gap-1.5"><MinervaIcon size={14} className="text-[#10b981]" /><span>Minerva OS</span></div>
             <div>curated by Mobbin</div>
           </footer>
         </div>
+
       ) : (
-        /* Split Onboarding flow (Screens 1 to 9) */
+        /* ── SPLIT ONBOARDING LAYOUT ── */
         <div className="flex-grow flex flex-col lg:flex-row h-screen min-h-screen overflow-hidden">
-          
-          {/* Left Column (Interactive Forms) */}
-          <div className="w-full lg:w-1/2 flex flex-col justify-between py-12 px-6 sm:px-12 bg-white relative z-10 overflow-y-auto">
-            
-            {/* Top Bar Navigation */}
+
+          {/* ── LEFT COLUMN ── */}
+          <div className="w-full lg:w-1/2 flex flex-col justify-between py-10 px-6 sm:px-12 bg-white relative z-10 overflow-y-auto">
+
+            {/* Top bar */}
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 font-bold text-[#26251e] cursor-pointer" onClick={() => goToStep('landing')}>
+              <div className="flex items-center gap-2 font-bold text-[#26251e] cursor-pointer" onClick={() => goToStep('landing', 'backward')}>
                 <MinervaIcon size={18} className="text-[#10b981]" />
                 <span className="text-xs">Minerva Reach</span>
               </div>
-
-              {/* Miniature tabs links as seen in mockup */}
-              <div className="flex items-center gap-4 text-[10px] font-semibold text-[#807d72] bg-[#f7f7f4] border border-[#e6e5e0] rounded-full px-4 py-1.5 shadow-xs">
+              <div className="flex items-center gap-4 text-[10px] font-semibold text-[#807d72] bg-[#f7f7f4] border border-[#e6e5e0] rounded-full px-4 py-1.5">
                 <span className="hover:text-[#26251e] transition-colors cursor-pointer">Overview</span>
                 <span className="hover:text-[#26251e] transition-colors cursor-pointer">Pricing</span>
-                <span className="hover:text-[#26251e] transition-colors cursor-pointer">Privacy and terms</span>
                 <span className="hover:text-[#26251e] transition-colors cursor-pointer">FAQ</span>
               </div>
             </div>
 
-            {/* Main Interactive Container with Slide transition */}
-            <div className={cn(
-              "my-auto max-w-md w-full mx-auto space-y-6 pt-12 pb-8 transition-all duration-300 transform",
-              animate ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-4"
-            )}>
-              
-              {/* STEP: LOGIN (Screens 1, 2, 3) */}
+            {/* Progress dots */}
+            <DotProgress currentStep={step} />
+
+            {/* Main animated content */}
+            <div
+              className={cn(
+                'my-auto max-w-md w-full mx-auto space-y-6 py-8 transition-all duration-200 transform',
+                slideClass,
+              )}
+            >
+              {/* ─── LOGIN ───────────────────────────────────────────────── */}
               {step === 'login' && (
                 <div className="space-y-6">
                   <div className="space-y-2">
@@ -397,9 +375,8 @@ export default function OnboardingPage() {
                     <p className="text-xs font-semibold text-[#807d72] pt-1">Sign in or sign up for free with your work email</p>
                   </div>
 
-                  {/* Google Authenticator */}
-                  <button 
-                    onClick={() => goToStep('otp')}
+                  <button
+                    onClick={() => goToStep('otp', 'forward')}
                     className="w-full flex items-center justify-center gap-2 bg-white border border-[#e6e5e0] hover:bg-neutral-50 text-xs font-bold rounded-full py-2.5 text-[#26251e] transition-all shadow-xs"
                   >
                     <svg className="w-4 h-4" viewBox="0 0 24 24">
@@ -412,69 +389,64 @@ export default function OnboardingPage() {
                   </button>
 
                   <div className="relative flex py-1.5 items-center">
-                    <div className="flex-grow border-t border-[#e6e5e0]"></div>
+                    <div className="flex-grow border-t border-[#e6e5e0]" />
                     <span className="flex-shrink mx-4 text-[10px] font-bold text-[#807d72] uppercase tracking-wider">or</span>
-                    <div className="flex-grow border-t border-[#e6e5e0]"></div>
+                    <div className="flex-grow border-t border-[#e6e5e0]" />
                   </div>
 
-                  {/* Email block */}
                   <div className="space-y-4">
-                    <input 
+                    <input
                       type="email"
                       placeholder="name@work-email.com"
                       value={email}
                       onChange={handleEmailChange}
                       className="w-full text-xs font-semibold px-4 py-3 bg-white border border-[#e6e5e0] focus:border-[#10b981] rounded-full outline-none transition-colors shadow-xs"
                     />
-
-                    {/* Personal Email Warning Banner (Screen 2) */}
                     {isPersonalEmail && email.includes('@') && (
                       <div className="flex gap-2.5 p-3 rounded-2xl bg-neutral-100 text-xs text-[#555552] border border-[#e6e5e0]/60 animate-in fade-in slide-in-from-top-2 duration-300">
                         <AlertCircle className="w-4 h-4 text-[#807d72] shrink-0 mt-0.5" />
                         <span className="leading-relaxed">Using your work email will make it easier for you to collaborate with your team.</span>
                       </div>
                     )}
-
-                    {/* Action button */}
                     <button
-                      onClick={() => goToStep('otp')}
+                      onClick={() => goToStep('otp', 'forward')}
                       disabled={!isEmailValid}
                       className={cn(
-                        "w-full rounded-full py-3 text-xs font-bold transition-all shadow-xs",
+                        'w-full rounded-full py-3 text-xs font-bold transition-all shadow-xs',
                         isEmailValid
-                          ? "bg-[#26251e] hover:bg-[#1a1a19] text-white cursor-pointer"
-                          : "bg-neutral-100 text-[#807d72] cursor-not-allowed border border-[#e6e5e0]"
+                          ? 'bg-[#26251e] hover:bg-[#1a1a19] text-white cursor-pointer'
+                          : 'bg-neutral-100 text-[#807d72] cursor-not-allowed border border-[#e6e5e0]',
                       )}
                     >
-                      {isPersonalEmail ? "Continue anyway" : "Continue"}
+                      {isPersonalEmail ? 'Continue anyway' : 'Continue'}
                     </button>
                   </div>
                 </div>
               )}
 
-              {/* STEP: OTP VERIFICATION (Screens 4, 5) */}
+              {/* ─── OTP ─────────────────────────────────────────────────── */}
               {step === 'otp' && (
                 <div className="space-y-6">
                   <div className="space-y-2">
                     <h2 className="text-3xl tracking-tight text-[#26251e] font-serif font-light" style={{ fontFamily: 'Georgia, serif' }}>We sent you a code</h2>
                     <p className="text-xs text-[#807d72] font-semibold leading-relaxed">
-                      Please check your inbox at <span className="text-[#26251e] underline">{email || "your email"}</span>. Enter the verification code below.
+                      Please check your inbox at{' '}
+                      <span className="text-[#26251e] underline">{email || 'your email'}</span>. Enter the verification code below.
                     </p>
                   </div>
 
-                  {/* 6 digits grid */}
                   <div className="grid grid-cols-6 gap-2 pt-2">
                     {otpCode.map((digit, idx) => (
                       <input
                         key={idx}
-                        ref={el => { otpRefs.current[idx] = el; }}
+                        ref={(el) => { otpRefs.current[idx] = el; }}
                         type="text"
                         maxLength={1}
                         value={digit}
                         placeholder="0"
                         onChange={(e) => handleOtpChange(idx, e.target.value)}
                         onKeyDown={(e) => handleOtpKeyDown(idx, e)}
-                        className="aspect-square text-center text-sm font-bold bg-white border border-[#e6e5e0] focus:border-[#10b981] rounded-full outline-none transition-colors shadow-xs text-[#26251e] placeholder:text-neutral-300"
+                        className="aspect-square text-center text-sm font-bold bg-white border border-[#e6e5e0] focus:border-[#10b981] rounded-xl outline-none transition-colors shadow-xs text-[#26251e] placeholder:text-neutral-300"
                       />
                     ))}
                   </div>
@@ -483,23 +455,21 @@ export default function OnboardingPage() {
                     <span className="text-[10px] font-bold text-[#807d72] hover:text-[#26251e] uppercase tracking-wider cursor-pointer underline transition-colors">Resend code</span>
                   </div>
 
-                  {/* Nav row */}
                   <div className="flex items-center gap-4 pt-4 border-t border-[#e6e5e0]/60">
                     <button
-                      onClick={() => goToStep('login')}
+                      onClick={() => goToStep('login', 'backward')}
                       className="inline-flex items-center justify-center gap-1.5 rounded-full border border-[#e6e5e0] bg-white hover:bg-neutral-50 px-6 py-2.5 text-xs font-bold text-[#26251e] shadow-xs transition-colors"
                     >
                       Back
                     </button>
-
                     <button
-                      onClick={() => goToStep('selection')}
+                      onClick={() => goToStep('selection', 'forward')}
                       disabled={!isOtpComplete}
                       className={cn(
-                        "flex-1 rounded-full py-2.5 text-xs font-bold transition-all shadow-xs text-center",
+                        'flex-1 rounded-full py-2.5 text-xs font-bold transition-all shadow-xs text-center',
                         isOtpComplete
-                          ? "bg-[#26251e] hover:bg-[#1a1a19] text-white cursor-pointer"
-                          : "bg-neutral-100 text-[#807d72] cursor-not-allowed border border-[#e6e5e0]"
+                          ? 'bg-[#26251e] hover:bg-[#1a1a19] text-white cursor-pointer'
+                          : 'bg-neutral-100 text-[#807d72] cursor-not-allowed border border-[#e6e5e0]',
                       )}
                     >
                       Continue
@@ -508,35 +478,29 @@ export default function OnboardingPage() {
                 </div>
               )}
 
-              {/* STEP: SELECTION (Custom Step for Niches & Cities - option A2) */}
+              {/* ─── SELECTION ────────────────────────────────────────────── */}
               {step === 'selection' && (
                 <div className="space-y-6">
                   <div className="space-y-2">
                     <h2 className="text-3xl tracking-tight text-[#26251e] font-serif font-light" style={{ fontFamily: 'Georgia, serif' }}>Configure targeting</h2>
                     <p className="text-xs text-[#807d72] font-semibold leading-relaxed">
-                      Choose the industries and cities you want your AI agents to start analyzing for local sales opportunities.
+                      Choose the industries and cities you want your AI agents to start analyzing.
                     </p>
                   </div>
 
-                  {/* Niches Selector */}
+                  {/* Niches */}
                   <div className="space-y-2.5">
                     <label className="text-[10px] font-bold uppercase tracking-wider text-[#807d72] flex items-center gap-1">
-                      <Briefcase className="w-3.5 h-3.5 text-[#10b981]" />
-                      <span>Secteurs d&apos;activité (Niches)</span>
+                      <Briefcase className="w-3.5 h-3.5 text-[#10b981]" /><span>Secteurs d&apos;activité</span>
                     </label>
                     <div className="flex flex-wrap gap-1.5">
-                      {PRESET_NICHES.map(niche => {
+                      {PRESET_NICHES.map((niche) => {
                         const active = selectedNiches.includes(niche);
                         return (
-                          <button
-                            key={niche}
-                            type="button"
-                            onClick={() => toggleNiche(niche)}
+                          <button key={niche} type="button" onClick={() => toggleNiche(niche)}
                             className={cn(
-                              "inline-flex items-center gap-1 rounded-full px-3 py-1 text-[10px] font-bold transition-all cursor-pointer border",
-                              active
-                                ? "bg-[#10b981]/10 text-[#059669] border-[#10b981]/30"
-                                : "bg-white text-[#555552] border-[#e6e5e0] hover:bg-neutral-50"
+                              'inline-flex items-center gap-1 rounded-full px-3 py-1 text-[10px] font-bold transition-all cursor-pointer border',
+                              active ? 'bg-[#10b981]/10 text-[#059669] border-[#10b981]/30' : 'bg-white text-[#555552] border-[#e6e5e0] hover:bg-neutral-50',
                             )}
                           >
                             <span>{niche}</span>
@@ -545,44 +509,30 @@ export default function OnboardingPage() {
                         );
                       })}
                     </div>
-                    {/* Add custom niche */}
                     <div className="flex gap-2">
-                      <input 
-                        type="text" 
-                        placeholder="Ajouter une autre niche..." 
-                        value={customNiche}
-                        onChange={(e) => setCustomNiche(e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && addCustomNiche()}
+                      <input type="text" placeholder="Ajouter une autre niche..." value={customNiche}
+                        onChange={(e) => setCustomNiche(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && addCustomNiche()}
                         className="flex-1 text-[11px] font-semibold px-3 py-2 bg-white border border-[#e6e5e0] rounded-full outline-none focus:border-[#10b981]"
                       />
-                      <button 
-                        onClick={addCustomNiche}
-                        className="rounded-full bg-white border border-[#e6e5e0] hover:bg-neutral-50 px-3 flex items-center justify-center border-solid"
-                      >
+                      <button onClick={addCustomNiche} className="rounded-full bg-white border border-[#e6e5e0] hover:bg-neutral-50 px-3 flex items-center justify-center">
                         <Plus className="w-4 h-4 text-[#26251e]" />
                       </button>
                     </div>
                   </div>
 
-                  {/* Cities Selector */}
+                  {/* Cities */}
                   <div className="space-y-2.5 pt-2">
                     <label className="text-[10px] font-bold uppercase tracking-wider text-[#807d72] flex items-center gap-1">
-                      <MapPin className="w-3.5 h-3.5 text-[#10b981]" />
-                      <span>Villes Cibles</span>
+                      <MapPin className="w-3.5 h-3.5 text-[#10b981]" /><span>Villes Cibles</span>
                     </label>
                     <div className="flex flex-wrap gap-1.5">
-                      {PRESET_CITIES.map(city => {
+                      {PRESET_CITIES.map((city) => {
                         const active = selectedCities.includes(city);
                         return (
-                          <button
-                            key={city}
-                            type="button"
-                            onClick={() => toggleCity(city)}
+                          <button key={city} type="button" onClick={() => toggleCity(city)}
                             className={cn(
-                              "inline-flex items-center gap-1 rounded-full px-3 py-1 text-[10px] font-bold transition-all cursor-pointer border",
-                              active
-                                ? "bg-[#10b981]/10 text-[#059669] border-[#10b981]/30"
-                                : "bg-white text-[#555552] border-[#e6e5e0] hover:bg-neutral-50"
+                              'inline-flex items-center gap-1 rounded-full px-3 py-1 text-[10px] font-bold transition-all cursor-pointer border',
+                              active ? 'bg-[#10b981]/10 text-[#059669] border-[#10b981]/30' : 'bg-white text-[#555552] border-[#e6e5e0] hover:bg-neutral-50',
                             )}
                           >
                             <span>{city}</span>
@@ -591,46 +541,32 @@ export default function OnboardingPage() {
                         );
                       })}
                     </div>
-                    {/* Add custom city */}
                     <div className="flex gap-2">
-                      <input 
-                        type="text" 
-                        placeholder="Ajouter une autre ville..." 
-                        value={customCity}
-                        onChange={(e) => setCustomCity(e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && addCustomCity()}
+                      <input type="text" placeholder="Ajouter une autre ville..." value={customCity}
+                        onChange={(e) => setCustomCity(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && addCustomCity()}
                         className="flex-1 text-[11px] font-semibold px-3 py-2 bg-white border border-[#e6e5e0] rounded-full outline-none focus:border-[#10b981]"
                       />
-                      <button 
-                        onClick={addCustomCity}
-                        className="rounded-full bg-white border border-[#e6e5e0] hover:bg-neutral-50 px-3 flex items-center justify-center border-solid"
-                      >
+                      <button onClick={addCustomCity} className="rounded-full bg-white border border-[#e6e5e0] hover:bg-neutral-50 px-3 flex items-center justify-center">
                         <Plus className="w-4 h-4 text-[#26251e]" />
                       </button>
                     </div>
                   </div>
 
-                  {/* AI Tone selector */}
+                  {/* AI Tone */}
                   <div className="space-y-2.5 pt-2">
                     <label className="text-[10px] font-bold uppercase tracking-wider text-[#807d72] flex items-center gap-1">
-                      <Sliders className="w-3.5 h-3.5 text-[#10b981]" />
-                      <span>Ton de l&apos;intelligence artificielle</span>
+                      <Sliders className="w-3.5 h-3.5 text-[#10b981]" /><span>Ton de l&apos;IA</span>
                     </label>
                     <div className="grid grid-cols-3 gap-2">
-                      {[
+                      {([
                         { id: 'casual' as const, name: 'Calme & Conseil' },
                         { id: 'professional' as const, name: 'Direct & Closer' },
-                        { id: 'storytelling' as const, name: 'Storytelling' }
-                      ].map(t => (
-                        <button
-                          key={t.id}
-                          type="button"
-                          onClick={() => setAiTone(t.id)}
+                        { id: 'storytelling' as const, name: 'Storytelling' },
+                      ]).map((t) => (
+                        <button key={t.id} type="button" onClick={() => setAiTone(t.id)}
                           className={cn(
-                            "flex flex-col items-center justify-center p-3 rounded-2xl border text-center transition-all cursor-pointer text-xs font-bold",
-                            aiTone === t.id
-                              ? "bg-[#10b981]/5 border-[#10b981] text-[#059669]"
-                              : "bg-white border-[#e6e5e0] text-[#555552] hover:bg-neutral-50"
+                            'flex flex-col items-center justify-center p-3 rounded-2xl border text-center transition-all cursor-pointer text-xs font-bold',
+                            aiTone === t.id ? 'bg-[#10b981]/5 border-[#10b981] text-[#059669]' : 'bg-white border-[#e6e5e0] text-[#555552] hover:bg-neutral-50',
                           )}
                         >
                           {t.name}
@@ -639,26 +575,18 @@ export default function OnboardingPage() {
                     </div>
                   </div>
 
-                  {/* Navigation row */}
                   <div className="flex items-center gap-4 pt-4 border-t border-[#e6e5e0]/60">
-                    <button
-                      onClick={() => goToStep('otp')}
-                      className="inline-flex items-center justify-center gap-1.5 rounded-full border border-[#e6e5e0] bg-white hover:bg-neutral-50 px-6 py-2.5 text-xs font-bold text-[#26251e] shadow-xs transition-colors"
-                    >
+                    <button onClick={() => goToStep('otp', 'backward')} className="inline-flex items-center justify-center gap-1.5 rounded-full border border-[#e6e5e0] bg-white hover:bg-neutral-50 px-6 py-2.5 text-xs font-bold text-[#26251e] shadow-xs transition-colors">
                       Back
                     </button>
-
-                    <button
-                      onClick={() => goToStep('workspace')}
-                      className="flex-1 rounded-full py-2.5 text-xs font-bold bg-[#26251e] hover:bg-[#1a1a19] text-white cursor-pointer shadow-xs text-center"
-                    >
+                    <button onClick={() => goToStep('workspace', 'forward')} className="flex-1 rounded-full py-2.5 text-xs font-bold bg-[#26251e] hover:bg-[#1a1a19] text-white cursor-pointer shadow-xs text-center">
                       Continue
                     </button>
                   </div>
                 </div>
               )}
 
-              {/* STEP: WORKSPACE SETUP (Screens 6, 7) */}
+              {/* ─── WORKSPACE ───────────────────────────────────────────── */}
               {step === 'workspace' && (
                 <div className="space-y-6">
                   <div className="space-y-2">
@@ -666,53 +594,38 @@ export default function OnboardingPage() {
                     <p className="text-xs text-[#807d72] font-semibold">Join or create a workspace</p>
                   </div>
 
-                  {/* Row 1: Workspace creation form */}
                   <div className="border border-[#e6e5e0] rounded-2xl p-5 bg-white space-y-4">
                     <div className="space-y-1">
                       <h4 className="text-xs font-bold text-[#26251e]">Create a new workspace</h4>
                       <p className="text-[11px] text-[#807d72] leading-relaxed">Set up an agency dashboard and configure AI campaigns from scratch.</p>
                     </div>
-
                     <div className="space-y-3 pt-2">
                       <div className="space-y-1">
                         <label className="text-[9px] font-bold uppercase tracking-wider text-[#807d72]">Your Full Name</label>
-                        <input
-                          type="text"
-                          placeholder="e.g. Alex Smith"
-                          value={fullName}
-                          onChange={(e) => setFullName(e.target.value)}
+                        <input type="text" placeholder="e.g. Alex Smith" value={fullName} onChange={(e) => setFullName(e.target.value)}
                           className="w-full text-xs font-semibold px-4 py-2.5 bg-white border border-[#e6e5e0] focus:border-[#10b981] rounded-full outline-none shadow-xs"
                         />
                       </div>
-
                       <div className="space-y-1">
                         <label className="text-[9px] font-bold uppercase tracking-wider text-[#807d72]">Workspace Name (Company)</label>
-                        <input
-                          type="text"
-                          placeholder="e.g. Uprising Agency"
-                          value={workspaceName}
-                          onChange={(e) => setWorkspaceName(e.target.value)}
+                        <input type="text" placeholder="e.g. Uprising Agency" value={workspaceName} onChange={(e) => setWorkspaceName(e.target.value)}
                           className="w-full text-xs font-semibold px-4 py-2.5 bg-white border border-[#e6e5e0] focus:border-[#10b981] rounded-full outline-none shadow-xs"
                         />
                       </div>
                     </div>
-
                     <div className="flex justify-end pt-3">
                       <button
                         onClick={handleCreateWorkspace}
                         disabled={!fullName.trim() || !workspaceName.trim() || creatingWorkspace}
                         className={cn(
-                          "rounded-full px-6 py-2 text-xs font-bold transition-all shadow-xs flex items-center gap-1.5",
+                          'rounded-full px-6 py-2 text-xs font-bold transition-all shadow-xs flex items-center gap-1.5',
                           fullName.trim() && workspaceName.trim()
-                            ? "bg-[#26251e] hover:bg-[#1a1a19] text-white cursor-pointer"
-                            : "bg-neutral-100 text-[#807d72] cursor-not-allowed border border-[#e6e5e0]"
+                            ? 'bg-[#26251e] hover:bg-[#1a1a19] text-white cursor-pointer'
+                            : 'bg-neutral-100 text-[#807d72] cursor-not-allowed border border-[#e6e5e0]',
                         )}
                       >
                         {creatingWorkspace ? (
-                          <>
-                            <Loader2 className="w-3.5 h-3.5 animate-spin text-[#807d72]" />
-                            <span>Creating...</span>
-                          </>
+                          <><Loader2 className="w-3.5 h-3.5 animate-spin text-[#807d72]" /><span>Creating...</span></>
                         ) : (
                           <span>Create</span>
                         )}
@@ -720,13 +633,11 @@ export default function OnboardingPage() {
                     </div>
                   </div>
 
-                  {/* Row 2: Sign out / log out */}
                   <div className="border border-[#e6e5e0] rounded-2xl p-5 bg-white flex items-center justify-between">
                     <div className="space-y-0.5 text-left">
                       <h4 className="text-xs font-bold text-[#26251e]">Not seeing your workspace?</h4>
                       <p className="text-[11px] text-[#807d72]">Try logging in with a different email address.</p>
                     </div>
-                    
                     <button
                       onClick={async () => {
                         const supabase = createClient();
@@ -740,92 +651,233 @@ export default function OnboardingPage() {
                     </button>
                   </div>
 
-                  {/* Footer log */}
-                  <div className="text-center text-[10px] text-[#807d72] font-semibold">
-                    Signed in as <span className="text-[#26251e] underline">{email || "active user"}</span>
+                  <div className="flex items-center gap-4 pt-2 border-t border-[#e6e5e0]/60">
+                    <button onClick={() => goToStep('selection', 'backward')} className="inline-flex items-center justify-center gap-1.5 rounded-full border border-[#e6e5e0] bg-white hover:bg-neutral-50 px-6 py-2.5 text-xs font-bold text-[#26251e] shadow-xs transition-colors">
+                      Back
+                    </button>
+                    <div className="text-center text-[10px] text-[#807d72] font-semibold flex-1">
+                      Signed in as <span className="text-[#26251e] underline">{email || 'active user'}</span>
+                    </div>
                   </div>
                 </div>
               )}
 
+              {/* ─── PRICING ─────────────────────────────────────────────── */}
+              {step === 'pricing' && (
+                <div className="space-y-5">
+                  <div className="space-y-2">
+                    <h2 className="text-3xl tracking-tight text-[#26251e] font-serif font-light" style={{ fontFamily: 'Georgia, serif' }}>Upgrade your workspace</h2>
+                    <div className="flex items-center gap-2 pt-1">
+                      <span className="text-xs text-[#807d72] font-semibold">Save €60/user/year with annual billing</span>
+                      <button
+                        onClick={() => setIsAnnualPlan(!isAnnualPlan)}
+                        className={cn(
+                          'w-10 h-5 rounded-full p-0.5 transition-colors duration-200 flex items-center shrink-0',
+                          isAnnualPlan ? 'bg-[#10b981] justify-end' : 'bg-neutral-200 justify-start',
+                        )}
+                      >
+                        <span className="w-4 h-4 rounded-full bg-white shadow block" />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    {/* Free plan */}
+                    <div className="border border-[#e6e5e0] rounded-2xl p-4 bg-white space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h4 className="text-xs font-bold text-[#26251e]">Free</h4>
+                          <p className="text-xl font-light text-[#26251e] font-serif" style={{ fontFamily: 'Georgia, serif' }}>€0 / month</p>
+                        </div>
+                        <button onClick={() => goToStep('analytics', 'forward')} className="rounded-full border border-[#e6e5e0] bg-white hover:bg-neutral-50 text-xs font-bold text-[#26251e] px-5 py-2 transition-colors">
+                          Continue free
+                        </button>
+                      </div>
+                      <ul className="space-y-1.5">
+                        {['50 prospects / mois', '5 campagnes actives', 'Audit SEO de base', 'Support e-mail'].map((f, i) => (
+                          <li key={i} className="flex items-center gap-2 text-[11px] font-semibold text-[#555552]">
+                            <Check className="w-3 h-3 text-[#10b981] shrink-0" /><span>{f}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    {/* Team plan */}
+                    <div className="border-2 border-[#10b981] rounded-2xl p-4 bg-[#10b981]/5 space-y-3 relative">
+                      <span className="absolute -top-2.5 left-4 bg-[#10b981] text-white text-[9px] font-bold px-3 py-0.5 rounded-full uppercase tracking-wider">Recommandé</span>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h4 className="text-xs font-bold text-[#26251e]">Team</h4>
+                          <p className="text-xl font-light text-[#26251e] font-serif" style={{ fontFamily: 'Georgia, serif' }}>
+                            {isAnnualPlan ? '€30' : '€35'}<span className="text-xs text-[#807d72] font-semibold"> / month</span>
+                            {isAnnualPlan && <span className="text-xs text-[#807d72] line-through ml-2">€35</span>}
+                          </p>
+                        </div>
+                        <button onClick={() => goToStep('analytics', 'forward')} className="rounded-full bg-[#26251e] hover:bg-[#1a1a19] text-white text-xs font-bold px-5 py-2 transition-colors">
+                          Select Team
+                        </button>
+                      </div>
+                      <ul className="space-y-1.5">
+                        {['Prospects illimités', 'Campagnes illimitées', 'IA multi-agents avancée', 'Intégrations premium', 'Support prioritaire', 'Jusqu\'à 50 membres'].map((f, i) => (
+                          <li key={i} className="flex items-center gap-2 text-[11px] font-semibold text-[#555552]">
+                            <Check className="w-3 h-3 text-[#10b981] shrink-0" /><span>{f}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+
+                  <p className="text-center text-[9px] font-semibold text-[#807d72]">
+                    ISO 27001 · RGPD · Données chiffrées AES-256
+                  </p>
+
+                  <div className="flex items-center gap-4 pt-2 border-t border-[#e6e5e0]/60">
+                    <button onClick={() => goToStep('workspace', 'backward')} className="inline-flex items-center justify-center rounded-full border border-[#e6e5e0] bg-white hover:bg-neutral-50 px-6 py-2.5 text-xs font-bold text-[#26251e] shadow-xs transition-colors">
+                      Back
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* ─── ANALYTICS ───────────────────────────────────────────── */}
+              {step === 'analytics' && (
+                <div className="space-y-6">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#10b981]/10 border border-[#10b981]/20">
+                    <Sparkles className="w-6 h-6 text-[#10b981]" />
+                  </div>
+
+                  <div className="space-y-2">
+                    <h2 className="text-3xl tracking-tight text-[#26251e] font-serif font-light" style={{ fontFamily: 'Georgia, serif' }}>Help us improve</h2>
+                    <p className="text-xs text-[#555552] font-semibold leading-relaxed">
+                      Allow your questions to be logged anonymously to help us improve our services. You can opt-out at any time in Settings.{' '}
+                      <span className="underline cursor-pointer hover:text-[#26251e]">Learn more in our Privacy Notice</span>.
+                    </p>
+                  </div>
+
+                  <div className="space-y-3">
+                    {[
+                      { icon: <BarChart3 className="w-4 h-4 text-[#10b981]" />, title: 'Analytics d\'usage', desc: 'Nous aide à améliorer les performances de l\'IA.' },
+                      { icon: <ShieldCheck className="w-4 h-4 text-[#10b981]" />, title: 'Données anonymisées', desc: 'Aucune donnée personnelle ou sensible n\'est collectée.' },
+                      { icon: <Zap className="w-4 h-4 text-[#10b981]" />, title: 'Opt-out à tout moment', desc: 'Désactivez le partage dans Paramètres > Confidentialité.' },
+                    ].map((item, i) => (
+                      <div key={i} className="flex items-start gap-3 p-3 rounded-2xl border border-[#e6e5e0] bg-neutral-50">
+                        <div className="shrink-0 mt-0.5">{item.icon}</div>
+                        <div>
+                          <p className="text-xs font-bold text-[#26251e]">{item.title}</p>
+                          <p className="text-[11px] text-[#807d72] font-semibold leading-relaxed">{item.desc}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="flex items-center gap-3 pt-4 border-t border-[#e6e5e0]/60">
+                    <button onClick={handleFinalizeOnboarding} className="flex-1 rounded-full bg-neutral-100 hover:bg-neutral-200 text-xs font-bold text-[#555552] py-2.5 transition-colors text-center">
+                      Don&apos;t share
+                    </button>
+                    <button onClick={handleFinalizeOnboarding} className="flex-1 rounded-full bg-[#26251e] hover:bg-[#1a1a19] text-white text-xs font-bold py-2.5 transition-colors shadow-xs text-center">
+                      Share analytics
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
-            {/* Bottom Brand Marker */}
-            <div className="flex items-center gap-1.5 justify-start text-[10px] text-[#807d72] font-semibold mt-8">
+            {/* Bottom brand */}
+            <div className="flex items-center gap-1.5 justify-start text-[10px] text-[#807d72] font-semibold mt-6">
               <MinervaIcon size={14} className="text-[#10b981]" />
               <span>Minerva OS Reach Lite</span>
             </div>
-
           </div>
 
-          {/* Right Column (High-Fidelity 3D Laptop Mockup) */}
+          {/* ── RIGHT COLUMN (Dynamic) ── */}
           <div className="hidden lg:flex w-1/2 bg-[#0c0c0b] flex-col items-center justify-center relative p-8 border-l border-neutral-800">
-            
-            {/* Visual background highlights */}
+
+            {/* Background glows */}
             <div className="absolute top-[10%] right-[10%] w-[350px] h-[350px] bg-[#10b981]/5 rounded-full blur-[140px] pointer-events-none" />
             <div className="absolute bottom-[10%] left-[10%] w-[350px] h-[350px] bg-neutral-800/10 rounded-full blur-[140px] pointer-events-none" />
 
-            {/* Simulated 3D Laptop Frame */}
-            <div className="relative w-full max-w-[560px] aspect-[16/11] select-none transition-transform duration-700 ease-out" style={{
-              transform: 'rotateX(10deg) rotateY(-18deg) rotateZ(3deg) skewY(1deg)',
-              transformStyle: 'preserve-3d',
-              perspective: '1500px'
-            }}>
-              {/* Laptop Display (Lid) */}
-              <div className="relative bg-[#1f1f1e] rounded-xl p-[10px] border border-neutral-700/30 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.85)]" style={{
-                transform: 'translateZ(15px)',
-              }}>
-                {/* Outer Screen Bezel Webcam */}
-                <div className="absolute top-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-[#000000] rounded-full border border-neutral-800 flex items-center justify-center">
+            {/* Dynamic headline (fades with step) */}
+            <div
+              className={cn(
+                'absolute top-12 left-10 right-10 transition-all duration-300',
+                rightFade ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2',
+              )}
+            >
+              {panelContent.badge && (
+                <span className="inline-flex items-center gap-1.5 text-[10px] font-bold text-[#10b981] bg-[#10b981]/10 border border-[#10b981]/20 rounded-full px-3 py-1 mb-3">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#10b981]" />
+                  {panelContent.badge}
+                </span>
+              )}
+              <h3
+                className="text-2xl font-light text-white font-serif leading-snug mb-2"
+                style={{ fontFamily: 'Georgia, serif' }}
+              >
+                {panelContent.headline}
+              </h3>
+              <p className="text-xs text-neutral-400 font-semibold leading-relaxed max-w-xs">
+                {panelContent.sub}
+              </p>
+            </div>
+
+            {/* 3D Laptop Mockup */}
+            <div
+              className="relative w-full max-w-[560px] aspect-[16/11] select-none transition-transform duration-700 ease-out"
+              style={{
+                transform: 'rotateX(10deg) rotateY(-18deg) rotateZ(3deg) skewY(1deg)',
+                transformStyle: 'preserve-3d',
+                perspective: '1500px',
+              }}
+            >
+              {/* Laptop lid */}
+              <div
+                className="relative bg-[#1f1f1e] rounded-xl p-[10px] border border-neutral-700/30 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.85)]"
+                style={{ transform: 'translateZ(15px)' }}
+              >
+                {/* Webcam dot */}
+                <div className="absolute top-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-black rounded-full border border-neutral-800 flex items-center justify-center">
                   <div className="w-0.5 h-0.5 bg-blue-500 rounded-full opacity-60" />
                 </div>
 
-                {/* Screen Canvas Container */}
+                {/* Screen */}
                 <div className="relative bg-[#0c0c0b] aspect-[16/10] rounded-lg overflow-hidden border border-neutral-800/80 flex text-[10px] leading-tight text-white select-none">
-                  
-                  {/* Dashboard Sidebar */}
+
+                  {/* Sidebar */}
                   <div className="w-[110px] bg-[#161615] border-r border-neutral-800 flex flex-col justify-between p-2 shrink-0">
                     <div className="space-y-4">
-                      {/* Logo header */}
                       <div className="flex items-center gap-1.5 px-1 font-bold text-white tracking-tight text-[9px] pt-1">
                         <MinervaIcon size={12} className="text-[#10b981]" />
                         <span>Minerva OS</span>
                       </div>
-
-                      {/* Nav list */}
                       <div className="space-y-1">
                         {[
                           { name: 'Prospecter', active: true },
                           { name: 'Search', active: false },
                           { name: 'Library', active: false },
                           { name: 'Agents', active: false },
-                          { name: 'Integrations', active: false }
+                          { name: 'Integrations', active: false },
                         ].map((item, i) => (
-                          <div 
-                            key={i} 
+                          <div
+                            key={i}
                             className={cn(
-                              "flex items-center gap-1.5 px-1.5 py-1 rounded transition-colors text-[8px] font-semibold",
-                              item.active 
-                                ? "bg-[#1f1f1e] text-[#10b981] border border-neutral-800" 
-                                : "text-neutral-400"
+                              'flex items-center gap-1.5 px-1.5 py-1 rounded transition-colors text-[8px] font-semibold',
+                              item.active ? 'bg-[#1f1f1e] text-[#10b981] border border-neutral-800' : 'text-neutral-400',
                             )}
                           >
-                            <div className={cn("w-1.5 h-1.5 rounded-full", item.active ? "bg-[#10b981]" : "bg-neutral-600")} />
+                            <div className={cn('w-1.5 h-1.5 rounded-full', item.active ? 'bg-[#10b981]' : 'bg-neutral-600')} />
                             <span>{item.name}</span>
                           </div>
                         ))}
                       </div>
                     </div>
-
                     <div className="flex items-center gap-1.5 px-1 text-[8px] text-neutral-400 font-semibold border-t border-neutral-800/50 pt-2">
                       <div className="w-4 h-4 rounded-full bg-neutral-800 flex items-center justify-center font-bold text-[7px] text-white">M</div>
                       <span className="truncate text-left">{email ? email.split('@')[0] : 'workspace'}</span>
                     </div>
                   </div>
 
-                  {/* Dashboard Main Area */}
+                  {/* Main area */}
                   <div className="flex-1 bg-[#0c0c0b] flex flex-col justify-between p-3.5 relative">
-                    
-                    {/* Top action header */}
                     <div className="flex justify-between items-center pb-2 border-b border-neutral-800/40">
                       <div className="flex gap-1">
                         <span className="w-1.5 h-1.5 rounded-full bg-red-500/80" />
@@ -835,12 +887,9 @@ export default function OnboardingPage() {
                       <div className="text-[7px] text-neutral-500 font-mono">https://minerva.os/dashboard</div>
                     </div>
 
-                    {/* Central Area Cards */}
                     <div className="flex-1 flex flex-col justify-center space-y-2.5 max-w-[240px] mx-auto py-2">
-                      
-                      {/* Interactive floating card 1 (emerald green highlight) */}
-                      <div 
-                        className="bg-[#10b981]/10 border border-[#10b981]/30 rounded-lg p-3 text-left space-y-1.5 shadow-xl transition-all duration-300"
+                      <div
+                        className="bg-[#10b981]/10 border border-[#10b981]/30 rounded-lg p-3 text-left space-y-1.5 shadow-xl"
                         style={{ animation: 'float 4s ease-in-out infinite' }}
                       >
                         <div className="flex items-center justify-between text-[7px] font-bold text-[#10b981] uppercase tracking-wider">
@@ -854,9 +903,8 @@ export default function OnboardingPage() {
                         </div>
                       </div>
 
-                      {/* Card 2 */}
-                      <div 
-                        className="bg-[#161615] border border-neutral-800 rounded-lg p-3 text-left space-y-1.5 shadow-xl transition-all duration-300"
+                      <div
+                        className="bg-[#161615] border border-neutral-800 rounded-lg p-3 text-left space-y-1.5 shadow-xl"
                         style={{ animation: 'float 5.5s ease-in-out infinite 0.7s' }}
                       >
                         <div className="flex items-center justify-between text-[7px] font-bold text-neutral-500 uppercase tracking-wider">
@@ -867,216 +915,37 @@ export default function OnboardingPage() {
                           <div className="bg-[#10b981] h-full rounded-full w-3/4" />
                         </div>
                       </div>
-
                     </div>
 
-                    {/* Chat Input search bar simulation */}
                     <div className="border border-neutral-800/80 rounded-full bg-[#161615] px-3.5 py-2 flex items-center justify-between">
                       <span className="text-[7.5px] text-neutral-400 font-semibold font-serif">Ask Sales Assistant anything...</span>
-                      <button className="w-4 h-4 bg-[#10b981] text-black font-bold rounded-full flex items-center justify-center text-[9px] hover:bg-[#059669]">
-                        →
-                      </button>
+                      <button className="w-4 h-4 bg-[#10b981] text-black font-bold rounded-full flex items-center justify-center text-[9px]">→</button>
                     </div>
-
                   </div>
-
                 </div>
               </div>
 
-              {/* Keyboard base assembly */}
-              <div className="absolute top-[96%] left-[3%] w-[94%] h-[15px] bg-[#2a2a29] rounded-b-xl border-t border-neutral-600/30 shadow-[0_25px_45px_rgba(0,0,0,0.95)]" style={{
-                transform: 'rotateX(82deg) translateZ(-8px)',
-                transformOrigin: 'top center',
-              }}>
-                {/* Simulated center notch trackpad */}
+              {/* Keyboard base */}
+              <div
+                className="absolute top-[96%] left-[3%] w-[94%] h-[15px] bg-[#2a2a29] rounded-b-xl border-t border-neutral-600/30 shadow-[0_25px_45px_rgba(0,0,0,0.95)]"
+                style={{ transform: 'rotateX(82deg) translateZ(-8px)', transformOrigin: 'top center' }}
+              >
                 <div className="absolute top-0.5 left-1/2 -translate-x-1/2 w-[120px] h-[10px] bg-[#1a1a1a] rounded-b border-x border-b border-neutral-700/40" />
-                {/* Thin keys lines simulation */}
                 <div className="absolute top-[2px] left-[10px] right-[10px] h-0.5 bg-neutral-800 opacity-80" />
               </div>
             </div>
-
           </div>
-
-          {/* SCREEN 8: UPGRADE WORKSPACE MODAL OVERLAY */}
-          {step === 'pricing' && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md px-4 py-8 animate-in fade-in duration-300">
-              <div className="w-full max-w-4xl bg-white border border-[#e6e5e0] rounded-2xl p-6 md:p-8 space-y-6 shadow-2xl relative text-left animate-in zoom-in-95 duration-200">
-                {/* Dismiss button */}
-                <button 
-                  onClick={() => goToStep('analytics')}
-                  className="absolute top-4 right-4 w-7 h-7 flex items-center justify-center rounded-full bg-neutral-100 hover:bg-neutral-200 text-[#555552] hover:text-[#26251e] transition-colors"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-
-                <div className="text-center space-y-2 max-w-lg mx-auto">
-                  <h3 className="text-2xl md:text-3xl tracking-tight text-[#26251e] font-serif font-light leading-snug" style={{ fontFamily: 'Georgia, serif' }}>Upgrade your workspace for unlimited value</h3>
-                  <div className="flex items-center justify-center gap-2 pt-2">
-                    <span className="text-xs text-[#807d72] font-semibold">Save €60 per user / year with annual plan</span>
-                    <button 
-                      onClick={() => setIsAnnualPlan(!isAnnualPlan)}
-                      className={cn(
-                        "w-10 h-5.5 rounded-full p-0.5 transition-colors duration-200 outline-none focus:outline-none flex items-center",
-                        isAnnualPlan ? "bg-[#10b981] justify-end" : "bg-neutral-200 justify-start"
-                      )}
-                    >
-                      <span className="w-4.5 h-4.5 rounded-full bg-white shadow-md block" />
-                    </button>
-                  </div>
-                </div>
-
-                {/* Cards Container */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
-                  
-                  {/* Card 1: Team */}
-                  <div className="bg-neutral-50 border border-[#e6e5e0] rounded-2xl p-6 flex flex-col justify-between gap-6 relative">
-                    <div className="space-y-4">
-                      <div className="space-y-1">
-                        <h4 className="text-sm font-bold text-[#26251e]">Team</h4>
-                        <div className="flex items-baseline gap-1.5 pt-1">
-                          <span className="text-2xl md:text-3xl font-light text-[#26251e] font-serif" style={{ fontFamily: 'Georgia, serif' }}>
-                            {isAnnualPlan ? "€30/month" : "€35/month"}
-                          </span>
-                          {isAnnualPlan && (
-                            <span className="text-xs text-[#807d72] line-through">€35/month</span>
-                          )}
-                        </div>
-                        <p className="text-[10px] text-[#807d72] font-semibold">Per member, billed annually</p>
-                      </div>
-
-                      <button 
-                        onClick={() => goToStep('analytics')}
-                        className="w-full bg-[#26251e] hover:bg-[#1a1a19] text-white rounded-full py-2.5 text-xs font-bold transition-all shadow-xs text-center"
-                      >
-                        Select team
-                      </button>
-
-                      {/* Details checklist */}
-                      <ul className="space-y-2 pt-2 border-t border-[#e6e5e0]/60">
-                        {[
-                          "Everything in free",
-                          "Unlimited documents, queries, and recordings",
-                          "All off-the-shelf integrations",
-                          "OpenAI & Claude LLM model selection",
-                          "Priority in email & chat support",
-                          "Early access to new features",
-                          "Up to 50 members per workspace"
-                        ].map((item, idx) => (
-                          <li key={idx} className="flex items-start gap-2.5 text-[11px] font-semibold text-[#555552]">
-                            <Check className="w-3.5 h-3.5 text-[#10b981] shrink-0 mt-0.5" />
-                            <span>{item}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  </div>
-
-                  {/* Card 2: Enterprise */}
-                  <div className="bg-neutral-50 border border-[#e6e5e0] rounded-2xl p-6 flex flex-col justify-between gap-6 relative">
-                    <div className="space-y-4">
-                      <div className="space-y-1">
-                        <h4 className="text-sm font-bold text-[#26251e]">Enterprise</h4>
-                        <div className="flex items-baseline gap-1.5 pt-1">
-                          <span className="text-2xl md:text-3xl font-light text-[#26251e] font-serif" style={{ fontFamily: 'Georgia, serif' }}>
-                            Custom pricing
-                          </span>
-                        </div>
-                        <p className="text-[10px] text-[#807d72] font-semibold">Contact sales for details</p>
-                      </div>
-
-                      <button 
-                        onClick={() => goToStep('analytics')}
-                        className="w-full bg-[#26251e] hover:bg-[#1a1a19] text-white rounded-full py-2.5 text-xs font-bold transition-all shadow-xs text-center"
-                      >
-                        Schedule a meeting
-                      </button>
-
-                      {/* Details checklist */}
-                      <ul className="space-y-2 pt-2 border-t border-[#e6e5e0]/60">
-                        {[
-                          "Everything in Free and Team",
-                          "Enterprise data processing agreement",
-                          "Domain verification, SAML-based SSO, and SCIM",
-                          "Additional LLM models",
-                          "Dedicated success team, priority support, and SLA",
-                          "Analytics dashboard to measure impact",
-                          "Custom integrations & API access"
-                        ].map((item, idx) => (
-                          <li key={idx} className="flex items-start gap-2.5 text-[11px] font-semibold text-[#555552]">
-                            <Check className="w-3.5 h-3.5 text-[#10b981] shrink-0 mt-0.5" />
-                            <span>{item}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  </div>
-
-                </div>
-
-                <div className="text-center text-[9px] font-semibold text-[#807d72] pt-2 border-t border-[#e6e5e0]/60">
-                  ISO 27001 certified and GDPR compliant. Data encrypted at rest with AES 256 and in transit with TLS 1.2+.
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* SCREEN 9: ANALYTICS CONSENT MODAL */}
-          {step === 'analytics' && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md px-4 animate-in fade-in duration-300">
-              <div className="w-full max-w-md bg-white border border-[#e6e5e0] rounded-2xl p-6 space-y-4 shadow-2xl relative text-left animate-in zoom-in-95 duration-200">
-                
-                <button 
-                  onClick={handleFinalizeOnboarding}
-                  className="absolute top-4 right-4 w-7 h-7 flex items-center justify-center rounded-full bg-neutral-100 hover:bg-neutral-200 text-[#555552] hover:text-[#26251e] transition-colors"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#10b981]/10 text-[#059669]">
-                  <Sparkles className="w-5 h-5" />
-                </div>
-
-                <div className="space-y-1.5">
-                  <h3 className="text-base font-bold text-[#26251e] font-serif" style={{ fontFamily: 'Georgia, serif' }}>Help us improve</h3>
-                  <p className="text-xs text-[#555552] leading-relaxed">
-                    Allow your questions to be logged anonymously to help us improve our services. You can opt-out at any time in Settings. Learn more in our <span className="underline cursor-pointer hover:text-black">Privacy Notice</span>.
-                  </p>
-                </div>
-
-                <div className="flex justify-end gap-2.5 pt-4 border-t border-[#e6e5e0]/60">
-                  <button 
-                    onClick={handleFinalizeOnboarding}
-                    className="rounded-full bg-neutral-100 hover:bg-neutral-200 text-xs font-bold text-[#555552] px-5 py-2.5 transition-colors"
-                  >
-                    Don&apos;t share
-                  </button>
-                  <button 
-                    onClick={handleFinalizeOnboarding}
-                    className="rounded-full bg-[#26251e] hover:bg-[#1a1a19] text-white text-xs font-bold px-5 py-2.5 transition-colors shadow-xs"
-                  >
-                    Share analytics
-                  </button>
-                </div>
-
-              </div>
-            </div>
-          )}
 
         </div>
       )}
 
-      {/* Floating 3D CSS Float animation definitions */}
-      <style jsx global>{`
+      {/* Float animation */}
+      <style>{`
         @keyframes float {
-          0%, 100% {
-            transform: translateY(0);
-          }
-          50% {
-            transform: translateY(-6px);
-          }
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-6px); }
         }
       `}</style>
-
     </div>
   );
 }
