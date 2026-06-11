@@ -1,152 +1,554 @@
 'use client';
 
-import React, { useState, useActionState } from 'react';
-import { login, signup } from './actions';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
-import { Lock, Mail, Loader2, Sparkles } from 'lucide-react';
+import React, { useState, useActionState, useRef, useCallback } from 'react';
+import { login, signup, requestOtp, verifyOtp, requestPasswordReset } from './actions';
+import { MinervaIcon } from '@/components/icons';
+import { Lock, Mail, Loader2, Sparkles, Eye, EyeOff, ArrowLeft, CheckCircle2 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
-export default function LoginPage() {
-  const [mode, setMode] = useState<'login' | 'signup'>('login');
-  
-  // React 19 useActionState
-  const [loginState, loginAction, isLoginPending] = useActionState(login, null);
-  const [signupState, signupAction, isSignupPending] = useActionState(signup, null);
+// ─── types ────────────────────────────────────────────────────────────────────
+type MainMode = 'login' | 'signup' | 'otp';
+type SubView = 'main' | 'forgot' | 'forgot-sent' | 'otp-sent';
 
-  const activeState = mode === 'login' ? loginState : signupState;
-  const isPending = isLoginPending || isSignupPending;
-  const currentAction = mode === 'login' ? loginAction : signupAction;
+// ─── helper: OTP 6-box grid ───────────────────────────────────────────────────
+function OtpGrid({
+  value,
+  onChange,
+}: {
+  value: string[];
+  onChange: (v: string[]) => void;
+}) {
+  const refs = useRef<(HTMLInputElement | null)[]>([]);
+
+  const handleChange = (idx: number, raw: string) => {
+    if (!/^\d*$/.test(raw)) return;
+    const digit = raw.slice(-1);
+    const next = [...value];
+    next[idx] = digit;
+    onChange(next);
+    if (digit && idx < 5) refs.current[idx + 1]?.focus();
+  };
+
+  const handleKeyDown = (idx: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Backspace' && !value[idx] && idx > 0) {
+      const next = [...value];
+      next[idx - 1] = '';
+      onChange(next);
+      refs.current[idx - 1]?.focus();
+    }
+  };
 
   return (
-    <div className="flex min-h-screen w-screen items-center justify-center bg-background px-4 font-sans text-foreground">
-      {/* Background soft highlights */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/5 via-transparent to-transparent pointer-events-none" />
+    <div className="grid grid-cols-6 gap-2">
+      {value.map((digit, idx) => (
+        <input
+          key={idx}
+          ref={(el) => { refs.current[idx] = el; }}
+          type="text"
+          inputMode="numeric"
+          maxLength={1}
+          value={digit}
+          placeholder="0"
+          onChange={(e) => handleChange(idx, e.target.value)}
+          onKeyDown={(e) => handleKeyDown(idx, e)}
+          className="aspect-square text-center text-sm font-bold bg-white border border-[#e6e5e0] focus:border-[#10b981] rounded-xl outline-none transition-colors shadow-none text-[#26251e] placeholder:text-neutral-300"
+        />
+      ))}
+    </div>
+  );
+}
 
-      <Card className="relative w-full max-w-md border border-border bg-card shadow-none animate-in fade-in-50 zoom-in-95 duration-500">
-        <CardHeader className="space-y-3 text-center">
-          <div className="flex justify-center">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground text-lg font-black">
-              M
+// ─── main component ────────────────────────────────────────────────────────────
+export default function LoginPage() {
+  const [mode, setMode] = useState<MainMode>('login');
+  const [view, setView] = useState<SubView>('main');
+  const [showPwd, setShowPwd] = useState(false);
+
+  // OTP state
+  const [otpEmail, setOtpEmail] = useState('');
+  const [otpDigits, setOtpDigits] = useState<string[]>(['', '', '', '', '', '']);
+
+  // Forgot password state
+  const [forgotEmail, setForgotEmail] = useState('');
+
+  // Track success transitions using stable action-wrapping callbacks
+  // We use useRef to store the latest action result key so we can detect changes
+  // without triggering setState in effects.
+  const otpReqSucceededRef = useRef(false);
+  const resetSucceededRef = useRef(false);
+
+  // Server action wrappers that switch view immediately after success
+  const otpReqActionWrapped = useCallback(
+    async (state: unknown, formData: FormData) => {
+      const result = await requestOtp(state, formData);
+      if (result?.success && !otpReqSucceededRef.current) {
+        otpReqSucceededRef.current = true;
+        setView('otp-sent');
+      }
+      return result;
+    },
+    [],
+  );
+
+  const resetActionWrapped = useCallback(
+    async (state: unknown, formData: FormData) => {
+      const result = await requestPasswordReset(state, formData);
+      if (result?.success && !resetSucceededRef.current) {
+        resetSucceededRef.current = true;
+        setView('forgot-sent');
+      }
+      return result;
+    },
+    [],
+  );
+
+  // Server actions
+  const [loginState, loginAction, isLoginPending] = useActionState(login, null);
+  const [signupState, signupAction, isSignupPending] = useActionState(signup, null);
+  const [otpReqState, otpReqAction, isOtpReqPending] = useActionState(otpReqActionWrapped, null);
+  const [otpVerState, otpVerAction, isOtpVerPending] = useActionState(verifyOtp, null);
+  const [resetState, resetAction, isResetPending] = useActionState(resetActionWrapped, null);
+
+  const switchMode = (m: MainMode) => {
+    setMode(m);
+    setView('main');
+  };
+
+  const otpToken = otpDigits.join('');
+  const isOtpComplete = otpToken.length === 6;
+
+  const activeState =
+    view === 'forgot' ? resetState
+    : view === 'otp-sent' ? otpVerState
+    : mode === 'login' ? loginState
+    : mode === 'otp' ? otpReqState
+    : signupState;
+
+  const isPending =
+    isLoginPending || isSignupPending || isOtpReqPending || isOtpVerPending || isResetPending;
+
+  // ── render ─────────────────────────────────────────────────────────────────
+  return (
+    <div className="flex min-h-screen w-screen items-center justify-center bg-[#f7f7f4] px-4 font-sans text-[#26251e]">
+      {/* Background soft glow */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(16,185,129,0.06)_0%,_transparent_60%)] pointer-events-none" />
+
+      <div className="relative w-full max-w-md">
+        <div className="bg-white border border-[#e6e5e0] rounded-3xl shadow-sm p-8 space-y-6 animate-in fade-in zoom-in-95 duration-500">
+
+          {/* ── Logo ── */}
+          <div className="flex flex-col items-center gap-3 text-center">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#10b981]/10 border border-[#10b981]/20">
+              <MinervaIcon size={22} className="text-[#10b981]" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold tracking-tight text-[#26251e]">
+                Minerva Reach
+              </h1>
+              <p className="text-xs text-[#807d72] font-semibold mt-1">
+                {view === 'forgot' || view === 'forgot-sent'
+                  ? 'Réinitialisation du mot de passe'
+                  : view === 'otp-sent'
+                  ? 'Vérification du code'
+                  : mode === 'login'
+                  ? 'Connecte-toi à ton espace de prospection'
+                  : mode === 'signup'
+                  ? 'Crée ton compte Minerva gratuitement'
+                  : 'Connexion sans mot de passe'}
+              </p>
             </div>
           </div>
-          <div className="space-y-1">
-            <CardTitle className="text-xl font-bold tracking-tight text-foreground">
-              Minerva Reach
-            </CardTitle>
-            <CardDescription className="text-xs text-muted-foreground">
-              {mode === 'login' 
-                ? "Connecte-toi à ton espace de prospection locale" 
-                : "Crée ton compte et commence à qualifier tes prospects"}
-            </CardDescription>
-          </div>
-        </CardHeader>
 
-        <form action={currentAction}>
-          <CardContent className="space-y-4">
-            {/* Toggle Modes */}
-            <div className="grid grid-cols-2 rounded-lg bg-muted p-1 border border-border">
+          {/* ── Mode tabs (hidden on sub-views) ── */}
+          {view === 'main' && (
+            <div className="grid grid-cols-3 rounded-xl bg-[#f7f7f4] p-1 border border-[#e6e5e0]">
+              {(['login', 'otp', 'signup'] as MainMode[]).map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => switchMode(m)}
+                  disabled={isPending}
+                  className={cn(
+                    'rounded-lg py-1.5 text-[11px] font-semibold transition-all duration-200 cursor-pointer',
+                    mode === m
+                      ? 'bg-white text-[#26251e] border border-[#e6e5e0] shadow-none'
+                      : 'text-[#807d72] hover:text-[#26251e]',
+                  )}
+                >
+                  {m === 'login' ? 'Connexion' : m === 'otp' ? 'Code OTP' : 'S\'inscrire'}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* ── Error / info banner ── */}
+          {activeState?.error && (
+            <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-xs text-red-700 font-semibold animate-in fade-in slide-in-from-top-2 duration-300">
+              {activeState.error}
+            </div>
+          )}
+
+          {/* ══════════════════════════════════════════════════════════════════
+              VIEW: FORGOT PASSWORD — Email request form
+          ══════════════════════════════════════════════════════════════════ */}
+          {view === 'forgot' && (
+            <form action={resetAction} className="space-y-4">
+              <input type="hidden" name="email" value={forgotEmail} />
+
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-[#807d72]">
+                  Adresse e-mail
+                </label>
+                <div className="relative">
+                  <span className="absolute inset-y-0 left-3.5 flex items-center text-[#807d72]">
+                    <Mail className="h-4 w-4" />
+                  </span>
+                  <input
+                    type="email"
+                    name="email"
+                    placeholder="nom@entreprise.fr"
+                    value={forgotEmail}
+                    onChange={(e) => setForgotEmail(e.target.value)}
+                    required
+                    disabled={isPending}
+                    className="w-full rounded-full border border-[#e6e5e0] bg-white px-4 py-2.5 pl-10 text-xs font-semibold text-[#26251e] outline-none transition-colors focus:border-[#10b981] disabled:opacity-60"
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={!forgotEmail || isPending}
+                className={cn(
+                  'w-full rounded-full py-3 text-xs font-bold transition-all flex items-center justify-center gap-2',
+                  forgotEmail && !isPending
+                    ? 'bg-[#26251e] hover:bg-[#1a1a19] text-white cursor-pointer'
+                    : 'bg-neutral-100 text-[#807d72] border border-[#e6e5e0] cursor-not-allowed',
+                )}
+              >
+                {isPending ? (
+                  <><Loader2 className="h-4 w-4 animate-spin" /><span>Envoi...</span></>
+                ) : (
+                  'Envoyer le lien de réinitialisation'
+                )}
+              </button>
+
               <button
                 type="button"
-                onClick={() => setMode('login')}
-                className={`rounded-md py-1.5 text-xs font-semibold transition-all duration-200 cursor-pointer ${
-                  mode === 'login' 
-                    ? 'bg-card text-foreground border border-border/80 shadow-none' 
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-                disabled={isPending}
+                onClick={() => setView('main')}
+                className="flex items-center gap-1.5 text-[10px] font-semibold text-[#807d72] hover:text-[#26251e] transition-colors mx-auto"
               >
-                Connexion
+                <ArrowLeft className="h-3 w-3" />
+                Retour à la connexion
               </button>
+            </form>
+          )}
+
+          {/* ══════════════════════════════════════════════════════════════════
+              VIEW: FORGOT-SENT confirmation
+          ══════════════════════════════════════════════════════════════════ */}
+          {view === 'forgot-sent' && (
+            <div className="text-center space-y-4 animate-in fade-in duration-300">
+              <div className="flex justify-center">
+                <CheckCircle2 className="h-12 w-12 text-[#10b981]" />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-[#26251e]">Email envoyé !</p>
+                <p className="text-xs text-[#807d72] font-semibold mt-1 leading-relaxed">
+                  Vérifiez votre boîte de réception à{' '}
+                  <span className="text-[#26251e] underline">{forgotEmail}</span>.{' '}
+                  Cliquez sur le lien pour réinitialiser votre mot de passe.
+                </p>
+              </div>
               <button
                 type="button"
-                onClick={() => setMode('signup')}
-                className={`rounded-md py-1.5 text-xs font-semibold transition-all duration-200 cursor-pointer ${
-                  mode === 'signup' 
-                    ? 'bg-card text-foreground border border-border/80 shadow-none' 
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-                disabled={isPending}
+                onClick={() => { setView('main'); setMode('login'); }}
+                className="text-[11px] font-bold text-[#807d72] hover:text-[#26251e] underline transition-colors"
               >
-                Créer un compte
+                Retour à la connexion
               </button>
             </div>
+          )}
 
-            {/* Error Message */}
-            {activeState?.error && (
-              <div className="rounded-md border border-destructive/20 bg-destructive/10 p-3 text-xs text-destructive">
-                {activeState.error}
-              </div>
-            )}
+          {/* ══════════════════════════════════════════════════════════════════
+              VIEW: OTP-SENT — verify code
+          ══════════════════════════════════════════════════════════════════ */}
+          {view === 'otp-sent' && (
+            <form action={otpVerAction} className="space-y-4">
+              <input type="hidden" name="email" value={otpEmail} />
+              <input type="hidden" name="token" value={otpToken} />
 
-            {/* Email Input */}
-            <div className="space-y-1">
-              <label htmlFor="email" className="text-[10px] font-bold tracking-wider text-muted-foreground uppercase">
-                Adresse E-mail
-              </label>
-              <div className="relative">
-                <span className="absolute inset-y-0 left-3 flex items-center text-muted-foreground">
-                  <Mail className="h-4 w-4" />
-                </span>
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  placeholder="nom@entreprise.fr"
-                  className="pl-9 bg-card border-border focus:border-primary text-xs text-foreground"
-                  required
-                  disabled={isPending}
-                />
-              </div>
-            </div>
+              <p className="text-xs text-[#807d72] font-semibold leading-relaxed">
+                Code envoyé à{' '}
+                <span className="text-[#26251e] underline">{otpEmail}</span>.
+                Entrez le code à 6 chiffres ci-dessous.
+              </p>
 
-            {/* Password Input */}
-            <div className="space-y-1">
-              <label htmlFor="password" className="text-[10px] font-bold tracking-wider text-muted-foreground uppercase">
-                Mot de passe
-              </label>
-              <div className="relative">
-                <span className="absolute inset-y-0 left-3 flex items-center text-muted-foreground">
-                  <Lock className="h-4 w-4" />
-                </span>
-                <Input
-                  id="password"
-                  name="password"
-                  type="password"
-                  placeholder="••••••••"
-                  className="pl-9 bg-card border-border focus:border-primary text-xs text-foreground"
-                  required
-                  disabled={isPending}
-                />
-              </div>
-            </div>
-          </CardContent>
+              <OtpGrid value={otpDigits} onChange={setOtpDigits} />
 
-          <CardFooter className="flex flex-col gap-3 pt-2">
-            <Button 
-              type="submit" 
-              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs uppercase tracking-wider h-9 transition-all duration-300 shadow-none"
-              disabled={isPending}
-            >
-              {isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin text-primary-foreground" />
-                  {mode === 'login' ? "Connexion..." : "Création..."}
-                </>
-              ) : (
-                <>
-                  {mode === 'login' ? "Se connecter" : "S'inscrire"}
-                </>
+              {otpVerState?.error && (
+                <p className="text-xs font-semibold text-red-600 animate-in fade-in duration-200">
+                  {otpVerState.error}
+                </p>
               )}
-            </Button>
 
-            <div className="flex items-center gap-1.5 text-[9px] text-muted-foreground mt-1 justify-center">
-              <Sparkles className="h-3 w-3 text-primary" />
-              <span>Propulsé par Minerva OS</span>
-            </div>
-          </CardFooter>
-        </form>
-      </Card>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setView('main')}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-[#e6e5e0] bg-white hover:bg-neutral-50 px-5 py-2.5 text-xs font-bold text-[#26251e] shadow-none transition-colors"
+                >
+                  <ArrowLeft className="h-3.5 w-3.5" />
+                  Retour
+                </button>
+
+                <button
+                  type="submit"
+                  disabled={!isOtpComplete || isPending}
+                  className={cn(
+                    'flex-1 rounded-full py-2.5 text-xs font-bold transition-all flex items-center justify-center gap-2',
+                    isOtpComplete && !isPending
+                      ? 'bg-[#26251e] hover:bg-[#1a1a19] text-white cursor-pointer'
+                      : 'bg-neutral-100 text-[#807d72] border border-[#e6e5e0] cursor-not-allowed',
+                  )}
+                >
+                  {isPending ? (
+                    <><Loader2 className="h-4 w-4 animate-spin" /><span>Vérification...</span></>
+                  ) : (
+                    'Vérifier le code'
+                  )}
+                </button>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setView('main')}
+                className="text-[10px] font-bold text-[#807d72] hover:text-[#26251e] underline transition-colors block text-center"
+              >
+                Renvoyer le code
+              </button>
+            </form>
+          )}
+
+          {/* ══════════════════════════════════════════════════════════════════
+              VIEW: MAIN — login / signup / otp-request forms
+          ══════════════════════════════════════════════════════════════════ */}
+          {view === 'main' && (
+            <>
+              {/* ── LOGIN mode ─────────────────────────────────────────── */}
+              {mode === 'login' && (
+                <form action={loginAction} className="space-y-4">
+                  <div className="space-y-1.5">
+                    <label htmlFor="email-login" className="text-[10px] font-bold uppercase tracking-wider text-[#807d72]">
+                      Adresse e-mail
+                    </label>
+                    <div className="relative">
+                      <span className="absolute inset-y-0 left-3.5 flex items-center text-[#807d72]">
+                        <Mail className="h-4 w-4" />
+                      </span>
+                      <input
+                        id="email-login"
+                        name="email"
+                        type="email"
+                        placeholder="nom@entreprise.fr"
+                        required
+                        disabled={isPending}
+                        className="w-full rounded-full border border-[#e6e5e0] bg-white px-4 py-2.5 pl-10 text-xs font-semibold text-[#26251e] outline-none transition-colors focus:border-[#10b981] disabled:opacity-60"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <label htmlFor="pwd-login" className="text-[10px] font-bold uppercase tracking-wider text-[#807d72]">
+                        Mot de passe
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => setView('forgot')}
+                        className="text-[10px] font-semibold text-[#10b981] hover:text-[#059669] underline transition-colors"
+                      >
+                        Mot de passe oublié ?
+                      </button>
+                    </div>
+                    <div className="relative">
+                      <span className="absolute inset-y-0 left-3.5 flex items-center text-[#807d72]">
+                        <Lock className="h-4 w-4" />
+                      </span>
+                      <input
+                        id="pwd-login"
+                        name="password"
+                        type={showPwd ? 'text' : 'password'}
+                        placeholder="••••••••"
+                        required
+                        disabled={isPending}
+                        className="w-full rounded-full border border-[#e6e5e0] bg-white px-4 py-2.5 pl-10 pr-10 text-xs font-semibold text-[#26251e] outline-none transition-colors focus:border-[#10b981] disabled:opacity-60"
+                      />
+                      <button
+                        type="button"
+                        tabIndex={-1}
+                        onClick={() => setShowPwd((v) => !v)}
+                        className="absolute inset-y-0 right-3.5 flex items-center text-[#807d72] hover:text-[#26251e] transition-colors"
+                      >
+                        {showPwd ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {loginState?.error && (
+                    <p className="text-xs font-semibold text-red-600 animate-in fade-in duration-200">
+                      {loginState.error}
+                    </p>
+                  )}
+
+                  <button
+                    type="submit"
+                    disabled={isPending}
+                    className="w-full rounded-full bg-[#26251e] hover:bg-[#1a1a19] text-white py-3 text-xs font-bold transition-all flex items-center justify-center gap-2 disabled:opacity-70 cursor-pointer"
+                  >
+                    {isLoginPending ? (
+                      <><Loader2 className="h-4 w-4 animate-spin" /><span>Connexion...</span></>
+                    ) : (
+                      'Se connecter'
+                    )}
+                  </button>
+                </form>
+              )}
+
+              {/* ── SIGNUP mode ─────────────────────────────────────────── */}
+              {mode === 'signup' && (
+                <form action={signupAction} className="space-y-4">
+                  <div className="space-y-1.5">
+                    <label htmlFor="email-signup" className="text-[10px] font-bold uppercase tracking-wider text-[#807d72]">
+                      Adresse e-mail
+                    </label>
+                    <div className="relative">
+                      <span className="absolute inset-y-0 left-3.5 flex items-center text-[#807d72]">
+                        <Mail className="h-4 w-4" />
+                      </span>
+                      <input
+                        id="email-signup"
+                        name="email"
+                        type="email"
+                        placeholder="nom@entreprise.fr"
+                        required
+                        disabled={isPending}
+                        className="w-full rounded-full border border-[#e6e5e0] bg-white px-4 py-2.5 pl-10 text-xs font-semibold text-[#26251e] outline-none transition-colors focus:border-[#10b981] disabled:opacity-60"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label htmlFor="pwd-signup" className="text-[10px] font-bold uppercase tracking-wider text-[#807d72]">
+                      Mot de passe
+                    </label>
+                    <div className="relative">
+                      <span className="absolute inset-y-0 left-3.5 flex items-center text-[#807d72]">
+                        <Lock className="h-4 w-4" />
+                      </span>
+                      <input
+                        id="pwd-signup"
+                        name="password"
+                        type={showPwd ? 'text' : 'password'}
+                        placeholder="Min. 6 caractères"
+                        required
+                        disabled={isPending}
+                        className="w-full rounded-full border border-[#e6e5e0] bg-white px-4 py-2.5 pl-10 pr-10 text-xs font-semibold text-[#26251e] outline-none transition-colors focus:border-[#10b981] disabled:opacity-60"
+                      />
+                      <button
+                        type="button"
+                        tabIndex={-1}
+                        onClick={() => setShowPwd((v) => !v)}
+                        className="absolute inset-y-0 right-3.5 flex items-center text-[#807d72] hover:text-[#26251e] transition-colors"
+                      >
+                        {showPwd ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {signupState?.error && (
+                    <p className="text-xs font-semibold text-red-600 animate-in fade-in duration-200">
+                      {signupState.error}
+                    </p>
+                  )}
+
+                  <button
+                    type="submit"
+                    disabled={isPending}
+                    className="w-full rounded-full bg-[#26251e] hover:bg-[#1a1a19] text-white py-3 text-xs font-bold transition-all flex items-center justify-center gap-2 disabled:opacity-70 cursor-pointer"
+                  >
+                    {isSignupPending ? (
+                      <><Loader2 className="h-4 w-4 animate-spin" /><span>Création...</span></>
+                    ) : (
+                      "S'inscrire gratuitement"
+                    )}
+                  </button>
+                </form>
+              )}
+
+              {/* ── OTP REQUEST mode ────────────────────────────────────── */}
+              {mode === 'otp' && (
+                <form action={otpReqAction} className="space-y-4">
+                  <p className="text-xs text-[#807d72] font-semibold leading-relaxed">
+                    Entrez votre adresse e-mail. Nous vous enverrons un code à usage unique pour vous connecter sans mot de passe.
+                  </p>
+
+                  <div className="space-y-1.5">
+                    <label htmlFor="email-otp" className="text-[10px] font-bold uppercase tracking-wider text-[#807d72]">
+                      Adresse e-mail
+                    </label>
+                    <div className="relative">
+                      <span className="absolute inset-y-0 left-3.5 flex items-center text-[#807d72]">
+                        <Mail className="h-4 w-4" />
+                      </span>
+                      <input
+                        id="email-otp"
+                        name="email"
+                        type="email"
+                        placeholder="nom@entreprise.fr"
+                        value={otpEmail}
+                        onChange={(e) => setOtpEmail(e.target.value)}
+                        required
+                        disabled={isPending}
+                        className="w-full rounded-full border border-[#e6e5e0] bg-white px-4 py-2.5 pl-10 text-xs font-semibold text-[#26251e] outline-none transition-colors focus:border-[#10b981] disabled:opacity-60"
+                      />
+                    </div>
+                  </div>
+
+                  {otpReqState?.error && (
+                    <p className="text-xs font-semibold text-red-600 animate-in fade-in duration-200">
+                      {otpReqState.error}
+                    </p>
+                  )}
+
+                  <button
+                    type="submit"
+                    disabled={!otpEmail || isPending}
+                    className={cn(
+                      'w-full rounded-full py-3 text-xs font-bold transition-all flex items-center justify-center gap-2',
+                      otpEmail && !isPending
+                        ? 'bg-[#26251e] hover:bg-[#1a1a19] text-white cursor-pointer'
+                        : 'bg-neutral-100 text-[#807d72] border border-[#e6e5e0] cursor-not-allowed',
+                    )}
+                  >
+                    {isOtpReqPending ? (
+                      <><Loader2 className="h-4 w-4 animate-spin" /><span>Envoi du code...</span></>
+                    ) : (
+                      'Envoyer le code OTP'
+                    )}
+                  </button>
+                </form>
+              )}
+            </>
+          )}
+
+          {/* ── Footer branding ── */}
+          <div className="flex items-center justify-center gap-1.5 text-[9px] text-[#807d72] font-semibold pt-2 border-t border-[#e6e5e0]">
+            <Sparkles className="h-3 w-3 text-[#10b981]" />
+            <span>Propulsé par Minerva OS</span>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

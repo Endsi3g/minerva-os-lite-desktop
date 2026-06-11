@@ -62,10 +62,13 @@ export async function middleware(request: NextRequest) {
 
   const isOnboardingPage = url.pathname === '/onboarding';
   const isWelcomePage = url.pathname === '/welcome';
+  // Allow authenticated users to access the password-reset page regardless of onboarding state
+  const isUpdatePasswordPage = url.pathname === '/update-password';
 
   if (!onboardingComplete) {
     // Logged in but not onboarded: force redirect to welcome/onboarding
-    if (!isOnboardingPage && !isWelcomePage) {
+    // (allow /update-password through so reset-email users can set a new password)
+    if (!isOnboardingPage && !isWelcomePage && !isUpdatePasswordPage) {
       url.pathname = '/welcome';
       return NextResponse.redirect(url);
     }
