@@ -19,7 +19,6 @@ import {
   Settings,
   PanelLeftClose,
   UserPlus,
-  Bell,
   Loader2,
   Check,
   Menu
@@ -269,60 +268,46 @@ export default function WelcomePage() {
       {/* Main Page Content Area */}
       <div className="flex-1 flex flex-col justify-between relative overflow-hidden bg-white">
         
-        {/* Unified App Top Header bar */}
-        <header className="flex h-12 items-center justify-between border-b border-[#e5e5e0] bg-white px-6 shrink-0 z-20 relative">
-          <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="lg:hidden h-8 w-8 text-[#7a7a76] hover:text-[#26251e]"
-              onClick={() => setSidebarOpen(true)}
-            >
-              <Menu className="h-4 w-4" />
-            </Button>
+        {/* Floating Collapse Toggle / Menu Button (to the right of the sidebar) */}
+        <div className="absolute top-4 left-4 z-30 flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="lg:hidden h-8 w-8 text-[#7a7a76] hover:text-[#26251e] border border-[#e5e5e0] bg-white/80 backdrop-blur-xs shadow-2xs"
+            onClick={() => setSidebarOpen(true)}
+          >
+            <Menu className="h-4 w-4" />
+          </Button>
 
-            <button
-              onClick={toggleCollapse}
-              className="h-8 w-8 hidden lg:flex items-center justify-center rounded text-[#7a7a76] hover:bg-[#e5e5e2]/60 transition-colors"
-              aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-            >
-              {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
-            </button>
+          <button
+            onClick={toggleCollapse}
+            className="hidden lg:flex h-8 w-8 items-center justify-center rounded-md border border-[#e5e5e0] bg-white/80 backdrop-blur-xs text-[#7a7a76] hover:text-[#26251e] hover:bg-[#e5e5e2]/60 transition-colors shadow-2xs"
+            aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
+          </button>
+        </div>
 
-            <div className="flex items-center gap-1.5 text-xs font-semibold text-[#7a7a76]">
-              <Link href="/today" className="hover:text-[#26251e]">Minerva OS Lite</Link>
-              <span className="text-[#e5e5e0] font-normal">/</span>
-              <span className="text-[#26251e] font-bold">Welcome</span>
-            </div>
+        {/* Floating Top-Right Actions (Invite Users & Profile) */}
+        <div className="absolute top-4 right-6 flex items-center gap-3 z-30 pointer-events-auto">
+          <Button 
+            onClick={() => setShowInviteModal(true)}
+            variant="ghost" 
+            size="sm" 
+            className="h-8 text-xs font-semibold text-[#555552] hover:text-[#26251e] hover:bg-[#e5e5e2]/60 flex items-center gap-1.5 rounded-md px-3 border border-[#e5e5e0] bg-white/80 backdrop-blur-xs shadow-2xs"
+          >
+            <UserPlus className="h-3.5 w-3.5" />
+            <span>Invite Users</span>
+          </Button>
+
+          <div className="h-7 w-7 rounded-full overflow-hidden border border-[#e5e5e0] bg-[#e5e5e2] flex items-center justify-center shrink-0 shadow-2xs">
+            <img 
+              src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=facearea&facepad=2&w=256&h=256&q=80" 
+              alt="Profile" 
+              className="w-full h-full object-cover"
+            />
           </div>
-
-          <div className="flex items-center gap-2">
-            <Button 
-              onClick={() => setShowInviteModal(true)}
-              variant="ghost" 
-              size="sm" 
-              className="h-8 text-xs font-semibold text-[#555552] hover:text-[#26251e] hover:bg-[#e5e5e2]/60 flex items-center gap-1.5 rounded-md px-3 border border-[#e5e5e0]"
-            >
-              <UserPlus className="h-3.5 w-3.5" />
-              <span>Invite Users</span>
-            </Button>
-
-            <Button variant="ghost" size="icon" className="text-[#7a7a76] hover:text-[#26251e] h-8 w-8 relative">
-              <Bell className="h-4 w-4" />
-              <span className="absolute top-2 right-2 h-1.5 w-1.5 rounded-full bg-[#10b981]" />
-            </Button>
-
-            <div className="h-4 w-px bg-[#e5e5e0] mx-1" />
-
-            <div className="h-7 w-7 rounded-full overflow-hidden border border-[#e5e5e0] bg-[#e5e5e2] flex items-center justify-center shrink-0">
-              <img 
-                src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=facearea&facepad=2&w=256&h=256&q=80" 
-                alt="Profile" 
-                className="w-full h-full object-cover"
-              />
-            </div>
-          </div>
-        </header>
+        </div>
 
         {/* Inner Grid Pattern Decorative background */}
         <div 
