@@ -86,7 +86,6 @@ function RoleBadge({ role }: { role: Role }) {
 export default function TeamPage() {
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState<string>('');
   const [userFullName, setUserFullName] = useState<string>('');
 
@@ -120,7 +119,6 @@ export default function TeamPage() {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        setCurrentUserId(user.id);
         setUserEmail(user.email || '');
         const { data: settings } = await supabase
           .from('settings')

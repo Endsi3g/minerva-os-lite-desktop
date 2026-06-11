@@ -5,11 +5,11 @@
 <h1 align="center">Minerva OS Reach Lite</h1>
 
 <p align="center">
-  <strong>Systeme de Prospection et de Qualification de Leads Locaux de Haute Performance</strong>
+  <strong>Système de Prospection et de Qualification de Leads Locaux de Haute Performance</strong>
 </p>
 
 <p align="center">
-  Une application de bureau legere basee sur Next.js, tailwindcss, Supabase et Google APIs pour automatiser la decouverte, l'audit technique SEO et l'engagement des commerces locaux.
+  Une application de bureau légère basée sur Next.js, tailwindcss, Supabase et Google APIs pour automatiser la découverte, l'audit technique SEO et l'engagement des commerces locaux.
 </p>
 
 <div align="center">
@@ -23,80 +23,93 @@
 
 ---
 
-## Table des matieres
+## Table des matières
 
-- [Presentation](#presentation)
-- [Fonctionnalites principales](#fonctionnalites-principales)
+- [Présentation](#présentation)
+- [Fonctionnalités principales](#fonctionnalités-principales)
 - [Architecture du projet](#architecture-du-projet)
-- [Prerequis et configuration](#prerequis-et-configuration)
-- [Developpement local](#developpement-local)
-- [Validation et deploiement](#validation-et-deploiement)
+- [Prérequis et configuration](#prérequis-et-configuration)
+- [Développement local](#développement-local)
+- [Validation et déploiement](#validation-et-déploiement)
 
 ---
 
-## Presentation
+## Présentation
 
-Minerva OS Reach Lite est concu pour aider les agences et les professionnels du web a identifier et cibler les entreprises locales presentant des lacunes de presence en ligne. Le systeme extrait automatiquement les profils d'etablissements physiques, analyse leurs forces et faiblesses SEO, genere des messages de prospection personnalises par intelligence artificielle et permet un envoi direct par e-mail via l'API Gmail.
+Minerva OS Reach Lite est conçu pour aider les agences et les professionnels du web à identifier et cibler les entreprises locales présentant des lacunes de présence en ligne. Le système extrait automatiquement les profils d'établissements physiques, analyse leurs forces et faiblesses SEO, génère des messages de prospection personnalisés par intelligence artificielle et permet un envoi direct par e-mail via l'API Gmail.
 
 ---
 
-## Fonctionnalites principales
+## Fonctionnalités principales
 
-### Moteur de recherche et de scraping multicritere
+### Moteur de recherche et de scraping multicritère
+- Recherche géolocalisée par secteur d'activité et par ville.
+- Extraction multi-source intégrant Google Maps (via OpenStreetMap Nominatim), Yelp et PagesJaunes.
+- Dé-duplication automatique des résultats et fusion des fiches de prospection.
 
-- Recherche geolocalisee par secteur d'activite et par ville.
-- Extraction multi-source integrant Google Maps (via OpenStreetMap Nominatim), Yelp et PagesJaunes.
-- De-duplication automatique des resultats et fusion des fiches de prospection.
-
-### Audit SEO technique automatise en temps reel
-
-- Analyse en direct du protocole de securite (HTTPS).
-- Verification de la compatibilite mobile (balise viewport).
-- Validation de la presence et de la pertinence des balises meta title et description.
+### Audit SEO technique automatisé en temps réel
+- Analyse en direct du protocole de sécurité (HTTPS).
+- Vérification de la compatibilité mobile (balise viewport).
+- Validation de la présence et de la pertinence des balises meta title et description.
 - Mesure des performances de chargement serveur.
-- Detection des scripts de suivi de trafic (Google Analytics, Facebook Pixel).
+- Détection des scripts de suivi de trafic (Google Analytics, Facebook Pixel).
 
-### Redacteur IA et engagement direct
-
-- Generation intelligente de brouillons de courriels de prospection (canaux Email, DM, Script).
-- Choix de tonalite (Calme et Conseil, Direct et Closer, Storytelling) via OpenRouter ou Anthropic.
-- Envoi securise en un clic via l'API REST de Gmail grace a une connexion Google OAuth native.
+### Rédacteur IA et engagement direct
+- Génération intelligente de brouillons de courriels de prospection (canaux Email, DM, Script).
+- Choix de tonalité (Calme et Conseil, Direct et Closer, Storytelling) via OpenRouter ou Anthropic.
+- Envoi sécurisé en un clic via l'API REST de Gmail grâce à une connexion Google OAuth native.
 - Export direct des audits et des scripts dans le Google Drive de l'utilisateur.
+
+### Authentification & Sécurité Avancée (Nouveau)
+- **Connexion Passwordless OTP** : Authentification rapide par code unique envoyé par email.
+- **Réinitialisation de mot de passe** : Flux sécurisé avec redirection PKCE (`/api/auth/confirm-reset`).
+- **Gestion des mots de passe** : Page dédiée `/update-password` avec indicateur de force visuel et contrôles de visibilité.
+- **Formulaire de Connexion premium** : Layout moderne à 3 onglets (Connexion standard, Code OTP, Inscription).
+
+### Gestion d'Équipe & Invitations (Nouveau)
+- **Système d'invitation sécurisé** : Invitation directe par email via l'API Admin de Supabase (utilisation de la clé de rôle de service `SUPABASE_SERVICE_ROLE_KEY` côté serveur).
+- **Rôles et Permissions** : Rôles configurables (Administrateur, Éditeur, Lecteur) avec politiques RLS (Row Level Security) strictes sur la base de données.
+- **Tableau de bord de l'équipe (`/team`)** : Interface premium de gestion des membres, affichage du propriétaire avec badge Couronne, modification de rôles en temps réel et suppression sécurisée des membres avec confirmation double-clic.
+
+### Onboarding Interactif Premium (Nouveau)
+- **Parcours d'onboarding inspiré de Sana AI** : Assistant multi-étapes avec animations fluides de glissement directionnel (gauche/droite) et indicateur visuel de progression circulaire.
+- **Configuration intégrée** : Étapes intégrées pour le choix des forfaits (Gratuit vs Équipe) et le consentement analytique.
 
 ---
 
 ## Architecture du projet
 
-Le projet est structure comme suit :
+Le projet est structuré comme suit :
 
-- `/Minerva OS Lite/minerva-os-lite-desktop` : Repertoire principal de l'application Next.js.
-  - `/app` : Routage applicatif Next.js (pages de pipeline, prospection, reglages, et routes API).
-  - `/components` : Composants graphiques reutilisables de l'interface utilisateur.
-  - `/lib` : Bibliotheques utilitaires, contextes React et clients de base de donnees.
+- `/Minerva OS Lite/minerva-os-lite-desktop` : Répertoire principal de l'application Next.js.
+  - `/app` : Routage applicatif Next.js (pages de pipeline, prospection, réglages, équipe et routes API).
+  - `/components` : Composants graphiques réutilisables de l'interface utilisateur.
+  - `/lib` : Bibliothèques utilitaires, contextes React et clients de base de données.
     - `/lib/supabase` : Helpers d'initialisation des clients Supabase (client, serveur et middleware).
   - `/public` : Actifs statiques et images.
   - `deploy-test.ps1` : Script de validation et de test de compilation.
-  - `supabase_schema.sql` : Schema relationnel de la base de donnees.
+  - `supabase_schema.sql` : Schéma relationnel de la base de données.
 
 ---
 
-## Prerequis et configuration
+## Prérequis et configuration
 
-### Prerequis systeme
-
-- Node.js (version 20.0.0 ou superieure)
-- pnpm (version 9.0.0 ou superieure)
-- Base de donnees Supabase active
+### Prérequis système
+- Node.js (version 20.0.0 ou supérieure)
+- pnpm (version 9.0.0 ou supérieure)
+- Base de données Supabase active
 
 ### Variables d'environnement
-
-Creez un fichier `.env.local` dans le dossier `Minerva OS Lite/minerva-os-lite-desktop` avec les variables suivantes :
+Créez un fichier `.env.local` dans le dossier `Minerva OS Lite/minerva-os-lite-desktop` avec les variables suivantes :
 
 ```env
 # Supabase
 NEXT_PUBLIC_SUPABASE_URL=https://votre-projet.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=votre-cle-anon
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=votre-cle-anon
+
+# Clé Secrète Admin Supabase (Serveur uniquement - NE JAMAIS exposer côté client)
+SUPABASE_SERVICE_ROLE_KEY=votre-cle-service-role
 
 # Google APIs (OAuth Gmail / Drive)
 GOOGLE_CLIENT_ID=votre-client-id.apps.googleusercontent.com
@@ -108,39 +121,38 @@ ANTHROPIC_API_KEY=votre-cle-anthropic
 
 ---
 
-## Developpement local
+## Développement local
 
-Pour installer et demarrer l'application en mode de developpement :
+Pour installer et démarrer l'application en mode de développement :
 
 ```bash
-# Aller dans le repertoire de l'application
+# Aller dans le répertoire de l'application
 cd "Minerva OS Lite/minerva-os-lite-desktop"
 
-# Installer les dependances
+# Installer les dépendances
 pnpm install
 
-# Lancer le serveur de developpement
+# Lancer le serveur de développement
 pnpm run dev
 ```
 
-L'application est disponible a l'adresse : `http://localhost:3000`
+L'application est disponible à l'adresse : `http://localhost:3000`
 
 ---
 
-## Validation et deploiement
+## Validation et déploiement
 
-Avant chaque soumission, executez le script de validation PowerShell pour tester la compilation et la qualite du code :
+Avant chaque soumission, exécutez le script de validation PowerShell pour tester la compilation et la qualité du code :
 
 ```powershell
-# Executer le script de test a la racine
+# Exécuter le script de test à la racine ou dans le sous-dossier
 ./deploy-test.ps1
 ```
 
-Ce script effectue automatiquement les etapes suivantes :
-
-1. Verification de la disponibilite du port 3000.
+Ce script effectue automatiquement les étapes suivantes :
+1. Vérification de la disponibilité du port 3000.
 2. Nettoyage du cache de build.
 3. Validation des types TypeScript.
-4. Validation de la qualite de code via le linter.
+4. Validation de la qualité de code via le linter.
 5. Compilation de production de l'application.
-6. Demarrage temporaire du serveur de production local et verification de l'acces reseau.
+6. Démarrage temporaire du serveur de production local et vérification de l'accès réseau.
