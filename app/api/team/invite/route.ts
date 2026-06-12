@@ -129,6 +129,8 @@ export async function POST(request: NextRequest) {
         role,
         status: 'pending',
         invited_by: user.id,
+        plan: 'Business',
+        usage_count: 0
       })
       .select()
       .single();

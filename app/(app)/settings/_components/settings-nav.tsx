@@ -1,11 +1,11 @@
 'use client';
 
 import React from 'react';
-import { User, Target, Brain, Bell, Sun, Link2, Settings2 } from 'lucide-react';
+import { User, Target, Brain, Bell, Sun, Link2, Settings2, BarChart3 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/lib/language-context';
 
-export type SettingsSection = 'profile' | 'prospecting' | 'ai' | 'notifications' | 'appearance' | 'integrations' | 'preferences';
+export type SettingsSection = 'profile' | 'prospecting' | 'ai' | 'notifications' | 'appearance' | 'integrations' | 'preferences' | 'analytics';
 
 interface SettingsNavProps {
   section: SettingsSection;
@@ -23,6 +23,7 @@ export function SettingsNav({ section, onSectionChange }: SettingsNavProps) {
     { id: 'notifications' as SettingsSection, name: t('settings.tab_notifications'), icon: Bell },
     { id: 'appearance' as SettingsSection, name: t('settings.tab_appearance'), icon: Sun },
     { id: 'integrations' as SettingsSection, name: t('settings.tab_integrations'), icon: Link2 },
+    { id: 'analytics' as SettingsSection, name: t('nav.analytics'), icon: BarChart3 },
   ];
 
   return (

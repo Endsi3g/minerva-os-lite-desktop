@@ -26,8 +26,12 @@ import {
   AlertCircle,
   Briefcase,
   Settings2,
-  Globe
+  Globe,
+  BarChart3,
+  MessageSquare,
+  Megaphone
 } from 'lucide-react';
+import { BottomBlur } from '@/components/ui/edge-blur';
 import { cn } from '@/lib/utils';
 import { ReachProvider, useReach } from '@/lib/reach-context';
 import { useLanguage } from '@/lib/language-context';
@@ -229,6 +233,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
     { name: t('nav.search'), href: '/leads', icon: Search },
     { name: t('nav.library'), href: '/library', icon: Folder },
     { name: t('nav.agents'), href: '/agents', icon: Sparkles },
+    { name: t('nav.analytics'), href: '/analytics', icon: BarChart3 },
     { name: t('nav.integrations'), href: '/integrations', icon: Plug },
     { name: t('nav.team'), href: '/team', icon: Users },
   ];
@@ -397,6 +402,36 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
 
         {/* Sidebar Navigation */}
         <div className="flex-1 overflow-y-auto overflow-x-hidden py-3 space-y-4">
+          {!isCollapsed ? (
+            <div className="px-3 mb-2">
+              <Link
+                href="/chat"
+                onClick={() => setSidebarOpen(false)}
+                className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-[#f54e00] bg-[#f54e00]/10 border border-[#f54e00]/20 rounded-md hover:bg-[#f54e00]/15 transition-all w-full justify-center"
+              >
+                <MessageSquare className="w-3.5 h-3.5 shrink-0" />
+                <span>{t('nav.new_chat')}</span>
+              </Link>
+            </div>
+          ) : (
+            <div className="px-2 mb-2 flex justify-center">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Link
+                    href="/chat"
+                    onClick={() => setSidebarOpen(false)}
+                    className="flex h-8 w-8 items-center justify-center rounded-md text-[#f54e00] bg-[#f54e00]/10 hover:bg-[#f54e00]/15 border border-[#f54e00]/20 transition-all"
+                  >
+                    <MessageSquare className="w-3.5 h-3.5 shrink-0" />
+                  </Link>
+                </TooltipTrigger>
+                <TooltipContent side="right" className="text-xs bg-[#26251e] text-white">
+                  {t('nav.new_chat')}
+                </TooltipContent>
+              </Tooltip>
+            </div>
+          )}
+          
           <nav className={cn("space-y-[2px]", isCollapsed ? "px-2" : "px-3")}>
             {navItems.map((item) => {
               const isActive = pathname === item.href || (item.href !== '/today' && pathname.startsWith(item.href));
@@ -552,6 +587,43 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
             </div>
           )}
 
+          {/* Changelog link just above Settings */}
+          <div className="mb-1.5">
+            {isCollapsed ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Link 
+                    href="/changelog"
+                    className={cn(
+                      "flex h-8 w-8 mx-auto items-center justify-center rounded-md transition-colors",
+                      pathname === '/changelog'
+                        ? "bg-[#e5e5e2] text-[#26251e]"
+                        : "text-[#555552] hover:bg-[#e5e5e2]/60 hover:text-[#26251e]"
+                    )}
+                  >
+                    <Megaphone className="h-4 w-4" />
+                  </Link>
+                </TooltipTrigger>
+                <TooltipContent side="right" className="text-xs bg-[#26251e] text-white">
+                  {t('nav.changelog')}
+                </TooltipContent>
+              </Tooltip>
+            ) : (
+              <Link
+                href="/changelog"
+                className={cn(
+                  "flex items-center gap-2.5 text-xs font-semibold px-2.5 py-1.5 rounded-md transition-colors",
+                  pathname === '/changelog'
+                    ? "bg-[#e5e5e2] text-[#26251e] font-semibold"
+                    : "text-[#555552] hover:text-[#26251e] hover:bg-[#e5e5e2]/60"
+                )}
+              >
+                <Megaphone className="h-4 w-4 text-[#555552]" />
+                <span>{t('nav.changelog')}</span>
+              </Link>
+            )}
+          </div>
+
           {/* Settings and user control row */}
           <div className="flex items-center justify-between">
             {isCollapsed ? (
@@ -565,7 +637,12 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
               <div className="w-full flex items-center justify-between">
                 <Link
                   href="/settings"
-                  className="flex items-center gap-2.5 text-xs font-semibold text-[#555552] hover:text-[#26251e] hover:bg-[#e5e5e2]/60 px-2 py-1.5 rounded-md transition-colors flex-1"
+                  className={cn(
+                    "flex items-center gap-2.5 text-xs font-semibold px-2 py-1.5 rounded-md transition-colors flex-1",
+                    pathname.startsWith('/settings')
+                      ? "bg-[#e5e5e2] text-[#26251e] font-semibold"
+                      : "text-[#555552] hover:text-[#26251e] hover:bg-[#e5e5e2]/60"
+                  )}
                 >
                   <SettingsIcon className="h-4 w-4 text-[#555552]" />
                   <span>{t('nav.settings')}</span>
@@ -826,6 +903,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
         </div>
       )}
 
+      <BottomBlur height={64} />
     </div>
   );
 }

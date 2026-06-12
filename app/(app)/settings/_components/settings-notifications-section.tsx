@@ -5,6 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SettingsSectionWrapper } from './settings-section-wrapper';
 import { cn } from '@/lib/utils';
+import { Switch } from '@/components/ui/switch';
 
 interface NotificationsData {
   reminderOverdue: boolean;
@@ -17,28 +18,6 @@ interface SettingsNotificationsSectionProps {
   data: NotificationsData;
   onChange: (updates: Partial<NotificationsData>) => void;
   isSaving: boolean;
-}
-
-// Inline custom Switch component
-function LocalSwitch({ checked, onCheckedChange, ariaLabel }: { checked: boolean; onCheckedChange: (c: boolean) => void; ariaLabel: string }) {
-  return (
-    <button
-      type="button"
-      onClick={() => onCheckedChange(!checked)}
-      aria-label={ariaLabel}
-      className={cn(
-        "relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out outline-hidden",
-        checked ? "bg-primary" : "bg-muted"
-      )}
-    >
-      <span
-        className={cn(
-          "pointer-events-none inline-block h-4 w-4 transform rounded-full bg-card shadow-xs ring-0 transition duration-200 ease-in-out",
-          checked ? "translate-x-4" : "translate-x-0"
-        )}
-      />
-    </button>
-  );
 }
 
 export function SettingsNotificationsSection({ data, onChange, isSaving }: SettingsNotificationsSectionProps) {
@@ -62,10 +41,10 @@ export function SettingsNotificationsSection({ data, onChange, isSaving }: Setti
                   Reçois une alerte de rappel pour chaque action commerciale (relance, appel) non résolue à l&apos;échéance.
                 </p>
               </div>
-              <LocalSwitch 
+              <Switch 
                 checked={data.reminderOverdue} 
                 onCheckedChange={(checked) => onChange({ reminderOverdue: checked })}
-                ariaLabel="Basculer les rappels d'actions en retard"
+                aria-label="Basculer les rappels d'actions en retard"
               />
             </div>
 
@@ -79,10 +58,10 @@ export function SettingsNotificationsSection({ data, onChange, isSaving }: Setti
                   Reçois un résumé tous les soirs récapitulant les opportunités chaudes et les tâches programmées pour le lendemain.
                 </p>
               </div>
-              <LocalSwitch 
+              <Switch 
                 checked={data.dailyDigest} 
                 onCheckedChange={(checked) => onChange({ dailyDigest: checked })}
-                ariaLabel="Basculer le résumé quotidien"
+                aria-label="Basculer le résumé quotidien"
               />
             </div>
 
@@ -96,10 +75,10 @@ export function SettingsNotificationsSection({ data, onChange, isSaving }: Setti
                   Reçois un bilan de performance de tes taux d&apos;engagement et des opportunités gagnées la semaine passée.
                 </p>
               </div>
-              <LocalSwitch 
+              <Switch 
                 checked={data.weeklyReport} 
                 onCheckedChange={(checked) => onChange({ weeklyReport: checked })}
-                ariaLabel="Basculer le rapport de performance hebdomadaire"
+                aria-label="Basculer le rapport de performance hebdomadaire"
               />
             </div>
           </div>

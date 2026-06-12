@@ -11,7 +11,8 @@ import { SettingsIntegrationsSection } from './settings-integrations-section';
 import { SettingsPreferencesSection, PreferencesData } from './settings-preferences-section';
 import { Locale } from '@/lib/translations';
 import { createClient } from '@/lib/supabase/client';
-
+import { AnalyticsDashboard } from '@/components/analytics-dashboard';
+import { cn } from '@/lib/utils';
 
 interface ProfileData {
   fullName: string;
@@ -261,7 +262,10 @@ export function SettingsRoot() {
 
       {/* Main configuration settings layout panel */}
       <div className="flex-1 overflow-y-auto min-h-0 scrollbar-thin">
-        <div className="mx-auto flex max-w-2xl flex-col gap-6 p-6">
+        <div className={cn(
+          "mx-auto flex flex-col gap-6 p-6",
+          section === 'analytics' ? "max-w-5xl" : "max-w-2xl"
+        )}>
           {section === 'profile' && (
             <SettingsProfileSection
               data={settings.profile}
@@ -312,6 +316,10 @@ export function SettingsRoot() {
 
           {section === 'integrations' && (
             <SettingsIntegrationsSection />
+          )}
+
+          {section === 'analytics' && (
+            <AnalyticsDashboard />
           )}
         </div>
       </div>

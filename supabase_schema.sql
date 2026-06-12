@@ -210,7 +210,9 @@ create table if not exists public.team_members (
     status text not null default 'pending' check (status in ('pending', 'active')),
     invited_by uuid references auth.users(id) on delete set null,
     invited_at timestamp with time zone default now() not null,
-    joined_at timestamp with time zone
+    joined_at timestamp with time zone,
+    plan text not null default 'Business',
+    usage_count integer not null default 0
 );
 
 -- Unique constraint: one record per email per workspace
@@ -251,6 +253,10 @@ create policy "Owner can delete team members" on public.team_members
 -- ALTER TABLE public.settings ADD COLUMN IF NOT EXISTS ai_provider text DEFAULT 'anthropic';
 -- ALTER TABLE public.settings ADD COLUMN IF NOT EXISTS openrouter_key text;
 -- ALTER TABLE public.settings ADD COLUMN IF NOT EXISTS ai_model text DEFAULT 'meta-llama/llama-3-8b-instruct:free';
+--
+-- Run this if your team_members table already exists:
+-- ALTER TABLE public.team_members ADD COLUMN IF NOT EXISTS plan text NOT NULL DEFAULT 'Business';
+-- ALTER TABLE public.team_members ADD COLUMN IF NOT EXISTS usage_count integer NOT NULL DEFAULT 0;
 -- ========================================================
 
 -- ========================================================
