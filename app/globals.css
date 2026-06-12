@@ -131,3 +131,112 @@
     border-color: var(--border);
   }
 }
+
+/* Georgia Serif font family */
+.font-georgia {
+  font-family: Georgia, serif;
+}
+
+/* Concentric circle stroke dasharray transition */
+.transition-stroke-dasharray {
+  transition: stroke-dasharray 0.5s ease-in-out;
+}
+
+/* Dynamic background grids */
+.bg-grid-pattern {
+  background-image: linear-gradient(#e6e5e0 1px, transparent 1px), linear-gradient(90deg, #e6e5e0 1px, transparent 1px);
+  background-size: 16px 16px;
+}
+.bg-grid-pattern-20 {
+  background-image: linear-gradient(#e6e5e0 1px, transparent 1px), linear-gradient(90deg, #e6e5e0 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+/* 3D Laptop Mockup layout rules */
+.laptop-mockup-3d {
+  transform: rotateX(10deg) rotateY(-18deg) rotateZ(3deg) skewY(1deg);
+  transform-style: preserve-3d;
+  perspective: 1500px;
+}
+.laptop-lid-3d {
+  transform: translateZ(15px);
+}
+.keyboard-base-3d {
+  transform: rotateX(82deg) translateZ(-8px);
+  transform-origin: top center;
+}
+
+/* Animations */
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+.animate-float-4s {
+  animation: float 4s ease-in-out infinite;
+}
+.animate-float-5-5s {
+  animation: float 5.5s ease-in-out infinite 0.7s;
+}
+
+/* Progressive edge blur filters (replacing inline gradients) */
+.mask-top-blur-1 {
+  mask-image: linear-gradient(to top, transparent, rgba(0, 0, 0, 0.1) 25%, rgba(0, 0, 0, 1));
+  -webkit-mask-image: linear-gradient(to top, transparent, rgba(0, 0, 0, 0.1) 25%, rgba(0, 0, 0, 1));
+}
+.mask-top-blur-2 {
+  mask-image: linear-gradient(to top, transparent, rgba(0, 0, 0, 0.3) 50%, rgba(0, 0, 0, 1));
+  -webkit-mask-image: linear-gradient(to top, transparent, rgba(0, 0, 0, 0.3) 50%, rgba(0, 0, 0, 1));
+}
+.mask-top-blur-3 {
+  mask-image: linear-gradient(to top, transparent, rgba(0, 0, 0, 0.6) 75%, rgba(0, 0, 0, 1));
+  -webkit-mask-image: linear-gradient(to top, transparent, rgba(0, 0, 0, 0.6) 75%, rgba(0, 0, 0, 1));
+}
+.mask-top-blur-4 {
+  mask-image: linear-gradient(to top, transparent, rgba(0, 0, 0, 1));
+  -webkit-mask-image: linear-gradient(to top, transparent, rgba(0, 0, 0, 1));
+}
+
+.mask-bottom-blur-1 {
+  mask-image: linear-gradient(to bottom, transparent, rgba(0, 0, 0, 0.1) 25%, rgba(0, 0, 0, 1));
+  -webkit-mask-image: linear-gradient(to bottom, transparent, rgba(0, 0, 0, 0.1) 25%, rgba(0, 0, 0, 1));
+}
+.mask-bottom-blur-2 {
+  mask-image: linear-gradient(to bottom, transparent, rgba(0, 0, 0, 0.3) 50%, rgba(0, 0, 0, 1));
+  -webkit-mask-image: linear-gradient(to bottom, transparent, rgba(0, 0, 0, 0.3) 50%, rgba(0, 0, 0, 1));
+}
+.mask-bottom-blur-3 {
+  mask-image: linear-gradient(to bottom, transparent, rgba(0, 0, 0, 0.6) 75%, rgba(0, 0, 0, 1));
+  -webkit-mask-image: linear-gradient(to bottom, transparent, rgba(0, 0, 0, 0.6) 75%, rgba(0, 0, 0, 1));
+}
+.mask-bottom-blur-4 {
+  mask-image: linear-gradient(to bottom, transparent, rgba(0, 0, 0, 1));
+  -webkit-mask-image: linear-gradient(to bottom, transparent, rgba(0, 0, 0, 1));
+}
+
+/* ── Sidebar smooth transition (300ms cubic-bezier) ── */
+.sidebar-transition {
+  transition: width 300ms cubic-bezier(0.4, 0, 0.2, 1),
+              transform 300ms cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 300ms cubic-bezier(0.4, 0, 0.2, 1),
+              padding 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: width, transform;
+  overflow: hidden;
+}
+
+/* Generic smooth toggle utility */
+.smooth-toggle {
+  transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ── Mobile bottom nav safe-area support (iPhone home indicator) ── */
+.bottom-nav-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Prevent content from hiding under bottom nav on mobile */
+@media (max-width: 767px) {
+  .mobile-main-content {
+    padding-bottom: calc(4rem + env(safe-area-inset-bottom, 0px));
+  }
+}

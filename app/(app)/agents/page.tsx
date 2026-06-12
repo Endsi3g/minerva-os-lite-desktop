@@ -338,8 +338,10 @@ export default function AgentsPage() {
             <div className="space-y-6">
               <div>
                 <h3 className="text-xs font-bold text-[#7a7a76] uppercase tracking-wider mb-2">1. Configurer le Prospect</h3>
-                <label className="block text-xs font-bold text-[#26251e] mb-1.5">Choisir un prospect ciblé</label>
+                <label htmlFor="lead-select" className="block text-xs font-bold text-[#26251e] mb-1.5">Choisir un prospect ciblé</label>
                 <select
+                  id="lead-select"
+                  title="Choisir un prospect ciblé"
                   value={selectedLeadId}
                   onChange={(e) => {
                     setSelectedLeadId(e.target.value);
@@ -390,8 +392,11 @@ export default function AgentsPage() {
                     </div>
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-[#26251e] mb-1.5">URL de destination (simulé)</label>
+                    <label htmlFor="dest-url-input" className="block text-xs font-bold text-[#26251e] mb-1.5">URL de destination (simulé)</label>
                     <input 
+                      id="dest-url-input"
+                      title="URL de destination (simulé)"
+                      placeholder="URL de destination (simulé)"
                       type="text" 
                       disabled
                       value={selectedLeadId ? `www.${leads.find(l => l.id === selectedLeadId)?.businessName.toLowerCase().replace(/[^a-z0-9]/g, '')}.fr` : 'Sélectionnez un prospect'}
@@ -420,8 +425,10 @@ export default function AgentsPage() {
                     </div>
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-[#26251e] mb-1.5">Ton rédactionnel</label>
+                    <label htmlFor="outreach-tone-select" className="block text-xs font-bold text-[#26251e] mb-1.5">Ton rédactionnel</label>
                     <select
+                      id="outreach-tone-select"
+                      title="Ton rédactionnel"
                       value={outreachTone}
                       onChange={(e) => setOutreachTone(e.target.value)}
                       className="w-full text-xs p-2.5 bg-white border border-[#e6e5e0] rounded-md focus:outline-none focus:ring-1 focus:ring-[#059669]"
@@ -447,8 +454,10 @@ export default function AgentsPage() {
                 <div className="space-y-4">
                   <div>
                     <h3 className="text-xs font-bold text-[#7a7a76] uppercase tracking-wider mb-2">2. Source d&apos;extraction</h3>
-                    <label className="block text-xs font-bold text-[#26251e] mb-1.5">Réseau d&apos;avis</label>
+                    <label htmlFor="review-source-select" className="block text-xs font-bold text-[#26251e] mb-1.5">Réseau d&apos;avis</label>
                     <select
+                      id="review-source-select"
+                      title="Réseau d'avis"
                       value={reviewSource}
                       onChange={(e) => setReviewSource(e.target.value as 'google' | 'yelp')}
                       className="w-full text-xs p-2.5 bg-white border border-[#e6e5e0] rounded-md focus:outline-none focus:ring-1 focus:ring-[#059669]"
@@ -599,6 +608,8 @@ export default function AgentsPage() {
                             <div><span className="text-[#26251e] font-semibold">Expéditeur :</span> {userName} ({companyName})</div>
                           </div>
                           <textarea
+                            title="Contenu du message"
+                            placeholder="Contenu du message"
                             value={resultData.content}
                             onChange={(e) => setResultData({ content: e.target.value })}
                             className="w-full text-xs p-4 bg-white focus:outline-none h-64 font-sans leading-relaxed resize-none"
@@ -797,13 +808,7 @@ export default function AgentsPage() {
 
         {/* Looking for inspiration grid banner */}
         <div className="relative border border-[#e5e5e0] rounded-xl overflow-hidden shadow-2xs h-[75px] bg-[#f4f4f3]/10 flex items-center justify-between px-6 py-4">
-          <div 
-            className="absolute inset-0 opacity-[0.2] pointer-events-none" 
-            style={{
-              backgroundImage: 'linear-gradient(#e5e5e0 1px, transparent 1px), linear-gradient(90deg, #e5e5e0 1px, transparent 1px)',
-              backgroundSize: '16px 16px'
-            }}
-          />
+          <div className="absolute inset-0 opacity-[0.2] pointer-events-none bg-grid-pattern" />
           <div className="z-10 text-left space-y-0.5">
             <h3 className="text-xs font-bold text-[#26251e]">Looking for inspiration?</h3>
             <p className="text-[11px] text-[#7a7a76]">Explore our template library to discover pre-built agents and get started quickly</p>

@@ -84,6 +84,13 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
   const [onboarding, setOnboarding] = useState({ percent: 12, score: 0 });
   const [completedTasks, setCompletedTasks] = useState<string[]>([]);
 
+  const progressCallback = React.useCallback((node: HTMLDivElement | null) => {
+    if (node !== null) {
+      node.style.width = `${onboarding.percent}%`;
+      node.style.transition = 'width 0.5s ease-in-out';
+    }
+  }, [onboarding.percent]);
+
   // Invite Users modal states
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
@@ -257,9 +264,9 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
 
       {/* Sidebar */}
       <aside className={cn(
-        "fixed inset-y-0 left-0 z-50 flex flex-col border-r border-[#e5e5e0] bg-[#f4f4f3] transition-all duration-300 ease-in-out md:static md:relative md:translate-x-0",
-        isCollapsed ? "md:w-16" : "md:w-[240px]",
-        sidebarOpen ? "translate-x-0" : "-translate-x-full"
+        "fixed inset-y-0 left-0 z-50 flex flex-col border-r border-[#e5e5e0] bg-[#f4f4f3] sidebar-transition md:static md:relative md:translate-x-0 shrink-0",
+        isCollapsed ? "md:w-0 md:border-r-0" : "md:w-[240px]",
+        sidebarOpen ? "translate-x-0 w-[240px]" : "-translate-x-full w-[240px]"
       )}>
         
         {/* Sidebar Brand Header (With Langdock style Switcher Dropdown) */}
@@ -502,10 +509,10 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
             <div className="px-3 space-y-1">
               <button 
                 onClick={() => setTodayCollapsed(!todayCollapsed)}
-                className="w-full flex items-center justify-between px-2.5 py-1 text-[10px] font-bold text-[#7a7a76] uppercase tracking-wider hover:text-[#26251e] transition-colors"
+                className="w-full flex items-center justify-between px-2.5 py-1 text-[10px] font-bold text-[#7a7a76] uppercase tracking-wider hover:text-[#26251e] smooth-toggle"
               >
                 <span>{t('nav.today')}</span>
-                <ChevronDown className={cn("h-3 w-3 transition-transform duration-200", todayCollapsed && "-rotate-90")} />
+                <ChevronDown className={cn("h-3 w-3 smooth-toggle", todayCollapsed && "-rotate-90")} />
               </button>
               
               {!todayCollapsed && (
@@ -571,17 +578,17 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
 
               <button
                 onClick={() => setShowOnboarding(!showOnboarding)}
-                className="w-full text-left p-2.5 bg-white border border-[#e5e5e0] hover:border-[#7a7a76] rounded-md transition-all flex flex-col gap-1.5 cursor-pointer group"
+                className="w-full text-left p-2.5 bg-white border border-[#e5e5e0] hover:border-[#7a7a76] rounded-md smooth-toggle flex flex-col gap-1.5 cursor-pointer group"
               >
                 <div className="flex items-center justify-between text-xs font-bold text-[#26251e]">
                   <span>{t('nav.get_started')}</span>
-                  <ChevronUp className={cn("h-3 w-3 text-[#7a7a76] transition-transform duration-200", showOnboarding && "rotate-180")} />
+                  <ChevronUp className={cn("h-3 w-3 text-[#7a7a76] smooth-toggle", showOnboarding && "rotate-180")} />
                 </div>
                 <div className="text-[10px] text-[#555552]">
                   {onboarding.percent}% done • <span className="text-[#10b981]">{onboarding.percent === 100 ? t('nav.done') : t('nav.in_progress')}</span>
                 </div>
                 <div className="w-full bg-[#e5e5e2] h-1 rounded-full overflow-hidden">
-                  <div className="bg-[#10b981] h-full rounded-full" style={{ width: `${onboarding.percent}%`, transition: 'width 0.5s ease-in-out' }} />
+                  <div ref={progressCallback} className="bg-[#10b981] h-full rounded-full" />
                 </div>
               </button>
             </div>
@@ -664,24 +671,26 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
       </aside>
 
       {/* Main Layout Area */}
-      <div className="flex flex-1 flex-col overflow-hidden bg-white">
+      <div className="flex flex-1 flex-col overflow-hidden bg-white min-w-0">
         {/* Topbar */}
-        <header className="flex h-12 items-center justify-between border-b border-[#e5e5e0] bg-white px-6">
+        <header className="flex h-12 items-center justify-between border-b border-[#e5e5e0] bg-white px-4 md:px-6 shrink-0">
           
           {/* Left Action (Menu Trigger) */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 md:gap-4">
             <Button
               variant="ghost"
               size="icon"
               className="md:hidden h-8 w-8"
               onClick={() => setSidebarOpen(true)}
+              title="Ouvrir le menu"
+              aria-label="Ouvrir le menu"
             >
               <Menu className="h-4 w-4" />
             </Button>
 
             <button
               onClick={toggleCollapse}
-              className="h-8 w-8 hidden md:flex items-center justify-center rounded text-[#7a7a76] hover:bg-[#e5e5e2]/60 transition-colors"
+              className="h-8 w-8 hidden md:flex items-center justify-center rounded text-[#7a7a76] hover:bg-[#e5e5e2]/60 smooth-toggle"
               aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
             >
               {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
@@ -739,6 +748,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
             <div className="h-4 w-px bg-[#e5e5e0] mx-1" />
 
             <div className="h-7 w-7 rounded-full overflow-hidden border border-[#e5e5e0] bg-[#e5e5e2] flex items-center justify-center shrink-0" title={userProfile?.fullName || 'Utilisateur'}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img 
                 src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=facearea&facepad=2&w=256&h=256&q=80" 
                 alt="Profile" 
@@ -749,10 +759,42 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
         </header>
 
         {/* Page Content Slot */}
-        <main className="flex-1 overflow-hidden bg-white">
+        <main className="flex-1 overflow-hidden bg-white mobile-main-content">
           {children}
         </main>
       </div>
+
+      {/* Mobile Bottom Navigation Bar (hidden on md+) */}
+      <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-white border-t border-[#e5e5e0] bottom-nav-safe">
+        <div className="flex items-center justify-around h-16 px-2">
+          {[
+            { name: t('nav.prospect'), href: '/prospecting', icon: PenSquare },
+            { name: t('nav.search'), href: '/leads', icon: Search },
+            { name: t('nav.library'), href: '/library', icon: Folder },
+            { name: t('nav.agents'), href: '/agents', icon: Sparkles },
+            { name: t('nav.integrations'), href: '/integrations', icon: Plug },
+            { name: t('nav.settings'), href: '/settings', icon: SettingsIcon },
+            { name: t('nav.changelog'), href: '/changelog', icon: Megaphone },
+          ].map((item) => {
+            const isActive = pathname === item.href || (item.href !== '/today' && pathname.startsWith(item.href));
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={cn(
+                  "flex flex-col items-center gap-0.5 px-1 py-1 rounded-lg smooth-toggle min-w-0",
+                  isActive
+                    ? "text-[#059669]"
+                    : "text-[#7a7a76] hover:text-[#26251e]"
+                )}
+              >
+                <item.icon className="h-5 w-5 shrink-0" />
+                <span className="text-[8px] font-semibold truncate max-w-[40px] text-center leading-tight">{item.name}</span>
+              </Link>
+            );
+          })}
+        </div>
+      </nav>
 
       {/* New Project Modal Overlay */}
       {showNewProjectModal && (

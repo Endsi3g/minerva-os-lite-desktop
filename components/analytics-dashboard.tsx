@@ -461,17 +461,27 @@ export function AnalyticsDashboard() {
                           </div>
 
                           {/* Stacked Pillar */}
-                          <div className="w-full flex flex-col justify-end h-full">
-                            {/* Agent message block (top) */}
-                            <div 
-                              style={{ height: `${agentPercent}%` }} 
-                              className="w-full bg-[#e5e5e2] dark:bg-neutral-800 rounded-t-xs hover:brightness-95 transition-all"
-                            />
-                            {/* Chat message block (bottom) */}
-                            <div 
-                              style={{ height: `${chatPercent}%` }} 
-                              className="w-full bg-primary hover:brightness-95 transition-all"
-                            />
+                          <div className="w-full h-full">
+                            <svg viewBox="0 0 24 100" preserveAspectRatio="none" className="w-full h-full">
+                              {agentPercent > 0 && (
+                                <rect
+                                  y={100 - agentPercent - chatPercent}
+                                  height={agentPercent}
+                                  width="24"
+                                  className="fill-[#e5e5e2] dark:fill-neutral-800 hover:brightness-95 transition-all"
+                                  rx="1"
+                                />
+                              )}
+                              {chatPercent > 0 && (
+                                <rect
+                                  y={100 - chatPercent}
+                                  height={chatPercent}
+                                  width="24"
+                                  className="fill-primary hover:brightness-95 transition-all"
+                                  rx="1"
+                                />
+                              )}
+                            </svg>
                           </div>
                         </div>
                       );
@@ -537,10 +547,19 @@ export function AnalyticsDashboard() {
                           </div>
 
                           {/* Pillar */}
-                          <div 
-                            style={{ height: `${userPercent}%` }} 
-                            className="w-full bg-emerald-500 rounded-t-xs hover:bg-emerald-600 transition-all"
-                          />
+                          <div className="w-full h-full">
+                            <svg viewBox="0 0 24 100" preserveAspectRatio="none" className="w-full h-full">
+                              {userPercent > 0 && (
+                                <rect
+                                  y={100 - userPercent}
+                                  height={userPercent}
+                                  width="24"
+                                  className="fill-emerald-500 hover:fill-emerald-600 transition-all"
+                                  rx="1"
+                                />
+                              )}
+                            </svg>
+                          </div>
                         </div>
                       );
                     })}

@@ -63,6 +63,13 @@ function WelcomePageContent() {
   const [completedTasks, setCompletedTasks] = useState<string[]>([]);
   const [onboarding, setOnboarding] = useState({ percent: 12, score: 0 });
 
+  const progressCallback = React.useCallback((node: HTMLDivElement | null) => {
+    if (node !== null) {
+      node.style.width = `${onboarding.percent}%`;
+      node.style.transition = 'width 0.5s ease-in-out';
+    }
+  }, [onboarding.percent]);
+
   // Invite Users modal states
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
@@ -132,9 +139,9 @@ function WelcomePageContent() {
 
       {/* Sidebar Layout Reproduced */}
       <aside className={cn(
-        "fixed inset-y-0 left-0 z-50 flex flex-col border-r border-[#e5e5e0] bg-[#f4f4f3] transition-all duration-300 ease-in-out md:static md:relative md:translate-x-0",
-        isCollapsed ? "md:w-16" : "md:w-[240px]",
-        sidebarOpen ? "translate-x-0" : "-translate-x-full"
+        "fixed inset-y-0 left-0 z-50 flex flex-col border-r border-[#e5e5e0] bg-[#f4f4f3] sidebar-transition md:static md:relative md:translate-x-0 shrink-0",
+        isCollapsed ? "md:w-0 md:border-r-0" : "md:w-[240px]",
+        sidebarOpen ? "translate-x-0 w-[240px]" : "-translate-x-full w-[240px]"
       )}>
         
         {/* Sidebar Brand Header */}
@@ -369,7 +376,7 @@ function WelcomePageContent() {
                 {onboarding.percent}% done • <span className="text-[#10b981]">{onboarding.percent === 100 ? 'Completed!' : "Let's go!"}</span>
               </div>
               <div className="w-full bg-[#e5e5e2] h-1 rounded-full overflow-hidden">
-                <div className="bg-[#10b981] h-full rounded-full" style={{ width: `${onboarding.percent}%`, transition: 'width 0.5s ease-in-out' }} />
+                <div ref={progressCallback} className="bg-[#10b981] h-full rounded-full" />
               </div>
             </button>
           ) : (
@@ -377,6 +384,19 @@ function WelcomePageContent() {
               <span className="text-[9px] font-bold text-[#10b981]">{onboarding.percent}%</span>
             </div>
           )}
+
+          {/* Changelog row */}
+          <div className="mb-1">
+            <Link
+              href="/changelog"
+              className="flex items-center gap-2.5 text-xs font-semibold text-[#555552] hover:text-[#26251e] hover:bg-[#e5e5e2]/60 px-2 py-1.5 rounded-md smooth-toggle"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-[#555552]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
+              </svg>
+              <span>Changelog</span>
+            </Link>
+          </div>
 
           {/* Settings row */}
           <div className="flex items-center justify-between">
@@ -390,7 +410,7 @@ function WelcomePageContent() {
             ) : (
               <Link
                 href="/settings"
-                className="flex items-center gap-2.5 text-xs font-semibold text-[#555552] hover:text-[#26251e] hover:bg-[#e5e5e2]/60 px-2 py-1.5 rounded-md transition-colors flex-1"
+                className="flex items-center gap-2.5 text-xs font-semibold text-[#555552] hover:text-[#26251e] hover:bg-[#e5e5e2]/60 px-2 py-1.5 rounded-md smooth-toggle flex-1"
               >
                 <SettingsIcon className="h-4 w-4 text-[#555552]" />
                 <span>Settings</span>
@@ -446,13 +466,7 @@ function WelcomePageContent() {
         </div>
 
         {/* Inner Grid Pattern Decorative background */}
-        <div 
-          className="absolute inset-0 opacity-[0.25] pointer-events-none" 
-          style={{
-            backgroundImage: 'linear-gradient(#e5e5e0 1px, transparent 1px), linear-gradient(90deg, #e5e5e0 1px, transparent 1px)',
-            backgroundSize: '20px 20px'
-          }}
-        />
+        <div className="absolute inset-0 opacity-[0.25] pointer-events-none bg-grid-pattern-20" />
 
         {/* Welcome Area content container */}
         <div className="flex-1 overflow-y-auto py-12 px-6 flex flex-col items-center relative z-10">
@@ -479,7 +493,7 @@ function WelcomePageContent() {
                   strokeWidth="2.5"
                   strokeDasharray={`${(onboarding.percent / 100) * 213.6} 213.6`}
                   fill="none"
-                  style={{ transition: 'stroke-dasharray 0.5s ease-in-out' }}
+                  className="transition-stroke-dasharray"
                 />
               </svg>
               
@@ -513,7 +527,7 @@ function WelcomePageContent() {
                 <h3 className="text-sm font-bold text-[#26251e] text-left">Get started with Minerva OS Lite</h3>
                 <p className="text-xs text-[#7a7a76] text-left">Learn about everything Minerva OS Lite can do for you and get up and running.</p>
               </div>
-              <button className="h-7 w-7 flex items-center justify-center rounded hover:bg-[#f4f4f3] text-[#7a7a76]">
+              <button title="Options de configuration" aria-label="Options de configuration" className="h-7 w-7 flex items-center justify-center rounded hover:bg-[#f4f4f3] text-[#7a7a76]">
                 <MoreHorizontal className="h-4 w-4" />
               </button>
             </div>

@@ -288,8 +288,7 @@ export default function OnboardingPage() {
 
           <main className="flex-1 flex flex-col items-center justify-center py-16 px-6 max-w-7xl mx-auto w-full">
             <h1
-              className="text-5xl md:text-7xl tracking-tight text-center max-w-4xl text-[#26251e] mb-12 font-light leading-tight font-serif"
-              style={{ fontFamily: 'Georgia, serif' }}
+              className="text-5xl md:text-7xl tracking-tight text-center max-w-4xl text-[#26251e] mb-12 font-light leading-tight font-serif font-georgia"
             >
               Superintelligence <br className="hidden sm:inline" /> for local sales
             </h1>
@@ -298,10 +297,10 @@ export default function OnboardingPage() {
               {/* Card 1 */}
               <div className="bg-[#0c0c0b] text-white rounded-2xl p-8 border border-neutral-800 flex flex-col justify-between aspect-[4/3] relative overflow-hidden group">
                 <div className="space-y-3 relative z-10">
-                  <h3 className="text-xl font-bold tracking-tight text-white font-serif" style={{ fontFamily: 'Georgia, serif' }}>Minerva Agents</h3>
+                  <h3 className="text-xl font-bold tracking-tight text-white font-serif font-georgia">Minerva Agents</h3>
                   <p className="text-xs text-neutral-400 max-w-xs leading-relaxed">AI agents designed to autonomously qualify and target local prospecting campaigns for your agency.</p>
                 </div>
-                <div className="flex gap-3 pt-6 relative z-10">
+                 <div className="flex gap-3 pt-6 relative z-10">
                   <button onClick={() => goToStep('login', 'forward')} className="bg-white hover:bg-neutral-100 text-black rounded-full px-5 py-2 text-xs font-bold transition-colors">Explore</button>
                   <button onClick={() => goToStep('login', 'forward')} className="bg-[#10b981] hover:bg-[#059669] text-black rounded-full px-5 py-2 text-xs font-bold transition-colors">Book an intro</button>
                 </div>
@@ -318,7 +317,7 @@ export default function OnboardingPage() {
               {/* Card 2 */}
               <div className="bg-[#f7f7f4] text-[#26251e] rounded-2xl p-8 border border-[#e6e5e0] flex flex-col justify-between aspect-[4/3] relative overflow-hidden group">
                 <div className="space-y-3 relative z-10">
-                  <h3 className="text-xl font-bold tracking-tight text-[#26251e] font-serif" style={{ fontFamily: 'Georgia, serif' }}>Minerva Learn</h3>
+                  <h3 className="text-xl font-bold tracking-tight text-[#26251e] font-serif font-georgia">Minerva Learn</h3>
                   <p className="text-xs text-[#807d72] max-w-xs leading-relaxed">AI-native knowledge base and training hub built to scale local prospecting methods.</p>
                 </div>
                 <div className="flex gap-3 pt-6 relative z-10">
@@ -369,8 +368,8 @@ export default function OnboardingPage() {
               {step === 'login' && (
                 <div className="space-y-6">
                   <div className="space-y-2">
-                    <h2 className="text-3xl tracking-tight text-[#26251e] font-serif font-light" style={{ fontFamily: 'Georgia, serif' }}>Welcome to Minerva</h2>
-                    <p className="text-2xl tracking-tight text-[#807d72] font-serif font-light" style={{ fontFamily: 'Georgia, serif' }}>Your AI agent for work</p>
+                    <h2 className="text-3xl tracking-tight text-[#26251e] font-serif font-light font-georgia">Welcome to Minerva</h2>
+                    <p className="text-2xl tracking-tight text-[#807d72] font-serif font-light font-georgia">Your AI agent for work</p>
                     <p className="text-xs font-semibold text-[#807d72] pt-1">Sign in or sign up for free with your work email</p>
                   </div>
 
@@ -427,7 +426,7 @@ export default function OnboardingPage() {
               {step === 'otp' && (
                 <div className="space-y-6">
                   <div className="space-y-2">
-                    <h2 className="text-3xl tracking-tight text-[#26251e] font-serif font-light" style={{ fontFamily: 'Georgia, serif' }}>We sent you a code</h2>
+                    <h2 className="text-3xl tracking-tight text-[#26251e] font-serif font-light font-georgia">We sent you a code</h2>
                     <p className="text-xs text-[#807d72] font-semibold leading-relaxed">
                       Please check your inbox at{' '}
                       <span className="text-[#26251e] underline">{email || 'your email'}</span>. Enter the verification code below.
@@ -481,7 +480,7 @@ export default function OnboardingPage() {
               {step === 'selection' && (
                 <div className="space-y-6">
                   <div className="space-y-2">
-                    <h2 className="text-3xl tracking-tight text-[#26251e] font-serif font-light" style={{ fontFamily: 'Georgia, serif' }}>Configure targeting</h2>
+                    <h2 className="text-3xl tracking-tight text-[#26251e] font-serif font-light font-georgia">Configure targeting</h2>
                     <p className="text-xs text-[#807d72] font-semibold leading-relaxed">
                       Choose the industries and cities you want your AI agents to start analyzing.
                     </p>
@@ -513,7 +512,7 @@ export default function OnboardingPage() {
                         onChange={(e) => setCustomNiche(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && addCustomNiche()}
                         className="flex-1 text-[11px] font-semibold px-3 py-2 bg-white border border-[#e6e5e0] rounded-full outline-none focus:border-[#10b981]"
                       />
-                      <button onClick={addCustomNiche} className="rounded-full bg-white border border-[#e6e5e0] hover:bg-neutral-50 px-3 flex items-center justify-center">
+                      <button title="Ajouter niche" aria-label="Ajouter niche" onClick={addCustomNiche} className="rounded-full bg-white border border-[#e6e5e0] hover:bg-neutral-50 px-3 flex items-center justify-center">
                         <Plus className="w-4 h-4 text-[#26251e]" />
                       </button>
                     </div>
@@ -545,7 +544,7 @@ export default function OnboardingPage() {
                         onChange={(e) => setCustomCity(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && addCustomCity()}
                         className="flex-1 text-[11px] font-semibold px-3 py-2 bg-white border border-[#e6e5e0] rounded-full outline-none focus:border-[#10b981]"
                       />
-                      <button onClick={addCustomCity} className="rounded-full bg-white border border-[#e6e5e0] hover:bg-neutral-50 px-3 flex items-center justify-center">
+                      <button title="Ajouter ville" aria-label="Ajouter ville" onClick={addCustomCity} className="rounded-full bg-white border border-[#e6e5e0] hover:bg-neutral-50 px-3 flex items-center justify-center">
                         <Plus className="w-4 h-4 text-[#26251e]" />
                       </button>
                     </div>
@@ -589,7 +588,7 @@ export default function OnboardingPage() {
               {step === 'workspace' && (
                 <div className="space-y-6">
                   <div className="space-y-2">
-                    <h2 className="text-3xl tracking-tight text-[#26251e] font-serif font-light" style={{ fontFamily: 'Georgia, serif' }}>Welcome to Minerva Agents</h2>
+                    <h2 className="text-3xl tracking-tight text-[#26251e] font-serif font-light font-georgia">Welcome to Minerva OS Lite</h2>
                     <p className="text-xs text-[#807d72] font-semibold">Join or create a workspace</p>
                   </div>
 
@@ -665,10 +664,12 @@ export default function OnboardingPage() {
               {step === 'pricing' && (
                 <div className="space-y-5">
                   <div className="space-y-2">
-                    <h2 className="text-3xl tracking-tight text-[#26251e] font-serif font-light" style={{ fontFamily: 'Georgia, serif' }}>Upgrade your workspace</h2>
+                    <h2 className="text-3xl tracking-tight text-[#26251e] font-serif font-light font-georgia">Upgrade your workspace</h2>
                     <div className="flex items-center gap-2 pt-1">
                       <span className="text-xs text-[#807d72] font-semibold">Save €60/user/year with annual billing</span>
                       <button
+                        title="Toggle annual billing"
+                        aria-label="Toggle annual billing"
                         onClick={() => setIsAnnualPlan(!isAnnualPlan)}
                         className={cn(
                           'w-10 h-5 rounded-full p-0.5 transition-colors duration-200 flex items-center shrink-0',
@@ -686,7 +687,7 @@ export default function OnboardingPage() {
                       <div className="flex items-center justify-between">
                         <div>
                           <h4 className="text-xs font-bold text-[#26251e]">Free</h4>
-                          <p className="text-xl font-light text-[#26251e] font-serif" style={{ fontFamily: 'Georgia, serif' }}>€0 / month</p>
+                          <p className="text-xl font-light text-[#26251e] font-serif font-georgia">€0 / month</p>
                         </div>
                         <button onClick={() => goToStep('analytics', 'forward')} className="rounded-full border border-[#e6e5e0] bg-white hover:bg-neutral-50 text-xs font-bold text-[#26251e] px-5 py-2 transition-colors">
                           Continue free
@@ -707,7 +708,7 @@ export default function OnboardingPage() {
                       <div className="flex items-center justify-between">
                         <div>
                           <h4 className="text-xs font-bold text-[#26251e]">Team</h4>
-                          <p className="text-xl font-light text-[#26251e] font-serif" style={{ fontFamily: 'Georgia, serif' }}>
+                          <p className="text-xl font-light text-[#26251e] font-serif font-georgia">
                             {isAnnualPlan ? '€30' : '€35'}<span className="text-xs text-[#807d72] font-semibold"> / month</span>
                             {isAnnualPlan && <span className="text-xs text-[#807d72] line-through ml-2">€35</span>}
                           </p>
@@ -746,7 +747,7 @@ export default function OnboardingPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <h2 className="text-3xl tracking-tight text-[#26251e] font-serif font-light" style={{ fontFamily: 'Georgia, serif' }}>Help us improve</h2>
+                    <h2 className="text-3xl tracking-tight text-[#26251e] font-serif font-light font-georgia">Help us improve</h2>
                     <p className="text-xs text-[#555552] font-semibold leading-relaxed">
                       Allow your questions to be logged anonymously to help us improve our services. You can opt-out at any time in Settings.{' '}
                       <span className="underline cursor-pointer hover:text-[#26251e]">Learn more in our Privacy Notice</span>.
@@ -809,8 +810,7 @@ export default function OnboardingPage() {
                 </span>
               )}
               <h3
-                className="text-2xl font-light text-white font-serif leading-snug mb-2"
-                style={{ fontFamily: 'Georgia, serif' }}
+                className="text-2xl font-light text-white font-serif leading-snug mb-2 font-georgia"
               >
                 {panelContent.headline}
               </h3>
@@ -821,17 +821,11 @@ export default function OnboardingPage() {
 
             {/* 3D Laptop Mockup */}
             <div
-              className="relative w-full max-w-[560px] aspect-[16/11] select-none transition-transform duration-700 ease-out"
-              style={{
-                transform: 'rotateX(10deg) rotateY(-18deg) rotateZ(3deg) skewY(1deg)',
-                transformStyle: 'preserve-3d',
-                perspective: '1500px',
-              }}
+              className="relative w-full max-w-[560px] aspect-[16/11] select-none transition-transform duration-700 ease-out laptop-mockup-3d"
             >
               {/* Laptop lid */}
               <div
-                className="relative bg-[#1f1f1e] rounded-xl p-[10px] border border-neutral-700/30 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.85)]"
-                style={{ transform: 'translateZ(15px)' }}
+                className="relative bg-[#1f1f1e] rounded-xl p-[10px] border border-neutral-700/30 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.85)] laptop-lid-3d"
               >
                 {/* Webcam dot */}
                 <div className="absolute top-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-black rounded-full border border-neutral-800 flex items-center justify-center">
@@ -888,8 +882,7 @@ export default function OnboardingPage() {
 
                     <div className="flex-1 flex flex-col justify-center space-y-2.5 max-w-[240px] mx-auto py-2">
                       <div
-                        className="bg-[#10b981]/10 border border-[#10b981]/30 rounded-lg p-3 text-left space-y-1.5 shadow-xl"
-                        style={{ animation: 'float 4s ease-in-out infinite' }}
+                        className="bg-[#10b981]/10 border border-[#10b981]/30 rounded-lg p-3 text-left space-y-1.5 shadow-xl animate-float-4s"
                       >
                         <div className="flex items-center justify-between text-[7px] font-bold text-[#10b981] uppercase tracking-wider">
                           <span>Suggested Task</span>
@@ -903,8 +896,7 @@ export default function OnboardingPage() {
                       </div>
 
                       <div
-                        className="bg-[#161615] border border-neutral-800 rounded-lg p-3 text-left space-y-1.5 shadow-xl"
-                        style={{ animation: 'float 5.5s ease-in-out infinite 0.7s' }}
+                        className="bg-[#161615] border border-neutral-800 rounded-lg p-3 text-left space-y-1.5 shadow-xl animate-float-5-5s"
                       >
                         <div className="flex items-center justify-between text-[7px] font-bold text-neutral-500 uppercase tracking-wider">
                           <span>Recent Meeting</span>
@@ -926,8 +918,7 @@ export default function OnboardingPage() {
 
               {/* Keyboard base */}
               <div
-                className="absolute top-[96%] left-[3%] w-[94%] h-[15px] bg-[#2a2a29] rounded-b-xl border-t border-neutral-600/30 shadow-[0_25px_45px_rgba(0,0,0,0.95)]"
-                style={{ transform: 'rotateX(82deg) translateZ(-8px)', transformOrigin: 'top center' }}
+                className="absolute top-[96%] left-[3%] w-[94%] h-[15px] bg-[#2a2a29] rounded-b-xl border-t border-neutral-600/30 shadow-[0_25px_45px_rgba(0,0,0,0.95)] keyboard-base-3d"
               >
                 <div className="absolute top-0.5 left-1/2 -translate-x-1/2 w-[120px] h-[10px] bg-[#1a1a1a] rounded-b border-x border-b border-neutral-700/40" />
                 <div className="absolute top-[2px] left-[10px] right-[10px] h-0.5 bg-neutral-800 opacity-80" />
@@ -937,14 +928,6 @@ export default function OnboardingPage() {
 
         </div>
       )}
-
-      {/* Float animation */}
-      <style>{`
-        @keyframes float {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-6px); }
-        }
-      `}</style>
     </div>
   );
 }

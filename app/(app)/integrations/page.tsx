@@ -206,6 +206,13 @@ export default function IntegrationsPage() {
   const [onboarding, setOnboarding] = useState({ percent: 12, score: 0 });
   const [completedTasks, setCompletedTasks] = useState<string[]>([]);
 
+  const progressCallback = React.useCallback((node: HTMLDivElement | null) => {
+    if (node !== null) {
+      node.style.width = `${onboarding.percent}%`;
+      node.style.transition = 'width 0.5s ease-in-out';
+    }
+  }, [onboarding.percent]);
+
   // Selection state for connect modal
   const [selectedIntegration, setSelectedIntegration] = useState<IntegrationItem | null>(null);
   const [showConnectModal, setShowConnectModal] = useState(false);
@@ -402,9 +409,9 @@ export default function IntegrationsPage() {
 
       {/* Sidebar Layout */}
       <aside className={cn(
-        "fixed inset-y-0 left-0 z-50 flex flex-col border-r border-[#e5e5e0] bg-[#f4f4f3] transition-all duration-300 ease-in-out md:static md:relative md:translate-x-0",
-        isCollapsed ? "md:w-16" : "md:w-[240px]",
-        sidebarOpen ? "translate-x-0" : "-translate-x-full"
+        "fixed inset-y-0 left-0 z-50 flex flex-col border-r border-[#e5e5e0] bg-[#f4f4f3] sidebar-transition md:static md:relative md:translate-x-0 shrink-0",
+        isCollapsed ? "md:w-0 md:border-r-0" : "md:w-[240px]",
+        sidebarOpen ? "translate-x-0 w-[240px]" : "-translate-x-full w-[240px]"
       )}>
         
         {/* Sidebar Brand Header */}
@@ -588,7 +595,7 @@ export default function IntegrationsPage() {
                   <ChevronUp className={cn("h-3 w-3 text-[#7a7a76] transition-transform duration-200", showOnboarding && "rotate-180")} />
                 </div>
                 <div className="w-full bg-[#e5e5e2] h-1 rounded-full overflow-hidden">
-                  <div className="bg-[#10b981] h-full rounded-full" style={{ width: `${onboarding.percent}%`, transition: 'width 0.5s ease-in-out' }} />
+                  <div ref={progressCallback} className="bg-[#10b981] h-full rounded-full" />
                 </div>
               </button>
             </div>
@@ -637,6 +644,8 @@ export default function IntegrationsPage() {
               size="icon"
               className="md:hidden h-8 w-8 text-[#7a7a76] hover:text-[#26251e]"
               onClick={() => setSidebarOpen(true)}
+              title="Ouvrir le menu"
+              aria-label="Ouvrir le menu"
             >
               <Menu className="h-4 w-4" />
             </Button>
@@ -677,7 +686,7 @@ export default function IntegrationsPage() {
               <span>Invite Users</span>
             </Button>
 
-            <Button variant="ghost" size="icon" className="text-[#7a7a76] hover:text-[#26251e] h-8 w-8 relative">
+            <Button variant="ghost" size="icon" className="text-[#7a7a76] hover:text-[#26251e] h-8 w-8 relative" title="Notifications" aria-label="Notifications">
               <Bell className="h-4 w-4" />
               <span className="absolute top-2 right-2 h-1.5 w-1.5 rounded-full bg-[#10b981]" />
             </Button>
@@ -685,6 +694,7 @@ export default function IntegrationsPage() {
             <div className="h-4 w-px bg-[#e5e5e0] mx-1" />
 
             <div className="h-7 w-7 rounded-full overflow-hidden border border-[#e5e5e0] bg-[#e5e5e2] flex items-center justify-center shrink-0">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img 
                 src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=facearea&facepad=2&w=256&h=256&q=80" 
                 alt="Profile" 
@@ -727,7 +737,7 @@ export default function IntegrationsPage() {
                   >
                     Export
                   </Button>
-                  <button className="h-8.5 w-8.5 flex items-center justify-center rounded-md border border-[#e5e5e0] hover:bg-slate-50 text-[#7a7a76]">
+                  <button title="Plus d'options" aria-label="Plus d'options" className="h-8.5 w-8.5 flex items-center justify-center rounded-md border border-[#e5e5e0] hover:bg-slate-50 text-[#7a7a76]">
                     <MoreHorizontal className="w-4 h-4" />
                   </button>
                 </div>
@@ -814,6 +824,8 @@ export default function IntegrationsPage() {
                           </div>
                           
                           <select
+                            id="auth-type-select"
+                            title="Type d'authentification"
                             value={authType}
                             onChange={(e) => setAuthType(e.target.value as 'none' | 'key' | 'oauth')}
                             className="w-full text-xs p-2.5 bg-white border border-[#e6e5e0] rounded-md focus:outline-none focus:ring-1 focus:ring-[#059669]"
@@ -877,9 +889,11 @@ export default function IntegrationsPage() {
                     <div className="space-y-4">
                       {/* Invite input */}
                       <div className="space-y-1.5">
-                        <label className="text-xs font-bold text-[#26251e]">Invite users, groups or API keys</label>
+                        <label htmlFor="invite-email-input-field" className="text-xs font-bold text-[#26251e]">Invite users, groups or API keys</label>
                         <div className="flex gap-2">
                           <Input 
+                            id="invite-email-input-field"
+                            title="Invite users, groups or API keys"
                             placeholder="Add users, groups and API keys"
                             value={inviteEmailInput}
                             onChange={(e) => setInviteEmailInput(e.target.value)}
@@ -902,7 +916,7 @@ export default function IntegrationsPage() {
 
                       {/* People with access list */}
                       <div className="space-y-2">
-                        <label className="text-xs font-bold text-[#26251e] block">People with access</label>
+                        <label htmlFor="access-role-select" className="text-xs font-bold text-[#26251e] block">People with access</label>
                         <div className="border border-[#e5e5e0]/60 rounded-xl p-3 bg-[#fdfdfc] flex items-center justify-between">
                           <div className="flex items-center gap-3">
                             <div className="w-8 h-8 rounded-full bg-[#059669]/10 flex items-center justify-center font-bold text-xs text-[#059669]">
@@ -913,7 +927,7 @@ export default function IntegrationsPage() {
                               <p className="text-[10px] text-[#7a7a76]">{activeEditIntegration.email}</p>
                             </div>
                           </div>
-                          <select className="text-xs bg-white border border-[#e5e5e0] p-1.5 rounded cursor-pointer">
+                          <select id="access-role-select" title="Rôle d'accès" className="text-xs bg-white border border-[#e5e5e0] p-1.5 rounded cursor-pointer">
                             <option value="editor">Editor</option>
                             <option value="viewer">Viewer</option>
                             <option value="admin">Owner</option>
@@ -923,13 +937,15 @@ export default function IntegrationsPage() {
 
                       {/* General access */}
                       <div className="space-y-2">
-                        <label className="text-xs font-bold text-[#26251e] block">General access</label>
+                        <label htmlFor="general-access-select" className="text-xs font-bold text-[#26251e] block">General access</label>
                         <div className="flex items-start gap-3 bg-[#fcfcfb] border border-[#e5e5e0] p-4 rounded-xl">
                           <div className="w-7 h-7 rounded-full bg-[#e5e5e2]/80 flex items-center justify-center text-[#7a7a76] shrink-0">
                             {generalAccessType === 'restricted' ? <Lock className="w-3.5 h-3.5" /> : <Globe className="w-3.5 h-3.5" />}
                           </div>
                           <div className="space-y-1">
                             <select 
+                              id="general-access-select"
+                              title="Accès général"
                               value={generalAccessType}
                               onChange={(e) => setGeneralAccessType(e.target.value as 'restricted' | 'public')}
                               className="text-xs bg-transparent border-none font-bold text-[#26251e] focus:outline-none p-0 cursor-pointer"
@@ -954,7 +970,7 @@ export default function IntegrationsPage() {
                     <div className="flex items-center justify-between border-b border-[#e5e5e0]/60 pb-3">
                       <h2 className="font-bold text-sm">Insights</h2>
                       <div className="flex gap-2">
-                        <select className="text-xs bg-white border border-[#e5e5e0] p-1.5 rounded cursor-pointer">
+                        <select id="time-filter-select" title="Filtre de temps" className="text-xs bg-white border border-[#e5e5e0] p-1.5 rounded cursor-pointer">
                           <option value="30">Last 30 days</option>
                           <option value="7">Last 7 days</option>
                         </select>
@@ -1032,6 +1048,8 @@ export default function IntegrationsPage() {
                     <div className="relative w-64">
                       <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-[#7a7a76]" />
                       <Input 
+                        id="search-integrations-input"
+                        title="Rechercher des intégrations"
                         placeholder="Search integrations"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
@@ -1161,6 +1179,8 @@ export default function IntegrationsPage() {
                 <div className="relative w-64 pb-2">
                   <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-[#7a7a76]" />
                   <Input 
+                    id="search-available-integrations-input"
+                    title="Rechercher des intégrations disponibles"
                     placeholder="Search integrations"
                     value={availableSearchQuery}
                     onChange={(e) => setAvailableSearchQuery(e.target.value)}
@@ -1264,6 +1284,8 @@ export default function IntegrationsPage() {
                 type="button" 
                 onClick={() => setShowAddScratchModal(false)}
                 className="text-[#7a7a76] hover:text-[#26251e] p-1 rounded-md hover:bg-slate-100"
+                title="Fermer"
+                aria-label="Fermer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -1284,6 +1306,8 @@ export default function IntegrationsPage() {
                   <h4 className="font-bold text-[11px] text-[#26251e] mb-1">Build integration from scratch</h4>
                   <input 
                     type="radio" 
+                    title="Build integration from scratch"
+                    aria-label="Build integration from scratch"
                     checked={customType === 'scratch'} 
                     onChange={() => setCustomType('scratch')}
                     className="text-[#059669] focus:ring-[#059669] mt-2" 
@@ -1301,6 +1325,8 @@ export default function IntegrationsPage() {
                   <h4 className="font-bold text-[11px] text-[#26251e] mb-1">Connect remote MCP</h4>
                   <input 
                     type="radio" 
+                    title="Connect remote MCP"
+                    aria-label="Connect remote MCP"
                     checked={customType === 'mcp'} 
                     onChange={() => setCustomType('mcp')}
                     className="text-[#059669] focus:ring-[#059669] mt-2" 
@@ -1318,6 +1344,8 @@ export default function IntegrationsPage() {
                   <h4 className="font-bold text-[11px] text-[#26251e] mb-1">Connect Remote Agent (A2A)</h4>
                   <input 
                     type="radio" 
+                    title="Connect Remote Agent (A2A)"
+                    aria-label="Connect Remote Agent (A2A)"
                     checked={customType === 'a2a'} 
                     onChange={() => setCustomType('a2a')}
                     className="text-[#059669] focus:ring-[#059669] mt-2" 
@@ -1328,8 +1356,10 @@ export default function IntegrationsPage() {
 
             {/* Inputs */}
             <div className="space-y-1.5">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Name</label>
+              <label htmlFor="custom-integration-name" className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Name</label>
               <input 
+                id="custom-integration-name"
+                title="Nom de l'intégration"
                 type="text" 
                 required
                 placeholder="Enter integration name"
@@ -1340,8 +1370,10 @@ export default function IntegrationsPage() {
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Integration description</label>
+              <label htmlFor="custom-integration-description" className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Integration description</label>
               <textarea 
+                id="custom-integration-description"
+                title="Description de l'intégration"
                 placeholder="Enter integration description"
                 value={customDescription}
                 onChange={(e) => setCustomDescription(e.target.value)}
@@ -1389,8 +1421,10 @@ export default function IntegrationsPage() {
             ) : (
               <>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Adresse e-mail</label>
+                  <label htmlFor="invite-email-input" className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Adresse e-mail</label>
                   <input 
+                    id="invite-email-input"
+                    title="Adresse e-mail"
                     type="email" 
                     required
                     placeholder="Ex: collaborateur@agence.com"
@@ -1460,6 +1494,9 @@ export default function IntegrationsPage() {
               <p className="text-xs text-[#7a7a76] text-left">Donnez un nom à votre projet de prospection.</p>
             </div>
             <input 
+              id="new-project-name-input"
+              title="Nom du projet"
+              aria-label="Nom du projet"
               type="text" 
               placeholder="Ex: Campagne Dentistes Paris"
               value={newProjectName}

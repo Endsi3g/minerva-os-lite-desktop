@@ -63,6 +63,16 @@ interface ChatSession {
   activeTools: string[];
 }
 
+function ProgressBar({ progress }: { progress: number }) {
+  const ref = React.useRef<HTMLDivElement>(null);
+  React.useEffect(() => {
+    if (ref.current) {
+      ref.current.style.width = `${progress}%`;
+    }
+  }, [progress]);
+  return <div ref={ref} className="bg-[#f54e00] h-full rounded-full transition-all" />;
+}
+
 export default function ChatPage() {
   const { t, locale } = useLanguage();
   
@@ -453,6 +463,8 @@ export default function ChatPage() {
         onChange={handleFileChange} 
         className="hidden" 
         accept=".pdf,.doc,.docx,.txt,.csv,.png,.jpg"
+        title="Sélectionner des fichiers"
+        aria-label="Sélectionner des fichiers"
       />
 
       {/* Main Chat Layout Area (width splits dynamically when canvas is open) */}
@@ -563,6 +575,8 @@ export default function ChatPage() {
                       <button 
                         onClick={() => setAppConnectClosed(true)}
                         className="p-1 rounded-full hover:bg-neutral-200/50 text-[#7a7a76] hover:text-[#26251e] transition-colors"
+                        title="Fermer"
+                        aria-label="Fermer"
                       >
                         <X className="w-3.5 h-3.5" />
                       </button>
@@ -710,6 +724,7 @@ export default function ChatPage() {
                             const altText = para.match(/\[([^\]]+)\]/)?.[1] || 'Visuel';
                             return (
                               <div key={pidx} className="my-2 border border-neutral-100 rounded-lg overflow-hidden shadow-xs">
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
                                 <img src={imgUrl} alt={altText} className="w-full h-auto object-cover max-h-48" />
                               </div>
                             );
@@ -785,7 +800,7 @@ export default function ChatPage() {
                       <p className="font-semibold text-[10px] text-[#26251e] truncate">{att.name}</p>
                       {att.progress < 100 ? (
                         <div className="w-full bg-slate-200 h-1 rounded-full overflow-hidden mt-0.5">
-                          <div className="bg-[#f54e00] h-full rounded-full transition-all" style={{ width: `${att.progress}%` }} />
+                          <ProgressBar progress={att.progress} />
                         </div>
                       ) : (
                         <p className="text-[8px] text-[#7a7a76] mt-0.5 leading-none">Chargé</p>
@@ -794,6 +809,8 @@ export default function ChatPage() {
                     <button 
                       onClick={() => deleteAttachment(att.id)}
                       className="p-0.5 rounded-full hover:bg-red-100 text-[#7a7a76] hover:text-red-600 transition-colors"
+                      title="Supprimer l'attachement"
+                      aria-label="Supprimer l'attachement"
                     >
                       <X className="w-3.5 h-3.5" />
                     </button>

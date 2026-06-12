@@ -423,7 +423,7 @@ export function ProspectingRoot() {
               <div className="w-full bg-border h-2 rounded-full overflow-hidden">
                 <div 
                   className="bg-primary h-full transition-all duration-500 ease-out rounded-full" 
-                  style={{ width: `${scrapeProgress}%` }}
+                  style={{ ['--progress' as string]: `${scrapeProgress}%`, width: 'var(--progress)' } as React.CSSProperties}
                 />
               </div>
               <div className="flex items-center justify-between text-[10px] text-muted-foreground font-mono">
