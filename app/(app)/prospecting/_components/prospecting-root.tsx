@@ -244,8 +244,9 @@ export function ProspectingRoot() {
   };
 
   return (
-    <div className="h-full overflow-y-auto bg-background">
-      <div className="max-w-6xl mx-auto p-6 space-y-6">
+    <div className="h-full overflow-y-auto bg-white relative">
+      <div className="absolute inset-0 opacity-[0.25] pointer-events-none bg-grid-pattern-20" />
+      <div className="max-w-6xl mx-auto p-6 space-y-6 relative z-10">
         
         {/* Title Header */}
         <div className="space-y-1">

@@ -409,7 +409,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
 
         {/* Sidebar Navigation */}
         <div className="flex-1 overflow-y-auto overflow-x-hidden py-3 space-y-4">
-          {!isCollapsed ? (
+          {pathname.startsWith('/chat') && (!isCollapsed ? (
             <div className="px-3 mb-2">
               <Link
                 href="/chat"
@@ -437,7 +437,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                 </TooltipContent>
               </Tooltip>
             </div>
-          )}
+          ))}
           
           <nav className={cn("space-y-[2px]", isCollapsed ? "px-2" : "px-3")}>
             {navItems.map((item) => {

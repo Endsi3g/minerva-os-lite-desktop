@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+
 import { 
   Paperclip, 
   Send, 
@@ -27,10 +28,15 @@ import {
   Minimize2,
   CheckCircle2,
   Database,
-  ArrowRight
+  ArrowRight,
+  Folder,
+  SlidersHorizontal,
+  ArrowUp,
+  Plus
 } from 'lucide-react';
 import { useLanguage } from '@/lib/language-context';
 import { cn } from '@/lib/utils';
+import { MinervaIcon } from '@/components/icons';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -78,17 +84,21 @@ export default function ChatPage() {
   
   // Model and Tool list options
   const models = [
-    { id: 'anthropic/claude-3-5-sonnet', name: 'Claude 3.5 Sonnet', icon: Sparkles, desc: 'Recommandé - Modèle le plus intelligent' },
-    { id: 'openai/gpt-4o', name: 'GPT-4o', icon: Bot, desc: 'Traitement rapide et équilibré' },
-    { id: 'meta-llama/llama-3-8b-instruct:free', name: 'Llama 3 8B (Free)', icon: Database, desc: 'Modèle léger et gratuit' },
-    { id: 'mistralai/mistral-7b-instruct:free', name: 'Mistral 7B (Free)', icon: Database, desc: 'Alternative européenne gratuite' }
+    { id: 'openai/gpt-5.2', name: 'GPT-5.2', icon: Sparkles, desc: 'Modèle de pointe (GDPR)' },
+    { id: 'openai/gpt-5.2-thinking', name: 'GPT-5.2 Thinking', icon: Sparkles, desc: 'Modèle avec réflexion avancée (GDPR)' },
+    { id: 'openai/gpt-5.1', name: 'GPT-5.1', icon: Sparkles, desc: 'Recommandé - Modèle le plus intelligent' },
+    { id: 'openai/gpt-5.1-thinking', name: 'GPT-5.1 Thinking', icon: Sparkles, desc: 'Logique avec réflexion active' },
+    { id: 'openai/gpt-5.1-thinking-fast', name: 'GPT-5.1 Thinking Fast', icon: Sparkles, desc: 'Raisonnement ultra-rapide' },
+    { id: 'openai/gpt-5', name: 'GPT-5', icon: Sparkles, desc: 'Modèle standard performant' },
+    { id: 'openai/gpt-5-thinking', name: 'GPT-5 Thinking', icon: Sparkles, desc: 'Modèle standard avec réflexion' }
   ];
 
   const tools = [
     { id: 'web_search', label: t('chat.web_search') || 'Recherche Web', icon: Globe },
     { id: 'deep_research', label: t('chat.deep_research') || 'Recherche approfondie', icon: Sparkles },
     { id: 'canvas', label: t('chat.canvas') || 'Canvas', icon: FileText },
-    { id: 'knowledge', label: t('chat.knowledge') || 'Connaissance entreprise', icon: Database }
+    { id: 'knowledge', label: t('chat.knowledge') || 'Connaissance entreprise', icon: Database },
+    { id: 'image', label: t('chat.image') || 'Générer une image', icon: ImageIcon }
   ];
 
   // Component States
@@ -453,6 +463,281 @@ export default function ChatPage() {
     document.body.removeChild(element);
   };
 
+  const getGreetingText = () => {
+    const hour = new Date().getHours();
+    let timeGreeting = "Good morning!";
+    if (hour >= 12 && hour < 18) timeGreeting = "Good afternoon!";
+    else if (hour >= 18 || hour < 5) timeGreeting = "Good evening!";
+    
+    if (locale === 'fr') {
+      if (hour >= 5 && hour < 12) timeGreeting = "Bon matin !";
+      else if (hour >= 12 && hour < 18) timeGreeting = "Bon après-midi !";
+      else timeGreeting = "Bonsoir !";
+    }
+
+    if (currentSession && currentSession.messages.length > 0) {
+      return locale === 'fr' ? "Toujours là ! Comment puis-je vous aider ?" : "Still at it! What can I help with?";
+    }
+    return `${timeGreeting} ${locale === 'fr' ? "Comment puis-je vous aider ?" : "What can I help with?"}`;
+  };
+
+  const renderInputCard = (isCentered: boolean) => {
+    return (
+      <div className={cn(
+        "w-full bg-white border border-[#e5e5e0] rounded-2xl shadow-xs transition-all flex flex-col focus-within:ring-1 focus-within:ring-[#059669]/40 focus-within:border-[#059669]/50 overflow-hidden",
+        isCentered ? "max-w-2xl mx-auto" : "w-full"
+      )}>
+        {/* Attached files row inside the card */}
+        {attachments.length > 0 && (
+          <div className="flex flex-wrap gap-2 p-3 border-b border-[#e5e5e0]/30 bg-slate-50/20">
+            {attachments.map(att => (
+              <div 
+                key={att.id} 
+                className="relative flex items-center gap-2.5 px-3 py-2 rounded-xl bg-white border border-[#e5e5e0] text-xs max-w-[200px] select-none animate-in fade-in zoom-in-95 duration-150 pr-8"
+              >
+                {/* File Icon */}
+                <div className="w-7 h-7 rounded bg-[#d93025] flex items-center justify-center text-white shrink-0 font-bold text-[9px] shadow-3xs uppercase">
+                  pdf
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="font-bold text-[10px] text-[#26251e] truncate">{att.name}</p>
+                  {att.progress < 100 ? (
+                    <div className="w-full bg-slate-200 h-0.5 rounded-full overflow-hidden mt-0.5">
+                      <ProgressBar progress={att.progress} />
+                    </div>
+                  ) : (
+                    <p className="text-[9px] text-[#7a7a76] mt-0.5 leading-none">Document</p>
+                  )}
+                </div>
+                <button 
+                  type="button"
+                  onClick={() => deleteAttachment(att.id)}
+                  className="absolute -top-1.5 -right-1.5 w-4.5 h-4.5 bg-black hover:bg-neutral-800 text-white rounded-full flex items-center justify-center border border-white shadow-xs transition-colors"
+                  title="Supprimer"
+                  aria-label="Supprimer"
+                >
+                  <X className="w-2.5 h-2.5" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Textarea */}
+        <textarea
+          ref={isCentered ? undefined : textareaRef}
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          placeholder={locale === 'fr' ? "Demandez n'importe quoi, @ pour le contexte..." : "Ask anything, @ for context and skills"}
+          rows={1}
+          className="w-full text-xs p-3 bg-transparent border-0 outline-hidden focus:ring-0 resize-none min-h-[44px] text-[#26251e] placeholder:text-[#7a7a76]"
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault();
+              handleSendMessage();
+            }
+          }}
+        />
+
+        {/* Actions bottom row inside the card */}
+        <div className="flex items-center justify-between pb-2 px-3">
+          {/* Left: Plus & Tools */}
+          <div className="flex items-center gap-1.5">
+            {/* Plus button popover */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <button type="button" className="w-7 h-7 rounded-full hover:bg-[#e5e5e2]/60 border border-[#e5e5e0] flex items-center justify-center text-[#7a7a76] hover:text-[#26251e] transition-colors">
+                  <Plus className="w-3.5 h-3.5" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-40 p-1 border border-[#e5e5e0] bg-white rounded-lg shadow-lg z-50 text-left">
+                <button
+                  type="button"
+                  onClick={handleAttachmentClick}
+                  className="w-full text-left px-2.5 py-1.5 text-xs rounded hover:bg-[#e5e5e2]/50 transition-colors flex items-center gap-2 text-[#26251e] font-semibold"
+                >
+                  <Paperclip className="w-3.5 h-3.5 text-[#059669]" />
+                  <span>{locale === 'fr' ? "Importer un fichier" : "Upload file"}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    // select from existing simulation
+                  }}
+                  className="w-full text-left px-2.5 py-1.5 text-xs rounded hover:bg-[#e5e5e2]/50 transition-colors flex items-center gap-2 text-[#26251e] font-semibold"
+                >
+                  <Folder className="w-3.5 h-3.5 text-[#059669]" />
+                  <span>{locale === 'fr' ? "Sélectionner un fichier" : "Select file"}</span>
+                </button>
+              </PopoverContent>
+            </Popover>
+
+            {/* Tools button/pill */}
+            <Popover>
+              <PopoverTrigger asChild>
+                {activeTools.includes('canvas') ? (
+                  <button type="button" className="flex items-center gap-1.5 h-7 px-3.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-[#3b82f6]/10 border border-[#3b82f6]/20 text-[#2563eb] transition-all hover:bg-[#3b82f6]/15">
+                    <FileText className="w-3 h-3 shrink-0" />
+                    <span>Canvas</span>
+                  </button>
+                ) : activeTools.includes('web_search') ? (
+                  <button type="button" className="flex items-center gap-1.5 h-7 px-3.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-[#3b82f6]/10 border border-[#3b82f6]/20 text-[#2563eb] transition-all hover:bg-[#3b82f6]/15">
+                    <Globe className="w-3 h-3 shrink-0" />
+                    <span>Web Search</span>
+                  </button>
+                ) : activeTools.includes('deep_research') ? (
+                  <button type="button" className="flex items-center gap-1.5 h-7 px-3.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-[#3b82f6]/10 border border-[#3b82f6]/20 text-[#2563eb] transition-all hover:bg-[#3b82f6]/15">
+                    <Sparkles className="w-3 h-3 shrink-0" />
+                    <span>Deep Research</span>
+                  </button>
+                ) : activeTools.includes('knowledge') ? (
+                  <button type="button" className="flex items-center gap-1.5 h-7 px-3.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-[#3b82f6]/10 border border-[#3b82f6]/20 text-[#2563eb] transition-all hover:bg-[#3b82f6]/15">
+                    <Database className="w-3 h-3 shrink-0" />
+                    <span>Knowledge</span>
+                  </button>
+                ) : activeTools.includes('image') ? (
+                  <button type="button" className="flex items-center gap-1.5 h-7 px-3.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-[#3b82f6]/10 border border-[#3b82f6]/20 text-[#2563eb] transition-all hover:bg-[#3b82f6]/15">
+                    <ImageIcon className="w-3 h-3 shrink-0" />
+                    <span>Image</span>
+                  </button>
+                ) : (
+                  <button type="button" className="flex items-center gap-1.5 h-7 px-3 rounded-full text-[10px] font-bold uppercase tracking-wider bg-white text-[#7a7a76] border border-[#e5e5e0] hover:border-[#7a7a76] hover:text-[#26251e] transition-all">
+                    <SlidersHorizontal className="w-3 h-3 shrink-0" />
+                    <span>Tools</span>
+                  </button>
+                )}
+              </PopoverTrigger>
+              <PopoverContent className="w-56 p-1 border border-[#e5e5e0] bg-white rounded-lg shadow-lg z-50 text-left">
+                {tools.map(tool => {
+                  const isToolActive = activeTools.includes(tool.id);
+                  return (
+                    <button
+                      key={tool.id}
+                      type="button"
+                      onClick={() => toggleTool(tool.id)}
+                      className="w-full text-left px-2.5 py-1.5 text-xs rounded hover:bg-[#e5e5e2]/50 transition-colors flex items-center justify-between text-[#26251e] font-semibold"
+                    >
+                      <span className="flex items-center gap-2">
+                        <tool.icon className="w-3.5 h-3.5 text-[#059669]" />
+                        <span>{tool.label}</span>
+                      </span>
+                      {isToolActive && <Check className="w-3.5 h-3.5 text-[#059669]" />}
+                    </button>
+                  );
+                })}
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          {/* Right: Model & Send */}
+          <div className="flex items-center gap-2">
+            {/* Model Selector */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <button type="button" className="h-7 text-xs font-semibold text-[#555552] hover:bg-[#e5e5e2]/60 flex items-center gap-1 px-2 rounded-md hover:text-[#26251e] transition-colors select-none">
+                  <selectedModel.icon className="w-3.5 h-3.5 text-[#059669]" />
+                  <span>{selectedModel.name}</span>
+                  <ChevronDown className="w-3 h-3 text-[#7a7a76]" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-64 p-1 border border-[#e5e5e0] bg-white rounded-lg shadow-lg z-50 text-left">
+                {models.map((m) => (
+                  <button
+                    key={m.id}
+                    type="button"
+                    onClick={() => setSelectedModel(m)}
+                    className="w-full text-left px-2.5 py-2 text-xs rounded hover:bg-[#e5e5e2]/50 transition-colors flex items-start gap-2.5"
+                  >
+                    <m.icon className="w-4 h-4 text-[#059669] shrink-0 mt-0.5" />
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold text-[#26251e] flex items-center justify-between">
+                        <span>{m.name}</span>
+                        {selectedModel.id === m.id && <Check className="w-3 h-3 text-emerald-600" />}
+                      </div>
+                      <p className="text-[10px] text-[#7a7a76] truncate leading-normal mt-0.5">{m.desc}</p>
+                    </div>
+                  </button>
+                ))}
+              </PopoverContent>
+            </Popover>
+
+            {/* Voice Input */}
+            <button type="button" className="w-7 h-7 rounded-full hover:bg-[#e5e5e2]/60 flex items-center justify-center text-[#7a7a76] hover:text-[#26251e] transition-colors">
+              <Mic className="w-3.5 h-3.5" />
+            </button>
+
+            {/* Send/Stop Button */}
+            {isLoading ? (
+              <button 
+                type="button"
+                onClick={() => setIsLoading(false)}
+                className="w-7 h-7 rounded-full bg-[#26251e] text-white flex items-center justify-center transition-colors"
+              >
+                <div className="w-2.5 h-2.5 bg-white rounded-xs" />
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => handleSendMessage()}
+                disabled={!input.trim() && attachments.length === 0}
+                className={cn(
+                  "w-7 h-7 rounded-full flex items-center justify-center transition-all duration-200",
+                  (input.trim() || attachments.length > 0)
+                    ? "bg-[#2563eb] text-white hover:bg-[#1d4ed8]"
+                    : "bg-[#e5e5e2]/80 text-[#7a7a76] cursor-not-allowed"
+                )}
+              >
+                <ArrowUp className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Apps Connections Prompt Box inside the card */}
+        {isCentered && !appConnectClosed && (
+          <div className="w-full border-t border-[#e5e5e0]/60 p-3 bg-[#fcfcfb] rounded-b-2xl flex items-center justify-between gap-4 text-left select-none animate-in slide-in-from-top-1 duration-150">
+            <span className="text-[10px] font-semibold text-[#7a7a76]">Connect your apps to Minerva OS</span>
+            <div className="flex items-center gap-3 shrink-0">
+              {/* Brand icon previews */}
+              <div className="flex -space-x-1 items-center">
+                <div className="w-5.5 h-5.5 rounded-full border border-white bg-white shadow-xs flex items-center justify-center" title="Google Drive">
+                  <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M14.43 10L19.44 18.66H9.42L4.41 10H14.43ZM8.57 2H18.57L23.59 10.66H13.58L8.57 2ZM0.41 10.66L5.42 2H9.08L4.07 10.66H0.41Z" fill="#0F9D58" />
+                  </svg>
+                </div>
+                <div className="w-5.5 h-5.5 rounded-full border border-white bg-white shadow-xs flex items-center justify-center" title="Gmail">
+                  <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z" fill="#DB4437" />
+                  </svg>
+                </div>
+                <div className="w-5.5 h-5.5 rounded-full border border-white bg-[#0078d4] shadow-xs flex items-center justify-center font-bold text-[8px] text-white" title="Outlook">
+                  O
+                </div>
+                <div className="w-5.5 h-5.5 rounded-full border border-white bg-black shadow-xs flex items-center justify-center font-semibold text-[8px] text-white" title="Notion">
+                  N
+                </div>
+                <div className="w-5.5 h-5.5 rounded-full border border-white bg-white shadow-xs flex items-center justify-center" title="Slack">
+                  <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M5.042 15.165a2.528 2.528 0 0 1-2.52 2.523 2.528 2.528 0 0 1-2.522-2.523 2.528 2.528 0 0 1 2.522-2.52h2.52v2.52zm1.261 0a2.528 2.528 0 0 1 2.52-2.52h5.043a2.528 2.528 0 0 1 2.522 2.52v5.042a2.528 2.528 0 0 1-2.522 2.52H8.823a2.528 2.528 0 0 1-2.52-2.52v-5.042zM8.823 5.043a2.528 2.528 0 0 1-2.52-2.522A2.528 2.528 0 0 1 8.823 0a2.528 2.528 0 0 1 2.52 2.521v2.522h-2.52zm0 1.261a2.528 2.528 0 0 1 2.52 2.52v5.043a2.528 2.528 0 0 1-2.52 2.522H3.78a2.528 2.528 0 0 1-2.522-2.522V8.824a2.528 2.528 0 0 1 2.522-2.52h5.043zm10.135 3.761a2.528 2.528 0 0 1 2.522-2.52 2.528 2.528 0 0 1 2.52 2.52 2.528 2.528 0 0 1-2.52 2.522h-2.522v-2.522zm-1.262 0a2.528 2.528 0 0 1-2.52 2.52H10.09a2.528 2.528 0 0 1-2.52-2.52V5.043a2.528 2.528 0 0 1 2.52-2.522h5.043a2.528 2.528 0 0 1 2.52 2.522v5.043zm-3.76 10.135a2.528 2.528 0 0 1 2.52 2.522A2.528 2.528 0 0 1 15.176 24a2.528 2.528 0 0 1-2.52-2.521v-2.522h2.52zm0-1.262a2.528 2.528 0 0 1-2.52-2.52v-5.043a2.528 2.528 0 0 1 2.52-2.52h5.042a2.528 2.528 0 0 1 2.522 2.52v5.043a2.528 2.528 0 0 1-2.522 2.52h-5.042z" fill="#36C5F0"/>
+                  </svg>
+                </div>
+              </div>
+              <button 
+                type="button"
+                onClick={() => setAppConnectClosed(true)}
+                className="p-1 rounded-full hover:bg-neutral-200/50 text-[#7a7a76] hover:text-[#26251e] transition-colors"
+                title="Fermer"
+                aria-label="Fermer"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="flex h-full w-full bg-white select-none overflow-hidden relative">
       {/* Hidden file selector */}
@@ -476,61 +761,7 @@ export default function ChatPage() {
         {/* Top Header bar with Model & Tool pill selector */}
         <div className="flex h-12 shrink-0 items-center justify-between border-b border-[#e5e5e0] bg-white px-6">
           <div className="flex items-center gap-2">
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="h-8 text-xs font-semibold text-[#26251e] hover:bg-[#e5e5e2]/60 flex items-center gap-1.5 px-2.5 rounded-md"
-                >
-                  <selectedModel.icon className="w-3.5 h-3.5 text-[#f54e00]" />
-                  <span>{selectedModel.name}</span>
-                  <ChevronDown className="w-3 h-3 text-[#7a7a76]" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-64 p-1 border border-[#e5e5e0] bg-white rounded-lg shadow-lg z-50 text-left">
-                {models.map((m) => (
-                  <button
-                    key={m.id}
-                    onClick={() => setSelectedModel(m)}
-                    className="w-full text-left px-2.5 py-2 text-xs rounded hover:bg-[#e5e5e2]/50 transition-colors flex items-start gap-2.5"
-                  >
-                    <m.icon className="w-4 h-4 text-[#f54e00] shrink-0 mt-0.5" />
-                    <div className="flex-1 min-w-0">
-                      <div className="font-semibold text-[#26251e] flex items-center justify-between">
-                        <span>{m.name}</span>
-                        {selectedModel.id === m.id && <Check className="w-3 h-3 text-emerald-600" />}
-                      </div>
-                      <p className="text-[10px] text-[#7a7a76] truncate leading-normal mt-0.5">{m.desc}</p>
-                    </div>
-                  </button>
-                ))}
-              </PopoverContent>
-            </Popover>
-
-            <div className="h-4 w-px bg-[#e5e5e0]" />
-
-            {/* Active Tool triggers */}
-            <div className="flex items-center gap-1">
-              {tools.map(tool => {
-                const isToolActive = activeTools.includes(tool.id);
-                return (
-                  <button
-                    key={tool.id}
-                    onClick={() => toggleTool(tool.id)}
-                    className={cn(
-                      "flex items-center gap-1 h-7 px-2.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all",
-                      isToolActive 
-                        ? "bg-[#26251e] text-white border border-[#26251e]" 
-                        : "bg-white text-[#7a7a76] border border-[#e5e5e0] hover:border-[#7a7a76] hover:text-[#26251e]"
-                    )}
-                  >
-                    <tool.icon className="w-3 h-3 shrink-0" />
-                    <span>{tool.label}</span>
-                  </button>
-                );
-              })}
-            </div>
+            <span className="text-xs font-bold text-[#26251e] uppercase tracking-wider">Copilot</span>
           </div>
 
           <Button 
@@ -539,139 +770,99 @@ export default function ChatPage() {
             size="sm" 
             className="h-8 text-xs font-semibold text-[#555552] hover:bg-[#e5e5e2]/60 px-2.5 border border-[#e5e5e0] rounded-md"
           >
-            New Chat
+            {locale === 'fr' ? 'Nouveau Chat' : 'New Chat'}
           </Button>
         </div>
 
         {/* Messaging Container */}
-        <div className="flex-1 overflow-y-auto min-h-0 scrollbar-thin p-6">
-          <div className="max-w-2xl mx-auto flex flex-col gap-6">
+        <div className="flex-1 overflow-y-auto min-h-0 scrollbar-thin p-6 flex flex-col">
+          <div className={cn(
+            "max-w-2xl mx-auto flex flex-col gap-6 w-full",
+            (!currentSession || currentSession.messages.length === 0) ? "my-auto justify-center" : "flex-1"
+          )}>
             
             {/* Show greeting and tools suggestions if conversation is empty */}
             {(!currentSession || currentSession.messages.length === 0) ? (
-              <div className="py-8 space-y-8 animate-in fade-in duration-300">
+              <div className="py-8 space-y-8 animate-in fade-in duration-300 flex flex-col justify-center">
                 
-                {/* Apps Connections Prompt Box */}
-                {!appConnectClosed && (
-                  <div className="p-4 bg-amber-500/5 border border-amber-500/10 rounded-xl flex items-center justify-between gap-4 text-left animate-in slide-in-from-top-2 duration-200">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-lg bg-amber-500/10 text-amber-600 shrink-0">
-                        <Link2 className="w-4 h-4" />
-                      </div>
-                      <div className="min-w-0">
-                        <h4 className="text-xs font-bold text-[#26251e]">{t('chat.connect_apps')}</h4>
-                        <p className="text-[10px] text-[#7a7a76] leading-normal mt-0.5">
-                          Synchronisez vos e-mails de prospection, documents et notes pour enrichir l&apos;IA.
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2.5 shrink-0">
-                      {/* Brand icon previews */}
-                      <div className="flex -space-x-1">
-                        <div className="w-5 h-5 rounded-full border border-white bg-white shadow-xs flex items-center justify-center font-bold text-[8px] text-blue-600">G</div>
-                        <div className="w-5 h-5 rounded-full border border-white bg-white shadow-xs flex items-center justify-center font-bold text-[8px] text-emerald-600">N</div>
-                        <div className="w-5 h-5 rounded-full border border-white bg-white shadow-xs flex items-center justify-center font-bold text-[8px] text-purple-600">S</div>
-                      </div>
-                      <button 
-                        onClick={() => setAppConnectClosed(true)}
-                        className="p-1 rounded-full hover:bg-neutral-200/50 text-[#7a7a76] hover:text-[#26251e] transition-colors"
-                        title="Fermer"
-                        aria-label="Fermer"
-                      >
-                        <X className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                )}
+                {/* Logo Badge */}
+                <div className="flex justify-center items-center gap-1.5 py-1 px-3 bg-white border border-[#e5e5e0] rounded-full text-xs font-semibold text-[#26251e] mx-auto w-fit shadow-3xs select-none">
+                  <MinervaIcon size={14} className="text-[#059669]" />
+                  <span>Minerva Copilot</span>
+                </div>
 
                 {/* Big Centered Greeting */}
-                <div className="text-center space-y-3 pt-6">
-                  <div className="w-12 h-12 rounded-2xl bg-white border border-[#e5e5e0] shadow-sm flex items-center justify-center mx-auto text-[#f54e00] font-bold text-lg">
-                    M
-                  </div>
-                  <h1 className="text-xl font-bold tracking-tight text-[#26251e]">
-                    {getGreeting()}
+                <div className="text-center space-y-3">
+                  <h1 className="text-2xl font-bold tracking-tight text-[#26251e]">
+                    {getGreetingText()}
                   </h1>
                 </div>
 
-                {/* Quick Action Suggestion Cards */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-xl mx-auto">
-                  <button 
-                    onClick={() => handleSuggestClick("Rédiger un email de prospection pour la boulangerie L'Épi d'Or")}
-                    className="p-3 bg-white hover:bg-[#e5e5e2]/30 border border-[#e5e5e0] hover:border-[#7a7a76] rounded-xl text-left transition-all group flex items-start gap-3"
-                  >
-                    <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-600 shrink-0 mt-0.5">
-                      <FileText className="w-4 h-4" />
-                    </div>
-                    <div className="min-w-0">
-                      <h3 className="text-xs font-bold text-[#26251e] flex items-center gap-1">
-                        <span>Créer un document</span>
-                        <ArrowRight className="w-3 h-3 text-[#7a7a76] opacity-0 group-hover:opacity-100 transition-opacity" />
-                      </h3>
-                      <p className="text-[10px] text-[#7a7a76] mt-0.5 leading-normal">
-                        Rédigez des propositions commerciales et ouvrez-les directement dans le Canvas.
-                      </p>
-                    </div>
-                  </button>
-
-                  <button 
-                    onClick={() => handleSuggestClick("Génère un rapport d'analyse de mes performances de prospection locales")}
-                    className="p-3 bg-white hover:bg-[#e5e5e2]/30 border border-[#e5e5e0] hover:border-[#7a7a76] rounded-xl text-left transition-all group flex items-start gap-3"
-                  >
-                    <div className="p-2 rounded-lg bg-blue-500/10 text-blue-600 shrink-0 mt-0.5">
-                      <BarChart3 className="w-4 h-4" />
-                    </div>
-                    <div className="min-w-0">
-                      <h3 className="text-xs font-bold text-[#26251e] flex items-center gap-1">
-                        <span>Visualiser les données</span>
-                        <ArrowRight className="w-3 h-3 text-[#7a7a76] opacity-0 group-hover:opacity-100 transition-opacity" />
-                      </h3>
-                      <p className="text-[10px] text-[#7a7a76] mt-0.5 leading-normal">
-                        Calculez les indicateurs de performance clés (KPI) et taux de closing.
-                      </p>
-                    </div>
-                  </button>
-
-                  <button 
-                    onClick={() => handleSuggestClick("Générer un visuel promotionnel minimaliste pour notre agence de marketing")}
-                    className="p-3 bg-white hover:bg-[#e5e5e2]/30 border border-[#e5e5e0] hover:border-[#7a7a76] rounded-xl text-left transition-all group flex items-start gap-3"
-                  >
-                    <div className="p-2 rounded-lg bg-orange-500/10 text-orange-600 shrink-0 mt-0.5">
-                      <ImageIcon className="w-4 h-4" />
-                    </div>
-                    <div className="min-w-0">
-                      <h3 className="text-xs font-bold text-[#26251e] flex items-center gap-1">
-                        <span>Générer une image</span>
-                        <ArrowRight className="w-3 h-3 text-[#7a7a76] opacity-0 group-hover:opacity-100 transition-opacity" />
-                      </h3>
-                      <p className="text-[10px] text-[#7a7a76] mt-0.5 leading-normal">
-                        Créez des mockups ou des bannières à intégrer à vos documents.
-                      </p>
-                    </div>
-                  </button>
-
-                  <button 
-                    onClick={() => handleSuggestClick("Aide-moi à structurer mon plan d'onboarding pour de nouveaux clients")}
-                    className="p-3 bg-white hover:bg-[#e5e5e2]/30 border border-[#e5e5e0] hover:border-[#7a7a76] rounded-xl text-left transition-all group flex items-start gap-3"
-                  >
-                    <div className="p-2 rounded-lg bg-purple-500/10 text-purple-600 shrink-0 mt-0.5">
-                      <Sparkles className="w-4 h-4" />
-                    </div>
-                    <div className="min-w-0">
-                      <h3 className="text-xs font-bold text-[#26251e] flex items-center gap-1">
-                        <span>Assistant Onboarding</span>
-                        <ArrowRight className="w-3 h-3 text-[#7a7a76] opacity-0 group-hover:opacity-100 transition-opacity" />
-                      </h3>
-                      <p className="text-[10px] text-[#7a7a76] mt-0.5 leading-normal">
-                        Consultez des playbooks de vente pour maximiser l&apos;activation des leads.
-                      </p>
-                    </div>
-                  </button>
+                {/* Centered Input Card */}
+                <div className="w-full max-w-xl mx-auto">
+                  {renderInputCard(true)}
                 </div>
+
+                {/* Quick Action Suggestion Cards */}
+                <div className="flex flex-col gap-2.5 items-center w-full max-w-xl mx-auto">
+                  <div className="flex flex-wrap justify-center gap-2">
+                    <button 
+                      type="button"
+                      onClick={() => handleSuggestClick(locale === 'fr' ? "Consulter la base de connaissances" : "Consult company knowledge base")}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-[#e5e5e2]/30 border border-[#e5e5e0] hover:border-[#7a7a76] rounded-full text-xs font-semibold text-[#26251e] transition-all"
+                    >
+                      <Database className="w-3.5 h-3.5 text-[#7a7a76]" />
+                      <span>{locale === 'fr' ? "Connaissance entreprise" : "Company knowledge"}</span>
+                    </button>
+                    <button 
+                      type="button"
+                      onClick={() => handleSuggestClick(locale === 'fr' ? "Rédiger un e-mail de prospection" : "Draft a sales proposal")}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-[#e5e5e2]/30 border border-[#e5e5e0] hover:border-[#7a7a76] rounded-full text-xs font-semibold text-[#26251e] transition-all"
+                    >
+                      <FileText className="w-3.5 h-3.5 text-[#7a7a76]" />
+                      <span>{locale === 'fr' ? "Créer un document" : "Create document"}</span>
+                    </button>
+                    <button 
+                      type="button"
+                      onClick={() => handleSuggestClick(locale === 'fr' ? "Créer une présentation de vente" : "Create a sales presentation")}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-[#e5e5e2]/30 border border-[#e5e5e0] hover:border-[#7a7a76] rounded-full text-xs font-semibold text-[#26251e] transition-all"
+                    >
+                      <Monitor className="w-3.5 h-3.5 text-[#7a7a76]" />
+                      <span>{locale === 'fr' ? "Créer une présentation" : "Create presentation"}</span>
+                    </button>
+                  </div>
+                  <div className="flex flex-wrap justify-center gap-2">
+                    <button 
+                      type="button"
+                      onClick={() => handleSuggestClick(locale === 'fr' ? "Créer un tableur de suivi des leads" : "Create a lead tracking spreadsheet")}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-[#e5e5e2]/30 border border-[#e5e5e0] hover:border-[#7a7a76] rounded-full text-xs font-semibold text-[#26251e] transition-all"
+                    >
+                      <Table className="w-3.5 h-3.5 text-[#7a7a76]" />
+                      <span>{locale === 'fr' ? "Créer un tableur" : "Create spreadsheet"}</span>
+                    </button>
+                    <button 
+                      type="button"
+                      onClick={() => handleSuggestClick(locale === 'fr' ? "Générer un visuel promotionnel" : "Generate promo image")}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-[#e5e5e2]/30 border border-[#e5e5e0] hover:border-[#7a7a76] rounded-full text-xs font-semibold text-[#26251e] transition-all"
+                    >
+                      <ImageIcon className="w-3.5 h-3.5 text-[#7a7a76]" />
+                      <span>{locale === 'fr' ? "Générer une image" : "Generate image"}</span>
+                    </button>
+                    <button 
+                      type="button"
+                      onClick={() => handleSuggestClick(locale === 'fr' ? "Faire une recherche approfondie sur la concurrence locale" : "Run deep research on local competitors")}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-[#e5e5e2]/30 border border-[#e5e5e0] hover:border-[#7a7a76] rounded-full text-xs font-semibold text-[#26251e] transition-all"
+                    >
+                      <Sparkles className="w-3.5 h-3.5 text-[#7a7a76]" />
+                      <span>{locale === 'fr' ? "Recherche approfondie" : "Deep research"}</span>
+                    </button>
+                  </div>
+                </div>
+
               </div>
             ) : (
               // Message Streams
-              <div className="space-y-6">
+              <div className="space-y-6 flex-1 py-4 animate-in fade-in duration-300">
                 {currentSession.messages.map((msg, idx) => {
                   const isUser = msg.role === 'user';
                   
@@ -786,93 +977,14 @@ export default function ChatPage() {
           </div>
         </div>
 
-        {/* Chat input wrapper */}
-        <div className="p-4 bg-white border-t border-[#e5e5e0] shrink-0">
-          <div className="max-w-2xl mx-auto space-y-2 text-left">
-            
-            {/* Attachment capsules preview */}
-            {attachments.length > 0 && (
-              <div className="flex flex-wrap gap-2 pb-2">
-                {attachments.map(att => (
-                  <div key={att.id} className="relative flex items-center gap-2.5 px-3 py-1.5 rounded-full bg-slate-50 border border-slate-200 text-xs max-w-[200px] group select-none">
-                    <FileText className="w-3.5 h-3.5 text-red-500 shrink-0" />
-                    <div className="min-w-0 flex-1">
-                      <p className="font-semibold text-[10px] text-[#26251e] truncate">{att.name}</p>
-                      {att.progress < 100 ? (
-                        <div className="w-full bg-slate-200 h-1 rounded-full overflow-hidden mt-0.5">
-                          <ProgressBar progress={att.progress} />
-                        </div>
-                      ) : (
-                        <p className="text-[8px] text-[#7a7a76] mt-0.5 leading-none">Chargé</p>
-                      )}
-                    </div>
-                    <button 
-                      onClick={() => deleteAttachment(att.id)}
-                      className="p-0.5 rounded-full hover:bg-red-100 text-[#7a7a76] hover:text-red-600 transition-colors"
-                      title="Supprimer l'attachement"
-                      aria-label="Supprimer l'attachement"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Input Box frame container */}
-            <div className="relative border border-[#e5e5e0] bg-white rounded-2xl shadow-xs focus-within:ring-1 focus-within:ring-[#f54e00]/40 focus-within:border-[#f54e00]/50 transition-all flex flex-col p-1">
-              <textarea
-                ref={textareaRef}
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder={t('chat.placeholder') || "Demandez n'importe quoi, @ pour le contexte..."}
-                rows={1}
-                className="w-full text-xs p-3 bg-transparent border-0 outline-hidden focus:ring-0 resize-none min-h-[40px] text-[#26251e]"
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSendMessage();
-                  }
-                }}
-              />
-
-              <div className="flex items-center justify-between border-t border-[#e5e5e0]/40 pt-1 pb-1 px-2">
-                {/* Left tools icons inside input box */}
-                <div className="flex items-center gap-1">
-                  <button 
-                    onClick={handleAttachmentClick}
-                    className="p-1.5 rounded-lg hover:bg-neutral-100 text-[#7a7a76] hover:text-[#26251e] transition-colors"
-                    title="Ajouter une pièce jointe"
-                  >
-                    <Paperclip className="w-4 h-4" />
-                  </button>
-                  
-                  <button 
-                    className="p-1.5 rounded-lg hover:bg-neutral-100 text-[#7a7a76] hover:text-[#26251e] transition-colors"
-                    title="Entrée vocale"
-                  >
-                    <Mic className="w-4 h-4" />
-                  </button>
-                </div>
-
-                {/* Submit button on right */}
-                <Button
-                  onClick={() => handleSendMessage()}
-                  disabled={isLoading || (!input.trim() && attachments.length === 0)}
-                  size="icon"
-                  className={cn(
-                    "w-7 h-7 rounded-xl transition-all duration-200",
-                    (input.trim() || attachments.length > 0) 
-                      ? "bg-[#f54e00] text-white hover:bg-[#d44300]" 
-                      : "bg-neutral-100 text-neutral-400 cursor-not-allowed"
-                  )}
-                >
-                  <Send className="w-3.5 h-3.5" />
-                </Button>
-              </div>
+        {/* Chat input wrapper (rendered at bottom ONLY when chat is active) */}
+        {currentSession && currentSession.messages.length > 0 && (
+          <div className="p-4 bg-white border-t border-[#e5e5e0] shrink-0">
+            <div className="max-w-2xl mx-auto">
+              {renderInputCard(false)}
             </div>
           </div>
-        </div>
+        )}
 
       </div>
 
@@ -883,7 +995,7 @@ export default function ChatPage() {
           {/* Canvas Header */}
           <div className="flex h-12 shrink-0 items-center justify-between border-b border-[#e5e5e0] px-4 select-none">
             <div className="flex items-center gap-2">
-              <div className="p-1 rounded bg-[#f54e00]/10 text-[#f54e00]">
+              <div className="p-1 rounded bg-[#059669]/10 text-[#059669]">
                 <FileText className="w-3.5 h-3.5" />
               </div>
               <span className="text-xs font-bold text-[#26251e] truncate max-w-[200px]">{canvasDoc.title}</span>
@@ -899,7 +1011,7 @@ export default function ChatPage() {
                 size="sm" 
                 className="h-7 text-[10px] font-bold uppercase tracking-wider text-[#555552] hover:bg-[#e5e5e2]/60 px-2 rounded flex items-center gap-1 border border-[#e5e5e0]"
               >
-                <Copy className="w-3 h-3" />
+                <Copy className="w-3.5 h-3.5" />
                 <span>{t('canvas.copy') || 'Copier'}</span>
               </Button>
 
@@ -910,7 +1022,7 @@ export default function ChatPage() {
                     size="sm" 
                     className="h-7 text-[10px] font-bold uppercase tracking-wider text-[#555552] hover:bg-[#e5e5e2]/60 px-2 rounded flex items-center gap-1 border border-[#e5e5e0]"
                   >
-                    <Download className="w-3 h-3" />
+                    <Download className="w-3.5 h-3.5" />
                     <span>{t('canvas.export') || 'Exporter'}</span>
                   </Button>
                 </PopoverTrigger>

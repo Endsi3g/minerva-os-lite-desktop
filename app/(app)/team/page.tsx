@@ -304,7 +304,8 @@ export default function TeamPage() {
   const totalMembersCount = members.length + 1; // +1 for current user
 
   return (
-    <div className="h-full overflow-y-auto bg-neutral-50/40 text-neutral-800 font-sans selection:bg-blue-500/10 relative">
+    <div className="h-full overflow-y-auto bg-white text-[#26251e] font-sans selection:bg-[#059669]/10 relative">
+      <div className="absolute inset-0 opacity-[0.25] pointer-events-none bg-grid-pattern-20 z-0" />
       
       {/* ── Toast Notification (Top Right) ── */}
       {toastMessage && (
@@ -322,11 +323,11 @@ export default function TeamPage() {
         </div>
       )}
 
-      <div className="max-w-5xl mx-auto px-8 py-10 space-y-6">
+      <div className="max-w-5xl mx-auto px-8 py-10 space-y-6 relative z-10">
 
         {/* ── Header ── */}
         <div className="space-y-1">
-          <h1 className="text-2xl font-bold text-neutral-900 tracking-tight">
+          <h1 className="text-2xl font-bold text-[#26251e] tracking-tight">
             {t('team.members_title')}
           </h1>
           <p className="text-xs text-neutral-500 font-medium">
@@ -335,11 +336,11 @@ export default function TeamPage() {
         </div>
 
         {/* ── Banner 1: Plan limits alert ── */}
-        <div className="flex gap-3 bg-[#edf5fd]/80 border border-[#d3e5f8] rounded-lg p-4 text-xs text-neutral-700 leading-relaxed shadow-2xs">
-          <Info className="w-4 h-4 text-[#0066cc] shrink-0 mt-0.5" />
+        <div className="flex gap-3 bg-[#059669]/5 border border-[#059669]/20 rounded-lg p-4 text-xs text-neutral-700 leading-relaxed shadow-2xs">
+          <Info className="w-4 h-4 text-[#059669] shrink-0 mt-0.5" />
           <div>
             <span>{t('team.banner_usage')} </span>
-            <a href="#" className="underline font-semibold hover:text-[#0052a3] transition-colors">
+            <a href="#" className="underline font-semibold hover:text-[#047857] transition-colors">
               {t('team.banner_usage_link')}
             </a>
           </div>
@@ -360,18 +361,18 @@ export default function TeamPage() {
                 </span>
               </div>
             </div>
-            <a href="#" className="text-xs text-blue-600 hover:text-blue-700 font-semibold underline block transition-colors">
+            <a href="#" className="text-xs text-[#059669] hover:text-[#047857] font-semibold underline block transition-colors">
               {t('team.stats_details')}
             </a>
           </div>
         </div>
 
         {/* ── Banner 2: Extra Spend limits alert ── */}
-        <div className="flex gap-3 bg-[#edf5fd]/80 border border-[#d3e5f8] rounded-lg p-4 text-xs text-neutral-700 leading-relaxed shadow-2xs">
-          <Info className="w-4 h-4 text-[#0066cc] shrink-0 mt-0.5" />
+        <div className="flex gap-3 bg-[#059669]/5 border border-[#059669]/20 rounded-lg p-4 text-xs text-neutral-700 leading-relaxed shadow-2xs">
+          <Info className="w-4 h-4 text-[#059669] shrink-0 mt-0.5" />
           <div>
             <span>{t('team.banner_billing')} </span>
-            <a href="#" className="underline font-semibold hover:text-[#0052a3] transition-colors">
+            <a href="#" className="underline font-semibold hover:text-[#047857] transition-colors">
               {t('team.banner_billing_link')}
             </a>
             <span>{locale === 'en' ? t('team.banner_billing_suffix') : '.'}</span>
@@ -399,7 +400,7 @@ export default function TeamPage() {
                   placeholder={t('team.search_placeholder')}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full h-8 pl-9 pr-3 text-xs bg-white border border-neutral-200 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-600 focus:border-blue-600 transition-all placeholder:text-neutral-400 font-medium"
+                  className="w-full h-8 pl-9 pr-3 text-xs bg-white border border-neutral-200 rounded-md focus:outline-none focus:ring-1 focus:ring-[#059669] focus:border-[#059669] transition-all placeholder:text-neutral-400 font-medium"
                 />
               </div>
 
@@ -409,13 +410,13 @@ export default function TeamPage() {
                   onClick={() => setShowFilterPopover(!showFilterPopover)}
                   className={cn(
                     "h-8 w-8 flex items-center justify-center bg-white border border-neutral-200 rounded-md hover:bg-neutral-50 text-neutral-600 transition-colors relative",
-                    (statusFilter !== 'all' || roleFilter !== 'all' || planFilter !== 'all') && "border-blue-500 text-blue-600"
+                    (statusFilter !== 'all' || roleFilter !== 'all' || planFilter !== 'all') && "border-[#059669] text-[#059669]"
                   )}
                   title="Filtres"
                 >
                   <Filter className="w-3.5 h-3.5" />
                   {(statusFilter !== 'all' || roleFilter !== 'all' || planFilter !== 'all') && (
-                    <span className="absolute top-1 right-1 w-1.5 h-1.5 bg-blue-600 rounded-full" />
+                    <span className="absolute top-1 right-1 w-1.5 h-1.5 bg-[#059669] rounded-full" />
                   )}
                 </button>
 
@@ -432,7 +433,7 @@ export default function TeamPage() {
                             setRoleFilter('all');
                             setPlanFilter('all');
                           }}
-                          className="text-[10px] font-bold text-blue-600 hover:text-blue-700 transition-colors"
+                          className="text-[10px] font-bold text-[#059669] hover:text-[#047857] transition-colors"
                         >
                           Réinitialiser
                         </button>
@@ -444,7 +445,7 @@ export default function TeamPage() {
                         <select
                           value={statusFilter}
                           onChange={(e) => setStatusFilter(e.target.value as 'all' | 'active' | 'pending')}
-                          className="w-full text-xs p-1.5 border border-neutral-200 rounded-md bg-white text-neutral-700 focus:outline-none focus:ring-1 focus:ring-blue-600"
+                          className="w-full text-xs p-1.5 border border-neutral-200 rounded-md bg-white text-neutral-700 focus:outline-none focus:ring-1 focus:ring-[#059669]"
                         >
                           <option value="all">Tous les statuts</option>
                           <option value="active">Actif</option>
@@ -458,7 +459,7 @@ export default function TeamPage() {
                         <select
                           value={roleFilter}
                           onChange={(e) => setRoleFilter(e.target.value as 'all' | 'admin' | 'editor' | 'viewer')}
-                          className="w-full text-xs p-1.5 border border-neutral-200 rounded-md bg-white text-neutral-700 focus:outline-none focus:ring-1 focus:ring-blue-600"
+                          className="w-full text-xs p-1.5 border border-neutral-200 rounded-md bg-white text-neutral-700 focus:outline-none focus:ring-1 focus:ring-[#059669]"
                         >
                           <option value="all">Tous les rôles</option>
                           <option value="admin">Administrateur</option>
@@ -473,7 +474,7 @@ export default function TeamPage() {
                         <select
                           value={planFilter}
                           onChange={(e) => setPlanFilter(e.target.value as 'all' | 'Business' | 'Pro' | 'Free')}
-                          className="w-full text-xs p-1.5 border border-neutral-200 rounded-md bg-white text-neutral-700 focus:outline-none focus:ring-1 focus:ring-blue-600"
+                          className="w-full text-xs p-1.5 border border-neutral-200 rounded-md bg-white text-neutral-700 focus:outline-none focus:ring-1 focus:ring-[#059669]"
                         >
                           <option value="all">Tous les forfaits</option>
                           <option value="Business">Business</option>
@@ -502,7 +503,7 @@ export default function TeamPage() {
                   setInviteError('');
                   setInviteEmail('');
                 }}
-                className="h-8 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-md px-4 shadow-2xs flex items-center gap-1.5 transition-colors"
+                className="h-8 bg-[#059669] hover:bg-[#047857] text-white text-xs font-semibold rounded-md px-4 shadow-2xs flex items-center gap-1.5 transition-colors"
               >
                 <span>{t('team.btn_invite')}</span>
               </button>

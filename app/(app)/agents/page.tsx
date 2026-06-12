@@ -763,7 +763,7 @@ export default function AgentsPage() {
                 <div 
                   key={'recent-' + agent.id}
                   onClick={() => setActiveAgentId(agent.id)}
-                  className="p-5 border border-[#e5e5e0] hover:border-[#7a7a76] bg-white rounded-xl flex flex-col justify-between h-[155px] shadow-2xs transition-all relative overflow-hidden group cursor-pointer"
+                  className="p-5 border border-[#e5e5e0] hover:border-[#7a7a76] bg-white rounded-xl flex flex-col justify-between min-h-[160px] h-auto pb-4 shadow-2xs transition-all relative overflow-hidden group cursor-pointer"
                 >
                   <div className="space-y-2 text-left">
                     <div className="flex items-start justify-between">
@@ -780,7 +780,7 @@ export default function AgentsPage() {
                       </button>
                     </div>
                     <h3 className="font-bold text-xs text-[#26251e] truncate">{agent.name}</h3>
-                    <p className="text-[11px] text-[#7a7a76] leading-relaxed line-clamp-2">
+                    <p className="text-[11px] text-[#7a7a76] leading-relaxed line-clamp-5">
                       {agent.description}
                     </p>
                   </div>
@@ -867,7 +867,7 @@ export default function AgentsPage() {
                 <div 
                   key={'all-' + agent.id}
                   onClick={() => setActiveAgentId(agent.id)}
-                  className="p-5 border border-[#e5e5e0] hover:border-[#7a7a76] bg-white rounded-xl flex flex-col justify-between h-[145px] shadow-2xs transition-all relative overflow-hidden group cursor-pointer"
+                  className="p-5 border border-[#e5e5e0] hover:border-[#7a7a76] bg-white rounded-xl flex flex-col justify-between min-h-[150px] h-auto pb-4 shadow-2xs transition-all relative overflow-hidden group cursor-pointer"
                 >
                   <div className="space-y-2 text-left">
                     <div className="flex items-start justify-between">
@@ -884,7 +884,7 @@ export default function AgentsPage() {
                       </button>
                     </div>
                     <h3 className="font-bold text-xs text-[#26251e] truncate">{agent.name}</h3>
-                    <p className="text-[11px] text-[#7a7a76] leading-relaxed line-clamp-2">
+                    <p className="text-[11px] text-[#7a7a76] leading-relaxed line-clamp-5">
                       {agent.description}
                     </p>
                   </div>

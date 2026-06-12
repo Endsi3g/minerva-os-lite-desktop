@@ -56,41 +56,44 @@ export function LeadsRoot() {
   const isDatabaseEmpty = leads.length === 0;
 
   return (
-    <div className="flex h-full flex-col gap-5 p-6 overflow-y-auto">
-      {/* Header section */}
-      <LeadsHeader />
+    <div className="flex h-full flex-col gap-5 p-6 overflow-y-auto bg-white relative">
+      <div className="absolute inset-0 opacity-[0.25] pointer-events-none bg-grid-pattern-20" />
+      <div className="flex flex-col gap-5 relative z-10 flex-1">
+        {/* Header section */}
+        <LeadsHeader />
 
-      {/* Filters bar */}
-      {!isDatabaseEmpty && <LeadsFilters table={table} />}
+        {/* Filters bar */}
+        {!isDatabaseEmpty && <LeadsFilters table={table} />}
 
-      {/* Main Table view */}
-      {isDatabaseEmpty ? (
-        <LeadsEmptyState 
-          type="no-leads" 
-          onAddLead={() => {
-            // Trigger sheets opening in header or just trigger mock add
-            const sheetTrigger = document.querySelector('[aria-haspopup="dialog"]') as HTMLElement;
-            if (sheetTrigger) sheetTrigger.click();
-          }} 
-        />
-      ) : isFilteredEmpty ? (
-        <LeadsEmptyState 
-          type="no-results" 
-          onResetFilters={() => {
-            setGlobalFilter('');
-            setColumnFilters([]);
-            table.setGlobalFilter('');
-            table.getColumn('status')?.setFilterValue(undefined);
-            table.getColumn('temperature')?.setFilterValue(undefined);
-            table.getColumn('niche')?.setFilterValue(undefined);
-          }} 
-        />
-      ) : (
-        <DataTable columns={columns} table={table} />
-      )}
+        {/* Main Table view */}
+        {isDatabaseEmpty ? (
+          <LeadsEmptyState 
+            type="no-leads" 
+            onAddLead={() => {
+              // Trigger sheets opening in header or just trigger mock add
+              const sheetTrigger = document.querySelector('[aria-haspopup="dialog"]') as HTMLElement;
+              if (sheetTrigger) sheetTrigger.click();
+            }} 
+          />
+        ) : isFilteredEmpty ? (
+          <LeadsEmptyState 
+            type="no-results" 
+            onResetFilters={() => {
+              setGlobalFilter('');
+              setColumnFilters([]);
+              table.setGlobalFilter('');
+              table.getColumn('status')?.setFilterValue(undefined);
+              table.getColumn('temperature')?.setFilterValue(undefined);
+              table.getColumn('niche')?.setFilterValue(undefined);
+            }} 
+          />
+        ) : (
+          <DataTable columns={columns} table={table} />
+        )}
 
-      {/* Floating Bulk Actions bar */}
-      <LeadsBulkActionsBar table={table} />
+        {/* Floating Bulk Actions bar */}
+        <LeadsBulkActionsBar table={table} />
+      </div>
     </div>
   );
 }

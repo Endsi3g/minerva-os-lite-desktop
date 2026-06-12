@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useRouter } from 'next/navigation';
 import {
   ColumnDef,
   flexRender,
@@ -26,6 +27,7 @@ export function DataTable<TData>({
   columns,
   table,
 }: DataTableProps<TData>) {
+  const router = useRouter();
   return (
     <div className="space-y-4">
       {/* Table Card Grid */}
@@ -55,7 +57,22 @@ export function DataTable<TData>({
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && 'selected'}
-                  className="hover:bg-muted/50 transition-colors border-b border-border last:border-0"
+                  className="hover:bg-muted/50 transition-colors border-b border-border last:border-0 cursor-pointer"
+                  onClick={(e) => {
+                    const target = e.target as HTMLElement;
+                    if (
+                      target.closest('button') || 
+                      target.closest('a') || 
+                      target.closest('input') || 
+                      target.closest('[role="checkbox"]')
+                    ) {
+                      return;
+                    }
+                    const lead = row.original as { id?: string };
+                    if (lead?.id) {
+                      router.push(`/leads/${lead.id}`);
+                    }
+                  }}
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id} className="py-2.5 px-4 text-xs font-medium align-middle">
