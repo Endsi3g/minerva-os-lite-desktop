@@ -28,6 +28,10 @@ create table if not exists public.settings (
     ai_provider text default 'anthropic',
     openrouter_key text,
     ai_model text default 'meta-llama/llama-3-8b-instruct:free',
+    language text default 'fr',
+    default_model text default 'None',
+    default_image_model text default 'None',
+    chat_capabilities text[] default array['web_search', 'image_generation', 'data_analyst', 'canvas'],
     created_at timestamp with time zone default now() not null,
     updated_at timestamp with time zone default now() not null
 );
@@ -253,6 +257,10 @@ create policy "Owner can delete team members" on public.team_members
 -- ALTER TABLE public.settings ADD COLUMN IF NOT EXISTS ai_provider text DEFAULT 'anthropic';
 -- ALTER TABLE public.settings ADD COLUMN IF NOT EXISTS openrouter_key text;
 -- ALTER TABLE public.settings ADD COLUMN IF NOT EXISTS ai_model text DEFAULT 'meta-llama/llama-3-8b-instruct:free';
+-- ALTER TABLE public.settings ADD COLUMN IF NOT EXISTS language text DEFAULT 'fr';
+-- ALTER TABLE public.settings ADD COLUMN IF NOT EXISTS default_model text DEFAULT 'None';
+-- ALTER TABLE public.settings ADD COLUMN IF NOT EXISTS default_image_model text DEFAULT 'None';
+-- ALTER TABLE public.settings ADD COLUMN IF NOT EXISTS chat_capabilities text[] DEFAULT ARRAY['web_search', 'image_generation', 'data_analyst', 'canvas'];
 --
 -- Run this if your team_members table already exists:
 -- ALTER TABLE public.team_members ADD COLUMN IF NOT EXISTS plan text NOT NULL DEFAULT 'Business';
