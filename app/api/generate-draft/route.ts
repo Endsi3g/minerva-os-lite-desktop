@@ -167,6 +167,7 @@ Rédige uniquement le corps du message final en français :`;
       .insert({
         lead_id: leadId,
         user_id: user.id,
+        workspace_id: lead.workspace_id,
         channel,
         tone: aiTone,
         content: draftContent,

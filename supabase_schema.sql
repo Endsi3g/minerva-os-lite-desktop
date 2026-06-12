@@ -252,3 +252,231 @@ create policy "Owner can delete team members" on public.team_members
 -- ALTER TABLE public.settings ADD COLUMN IF NOT EXISTS openrouter_key text;
 -- ALTER TABLE public.settings ADD COLUMN IF NOT EXISTS ai_model text DEFAULT 'meta-llama/llama-3-8b-instruct:free';
 -- ========================================================
+
+-- ========================================================
+-- 8. WORKSPACES SYSTEM (LANGDOCK STYLE)
+-- Stores multiple workspaces for users
+create table if not exists public.workspaces (
+    id uuid default gen_random_uuid() primary key,
+    name text not null,
+    owner_id uuid references auth.users(id) on delete cascade not null,
+    created_at timestamp with time zone default now() not null
+);
+
+-- Enable RLS
+alter table public.workspaces enable row level security;
+
+-- Policies for workspaces
+create policy "Users can select workspaces they own or belong to" on public.workspaces
+    for select using (
+        auth.uid() = owner_id 
+        or exists (
+            select 1 from public.team_members tm 
+            where tm.workspace_id = public.workspaces.id 
+              and tm.member_user_id = auth.uid() 
+              and tm.status = 'active'
+        )
+    );
+
+create policy "Users can insert workspaces they own" on public.workspaces
+    for insert with check (auth.uid() = owner_id);
+
+create policy "Users can update workspaces they own" on public.workspaces
+    for update using (auth.uid() = owner_id);
+
+create policy "Users can delete workspaces they own" on public.workspaces
+    for delete using (auth.uid() = owner_id);
+
+-- Add workspace_id fields to existing tables
+alter table public.team_members add column if not exists workspace_id uuid references public.workspaces(id) on delete cascade;
+alter table public.leads add column if not exists workspace_id uuid references public.workspaces(id) on delete cascade;
+alter table public.tasks add column if not exists workspace_id uuid references public.workspaces(id) on delete cascade;
+alter table public.notes add column if not exists workspace_id uuid references public.workspaces(id) on delete cascade;
+alter table public.drafts add column if not exists workspace_id uuid references public.workspaces(id) on delete cascade;
+alter table public.ai_suggestions add column if not exists workspace_id uuid references public.workspaces(id) on delete cascade;
+
+-- Trigger logic to automatically create a default workspace when settings is created
+create or replace function public.handle_default_workspace()
+returns trigger as $$
+declare
+    default_ws_id uuid;
+begin
+    -- Create default workspace matching company name or owner email
+    insert into public.workspaces (name, owner_id)
+    values (coalesce(new.company_name, 'Mon Espace'), new.user_id)
+    returning id into default_ws_id;
+
+    -- Update existing records if they have null workspace_id
+    update public.team_members set workspace_id = default_ws_id where workspace_owner_id = new.user_id and workspace_id is null;
+    update public.leads set workspace_id = default_ws_id where user_id = new.user_id and workspace_id is null;
+    update public.tasks set workspace_id = default_ws_id where user_id = new.user_id and workspace_id is null;
+    
+    return new;
+end;
+$$ language plpgsql;
+
+drop trigger if exists settings_default_workspace on public.settings;
+create trigger settings_default_workspace
+    after insert on public.settings
+    for each row execute function public.handle_default_workspace();
+
+-- Migrate existing users to have a default workspace
+do $$
+declare
+    r record;
+    default_ws_id uuid;
+begin
+    for r in select user_id, company_name from public.settings loop
+        if not exists (select 1 from public.workspaces where owner_id = r.user_id) then
+            insert into public.workspaces (name, owner_id)
+            values (coalesce(r.company_name, 'Mon Espace'), r.user_id)
+            returning id into default_ws_id;
+
+            update public.team_members set workspace_id = default_ws_id where workspace_owner_id = r.user_id and workspace_id is null;
+            update public.leads set workspace_id = default_ws_id where user_id = r.user_id and workspace_id is null;
+            update public.tasks set workspace_id = default_ws_id where user_id = r.user_id and workspace_id is null;
+        end if;
+    end loop;
+end;
+$$;
+
+-- Update row level security policies for all tables to verify member_user_id and workspace ownership
+-- Leads policies
+drop policy if exists "Users can select their own leads" on public.leads;
+create policy "Users and team members can select leads" on public.leads
+    for select using (
+        exists (
+            select 1 from public.workspaces w
+            where w.id = public.leads.workspace_id
+              and (w.owner_id = auth.uid() or exists (
+                  select 1 from public.team_members tm
+                  where tm.workspace_id = w.id
+                    and tm.member_user_id = auth.uid()
+                    and tm.status = 'active'
+              ))
+        )
+    );
+
+drop policy if exists "Users can insert their own leads" on public.leads;
+create policy "Users and team members can insert leads" on public.leads
+    for insert with check (
+        exists (
+            select 1 from public.workspaces w
+            where w.id = workspace_id
+              and (w.owner_id = auth.uid() or exists (
+                  select 1 from public.team_members tm
+                  where tm.workspace_id = w.id
+                    and tm.member_user_id = auth.uid()
+                    and tm.status = 'active'
+              ))
+        )
+    );
+
+drop policy if exists "Users can update their own leads" on public.leads;
+create policy "Users and team members can update leads" on public.leads
+    for update using (
+        exists (
+            select 1 from public.workspaces w
+            where w.id = public.leads.workspace_id
+              and (w.owner_id = auth.uid() or exists (
+                  select 1 from public.team_members tm
+                  where tm.workspace_id = w.id
+                    and tm.member_user_id = auth.uid()
+                    and tm.status = 'active'
+              ))
+        )
+    );
+
+drop policy if exists "Users can delete their own leads" on public.leads;
+create policy "Users and team members can delete leads" on public.leads
+    for delete using (
+        exists (
+            select 1 from public.workspaces w
+            where w.id = public.leads.workspace_id
+              and (w.owner_id = auth.uid() or exists (
+                  select 1 from public.team_members tm
+                  where tm.workspace_id = w.id
+                    and tm.member_user_id = auth.uid()
+                    and tm.status = 'active'
+              ))
+        )
+    );
+
+-- Tasks policies
+drop policy if exists "Users can select their own tasks" on public.tasks;
+create policy "Users and team members can select tasks" on public.tasks
+    for select using (
+        exists (
+            select 1 from public.workspaces w
+            where w.id = public.tasks.workspace_id
+              and (w.owner_id = auth.uid() or exists (
+                  select 1 from public.team_members tm
+                  where tm.workspace_id = w.id
+                    and tm.member_user_id = auth.uid()
+                    and tm.status = 'active'
+              ))
+        )
+    );
+
+drop policy if exists "Users can insert their own tasks" on public.tasks;
+create policy "Users and team members can insert tasks" on public.tasks
+    for insert with check (
+        exists (
+            select 1 from public.workspaces w
+            where w.id = workspace_id
+              and (w.owner_id = auth.uid() or exists (
+                  select 1 from public.team_members tm
+                  where tm.workspace_id = w.id
+                    and tm.member_user_id = auth.uid()
+                    and tm.status = 'active'
+              ))
+        )
+    );
+
+drop policy if exists "Users can update their own tasks" on public.tasks;
+create policy "Users and team members can update tasks" on public.tasks
+    for update using (
+        exists (
+            select 1 from public.workspaces w
+            where w.id = public.tasks.workspace_id
+              and (w.owner_id = auth.uid() or exists (
+                  select 1 from public.team_members tm
+                  where tm.workspace_id = w.id
+                    and tm.member_user_id = auth.uid()
+                    and tm.status = 'active'
+              ))
+        )
+    );
+
+drop policy if exists "Users can delete their own tasks" on public.tasks;
+create policy "Users and team members can delete tasks" on public.tasks
+    for delete using (
+        exists (
+            select 1 from public.workspaces w
+            where w.id = public.tasks.workspace_id
+              and (w.owner_id = auth.uid() or exists (
+                  select 1 from public.team_members tm
+                  where tm.workspace_id = w.id
+                    and tm.member_user_id = auth.uid()
+                    and tm.status = 'active'
+              ))
+        )
+    );
+
+-- Settings read access for members
+drop policy if exists "Users can select their own settings" on public.settings;
+create policy "Users and team members can select settings" on public.settings
+    for select using (
+        auth.uid() = user_id 
+        or exists (
+            select 1 from public.workspaces w
+            where w.owner_id = public.settings.user_id
+              and exists (
+                  select 1 from public.team_members tm
+                  where tm.workspace_id = w.id
+                    and tm.member_user_id = auth.uid()
+                    and tm.status = 'active'
+              )
+        )
+    );
+

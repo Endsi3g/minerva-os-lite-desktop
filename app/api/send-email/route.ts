@@ -176,6 +176,7 @@ export async function POST(req: NextRequest) {
       .insert({
         lead_id: leadId,
         user_id: user.id,
+        workspace_id: lead.workspace_id,
         type: 'email',
         content: logText
       });

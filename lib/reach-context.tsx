@@ -5,6 +5,15 @@ import { User as SupabaseUser } from '@supabase/supabase-js';
 import { Lead, Task, Note, AiSuggestion, initialLeads, initialTasks, initialAiSuggestions } from './mock-data';
 import { createClient } from './supabase/client';
 
+export interface Workspace {
+  id: string;
+  name: string;
+  owner_id: string;
+  created_at: string;
+  isOwner: boolean;
+  ownerName: string;
+}
+
 interface ReachContextType {
   leads: Lead[];
   tasks: Task[];
@@ -12,6 +21,12 @@ interface ReachContextType {
   quickNote: string;
   focusTitle: string;
   focusItems: string[];
+  workspacesList: Workspace[];
+  activeWorkspace: Workspace | null;
+  switchWorkspace: (workspaceId: string) => Promise<void>;
+  createWorkspace: (name: string) => Promise<Workspace | null>;
+  renameWorkspace: (id: string, name: string) => Promise<void>;
+  deleteWorkspace: (id: string) => Promise<void>;
   addLead: (leadData: {
     businessName: string;
     contactName: string;
@@ -148,7 +163,11 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
     "Finaliser et envoyer l'audit SEO pour Michel Martin (Garage du Centre)"
   ]);
 
-  const populateMockData = useCallback(async (userId: string) => {
+  // Workspaces State
+  const [workspacesList, setWorkspacesList] = useState<Workspace[]>([]);
+  const [activeWorkspace, setActiveWorkspace] = useState<Workspace | null>(null);
+
+  const populateMockData = useCallback(async (userId: string, workspaceId: string) => {
     const supabase = createClient();
     try {
       // Insert default settings if they don't exist
@@ -159,12 +178,13 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
         timezone: 'Europe/Paris'
       });
 
-      // Insert leads
+      // Insert leads with workspace_id
       for (const lead of initialLeads) {
         const { data: insertedLead } = await supabase
           .from('leads')
           .insert({
             user_id: userId,
+            workspace_id: workspaceId,
             business_name: lead.businessName,
             contact_name: lead.contactName,
             contact_email: lead.contactEmail,
@@ -184,6 +204,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
             await supabase.from('notes').insert({
               lead_id: insertedLead.id,
               user_id: userId,
+              workspace_id: workspaceId,
               type: note.type,
               content: note.content
             });
@@ -191,10 +212,11 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
         }
       }
 
-      // Insert tasks
+      // Insert tasks with workspace_id
       for (const task of initialTasks) {
         await supabase.from('tasks').insert({
           user_id: userId,
+          workspace_id: workspaceId,
           title: task.title,
           completed: task.completed,
           category: task.category,
@@ -207,28 +229,31 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const loadData = useCallback(async (currUser: SupabaseUser) => {
+  const loadData = useCallback(async (currUser: SupabaseUser, activeWs: Workspace) => {
     const supabase = createClient();
     try {
-      // 1. Fetch leads & notes
+      // 1. Fetch leads & notes for the active workspace
       const { data: dbLeads } = await supabase
         .from('leads')
         .select('*')
+        .eq('workspace_id', activeWs.id)
         .order('created_at', { ascending: false });
 
-      if (dbLeads && dbLeads.length === 0) {
+      if (dbLeads && dbLeads.length === 0 && activeWs.isOwner) {
         // Pre-populate DB with mock data for this user
-        await populateMockData(currUser.id);
+        await populateMockData(currUser.id, activeWs.id);
         
         // Fetch again after population
         const { data: freshLeads } = await supabase
           .from('leads')
           .select('*')
+          .eq('workspace_id', activeWs.id)
           .order('created_at', { ascending: false });
         
         const { data: freshNotes } = await supabase
           .from('notes')
           .select('*')
+          .eq('workspace_id', activeWs.id)
           .order('created_at', { ascending: true });
 
         const uiLeads = (freshLeads || []).map(lead => {
@@ -244,6 +269,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
             await supabase.from('ai_suggestions').insert({
               lead_id: matchingLead.id,
               user_id: currUser.id,
+              workspace_id: activeWs.id,
               action_text: sug.actionText,
               suggested_channel: sug.suggestedChannel,
               reasoning: sug.reasoning,
@@ -256,12 +282,14 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
         const { data: freshTasks } = await supabase
           .from('tasks')
           .select('*')
+          .eq('workspace_id', activeWs.id)
           .order('created_at', { ascending: false });
         setTasks((freshTasks || []).map(mapDbTaskToUi));
 
         const { data: freshSuggestions } = await supabase
           .from('ai_suggestions')
-          .select('*');
+          .select('*')
+          .eq('workspace_id', activeWs.id);
         setAiSuggestions((freshSuggestions || []).map(s => mapDbSuggestionToUi(s, uiLeads)));
         return;
       }
@@ -269,6 +297,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
       const { data: dbNotes } = await supabase
         .from('notes')
         .select('*')
+        .eq('workspace_id', activeWs.id)
         .order('created_at', { ascending: true });
 
       // Combine
@@ -282,28 +311,34 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
       const { data: dbTasks } = await supabase
         .from('tasks')
         .select('*')
+        .eq('workspace_id', activeWs.id)
         .order('created_at', { ascending: false });
 
       const uiTasks = (dbTasks || []).map(mapDbTaskToUi);
       setTasks(uiTasks);
 
-      // 3. Fetch settings
+      // 3. Fetch settings for the owner of the active workspace
       const { data: dbSettings } = await supabase
         .from('settings')
         .select('*')
-        .eq('user_id', currUser.id)
+        .eq('user_id', activeWs.owner_id)
         .maybeSingle();
 
       if (dbSettings) {
         setQuickNote(dbSettings.quick_note || '');
         setFocusTitle(dbSettings.focus_title || 'Objectif principal du jour');
         setFocusItems(dbSettings.focus_items || []);
+      } else {
+        setQuickNote('');
+        setFocusTitle('Objectif principal du jour');
+        setFocusItems([]);
       }
 
       // 4. Fetch AI suggestions
       const { data: dbSuggestions } = await supabase
         .from('ai_suggestions')
-        .select('*');
+        .select('*')
+        .eq('workspace_id', activeWs.id);
 
       const uiSuggestions = (dbSuggestions || []).map(s => mapDbSuggestionToUi(s, uiLeads));
       setAiSuggestions(uiSuggestions);
@@ -313,7 +348,109 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
     }
   }, [populateMockData]);
 
-  // Load initial data from DB and setup Auth listener
+  // Load Workspaces List
+  const loadWorkspaces = useCallback(async () => {
+    try {
+      const res = await fetch('/api/workspaces');
+      if (res.ok) {
+        const data = await res.json();
+        const list = data.workspaces || [];
+        setWorkspacesList(list);
+
+        const savedId = localStorage.getItem('minerva_active_workspace_id');
+        let active = list.find((w: Workspace) => w.id === savedId);
+        if (!active && list.length > 0) {
+          active = list.find((w: Workspace) => w.isOwner) || list[0];
+        }
+
+        if (active) {
+          setActiveWorkspace(active);
+          localStorage.setItem('minerva_active_workspace_id', active.id);
+        }
+      }
+    } catch (e) {
+      console.error("Error loading workspaces:", e);
+    }
+  }, []);
+
+  // Workspace Switcher actions
+  const switchWorkspace = async (workspaceId: string) => {
+    const ws = workspacesList.find(w => w.id === workspaceId);
+    if (ws) {
+      setActiveWorkspace(ws);
+      localStorage.setItem('minerva_active_workspace_id', ws.id);
+      window.dispatchEvent(new Event('minerva_workspace_changed'));
+    }
+  };
+
+  const createWorkspace = async (name: string): Promise<Workspace | null> => {
+    if (!user) return null;
+    try {
+      const res = await fetch('/api/workspaces', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const newWs: Workspace = {
+          ...data.workspace,
+          isOwner: true,
+          ownerName: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Vous'
+        };
+        setWorkspacesList(prev => [...prev, newWs]);
+        return newWs;
+      }
+    } catch (e) {
+      console.error("Error creating workspace:", e);
+    }
+    return null;
+  };
+
+  const renameWorkspace = async (id: string, name: string) => {
+    if (!user) return;
+    try {
+      const res = await fetch('/api/workspaces', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, name }),
+      });
+      if (res.ok) {
+        setWorkspacesList(prev => prev.map(w => w.id === id ? { ...w, name } : w));
+        if (activeWorkspace?.id === id) {
+          setActiveWorkspace(prev => prev ? { ...prev, name } : null);
+        }
+      }
+    } catch (e) {
+      console.error("Error renaming workspace:", e);
+    }
+  };
+
+  const deleteWorkspace = async (id: string) => {
+    if (!user) return;
+    try {
+      const res = await fetch(`/api/workspaces?id=${id}`, {
+        method: 'DELETE',
+      });
+      if (res.ok) {
+        const updatedList = workspacesList.filter(w => w.id !== id);
+        setWorkspacesList(updatedList);
+        if (activeWorkspace?.id === id) {
+          const fallback = updatedList.find(w => w.isOwner) || updatedList[0] || null;
+          setActiveWorkspace(fallback);
+          if (fallback) {
+            localStorage.setItem('minerva_active_workspace_id', fallback.id);
+          } else {
+            localStorage.removeItem('minerva_active_workspace_id');
+          }
+        }
+      }
+    } catch (e) {
+      console.error("Error deleting workspace:", e);
+    }
+  };
+
+  // Setup initial session loading and workspace fetching
   useEffect(() => {
     const supabase = createClient();
     
@@ -321,7 +458,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
         setUser(session.user);
-        loadData(session.user);
+        await loadWorkspaces();
       }
     };
     
@@ -330,19 +467,29 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (session?.user) {
         setUser(session.user);
-        loadData(session.user);
+        loadWorkspaces();
       } else {
         setUser(null);
         setLeads([]);
         setTasks([]);
         setAiSuggestions([]);
+        setWorkspacesList([]);
+        setActiveWorkspace(null);
       }
     });
 
     return () => {
       subscription.unsubscribe();
     };
-  }, [loadData]);
+  }, [loadWorkspaces]);
+
+  // Load data whenever activeWorkspace or user changes
+  useEffect(() => {
+    if (user && activeWorkspace) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      loadData(user, activeWorkspace);
+    }
+  }, [user, activeWorkspace, loadData]);
 
   const addLead = async (leadData: {
     businessName: string;
@@ -357,7 +504,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
     nextActionDate: string;
     notes?: string;
   }) => {
-    if (!user) return;
+    if (!user || !activeWorkspace) return;
     const supabase = createClient();
 
     try {
@@ -365,6 +512,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
         .from('leads')
         .insert({
           user_id: user.id,
+          workspace_id: activeWorkspace.id,
           business_name: leadData.businessName,
           contact_name: leadData.contactName,
           contact_email: leadData.contactEmail,
@@ -389,6 +537,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
           .insert({
             lead_id: newDbLead.id,
             user_id: user.id,
+            workspace_id: activeWorkspace.id,
             type: 'general',
             content: leadData.notes
           })
@@ -435,7 +584,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
   };
 
   const addTask = async (title: string, category: Task['category']) => {
-    if (!user) return;
+    if (!user || !activeWorkspace) return;
     const supabase = createClient();
 
     try {
@@ -443,6 +592,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
         .from('tasks')
         .insert({
           user_id: user.id,
+          workspace_id: activeWorkspace.id,
           title,
           category,
           due_date: new Date().toISOString().split('T')[0]
@@ -480,9 +630,12 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
 
   const saveQuickNote = async (note: string) => {
     setQuickNote(note);
-    if (!user) return;
-    const supabase = createClient();
+    if (!user || !activeWorkspace) return;
 
+    // Only allow owner to modify settings
+    if (!activeWorkspace.isOwner) return;
+
+    const supabase = createClient();
     try {
       await supabase
         .from('settings')
@@ -498,9 +651,12 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
   const updateFocus = async (title: string, items: string[]) => {
     setFocusTitle(title);
     setFocusItems(items);
-    if (!user) return;
-    const supabase = createClient();
+    if (!user || !activeWorkspace) return;
 
+    // Only allow owner to modify settings
+    if (!activeWorkspace.isOwner) return;
+
+    const supabase = createClient();
     try {
       await supabase
         .from('settings')
@@ -589,7 +745,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
   };
 
   const addNoteToLead = async (leadId: string, content: string, type: Note['type']) => {
-    if (!user) return;
+    if (!user || !activeWorkspace) return;
     const supabase = createClient();
 
     try {
@@ -598,6 +754,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
         .insert({
           lead_id: leadId,
           user_id: user.id,
+          workspace_id: activeWorkspace.id,
           type,
           content
         })
@@ -640,6 +797,12 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
         quickNote,
         focusTitle,
         focusItems,
+        workspacesList,
+        activeWorkspace,
+        switchWorkspace,
+        createWorkspace,
+        renameWorkspace,
+        deleteWorkspace,
         addLead,
         toggleTask,
         addTask,
@@ -665,3 +828,4 @@ export function useReach() {
   }
   return context;
 }
+

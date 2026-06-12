@@ -5,10 +5,12 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useReach } from '@/lib/reach-context';
+import { useLanguage } from '@/lib/language-context';
 import { Sparkles, Copy, Check } from 'lucide-react';
 
 export function AiSuggestionsCard() {
   const { aiSuggestions } = useReach();
+  const { t } = useLanguage();
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const handleCopy = (id: string, text: string) => {
@@ -35,15 +37,15 @@ export function AiSuggestionsCard() {
             <Sparkles className="h-4 w-4" />
           </div>
           <div>
-            <CardTitle className="text-base font-semibold font-sans">Suggestions IA</CardTitle>
-            <CardDescription className="text-xs">Recommandations d&apos;actions personnalisées.</CardDescription>
+            <CardTitle className="text-base font-semibold font-sans">{t('today.ai_suggestions')}</CardTitle>
+            <CardDescription className="text-xs">{t('today.ai_suggestions_desc')}</CardDescription>
           </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
         {aiSuggestions.length === 0 ? (
           <p className="text-xs text-muted-foreground italic text-center py-4">
-            Aucune suggestion disponible pour le moment.
+            {t('today.ai_suggestions_no_data')}
           </p>
         ) : (
           aiSuggestions.map((sug) => (
@@ -63,7 +65,7 @@ export function AiSuggestionsCard() {
               
               <div className="flex items-center justify-between pt-1 mt-1 border-t border-border/50">
                 <span className="text-[9px] text-muted-foreground font-mono truncate max-w-[150px]">
-                  Prompt disponible
+                  {t('today.ai_suggestions_prompt_available')}
                 </span>
                 <Button 
                   variant="ghost" 
@@ -74,12 +76,12 @@ export function AiSuggestionsCard() {
                   {copiedId === sug.id ? (
                     <>
                       <Check className="h-3 w-3 text-emerald-600" />
-                      <span className="text-emerald-600">Prompt copié</span>
+                      <span className="text-emerald-600">{t('today.ai_suggestions_copied')}</span>
                     </>
                   ) : (
                     <>
                       <Copy className="h-3 w-3" />
-                      <span>Copier le prompt</span>
+                      <span>{t('today.ai_suggestions_copy')}</span>
                     </>
                   )}
                 </Button>

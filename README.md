@@ -75,6 +75,12 @@ Minerva OS Reach Lite est conçu pour aider les agences et les professionnels du
 - **Parcours d'onboarding inspiré de Sana AI** : Assistant multi-étapes avec animations fluides de glissement directionnel (gauche/droite) et indicateur visuel de progression circulaire.
 - **Configuration intégrée** : Étapes intégrées pour le choix des forfaits (Gratuit vs Équipe) et le consentement analytique.
 
+### Système de Workspaces & Commutation Dynamique (Nouveau)
+- **Sélecteur de style Langdock** : Menu déroulant interactif dans la sidebar avec sous-menu volant (flyout menu) de commutation instantanée des workspaces.
+- **Partitionnement étanche des données** : Les leads, tâches, notes et suggestions d&apos;IA sont filtrés de manière transparente en fonction du workspace actif.
+- **Sécurité et RLS strictes** : Accès contrôlé via Supabase RLS autorisant uniquement les propriétaires et les membres invités actifs d&apos;un workspace à lire/écrire ses données.
+- **Gestion dédiée (`/workspaces`)** : Page d&apos;administration complète permettant de créer de nouveaux workspaces, renommer ou supprimer ceux que l&apos;on possède (avec garde-fou interdisant la suppression du dernier espace).
+
 ---
 
 ## Architecture du projet

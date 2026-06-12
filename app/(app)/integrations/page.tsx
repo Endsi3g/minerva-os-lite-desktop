@@ -395,22 +395,22 @@ export default function IntegrationsPage() {
       {/* Mobile Sidebar Overlay */}
       {sidebarOpen && (
         <div 
-          className="fixed inset-0 z-40 bg-black/20 lg:hidden"
+          className="fixed inset-0 z-40 bg-black/20 md:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
       {/* Sidebar Layout */}
       <aside className={cn(
-        "fixed inset-y-0 left-0 z-50 flex flex-col border-r border-[#e5e5e0] bg-[#f4f4f3] transition-all duration-300 ease-in-out lg:static lg:relative lg:translate-x-0",
-        isCollapsed ? "lg:w-16" : "lg:w-[240px]",
+        "fixed inset-y-0 left-0 z-50 flex flex-col border-r border-[#e5e5e0] bg-[#f4f4f3] transition-all duration-300 ease-in-out md:static md:relative md:translate-x-0",
+        isCollapsed ? "md:w-16" : "md:w-[240px]",
         sidebarOpen ? "translate-x-0" : "-translate-x-full"
       )}>
         
         {/* Sidebar Brand Header */}
         <div className={cn(
           "flex h-12 items-center border-b border-[#e5e5e0] px-4 transition-all duration-300",
-          isCollapsed ? "lg:justify-center lg:px-0" : "justify-between"
+          isCollapsed ? "md:justify-center md:px-0" : "justify-between"
         )}>
           <div className="flex items-center gap-2 font-sans font-semibold text-sm tracking-tight text-[#26251e]">
             <MinervaIcon size={20} className="shrink-0" />
@@ -635,7 +635,7 @@ export default function IntegrationsPage() {
             <Button
               variant="ghost"
               size="icon"
-              className="lg:hidden h-8 w-8 text-[#7a7a76] hover:text-[#26251e]"
+              className="md:hidden h-8 w-8 text-[#7a7a76] hover:text-[#26251e]"
               onClick={() => setSidebarOpen(true)}
             >
               <Menu className="h-4 w-4" />
@@ -643,7 +643,7 @@ export default function IntegrationsPage() {
 
             <button
               onClick={toggleCollapse}
-              className="h-8 w-8 hidden lg:flex items-center justify-center rounded text-[#7a7a76] hover:bg-[#e5e5e2]/60 transition-colors"
+              className="h-8 w-8 hidden md:flex items-center justify-center rounded text-[#7a7a76] hover:bg-[#e5e5e2]/60 transition-colors"
               aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
             >
               {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}

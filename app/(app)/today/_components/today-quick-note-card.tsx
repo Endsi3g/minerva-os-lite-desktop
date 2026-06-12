@@ -5,14 +5,17 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { useReach } from '@/lib/reach-context';
+import { useLanguage } from '@/lib/language-context';
 import { FileText, Save, CheckCircle2 } from 'lucide-react';
 
 export function TodayQuickNoteCard() {
   const { quickNote, saveQuickNote } = useReach();
+  const { t } = useLanguage();
   
   // Initialize state directly from localStorage to avoid hydration/useEffect setState warnings
   const [noteContent, setNoteContent] = useState('');
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');  // Load initial value on mount deferred
+  
   useEffect(() => {
     const timer = setTimeout(() => {
       const stored = localStorage.getItem('minerva_quick_note') || quickNote || '';
@@ -20,6 +23,7 @@ export function TodayQuickNoteCard() {
     }, 0);
     return () => clearTimeout(timer);
   }, [quickNote]);
+
   const handleSave = () => {
     setSaveStatus('saving');
     saveQuickNote(noteContent);
@@ -39,8 +43,8 @@ export function TodayQuickNoteCard() {
             <FileText className="h-4 w-4" />
           </div>
           <div>
-            <CardTitle className="text-base font-semibold font-sans">Notes Rapides</CardTitle>
-            <CardDescription className="text-xs">Journal, idées volantes ou rappels temporaires.</CardDescription>
+            <CardTitle className="text-base font-semibold font-sans">{t('today.quick_note')}</CardTitle>
+            <CardDescription className="text-xs">{t('today.quick_note_desc')}</CardDescription>
           </div>
         </div>
       </CardHeader>
@@ -48,12 +52,12 @@ export function TodayQuickNoteCard() {
         <Textarea
           value={noteContent}
           onChange={(e) => setNoteContent(e.target.value)}
-          placeholder="Rédige tes notes ici..."
+          placeholder={t('today.quick_note_placeholder')}
           className="text-xs min-h-[120px] resize-y leading-relaxed bg-background"
         />
         <div className="flex items-center justify-between">
           <span className="text-[10px] text-muted-foreground font-mono">
-            {noteContent.length} caractères
+            {noteContent.length} {t('today.quick_note_characters')}
           </span>
           <Button 
             size="sm" 
@@ -61,16 +65,16 @@ export function TodayQuickNoteCard() {
             className="h-8 gap-1.5 px-3 bg-primary hover:bg-primary/90 text-xs font-semibold"
           >
             {saveStatus === 'saving' ? (
-              <span>Sauvegarde...</span>
+              <span>{t('today.saving')}</span>
             ) : saveStatus === 'saved' ? (
               <>
                 <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
-                <span>Enregistré</span>
+                <span>{t('today.saved')}</span>
               </>
             ) : (
               <>
                 <Save className="h-3.5 w-3.5" />
-                <span>Enregistrer</span>
+                <span>{t('today.save')}</span>
               </>
             )}
           </Button>

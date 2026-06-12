@@ -5,10 +5,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useReach } from '@/lib/reach-context';
+import { useLanguage } from '@/lib/language-context';
 import { Edit2, Check, Target, Plus, Trash2 } from 'lucide-react';
 
 export function TodayFocusCard() {
   const { focusTitle, focusItems, updateFocus } = useReach();
+  const { t } = useLanguage();
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(focusTitle);
   const [editItems, setEditItems] = useState<string[]>([]);
@@ -48,8 +50,8 @@ export function TodayFocusCard() {
             <Target className="h-4 w-4" />
           </div>
           <div>
-            <CardTitle className="text-base font-semibold font-sans">Focus du Jour</CardTitle>
-            <CardDescription className="text-xs">Tes priorités absolues (MITs) pour aujourd&apos;hui.</CardDescription>
+            <CardTitle className="text-base font-semibold font-sans">{t('today.focus_title')}</CardTitle>
+            <CardDescription className="text-xs">{t('today.focus_desc')}</CardDescription>
           </div>
         </div>
         {!isEditing && (
@@ -63,7 +65,7 @@ export function TodayFocusCard() {
         {isEditing ? (
           <div className="space-y-4">
             <div className="grid gap-1.5">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Titre de l&apos;objectif</label>
+              <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{t('today.focus_goal_label')}</label>
               <Input 
                 value={editTitle}
                 onChange={e => setEditTitle(e.target.value)}
@@ -73,14 +75,14 @@ export function TodayFocusCard() {
             </div>
             
             <div className="grid gap-2">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Points clés</label>
+              <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{t('today.focus_points_label')}</label>
               <div className="space-y-2">
                 {editItems.map((item, idx) => (
                   <div key={idx} className="flex items-center gap-2">
                     <Input 
                       value={item}
                       onChange={e => handleItemChange(idx, e.target.value)}
-                      placeholder={`Priorité ${idx + 1}`}
+                      placeholder={`${t('today.focus_edit_placeholder')} ${idx + 1}`}
                       className="text-xs h-8"
                     />
                     <Button 
@@ -101,17 +103,17 @@ export function TodayFocusCard() {
                 className="mt-1 w-full text-xs h-8 gap-1.5 border-dashed"
               >
                 <Plus className="h-3.5 w-3.5" />
-                <span>Ajouter une priorité</span>
+                <span>{t('today.focus_add_item')}</span>
               </Button>
             </div>
 
             <div className="flex justify-end gap-2 pt-2">
               <Button variant="outline" size="sm" onClick={() => setIsEditing(false)}>
-                Annuler
+                {t('today.cancel')}
               </Button>
               <Button size="sm" onClick={handleSave} className="gap-1.5">
                 <Check className="h-3.5 w-3.5" />
-                <span>Enregistrer</span>
+                <span>{t('today.save')}</span>
               </Button>
             </div>
           </div>
@@ -119,7 +121,7 @@ export function TodayFocusCard() {
           <div className="space-y-3">
             <h3 className="text-sm font-semibold text-foreground">{focusTitle}</h3>
             {focusItems.length === 0 ? (
-              <p className="text-xs text-muted-foreground italic">Aucun focus particulier aujourd&apos;hui. Prends le temps de planifier.</p>
+              <p className="text-xs text-muted-foreground italic">{t('today.focus_no_items')}</p>
             ) : (
               <ul className="space-y-2 pl-1">
                 {focusItems.map((item, idx) => (

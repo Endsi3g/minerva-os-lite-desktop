@@ -3,10 +3,12 @@
 import React from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { useReach } from '@/lib/reach-context';
+import { useLanguage } from '@/lib/language-context';
 import { LayoutDashboard, Users, CalendarCheck2, Trophy, BarChart3 } from 'lucide-react';
 
 export function PipelineSummaryCard() {
   const { leads } = useReach();
+  const { t } = useLanguage();
 
   // Compute metrics
   const newLeadsCount = leads.filter(l => l.status === 'New').length;
@@ -15,10 +17,10 @@ export function PipelineSummaryCard() {
   const wonCount = leads.filter(l => l.status === 'Won').length;
 
   const metrics = [
-    { name: 'Nouveaux leads', value: newLeadsCount, icon: Users, color: 'text-blue-500 bg-blue-50 dark:bg-blue-950/20' },
-    { name: 'Prospects contactés', value: contactedCount, icon: BarChart3, color: 'text-amber-500 bg-amber-50 dark:bg-amber-950/20' },
-    { name: 'RDV fixés', value: meetingCount, icon: CalendarCheck2, color: 'text-purple-500 bg-purple-50 dark:bg-purple-950/20' },
-    { name: 'Contrats signés', value: wonCount, icon: Trophy, color: 'text-emerald-500 bg-emerald-50 dark:bg-emerald-950/20' },
+    { name: t('today.pipeline_new'), value: newLeadsCount, icon: Users, color: 'text-blue-500 bg-blue-50 dark:bg-blue-950/20' },
+    { name: t('today.pipeline_contacted'), value: contactedCount, icon: BarChart3, color: 'text-amber-500 bg-amber-50 dark:bg-amber-950/20' },
+    { name: t('today.pipeline_meetings'), value: meetingCount, icon: CalendarCheck2, color: 'text-purple-500 bg-purple-50 dark:bg-purple-950/20' },
+    { name: t('today.pipeline_won'), value: wonCount, icon: Trophy, color: 'text-emerald-500 bg-emerald-50 dark:bg-emerald-950/20' },
   ];
 
   return (
@@ -29,8 +31,8 @@ export function PipelineSummaryCard() {
             <LayoutDashboard className="h-4 w-4" />
           </div>
           <div>
-            <CardTitle className="text-base font-semibold font-sans">Résumé Pipeline</CardTitle>
-            <CardDescription className="text-xs">Indicateurs clés de performance commerciale.</CardDescription>
+            <CardTitle className="text-base font-semibold font-sans">{t('today.pipeline_summary')}</CardTitle>
+            <CardDescription className="text-xs">{t('today.pipeline_summary_desc')}</CardDescription>
           </div>
         </div>
       </CardHeader>

@@ -5,10 +5,12 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { FollowUpList } from './follow-up-list';
 import { useReach } from '@/lib/reach-context';
+import { useLanguage } from '@/lib/language-context';
 import { MessageSquareReply } from 'lucide-react';
 
 export function FollowUpListCard() {
   const { leads } = useReach();
+  const { t } = useLanguage();
 
   // Filter leads with nextActionDate <= today AND status is not Won/Lost
   const todayStr = new Date().toISOString().split('T')[0];
@@ -28,13 +30,13 @@ export function FollowUpListCard() {
             <MessageSquareReply className="h-4 w-4" />
           </div>
           <div>
-            <CardTitle className="text-base font-semibold font-sans">Relances Dues</CardTitle>
-            <CardDescription className="text-xs">Prospects à relancer en priorité aujourd&apos;hui.</CardDescription>
+            <CardTitle className="text-base font-semibold font-sans">{t('today.follow_ups')}</CardTitle>
+            <CardDescription className="text-xs">{t('today.follow_ups_desc')}</CardDescription>
           </div>
         </div>
         {followUpLeads.length > 0 && (
           <Badge variant="destructive" className="text-[10px] font-bold px-2 py-0.5 rounded-full">
-            {followUpLeads.length} dû{followUpLeads.length > 1 ? 's' : ''}
+            {followUpLeads.length}
           </Badge>
         )}
       </CardHeader>

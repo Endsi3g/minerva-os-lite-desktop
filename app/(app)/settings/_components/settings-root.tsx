@@ -8,6 +8,8 @@ import { SettingsAiSection } from './settings-ai-section';
 import { SettingsNotificationsSection } from './settings-notifications-section';
 import { SettingsAppearanceSection } from './settings-appearance-section';
 import { SettingsIntegrationsSection } from './settings-integrations-section';
+import { SettingsPreferencesSection, PreferencesData } from './settings-preferences-section';
+import { Locale } from '@/lib/translations';
 import { createClient } from '@/lib/supabase/client';
 
 
@@ -58,6 +60,7 @@ interface AppSettings {
   ai: AiData;
   notifications: NotificationsData;
   appearance: AppearanceData;
+  preferences: PreferencesData;
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -96,6 +99,12 @@ const DEFAULT_SETTINGS: AppSettings = {
   appearance: {
     density: "comfortable",
     theme: "light"
+  },
+  preferences: {
+    defaultModel: "None",
+    defaultImageModel: "None",
+    chatCapabilities: ["web_search", "image_generation", "data_analyst", "canvas"],
+    language: "fr"
   }
 };
 
@@ -123,7 +132,7 @@ export function SettingsRoot() {
                 fullName: dbSettings.full_name || '',
                 email: dbSettings.company_name || '',
                 phone: '+33 6 12 34 56 78',
-                language: 'fr',
+                language: dbSettings.language || 'fr',
                 timezone: dbSettings.timezone || 'Europe/Paris'
               },
               prospecting: {
@@ -150,6 +159,12 @@ export function SettingsRoot() {
               appearance: {
                 density: 'comfortable',
                 theme: 'dark'
+              },
+              preferences: {
+                defaultModel: dbSettings.default_model || 'None',
+                defaultImageModel: dbSettings.default_image_model || 'None',
+                chatCapabilities: dbSettings.chat_capabilities || ['web_search', 'image_generation', 'data_analyst', 'canvas'],
+                language: (dbSettings.language as Locale) || 'fr'
               }
             });
             return;
@@ -192,7 +207,8 @@ export function SettingsRoot() {
           const supabase = createClient();
           const { data: { user } } = await supabase.auth.getUser();
           if (user) {
-            await supabase.from('settings').upsert({
+            // Standard settings columns save
+            const { error: baseError } = await supabase.from('settings').upsert({
               user_id: user.id,
               full_name: nextSettings.profile.fullName,
               company_name: nextSettings.profile.email,
@@ -205,6 +221,22 @@ export function SettingsRoot() {
               openrouter_key: nextSettings.ai.openrouterKey,
               ai_model: nextSettings.ai.aiModel,
             });
+            if (baseError) console.error("Error saving base settings:", baseError.message);
+
+            // Attempt preferences columns save (handle DDL missing column errors gracefully)
+            if (secKey === 'preferences') {
+              const pref = nextSettings.preferences;
+              const { error: prefError } = await supabase.from('settings').upsert({
+                user_id: user.id,
+                language: pref.language,
+                default_model: pref.defaultModel,
+                default_image_model: pref.defaultImageModel,
+                chat_capabilities: pref.chatCapabilities
+              });
+              if (prefError) {
+                console.warn("Could not save preferences to settings table (columns might be missing):", prefError.message);
+              }
+            }
           }
         } catch (err) {
           console.error("Error upserting settings to Supabase:", err);
@@ -267,6 +299,14 @@ export function SettingsRoot() {
               data={settings.appearance}
               onChange={(updates) => updateSettingsSection('appearance', updates)}
               isSaving={!!savingSection.appearance}
+            />
+          )}
+
+          {section === 'preferences' && (
+            <SettingsPreferencesSection
+              data={settings.preferences}
+              onChange={(updates) => updateSettingsSection('preferences', updates)}
+              isSaving={!!savingSection.preferences}
             />
           )}
 

@@ -4,10 +4,12 @@ import React from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { TodayTasksList } from './today-tasks-list';
 import { useReach } from '@/lib/reach-context';
+import { useLanguage } from '@/lib/language-context';
 import { ListTodo } from 'lucide-react';
 
 export function TodayTasksCard() {
   const { tasks } = useReach();
+  const { t } = useLanguage();
 
   const completedCount = tasks.filter(t => t.completed).length;
   const totalCount = tasks.length;
@@ -21,8 +23,8 @@ export function TodayTasksCard() {
             <ListTodo className="h-4 w-4" />
           </div>
           <div>
-            <CardTitle className="text-base font-semibold font-sans">Tâches du Jour</CardTitle>
-            <CardDescription className="text-xs">Tâches opérationnelles hors-pipeline.</CardDescription>
+            <CardTitle className="text-base font-semibold font-sans">{t('today.tasks_title')}</CardTitle>
+            <CardDescription className="text-xs">{t('today.tasks_desc')}</CardDescription>
           </div>
         </div>
         {totalCount > 0 && (

@@ -5,10 +5,12 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { HotLeadsList } from './hot-leads-list';
 import { useReach } from '@/lib/reach-context';
+import { useLanguage } from '@/lib/language-context';
 import { Flame } from 'lucide-react';
 
 export function HotLeadsCard() {
   const { leads } = useReach();
+  const { t } = useLanguage();
 
   // Filter hot and warm leads (status not Won or Lost)
   const hotLeads = leads.filter(
@@ -26,13 +28,13 @@ export function HotLeadsCard() {
             <Flame className="h-4 w-4" />
           </div>
           <div>
-            <CardTitle className="text-base font-semibold font-sans">Leads Chauds</CardTitle>
-            <CardDescription className="text-xs">Prospects à fort potentiel ou avec intérêt signalé.</CardDescription>
+            <CardTitle className="text-base font-semibold font-sans">{t('today.hot_leads')}</CardTitle>
+            <CardDescription className="text-xs">{t('today.hot_leads_desc')}</CardDescription>
           </div>
         </div>
         {hotLeads.length > 0 && (
           <Badge className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500 hover:bg-amber-600 text-white">
-            {hotLeads.length} actif{hotLeads.length > 1 ? 's' : ''}
+            {hotLeads.length}
           </Badge>
         )}
       </CardHeader>

@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useReach } from '@/lib/reach-context';
+import { useLanguage } from '@/lib/language-context';
 import { Plus, CheckSquare } from 'lucide-react';
 import {
   Sheet,
@@ -29,6 +30,7 @@ import { Lead, Task } from '@/lib/mock-data';
 
 export function TodayHeader() {
   const { addLead, addTask } = useReach();
+  const { t } = useLanguage();
   
   // Sheet states
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -88,9 +90,9 @@ export function TodayHeader() {
     <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-border pb-6">
       {/* Title block */}
       <div>
-        <h1 className="text-3xl font-sans font-bold tracking-tight text-foreground">Today</h1>
+        <h1 className="text-3xl font-sans font-bold tracking-tight text-foreground">{t('today.title')}</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Concentre-toi sur tes relances, leads chauds et tâches clés du jour.
+          {t('today.subtitle')}
         </p>
       </div>
 
@@ -101,20 +103,20 @@ export function TodayHeader() {
           <DialogTrigger asChild>
             <Button variant="outline" size="sm" className="gap-2">
               <CheckSquare className="h-4 w-4 text-muted-foreground" />
-              <span>Nouvelle tâche</span>
+              <span>{t('today.new_task')}</span>
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-[425px]">
             <form onSubmit={handleTaskSubmit}>
               <DialogHeader>
-                <DialogTitle>Nouvelle tâche du jour</DialogTitle>
+                <DialogTitle>{t('today.new_task_title')}</DialogTitle>
                 <DialogDescription>
-                  Ajoute une tâche transverse à faire aujourd&apos;hui.
+                  {t('today.new_task_desc')}
                 </DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
                 <div className="grid gap-2">
-                  <label htmlFor="task-title" className="text-xs font-semibold">Titre de la tâche</label>
+                  <label htmlFor="task-title" className="text-xs font-semibold">{t('today.task_title_label')}</label>
                   <Input 
                     id="task-title" 
                     placeholder="ex: Relancer M. Dupont" 
@@ -124,7 +126,7 @@ export function TodayHeader() {
                   />
                 </div>
                 <div className="grid gap-2">
-                  <label htmlFor="task-category" className="text-xs font-semibold">Catégorie</label>
+                  <label htmlFor="task-category" className="text-xs font-semibold">{t('today.task_category_label')}</label>
                   <Select
                     value={taskForm.category}
                     onValueChange={(val: Task['category']) => setTaskForm(prev => ({ ...prev, category: val }))}
@@ -142,7 +144,7 @@ export function TodayHeader() {
                 </div>
               </div>
               <DialogFooter>
-                <Button type="submit">Créer la tâche</Button>
+                <Button type="submit">{t('today.create_task')}</Button>
               </DialogFooter>
             </form>
           </DialogContent>
@@ -153,21 +155,21 @@ export function TodayHeader() {
           <SheetTrigger asChild>
             <Button size="sm" className="gap-2 bg-primary hover:bg-primary/90">
               <Plus className="h-4 w-4" />
-              <span>Ajouter un lead</span>
+              <span>{t('today.add_lead')}</span>
             </Button>
           </SheetTrigger>
           <SheetContent className="w-[400px] sm:w-[540px] overflow-y-auto">
             <form onSubmit={handleLeadSubmit} className="space-y-6">
               <SheetHeader>
-                <SheetTitle>Ajouter un nouveau prospect</SheetTitle>
+                <SheetTitle>{t('today.add_lead_title')}</SheetTitle>
                 <SheetDescription>
-                  Renseigne le profil commercial de ton lead. Il sera visible immédiatement.
+                  {t('today.add_lead_desc')}
                 </SheetDescription>
               </SheetHeader>
 
               <div className="space-y-4">
                 <div className="grid gap-2">
-                  <label className="text-xs font-semibold">Nom du business *</label>
+                  <label className="text-xs font-semibold">{t('today.business_name_label')}</label>
                   <Input 
                     placeholder="Boulangerie L'Épi d'Or" 
                     value={leadForm.businessName}
@@ -177,7 +179,7 @@ export function TodayHeader() {
                 </div>
 
                 <div className="grid gap-2">
-                  <label className="text-xs font-semibold">Nom du contact principal</label>
+                  <label className="text-xs font-semibold">{t('today.contact_name_label')}</label>
                   <Input 
                     placeholder="Jean Dupont" 
                     value={leadForm.contactName}
@@ -187,7 +189,7 @@ export function TodayHeader() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2">
-                    <label className="text-xs font-semibold">Niche / Secteur</label>
+                    <label className="text-xs font-semibold">{t('today.niche_label')}</label>
                     <Input 
                       placeholder="Boulangerie" 
                       value={leadForm.niche}
@@ -195,7 +197,7 @@ export function TodayHeader() {
                     />
                   </div>
                   <div className="grid gap-2">
-                    <label className="text-xs font-semibold">Ville</label>
+                    <label className="text-xs font-semibold">{t('today.city_label')}</label>
                     <Input 
                       placeholder="Lyon" 
                       value={leadForm.city}
@@ -206,7 +208,7 @@ export function TodayHeader() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2">
-                    <label className="text-xs font-semibold">Température</label>
+                    <label className="text-xs font-semibold">{t('today.temperature_label')}</label>
                     <Select
                       value={leadForm.temperature}
                       onValueChange={(val: Lead['temperature']) => setLeadForm(prev => ({ ...prev, temperature: val }))}
@@ -222,7 +224,7 @@ export function TodayHeader() {
                     </Select>
                   </div>
                   <div className="grid gap-2">
-                    <label className="text-xs font-semibold">Statut initial</label>
+                    <label className="text-xs font-semibold">{t('today.status_label')}</label>
                     <Select
                       value={leadForm.status}
                       onValueChange={(val: Lead['status']) => setLeadForm(prev => ({ ...prev, status: val }))}
@@ -241,7 +243,7 @@ export function TodayHeader() {
                 </div>
 
                 <div className="grid gap-2">
-                  <label className="text-xs font-semibold">Source d&apos;acquisition</label>
+                  <label className="text-xs font-semibold">{t('today.source_label')}</label>
                   <Input 
                     placeholder="ex: Google Maps, Prospection Physique" 
                     value={leadForm.source}
@@ -250,7 +252,7 @@ export function TodayHeader() {
                 </div>
 
                 <div className="grid gap-2">
-                  <label className="text-xs font-semibold">Action suivante</label>
+                  <label className="text-xs font-semibold">{t('today.next_action_label')}</label>
                   <Input 
                     placeholder="ex: Rappeler pour confirmer le rendez-vous" 
                     value={leadForm.nextAction}
@@ -259,7 +261,7 @@ export function TodayHeader() {
                 </div>
 
                 <div className="grid gap-2">
-                  <label className="text-xs font-semibold">Date de l&apos;action suivante</label>
+                  <label className="text-xs font-semibold">{t('today.next_action_date_label')}</label>
                   <Input 
                     type="date"
                     value={leadForm.nextActionDate}
@@ -268,7 +270,7 @@ export function TodayHeader() {
                 </div>
 
                 <div className="grid gap-2">
-                  <label className="text-xs font-semibold">Notes terrain / Observations initiales</label>
+                  <label className="text-xs font-semibold">{t('today.notes_label')}</label>
                   <Textarea 
                     placeholder="ex: Site web non responsive, manque de visibilité locale..." 
                     value={leadForm.notes}
@@ -279,8 +281,8 @@ export function TodayHeader() {
               </div>
 
               <SheetFooter className="pt-4 border-t border-border">
-                <Button type="button" variant="outline" onClick={() => setSheetOpen(false)}>Annuler</Button>
-                <Button type="submit">Enregistrer le prospect</Button>
+                <Button type="button" variant="outline" onClick={() => setSheetOpen(false)}>{t('today.cancel')}</Button>
+                <Button type="submit">{t('today.save_lead')}</Button>
               </SheetFooter>
             </form>
           </SheetContent>

@@ -19,13 +19,20 @@ import {
   Settings,
   PanelLeftClose,
   UserPlus,
+  Users,
   Loader2,
   Check,
-  Menu
+  Menu,
+  Briefcase,
+  Settings2,
+  Globe,
+  LogOut
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { MinervaIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
+import { ReachProvider, useReach } from '@/lib/reach-context';
+import { signout } from '@/app/login/actions';
 import { 
   getOnboardingProgress, 
   getOnboardingState, 
@@ -33,8 +40,15 @@ import {
   onboardingTasks 
 } from '@/lib/onboarding-store';
 
-export default function WelcomePage() {
+function WelcomePageContent() {
   const router = useRouter();
+
+  // Workspaces Context
+  const { activeWorkspace, workspacesList, switchWorkspace } = useReach();
+  
+  // Dropdown States for Workspaces switcher
+  const [isWorkspaceMenuOpen, setIsWorkspaceMenuOpen] = useState(false);
+  const [isSwitchWorkspaceOpen, setIsSwitchWorkspaceOpen] = useState(false);
   
   // Sidebar states
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -111,32 +125,154 @@ export default function WelcomePage() {
       {/* Mobile Sidebar Overlay */}
       {sidebarOpen && (
         <div 
-          className="fixed inset-0 z-40 bg-black/20 lg:hidden"
+          className="fixed inset-0 z-40 bg-black/20 md:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
       {/* Sidebar Layout Reproduced */}
       <aside className={cn(
-        "fixed inset-y-0 left-0 z-50 flex flex-col border-r border-[#e5e5e0] bg-[#f4f4f3] transition-all duration-300 ease-in-out lg:static lg:relative lg:translate-x-0",
-        isCollapsed ? "lg:w-16" : "lg:w-[240px]",
+        "fixed inset-y-0 left-0 z-50 flex flex-col border-r border-[#e5e5e0] bg-[#f4f4f3] transition-all duration-300 ease-in-out md:static md:relative md:translate-x-0",
+        isCollapsed ? "md:w-16" : "md:w-[240px]",
         sidebarOpen ? "translate-x-0" : "-translate-x-full"
       )}>
         
         {/* Sidebar Brand Header */}
         <div className={cn(
-          "flex h-12 items-center border-b border-[#e5e5e0] px-4 transition-all duration-300",
-          isCollapsed ? "lg:justify-center lg:px-0" : "justify-between"
+          "relative flex h-12 items-center border-b border-[#e5e5e0] px-4 transition-all duration-300",
+          isCollapsed ? "md:justify-center md:px-0" : "justify-between"
         )}>
-          <div className="flex items-center gap-2 font-sans font-semibold text-sm tracking-tight text-[#26251e]">
+          <div className="flex items-center gap-2 font-sans font-semibold text-sm tracking-tight text-[#26251e] w-full min-w-0">
             <MinervaIcon size={20} className="shrink-0" />
             {!isCollapsed && (
-              <div className="flex items-center gap-1 cursor-pointer hover:bg-[#e5e5e2] px-1.5 py-0.5 rounded transition-colors">
-                <span className="font-semibold text-sm text-[#26251e]">Minerva OS Lite</span>
-                <ChevronDown className="h-3 w-3 text-[#7a7a76]" />
+              <div 
+                onClick={() => setIsWorkspaceMenuOpen(!isWorkspaceMenuOpen)}
+                className="flex flex-1 items-center justify-between gap-1 cursor-pointer hover:bg-[#e5e5e2] px-1.5 py-0.5 rounded transition-colors select-none min-w-0"
+              >
+                <span className="font-semibold text-sm text-[#26251e] truncate">
+                  {activeWorkspace ? activeWorkspace.name : 'Minerva OS Lite'}
+                </span>
+                <ChevronDown className="h-3 w-3 text-[#7a7a76] shrink-0" />
               </div>
             )}
           </div>
+
+          {/* Workspace dropdown menu (Langdock Style) */}
+          {isWorkspaceMenuOpen && !isCollapsed && (
+            <>
+              {/* Invisible background click handler */}
+              <div 
+                className="fixed inset-0 z-[90]" 
+                onClick={() => {
+                  setIsWorkspaceMenuOpen(false);
+                  setIsSwitchWorkspaceOpen(false);
+                }}
+              />
+              
+              <div className="absolute left-4 top-11 w-56 bg-white border border-[#e5e5e0] rounded-xl shadow-lg py-1.5 z-[100] animate-in fade-in slide-in-from-top-1 duration-150 text-left">
+                <Link
+                  href="/settings"
+                  onClick={() => setIsWorkspaceMenuOpen(false)}
+                  className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-[#555552] hover:text-[#26251e] hover:bg-[#e5e5e2]/60 transition-colors"
+                >
+                  <SettingsIcon className="w-3.5 h-3.5" />
+                  <span>Paramètres du compte</span>
+                </Link>
+
+                <Link
+                  href="/workspaces"
+                  onClick={() => setIsWorkspaceMenuOpen(false)}
+                  className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-[#555552] hover:text-[#26251e] hover:bg-[#e5e5e2]/60 transition-colors"
+                >
+                  <Settings2 className="w-3.5 h-3.5" />
+                  <span>Gérer les espaces</span>
+                </Link>
+
+                <Link
+                  href="/team"
+                  onClick={() => setIsWorkspaceMenuOpen(false)}
+                  className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-[#555552] hover:text-[#26251e] hover:bg-[#e5e5e2]/60 transition-colors"
+                >
+                  <Users className="w-3.5 h-3.5" />
+                  <span>Inviter des membres</span>
+                </Link>
+
+                <div className="h-px bg-[#e5e5e0] my-1" />
+
+                {/* Switch workspace parent item */}
+                <div 
+                  className="relative"
+                  onMouseEnter={() => setIsSwitchWorkspaceOpen(true)}
+                  onMouseLeave={() => setIsSwitchWorkspaceOpen(false)}
+                >
+                  <button
+                    className={cn(
+                      "w-full flex items-center justify-between px-3 py-2 text-xs font-semibold text-[#555552] hover:text-[#26251e] hover:bg-[#e5e5e2]/60 transition-colors text-left",
+                      isSwitchWorkspaceOpen && "bg-[#e5e5e2]/60 text-[#26251e]"
+                    )}
+                  >
+                    <span className="flex items-center gap-2">
+                      <Briefcase className="w-3.5 h-3.5" />
+                      <span>Switch workspace</span>
+                    </span>
+                    <ChevronRight className="w-3 h-3 text-[#7a7a76]" />
+                  </button>
+
+                  {/* Submenu flyout to the right */}
+                  {isSwitchWorkspaceOpen && (
+                    <div className="absolute left-full top-0 ml-0.5 w-52 bg-white border border-[#e5e5e0] rounded-xl shadow-lg py-1.5 z-[101] animate-in fade-in slide-in-from-left-1 duration-150 text-left">
+                      <div className="max-h-[200px] overflow-y-auto">
+                        {workspacesList.map((ws) => {
+                          const isWsActive = activeWorkspace?.id === ws.id;
+                          return (
+                            <button
+                              key={ws.id}
+                              onClick={() => {
+                                switchWorkspace(ws.id);
+                                setIsWorkspaceMenuOpen(false);
+                                setIsSwitchWorkspaceOpen(false);
+                              }}
+                              className="w-full flex items-center justify-between px-3 py-2 text-xs font-semibold text-[#555552] hover:text-[#26251e] hover:bg-[#e5e5e2]/60 transition-colors text-left"
+                            >
+                              <span className="truncate max-w-[120px]">{ws.name}</span>
+                              {isWsActive && <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      
+                      {workspacesList.length > 0 && <div className="h-px bg-[#e5e5e0] my-1" />}
+
+                      <Link
+                        href="/workspaces"
+                        onClick={() => {
+                          setIsWorkspaceMenuOpen(false);
+                          setIsSwitchWorkspaceOpen(false);
+                        }}
+                        className="flex items-center justify-between px-3 py-2 text-xs font-semibold text-[#807d72] hover:text-[#26251e] hover:bg-[#e5e5e2]/60 transition-colors"
+                      >
+                        <span>All workspaces</span>
+                        <Globe className="w-3 h-3" />
+                      </Link>
+                    </div>
+                  )}
+                </div>
+
+                <div className="h-px bg-[#e5e5e0] my-1" />
+
+                <button
+                  onClick={async () => {
+                    setIsWorkspaceMenuOpen(false);
+                    await signout();
+                  }}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-xs font-semibold text-[#555552] hover:text-red-600 hover:bg-red-50 transition-colors text-left"
+                >
+                  <LogOut className="w-3.5 h-3.5 text-red-600" />
+                  <span>Déconnexion</span>
+                </button>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Sidebar Navigation */}
@@ -273,7 +409,7 @@ export default function WelcomePage() {
           <Button
             variant="ghost"
             size="icon"
-            className="lg:hidden h-8 w-8 text-[#7a7a76] hover:text-[#26251e] border border-[#e5e5e0] bg-white/80 backdrop-blur-xs shadow-2xs"
+            className="md:hidden h-8 w-8 text-[#7a7a76] hover:text-[#26251e] border border-[#e5e5e0] bg-white/80 backdrop-blur-xs shadow-2xs"
             onClick={() => setSidebarOpen(true)}
           >
             <Menu className="h-4 w-4" />
@@ -281,7 +417,7 @@ export default function WelcomePage() {
 
           <button
             onClick={toggleCollapse}
-            className="hidden lg:flex h-8 w-8 items-center justify-center rounded-md border border-[#e5e5e0] bg-white/80 backdrop-blur-xs text-[#7a7a76] hover:text-[#26251e] hover:bg-[#e5e5e2]/60 transition-colors shadow-2xs"
+            className="hidden md:flex h-8 w-8 items-center justify-center rounded-md border border-[#e5e5e0] bg-white/80 backdrop-blur-xs text-[#7a7a76] hover:text-[#26251e] hover:bg-[#e5e5e2]/60 transition-colors shadow-2xs"
             aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
             {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
@@ -640,5 +776,13 @@ function ExternalLinkIcon({ className }: { className?: string }) {
       <polyline points="15 3 21 3 21 9" />
       <line x1="10" y1="14" x2="21" y2="3" />
     </svg>
+  );
+}
+
+export default function WelcomePage() {
+  return (
+    <ReachProvider>
+      <WelcomePageContent />
+    </ReachProvider>
   );
 }
