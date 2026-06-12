@@ -251,7 +251,7 @@ export default function OnboardingPage() {
     localStorage.setItem('minerva_reach_settings', JSON.stringify(localSettings));
     localStorage.setItem('minerva_welcome_seen', 'true');
     router.refresh();
-    router.push('/today');
+    router.push('/welcome');
   };
 
   const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);

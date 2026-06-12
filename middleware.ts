@@ -11,7 +11,7 @@ export async function middleware(request: NextRequest) {
     url.pathname.endsWith('.png') ||
     url.pathname.endsWith('.jpg') ||
     url.pathname.endsWith('.svg') ||
-    url.pathname.startsWith('/api/auth') // Allow auth callback routes
+    url.pathname.startsWith('/api/') // Let API routes handle their own authentication/redirect logic
   ) {
     return NextResponse.next();
   }
@@ -66,15 +66,14 @@ export async function middleware(request: NextRequest) {
   const isUpdatePasswordPage = url.pathname === '/update-password';
 
   if (!onboardingComplete) {
-    // Logged in but not onboarded: force redirect to welcome/onboarding
-    // (allow /update-password through so reset-email users can set a new password)
-    if (!isOnboardingPage && !isWelcomePage && !isUpdatePasswordPage) {
-      url.pathname = '/welcome';
+    // Logged in but not onboarded: force redirect to /onboarding
+    if (!isOnboardingPage && !isUpdatePasswordPage) {
+      url.pathname = '/onboarding';
       return NextResponse.redirect(url);
     }
   } else {
-    // Onboarded: don't let them go back to welcome/onboarding
-    if (isOnboardingPage || isWelcomePage) {
+    // Onboarded: don't let them go back to onboarding page
+    if (isOnboardingPage) {
       url.pathname = '/today';
       return NextResponse.redirect(url);
     }
