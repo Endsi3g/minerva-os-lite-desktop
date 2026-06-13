@@ -36,6 +36,7 @@ import {
 } from 'lucide-react';
 import { useLanguage } from '@/lib/language-context';
 import { cn } from '@/lib/utils';
+import { getApiUrl } from '@/lib/api-helper';
 import { MinervaIcon } from '@/components/icons';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -322,7 +323,7 @@ export default function ChatPage() {
     saveSessions(sessions.map(s => s.id === currentSessionId ? sessionWithAssistant : s));
 
     try {
-      const response = await fetch('/api/chat', {
+      const response = await fetch(getApiUrl('/api/chat'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

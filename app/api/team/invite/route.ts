@@ -97,26 +97,89 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 5. Send Supabase invitation email (Service Role)
+    // 5. Generate Supabase invitation link (Service Role)
     const adminClient = createServiceClient();
-    const { data: inviteData, error: inviteError } = await adminClient.auth.admin.inviteUserByEmail(
-      email.toLowerCase(),
-      {
-        redirectTo: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/onboarding`,
-        data: {
-          invited_by: user.id,
-          workspace_owner_id: ownerId,
-          role,
-        },
-      }
-    );
+    let actionLink = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/login`;
+    let inviteData: any = null;
+    let inviteError: any = null;
+
+    try {
+      const genResult = await adminClient.auth.admin.generateLink({
+        type: 'invite',
+        email: email.toLowerCase(),
+        options: {
+          redirectTo: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/onboarding`,
+          data: {
+            invited_by: user.id,
+            workspace_owner_id: ownerId,
+            role,
+          },
+        }
+      });
+      inviteData = genResult.data;
+      inviteError = genResult.error;
+    } catch (e: any) {
+      inviteError = e;
+    }
 
     if (inviteError) {
-      console.error('Supabase invite error:', inviteError);
-      // If user already exists in Supabase Auth, still insert the team member record
+      console.error('Supabase generateLink error:', inviteError);
+      // If user already exists in Supabase Auth, we fallback to login link
       if (!inviteError.message.includes('already been registered')) {
         return NextResponse.json({ error: inviteError.message }, { status: 500 });
       }
+      actionLink = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/login`;
+    } else if (inviteData?.properties?.action_link) {
+      actionLink = inviteData.properties.action_link;
+    }
+
+    // Send invitation email via Resend
+    const resendApiKey = process.env.RESEND_API_KEY;
+    if (resendApiKey) {
+      const emailHtml = `
+        <div style="font-family: system-ui, -apple-system, sans-serif; max-width: 580px; margin: 0 auto; padding: 32px 24px; border: 1px solid #e6e5e0; border-radius: 12px; background-color: #ffffff;">
+          <h2 style="color: #26251e; font-size: 20px; font-weight: 700; margin-top: 0; margin-bottom: 16px; font-family: Outfit, sans-serif;">Rejoignez Minerva OS Lite</h2>
+          <p style="color: #555552; font-size: 14px; line-height: 1.6; margin-bottom: 24px;">
+            Vous avez été invité(e) par <strong>${user.email}</strong> à rejoindre son espace de travail sur <strong>Minerva OS Lite</strong> en tant que <strong>${role}</strong>.
+          </p>
+          <div style="margin: 28px 0; text-align: left;">
+            <a href="${actionLink}" style="background-color: #f54e00; color: #ffffff; padding: 10px 20px; text-decoration: none; font-weight: 600; border-radius: 6px; font-size: 13px; display: inline-block; transition: background-color 0.2s;">
+              Accepter l'invitation
+            </a>
+          </div>
+          <p style="color: #807d72; font-size: 11px; line-height: 1.5; border-top: 1px solid #e6e5e0; padding-top: 16px; margin-top: 24px;">
+            Si le bouton ci-dessus ne fonctionne pas, vous pouvez copier et coller ce lien dans votre navigateur :<br/>
+            <span style="color: #f54e00; word-break: break-all;">${actionLink}</span>
+          </p>
+        </div>
+      `;
+
+      try {
+        const resendRes = await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${resendApiKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            from: 'Minerva OS <onboarding@resend.dev>',
+            to: [email.toLowerCase()],
+            subject: `Invitation à rejoindre Minerva OS`,
+            html: emailHtml
+          })
+        });
+
+        if (!resendRes.ok) {
+          const errData = await resendRes.json();
+          console.error('Failed to send email via Resend:', errData);
+        } else {
+          console.log('Email successfully sent via Resend to:', email);
+        }
+      } catch (sendErr) {
+        console.error('Error sending email via Resend:', sendErr);
+      }
+    } else {
+      console.warn('RESEND_API_KEY is not set. Email dispatch skipped.');
     }
 
     // 6. Insert pending team member record

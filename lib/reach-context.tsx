@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { getApiUrl } from './api-helper';
 import { User as SupabaseUser } from '@supabase/supabase-js';
 import { Lead, Task, Note, AiSuggestion, initialLeads, initialTasks } from './mock-data';
 import { createClient } from './supabase/client';
@@ -68,6 +69,7 @@ interface DbLead {
   next_action?: string | null;
   next_action_date?: string | null;
   owner?: string | null;
+  image_url?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -112,6 +114,7 @@ function mapDbLeadToUi(dbLead: DbLead, dbNotes: DbNote[] = []): Lead {
     nextAction: dbLead.next_action || '',
     nextActionDate: dbLead.next_action_date || '',
     owner: dbLead.owner || 'Moi',
+    imageUrl: dbLead.image_url || '',
     createdAt: dbLead.created_at,
     updatedAt: dbLead.updated_at,
     notes: dbNotes
@@ -167,6 +170,47 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
   // Workspaces State
   const [workspacesList, setWorkspacesList] = useState<Workspace[]>([]);
   const [activeWorkspace, setActiveWorkspace] = useState<Workspace | null>(null);
+
+  const loadDataLocal = useCallback(async (userId: string, workspaceId: string) => {
+    const electronObj = typeof window !== 'undefined' && (window as any).electron;
+    if (!electronObj) return;
+
+    try {
+      const dbLeads = await electronObj.dbAll(
+        "SELECT * FROM leads WHERE workspace_id = ? ORDER BY created_at DESC",
+        [workspaceId]
+      );
+      const dbNotes = await electronObj.dbAll(
+        "SELECT * FROM notes WHERE workspace_id = ? ORDER BY created_at ASC",
+        [workspaceId]
+      );
+
+      const uiLeads = (dbLeads || []).map((lead: any) => {
+        const leadNotes = (dbNotes || []).filter((n: any) => n.lead_id === lead.id);
+        return mapDbLeadToUi(lead, leadNotes);
+      });
+      setLeads(uiLeads);
+
+      const dbTasks = await electronObj.dbAll(
+        "SELECT * FROM tasks WHERE workspace_id = ? ORDER BY created_at DESC",
+        [workspaceId]
+      );
+      const uiTasks = (dbTasks || []).map(mapDbTaskToUi);
+      setTasks(uiTasks);
+
+      const dbSettings = await electronObj.dbGet(
+        "SELECT * FROM settings WHERE user_id = ? ORDER BY updated_at DESC LIMIT 1",
+        [userId]
+      );
+      if (dbSettings) {
+        setQuickNote(dbSettings.quick_note || '');
+        setFocusTitle(dbSettings.focus_title || 'Objectif principal du jour');
+        setFocusItems(dbSettings.focus_items ? JSON.parse(dbSettings.focus_items) : []);
+      }
+    } catch (err) {
+      console.error("Failed to load local SQLite data in ReachProvider:", err);
+    }
+  }, []);
 
   const populateMockData = useCallback(async (userId: string, workspaceId: string) => {
     const supabase = createClient();
@@ -231,6 +275,11 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const loadData = useCallback(async (currUser: SupabaseUser, activeWs: Workspace) => {
+    const electronObj = typeof window !== 'undefined' && (window as any).electron;
+    if (electronObj) {
+      await loadDataLocal(currUser.id, activeWs.id);
+      return;
+    }
     const supabase = createClient();
     try {
       // 1. Fetch leads & notes for the active workspace
@@ -300,7 +349,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
   // Load Workspaces List
   const loadWorkspaces = useCallback(async () => {
     try {
-      const res = await fetch('/api/workspaces');
+      const res = await fetch(getApiUrl('/api/workspaces'));
       if (res.ok) {
         const data = await res.json();
         const list = data.workspaces || [];
@@ -335,7 +384,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
   const createWorkspace = async (name: string): Promise<Workspace | null> => {
     if (!user) return null;
     try {
-      const res = await fetch('/api/workspaces', {
+      const res = await fetch(getApiUrl('/api/workspaces'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name }),
@@ -359,7 +408,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
   const renameWorkspace = async (id: string, name: string) => {
     if (!user) return;
     try {
-      const res = await fetch('/api/workspaces', {
+      const res = await fetch(getApiUrl('/api/workspaces'), {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id, name }),
@@ -378,7 +427,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
   const deleteWorkspace = async (id: string) => {
     if (!user) return;
     try {
-      const res = await fetch(`/api/workspaces?id=${id}`, {
+      const res = await fetch(getApiUrl(`/api/workspaces?id=${id}`), {
         method: 'DELETE',
       });
       if (res.ok) {
@@ -407,6 +456,16 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
         setUser(session.user);
+        
+        const electronObj = typeof window !== 'undefined' && (window as any).electron;
+        if (electronObj && electronObj.setSession) {
+          electronObj.setSession({
+            accessToken: session.access_token,
+            supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL,
+            supabaseKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+            userId: session.user.id
+          });
+        }
         await loadWorkspaces();
       }
     };
@@ -414,11 +473,23 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
     fetchSession();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      const electronObj = typeof window !== 'undefined' && (window as any).electron;
       if (session?.user) {
         setUser(session.user);
+        if (electronObj && electronObj.setSession) {
+          electronObj.setSession({
+            accessToken: session.access_token,
+            supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL,
+            supabaseKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+            userId: session.user.id
+          });
+        }
         loadWorkspaces();
       } else {
         setUser(null);
+        if (electronObj && electronObj.setSession) {
+          electronObj.setSession(null);
+        }
         setLeads([]);
         setTasks([]);
         setAiSuggestions([]);
@@ -431,6 +502,19 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
       subscription.unsubscribe();
     };
   }, [loadWorkspaces]);
+
+  // Set up Focus Lead listener for Spotlight
+  useEffect(() => {
+    const electronObj = typeof window !== 'undefined' && (window as any).electron;
+    if (electronObj && electronObj.onFocusLead) {
+      const unsubscribe = electronObj.onFocusLead((leadId: string) => {
+        window.dispatchEvent(new CustomEvent('minerva_focus_lead', { detail: { leadId } }));
+      });
+      return () => {
+        if (unsubscribe) unsubscribe();
+      };
+    }
+  }, []);
 
   // Load data whenever activeWorkspace or user changes
   useEffect(() => {
@@ -452,8 +536,63 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
     nextAction: string;
     nextActionDate: string;
     notes?: string;
+    imageUrl?: string;
   }) => {
     if (!user || !activeWorkspace) return;
+    const electronObj = typeof window !== 'undefined' && (window as any).electron;
+
+    if (electronObj) {
+      try {
+        const leadId = 'lead-' + Date.now();
+        const nowStr = new Date().toISOString();
+        
+        await electronObj.dbRun(`INSERT INTO leads (id, user_id, business_name, contact_name, contact_email, niche, city, source, status, temperature, next_action, next_action_date, owner, image_url, workspace_id, created_at, updated_at, sync_status)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending_insert')`,
+          [leadId, user.id, leadData.businessName, leadData.contactName, leadData.contactEmail || '', leadData.niche, leadData.city, leadData.source, leadData.status, leadData.temperature, leadData.nextAction, leadData.nextActionDate || null, 'Moi', leadData.imageUrl || null, activeWorkspace.id, nowStr, nowStr]
+        );
+
+        const insertedNotes: DbNote[] = [];
+        if (leadData.notes) {
+          const noteId = 'note-' + Date.now();
+          await electronObj.dbRun(`INSERT INTO notes (id, lead_id, user_id, type, content, workspace_id, created_at, updated_at, sync_status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending_insert')`,
+            [noteId, leadId, user.id, 'general', leadData.notes, activeWorkspace.id, nowStr, nowStr]
+          );
+          insertedNotes.push({
+            id: noteId,
+            lead_id: leadId,
+            type: 'general',
+            content: leadData.notes,
+            created_at: nowStr
+          });
+        }
+
+        const newUiLead = mapDbLeadToUi({
+          id: leadId,
+          business_name: leadData.businessName,
+          contact_name: leadData.contactName,
+          contact_email: leadData.contactEmail || '',
+          niche: leadData.niche,
+          city: leadData.city,
+          source: leadData.source,
+          status: leadData.status,
+          temperature: leadData.temperature,
+          next_action: leadData.nextAction,
+          next_action_date: leadData.nextActionDate || null,
+          owner: 'Moi',
+          image_url: leadData.imageUrl || null,
+          created_at: nowStr,
+          updated_at: nowStr
+        }, insertedNotes);
+
+        setLeads(prev => [newUiLead, ...prev]);
+        electronObj.triggerSync();
+      } catch (err) {
+        console.error("Local addLead error:", err);
+      }
+      return;
+    }
+
     const supabase = createClient();
 
     try {
@@ -472,6 +611,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
           temperature: leadData.temperature,
           next_action: leadData.nextAction,
           next_action_date: leadData.nextActionDate || null,
+          image_url: leadData.imageUrl || null,
           owner: 'Moi'
         })
         .select()
@@ -511,21 +651,40 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
 
   const toggleTask = async (id: string) => {
     if (!user) return;
-    const supabase = createClient();
-
     const currentTask = tasks.find(t => t.id === id);
     if (!currentTask) return;
 
+    const nextCompleted = !currentTask.completed;
+    const electronObj = typeof window !== 'undefined' && (window as any).electron;
+
+    if (electronObj) {
+      try {
+        const completedInt = nextCompleted ? 1 : 0;
+        await electronObj.dbRun(
+          "UPDATE tasks SET completed = ?, sync_status = 'pending_update', updated_at = ? WHERE id = ?",
+          [completedInt, new Date().toISOString(), id]
+        );
+        setTasks(prev => prev.map(t => 
+          t.id === id ? { ...t, completed: nextCompleted } : t
+        ));
+        electronObj.triggerSync();
+      } catch (err) {
+        console.error("Local toggleTask error:", err);
+      }
+      return;
+    }
+
+    const supabase = createClient();
     try {
       const { error } = await supabase
         .from('tasks')
-        .update({ completed: !currentTask.completed })
+        .update({ completed: nextCompleted })
         .eq('id', id);
 
       if (error) throw error;
 
       setTasks(prev => prev.map(t => 
-        t.id === id ? { ...t, completed: !t.completed } : t
+        t.id === id ? { ...t, completed: nextCompleted } : t
       ));
     } catch (err) {
       console.error("Error in toggleTask:", err);
@@ -534,8 +693,37 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
 
   const addTask = async (title: string, category: Task['category']) => {
     if (!user || !activeWorkspace) return;
-    const supabase = createClient();
+    const electronObj = typeof window !== 'undefined' && (window as any).electron;
 
+    if (electronObj) {
+      try {
+        const taskId = 'task-' + Date.now();
+        const nowStr = new Date().toISOString();
+        const dueDate = nowStr.split('T')[0];
+
+        await electronObj.dbRun(
+          `INSERT INTO tasks (id, user_id, title, completed, category, due_date, workspace_id, created_at, updated_at, sync_status)
+           VALUES (?, ?, ?, 0, ?, ?, ?, ?, ?, 'pending_insert')`,
+          [taskId, user.id, title, category, dueDate, activeWorkspace.id, nowStr, nowStr]
+        );
+
+        const newUiTask: Task = {
+          id: taskId,
+          title,
+          completed: false,
+          category,
+          dueDate
+        };
+
+        setTasks(prev => [newUiTask, ...prev]);
+        electronObj.triggerSync();
+      } catch (err) {
+        console.error("Local addTask error:", err);
+      }
+      return;
+    }
+
+    const supabase = createClient();
     try {
       const { data: newDbTask, error } = await supabase
         .from('tasks')
@@ -561,8 +749,25 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
 
   const deleteTask = async (id: string) => {
     if (!user) return;
-    const supabase = createClient();
+    const electronObj = typeof window !== 'undefined' && (window as any).electron;
 
+    if (electronObj) {
+      try {
+        const existing = await electronObj.dbGet("SELECT sync_status FROM tasks WHERE id = ?", [id]);
+        if (existing && existing.sync_status === 'pending_insert') {
+          await electronObj.dbRun("DELETE FROM tasks WHERE id = ?", [id]);
+        } else {
+          await electronObj.dbRun("UPDATE tasks SET sync_status = 'pending_delete' WHERE id = ?", [id]);
+        }
+        setTasks(prev => prev.filter(t => t.id !== id));
+        electronObj.triggerSync();
+      } catch (err) {
+        console.error("Local deleteTask error:", err);
+      }
+      return;
+    }
+
+    const supabase = createClient();
     try {
       const { error } = await supabase
         .from('tasks')
@@ -583,6 +788,24 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
 
     // Only allow owner to modify settings
     if (!activeWorkspace.isOwner) return;
+
+    const electronObj = typeof window !== 'undefined' && (window as any).electron;
+    if (electronObj) {
+      try {
+        await electronObj.dbRun(`INSERT INTO settings (user_id, quick_note, updated_at, sync_status)
+          VALUES (?, ?, ?, 'pending_update')
+          ON CONFLICT(user_id) DO UPDATE SET
+            quick_note = excluded.quick_note,
+            updated_at = excluded.updated_at,
+            sync_status = 'pending_update'`,
+          [user.id, note, new Date().toISOString()]
+        );
+        electronObj.triggerSync();
+      } catch (err) {
+        console.error("Local saveQuickNote error:", err);
+      }
+      return;
+    }
 
     const supabase = createClient();
     try {
@@ -605,6 +828,25 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
     // Only allow owner to modify settings
     if (!activeWorkspace.isOwner) return;
 
+    const electronObj = typeof window !== 'undefined' && (window as any).electron;
+    if (electronObj) {
+      try {
+        await electronObj.dbRun(`INSERT INTO settings (user_id, focus_title, focus_items, updated_at, sync_status)
+          VALUES (?, ?, ?, ?, 'pending_update')
+          ON CONFLICT(user_id) DO UPDATE SET
+            focus_title = excluded.focus_title,
+            focus_items = excluded.focus_items,
+            updated_at = excluded.updated_at,
+            sync_status = 'pending_update'`,
+          [user.id, title, JSON.stringify(items), new Date().toISOString()]
+        );
+        electronObj.triggerSync();
+      } catch (err) {
+        console.error("Local updateFocus error:", err);
+      }
+      return;
+    }
+
     const supabase = createClient();
     try {
       await supabase
@@ -621,6 +863,42 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
 
   const updateLead = async (leadId: string, fields: Partial<Lead>) => {
     if (!user) return;
+    const electronObj = typeof window !== 'undefined' && (window as any).electron;
+    if (electronObj) {
+      try {
+        const dbFields: string[] = [];
+        const params: any[] = [];
+        
+        if (fields.businessName !== undefined) { dbFields.push("business_name = ?"); params.push(fields.businessName); }
+        if (fields.contactName !== undefined) { dbFields.push("contact_name = ?"); params.push(fields.contactName); }
+        if (fields.contactEmail !== undefined) { dbFields.push("contact_email = ?"); params.push(fields.contactEmail); }
+        if (fields.niche !== undefined) { dbFields.push("niche = ?"); params.push(fields.niche); }
+        if (fields.city !== undefined) { dbFields.push("city = ?"); params.push(fields.city); }
+        if (fields.source !== undefined) { dbFields.push("source = ?"); params.push(fields.source); }
+        if (fields.status !== undefined) { dbFields.push("status = ?"); params.push(fields.status); }
+        if (fields.temperature !== undefined) { dbFields.push("temperature = ?"); params.push(fields.temperature); }
+        if (fields.nextAction !== undefined) { dbFields.push("next_action = ?"); params.push(fields.nextAction); }
+        if (fields.nextActionDate !== undefined) { dbFields.push("next_action_date = ?"); params.push(fields.nextActionDate || null); }
+        if (fields.imageUrl !== undefined) { dbFields.push("image_url = ?"); params.push(fields.imageUrl || null); }
+
+        if (dbFields.length > 0) {
+          dbFields.push("updated_at = ?");
+          params.push(new Date().toISOString());
+          dbFields.push("sync_status = 'pending_update'");
+          params.push(leadId);
+          await electronObj.dbRun(`UPDATE leads SET ${dbFields.join(", ")} WHERE id = ?`, params);
+        }
+
+        setLeads(prev => prev.map(lead => 
+          lead.id === leadId ? { ...lead, ...fields, updatedAt: new Date().toISOString() } : lead
+        ));
+        electronObj.triggerSync();
+      } catch (err) {
+        console.error("Local updateLead error:", err);
+      }
+      return;
+    }
+
     const supabase = createClient();
 
     const dbFields: Record<string, string | boolean | null | undefined> = {};
@@ -634,6 +912,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
     if (fields.temperature !== undefined) dbFields.temperature = fields.temperature;
     if (fields.nextAction !== undefined) dbFields.next_action = fields.nextAction;
     if (fields.nextActionDate !== undefined) dbFields.next_action_date = fields.nextActionDate || null;
+    if (fields.imageUrl !== undefined) dbFields.image_url = fields.imageUrl || null;
 
     try {
       const { error } = await supabase
@@ -657,6 +936,26 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
 
   const deleteLeads = async (ids: string[]) => {
     if (!user) return;
+    const electronObj = typeof window !== 'undefined' && (window as any).electron;
+    if (electronObj) {
+      try {
+        for (const id of ids) {
+          const existing = await electronObj.dbGet("SELECT sync_status FROM leads WHERE id = ?", [id]);
+          if (existing && existing.sync_status === 'pending_insert') {
+            await electronObj.dbRun("DELETE FROM leads WHERE id = ?", [id]);
+            await electronObj.dbRun("DELETE FROM notes WHERE lead_id = ?", [id]);
+          } else {
+            await electronObj.dbRun("UPDATE leads SET sync_status = 'pending_delete' WHERE id = ?", [id]);
+          }
+        }
+        setLeads(prev => prev.filter(lead => !ids.includes(lead.id)));
+        electronObj.triggerSync();
+      } catch (err) {
+        console.error("Local deleteLeads error:", err);
+      }
+      return;
+    }
+
     const supabase = createClient();
 
     try {
@@ -675,6 +974,22 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
 
   const updateLeadsStatus = async (ids: string[], status: Lead['status']) => {
     if (!user) return;
+    const electronObj = typeof window !== 'undefined' && (window as any).electron;
+    if (electronObj) {
+      try {
+        for (const id of ids) {
+          await electronObj.dbRun("UPDATE leads SET status = ?, sync_status = 'pending_update', updated_at = ? WHERE id = ?", [status, new Date().toISOString(), id]);
+        }
+        setLeads(prev => prev.map(lead => 
+          ids.includes(lead.id) ? { ...lead, status, updatedAt: new Date().toISOString() } : lead
+        ));
+        electronObj.triggerSync();
+      } catch (err) {
+        console.error("Local updateLeadsStatus error:", err);
+      }
+      return;
+    }
+
     const supabase = createClient();
 
     try {
@@ -695,6 +1010,41 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
 
   const addNoteToLead = async (leadId: string, content: string, type: Note['type']) => {
     if (!user || !activeWorkspace) return;
+    const electronObj = typeof window !== 'undefined' && (window as any).electron;
+    if (electronObj) {
+      try {
+        const noteId = 'note-' + Date.now();
+        const nowStr = new Date().toISOString();
+        await electronObj.dbRun(`INSERT INTO notes (id, lead_id, user_id, type, content, workspace_id, created_at, updated_at, sync_status)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending_insert')`,
+          [noteId, leadId, user.id, type, content, activeWorkspace.id, nowStr, nowStr]
+        );
+
+        const newUiNote: Note = {
+          id: noteId,
+          leadId,
+          type,
+          content,
+          createdAt: nowStr
+        };
+
+        setLeads(prev => prev.map(lead => {
+          if (lead.id === leadId) {
+            return {
+              ...lead,
+              notes: [...lead.notes, newUiNote],
+              updatedAt: nowStr
+            };
+          }
+          return lead;
+        }));
+        electronObj.triggerSync();
+      } catch (err) {
+        console.error("Local addNoteToLead error:", err);
+      }
+      return;
+    }
+
     const supabase = createClient();
 
     try {

@@ -203,6 +203,7 @@ export default function IntegrationsPage() {
 
   // User details
   const [userName, setUserName] = useState('Moi');
+  const [userEmail, setUserEmail] = useState('');
 
   useEffect(() => {
     const syncStore = () => {
@@ -219,14 +220,52 @@ export default function IntegrationsPage() {
         const supabase = createClient();
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
+          if (user.email) {
+            setUserEmail(user.email);
+          }
           const { data: settings } = await supabase
             .from('settings')
             .select('full_name')
             .eq('user_id', user.id)
             .maybeSingle();
+          
+          let currentUserName = 'Moi';
           if (settings?.full_name) {
+            currentUserName = settings.full_name;
             setUserName(settings.full_name);
+          } else if (user.email) {
+            currentUserName = user.email.split('@')[0];
+            setUserName(currentUserName);
           }
+
+          const dynamicEmail = user.email || 'user@example.com';
+          const emailPrefix = dynamicEmail.split('@')[0];
+          const emailDomain = dynamicEmail.split('@')[1] || 'example.com';
+
+          setIntegrationsList(prev => prev.map(item => {
+            if (item.owner === 'Alex Smith') {
+              const updatedItem = { ...item };
+              updatedItem.owner = currentUserName;
+              
+              if (item.email && item.email.includes('alexsmith')) {
+                updatedItem.email = item.email.replace('alexsmith', emailPrefix);
+              }
+              
+              if (item.accEmail && item.accEmail.includes('alexsmith')) {
+                if (item.accEmail.includes('gmail.com')) {
+                  updatedItem.accEmail = `${emailPrefix}.drive@gmail.com`;
+                } else if (item.accEmail.includes('meetings')) {
+                  updatedItem.accEmail = `${emailPrefix}.meetings@${emailDomain}`;
+                } else if (item.accEmail.includes('sharepoint')) {
+                  updatedItem.accEmail = `${emailPrefix}.sharepoint@${emailDomain}`;
+                } else {
+                  updatedItem.accEmail = item.accEmail.replace('alexsmith', emailPrefix);
+                }
+              }
+              return updatedItem;
+            }
+            return item;
+          }));
         }
       } catch (err) {
         console.error("Error loading settings in integrations:", err);
@@ -245,7 +284,7 @@ export default function IntegrationsPage() {
       name: customName.trim(),
       category: 'custom',
       owner: userName,
-      email: `${userName.toLowerCase().replace(/\s/g, '')}@minerva-os-lite.com`,
+      email: userEmail || `${userName.toLowerCase().replace(/\s/g, '')}@minerva-os-lite.com`,
       accEmail: 'Custom Connected Integration',
       icon: () => (
         <div className="w-7 h-7 rounded-lg bg-[#059669]/10 flex items-center justify-center border border-[#059669]/20 shrink-0">

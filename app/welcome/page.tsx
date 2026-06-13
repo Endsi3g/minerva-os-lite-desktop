@@ -26,6 +26,7 @@ import {
   Briefcase,
   Settings2,
   Globe,
+  AlertCircle,
   LogOut
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -39,6 +40,7 @@ import {
   toggleOnboardingTask, 
   onboardingTasks 
 } from '@/lib/onboarding-store';
+import { getApiUrl } from '@/lib/api-helper';
 
 function WelcomePageContent() {
   const router = useRouter();
@@ -76,6 +78,7 @@ function WelcomePageContent() {
   const [inviteRole, setInviteRole] = useState<'editor' | 'viewer' | 'admin'>('editor');
   const [isSendingInvite, setIsSendingInvite] = useState(false);
   const [inviteSuccess, setInviteSuccess] = useState(false);
+  const [inviteError, setInviteError] = useState('');
 
   useEffect(() => {
     const syncStore = () => {
@@ -106,13 +109,33 @@ function WelcomePageContent() {
     e.preventDefault();
     if (!inviteEmail.trim()) return;
     setIsSendingInvite(true);
-    await new Promise((resolve) => setTimeout(resolve, 1200));
-    setIsSendingInvite(false);
-    setInviteSuccess(true);
-    await new Promise((resolve) => setTimeout(resolve, 1200));
-    setInviteEmail('');
-    setInviteSuccess(false);
-    setShowInviteModal(false);
+    setInviteError('');
+
+    try {
+      const res = await fetch(getApiUrl('/api/team/invite'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: inviteEmail.trim(), role: inviteRole }),
+      });
+
+      const data = await res.json();
+      setIsSendingInvite(false);
+
+      if (!res.ok) {
+        setInviteError(data.error || 'Erreur lors de l\'envoi');
+        return;
+      }
+
+      setInviteSuccess(true);
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+      setInviteEmail('');
+      setInviteSuccess(false);
+      setInviteError('');
+      setShowInviteModal(false);
+    } catch (err) {
+      setIsSendingInvite(false);
+      setInviteError('Erreur de connexion');
+    }
   };
 
   const handleStartChatting = () => {
@@ -714,7 +737,7 @@ function WelcomePageContent() {
                     required
                     placeholder="Ex: collaborateur@agence.com"
                     value={inviteEmail}
-                    onChange={(e) => setInviteEmail(e.target.value)}
+                    onChange={(e) => { setInviteEmail(e.target.value); setInviteError(''); }}
                     className="w-full text-xs p-2.5 bg-white border border-[#e6e5e0] rounded-md focus:outline-none focus:ring-1 focus:ring-[#059669]"
                   />
                 </div>
@@ -734,6 +757,13 @@ function WelcomePageContent() {
                     ))}
                   </div>
                 </div>
+
+                {inviteError && (
+                  <div className="flex items-center gap-2 text-red-600 bg-red-50 border border-red-200 rounded-xl px-3 py-2 text-xs font-semibold">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    {inviteError}
+                  </div>
+                )}
 
                 <div className="flex justify-end gap-2 text-xs pt-2 border-t border-[#e5e5e0]/60">
                   <Button 

@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useReach } from '@/lib/reach-context';
 import { createClient } from '@/lib/supabase/client';
+import { getApiUrl } from '@/lib/api-helper';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -116,7 +117,7 @@ export function IntelligenceScrapeShortcut({ onImportComplete }: IntelligenceScr
     try {
       const nicheQuery = customQuery ? customQuery : `${selectedNiche} ${selectedCity}`;
       
-      const res = await fetch('/api/scrape-maps', {
+      const res = await fetch(getApiUrl('/api/scrape-maps'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

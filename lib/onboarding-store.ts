@@ -141,7 +141,7 @@ export const getAgents = (): Agent[] => {
       name: 'Tableau Insight Explorer',
       description: 'Your Tableau companion for data visualization and business intelligence.',
       iconType: 'minerva',
-      owner: 'Alex Smith',
+      owner: 'Moi',
       chatsCount: '<10',
       lastUsed: 'Today, 9:18 PM'
     },
@@ -150,7 +150,7 @@ export const getAgents = (): Agent[] => {
       name: 'Health Assistant',
       description: 'Turns ASMobbin onboarding research into structured outputs such as summaries,...',
       iconType: 'gradient',
-      owner: 'Alex Smith',
+      owner: 'Moi',
       chatsCount: '<10',
       lastUsed: 'Today, 9:03 PM'
     },
@@ -159,7 +159,7 @@ export const getAgents = (): Agent[] => {
       name: 'ASMobbin Agent',
       description: 'Analyzes ASMobbin Health App onboarding research, summarizes interview findings,...',
       iconType: 'black',
-      owner: 'Alex Smith',
+      owner: 'Moi',
       chatsCount: '<10',
       lastUsed: 'Today, 8:37 PM'
     }
@@ -173,12 +173,12 @@ export const getAgents = (): Agent[] => {
   }
 };
 
-export const addAgent = (agent: Omit<Agent, 'id' | 'owner' | 'chatsCount' | 'lastUsed'>) => {
+export const addAgent = (agent: Omit<Agent, 'id' | 'owner' | 'chatsCount' | 'lastUsed'>, ownerName?: string) => {
   const agents = getAgents();
   const newAgent: Agent = {
     ...agent,
     id: 'agent-' + Date.now(),
-    owner: 'Alex Smith',
+    owner: ownerName || 'Moi',
     chatsCount: '<10',
     lastUsed: 'Just now'
   };

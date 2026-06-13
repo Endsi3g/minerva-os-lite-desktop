@@ -20,14 +20,15 @@ function printMenu() {
   console.log("  \x1b[33m[4]\x1b[0m Desktop  - Electron Dev Mode (Live reload)");
   console.log("  \x1b[33m[5]\x1b[0m Desktop  - Compiler Installer (.exe, .dmg)");
   console.log("");
-  console.log("  \x1b[34m[6]\x1b[0m Mobile   - Capacitor Export & Sync iOS");
-  console.log("  \x1b[34m[7]\x1b[0m Mobile   - Ouvrir dans Xcode Simulator");
-  console.log("  \x1b[34m[8]\x1b[0m Mobile   - Capacitor Export & Sync Android");
-  console.log("  \x1b[34m[9]\x1b[0m Mobile   - Ouvrir dans Android Studio");
+  console.log("  \x1b[34m[6]\x1b[0m Mobile   - Compiler & Synchroniser (Capacitor Sync)");
+  console.log("  \x1b[34m[7]\x1b[0m Mobile   - Ouvrir le projet dans Xcode (iOS)");
+  console.log("  \x1b[34m[8]\x1b[0m Mobile   - Lancer sur iPhone connecté (USB)");
+  console.log("  \x1b[34m[9]\x1b[0m Mobile   - Lancer sur iPhone connecté (Live Reload)");
+  console.log("  \x1b[34m[10]\x1b[0m Mobile  - Ouvrir dans Android Studio");
   console.log("");
-  console.log("  \x1b[31m[10]\x1b[0m Quitter");
+  console.log("  \x1b[31m[11]\x1b[0m Quitter");
   console.log("\x1b[35m========================================================\x1b[0m");
-  rl.question("Entrez votre choix (1-10) : ", handleChoice);
+  rl.question("Entrez votre choix (1-11) : ", handleChoice);
 }
 
 function runCommand(command, args = []) {
@@ -64,15 +65,18 @@ function handleChoice(answer) {
       runCommand('pnpm', ['run', 'cap:sync']);
       break;
     case '7':
-      runCommand('pnpm', ['run', 'cap:open:ios']);
+      runCommand('npx', ['cap', 'open', 'ios']);
       break;
     case '8':
-      runCommand('pnpm', ['run', 'cap:sync:android']);
+      runCommand('npx', ['cap', 'run', 'ios']);
       break;
     case '9':
-      runCommand('pnpm', ['run', 'cap:open:android']);
+      runCommand('npx', ['cap', 'run', 'ios', '--live-reload', '--external']);
       break;
     case '10':
+      runCommand('npx', ['cap', 'open', 'android']);
+      break;
+    case '11':
       console.log("\nAu revoir !");
       rl.close();
       process.exit(0);

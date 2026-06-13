@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import { getApiUrl } from '@/lib/api-helper';
 import { 
   PenSquare, 
   Search, 
@@ -29,7 +30,8 @@ import {
   Globe,
   BarChart3,
   MessageSquare,
-  Megaphone
+  Megaphone,
+  Download
 } from 'lucide-react';
 import { BottomBlur } from '@/components/ui/edge-blur';
 import { cn } from '@/lib/utils';
@@ -106,8 +108,20 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
     };
     syncStore();
     window.addEventListener('minerva_store_update', syncStore);
-    return () => window.removeEventListener('minerva_store_update', syncStore);
-  }, []);
+
+    const handleFocusLead = (e: Event) => {
+      const customEvent = e as CustomEvent<{ leadId: string }>;
+      if (customEvent.detail?.leadId) {
+        router.push(`/leads/${customEvent.detail.leadId}`);
+      }
+    };
+    window.addEventListener('minerva_focus_lead', handleFocusLead);
+
+    return () => {
+      window.removeEventListener('minerva_store_update', syncStore);
+      window.removeEventListener('minerva_focus_lead', handleFocusLead);
+    };
+  }, [router]);
 
   useEffect(() => {
     const collapsed = localStorage.getItem('minerva_sidebar_collapsed') === 'true';
@@ -132,7 +146,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
     setIsSendingInvite(true);
     setInviteError('');
 
-    const res = await fetch('/api/team/invite', {
+    const res = await fetch(getApiUrl('/api/team/invite'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: inviteEmail.trim(), role: inviteRole }),
@@ -219,6 +233,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
       else if (segment === 'team') label = t('nav.team');
       else if (segment === 'workspaces') label = t('nav.workspaces');
       else if (segment === 'agents') label = t('nav.agents');
+      else if (segment === 'download') label = t('nav.download');
 
       if (segments[index - 1] === 'leads' && segment !== 'leads') {
         label = 'Details';
@@ -243,6 +258,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
     { name: t('nav.analytics'), href: '/analytics', icon: BarChart3 },
     { name: t('nav.integrations'), href: '/integrations', icon: Plug },
     { name: t('nav.team'), href: '/team', icon: Users },
+    { name: t('nav.download'), href: '/download', icon: Download },
   ];
 
   const recentFiles = [
@@ -563,7 +579,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className={cn("font-medium text-[#26251e] truncate text-left", isCompleted && "line-through text-[#7a7a76]")}>
-                              {task.name}
+                              {t(`onboarding.task.${task.id}` as any)}
                             </p>
                             <p className="text-[9px] text-[#7a7a76] text-left">
                               {task.category === 'chat' ? 'Chat' : 'Workspace'} • {task.pts > 0 ? `+${task.pts} pts` : 'Done'}

@@ -25,6 +25,7 @@ import { MinervaIcon } from '@/components/icons';
 import { getAgents, addAgent, deleteAgent, Agent } from '@/lib/onboarding-store';
 import { useReach } from '@/lib/reach-context';
 import { createClient } from '@/lib/supabase/client';
+import { useLanguage } from '@/lib/language-context';
 
 interface AgentResult {
   score?: number;
@@ -35,6 +36,7 @@ interface AgentResult {
 }
 
 export default function AgentsPage() {
+  const { t } = useLanguage();
   const [agents, setAgents] = useState<Agent[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'popular' | 'newest'>('popular');
@@ -105,7 +107,7 @@ export default function AgentsPage() {
       name: name.trim(),
       description: description.trim(),
       iconType
-    });
+    }, userName);
 
     setName('');
     setDescription('');
@@ -113,17 +115,37 @@ export default function AgentsPage() {
     setShowCreateModal(false);
   };
 
-  const filteredAgents = agents.filter(agent => 
-    agent.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    agent.description.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const getAgentOwnerName = (agent: Agent) => {
+    return agent.owner === 'Alex Smith' || agent.owner === 'Moi' ? userName : agent.owner;
+  };
+
+  const getAgentName = (agent: Agent) => {
+    const key = `agent.${agent.id}.name`;
+    const translated = t(key as any);
+    return translated === key ? agent.name : translated;
+  };
+
+  const getAgentDesc = (agent: Agent) => {
+    const key = `agent.${agent.id}.description`;
+    const translated = t(key as any);
+    return translated === key ? agent.description : translated;
+  };
+
+  const filteredAgents = agents.filter(agent => {
+    const agentName = getAgentName(agent);
+    const agentDesc = getAgentDesc(agent);
+    return agentName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+           agentDesc.toLowerCase().includes(searchQuery.toLowerCase());
+  });
 
   // Sorting
   const sortedAgents = [...filteredAgents].sort((a, b) => {
     if (sortBy === 'newest') {
       return b.id.localeCompare(a.id);
     }
-    return a.name.localeCompare(b.name);
+    const nameA = getAgentName(a);
+    const nameB = getAgentName(b);
+    return nameA.localeCompare(nameB);
   });
 
   // Render the appropriate icon for the agent card
@@ -320,13 +342,13 @@ export default function AgentsPage() {
             <div className="flex items-center gap-3">
               {activeAgent && renderAgentIcon(activeAgent.iconType, 'sm')}
               <div className="text-left">
-                <h2 className="font-bold text-sm leading-tight">{activeAgent?.name}</h2>
+                <h2 className="font-bold text-sm leading-tight">{activeAgent ? getAgentName(activeAgent) : ''}</h2>
                 <p className="text-[10px] text-[#7a7a76] font-medium">Workspace Interactif</p>
               </div>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-[11px] text-[#7a7a76]">Auteur : <strong className="text-[#26251e] font-semibold">{activeAgent?.owner}</strong></span>
+            <span className="text-[11px] text-[#7a7a76]">Auteur : <strong className="text-[#26251e] font-semibold">{activeAgent ? getAgentOwnerName(activeAgent) : ''}</strong></span>
           </div>
         </div>
 
@@ -779,17 +801,17 @@ export default function AgentsPage() {
                         <X className="w-3.5 h-3.5" />
                       </button>
                     </div>
-                    <h3 className="font-bold text-xs text-[#26251e] truncate">{agent.name}</h3>
+                    <h3 className="font-bold text-xs text-[#26251e] truncate">{getAgentName(agent)}</h3>
                     <p className="text-[11px] text-[#7a7a76] leading-relaxed line-clamp-5">
-                      {agent.description}
+                      {getAgentDesc(agent)}
                     </p>
                   </div>
                   <div className="flex items-center justify-between text-[10px] text-[#7a7a76] font-medium border-t border-[#e5e5e0]/60 pt-2.5 mt-2">
                     <div className="flex items-center gap-1.5">
                       <div className="w-4 h-4 rounded-full bg-[#e5e5e2] flex items-center justify-center text-[8px] font-bold text-[#26251e]">
-                        {agent.owner.substring(0, 1).toUpperCase()}
+                        {getAgentOwnerName(agent).substring(0, 1).toUpperCase()}
                       </div>
-                      <span className="truncate max-w-[80px]">{agent.owner}</span>
+                      <span className="truncate max-w-[80px]">{getAgentOwnerName(agent)}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="flex items-center gap-0.5">
@@ -883,17 +905,17 @@ export default function AgentsPage() {
                         <X className="w-3.5 h-3.5" />
                       </button>
                     </div>
-                    <h3 className="font-bold text-xs text-[#26251e] truncate">{agent.name}</h3>
+                    <h3 className="font-bold text-xs text-[#26251e] truncate">{getAgentName(agent)}</h3>
                     <p className="text-[11px] text-[#7a7a76] leading-relaxed line-clamp-5">
-                      {agent.description}
+                      {getAgentDesc(agent)}
                     </p>
                   </div>
                   <div className="flex items-center justify-between text-[10px] text-[#7a7a76] font-medium border-t border-[#e5e5e0]/60 pt-2.5 mt-2">
                     <div className="flex items-center gap-1.5">
                       <div className="w-4 h-4 rounded-full bg-[#e5e5e2] flex items-center justify-center text-[8px] font-bold text-[#26251e]">
-                        {agent.owner.substring(0, 1).toUpperCase()}
+                        {getAgentOwnerName(agent).substring(0, 1).toUpperCase()}
                       </div>
-                      <span className="truncate max-w-[100px]">{agent.owner}</span>
+                      <span className="truncate max-w-[100px]">{getAgentOwnerName(agent)}</span>
                     </div>
                     <div className="flex items-center gap-1">
                       <MessageSquare className="h-3 w-3 text-[#7a7a76]" />

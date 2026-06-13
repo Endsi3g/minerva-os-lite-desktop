@@ -51,6 +51,7 @@ create table if not exists public.leads (
     next_action text,
     next_action_date date,
     owner text default 'Moi',
+    image_url text,
     created_at timestamp with time zone default now() not null,
     updated_at timestamp with time zone default now() not null
 );
@@ -265,6 +266,9 @@ create policy "Owner can delete team members" on public.team_members
 -- Run this if your team_members table already exists:
 -- ALTER TABLE public.team_members ADD COLUMN IF NOT EXISTS plan text NOT NULL DEFAULT 'Business';
 -- ALTER TABLE public.team_members ADD COLUMN IF NOT EXISTS usage_count integer NOT NULL DEFAULT 0;
+--
+-- Run this to update your existing leads table:
+-- ALTER TABLE public.leads ADD COLUMN IF NOT EXISTS image_url text;
 -- ========================================================
 
 -- ========================================================

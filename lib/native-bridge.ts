@@ -16,16 +16,16 @@ export async function takePhoto(): Promise<string | null> {
       const photo = await Camera.getPhoto({
         quality: 90,
         allowEditing: true,
-        resultType: CameraResultType.Uri,
+        resultType: CameraResultType.Base64,
         source: CameraSource.Camera
       });
-      return photo.webPath || null;
+      return `data:image/jpeg;base64,${photo.base64String}`;
     } catch (err) {
       console.error('Error taking photo with native camera:', err);
       return null;
     }
   } else {
-    // Web fallback: programmatically trigger file input
+    // Web fallback: programmatically trigger file input and read as Base64 Data URL
     return new Promise((resolve) => {
       const input = document.createElement('input');
       input.type = 'file';
@@ -33,8 +33,14 @@ export async function takePhoto(): Promise<string | null> {
       input.onchange = (e) => {
         const file = (e.target as HTMLInputElement).files?.[0];
         if (file) {
-          const url = URL.createObjectURL(file);
-          resolve(url);
+          const reader = new FileReader();
+          reader.onload = () => {
+            resolve(reader.result as string);
+          };
+          reader.onerror = () => {
+            resolve(null);
+          };
+          reader.readAsDataURL(file);
         } else {
           resolve(null);
         }
@@ -112,5 +118,19 @@ export async function getPersistentItem(key: string): Promise<string | null> {
     }
   } else {
     return localStorage.getItem(key);
+  }
+}
+
+declare global {
+  interface Window {
+    electron?: {
+      isElectron: boolean;
+      exportAudit: (fileName: string, content: string) => Promise<{ success: boolean; filePath?: string }>;
+      sendNotification: (title: string, body: string) => Promise<boolean>;
+      updateScrapingStatus: (status: 'idle' | 'running', niche?: string, city?: string) => void;
+      getDiagnostics: () => Promise<any>;
+      triggerUpdateCheck: () => void;
+      onUpdateStatus: (callback: (status: string, details?: string) => void) => () => void;
+    };
   }
 }

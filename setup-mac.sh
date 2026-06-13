@@ -10,6 +10,9 @@ YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m' # No Color
 
+# Ajouter Homebrew au PATH pour cette session de script
+export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
+
 echo -e "${CYAN}===========================================================${NC}"
 echo -e "${CYAN}     Minerva OS Reach Lite - macOS Dev Setup Script        ${NC}"
 echo -e "${CYAN}===========================================================${NC}"
@@ -95,19 +98,35 @@ if [ -f "$ROOT_DIR/package.json" ]; then
   pnpm install
 fi
 
-DESKTOP_DIR="$ROOT_DIR/Minerva OS Lite/minerva-os-lite-desktop"
-if [ -d "$DESKTOP_DIR" ]; then
-  echo "Installation des dépendances dans le dossier Desktop/App..."
-  cd "$DESKTOP_DIR"
-  pnpm install
-else
-  echo -e "${RED}[ERREUR] Le répertoire de l'application $DESKTOP_DIR est introuvable.${NC}"
-  exit 1
+DESKTOP_DIR="$ROOT_DIR"
+if [ -d "$ROOT_DIR/Minerva OS Lite/minerva-os-lite-desktop" ]; then
+  DESKTOP_DIR="$ROOT_DIR/Minerva OS Lite/minerva-os-lite-desktop"
 fi
+
+echo "Installation des dépendances dans le dossier : $DESKTOP_DIR..."
+cd "$DESKTOP_DIR"
+pnpm install
+
 
 # 7. Initialisation / Synchronisation des plateformes mobiles Capacitor
 echo -e "${CYAN}[6/6] Initialisation des plateformes mobiles...${NC}"
+
+# Déplacement temporaire de app/api pour éviter les erreurs d'export statique Next.js
+if [ -d "app/api" ]; then
+  echo "Déplacement temporaire du dossier app/api pour l'export statique..."
+  mv app/api app-api-temp
+  trap 'if [ -d "app-api-temp" ]; then echo "Restauration du dossier app/api..."; mv app-api-temp app/api; fi' EXIT ERR
+fi
+
 EXPORT_MODE=true pnpm run build
+
+if [ -d "app-api-temp" ]; then
+  echo "Restauration du dossier app/api..."
+  mv app-api-temp app/api
+  # Nettoyer le trap
+  trap - EXIT ERR
+fi
+
 
 # iOS
 if [ -d "$DESKTOP_DIR/ios" ]; then
@@ -138,6 +157,21 @@ fi
 echo ""
 echo -e "${GREEN}===========================================================${NC}"
 echo -e "${GREEN}  [SUCCÈS] Environnement configuré avec succès pour macOS !${NC}"
-echo -e "${GREEN}  Vous pouvez lancer l'application en mode interactif avec :${NC}"
-echo -e "${CYAN}  pnpm run launch${NC}"
+echo -e "${GREEN}  Vous pouvez lancer l'application en mode de développement avec :${NC}"
+echo -e "${CYAN}  pnpm run dev${NC} ou ${CYAN}pnpm run electron:dev${NC}"
 echo -e "${GREEN}===========================================================${NC}"
+echo ""
+
+# Options interactives
+read -p "Voulez-vous ouvrir Xcode maintenant pour compiler/configurer l'application iOS ? (y/N) : " open_xcode
+if [[ "$open_xcode" =~ ^[yY](es)?$ ]]; then
+  echo -e "${CYAN}Ouverture de Xcode via Capacitor...${NC}"
+  npx cap open ios
+fi
+
+echo ""
+read -p "Voulez-vous tenter de lancer l'application directement sur votre iPhone connecté en USB ? (y/N) : " run_ios
+if [[ "$run_ios" =~ ^[yY](es)?$ ]]; then
+  echo -e "${CYAN}Déploiement sur votre iPhone connecté...${NC}"
+  npx cap run ios --live-reload --external
+fi

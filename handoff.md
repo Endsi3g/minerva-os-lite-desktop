@@ -47,6 +47,13 @@ This document describes the key features, architecture, and current state of the
   3. **ASMobbin Agent**: Summarizes user onboarding experiences.
 - Includes full agent creation workflows to define custom instruction sets and models.
 
+### 💻 Desktop App & Offline-First Integration (Electron & SQLite)
+- **Offline SQLite Storage** : Base de données locale complète (`leads`, `drafts`, `notes`, `settings`, `tasks`) stockée dans le dossier de l'application utilisateur. Toutes les modifications utilisateur (leads, notes, tâches) sont persistées localement sans connexion internet.
+- **Moteur de Synchronisation Last-Write-Wins** : Synchronisation bidirectionnelle automatique asynchrone poussant/tirant les données avec Supabase toutes les 5 minutes. Résolution des conflits basée sur la date `updated_at`.
+- **Planificateur de Prospection Persistant** : Lancement asynchrone du scraper Maps toutes les 6 heures avec enregistrement de la date de dernière exécution dans SQLite, empêchant les sur-sollicitations de l'API après un redémarrage de l'application.
+- **Spotlight Search Global** : Fenêtre translucide d'accès rapide sommable par raccourci global adaptatif (`Option + Espace` sur Mac, `Alt + Espace` sur Windows/Linux), permettant de copier un e-mail ou d'ouvrir directement la fiche dans la fenêtre principale.
+- **Export PDF Premium** : Service d'export natif exploitant l'API d'impression d'Electron pour enregistrer des rapports d'audit SEO soignés au format PDF local.
+
 ### 📱 Responsive Layout
 - Hamburger menu trigger (`Menu`) and backdrop overlays are enabled on smaller devices to toggle the sidebar smoothly on mobile viewpoints.
 
@@ -55,10 +62,11 @@ This document describes the key features, architecture, and current state of the
 ## 3. Database Schema
 
 The core database structures are stored in [supabase_schema.sql](file:///c:/Minerva%20OS%20Reach%20Lite/Minerva%20OS%20Lite/minerva-os-lite-desktop/supabase_schema.sql):
-- **`profiles`**: Stores base identity settings (user ID, full name, company name).
-- **`leads`**: Centralizes prospect metrics, contact emails, social coordinates, and local SEO score checks.
-- **`folders` & `projects`**: Organizes prospecting campaign folders.
-- **`connected_integrations`**: Stores state keys of connected services.
+- **`profiles` / `settings`** : Stocke l'identité de l'utilisateur, la note rapide, l'objectif du jour et les configurations de prospection (niches, villes).
+- **`leads`** : Contient les prospects, coordonnées de contact et informations d'état.
+- **`notes`** : Journal d'activités lié aux prospects (visites, appels, e-mails).
+- **`tasks`** : Tâches associées aux relances et à la préparation.
+- **`drafts`** : Brouillons de messages générés par l'IA.
 
 ---
 
@@ -73,38 +81,33 @@ pnpm install
 # 2. Run the development server
 pnpm run dev
 
-# 3. Validate code compilation, ESLint compliance, and production build
-./deploy-test.ps1
-```
+# 2b. Run Electron dev environment
+pnpm run electron:dev
 
-The `./deploy-test.ps1` script ensures that:
-- The code typechecks cleanly (`tsc --noEmit`).
-- No critical warnings or styling issues remain (`eslint`).
-- Next.js builds the production optimized package.
-- The web app starts and responds on port 3000.
+# 3. Validate code compilation, ESLint compliance, and production build
+export PATH=$PATH:/opt/homebrew/bin:/usr/local/bin; pnpm typecheck
+pnpm run build
+```
 
 ---
 
 ## 5. Roadmap & Future Steps
 
 ### 📱 Full Native Mobile Build (iOS & Android)
-- **Status**: Core Capacitor dependencies added, `capacitor.config.json` configured, and `setup-mac.sh` created to prepare the environment.
+- **Status**: Core Capacitor dependencies added, `capacitor.config.json` configured, and `setup-mac.sh` created to prepare the environment (with interactive Xcode launch and phone deployment).
 - **Next Steps**:
   - Integrate native features like push notifications (`@capacitor/push-notifications`), camera access, and persistent local storage.
   - Finalize Android integration by installing Android SDK and running `npx cap add android` / `npx cap sync android`.
   - Set up automated CI/CD pipelines (e.g., GitHub Actions with Fastlane) to deploy build artifacts to Apple TestFlight and Google Play Console.
 
-### 💻 Production Desktop App (Electron)
-- **Status**: Electron wrapper added (`electron/main.cjs`, `preload.js`), packaging scripts configured, and `electron-builder` set up in `package.json`.
+### 💻 Production Desktop App (Electron Package & Auto-updates)
+- **Status**: Completed wrapper, preload bindings, and local sync db.
 - **Next Steps**:
-  - Implement an auto-update system (e.g., using `electron-updater`) to push security fixes and features to desktop clients automatically.
-  - Add native menu bars, system tray quick-access icons, and windows-specific shortcuts.
+  - Implement an auto-update system (e.g., using `electron-updater` / GitHub releases) to push security fixes and features to desktop clients automatically.
   - Configure code-signing certificates to prevent security warnings on Windows (SmartScreen) and macOS (Gatekeeper).
 
 ### ⚡ Real-World Integrations & AI Engine Expansion
-- **Status**: Added global fallback API keys (`process.env.OPENROUTER_API_KEY` and `process.env.ANTHROPIC_API_KEY`) and native Anthropic streaming. Added manual demo data import to keep workspaces clean by default.
+- **Status**: Connected dynamic LLM client configurations, added Gmail API mock-to-real connection template capability.
 - **Next Steps**:
   - Connect real email dispatch engines (e.g., Resend, SendGrid) to replace invitation simulation with real emails.
   - Transition Google Maps scraping (`/api/scrape-maps`) from mock data to actual calls using Google Places API or direct puppeteer scrapers.
-  - Expand supported LLMs in the AI Copilot to include OpenAI (`gpt-4o`) and deepseek models dynamically.
-

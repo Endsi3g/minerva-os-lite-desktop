@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
           headers: {
             'Authorization': `Bearer ${openrouterKey.trim()}`,
             'Content-Type': 'application/json',
-            'HTTP-Referer': 'http://localhost:3000',
+            'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
             'X-Title': 'Minerva OS Reach Lite',
           },
           body: JSON.stringify({

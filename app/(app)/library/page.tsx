@@ -21,8 +21,10 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { getFolders, addFolder } from '@/lib/onboarding-store';
+import { useLanguage } from '@/lib/language-context';
 
 export default function LibraryPage() {
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState<'All' | 'Shared' | 'Private'>('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [folders, setFolders] = useState<string[]>([]);
@@ -40,22 +42,25 @@ export default function LibraryPage() {
 
   return (
     <div className="h-full overflow-y-auto bg-white">
-      <div className="max-w-6xl mx-auto p-8 space-y-8 text-[#26251e] font-sans selection:bg-[#f54e00]/10">
+      <div className="max-w-6xl mx-auto p-8 space-y-8 text-[#26251e] font-sans selection:bg-[#f54e00]/10 text-left">
         
         {/* Header Section */}
-        <div className="space-y-1.5">
-          <h1 className="text-xl font-bold text-[#26251e]">Library</h1>
+        <div className="space-y-1.5 text-left">
+          <h1 className="text-xl font-bold text-[#26251e]">{t('library.title')}</h1>
           <p className="text-xs text-[#7a7a76]">
-            View recent files from chats & manage files in your folders. <a href="#" className="text-[#059669] hover:underline">Learn more</a>
+            {t('library.subtitle')}{' '}
+            <a href="#" className="text-[#059669] hover:underline">
+              {t('library.learn_more')}
+            </a>
           </p>
         </div>
 
         {/* Create new file Row */}
         <div className="space-y-3">
           <div className="flex justify-between items-center">
-            <h2 className="text-xs font-bold uppercase tracking-wider text-[#7a7a76]">Create new file</h2>
+            <h2 className="text-xs font-bold uppercase tracking-wider text-[#7a7a76]">{t('library.create_new')}</h2>
             <a href="#" className="text-xs text-[#7a7a76] hover:text-[#26251e] flex items-center gap-1 transition-colors">
-              <span>All templates</span>
+              <span>{t('library.all_templates')}</span>
               <ChevronDown className="h-3 w-3 -rotate-90" />
             </a>
           </div>
@@ -68,7 +73,7 @@ export default function LibraryPage() {
                 <Plus className="h-5 w-5 text-[#7a7a76] stroke-[2.5]" />
               </div>
               <div className="flex items-center justify-between text-xs px-1">
-                <span className="font-semibold text-[#26251e]">Blank file</span>
+                <span className="font-semibold text-[#26251e]">{t('library.blank_file')}</span>
                 <ChevronDown className="h-3.5 w-3.5 text-[#7a7a76]" />
               </div>
             </div>
@@ -85,7 +90,7 @@ export default function LibraryPage() {
                 <div className="absolute -bottom-8 -right-8 h-20 w-20 rounded-full bg-[#059669]/10" />
               </div>
               <div className="text-xs px-1">
-                <div className="font-semibold text-[#26251e] truncate">ASMobbin Template</div>
+                <div className="font-semibold text-[#26251e] truncate">{t('library.asmobbin_template')}</div>
                 <div className="text-[10px] text-[#7a7a76]">Presentation</div>
               </div>
             </div>
@@ -108,7 +113,7 @@ export default function LibraryPage() {
                 <div className="absolute right-2 top-2 h-4 w-4 bg-[#10b981] rounded-xs flex items-center justify-center text-[8px] font-bold text-white">W</div>
               </div>
               <div className="text-xs px-1">
-                <div className="font-semibold text-[#26251e] truncate">ASMobbin Brochure</div>
+                <div className="font-semibold text-[#26251e] truncate">{t('library.asmobbin_brochure')}</div>
                 <div className="text-[10px] text-[#7a7a76]">Document</div>
               </div>
             </div>
@@ -128,7 +133,7 @@ export default function LibraryPage() {
                 <div className="absolute right-2 bottom-2 h-4 w-4 bg-[#059669] rounded-xs flex items-center justify-center text-[7px] font-bold text-white">PDF</div>
               </div>
               <div className="text-xs px-1">
-                <div className="font-semibold text-[#26251e] truncate">ASMobbin Health Ap...</div>
+                <div className="font-semibold text-[#26251e] truncate">{t('library.asmobbin_health')}</div>
                 <div className="text-[10px] text-[#7a7a76]">Document</div>
               </div>
             </div>
@@ -137,7 +142,7 @@ export default function LibraryPage() {
             <div className="flex flex-col gap-2">
               <div className="aspect-[4/3] border border-dashed border-[#e5e5e0] hover:border-[#7a7a76] rounded-lg bg-[#f4f4f3]/20 flex flex-col items-center justify-center cursor-pointer transition-all">
                 <Upload className="h-4 w-4 text-[#7a7a76] mb-1 stroke-[2]" />
-                <span className="text-[10px] font-bold text-[#7a7a76] uppercase tracking-wider">Add template</span>
+                <span className="text-[10px] font-bold text-[#7a7a76] uppercase tracking-wider">{t('library.add_template')}</span>
               </div>
             </div>
 
@@ -183,7 +188,7 @@ export default function LibraryPage() {
                 className="h-7 text-xs font-bold bg-[#059669] hover:bg-[#047857] text-white flex items-center gap-1 rounded px-2.5"
               >
                 <Plus className="h-3.5 w-3.5" />
-                <span>Create folder</span>
+                <span>{t('library.create_folder')}</span>
               </Button>
             </div>
 
@@ -198,10 +203,10 @@ export default function LibraryPage() {
                     <th className="py-2.5 px-4 w-6">
                       <input type="checkbox" className="rounded border-[#e5e5e0]" />
                     </th>
-                    <th className="py-2.5 px-3">Name</th>
-                    <th className="py-2.5 px-3">Visibility</th>
-                    <th className="py-2.5 px-3">Files</th>
-                    <th className="py-2.5 px-3 text-right pr-6">Last updated at</th>
+                    <th className="py-2.5 px-3">{t('library.table_name')}</th>
+                    <th className="py-2.5 px-3">{t('library.table_visibility')}</th>
+                    <th className="py-2.5 px-3">{t('library.table_files')}</th>
+                    <th className="py-2.5 px-3 text-right pr-6">{t('library.table_updated')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -217,12 +222,12 @@ export default function LibraryPage() {
                       <td className="py-3.5 px-3 text-[#7a7a76]">
                         <span className="inline-flex items-center gap-1 bg-[#f4f4f3] px-2 py-0.5 rounded text-[10px] font-semibold text-[#555552]">
                           <Lock className="h-2.5 w-2.5" />
-                          Private
+                          {t('library.private')}
                         </span>
                       </td>
-                      <td className="py-3.5 px-3 text-[#7a7a76]">0 files</td>
+                      <td className="py-3.5 px-3 text-[#7a7a76]">{t('library.zero_files')}</td>
                       <td className="py-3.5 px-3 text-right text-[#7a7a76] pr-6">
-                        {index === 0 ? '23 seconds ago' : 'Just now'}
+                        {index === 0 ? t('library.secs_ago') : t('library.just_now')}
                       </td>
                     </tr>
                   ))}
@@ -235,14 +240,14 @@ export default function LibraryPage() {
         {/* Recent files Section */}
         <div className="space-y-4">
           <div className="flex justify-between items-center">
-            <h2 className="text-xs font-bold uppercase tracking-wider text-[#7a7a76]">Recent files</h2>
+            <h2 className="text-xs font-bold uppercase tracking-wider text-[#7a7a76]">{t('library.recent_files')}</h2>
             
             <div className="flex items-center gap-3">
               {/* Search input */}
               <div className="relative w-44">
                 <Search className="absolute left-2 top-2 h-3.5 w-3.5 text-[#7a7a76]" />
                 <Input 
-                  placeholder="Search files..."
+                  placeholder={t('library.search_placeholder')}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="h-7.5 pl-7 text-xs bg-white border-[#e5e5e0] focus-visible:ring-1 focus-visible:ring-[#059669]"
@@ -253,7 +258,7 @@ export default function LibraryPage() {
               <div className="flex items-center gap-1">
                 <Button variant="outline" size="sm" className="h-7.5 text-xs font-semibold px-2 border-[#e5e5e0] flex items-center gap-1">
                   <SlidersHorizontal className="h-3 w-3 text-[#7a7a76]" />
-                  <span>Filter</span>
+                  <span>{t('library.filter')}</span>
                 </Button>
                 <Button variant="ghost" size="icon" className="h-7.5 w-7.5 text-[#7a7a76] hover:text-[#26251e]">
                   <ArrowUpDown className="h-3.5 w-3.5" />
@@ -275,7 +280,7 @@ export default function LibraryPage() {
             <div className="border border-[#e5e5e0] hover:border-[#7a7a76] rounded-lg overflow-hidden bg-white shadow-xs flex flex-col group cursor-pointer transition-all">
               <div className="aspect-[4/3] bg-[#f4f4f3]/40 border-b border-[#e5e5e0] p-3 flex flex-col justify-between overflow-hidden">
                 {/* Visual miniature mockup of a table */}
-                <div className="space-y-1 bg-white border border-[#e5e5e0] rounded-xs p-1.5 text-[6px] text-[#7a7a76] font-mono select-none overflow-hidden">
+                <div className="space-y-1 bg-white border border-[#e5e5e0] rounded-xs p-1.5 text-[6px] text-[#7a7a76] font-mono select-none overflow-hidden text-left">
                   <div className="grid grid-cols-3 border-b border-[#e5e5e0] pb-0.5 text-[5px] font-bold text-[#26251e]">
                     <span>Criterion</span>
                     <span>Rating</span>
@@ -373,7 +378,7 @@ export default function LibraryPage() {
             <div className="border border-[#e5e5e0] hover:border-[#7a7a76] rounded-lg overflow-hidden bg-white shadow-xs flex flex-col group cursor-pointer transition-all">
               <div className="aspect-[4/3] bg-[#f4f4f3]/40 border-b border-[#e5e5e0] p-3 flex flex-col justify-between overflow-hidden">
                 {/* Visual miniature code text */}
-                <div className="flex-1 bg-white border border-[#e5e5e0] rounded-xs p-1.5 font-mono text-[5px] text-[#7a7a76] select-none leading-relaxed overflow-hidden">
+                <div className="flex-1 bg-white border border-[#e5e5e0] rounded-xs p-1.5 font-mono text-[5px] text-[#7a7a76] select-none leading-relaxed overflow-hidden text-left">
                   <div>Handle,Title,Body (HTML),Vendor,Product Category</div>
                   <div>tshirt-1,Example T-Shirt,&lt;p&gt;Best shirt,&quot;Acme&quot;,Apparel</div>
                   <div>pants-2,Example Pants,&lt;p&gt;Sleek denim,&quot;Acme&quot;,Apparel</div>
@@ -401,14 +406,14 @@ export default function LibraryPage() {
       {/* New Folder Modal Overlay */}
       {showNewFolderModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-xs">
-          <div className="w-full max-w-sm bg-white border border-[#e6e5e0] rounded-xl p-5 space-y-4 shadow-xl animate-in fade-in zoom-in-95 duration-150">
+          <div className="w-full max-w-sm bg-white border border-[#e6e5e0] rounded-xl p-5 space-y-4 shadow-xl animate-in fade-in zoom-in-95 duration-150 text-left">
             <div className="space-y-1">
-              <h3 className="text-sm font-bold text-[#26251e] text-left">Nouveau Dossier</h3>
-              <p className="text-xs text-[#7a7a76] text-left">Créez un nouveau dossier dans votre bibliothèque.</p>
+              <h3 className="text-sm font-bold text-[#26251e] text-left">{t('library.new_folder_modal_title')}</h3>
+              <p className="text-xs text-[#7a7a76] text-left">{t('library.new_folder_modal_desc')}</p>
             </div>
             <input 
               type="text" 
-              placeholder="Nom du dossier"
+              placeholder={t('library.folder_name_placeholder')}
               value={newFolderName}
               onChange={(e) => setNewFolderName(e.target.value)}
               className="w-full text-xs p-2.5 bg-white border border-[#e6e5e0] rounded-md focus:outline-none focus:ring-1 focus:ring-[#059669]"
@@ -431,7 +436,7 @@ export default function LibraryPage() {
                 }}
                 className="h-8 text-[#555552]"
               >
-                Annuler
+                {t('library.cancel')}
               </Button>
               <Button 
                 onClick={() => {
@@ -443,7 +448,7 @@ export default function LibraryPage() {
                 }}
                 className="h-8 bg-[#059669] hover:bg-[#047857] text-white font-bold"
               >
-                Créer le dossier
+                {t('library.create_btn')}
               </Button>
             </div>
           </div>

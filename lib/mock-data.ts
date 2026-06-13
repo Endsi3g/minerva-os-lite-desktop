@@ -20,6 +20,7 @@ export interface Lead {
   nextActionDate: string; // ISO date string (YYYY-MM-DD)
   notes: Note[];
   owner: string;
+  imageUrl?: string;
   createdAt: string;
   updatedAt: string;
 }

@@ -81,6 +81,13 @@ Minerva OS Reach Lite est conçu pour aider les agences et les professionnels du
 - **Sécurité et RLS strictes** : Accès contrôlé via Supabase RLS autorisant uniquement les propriétaires et les membres invités actifs d&apos;un workspace à lire/écrire ses données.
 - **Gestion dédiée (`/workspaces`)** : Page d&apos;administration complète permettant de créer de nouveaux workspaces, renommer ou supprimer ceux que l&apos;on possède (avec garde-fou interdisant la suppression du dernier espace).
 
+### Fonctionnalités Natives & Support Hors-ligne Electron (Nouveau)
+- **Stockage SQLite hors-ligne complet** : Base de données locale pour persister et modifier les prospects, les notes et les tâches sans connexion Internet.
+- **Synchronisation bidirectionnelle automatique** : Moteur de synchronisation asynchrone utilisant la politique **Last-Write-Wins** basée sur les dates `updated_at` pour résoudre les conflits avec Supabase.
+- **Planificateur de prospection persistant** : Déclenchement automatique et persistant du scraping de leads toutes les 6 heures avec notifications natives sur le système d'exploitation.
+- **Spotlight Search global** : Barre de recherche rapide de type Spotlight accessible par-dessus toutes les applications via `Option + Espace` (macOS) ou `Alt + Espace` (Windows/Linux).
+- **Exportation PDF native enrichie** : Impression PDF native des rapports d'audits SEO sous forme hautement stylisée sans dépendance lourde tierce.
+
 ---
 
 ## Architecture du projet

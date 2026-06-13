@@ -127,7 +127,7 @@ export async function requestPasswordReset(
 
   // Derive origin from server-side request headers
   const headerList = await headers();
-  const origin = headerList.get('origin') ?? headerList.get('x-forwarded-host') ?? 'http://localhost:3000';
+  const origin = headerList.get('origin') ?? headerList.get('x-forwarded-host') ?? process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
   const redirectTo = `${origin}/api/auth/confirm-reset`;
 
   const { error } = await supabase.auth.resetPasswordForEmail(email, {

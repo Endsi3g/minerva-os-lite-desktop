@@ -1,11 +1,18 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
-const { app, BrowserWindow, Menu, Tray, nativeImage, dialog } = require('electron');
+const { app, BrowserWindow, Menu, Tray, nativeImage, dialog, ipcMain, Notification, globalShortcut, clipboard } = require('electron');
 const { autoUpdater } = require('electron-updater');
 const path = require('path');
+const fs = require('fs');
+const os = require('os');
+const db = require('./database.cjs');
+const sync = require('./sync.cjs');
 
 let mainWindow;
+let spotlightWindow;
 let tray = null;
 let isQuitting = false;
+let scrapingStatus = { status: 'idle', niche: '', city: '' };
+let hasNotifiedBackground = false;
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -39,6 +46,17 @@ function createWindow() {
     if (!isQuitting) {
       event.preventDefault();
       mainWindow.hide();
+      
+      if (!hasNotifiedBackground) {
+        hasNotifiedBackground = true;
+        if (Notification.isSupported()) {
+          new Notification({
+            title: 'Minerva OS Reach Lite',
+            body: 'Minerva continue de tourner en tâche de fond dans la zone de notification.',
+            icon: path.join(__dirname, '../public/icon-192.png')
+          }).show();
+        }
+      }
     }
   });
 
@@ -47,14 +65,23 @@ function createWindow() {
   });
 }
 
-function createTray() {
-  const iconPath = path.join(__dirname, '../public/icon-192.png');
-  const trayIcon = nativeImage.createFromPath(iconPath);
+function updateTrayMenu() {
+  if (!tray) return;
 
-  tray = new Tray(trayIcon);
-  tray.setToolTip('Minerva OS Reach Lite');
+  const statusLabel = scrapingStatus.status === 'running'
+    ? `Statut : Scraping en cours (${scrapingStatus.niche} - ${scrapingStatus.city})`
+    : 'Statut : Prêt pour la prospection';
 
   const contextMenu = Menu.buildFromTemplate([
+    {
+      label: 'Minerva OS Reach Lite',
+      enabled: false
+    },
+    {
+      label: statusLabel,
+      enabled: false
+    },
+    { type: 'separator' },
     {
       label: 'Ouvrir l\'application',
       click: () => {
@@ -74,6 +101,16 @@ function createTray() {
   ]);
 
   tray.setContextMenu(contextMenu);
+}
+
+function createTray() {
+  const iconPath = path.join(__dirname, '../public/icon-192.png');
+  const trayIcon = nativeImage.createFromPath(iconPath);
+
+  tray = new Tray(trayIcon);
+  tray.setToolTip('Minerva OS Reach Lite');
+
+  updateTrayMenu();
 
   // Click tray icon to toggle window visibility
   tray.on('click', () => {
@@ -151,12 +188,22 @@ function setupMenuAndShortcuts() {
 }
 
 function checkUpdates() {
-  // Do not check updates in development mode
-  if (process.env.NODE_ENV === 'development') return;
-
-  autoUpdater.checkForUpdatesAndNotify();
-
+  // Setup standard update event listeners to broadcast to renderer
+  autoUpdater.on('checking-for-update', () => {
+    if (mainWindow) mainWindow.webContents.send('update-status', 'checking');
+  });
+  autoUpdater.on('update-available', (info) => {
+    if (mainWindow) mainWindow.webContents.send('update-status', 'available', info.version);
+  });
+  autoUpdater.on('update-not-available', () => {
+    if (mainWindow) mainWindow.webContents.send('update-status', 'not-available');
+  });
+  autoUpdater.on('error', (err) => {
+    if (mainWindow) mainWindow.webContents.send('update-status', 'error', err.message);
+  });
   autoUpdater.on('update-downloaded', (info) => {
+    if (mainWindow) mainWindow.webContents.send('update-status', 'downloaded', info.version);
+    
     dialog.showMessageBox({
       type: 'info',
       title: 'Mise à jour disponible',
@@ -172,22 +219,330 @@ function checkUpdates() {
     });
   });
 
-  autoUpdater.on('error', (err) => {
-    console.error('Erreur lors de la mise à jour automatique :', err);
+  if (process.env.NODE_ENV === 'development') return;
+
+  autoUpdater.checkForUpdatesAndNotify();
+}
+
+function setupIpcHandlers() {
+  // 1. Export SEO Audit to user-specified local path
+  ipcMain.handle('export-audit', async (event, { fileName, content }) => {
+    const window = BrowserWindow.getFocusedWindow() || mainWindow;
+    const { filePath } = await dialog.showSaveDialog(window, {
+      title: 'Exporter l\'audit SEO',
+      defaultPath: fileName,
+      filters: [
+        { name: 'Texte brut (*.txt)', extensions: ['txt'] },
+        { name: 'Markdown (*.md)', extensions: ['md'] },
+        { name: 'Tous les fichiers', extensions: ['*'] }
+      ]
+    });
+
+    if (filePath) {
+      try {
+        fs.writeFileSync(filePath, content, 'utf-8');
+        return { success: true, filePath };
+      } catch (err) {
+        console.error('Failed to write file locally:', err);
+        return { success: false, error: err.message };
+      }
+    }
+    return { success: false };
+  });
+
+  // 2. Native System Notifications
+  ipcMain.handle('send-notification', async (event, { title, body }) => {
+    if (Notification.isSupported()) {
+      new Notification({
+        title,
+        body,
+        icon: path.join(__dirname, '../public/icon-192.png')
+      }).show();
+      return true;
+    }
+    return false;
+  });
+
+  // 3. Hardware / OS Diagnostic check details
+  ipcMain.handle('get-diagnostics', async () => {
+    const totalMemBytes = os.totalmem();
+    const freeMemBytes = os.freemem();
+    const totalMemGb = (totalMemBytes / (1024 * 1024 * 1024)).toFixed(2);
+    const freeMemGb = (freeMemBytes / (1024 * 1024 * 1024)).toFixed(2);
+    const usedMemGb = ((totalMemBytes - freeMemBytes) / (1024 * 1024 * 1024)).toFixed(2);
+    
+    return {
+      platform: process.platform === 'darwin' ? 'macOS' : process.platform === 'win32' ? 'Windows' : 'Linux',
+      arch: process.arch,
+      nodeVersion: process.version,
+      chromeVersion: process.versions.chrome,
+      electronVersion: process.versions.electron,
+      totalMemory: `${totalMemGb} GB`,
+      freeMemory: `${freeMemGb} GB`,
+      usedMemory: `${usedMemGb} GB`,
+      cpus: os.cpus().map(cpu => cpu.model)[0] || 'Unknown CPU',
+      cpuCount: os.cpus().length,
+      uptime: (os.uptime() / 3600).toFixed(2) + ' hours',
+      appVersion: app.getVersion()
+    };
+  });
+
+  // 4. Update scraping status in System Tray menu
+  ipcMain.on('update-scraping-status', (event, { status, niche, city }) => {
+    scrapingStatus = { status, niche, city };
+    updateTrayMenu();
+  });
+
+  // 5. Trigger update check manually from settings / download view
+  ipcMain.on('trigger-update-check', () => {
+    if (process.env.NODE_ENV === 'development') {
+      if (mainWindow) {
+        mainWindow.webContents.send('update-status', 'checking');
+        setTimeout(() => {
+          mainWindow.webContents.send('update-status', 'not-available');
+        }, 1000);
+      }
+    } else {
+      autoUpdater.checkForUpdatesAndNotify();
+    }
+  });
+
+  // 6. Local SQLite database handlers
+  ipcMain.handle('db-all', async (event, { sql, params }) => {
+    return await db.all(sql, params);
+  });
+
+  ipcMain.handle('db-run', async (event, { sql, params }) => {
+    return await db.run(sql, params);
+  });
+
+  ipcMain.handle('db-get', async (event, { sql, params }) => {
+    return await db.get(sql, params);
+  });
+
+  // 7. Supabase session and sync handlers
+  ipcMain.handle('set-session', async (event, session) => {
+    sync.setSession(session);
+    return true;
+  });
+
+  ipcMain.handle('trigger-sync', async () => {
+    await sync.triggerSync();
+    return true;
+  });
+
+  // 8. Spotlight Quick Search window handlers
+  ipcMain.on('hide-spotlight', () => {
+    if (spotlightWindow) spotlightWindow.hide();
+  });
+
+  ipcMain.on('open-lead-in-main', (event, leadId) => {
+    if (spotlightWindow) spotlightWindow.hide();
+    if (mainWindow) {
+      mainWindow.show();
+      mainWindow.focus();
+      mainWindow.webContents.send('focus-lead', leadId);
+    }
+  });
+
+  ipcMain.on('copy-to-clipboard', (event, text) => {
+    clipboard.writeText(text);
+  });
+
+  // 9. PDF printing handler
+  ipcMain.handle('print-to-pdf', async (event, { fileName, htmlContent }) => {
+    const pdfWindow = new BrowserWindow({
+      show: false,
+      webPreferences: {
+        nodeIntegration: false
+      }
+    });
+
+    await pdfWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(htmlContent)}`);
+
+    const window = BrowserWindow.getFocusedWindow() || mainWindow;
+    const { filePath } = await dialog.showSaveDialog(window, {
+      title: 'Exporter en PDF',
+      defaultPath: fileName,
+      filters: [{ name: 'Document PDF (*.pdf)', extensions: ['pdf'] }]
+    });
+
+    if (filePath) {
+      try {
+        const data = await pdfWindow.webContents.printToPDF({
+          printBackground: true,
+          margins: { top: 0.4, bottom: 0.4, left: 0.4, right: 0.4 }
+        });
+        fs.writeFileSync(filePath, data);
+        pdfWindow.close();
+        return { success: true, filePath };
+      } catch (err) {
+        console.error("PDF printing failed:", err);
+        pdfWindow.close();
+        return { success: false, error: err.message };
+      }
+    }
+    pdfWindow.close();
+    return { success: false };
   });
 }
 
+function createSpotlightWindow() {
+  spotlightWindow = new BrowserWindow({
+    width: 600,
+    height: 400,
+    frame: false,
+    resizable: false,
+    transparent: true,
+    alwaysOnTop: true,
+    skipTaskbar: true,
+    show: false,
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true,
+      preload: path.join(__dirname, 'preload.js')
+    }
+  });
+
+  const isDev = process.env.NODE_ENV === 'development';
+
+  if (isDev) {
+    spotlightWindow.loadURL('http://localhost:3000/spotlight');
+  } else {
+    const spotlightPath = path.join(__dirname, '../out/spotlight.html');
+    spotlightWindow.loadFile(spotlightPath).catch(err => {
+      console.error("Failed to load static spotlight assets in Electron:", err);
+    });
+  }
+
+  spotlightWindow.on('blur', () => {
+    spotlightWindow.hide();
+  });
+}
+
+async function runBackgroundScrapeIfNeeded() {
+  try {
+    const setting = await db.get("SELECT * FROM settings ORDER BY updated_at DESC LIMIT 1");
+    if (!setting) return;
+
+    const now = Date.now();
+    const lastScrapeTime = setting.last_scrape_at ? new Date(setting.last_scrape_at).getTime() : 0;
+    const sixHoursMs = 6 * 60 * 60 * 1000; // 21600000 ms
+
+    if (now - lastScrapeTime >= sixHoursMs) {
+      const niches = JSON.parse(setting.niches || '[]');
+      const cities = JSON.parse(setting.cities || '[]');
+
+      if (niches.length > 0 && cities.length > 0) {
+        const niche = niches[Math.floor(Math.random() * niches.length)];
+        const city = cities[Math.floor(Math.random() * cities.length)];
+        const query = `${niche} ${city}`;
+
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://minerva-os-lite.com';
+        const response = await fetch(`${appUrl}/api/scrape-maps`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            niche,
+            city,
+            query,
+            sources: ['google']
+          })
+        });
+
+        const data = await response.json();
+        
+        // Update the last_scrape_at timestamp locally right away
+        const nowStr = new Date().toISOString();
+        await db.run("UPDATE settings SET last_scrape_at = ? WHERE user_id = ?", [nowStr, setting.user_id]);
+
+        if (data.leads && data.leads.length > 0) {
+          let addedCount = 0;
+          for (const item of data.leads) {
+            const existing = await db.get("SELECT id FROM leads WHERE business_name = ? AND city = ?", [item.businessName, item.city]);
+            if (!existing) {
+              const leadId = 'lead-' + Date.now() + Math.random().toString(36).substr(2, 5);
+              let temp = 'Warm';
+              if (item.rating < 4.0 || !item.website) temp = 'Hot';
+
+              await db.run(`INSERT INTO leads (id, user_id, business_name, contact_name, contact_email, niche, city, source, status, temperature, next_action, next_action_date, owner, image_url, workspace_id, created_at, updated_at, sync_status)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending_insert')`,
+                [leadId, setting.user_id, item.businessName, 'Gérant', item.email || '', item.niche, item.city, `Background Maps - ${item.rating}★`, 'New', temp, item.seoAudit || 'Vérifier la fiche', new Date().toISOString().split('T')[0], 'Moi', '', '', new Date().toISOString(), new Date().toISOString()]
+              );
+              addedCount++;
+            }
+          }
+
+          if (addedCount > 0) {
+            await sync.triggerSync();
+
+            if (Notification.isSupported()) {
+              new Notification({
+                title: 'Prospection Autonome',
+                body: `${addedCount} nouveaux prospects trouvés pour "${niche}" à "${city}" !`,
+                icon: path.join(__dirname, '../public/icon-192.png')
+              }).show();
+            }
+          }
+        }
+      }
+    }
+  } catch (err) {
+    console.error("Background autonomous scraper error:", err);
+  }
+}
+
+function setupBackgroundScraper() {
+  // Check immediately on launch
+  runBackgroundScrapeIfNeeded();
+  // Check every 5 minutes (300000 ms)
+  setInterval(runBackgroundScrapeIfNeeded, 300000);
+}
+
 app.whenReady().then(() => {
+  db.initDb();
+  setupIpcHandlers();
   createWindow();
+  createSpotlightWindow();
   createTray();
   setupMenuAndShortcuts();
   checkUpdates();
+  setupBackgroundScraper();
+
+  // Register global shortcut platform-adaptively
+  const shortcutKey = process.platform === 'darwin' ? 'Option+Space' : 'Alt+Space';
+  
+  if (globalShortcut.isRegistered(shortcutKey)) {
+    console.warn(`Global shortcut ${shortcutKey} is already registered by another application.`);
+  } else {
+    const success = globalShortcut.register(shortcutKey, () => {
+      if (spotlightWindow) {
+        if (spotlightWindow.isVisible()) {
+          spotlightWindow.hide();
+        } else {
+          const { screen } = require('electron');
+          const primaryDisplay = screen.getPrimaryDisplay();
+          const { width, height } = primaryDisplay.workAreaSize;
+          spotlightWindow.setPosition(Math.round((width - 600) / 2), Math.round(height * 0.15));
+          spotlightWindow.show();
+        }
+      }
+    });
+
+    if (!success) {
+      console.error(`Failed to register global shortcut ${shortcutKey}`);
+    }
+  }
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
       createWindow();
     }
   });
+});
+
+app.on('will-quit', () => {
+  globalShortcut.unregisterAll();
 });
 
 app.on('window-all-closed', () => {

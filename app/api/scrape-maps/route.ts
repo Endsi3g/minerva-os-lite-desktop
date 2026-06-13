@@ -471,8 +471,8 @@ export async function POST(req: NextRequest) {
         try {
           const searchQuery = query || `${niche} ${city}`;
           
-          // Run Google Maps scraper Actor on Apify
-          const apifyRes = await fetch(`https://api.apify.com/v2/acts/apify~google-maps-scraper/runs?token=${apifyToken}`, {
+          // Run Google Maps scraper Actor on Apify (synchronous wait up to 60 seconds)
+          const apifyRes = await fetch(`https://api.apify.com/v2/acts/apify~google-maps-scraper/runs?token=${apifyToken}&wait=60`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -485,19 +485,23 @@ export async function POST(req: NextRequest) {
 
           if (apifyRes.ok) {
             const runInfo = await apifyRes.json();
-            const runId = runInfo.data.id;
+            const status = runInfo.data.status;
             const datasetId = runInfo.data.defaultDatasetId;
+            const runId = runInfo.data.id;
 
-            // Poll Apify for completion up to 10 seconds, then fetch dataset
-            let completed = false;
-            for (let i = 0; i < 5; i++) {
-              await new Promise(r => setTimeout(r, 2000));
-              const statusRes = await fetch(`https://api.apify.com/v2/act-runs/${runId}?token=${apifyToken}`);
-              if (statusRes.ok) {
-                const statusData = await statusRes.json();
-                if (statusData.data.status === 'SUCCEEDED') {
-                  completed = true;
-                  break;
+            let completed = status === 'SUCCEEDED';
+
+            // If it's still running, poll briefly for another 10 seconds just in case it's almost done
+            if (!completed && (status === 'RUNNING' || status === 'READY')) {
+              for (let i = 0; i < 5; i++) {
+                await new Promise(r => setTimeout(r, 2000));
+                const statusRes = await fetch(`https://api.apify.com/v2/act-runs/${runId}?token=${apifyToken}`);
+                if (statusRes.ok) {
+                  const statusData = await statusRes.json();
+                  if (statusData.data.status === 'SUCCEEDED') {
+                    completed = true;
+                    break;
+                  }
                 }
               }
             }

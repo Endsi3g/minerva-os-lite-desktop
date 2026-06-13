@@ -5,3 +5,4 @@ allowBuilds:
   unrs-resolver: true
   msw: false
   electron-winstaller: true
+  sqlite3: true

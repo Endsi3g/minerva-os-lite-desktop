@@ -117,7 +117,7 @@ Rédige uniquement le corps du message final en français :`;
           headers: {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${openrouterKey}`,
-            'HTTP-Referer': 'http://localhost:3000',
+            'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
             'X-Title': 'Minerva Reach'
           },
           body: JSON.stringify({

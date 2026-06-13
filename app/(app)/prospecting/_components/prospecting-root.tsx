@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useReach } from '@/lib/reach-context';
 import { createClient } from '@/lib/supabase/client';
+import { getApiUrl } from '@/lib/api-helper';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -113,6 +114,15 @@ export function ProspectingRoot() {
     setScrapeStep(0);
     setScrapeProgress(10);
 
+    const electronObj = typeof window !== 'undefined' && (window as any).electron;
+    if (electronObj && electronObj.updateScrapingStatus) {
+      electronObj.updateScrapingStatus(
+        'running',
+        customQuery ? 'Recherche libre' : selectedNiche,
+        customQuery ? 'Recherche libre' : selectedCity
+      );
+    }
+
     // Dynamic step progression interval
     const stepInterval = setInterval(() => {
       setScrapeStep(prev => {
@@ -128,7 +138,7 @@ export function ProspectingRoot() {
     try {
       const nicheQuery = customQuery ? customQuery : `${selectedNiche} ${selectedCity}`;
       
-      const res = await fetch('/api/scrape-maps', {
+      const res = await fetch(getApiUrl('/api/scrape-maps'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -150,6 +160,16 @@ export function ProspectingRoot() {
           setScrapedLeads(data.leads);
           // Auto select all scraped leads by default
           setSelectedIds(data.leads.map((l: ScrapedLead) => l.id));
+
+          if (electronObj && electronObj.updateScrapingStatus) {
+            electronObj.updateScrapingStatus('idle');
+          }
+          if (electronObj && electronObj.sendNotification) {
+            electronObj.sendNotification(
+              "Minerva OS Reach Lite",
+              `${data.leads.length} prospects extraits avec succès !`
+            );
+          }
         }
         setScraping(false);
       }, 800);
@@ -158,6 +178,16 @@ export function ProspectingRoot() {
       console.error("Scrape failed:", err);
       clearInterval(stepInterval);
       setScraping(false);
+
+      if (electronObj && electronObj.updateScrapingStatus) {
+        electronObj.updateScrapingStatus('idle');
+      }
+      if (electronObj && electronObj.sendNotification) {
+        electronObj.sendNotification(
+          "Erreur du Scraper",
+          "La recherche de prospects a échoué."
+        );
+      }
       alert("La prospection a échoué. Veuillez réessayer.");
     }
   };

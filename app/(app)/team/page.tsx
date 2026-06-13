@@ -8,6 +8,7 @@ import {
 import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
 import { useLanguage } from '@/lib/language-context';
+import { getApiUrl } from '@/lib/api-helper';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 type Role = 'admin' | 'editor' | 'viewer';
@@ -86,7 +87,7 @@ export default function TeamPage() {
   const fetchMembers = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/team/members');
+      const res = await fetch(getApiUrl('/api/team/members'));
       if (res.ok) {
         const data = await res.json();
         setMembers(data.members || []);
@@ -127,7 +128,7 @@ export default function TeamPage() {
     setInviteError('');
 
     try {
-      const res = await fetch('/api/team/invite', {
+      const res = await fetch(getApiUrl('/api/team/invite'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -160,7 +161,7 @@ export default function TeamPage() {
     setUpdatingMemberId(memberId);
     setActiveDropdown(null);
     try {
-      const res = await fetch('/api/team/members', {
+      const res = await fetch(getApiUrl('/api/team/members'), {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -199,7 +200,7 @@ export default function TeamPage() {
   const handleRemoveMember = async (memberId: string) => {
     setRemovingId(memberId);
     try {
-      const res = await fetch(`/api/team/members?id=${memberId}`, { method: 'DELETE' });
+      const res = await fetch(getApiUrl(`/api/team/members?id=${memberId}`), { method: 'DELETE' });
       if (res.ok) {
         setMembers((prev) => prev.filter((m) => m.id !== memberId));
         triggerToast('Member removed successfully.');
