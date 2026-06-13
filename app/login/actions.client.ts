@@ -1,24 +1,9 @@
-// Universal auth actions — compatible with both Next.js server-rendered mode
-// and static export (Electron) mode.
-//
-// Implementation: uses the Supabase browser client directly. In server-rendered
-// mode this works because the pages that call these actions are all 'use client'
-// components. In export/Electron mode, there is no server at all — all calls
-// happen in the browser.
-//
-// Historically this file used 'use server' + createClient (cookie-based SSR).
-// That is incompatible with output:'export'. The browser client approach works
-// in both modes because signout/auth state changes are picked up via
-// supabase.auth.onAuthStateChange in the layout.
+// Client-side auth actions using the Supabase browser client.
+// This file replaces the 'use server' actions.ts for static export (Electron build).
+// All Supabase auth calls are made directly from the browser — no server required.
 import { createClient } from '@/lib/supabase/client';
 
 type ActionResult = { error?: string; success?: boolean };
-
-function navigate(path: string) {
-  if (typeof window !== 'undefined') {
-    window.location.href = path;
-  }
-}
 
 export async function login(_state: unknown, formData: FormData): Promise<ActionResult> {
   const supabase = createClient();
@@ -32,7 +17,8 @@ export async function login(_state: unknown, formData: FormData): Promise<Action
   const { error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) return { error: error.message || 'Identifiants invalides.' };
 
-  navigate('/today');
+  // Client-side navigation after login
+  window.location.replace('/today');
   return {};
 }
 
@@ -47,14 +33,14 @@ export async function signup(_state: unknown, formData: FormData): Promise<Actio
   const { error } = await supabase.auth.signUp({ email, password });
   if (error) return { error: error.message || "Erreur lors de l'inscription." };
 
-  navigate('/welcome');
+  window.location.replace('/welcome');
   return {};
 }
 
 export async function signout(): Promise<void> {
   const supabase = createClient();
   await supabase.auth.signOut();
-  navigate('/login');
+  window.location.replace('/login');
 }
 
 export async function requestOtp(
@@ -88,7 +74,7 @@ export async function verifyOtp(
   const { error } = await supabase.auth.verifyOtp({ email, token, type: 'email' });
   if (error) return { error: error.message };
 
-  navigate('/today');
+  window.location.replace('/today');
   return {};
 }
 
@@ -100,9 +86,7 @@ export async function requestPasswordReset(
   const email = formData.get('email') as string;
   if (!email) return { error: 'Veuillez saisir votre adresse e-mail.' };
 
-  const appUrl =
-    process.env.NEXT_PUBLIC_APP_URL ??
-    (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000');
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? window.location.origin;
   const redirectTo = `${appUrl}/api/auth/confirm-reset`;
 
   const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
@@ -128,6 +112,6 @@ export async function updateUserPassword(
   const { error } = await supabase.auth.updateUser({ password });
   if (error) return { error: error.message };
 
-  navigate('/today');
+  window.location.replace('/today');
   return {};
 }

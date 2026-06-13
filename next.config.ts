@@ -1,15 +1,19 @@
-import type { NextConfig } from "next"
+import type { NextConfig } from 'next';
+
+const isExportMode = process.env.EXPORT_MODE === 'true';
 
 const nextConfig: NextConfig = {
   turbopack: {
-    root: "./",
+    root: './',
   },
-  ...(process.env.EXPORT_MODE === 'true' ? {
-    output: 'export',
-    images: {
-      unoptimized: true
-    }
-  } : {})
-}
+  ...(isExportMode
+    ? {
+        output: 'export',
+        images: {
+          unoptimized: true,
+        },
+      }
+    : {}),
+};
 
-export default nextConfig
+export default nextConfig;
