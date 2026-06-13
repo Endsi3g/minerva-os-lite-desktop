@@ -4,24 +4,41 @@ import React, { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { useReach } from '@/lib/reach-context';
 import { MessageSquare, Send, RefreshCw, Sparkle } from 'lucide-react';
 
 export function IntelligenceCopilotPanel() {
+  const { leads } = useReach();
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [activeResponse, setActiveResponse] = useState<string | null>(null);
 
+  // 1. Identify the latest lead
+  const sortedLeads = [...leads].sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+  const latestLead = sortedLeads[0] || { id: 'lead-5', businessName: 'Cabinet Dentaire Dr. Laurent', contactName: 'Dr. Laurent', niche: 'Santé / Cabinet médical', city: 'Lyon', status: 'Won', notes: [] };
+
+  // Determine dynamic recommendation based on lead audit notes
+  const auditText = (latestLead.notes?.map((n) => n.content).join(' ') || '') + ' ' + (latestLead.nextAction || '');
+  let recommendation = "Proposer une optimisation complète de la fiche Google Maps (horaires, photos, mots-clés) et l'intégration du widget Minerva pour capter de nouveaux clients.";
+  if (auditText.toLowerCase().includes('aucun site') || auditText.toLowerCase().includes('pas de site')) {
+    recommendation = "Proposer la création d'un site web vitrine responsive mobile-first et l'ajout d'un module de prise de rendez-vous Minerva.";
+  } else if (auditText.toLowerCase().includes('non sécurisé') || auditText.toLowerCase().includes('pas de https')) {
+    recommendation = "Proposer la sécurisation SSL/HTTPS du site existant et l'optimisation des balises méta pour de meilleures performances SEO locales.";
+  } else if (auditText.toLowerCase().includes('non optimisé mobiles')) {
+    recommendation = "Proposer une refonte responsive mobile-first pour éliminer la perte de clientèle naviguant sur smartphones.";
+  }
+
   const responses: Record<string, string> = {
     weekly: `### 📊 Analyse de votre semaine de prospection\n\nVoici le bilan de vos opportunités actuelles :\n\n- **1. Priorité immédiate** : Jean Dupont (**Boulangerie L'Épi d'Or**) attend votre appel pour planifier sa démonstration. C'est votre opportunité la plus chaude (Score: 94).\n- **2. Action en attente** : Michel Martin (**Garage du Centre**) a besoin de son audit SEO local. Préparez-le et envoyez-le par e-mail aujourd'hui pour relancer l'intérêt.\n- **3. RDV Fixé** : Vous avez rendez-vous avec Sophie Bernard (**Zen & Co Coiffure**) ce vendredi à 14h. Révisez l'argumentaire sur la fidélisation automatisée.\n- **4. Prospection de terrain** : Prévoyez un passage physique au **Bistrot Gourmand** en fin de service d'après-midi. L'objectif est d'identifier le gérant et d'obtenir son e-mail.\n\n*Recommandation globale : Concentrez vos efforts sur la validation de la démo de L'Épi d'Or pour verrouiller le deal.*`,
     campaigns: `### 💡 3 Idées de Campagnes Commerciales Ciblées\n\nVoici 3 angles d'approche rédigés pour vos segments locaux :\n\n#### 1. Campagne "Maps Revendiquée" (Spécifique Artisans)\n- **Cible** : Boulangeries, Boucheries, Artisans sans fiche Google Maps optimisée.\n- **Accroche** : *"Vos clients vous cherchent sur Google Maps, mais c'est votre concurrent qu'ils trouvent."*\n- **Action** : Offrir la revendication et l'optimisation GMB gratuite en échange d'une présentation Minerva.\n\n#### 2. Campagne "Click & Collect Express" (Restauration / Alimentation)\n- **Cible** : Restaurants et points de vente locaux sans commande en ligne.\n- **Accroche** : *"Ne laissez plus la file d'attente décourager vos clients du midi."*\n- **Action** : Proposer le module Click & Collect Minerva sans commission pendant 30 jours.\n\n#### 3. Campagne "Fidélité SMS automatisée" (Beauté / Services)\n- **Cible** : Salons de coiffure, Instituts de beauté.\n- **Accroche** : *"Remplissez vos créneaux vides du mardi matin sans passer des heures sur Instagram."*\n- **Action** : Montrer comment Minerva relance automatiquement les clients inactifs par SMS.`,
-    argumentaire: `### 🎯 Argumentaire de Vente - Cabinet Dentaire Dr. Laurent\n\n*Statut : Gagné (Won) - Phase d'Onboarding*\n\nVoici les points clés à aborder pour finaliser l'installation technique :\n\n- **1. La Fiche Professionnelle** : Confirmer l'accès administrateur à leur fiche Google pour intégrer le widget de rendez-vous Minerva.\n- **2. L'Onboarding technique** : Rassurer le Dr. Laurent sur le fait que l'intégration prend moins de 15 minutes et n'interrompt pas leur système de secrétariat actuel.\n- **3. Premier objectif** : Récupérer les 15 premiers avis de patients dès la première semaine pour activer les premiers signaux de visibilité.\n\n*Angle de closing : Mettre en avant le professionnalisme et la conformité médicale (RGPD) du traitement des données des patients.*`
+    argumentaire: `### 🎯 Argumentaire de Vente - ${latestLead.businessName}\n\n*Statut : ${latestLead.status} - Niche : ${latestLead.niche} à ${latestLead.city}*\n\nVoici les points clés rédigés par Minerva pour convaincre **${latestLead.contactName || 'le gérant'}** :\n\n- **1. Point de contact** : Présenter Minerva Reach en s'adressant directement à **${latestLead.contactName || 'le gérant'}**.\n- **2. Signal fort détecté** : ${latestLead.nextAction || 'Fiche locale à auditer et optimiser.'}\n- **3. Solution et Proposition** : ${recommendation}\n- **4. Prochaine étape recommandée** : Proposer un appel court de 5 minutes pour présenter l'audit local gratuit ou passer sur place présenter les maquettes.\n\n*Angle de closing : Axer le discours sur le retour sur investissement rapide et l'augmentation des demandes locales directes.*`
   };
 
   const handleSuggestionClick = (key: string) => {
     let queryText = '';
     if (key === 'weekly') queryText = "Analyse ma semaine de prospection";
     if (key === 'campaigns') queryText = "Donne-moi 3 idées de campagnes pour mes niches";
-    if (key === 'argumentaire') queryText = "Prépare l'argumentaire pour le Cabinet Dentaire Dr. Laurent";
+    if (key === 'argumentaire') queryText = `Prépare l'argumentaire pour ${latestLead.businessName}`;
     
     setInput(queryText);
     runQuery(queryText, key);
@@ -31,11 +48,10 @@ export function IntelligenceCopilotPanel() {
     e.preventDefault();
     if (!input.trim()) return;
     
-    // Check if query matches a known key
     let matchingKey = 'weekly';
     const lowerInput = input.toLowerCase();
     if (lowerInput.includes('campagne') || lowerInput.includes('idée')) matchingKey = 'campaigns';
-    if (lowerInput.includes('dentaire') || lowerInput.includes('laurent') || lowerInput.includes('argumentaire')) matchingKey = 'argumentaire';
+    if (lowerInput.includes('argumentaire') || lowerInput.includes(latestLead.businessName.toLowerCase())) matchingKey = 'argumentaire';
     
     runQuery(input, matchingKey);
   };
@@ -60,7 +76,6 @@ export function IntelligenceCopilotPanel() {
         return <h4 key={i} className="text-[11px] font-bold text-foreground mt-2 mb-1">{line.replace('#### ', '')}</h4>;
       }
       if (line.startsWith('- ')) {
-        // Parse bold elements in bullet points
         const boldRegex = /\*\*(.*?)\*\*/g;
         const parts = [];
         let lastIndex = 0;
@@ -132,7 +147,7 @@ export function IntelligenceCopilotPanel() {
               onClick={() => handleSuggestionClick('argumentaire')}
               className="text-left text-[11px] text-muted-foreground hover:text-primary hover:bg-primary/5 border border-border/60 hover:border-primary/20 px-2.5 py-1.5 rounded bg-card transition-colors flex items-center justify-between"
             >
-              <span>🎯 Rédiger argumentaire Dr. Laurent</span>
+              <span className="truncate">🎯 Rédiger argumentaire pour {latestLead.businessName}</span>
               <Sparkle className="h-3 w-3 text-primary shrink-0 opacity-40" />
             </button>
           </div>
@@ -183,3 +198,4 @@ export function IntelligenceCopilotPanel() {
 }
 
 export default IntelligenceCopilotPanel;
+

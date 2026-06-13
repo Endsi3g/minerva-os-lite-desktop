@@ -4,29 +4,50 @@ import React, { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
+import { useReach } from '@/lib/reach-context';
 import { RefreshCw, Sparkles, BookOpen } from 'lucide-react';
 
 export function IntelligenceSummariesPanel() {
+
+
+  const { leads } = useReach();
   const [scope, setScope] = useState('all');
   const [generating, setGenerating] = useState(false);
-  const [summary, setSummary] = useState(
-    'Synthèse globale de ton portefeuille : 5 prospects répartis sur 4 niches commerciales à Lyon et Villeurbanne. Le segment le plus actif est "Boulangerie / Artisanat" (1 lead chaud, démonstration à confirmer). La méthode d\'accroche "Audit SEO local" génère de forts retours dans la niche automobile (1 lead tiède, en attente d\'audit).'
-  );
 
-  const summaries: Record<string, string> = {
-    all: 'Synthèse globale de ton portefeuille : 5 prospects répartis sur 4 niches commerciales à Lyon et Villeurbanne. Le segment le plus actif est "Boulangerie / Artisanat" (1 lead chaud, démonstration à confirmer). La méthode d\'accroche "Audit SEO local" génère de forts retours dans la niche automobile (1 lead tiède, en attente d\'audit).',
-    boulangerie: 'Focus Boulangerie : Jean Dupont (L\'Épi d\'Or) présente un intérêt immédiat pour la commande en ligne. Le prospect est chaud et en attente d\'un appel pour fixer la date de démonstration. L\'angle d\'attaque doit porter sur le gain de temps et la simplicité de la commande mobile.',
-    auto: 'Focus Automobile : Le Garage du Centre (Michel Martin) a un besoin flagrant en e-réputation locale (zéro avis Google My Business, fiche non optimisée). L\'envoi programmé d\'un audit de visibilité local personnalisé est crucial aujourd\'hui pour initier le contact.',
-    restauration: 'Focus Restauration : Le Bistrot Gourmand (Antoine Lambert) a été identifié via Google Maps. Il n\'y a aucune action en cours hormis une visite physique planifiée pour le passage de fin de service. L\'objectif est d\'identifier le décideur sur place.',
-    coiffure: 'Focus Coiffure & Beauté : Zen & Co (Sophie Bernard) a un rendez-vous planifié demain à 14h pour discuter de la gestion automatique de fidélité. Le lead est très chaud et très engagé.'
+  // Calculate portfolio stats
+  const totalLeads = leads.length;
+  const uniqueNiches = new Set(leads.map(l => l.niche?.split(' / ')[0] || 'Général')).size;
+  const cities = new Set(leads.map(l => l.city || 'Lyon')).size;
+  const hotLeads = leads.filter(l => l.temperature === 'Hot');
+  const meetingBookedLeads = leads.filter(l => l.status === 'Meeting Booked');
+
+  const getDynamicSummary = (scopeVal: string) => {
+    if (scopeVal === 'all') {
+      const activeNiche = leads.length > 0 ? leads[0].niche.split(' / ')[0] : 'Boulangerie';
+      return `Synthèse globale de ton portefeuille : ${totalLeads} prospects répartis sur ${uniqueNiches} niches commerciales à travers ${cities} villes. Tu as actuellement ${hotLeads.length} prospects très chauds et ${meetingBookedLeads.length} rendez-vous planifiés dans ton CRM local. Le segment le plus représenté est "${activeNiche}".`;
+    }
+
+    // Niche specifics filter
+    const keyword = scopeVal === 'coiffure' ? 'coiff' : scopeVal === 'boulangerie' ? 'boulang' : scopeVal;
+    const filtered = leads.filter(l => l.niche?.toLowerCase().includes(keyword));
+    const count = filtered.length;
+    const hotCount = filtered.filter(l => l.temperature === 'Hot').length;
+
+    if (count === 0) {
+      return `Focus ${scopeVal.toUpperCase()} : Aucun prospect n'est actuellement enregistré dans cette niche. Utilise la recherche Google Maps Rapide ci-contre pour identifier des opportunités dans le secteur.`;
+    }
+
+    const firstLead = filtered[0];
+    return `Focus ${scopeVal.toUpperCase()} : Tu as ${count} prospect(s) dans ce secteur commercial, dont ${hotCount} très chaud(s). La priorité immédiate est ${firstLead.businessName} (${firstLead.contactName || 'le gérant'}) à ${firstLead.city}, dont le statut est "${firstLead.status}" (prochaine action : ${firstLead.nextAction || 'non spécifiée'}).`;
   };
+
+  const summary = getDynamicSummary(scope);
 
   const handleScopeChange = (val: string) => {
     setScope(val);
     setGenerating(true);
     setTimeout(() => {
       setGenerating(false);
-      setSummary(summaries[val] || summaries.all);
     }, 600);
   };
 
@@ -77,7 +98,7 @@ export function IntelligenceSummariesPanel() {
             <SelectContent>
               <SelectItem value="all" className="text-xs">Global (Tous les leads)</SelectItem>
               <SelectItem value="boulangerie" className="text-xs">Boulangerie / Artisanat</SelectItem>
-              <SelectItem value="auto" className="text-xs">Automobile</SelectItem>
+              <SelectItem value="automobile" className="text-xs">Automobile</SelectItem>
               <SelectItem value="restauration" className="text-xs">Restauration</SelectItem>
               <SelectItem value="coiffure" className="text-xs">Coiffure & Beauté</SelectItem>
             </SelectContent>
@@ -110,3 +131,4 @@ export function IntelligenceSummariesPanel() {
 }
 
 export default IntelligenceSummariesPanel;
+

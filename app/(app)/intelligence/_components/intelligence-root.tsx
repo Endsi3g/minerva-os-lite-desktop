@@ -1,7 +1,8 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { IntelligenceHeader } from './intelligence-header';
+import { IntelligenceScrapeShortcut } from './intelligence-scrape-shortcut';
 import { IntelligenceInsightsPanel } from './intelligence-insights-panel';
 import { IntelligenceOpportunitiesPanel } from './intelligence-opportunities-panel';
 import { IntelligenceCadencePanel } from './intelligence-cadence-panel';
@@ -10,8 +11,10 @@ import { IntelligencePlaybooksPanel } from './intelligence-playbooks-panel';
 import { IntelligenceCopilotPanel } from './intelligence-copilot-panel';
 
 export function IntelligenceRoot() {
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
   const handleRefresh = () => {
-    // Simulated global refresh callback
+    setRefreshTrigger(prev => prev + 1);
     console.log('Intelligence dashboard refreshed');
   };
 
@@ -22,18 +25,19 @@ export function IntelligenceRoot() {
 
       {/* Two-Column Grid Layout */}
       <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
-        {/* Left Column (automated insights, opportunities, cadence charts) */}
+        {/* Left Column (scrape shortcut, automated insights, opportunities, cadence charts) */}
         <div className="flex flex-col gap-5 min-w-0">
-          <IntelligenceInsightsPanel />
-          <IntelligenceOpportunitiesPanel />
+          <IntelligenceScrapeShortcut onImportComplete={handleRefresh} />
+          <IntelligenceInsightsPanel key={`insights-${refreshTrigger}`} />
+          <IntelligenceOpportunitiesPanel key={`opportunities-${refreshTrigger}`} />
           <IntelligenceCadencePanel />
         </div>
 
         {/* Right Column (summaries scope, outreach playbooks, copilot interface) */}
         <div className="flex flex-col gap-5 min-w-0">
-          <IntelligenceSummariesPanel />
-          <IntelligencePlaybooksPanel />
-          <IntelligenceCopilotPanel />
+          <IntelligenceSummariesPanel key={`summaries-${refreshTrigger}`} />
+          <IntelligencePlaybooksPanel key={`playbooks-${refreshTrigger}`} />
+          <IntelligenceCopilotPanel key={`copilot-${refreshTrigger}`} />
         </div>
       </div>
     </div>
@@ -41,3 +45,4 @@ export function IntelligenceRoot() {
 }
 
 export default IntelligenceRoot;
+

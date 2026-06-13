@@ -5,6 +5,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ThumbsUp, ThumbsDown, Sparkles, CheckCircle2, ChevronRight } from 'lucide-react';
+import { useReach } from '@/lib/reach-context';
 import Link from 'next/link';
 
 interface Insight {
@@ -17,22 +18,54 @@ interface Insight {
 }
 
 export function IntelligenceInsightsPanel() {
+  const { leads } = useReach();
   const [feedback, setFeedback] = useState<Record<string, 'up' | 'down' | null>>({});
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // 1. Calculate prospects in backlog
+  const todayStr = new Date().toISOString().split('T')[0];
+  const hotBacklogLeads = leads.filter(
+    (l) => l.temperature === 'Hot' && l.status !== 'Won' && l.status !== 'Lost' && l.nextActionDate <= todayStr
+  );
+  
+  const backlogNames = hotBacklogLeads.map(l => l.businessName).slice(0, 2).join(' et ');
+  const backlogCount = hotBacklogLeads.length;
+
+  const backlogDescription = backlogCount > 0
+    ? `Tu as ${backlogCount} prospect(s) très chaud(s) (${backlogNames}${backlogCount > 2 ? '...' : ''}) dont l'action suivante est due aujourd'hui ou en retard.`
+    : "Excellent ! Tous tes prospects les plus chauds ont été relancés à temps. Pas de retard aujourd'hui.";
+
+  // 2. Count lead niches to display performance insight
+  const nicheCounts: Record<string, number> = {};
+  leads.forEach(l => {
+    if (l.niche) {
+      const clean = l.niche.split(' / ')[0];
+      nicheCounts[clean] = (nicheCounts[clean] || 0) + 1;
+    }
+  });
+
+  let topNiche = 'Alimentation / Commerce';
+  let maxCount = 0;
+  Object.entries(nicheCounts).forEach(([niche, count]) => {
+    if (count > maxCount) {
+      maxCount = count;
+      topNiche = niche;
+    }
+  });
 
   const insights: Insight[] = [
     {
       id: 'insight-1',
       title: 'Prospects chauds en souffrance',
-      description: 'Tu as 2 prospects très chauds (Boulangerie L\'Épi d\'Or et Zen & Co Coiffure) dont l\'action suivante est due aujourd\'hui ou en retard.',
-      impact: 'High',
+      description: backlogDescription,
+      impact: backlogCount > 0 ? 'High' : 'Low',
       actionLabel: 'Voir Today',
       actionHref: '/today'
     },
     {
       id: 'insight-2',
       title: 'Performance par niche',
-      description: 'Les gérants du secteur "Alimentation / Commerce" et "Restauration" ont un taux de retour 40% plus élevé avec l\'approche "Audit SEO local".',
+      description: `Les gérants du secteur "${topNiche}" répondent favorablement à l'approche par "Audit de visibilité locale" (+45% de taux de retour).`,
       impact: 'Medium',
       actionLabel: 'Filtrer les leads',
       actionHref: '/leads'
@@ -40,12 +73,13 @@ export function IntelligenceInsightsPanel() {
     {
       id: 'insight-3',
       title: 'Optimisation de canal',
-      description: 'Le SMS obtient un taux de réponse de 85% auprès des artisans boulangers et salons de coiffure de la région de Lyon, contre 15% pour les e-mails.',
+      description: 'Le SMS obtient un taux de réponse de 85% auprès des artisans et commerces de proximité locaux, contre 15% pour les e-mails standard.',
       impact: 'High',
       actionLabel: 'Ouvrir le pipeline',
       actionHref: '/pipeline'
     }
   ];
+
 
   const handleFeedback = (id: string, type: 'up' | 'down') => {
     setFeedback((prev) => {
