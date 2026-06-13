@@ -1,0 +1,6 @@
+{
+  "appId": "com.minerva.reachlite",
+  "appName": "Minerva OS Reach Lite",
+  "webDir": "out",
+  "bundledWebRuntime": false
+}

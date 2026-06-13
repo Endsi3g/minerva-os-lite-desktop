@@ -82,3 +82,29 @@ The `./deploy-test.ps1` script ensures that:
 - No critical warnings or styling issues remain (`eslint`).
 - Next.js builds the production optimized package.
 - The web app starts and responds on port 3000.
+
+---
+
+## 5. Roadmap & Future Steps
+
+### 📱 Full Native Mobile Build (iOS & Android)
+- **Status**: Core Capacitor dependencies added, `capacitor.config.json` configured, and `setup-mac.sh` created to prepare the environment.
+- **Next Steps**:
+  - Integrate native features like push notifications (`@capacitor/push-notifications`), camera access, and persistent local storage.
+  - Finalize Android integration by installing Android SDK and running `npx cap add android` / `npx cap sync android`.
+  - Set up automated CI/CD pipelines (e.g., GitHub Actions with Fastlane) to deploy build artifacts to Apple TestFlight and Google Play Console.
+
+### 💻 Production Desktop App (Electron)
+- **Status**: Electron wrapper added (`electron/main.cjs`, `preload.js`), packaging scripts configured, and `electron-builder` set up in `package.json`.
+- **Next Steps**:
+  - Implement an auto-update system (e.g., using `electron-updater`) to push security fixes and features to desktop clients automatically.
+  - Add native menu bars, system tray quick-access icons, and windows-specific shortcuts.
+  - Configure code-signing certificates to prevent security warnings on Windows (SmartScreen) and macOS (Gatekeeper).
+
+### ⚡ Real-World Integrations & AI Engine Expansion
+- **Status**: Added global fallback API keys (`process.env.OPENROUTER_API_KEY` and `process.env.ANTHROPIC_API_KEY`) and native Anthropic streaming. Added manual demo data import to keep workspaces clean by default.
+- **Next Steps**:
+  - Connect real email dispatch engines (e.g., Resend, SendGrid) to replace invitation simulation with real emails.
+  - Transition Google Maps scraping (`/api/scrape-maps`) from mock data to actual calls using Google Places API or direct puppeteer scrapers.
+  - Expand supported LLMs in the AI Copilot to include OpenAI (`gpt-4o`) and deepseek models dynamically.
+
