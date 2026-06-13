@@ -42,13 +42,14 @@ export async function POST(req: NextRequest) {
       .maybeSingle();
 
     const provider = dbSettings?.ai_provider || 'anthropic';
-    const openrouterKey = dbSettings?.openrouter_key || '';
+    const openrouterKey = dbSettings?.openrouter_key || process.env.OPENROUTER_API_KEY || '';
+    const anthropicKey = process.env.ANTHROPIC_API_KEY || '';
     const selectedModel = model || dbSettings?.ai_model || 'meta-llama/llama-3-8b-instruct:free';
 
     const lastMessage = messages[messages.length - 1]?.content || '';
     const lastMessageLower = lastMessage.toLowerCase();
 
-    // Check if we have keys to use real LLM integration
+    // 1. OpenRouter Integration (Real OpenRouter API)
     if (provider === 'openrouter' && openrouterKey && openrouterKey.trim() !== '') {
       try {
         const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
@@ -70,7 +71,6 @@ export async function POST(req: NextRequest) {
         });
 
         if (response.ok && response.body) {
-          // Stream real OpenRouter API response
           const stream = new ReadableStream({
             async start(controller) {
               const reader = response.body!.getReader();
@@ -99,6 +99,95 @@ export async function POST(req: NextRequest) {
         }
       } catch (err) {
         console.error("Failed to connect to OpenRouter, falling back to simulated stream:", err);
+      }
+    }
+
+    // 2. Native Anthropic Integration
+    if (provider === 'anthropic' && anthropicKey && anthropicKey.trim() !== '') {
+      try {
+        let anthropicModel = 'claude-3-5-sonnet-20241022';
+        if (selectedModel && (selectedModel.startsWith('claude') || selectedModel.includes('anthropic'))) {
+          anthropicModel = selectedModel;
+        }
+
+        const response = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'x-api-key': anthropicKey.trim(),
+            'anthropic-version': '2023-06-01',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: anthropicModel,
+            messages: messages.map((m: { role: string; content: string }) => ({
+              role: m.role,
+              content: m.content
+            })),
+            stream: true,
+            max_tokens: 1500
+          })
+        });
+
+        if (response.ok && response.body) {
+          const stream = new ReadableStream({
+            async start(controller) {
+              const reader = response.body!.getReader();
+              const decoder = new TextDecoder();
+              let buffer = '';
+
+              try {
+                while (true) {
+                  const { done, value } = await reader.read();
+                  if (done) break;
+
+                  buffer += decoder.decode(value, { stream: true });
+                  const lines = buffer.split('\n');
+                  buffer = lines.pop() || '';
+
+                  for (const line of lines) {
+                    if (line.startsWith('data: ')) {
+                      const dataStr = line.slice(6).trim();
+                      if (dataStr === '[DONE]') continue;
+                      try {
+                        const parsed = JSON.parse(dataStr);
+                        if (parsed.type === 'content_block_delta' && parsed.delta?.text) {
+                          const text = parsed.delta.text;
+                          const sseFormat = `data: ${JSON.stringify({
+                            choices: [{
+                              delta: {
+                                content: text
+                              }
+                            }]
+                          })}\n\n`;
+                          controller.enqueue(encoder.encode(sseFormat));
+                        }
+                      } catch {
+                        // ignore parsing error
+                      }
+                    }
+                  }
+                }
+                controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+              } catch (e) {
+                controller.error(e);
+              } finally {
+                controller.close();
+              }
+            }
+          });
+
+          return new NextResponse(stream, {
+            headers: {
+              'Content-Type': 'text/event-stream',
+              'Cache-Control': 'no-cache',
+              'Connection': 'keep-alive',
+            }
+          });
+        } else {
+          console.warn("Anthropic API returned error:", await response.text());
+        }
+      } catch (err) {
+        console.error("Failed to connect to Anthropic, falling back to simulated stream:", err);
       }
     }
 

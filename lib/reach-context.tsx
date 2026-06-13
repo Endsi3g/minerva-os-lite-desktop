@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { User as SupabaseUser } from '@supabase/supabase-js';
-import { Lead, Task, Note, AiSuggestion, initialLeads, initialTasks, initialAiSuggestions } from './mock-data';
+import { Lead, Task, Note, AiSuggestion, initialLeads, initialTasks } from './mock-data';
 import { createClient } from './supabase/client';
 
 export interface Workspace {
@@ -50,6 +50,7 @@ interface ReachContextType {
   addNoteToLead: (leadId: string, content: string, type: Note['type']) => void;
   deleteLeads: (ids: string[]) => void;
   updateLeadsStatus: (ids: string[], status: Lead['status']) => void;
+  importDemoData: () => Promise<void>;
 }
 
 const ReachContext = createContext<ReachContextType | undefined>(undefined);
@@ -239,60 +240,8 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
         .eq('workspace_id', activeWs.id)
         .order('created_at', { ascending: false });
 
-      if (dbLeads && dbLeads.length === 0 && activeWs.isOwner) {
-        // Pre-populate DB with mock data for this user
-        await populateMockData(currUser.id, activeWs.id);
-        
-        // Fetch again after population
-        const { data: freshLeads } = await supabase
-          .from('leads')
-          .select('*')
-          .eq('workspace_id', activeWs.id)
-          .order('created_at', { ascending: false });
-        
-        const { data: freshNotes } = await supabase
-          .from('notes')
-          .select('*')
-          .eq('workspace_id', activeWs.id)
-          .order('created_at', { ascending: true });
-
-        const uiLeads = (freshLeads || []).map(lead => {
-          const leadNotes = (freshNotes || []).filter(n => n.lead_id === lead.id);
-          return mapDbLeadToUi(lead, leadNotes);
-        });
-        setLeads(uiLeads);
-
-        // Insert AI suggestions linking correctly to new lead UUIDs
-        for (const sug of initialAiSuggestions) {
-          const matchingLead = uiLeads.find(l => l.businessName === sug.leadName);
-          if (matchingLead) {
-            await supabase.from('ai_suggestions').insert({
-              lead_id: matchingLead.id,
-              user_id: currUser.id,
-              workspace_id: activeWs.id,
-              action_text: sug.actionText,
-              suggested_channel: sug.suggestedChannel,
-              reasoning: sug.reasoning,
-              draft_prompt: sug.draftPrompt
-            });
-          }
-        }
-
-        // Final load of tasks and suggestions
-        const { data: freshTasks } = await supabase
-          .from('tasks')
-          .select('*')
-          .eq('workspace_id', activeWs.id)
-          .order('created_at', { ascending: false });
-        setTasks((freshTasks || []).map(mapDbTaskToUi));
-
-        const { data: freshSuggestions } = await supabase
-          .from('ai_suggestions')
-          .select('*')
-          .eq('workspace_id', activeWs.id);
-        setAiSuggestions((freshSuggestions || []).map(s => mapDbSuggestionToUi(s, uiLeads)));
-        return;
-      }
+      // Auto-population of mock data has been disabled for clean workspaces.
+      // Demo data can be imported manually via settings.
 
       const { data: dbNotes } = await supabase
         .from('notes')
@@ -788,6 +737,12 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const importDemoData = async () => {
+    if (!user || !activeWorkspace) return;
+    await populateMockData(user.id, activeWorkspace.id);
+    await loadData(user, activeWorkspace);
+  };
+
   return (
     <ReachContext.Provider
       value={{
@@ -813,7 +768,8 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
         updateLeadStatus,
         addNoteToLead,
         deleteLeads,
-        updateLeadsStatus
+        updateLeadsStatus,
+        importDemoData
       }}
     >
       {children}
