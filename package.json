@@ -15,11 +15,17 @@
     "electron:build": "cross-env EXPORT_MODE=true next build && electron-builder",
     "cap:sync": "cross-env EXPORT_MODE=true next build && cap sync",
     "cap:open:ios": "cap open ios",
+    "cap:sync:android": "cross-env EXPORT_MODE=true next build && cap sync android",
+    "cap:open:android": "cap open android",
     "launch": "node scripts/launcher.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.104.1",
+    "@capacitor/android": "^8.4.0",
+    "@capacitor/camera": "^8.2.0",
     "@capacitor/core": "^8.4.0",
+    "@capacitor/preferences": "^8.0.1",
+    "@capacitor/push-notifications": "^8.1.1",
     "@radix-ui/react-popover": "^1.1.16",
     "@radix-ui/react-switch": "^1.3.0",
     "@radix-ui/react-tabs": "^1.1.14",

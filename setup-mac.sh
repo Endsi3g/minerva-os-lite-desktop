@@ -14,7 +14,7 @@ echo -e "${CYAN}===========================================================${NC}
 echo -e "${CYAN}     Minerva OS Reach Lite - macOS Dev Setup Script        ${NC}"
 echo -e "${CYAN}===========================================================${NC}"
 echo -e "Ce script va préparer votre environnement macOS pour compiler"
-echo -e "l'application en version de bureau (Electron) et mobile (iOS)."
+echo -e "l'application en version de bureau (Electron) et mobile (iOS & Android)."
 echo ""
 
 # 1. Vérification du système d'exploitation
@@ -70,6 +70,21 @@ else
   brew install cocoapods
 fi
 
+# 5b. Vérification du SDK Android (requis pour compiler Android)
+echo -e "${CYAN}[4b/6] Vérification du SDK Android...${NC}"
+ANDROID_SDK_PATH="$HOME/Library/Android/sdk"
+if [ -d "$ANDROID_SDK_PATH" ]; then
+  echo -e "${GREEN}[OK] SDK Android détecté à : $ANDROID_SDK_PATH${NC}"
+else
+  if [ -n "$ANDROID_HOME" ] && [ -d "$ANDROID_HOME" ]; then
+    ANDROID_SDK_PATH="$ANDROID_HOME"
+    echo -e "${GREEN}[OK] SDK Android détecté (via ANDROID_HOME) à : $ANDROID_SDK_PATH${NC}"
+  else
+    ANDROID_SDK_PATH=""
+    echo -e "${YELLOW}[ATTENTION] Le SDK Android est introuvable. Si vous souhaitez compiler pour Android, veuillez installer Android Studio.${NC}"
+  fi
+fi
+
 # 6. Installation des dépendances NPM
 echo -e "${CYAN}[5/6] Installation des dépendances du projet...${NC}"
 ROOT_DIR="$(pwd)"
@@ -90,17 +105,34 @@ else
   exit 1
 fi
 
-# 7. Initialisation / Synchronisation de la plateforme iOS Capacitor
-echo -e "${CYAN}[6/6] Initialisation de la plateforme mobile iOS...${NC}"
+# 7. Initialisation / Synchronisation des plateformes mobiles Capacitor
+echo -e "${CYAN}[6/6] Initialisation des plateformes mobiles...${NC}"
+EXPORT_MODE=true pnpm run build
+
+# iOS
 if [ -d "$DESKTOP_DIR/ios" ]; then
   echo "La plateforme iOS est déjà ajoutée. Synchronisation en cours..."
-  EXPORT_MODE=true pnpm run build
   npx cap sync ios
 else
   echo "Ajout de la plateforme iOS..."
-  EXPORT_MODE=true pnpm run build
   npx cap add ios
   npx cap sync ios
+fi
+
+# Android
+if [ -n "$ANDROID_SDK_PATH" ] && [ -d "$ANDROID_SDK_PATH" ]; then
+  mkdir -p "$DESKTOP_DIR/android"
+  echo "sdk.dir=$ANDROID_SDK_PATH" > "$DESKTOP_DIR/android/local.properties"
+  echo -e "${GREEN}[OK] Fichier android/local.properties configuré.${NC}"
+  
+  if [ -d "$DESKTOP_DIR/android/app" ]; then
+    echo "La plateforme Android est déjà ajoutée. Synchronisation en cours..."
+    npx cap sync android
+  else
+    echo "Ajout de la plateforme Android..."
+    npx cap add android
+    npx cap sync android
+  fi
 fi
 
 echo ""

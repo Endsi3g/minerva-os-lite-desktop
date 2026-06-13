@@ -1,0 +1,46 @@
+default_platform(:ios)
+
+platform :ios do
+  desc "Push a new beta build to Apple TestFlight"
+  lane :beta do
+    # In CI environments, configure temp keychain
+    if is_ci
+      setup_ci
+    end
+    
+    # 1. Install iOS CocoaPods
+    cocoapods(
+      clean_install: true,
+      podfile: "ios/App/Podfile"
+    )
+
+    # 2. Certificates loading (via Match if MATCH_PASSWORD is supplied)
+    if ENV["MATCH_PASSWORD"]
+      match(type: "appstore", readonly: is_ci)
+    else
+      UI.important("MATCH_PASSWORD is not set. Skipping Match. Code signing must be configured in Xcode project.")
+    end
+
+    # 3. Build iOS Application (.ipa)
+    build_app(
+      workspace: "ios/App/App.xcworkspace",
+      scheme: "App",
+      export_method: "app-store",
+      output_directory: "build-artifacts",
+      output_name: "MinervaOSReachLite.ipa"
+    )
+
+    # 4. Upload to App Store Connect / TestFlight
+    if ENV["APP_STORE_CONNECT_API_KEY_KEY"]
+      api_key = app_store_connect_api_key(
+        key_id: ENV["APP_STORE_CONNECT_API_KEY_KEY_ID"],
+        issuer_id: ENV["APP_STORE_CONNECT_API_KEY_ISSUER_ID"],
+        key_content: ENV["APP_STORE_CONNECT_API_KEY_KEY"],
+        is_key_content_base64: true
+      )
+      upload_to_testflight(api_key: api_key)
+    else
+      upload_to_testflight
+    end
+  end
+end

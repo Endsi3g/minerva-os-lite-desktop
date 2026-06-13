@@ -11,9 +11,21 @@ importers:
       '@anthropic-ai/sdk':
         specifier: ^0.104.1
         version: 0.104.1(zod@3.25.76)
+      '@capacitor/android':
+        specifier: ^8.4.0
+        version: 8.4.0(@capacitor/core@8.4.0)
+      '@capacitor/camera':
+        specifier: ^8.2.0
+        version: 8.2.0(@capacitor/core@8.4.0)
       '@capacitor/core':
         specifier: ^8.4.0
         version: 8.4.0
+      '@capacitor/preferences':
+        specifier: ^8.0.1
+        version: 8.0.1(@capacitor/core@8.4.0)
+      '@capacitor/push-notifications':
+        specifier: ^8.1.1
+        version: 8.1.1(@capacitor/core@8.4.0)
       '@radix-ui/react-popover':
         specifier: ^1.1.16
         version: 1.1.16(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -269,6 +281,16 @@ packages:
     resolution: {integrity: sha512-4zBIxpPzowiZpusoFkyGVwakdRJUyuH5PxQ/PrqghfdFWWasvnCdPfQXHrenDai+gyLARulZjZowCOj6fjT4pA==}
     engines: {node: '>=6.9.0'}
 
+  '@capacitor/android@8.4.0':
+    resolution: {integrity: sha512-K1ZPkQzvRzPEALz9nBdLx5p5nAPzp5fsTYWk7LRiKZeH/NXqjDvqfTv7lrLgrziQNoDeaL6ijg64oBREzXiV+g==}
+    peerDependencies:
+      '@capacitor/core': ^8.4.0
+
+  '@capacitor/camera@8.2.0':
+    resolution: {integrity: sha512-hYfrT6xpL936qoEkIpJzSnb0fQCaTkOux1cXzGBfH8QLOGqr6gSLiWZlZz/fqMPmMKJMNRBqlTQkj5fuMhVZog==}
+    peerDependencies:
+      '@capacitor/core': '>=8.0.0'
+
   '@capacitor/cli@8.4.0':
     resolution: {integrity: sha512-5Z9RKHxiqJYRTLrfMeZmzR4qrlg5B85MxsWZ5goyXsLkO3bgpW9a1qV/6fR1SX9s5gwLza5y7PZVwITl/hDJ7g==}
     engines: {node: '>=22.0.0'}
@@ -281,6 +303,16 @@ packages:
     resolution: {integrity: sha512-tnwstEdbTJ2nHAfoAwnurXgYRscWeLY+IIGdz69o24gN2Crfj9Xc0TWo8L5uFLF1LmpbUywH1IT0U1oHV8c+CA==}
     peerDependencies:
       '@capacitor/core': ^8.4.0
+
+  '@capacitor/preferences@8.0.1':
+    resolution: {integrity: sha512-T6no3ebi79XJCk91U3Jp/liJUwgBdvHR+s6vhvPkPxSuch7z3zx5Rv1bdWM6sWruNx+pViuEGqZvbfCdyBvcHQ==}
+    peerDependencies:
+      '@capacitor/core': '>=8.0.0'
+
+  '@capacitor/push-notifications@8.1.1':
+    resolution: {integrity: sha512-WqzjPKIbYbARMN+GC0XMAJcxJpUUzqgzS/Ny8RODLrro38pQhm3GXYwX2Mwd+LZlLY39rGImkCkrKyQSNfuikA==}
+    peerDependencies:
+      '@capacitor/core': '>=8.0.0'
 
   '@date-fns/tz@1.5.0':
     resolution: {integrity: sha512-lwYN/vDPeNRULcepoE/LO2Pgx+7/RV+S9ARfbc9lr2DtGkOD7pAiruHvbR1RX3Qyf6ja47EWJDMsNK5vK08DJg==}
@@ -4916,6 +4948,14 @@ snapshots:
       '@babel/helper-string-parser': 7.29.7
       '@babel/helper-validator-identifier': 7.29.7
 
+  '@capacitor/android@8.4.0(@capacitor/core@8.4.0)':
+    dependencies:
+      '@capacitor/core': 8.4.0
+
+  '@capacitor/camera@8.2.0(@capacitor/core@8.4.0)':
+    dependencies:
+      '@capacitor/core': 8.4.0
+
   '@capacitor/cli@8.4.0':
     dependencies:
       '@ionic/cli-framework-output': 2.2.8
@@ -4943,6 +4983,14 @@ snapshots:
       tslib: 2.8.1
 
   '@capacitor/ios@8.4.0(@capacitor/core@8.4.0)':
+    dependencies:
+      '@capacitor/core': 8.4.0
+
+  '@capacitor/preferences@8.0.1(@capacitor/core@8.4.0)':
+    dependencies:
+      '@capacitor/core': 8.4.0
+
+  '@capacitor/push-notifications@8.1.1(@capacitor/core@8.4.0)':
     dependencies:
       '@capacitor/core': 8.4.0
 

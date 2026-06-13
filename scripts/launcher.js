@@ -22,10 +22,12 @@ function printMenu() {
   console.log("");
   console.log("  \x1b[34m[6]\x1b[0m Mobile   - Capacitor Export & Sync iOS");
   console.log("  \x1b[34m[7]\x1b[0m Mobile   - Ouvrir dans Xcode Simulator");
+  console.log("  \x1b[34m[8]\x1b[0m Mobile   - Capacitor Export & Sync Android");
+  console.log("  \x1b[34m[9]\x1b[0m Mobile   - Ouvrir dans Android Studio");
   console.log("");
-  console.log("  \x1b[31m[8]\x1b[0m Quitter");
+  console.log("  \x1b[31m[10]\x1b[0m Quitter");
   console.log("\x1b[35m========================================================\x1b[0m");
-  rl.question("Entrez votre choix (1-8) : ", handleChoice);
+  rl.question("Entrez votre choix (1-10) : ", handleChoice);
 }
 
 function runCommand(command, args = []) {
@@ -53,7 +55,6 @@ function handleChoice(answer) {
       runCommand('pnpm', ['run', 'start']);
       break;
     case '4':
-      // Run dev server in parallel or run electron dev
       runCommand('pnpm', ['run', 'electron:dev']);
       break;
     case '5':
@@ -66,12 +67,18 @@ function handleChoice(answer) {
       runCommand('pnpm', ['run', 'cap:open:ios']);
       break;
     case '8':
+      runCommand('pnpm', ['run', 'cap:sync:android']);
+      break;
+    case '9':
+      runCommand('pnpm', ['run', 'cap:open:android']);
+      break;
+    case '10':
       console.log("\nAu revoir !");
       rl.close();
       process.exit(0);
       break;
     default:
-      console.log("\n\x1b[31mChoix invalide. Veuillez saisir un nombre entre 1 et 8.\x1b[0m");
+      console.log("\n\x1b[31mChoix invalide. Veuillez saisir un nombre entre 1 et 10.\x1b[0m");
       setTimeout(printMenu, 1500);
       break;
   }

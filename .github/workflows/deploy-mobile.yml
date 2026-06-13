@@ -1,0 +1,105 @@
+name: Deploy Mobile Apps (iOS & Android)
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  deploy-android:
+    name: Build & Deploy Android (Google Play)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 11.5.2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install Dependencies
+        run: pnpm install
+
+      - name: Build Next.js Static Site
+        run: pnpm run build
+        env:
+          EXPORT_MODE: 'true'
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Sync Android Platform
+        run: npx cap sync android
+
+      - name: Setup Ruby (Fastlane)
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+
+      - name: Install Fastlane
+        run: gem install fastlane bundler
+
+      - name: Run Fastlane Android Beta
+        run: bundle exec fastlane android beta
+        env:
+          PLAY_STORE_JSON_KEY_PATH: ${{ secrets.PLAY_STORE_JSON_KEY_PATH }}
+        working-directory: Minerva OS Lite/minerva-os-lite-desktop
+
+  deploy-ios:
+    name: Build & Deploy iOS (TestFlight)
+    runs-on: macos-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 11.5.2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install Dependencies
+        run: pnpm install
+
+      - name: Build Next.js Static Site
+        run: pnpm run build
+        env:
+          EXPORT_MODE: 'true'
+
+      - name: Sync iOS Platform
+        run: npx cap sync ios
+
+      - name: Setup Ruby (Fastlane)
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+
+      - name: Install Fastlane & CocoaPods
+        run: gem install fastlane cocoapods bundler
+
+      - name: Run Fastlane iOS Beta
+        run: bundle exec fastlane ios beta
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          ITC_TEAM_ID: ${{ secrets.ITC_TEAM_ID }}
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+          APP_STORE_CONNECT_API_KEY_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_KEY_ID }}
+          APP_STORE_CONNECT_API_KEY_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ISSUER_ID }}
+          APP_STORE_CONNECT_API_KEY_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY_KEY }}
+        working-directory: Minerva OS Lite/minerva-os-lite-desktop

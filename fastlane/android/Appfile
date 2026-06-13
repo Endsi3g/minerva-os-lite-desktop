@@ -1,0 +1,2 @@
+json_key_file(ENV["PLAY_STORE_JSON_KEY_PATH"] || "fastlane/android/play-store-credentials.json") # Path to the google play json key file
+package_name("com.minerva.reachlite") # e.g. com.krausefx.app
