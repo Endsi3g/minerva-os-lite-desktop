@@ -1,0 +1,158 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Commands
+
+```bash
+# Development
+pnpm dev                  # Next.js dev server at http://localhost:3000
+pnpm electron:dev         # Run Electron in dev mode (requires pnpm dev running first)
+pnpm lint                 # ESLint
+pnpm format               # Prettier (ts, tsx)
+pnpm typecheck            # TypeScript type-check (no emit)
+
+# Production builds
+pnpm electron:build       # Static Next.js export → Electron .dmg / .exe via electron-builder
+pnpm cap:sync             # Static Next.js export → Capacitor iOS/Android sync
+pnpm cap:open:ios         # Open iOS project in Xcode
+pnpm cap:open:android     # Open Android project in Android Studio
+
+# Deploy scripts
+pnpm launch               # node scripts/launcher.js (opens built Electron app)
+pnpm deploy               # node scripts/deploy.js
+```
+
+> **EXPORT_MODE**: The electron:build and cap:sync scripts temporarily rename `app/api/` to `app-api-temp/` before calling `next build` so that Next.js static export (which cannot include API routes) succeeds, then restores the folder. Never manually delete or move `app/api/`.
+
+## Architecture
+
+### Runtime Contexts
+The app runs in three distinct contexts that all share the same Next.js codebase:
+
+1. **Web browser** — served by `next dev` or `next start`; API routes run server-side.
+2. **Electron desktop** — Next.js statically exported to `out/`, served by a custom `app://` protocol handler in `electron/main.cjs`. API route calls go to the remote URL set via `NEXT_PUBLIC_APP_URL`.
+3. **Capacitor mobile (iOS/Android)** — same static export synced via `cap sync`.
+
+Use `getApiUrl(path)` (`lib/api-helper.ts`) for every API call. It detects the runtime and routes to `NEXT_PUBLIC_APP_URL` when running in Electron or native Capacitor instead of relative paths.
+
+Detect Electron: `typeof window !== 'undefined' && (window as any).electron` (truthy).
+
+### Data Layer: Dual-Store Pattern
+
+All data operations in `ReachContext` (and page-level components) follow this pattern:
+
+```
+if (window.electron) {
+  // write to SQLite via window.electron.dbRun/dbAll/dbGet IPC
+  // mark sync_status as 'pending_insert' | 'pending_update' | 'pending_delete'
+  // call window.electron.triggerSync()
+} else {
+  // write directly to Supabase via createClient() from lib/supabase/client.ts
+}
+```
+
+**SQLite schema** is in `electron/database.cjs` (`initDb`). Tables: `settings`, `leads`, `drafts`, `notes`, `tasks`, `workspaces` — each has a `sync_status` column and `updated_at` timestamp.
+
+**Any Supabase schema change** (new column, new table) must be mirrored in `electron/database.cjs`. Use `ALTER TABLE … ADD COLUMN` with an empty callback to safely handle re-runs.
+
+**Sync engine** (`electron/sync.cjs`) uses Last-Write-Wins on `updated_at`. Runs automatically every 5 minutes and on-demand when `window.electron.triggerSync()` is called.
+
+### Electron Windows
+
+`electron/main.cjs` manages four windows:
+- **mainWindow** — the full app shell, loaded from `app://minerva/` in production.
+- **spotlightWindow** — frameless overlay at `/spotlight`, toggled by `Option+Space` / `Alt+Space`.
+- **trayWindow** — 360×450 frameless popover at `/tray`, shown when the system tray icon is clicked.
+- **PDF export window** — temporary invisible BrowserWindow used to render HTML → PDF.
+
+IPC channel names are defined in `electron/main.cjs` (`setupIpcHandlers`) and exposed to the renderer via `electron/preload.js` (`contextBridge.exposeInMainWorld('electron', {...})`).
+
+### Next.js App Router Structure
+
+```
+app/
+  layout.tsx                  # Root layout (ThemeProvider, LanguageProvider)
+  page.tsx                    # Root redirect (→ /today)
+  login/                      # Auth pages (OTP, password, signup)
+  onboarding/                 # Multi-step onboarding (redirected here if settings missing)
+  welcome/                    # Post-onboarding splash
+  spotlight/                  # Global search overlay (Electron only)
+  tray/                       # System tray popover (Electron only)
+  update-password/            # Password reset flow
+  (app)/                      # Authenticated shell with sidebar layout
+    layout.tsx                # Sidebar + topbar + ReachProvider + TooltipProvider
+    today/                    # Daily dashboard
+    leads/                    # Lead list (TanStack Table) + [id] detail
+    prospecting/              # Lead scraping UI
+    pipeline/                 # Kanban + table views
+    intelligence/             # AI insights & summaries
+    settings/                 # Sectioned settings pages
+    team/                     # Team member management
+    workspaces/               # Workspace CRUD
+    agents/                   # Custom AI agents
+    analytics/                # Analytics dashboard
+    chat/                     # AI chat interface
+    integrations/             # Third-party connectors
+    library/                  # Asset library
+    download/                 # App download page
+    changelog/                # Release notes
+  api/
+    auth/google/(login|callback)/   # Google OAuth for Gmail/Drive
+    auth/confirm-reset/             # Supabase PKCE password reset
+    chat/                           # AI chat (Anthropic SDK streaming)
+    generate-draft/                 # AI prospecting email draft generation
+    scrape-maps/                    # Lead scraping from Google Maps / OSM
+    send-email/                     # Gmail API send
+    export-drive/                   # Google Drive export
+    team/(invite|members|role)/     # Team management (uses SUPABASE_SERVICE_ROLE_KEY)
+    workspaces/                     # Workspace CRUD
+```
+
+### Global State: ReachContext
+
+`lib/reach-context.tsx` provides the central `ReachProvider` (wraps the entire `(app)` layout). It holds: `leads`, `tasks`, `aiSuggestions`, `quickNote`, `focusItems`, `workspacesList`, `activeWorkspace`.
+
+All mutations update local state optimistically and persist to SQLite (Electron) or Supabase (web).
+
+Workspace partitioning: all queries include `workspace_id = activeWorkspace.id`. Active workspace ID is persisted in `localStorage` under `minerva_active_workspace_id`.
+
+### Auth & Middleware
+
+`middleware.ts` runs on every non-static route:
+1. Unauthenticated → redirect to `/login`.
+2. Authenticated + onboarding incomplete (no `full_name`/`company_name` in `settings`) → redirect to `/onboarding`.
+3. Root `/` → redirect to `/today`.
+
+Supabase helpers are in `lib/supabase/`: `client.ts` (browser), `server.ts` (RSC/route handlers), `middleware.ts` (session refresh).
+
+### Background Scraper
+
+Electron runs `runBackgroundScrapeIfNeeded()` on launch and every 5 minutes. It triggers a scrape if `settings.last_scrape_at` is more than 6 hours old. The scrape POSTs to `NEXT_PUBLIC_APP_URL/api/scrape-maps` and inserts new leads directly into SQLite with `sync_status = 'pending_insert'`, then calls `triggerSync()`.
+
+### Capacitor / Mobile
+
+`lib/native-bridge.ts` wraps Capacitor APIs (Camera, PushNotifications, Preferences) with web fallbacks. Use `isNativePlatform()` to guard native calls. `lib/native-bridge.ts` also holds the `Window.electron` TypeScript declaration.
+
+## Environment Variables
+
+Required in `.env.local`:
+
+```
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=        # Server-only — never expose to client
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+ANTHROPIC_API_KEY=
+NEXT_PUBLIC_APP_URL=              # Used by Electron/Capacitor for API calls (e.g. https://minerva-os-lite.com)
+```
+
+## Key Conventions
+
+- **Feature pages** use a `*-root.tsx` client component pattern: the Next.js `page.tsx` is a thin server component that renders `<FeatureRoot />` which holds all client state.
+- **Private route components** live under `_components/` inside each route folder.
+- **Supabase column naming** is `snake_case`; the UI model (TypeScript interfaces in `lib/mock-data.ts`) uses `camelCase`. All mapping happens in `ReachContext` via `mapDbLeadToUi`, `mapDbTaskToUi`, etc.
+- **i18n**: `lib/language-context.tsx` provides the `useLanguage()` hook with `t()`. All visible UI strings should use translation keys.
+- **UI components**: shadcn/ui (`components/ui/`) built on Radix UI primitives. Add new components via `pnpm dlx shadcn add <component>`.
+- **Styling**: Tailwind CSS v4 with design tokens hardcoded as hex literals (`#26251e`, `#f54e00`, `#e5e5e0`, etc.) — do not use named Tailwind colors for brand elements.
