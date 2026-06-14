@@ -9,7 +9,8 @@ import { useReach } from '@/lib/reach-context';
 import { Button } from '@/components/ui/button';
 
 interface ProfileData {
-  fullName: string;
+  firstName: string;
+  lastName: string;
   email: string;
   phone: string;
   language: string;
@@ -53,14 +54,26 @@ export function SettingsProfileSection({ data, onChange, isSaving }: SettingsPro
           
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-1.5">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Nom complet</label>
+              <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Prénom</label>
               <Input 
-                value={data.fullName} 
-                onChange={(e) => onChange({ fullName: e.target.value })} 
-                placeholder="Uprising Studio"
+                value={data.firstName} 
+                onChange={(e) => onChange({ firstName: e.target.value })} 
+                placeholder="Jean"
                 className="text-xs bg-card"
               />
             </div>
+            <div className="grid gap-1.5">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Nom de famille</label>
+              <Input 
+                value={data.lastName} 
+                onChange={(e) => onChange({ lastName: e.target.value })} 
+                placeholder="Dupont"
+                className="text-xs bg-card"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-1.5">
               <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Adresse e-mail</label>
               <Input 
@@ -71,15 +84,12 @@ export function SettingsProfileSection({ data, onChange, isSaving }: SettingsPro
                 className="text-xs bg-card"
               />
             </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-1.5">
               <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Numéro de téléphone</label>
               <Input 
                 value={data.phone} 
                 onChange={(e) => onChange({ phone: e.target.value })} 
-                placeholder="+33 6 12 34 56 78"
+                placeholder="+1 (514) 123-4567"
                 className="text-xs bg-card"
               />
             </div>
@@ -103,7 +113,7 @@ export function SettingsProfileSection({ data, onChange, isSaving }: SettingsPro
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="fr" className="text-xs">Français (FR)</SelectItem>
+                  <SelectItem value="fr" className="text-xs">Français (CA)</SelectItem>
                   <SelectItem value="en" className="text-xs">English (EN)</SelectItem>
                 </SelectContent>
               </Select>

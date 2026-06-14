@@ -5,14 +5,15 @@ let supabase = null;
 let currentUserId = null;
 let syncTimer = null;
 
-function setSession({ accessToken, supabaseUrl, supabaseKey, userId }) {
-  if (!accessToken || !supabaseUrl || !supabaseKey) {
+function setSession(session) {
+  if (!session || !session.accessToken || !session.supabaseUrl || !session.supabaseKey) {
     supabase = null;
     currentUserId = null;
     stopSyncTimer();
     return;
   }
 
+  const { accessToken, supabaseUrl, supabaseKey, userId } = session;
   supabase = createClient(supabaseUrl, supabaseKey, {
     auth: {
       persistSession: false,
@@ -216,13 +217,52 @@ async function syncPush() {
     }
   }
 
+  // 4b. Workspaces
+  const pendingWorkspaces = await db.all("SELECT * FROM workspaces WHERE sync_status != 'synced'");
+  for (const ws of pendingWorkspaces) {
+    if (ws.sync_status === 'pending_insert') {
+      const { id, name, owner_id, created_at } = ws;
+      const { error } = await supabase.from('workspaces').upsert({
+        id,
+        name,
+        owner_id,
+        created_at
+      });
+      if (!error) {
+        await db.run("UPDATE workspaces SET sync_status = 'synced' WHERE id = ?", [id]);
+      } else {
+        console.error("Error pushing insert for workspace", id, error);
+      }
+    } else if (ws.sync_status === 'pending_update') {
+      const { id, name } = ws;
+      const { error } = await supabase.from('workspaces').update({
+        name
+      }).eq('id', id);
+      if (!error) {
+        await db.run("UPDATE workspaces SET sync_status = 'synced' WHERE id = ?", [id]);
+      } else {
+        console.error("Error pushing update for workspace", id, error);
+      }
+    } else if (ws.sync_status === 'pending_delete') {
+      const { error } = await supabase.from('workspaces').delete().eq('id', ws.id);
+      if (!error) {
+        await db.run("DELETE FROM workspaces WHERE id = ?", [ws.id]);
+      } else {
+        console.error("Error pushing delete for workspace", ws.id, error);
+      }
+    }
+  }
+
   // 5. Settings
   const pendingSettings = await db.all("SELECT * FROM settings WHERE sync_status != 'synced'");
   for (const setting of pendingSettings) {
-    const { user_id, full_name, company_name, timezone, niches, cities, ai_tone, ai_density, quick_note, focus_title, focus_items } = setting;
+    const { user_id, full_name, last_name, phone, email, company_name, timezone, niches, cities, ai_tone, ai_density, quick_note, focus_title, focus_items } = setting;
     const { error } = await supabase.from('settings').upsert({
       user_id,
       full_name,
+      last_name,
+      phone,
+      email,
       company_name,
       timezone,
       niches: JSON.parse(niches || '[]'),
@@ -253,11 +293,14 @@ async function syncPull() {
                          (localSetting.sync_status === 'synced' && 
                           new Date(remoteSettings.updated_at) > new Date(localSetting.updated_at || 0));
     if (shouldUpdate) {
-      const { user_id, full_name, company_name, timezone, niches, cities, ai_tone, ai_density, quick_note, focus_title, focus_items, updated_at } = remoteSettings;
-      await db.run(`INSERT INTO settings (user_id, full_name, company_name, timezone, niches, cities, ai_tone, ai_density, quick_note, focus_title, focus_items, updated_at, sync_status)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced')
+      const { user_id, full_name, last_name, phone, email, company_name, timezone, niches, cities, ai_tone, ai_density, quick_note, focus_title, focus_items, updated_at } = remoteSettings;
+      await db.run(`INSERT INTO settings (user_id, full_name, last_name, phone, email, company_name, timezone, niches, cities, ai_tone, ai_density, quick_note, focus_title, focus_items, updated_at, sync_status)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced')
         ON CONFLICT(user_id) DO UPDATE SET
           full_name = excluded.full_name,
+          last_name = excluded.last_name,
+          phone = excluded.phone,
+          email = excluded.email,
           company_name = excluded.company_name,
           timezone = excluded.timezone,
           niches = excluded.niches,
@@ -269,7 +312,7 @@ async function syncPull() {
           focus_items = excluded.focus_items,
           updated_at = excluded.updated_at,
           sync_status = 'synced'`,
-        [user_id, full_name, company_name, timezone, JSON.stringify(niches || []), JSON.stringify(cities || []), ai_tone, ai_density, quick_note, focus_title, JSON.stringify(focus_items || []), updated_at]
+        [user_id, full_name, last_name, phone, email, company_name, timezone, JSON.stringify(niches || []), JSON.stringify(cities || []), ai_tone, ai_density, quick_note, focus_title, JSON.stringify(focus_items || []), updated_at]
       );
     }
   }
@@ -373,6 +416,28 @@ async function syncPull() {
           user_id = ?, title = ?, completed = ?, category = ?, due_date = ?, workspace_id = ?, updated_at = ?
           WHERE id = ?`,
           [user_id, title, completedInt, category, due_date, workspace_id, created_at, id]
+        );
+      }
+    }
+  }
+
+  // 6. Workspaces Pull
+  const { data: remoteWorkspaces, error: workspacesError } = await supabase
+    .from('workspaces')
+    .select('*');
+
+  if (!workspacesError && remoteWorkspaces) {
+    for (const ws of remoteWorkspaces) {
+      const { id, name, owner_id, created_at } = ws;
+      const localWs = await db.get("SELECT sync_status FROM workspaces WHERE id = ?", [id]);
+      if (!localWs) {
+        await db.run(`INSERT INTO workspaces (id, name, owner_id, created_at, sync_status)
+          VALUES (?, ?, ?, ?, 'synced')`,
+          [id, name, owner_id, created_at]
+        );
+      } else if (localWs.sync_status === 'synced') {
+        await db.run(`UPDATE workspaces SET name = ?, owner_id = ?, created_at = ? WHERE id = ?`,
+          [name, owner_id, created_at, id]
         );
       }
     }

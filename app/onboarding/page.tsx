@@ -18,9 +18,10 @@ import {
 import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
 import { MinervaIcon } from '@/components/icons';
+import { TextureOverlay } from '@/components/ui/texture-overlay';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-type Step = 'landing' | 'login' | 'otp' | 'selection' | 'workspace' | 'pricing' | 'analytics';
+type Step = 'landing' | 'login' | 'otp' | 'selection' | 'workspace' | 'pricing' | 'analytics' | 'finalizing';
 type Direction = 'forward' | 'backward';
 
 // Steps that show the progress dots (excludes landing)
@@ -32,14 +33,14 @@ const PRESET_NICHES = [
 ];
 
 const PRESET_CITIES = [
-  'Paris', 'Lyon', 'Marseille', 'Bordeaux', 'Lille', 'Nantes', 'Toulouse',
+  'Montréal', 'Québec', 'Laval', 'Gatineau', 'Sherbrooke', 'Toronto', 'Vancouver',
 ];
 
 // ─── Right Panel Content per Step ─────────────────────────────────────────────
 const RIGHT_PANEL_CONTENT: Record<string, { headline: string; sub: string; badge?: string }> = {
   login: {
     headline: 'Bienvenue sur Minerva',
-    sub: 'L\'IA de prospection locale la plus avancée pour les agences françaises.',
+    sub: 'L\'IA de prospection locale la plus avancée pour les agences canadiennes.',
     badge: 'Gratuit pour commencer',
   },
   otp: {
@@ -67,6 +68,11 @@ const RIGHT_PANEL_CONTENT: Record<string, { headline: string; sub: string; badge
     sub: 'Partagez anonymement vos données d\'usage pour améliorer Minerva pour tous.',
     badge: 'Données anonymisées',
   },
+  finalizing: {
+    headline: 'Configuration en cours',
+    sub: 'Vos filtres et niches d\'IA sont en cours de configuration dans votre espace.',
+    badge: 'Minerva OS Lite',
+  },
 };
 
 // ─── Dot Progress Indicator ────────────────────────────────────────────────────
@@ -88,6 +94,42 @@ function DotProgress({ currentStep }: { currentStep: Step }) {
           )}
         />
       ))}
+    </div>
+  );
+}
+
+// ─── Finalizing Checklist Component ───────────────────────────────────────────
+function FinalizingCheck({ index, delay }: { index: number; delay: number }) {
+  const [status, setStatus] = useState<'pending' | 'loading' | 'done'>('pending');
+
+  useEffect(() => {
+    const loadTimer = setTimeout(() => {
+      setStatus('loading');
+    }, delay);
+
+    const doneTimer = setTimeout(() => {
+      setStatus('done');
+    }, delay + 1200);
+
+    return () => {
+      clearTimeout(loadTimer);
+      clearTimeout(doneTimer);
+    };
+  }, [delay]);
+
+  if (status === 'pending') {
+    return <div className="w-4 h-4 rounded-full border border-[#e6e5e0] shrink-0" />;
+  }
+
+  if (status === 'loading') {
+    return (
+      <div className="w-4 h-4 rounded-full border border-[#10b981]/30 border-t-[#10b981] animate-spin shrink-0" />
+    );
+  }
+
+  return (
+    <div className="w-4 h-4 rounded-full bg-[#10b981] text-white flex items-center justify-center text-[10px] font-bold shrink-0 animate-in zoom-in duration-300">
+      ✓
     </div>
   );
 }
@@ -139,6 +181,12 @@ export default function OnboardingPage() {
       if (user) {
         if (user.email) { setEmail(user.email); checkEmailDomain(user.email); }
         if (user.user_metadata?.full_name) setFullName(user.user_metadata.full_name);
+        setStep((prev) => {
+          if (prev === 'landing' || prev === 'login' || prev === 'otp') {
+            return 'selection';
+          }
+          return prev;
+        });
       }
     };
     fetchUser();
@@ -226,6 +274,9 @@ export default function OnboardingPage() {
 
   const handleFinalizeOnboarding = async () => {
     const name = fullName.trim() || 'Utilisateur Minerva';
+    const nameParts = name.split(/\s+/);
+    const firstName = nameParts[0] || '';
+    const lastName = nameParts.slice(1).join(' ') || '';
     const company = workspaceName.trim() || 'Mon Workspace';
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -233,6 +284,9 @@ export default function OnboardingPage() {
       await supabase.from('settings').upsert({
         user_id: user.id,
         full_name: name,
+        last_name: lastName,
+        phone: '',
+        email: email || '',
         company_name: company,
         timezone: 'Europe/Paris',
         niches: selectedNiches.length > 0 ? selectedNiches : ['Boulangerie', 'Coiffure'],
@@ -242,7 +296,14 @@ export default function OnboardingPage() {
       });
     }
     const localSettings = {
-      profile: { fullName: name, email: email || 'contact@uprising.studio', phone: '+33 6 12 34 56 78', language: 'fr', timezone: 'Europe/Paris' },
+      profile: {
+        firstName: firstName,
+        lastName: lastName,
+        email: email || 'contact@uprising.studio',
+        phone: '',
+        language: 'fr',
+        timezone: 'Europe/Paris'
+      },
       prospecting: { niches: selectedNiches, cities: selectedCities, services: { website: true, seoAudit: true, acquisition: false }, language: 'both' },
       ai: { tone: aiTone, customization: 'medium', autoInsights: true, autoFollowUps: false },
       notifications: { reminderOverdue: true, dailyDigest: true, weeklyReport: false, digestTime: '20:00' },
@@ -250,8 +311,22 @@ export default function OnboardingPage() {
     };
     localStorage.setItem('minerva_reach_settings', JSON.stringify(localSettings));
     localStorage.setItem('minerva_welcome_seen', 'true');
-    router.refresh();
-    router.push('/welcome');
+
+    // Smooth transition to finalizing state
+    setStep('finalizing');
+    setDirection('forward');
+    setSlidePhase('exit');
+    setTimeout(() => {
+      setSlidePhase('enter');
+      setTimeout(() => {
+        setSlidePhase('idle');
+      }, 250);
+    }, 200);
+
+    setTimeout(() => {
+      router.refresh();
+      router.push('/welcome');
+    }, 4500);
   };
 
   const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -263,6 +338,7 @@ export default function OnboardingPage() {
   // ════════════════════════════════════════════════════════════════════════════
   return (
     <div className="min-h-screen w-screen bg-white text-[#26251e] font-sans selection:bg-[#10b981]/10 flex flex-col justify-between overflow-x-hidden relative">
+      <TextureOverlay texture="grid" opacity={0.6} />
 
       {/* ── LANDING PAGE (Screen 0) ── */}
       {step === 'landing' ? (
@@ -666,53 +742,53 @@ export default function OnboardingPage() {
                   <div className="space-y-2">
                     <h2 className="text-3xl tracking-tight text-[#26251e] font-serif font-light font-georgia">Upgrade your workspace</h2>
                     <div className="flex items-center gap-2 pt-1">
-                      <span className="text-xs text-[#807d72] font-semibold">Save €60/user/year with annual billing</span>
-                      <button
-                        title="Toggle annual billing"
-                        aria-label="Toggle annual billing"
-                        onClick={() => setIsAnnualPlan(!isAnnualPlan)}
-                        className={cn(
-                          'w-10 h-5 rounded-full p-0.5 transition-colors duration-200 flex items-center shrink-0',
-                          isAnnualPlan ? 'bg-[#10b981] justify-end' : 'bg-neutral-200 justify-start',
-                        )}
-                      >
-                        <span className="w-4 h-4 rounded-full bg-white shadow block" />
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="space-y-3">
-                    {/* Free plan */}
-                    <div className="border border-[#e6e5e0] rounded-2xl p-4 bg-white space-y-3">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h4 className="text-xs font-bold text-[#26251e]">Free</h4>
-                          <p className="text-xl font-light text-[#26251e] font-serif font-georgia">€0 / month</p>
-                        </div>
-                        <button onClick={() => goToStep('analytics', 'forward')} className="rounded-full border border-[#e6e5e0] bg-white hover:bg-neutral-50 text-xs font-bold text-[#26251e] px-5 py-2 transition-colors">
-                          Continue free
-                        </button>
-                      </div>
-                      <ul className="space-y-1.5">
-                        {['50 prospects / mois', '5 campagnes actives', 'Audit SEO de base', 'Support e-mail'].map((f, i) => (
-                          <li key={i} className="flex items-center gap-2 text-[11px] font-semibold text-[#555552]">
-                            <Check className="w-3 h-3 text-[#10b981] shrink-0" /><span>{f}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-
-                    {/* Team plan */}
-                    <div className="border-2 border-[#10b981] rounded-2xl p-4 bg-[#10b981]/5 space-y-3 relative">
-                      <span className="absolute -top-2.5 left-4 bg-[#10b981] text-white text-[9px] font-bold px-3 py-0.5 rounded-full uppercase tracking-wider">Recommandé</span>
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h4 className="text-xs font-bold text-[#26251e]">Team</h4>
-                          <p className="text-xl font-light text-[#26251e] font-serif font-georgia">
-                            {isAnnualPlan ? '€30' : '€35'}<span className="text-xs text-[#807d72] font-semibold"> / month</span>
-                            {isAnnualPlan && <span className="text-xs text-[#807d72] line-through ml-2">€35</span>}
-                          </p>
-                        </div>
+                       <span className="text-xs text-[#807d72] font-semibold">Save $60/user/year with annual billing</span>
+                       <button
+                         title="Toggle annual billing"
+                         aria-label="Toggle annual billing"
+                         onClick={() => setIsAnnualPlan(!isAnnualPlan)}
+                         className={cn(
+                           'w-10 h-5 rounded-full p-0.5 transition-colors duration-200 flex items-center shrink-0',
+                           isAnnualPlan ? 'bg-[#10b981] justify-end' : 'bg-neutral-200 justify-start',
+                         )}
+                       >
+                         <span className="w-4 h-4 rounded-full bg-white shadow block" />
+                       </button>
+                     </div>
+                   </div>
+ 
+                   <div className="space-y-3">
+                     {/* Free plan */}
+                     <div className="border border-[#e6e5e0] rounded-2xl p-4 bg-white space-y-3">
+                       <div className="flex items-center justify-between">
+                         <div>
+                           <h4 className="text-xs font-bold text-[#26251e]">Free</h4>
+                           <p className="text-xl font-light text-[#26251e] font-serif font-georgia">$0 / month</p>
+                         </div>
+                         <button onClick={() => goToStep('analytics', 'forward')} className="rounded-full border border-[#e6e5e0] bg-white hover:bg-neutral-50 text-xs font-bold text-[#26251e] px-5 py-2 transition-colors">
+                           Continue free
+                         </button>
+                       </div>
+                       <ul className="space-y-1.5">
+                         {['50 prospects / mois', '5 campagnes actives', 'Audit SEO de base', 'Support e-mail'].map((f, i) => (
+                           <li key={i} className="flex items-center gap-2 text-[11px] font-semibold text-[#555552]">
+                             <Check className="w-3 h-3 text-[#10b981] shrink-0" /><span>{f}</span>
+                           </li>
+                         ))}
+                       </ul>
+                     </div>
+ 
+                     {/* Team plan */}
+                     <div className="border-2 border-[#10b981] rounded-2xl p-4 bg-[#10b981]/5 space-y-3 relative">
+                       <span className="absolute -top-2.5 left-4 bg-[#10b981] text-white text-[9px] font-bold px-3 py-0.5 rounded-full uppercase tracking-wider">Recommandé</span>
+                       <div className="flex items-center justify-between">
+                         <div>
+                           <h4 className="text-xs font-bold text-[#26251e]">Team</h4>
+                           <p className="text-xl font-light text-[#26251e] font-serif font-georgia">
+                             {isAnnualPlan ? '$30' : '$35'}<span className="text-xs text-[#807d72] font-semibold"> / month</span>
+                             {isAnnualPlan && <span className="text-xs text-[#807d72] line-through ml-2">$35</span>}
+                           </p>
+                         </div>
                         <button onClick={() => goToStep('analytics', 'forward')} className="rounded-full bg-[#26251e] hover:bg-[#1a1a19] text-white text-xs font-bold px-5 py-2 transition-colors">
                           Select Team
                         </button>
@@ -778,6 +854,61 @@ export default function OnboardingPage() {
                       Share analytics
                     </button>
                   </div>
+                </div>
+              )}
+
+              {/* ─── FINALIZING ─────────────────────────────────────────── */}
+              {step === 'finalizing' && (
+                <div className="space-y-8 animate-in fade-in duration-500 text-left">
+                  <div className="space-y-3">
+                    <h2 className="text-3xl tracking-tight text-[#26251e] font-serif font-light font-georgia">
+                      Configuration en cours
+                    </h2>
+                    <p className="text-xs text-[#807d72] font-semibold leading-relaxed">
+                      Veuillez patienter pendant que nous initialisons votre environnement de prospection.
+                    </p>
+                  </div>
+
+                  {/* Checklist items with progressive reveal */}
+                  <div className="space-y-4">
+                    {[
+                      { text: 'Création du profil utilisateur', delay: 0 },
+                      { text: 'Configuration de l\'IA et des filtres cibles', delay: 1200 },
+                      { text: 'Initialisation de l\'espace de travail SQLite local', delay: 2400 },
+                      { text: 'Synchronisation globale avec Supabase', delay: 3600 },
+                    ].map((item, idx) => (
+                      <div 
+                        key={idx} 
+                        className="flex items-center gap-3 text-xs font-semibold text-[#26251e] animate-in fade-in slide-in-from-bottom-2 duration-500"
+                        style={{
+                          animationDelay: `${item.delay}ms`,
+                          animationFillMode: 'both'
+                        }}
+                      >
+                        <FinalizingCheck index={idx} delay={item.delay} />
+                        <span className="text-[#555552]">{item.text}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Progress bar */}
+                  <div className="flex flex-col gap-2 pt-4 border-t border-[#e6e5e0]/60">
+                    <div className="w-full bg-[#e6e5e0]/50 h-[3px] rounded-full overflow-hidden">
+                      <div 
+                        className="bg-[#10b981] h-full rounded-full"
+                        style={{
+                          animation: 'finalProgress 4.5s linear forwards'
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  <style jsx global>{`
+                    @keyframes finalProgress {
+                      0% { width: 0%; }
+                      100% { width: 100%; }
+                    }
+                  `}</style>
                 </div>
               )}
             </div>

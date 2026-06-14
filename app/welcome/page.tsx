@@ -447,52 +447,55 @@ function WelcomePageContent() {
       {/* Main Page Content Area */}
       <div className="flex-1 flex flex-col justify-between relative overflow-hidden bg-white">
         
-        {/* Floating Collapse Toggle / Menu Button (to the right of the sidebar) */}
-        <div className="absolute top-4 left-4 z-30 flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="md:hidden h-8 w-8 text-[#7a7a76] hover:text-[#26251e] border border-[#e5e5e0] bg-white/80 backdrop-blur-xs shadow-2xs"
-            onClick={() => setSidebarOpen(true)}
-          >
-            <Menu className="h-4 w-4" />
-          </Button>
+        {/* Topbar matching App Layout */}
+        <header className="flex h-12 items-center justify-between border-b border-[#e5e5e0] bg-white px-4 md:px-6 shrink-0 relative z-30">
+          {/* Left Actions */}
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="md:hidden h-8 w-8 text-[#7a7a76] hover:text-[#26251e] border border-[#e5e5e0]"
+              onClick={() => setSidebarOpen(true)}
+            >
+              <Menu className="h-4 w-4" />
+            </Button>
 
-          <button
-            onClick={toggleCollapse}
-            className="hidden md:flex h-8 w-8 items-center justify-center rounded-md border border-[#e5e5e0] bg-white/80 backdrop-blur-xs text-[#7a7a76] hover:text-[#26251e] hover:bg-[#e5e5e2]/60 transition-colors shadow-2xs"
-            aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-          >
-            {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
-          </button>
-        </div>
-
-        {/* Floating Top-Right Actions (Invite Users & Profile) */}
-        <div className="absolute top-4 right-6 flex items-center gap-3 z-30 pointer-events-auto">
-          <Button 
-            onClick={() => setShowInviteModal(true)}
-            variant="ghost" 
-            size="sm" 
-            className="h-8 text-xs font-semibold text-[#555552] hover:text-[#26251e] hover:bg-[#e5e5e2]/60 flex items-center gap-1.5 rounded-md px-3 border border-[#e5e5e0] bg-white/80 backdrop-blur-xs shadow-2xs"
-          >
-            <UserPlus className="h-3.5 w-3.5" />
-            <span>Invite Users</span>
-          </Button>
-
-          <div className="h-7 w-7 rounded-full overflow-hidden border border-[#e5e5e0] bg-[#e5e5e2] flex items-center justify-center shrink-0 shadow-2xs">
-            <img 
-              src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=facearea&facepad=2&w=256&h=256&q=80" 
-              alt="Profile" 
-              className="w-full h-full object-cover"
-            />
+            <button
+              onClick={toggleCollapse}
+              className="hidden md:flex h-8 w-8 items-center justify-center rounded-md border border-[#e5e5e0] text-[#7a7a76] hover:text-[#26251e] hover:bg-[#e5e5e2]/60 transition-colors"
+              aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            >
+              {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
+            </button>
           </div>
-        </div>
+
+          {/* Right actions */}
+          <div className="flex items-center gap-3">
+            <Button 
+              onClick={() => setShowInviteModal(true)}
+              variant="ghost" 
+              size="sm" 
+              className="h-8 text-xs font-semibold text-[#555552] hover:text-[#26251e] hover:bg-[#e5e5e2]/60 flex items-center gap-1.5 rounded-md px-3 border border-[#e5e5e0]"
+            >
+              <UserPlus className="h-3.5 w-3.5" />
+              <span>Invite Users</span>
+            </Button>
+
+            <div className="h-7 w-7 rounded-full overflow-hidden border border-[#e5e5e0] bg-[#e5e5e2] flex items-center justify-center shrink-0">
+              <img 
+                src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=facearea&facepad=2&w=256&h=256&q=80" 
+                alt="Profile" 
+                className="w-full h-full object-cover"
+              />
+            </div>
+          </div>
+        </header>
 
         {/* Inner Grid Pattern Decorative background */}
         <div className="absolute inset-0 opacity-[0.25] pointer-events-none bg-grid-pattern-20" />
 
         {/* Welcome Area content container */}
-        <div className="flex-1 overflow-y-auto py-12 px-6 flex flex-col items-center relative z-10">
+        <div className="flex-1 overflow-y-auto py-8 px-4 md:px-6 flex flex-col items-center relative z-10">
           
           {/* Concentric Circle indicator mockup */}
           <div className="flex flex-col items-center space-y-4 mt-6">

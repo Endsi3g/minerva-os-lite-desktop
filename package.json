@@ -18,7 +18,8 @@
     "cap:sync:android": "([ -d app/api ] && mv app/api app-api-temp || true); cross-env EXPORT_MODE=true next build; status=$?; ([ -d app-api-temp ] && mv app-api-temp app/api || true); [ $status -eq 0 ] && cap sync android",
     "cap:open:android": "cap open android",
     "launch": "node scripts/launcher.js",
-    "deploy": "node scripts/deploy.js"
+    "deploy": "node scripts/deploy.js",
+    "postinstall": "node scripts/setup-git-hooks.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.104.1",

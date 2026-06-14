@@ -243,7 +243,7 @@ function getSimulatedReply(query: string, activeTool?: string): string {
 
 Bonjour Jean,
 
-J'ai récemment visité votre site internet et j'ai remarqué que votre boulangerie n'apparaît pas dans les premiers résultats sur Google Maps pour les recherches associées à "artisan boulanger Lyon".
+J'ai récemment visité votre site internet et j'ai remarqué que votre boulangerie n'apparaît pas dans les premiers résultats sur Google Maps pour les recherches associées à "boulanger Montréal".
 
 En optimisant simplement quelques éléments clés de votre fiche Google Business Profile et en adaptant la structure technique de votre site mobile, vous pourriez attirer entre **20% et 35% de clients supplémentaires** chaque semaine.
 
@@ -267,8 +267,8 @@ Faites-moi savoir si vous souhaitez que j'adapte le ton (plus chaleureux ou plus
 
 ## Indicateurs Clés (KPI)
 - **Taux de conversion global :** 24.5% (+2.3% par rapport au mois dernier)
-- **Coût d'acquisition client (CAC) :** 45.00 €
-- **Revenu Mensuel Récurrent (MRR) :** 12 400.00 €
+- **Coût d'acquisition client (CAC) :** 45.00 $
+- **Revenu Mensuel Récurrent (MRR) :** 12 400.00 $
 
 ## Répartition des Prospects par Statut
 1. **Nouveaux Leads (New) :** 45 prospects

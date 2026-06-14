@@ -13,6 +13,9 @@ function initDb() {
     db.run(`CREATE TABLE IF NOT EXISTS settings (
       user_id TEXT PRIMARY KEY,
       full_name TEXT,
+      last_name TEXT,
+      phone TEXT,
+      email TEXT,
       company_name TEXT,
       timezone TEXT,
       niches TEXT,
@@ -26,6 +29,16 @@ function initDb() {
       updated_at TEXT,
       sync_status TEXT DEFAULT 'synced'
     )`);
+
+    db.run(`ALTER TABLE settings ADD COLUMN last_name TEXT`, () => {
+      // Ignore if column already exists
+    });
+    db.run(`ALTER TABLE settings ADD COLUMN phone TEXT`, () => {
+      // Ignore if column already exists
+    });
+    db.run(`ALTER TABLE settings ADD COLUMN email TEXT`, () => {
+      // Ignore if column already exists
+    });
 
     // 2. Leads table
     db.run(`CREATE TABLE IF NOT EXISTS leads (
@@ -86,6 +99,16 @@ function initDb() {
       category TEXT DEFAULT 'General',
       due_date TEXT,
       workspace_id TEXT,
+      created_at TEXT,
+      updated_at TEXT,
+      sync_status TEXT DEFAULT 'synced'
+    )`);
+
+    // 6. Workspaces table
+    db.run(`CREATE TABLE IF NOT EXISTS workspaces (
+      id TEXT PRIMARY KEY,
+      name TEXT,
+      owner_id TEXT,
       created_at TEXT,
       updated_at TEXT,
       sync_status TEXT DEFAULT 'synced'

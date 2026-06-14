@@ -68,9 +68,9 @@ export function LeadsHeader() {
       addLead({
         businessName: "Boucherie Charcuterie Vessière",
         contactName: "Marc Vessière",
-        contactEmail: "contact@boucherie-vessiere.fr",
+        contactEmail: "contact@boucherie-vessiere.ca",
         niche: "Alimentation / Commerce",
-        city: "Lyon",
+        city: "Montréal",
         source: "CSV Import",
         status: "New",
         temperature: "Warm",
@@ -82,9 +82,9 @@ export function LeadsHeader() {
       addLead({
         businessName: "Hôtel Le Roosevelt",
         contactName: "Hélène Dubois",
-        contactEmail: "direction@hotelroosevelt.fr",
+        contactEmail: "direction@hotelroosevelt.ca",
         niche: "Hôtellerie / Tourisme",
-        city: "Lyon",
+        city: "Montréal",
         source: "CSV Import",
         status: "Contacted",
         temperature: "Hot",
@@ -199,7 +199,7 @@ export function LeadsHeader() {
                   <div className="grid gap-1">
                     <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Ville</label>
                     <Input 
-                      placeholder="Lyon" 
+                      placeholder="Montréal" 
                       value={leadForm.city}
                       onChange={e => setLeadForm(prev => ({ ...prev, city: e.target.value }))}
                     />

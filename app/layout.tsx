@@ -2,11 +2,12 @@ import { JetBrains_Mono, Inter } from "next/font/google"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { LanguageProvider } from "@/lib/language-context"
+import { PageTransition } from "@/components/page-transition"
 import { cn } from "@/lib/utils"
 import type { Metadata, Viewport } from "next"
 
 const inter = Inter({
-  subsets: ["latin"],
+  subsets: ["sans-serif", "latin"] as any, // prevent type differences in different versions
   variable: "--font-sans"
 })
 
@@ -63,7 +64,9 @@ export default function RootLayout({
       <body>
         <ThemeProvider>
           <LanguageProvider>
-            {children}
+            <PageTransition>
+              {children}
+            </PageTransition>
           </LanguageProvider>
         </ThemeProvider>
       </body>

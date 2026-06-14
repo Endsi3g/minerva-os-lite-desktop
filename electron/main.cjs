@@ -51,10 +51,15 @@ function createWindow() {
     mainWindow.loadURL('http://localhost:3000');
     mainWindow.webContents.openDevTools();
   } else {
-    mainWindow.loadURL('app:///').catch(err => {
+    mainWindow.webContents.openDevTools();
+    mainWindow.loadURL('app://minerva/').catch(err => {
       console.error("Failed to load app url in Electron:", err);
     });
   }
+
+  mainWindow.webContents.on('console-message', (event, level, message, line, sourceId) => {
+    console.log(`[Renderer Console] [Level ${level}] ${message} (at ${sourceId}:${line})`);
+  });
 
   // Intercept the close event to hide the window instead of quitting
   mainWindow.on('close', (event) => {
@@ -454,7 +459,7 @@ function createSpotlightWindow() {
   if (isDev) {
     spotlightWindow.loadURL('http://localhost:3000/spotlight');
   } else {
-    spotlightWindow.loadURL('app:///spotlight').catch(err => {
+    spotlightWindow.loadURL('app://minerva/spotlight').catch(err => {
       console.error("Failed to load spotlight url in Electron:", err);
     });
   }
@@ -486,7 +491,7 @@ function createTrayWindow() {
   if (isDev) {
     trayWindow.loadURL('http://localhost:3000/tray');
   } else {
-    trayWindow.loadURL('app:///tray').catch(err => {
+    trayWindow.loadURL('app://minerva/tray').catch(err => {
       console.error("Failed to load tray url in Electron:", err);
     });
   }
@@ -666,11 +671,13 @@ function setupProtocol() {
 
   protocol.handle('app', async (request) => {
     try {
-      let url = decodeURIComponent(request.url.replace('app://', ''));
-      if (url.startsWith('/')) {
-        url = url.substring(1);
+      const parsedUrl = new URL(request.url);
+      const isRsc = parsedUrl.searchParams.has('_rsc') || request.headers.get('rsc') === '1' || request.headers.get('RSC') === '1';
+      
+      let cleanPath = decodeURIComponent(parsedUrl.pathname);
+      if (cleanPath.startsWith('/')) {
+        cleanPath = cleanPath.substring(1);
       }
-      let cleanPath = url.split('?')[0].split('#')[0];
       if (cleanPath.endsWith('/')) {
         cleanPath = cleanPath.slice(0, -1);
       }
@@ -686,7 +693,6 @@ function setupProtocol() {
 
       let finalPath = filePath;
       if (isHtmlOrRoute) {
-        const isRsc = request.url.includes('_rsc=') || request.headers.get('rsc') === '1' || request.headers.get('RSC') === '1';
         const suffix = isRsc ? '.txt' : '.html';
         
         if (ext === '') {
@@ -715,7 +721,10 @@ function setupProtocol() {
       }
 
       const fileExtension = path.extname(finalPath).toLowerCase();
-      const contentType = mimeTypes[fileExtension] || 'application/octet-stream';
+      let contentType = mimeTypes[fileExtension] || 'application/octet-stream';
+      if (isRsc && fileExtension === '.txt') {
+        contentType = 'text/x-component';
+      }
 
       const data = await fs.promises.readFile(finalPath);
       return new Response(data, {

@@ -185,8 +185,8 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
         .eq('user_id', user.id)
         .maybeSingle();
 
-      if (!settings || !settings.full_name) {
-        router.push('/welcome');
+      if (!settings || !settings.full_name || !settings.company_name) {
+        router.push('/onboarding');
       } else {
         setUserProfile({
           fullName: settings.full_name,

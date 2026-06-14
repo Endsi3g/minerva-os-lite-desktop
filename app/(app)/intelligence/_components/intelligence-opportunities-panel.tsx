@@ -101,7 +101,7 @@ export function IntelligenceOpportunitiesPanel() {
       leadId: 'lead-1',
       businessName: "Boulangerie L'Épi d'Or",
       niche: 'Boulangerie / Artisanat',
-      city: 'Lyon',
+      city: 'Montréal',
       signal: 'Site web obsolète (non responsive, pas de commande mobile) + opportunité Click & Collect.',
       score: 94,
       type: 'website'
@@ -111,7 +111,7 @@ export function IntelligenceOpportunitiesPanel() {
       leadId: 'lead-2',
       businessName: 'Garage du Centre',
       niche: 'Automobile',
-      city: 'Villeurbanne',
+      city: 'Laval',
       signal: 'Fiche Google My Business non revendiquée et aucun avis client récent (concurrent à 300m très actif).',
       score: 88,
       type: 'seo'
@@ -121,7 +121,7 @@ export function IntelligenceOpportunitiesPanel() {
       leadId: 'lead-4',
       businessName: 'Restaurant Le Bistrot Gourmand',
       niche: 'Restauration',
-      city: 'Lyon',
+      city: 'Montréal',
       signal: 'Pas de menu consultable en ligne, absence de référencement sur les portails de livraison locaux.',
       score: 75,
       type: 'reviews'

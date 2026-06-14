@@ -7,6 +7,9 @@ create extension if not exists "uuid-ossp";
 create table if not exists public.settings (
     user_id uuid references auth.users(id) on delete cascade primary key,
     full_name text,
+    last_name text,
+    phone text,
+    email text,
     company_name text,
     timezone text default 'Europe/Paris',
     niches text[] default '{}',

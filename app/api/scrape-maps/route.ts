@@ -23,7 +23,7 @@ function generateRealisticLeads(niche: string, city: string): ScrapedLead[] {
   // Specific templates per niche
   let templates = [
     { name: "Le Moulin de {city}", rating: 3.8, reviews: 14, web: "", audit: "Fiche Maps non revendiquée. Aucun site internet référencé. Excellente opportunité de création de site internet." },
-    { name: "{niche} Artisanale {city}", rating: 4.1, reviews: 7, web: "http://{niche-slug}-{city-slug}.fr", audit: "Fiche Google Maps mal référencée avec seulement 7 avis. Le site internet actuel n'est pas optimisé pour les mobiles (non responsive)." },
+    { name: "{niche} Artisanale {city}", rating: 4.1, reviews: 7, web: "http://{niche-slug}-{city-slug}.ca", audit: "Fiche Google Maps mal référencée avec seulement 7 avis. Le site internet actuel n'est pas optimisé pour les mobiles (non responsive)." },
     { name: "{niche} Centrale - Chez M. Lambert", rating: 3.4, reviews: 29, web: "", audit: "Note de 3.4/5, pénalisant grandement la visibilité locale. Fiche Google Maps sans photos ni horaires de service. Possibilité de proposer un pack d'optimisation de fiche Maps." },
     { name: "{niche} & Co", rating: 4.6, reviews: 112, web: "http://www.{niche-slug}-and-co.com", audit: "Bonne visibilité mais pas de système de réservation en ligne ni de récolte d'avis automatisée. Opportunité pour vendre le module d'acquisition Minerva." },
     { name: "L'Atelier du {city}", rating: 3.9, reviews: 5, web: "", audit: "Profil Maps presque vide et sans avis récents. Site internet introuvable. Proposition de valeur : création d'un audit SEO local gratuit." }
@@ -32,7 +32,7 @@ function generateRealisticLeads(niche: string, city: string): ScrapedLead[] {
   if (lowercaseNiche.includes('garage') || lowercaseNiche.includes('auto')) {
     templates = [
       { name: "Garage Auto du Centre {city}", rating: 3.7, reviews: 23, web: "", audit: "Fiche non revendiquée. Pas de site web. Très forte opportunité de création de site vitrine pour présenter les prestations." },
-      { name: "Carrosserie {city} Services", rating: 4.2, reviews: 9, web: "http://{city-slug}-carrosserie.fr", audit: "Le site internet existant est obsolète et ne possède pas de protocole HTTPS sécurisé. Fiche Maps peu active." },
+      { name: "Carrosserie {city} Services", rating: 4.2, reviews: 9, web: "http://{city-slug}-carrosserie.ca", audit: "Le site internet existant est obsolète et ne possède pas de protocole HTTPS sécurisé. Fiche Maps peu active." },
       { name: "Garage Rapide - Dr. Moteur", rating: 3.5, reviews: 41, web: "", audit: "Note moyenne faible (3.5/5) impactée par 3 avis négatifs sans réponse du propriétaire. Besoin d'un outil de gestion d'e-réputation." },
       { name: "Pneus & Réparations {city}", rating: 4.5, reviews: 198, web: "http://www.pneus-{city-slug}.com", audit: "Fiche bien référencée mais manque d'un bouton de prise de rendez-vous en ligne direct. Proposition du widget de réservation." },
       { name: "Mécanique Générale - Chez Michel", rating: 4.0, reviews: 4, web: "", audit: "Seulement 4 avis clients. Visibilité très faible sur Google Maps par rapport aux concurrents directs dans un rayon de 1km." }
@@ -40,7 +40,7 @@ function generateRealisticLeads(niche: string, city: string): ScrapedLead[] {
   } else if (lowercaseNiche.includes('coiffure') || lowercaseNiche.includes('beauté') || lowercaseNiche.includes('salon')) {
     templates = [
       { name: "Zen & Style Coiffure {city}", rating: 4.1, reviews: 12, web: "", audit: "Pas de site internet ni de module de réservation de créneaux. Perte de clientèle en dehors des heures d'ouverture." },
-      { name: "L'Instant Beauté {city}", rating: 3.9, reviews: 8, web: "http://instant-beaute-{city-slug}.fr", audit: "Le site web n'a pas de certificat SSL et n'est pas adapté aux smartphones. La fiche Maps n'a pas de description rédigée." },
+      { name: "L'Instant Beauté {city}", rating: 3.9, reviews: 8, web: "http://instant-beaute-{city-slug}.ca", audit: "Le site web n'a pas de certificat SSL et n'est pas adapté aux smartphones. La fiche Maps n'a pas de description rédigée." },
       { name: "Ciseaux d'Or - Coiffeur Visagiste", rating: 3.6, reviews: 32, web: "", audit: "Fiche Maps non revendiquée par le propriétaire actuel. Avis négatifs sans réponses. Opportunité immédiate de réhabilitation de fiche locale." },
       { name: "Institut de Beauté - Rêve de Soie", rating: 4.7, reviews: 154, web: "http://www.revedesoie-{city-slug}.com", audit: "Fiche très performante. Opportunité : proposer Minerva OS pour automatiser les campagnes de fidélité par SMS pour remplir les heures creuses." },
       { name: "Salon Coiffure Homme - Barber Club", rating: 4.0, reviews: 6, web: "", audit: "Très peu d'avis clients et aucun lien vers les réseaux sociaux. Site web absent." }
@@ -48,9 +48,9 @@ function generateRealisticLeads(niche: string, city: string): ScrapedLead[] {
   } else if (lowercaseNiche.includes('dentaire') || lowercaseNiche.includes('médical') || lowercaseNiche.includes('santé') || lowercaseNiche.includes('cabinet')) {
     templates = [
       { name: "Cabinet Dentaire des Oliviers {city}", rating: 3.9, reviews: 18, web: "", audit: "Pas de site web pour présenter les horaires d'urgence et le plan d'accès. La fiche Maps n'est pas revendiquée." },
-      { name: "Centre Médical et Dentaire {city}", rating: 4.1, reviews: 11, web: "http://dentiste-centre-{city-slug}.fr", audit: "Le site internet est long à charger (plus de 6 secondes) et non responsive. Pas d'agenda de prise de RDV direct." },
+      { name: "Centre Médical et Dentaire {city}", rating: 4.1, reviews: 11, web: "http://dentiste-centre-{city-slug}.ca", audit: "Le site internet est long à charger (plus de 6 secondes) et non responsive. Pas d'agenda de prise de RDV direct." },
       { name: "Dr. Pierre Martin - Chirurgien Dentiste", rating: 3.4, reviews: 31, web: "", audit: "Fiche Maps avec plusieurs avis négatifs liés à l'attente en ligne. Proposer un widget de prise de contact asynchrone." },
-      { name: "Cabinet Dentaire Dr. Laurent & Associés", rating: 4.8, reviews: 85, web: "http://www.cabinet-laurent-dentiste.fr", audit: "Profil déjà performant et bien optimisé. Le client idéal pour un contrat d'onboarding récurrent." },
+      { name: "Cabinet Dentaire Dr. Laurent & Associés", rating: 4.8, reviews: 85, web: "http://www.cabinet-laurent-dentiste.ca", audit: "Profil déjà performant et bien optimisé. Le client idéal pour un contrat d'onboarding récurrent." },
       { name: "Clinique Dentaire du Centre-Ville", rating: 4.0, reviews: 7, web: "", audit: "Manque d'optimisation sur les mots-clés de spécialité locale. Aucun site web." }
     ];
   }
@@ -74,8 +74,8 @@ function generateRealisticLeads(niche: string, city: string): ScrapedLead[] {
       .replace('{city-slug}', citySlug);
 
     // Generate phone numbers
-    const randomMobile = Math.floor(10000000 + Math.random() * 90000000);
-    const formattedPhone = `+33 6 ${String(randomMobile).substring(0, 2)} ${String(randomMobile).substring(2, 4)} ${String(randomMobile).substring(4, 6)} ${String(randomMobile).substring(6, 8)}`;
+    const randomMobile = Math.floor(1000000 + Math.random() * 9000000);
+    const formattedPhone = `+1 514-${String(randomMobile).substring(0, 3)}-${String(randomMobile).substring(3, 7)}`;
 
     const id = `scraped-${nicheSlug}-${citySlug}-${idx + 1}`;
 
@@ -159,9 +159,9 @@ async function runCustomScraper(niche: string, city: string): Promise<ScrapedLea
                                    decoded.includes('instagram.com') ||
                                    decoded.includes('twitter.com') ||
                                    decoded.includes('linkedin.com') ||
-                                   decoded.includes('pagesjaunes.fr') ||
+                                   decoded.includes('yellowpages.ca') ||
                                    decoded.includes('tripadvisor') ||
-                                   decoded.includes('yelp.fr') ||
+                                   decoded.includes('yelp.ca') ||
                                    decoded.includes('yelp.com') ||
                                    decoded.includes('societe.com') ||
                                    decoded.includes('infogreffe');
@@ -220,7 +220,7 @@ async function runCustomScraper(niche: string, city: string): Promise<ScrapedLea
             
             // Extract phone number if not present in OSM
             if (!phone) {
-              const phoneRegex = /(?:(?:\+|00)33|0)\s*[1-9](?:[\s.-]*\d{2}){4}/g;
+              const phoneRegex = /(?:\+?1[-. ]?)?\(?([2-9][0-8][0-9])\)?[-. ]?([2-9][0-9]{2})[-. ]?([0-9]{4})/g;
               const foundPhones = html.match(phoneRegex) || [];
               if (foundPhones.length > 0) {
                 phone = foundPhones[0];
@@ -304,8 +304,8 @@ async function runCustomScraper(niche: string, city: string): Promise<ScrapedLea
 // DDG Directory index parser
 async function scrapeDirectoryFromDDG(niche: string, city: string, source: 'yelp' | 'pagesjaunes'): Promise<ScrapedLead[]> {
   const query = source === 'yelp' 
-    ? `site:yelp.fr/biz/ OR site:yelp.com/biz/ "${niche}" "${city}"` 
-    : `site:pagesjaunes.fr/pros/ "${niche}" "${city}"`;
+    ? `site:yelp.ca/biz/ OR site:yelp.com/biz/ "${niche}" "${city}"` 
+    : `site:yellowpages.ca/bus/ "${niche}" "${city}"`;
     
   const searchUrl = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`;
   
@@ -349,10 +349,10 @@ async function scrapeDirectoryFromDDG(niche: string, city: string, source: 'yelp
         businessName = title.split(',')[0].split(' - ')[0].split(' | ')[0].trim();
       }
       
-      businessName = businessName.replace(/\s*(?:Yelp|PagesJaunes|Pages Jaunes)\s*$/gi, '').trim();
+      businessName = businessName.replace(/\s*(?:Yelp|PagesJaunes|Pages Jaunes|YellowPages|Yellow Pages)\s*$/gi, '').trim();
       
       let phone = '';
-      const phoneRegex = /(?:(?:\+|00)33|0)\s*[1-9](?:[\s.-]*\d{2}){4}/g;
+      const phoneRegex = /(?:\+?1[-. ]?)?\(?([2-9][0-8][0-9])\)?[-. ]?([2-9][0-9]{2})[-. ]?([0-9]{4})/g;
       const phoneMatches = snippet.match(phoneRegex);
       if (phoneMatches && phoneMatches.length > 0) {
         phone = phoneMatches[0];

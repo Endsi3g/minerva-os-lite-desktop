@@ -15,7 +15,8 @@ import { AnalyticsDashboard } from '@/components/analytics-dashboard';
 import { cn } from '@/lib/utils';
 
 interface ProfileData {
-  fullName: string;
+  firstName: string;
+  lastName: string;
   email: string;
   phone: string;
   language: string;
@@ -66,15 +67,16 @@ interface AppSettings {
 
 const DEFAULT_SETTINGS: AppSettings = {
   profile: {
-    fullName: "Uprising Studio",
+    firstName: "Uprising",
+    lastName: "Studio",
     email: "contact@uprising.studio",
-    phone: "+33 6 12 34 56 78",
+    phone: "+1 (514) 123-4567",
     language: "fr",
-    timezone: "Europe/Paris"
+    timezone: "America/Montreal"
   },
   prospecting: {
     niches: ["Boulangerie / Artisanat", "Automobile", "Restauration", "Coiffure & Beauté"],
-    cities: ["Lyon", "Villeurbanne"],
+    cities: ["Montréal", "Laval"],
     services: {
       website: true,
       seoAudit: true,
@@ -130,9 +132,10 @@ export function SettingsRoot() {
           if (dbSettings) {
             setSettings({
               profile: {
-                fullName: dbSettings.full_name || '',
-                email: dbSettings.company_name || '',
-                phone: '+33 6 12 34 56 78',
+                firstName: dbSettings.full_name || '',
+                lastName: dbSettings.last_name || '',
+                email: dbSettings.email || dbSettings.company_name || '',
+                phone: dbSettings.phone || '',
                 language: dbSettings.language || 'fr',
                 timezone: dbSettings.timezone || 'Europe/Paris'
               },
@@ -211,7 +214,10 @@ export function SettingsRoot() {
             // Standard settings columns save
             const { error: baseError } = await supabase.from('settings').upsert({
               user_id: user.id,
-              full_name: nextSettings.profile.fullName,
+              full_name: nextSettings.profile.firstName,
+              last_name: nextSettings.profile.lastName,
+              phone: nextSettings.profile.phone,
+              email: nextSettings.profile.email,
               company_name: nextSettings.profile.email,
               timezone: nextSettings.profile.timezone,
               niches: nextSettings.prospecting.niches,

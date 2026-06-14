@@ -348,6 +348,58 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
 
   // Load Workspaces List
   const loadWorkspaces = useCallback(async () => {
+    const electronObj = typeof window !== 'undefined' && (window as any).electron;
+    if (electronObj) {
+      try {
+        const list = await electronObj.dbAll("SELECT * FROM workspaces WHERE sync_status != 'pending_delete'");
+        const currentUser = user || (await createClient().auth.getUser()).data.user;
+        let mappedList = (list || []).map((w: any) => ({
+          id: w.id,
+          name: w.name,
+          owner_id: w.owner_id,
+          created_at: w.created_at || new Date().toISOString(),
+          isOwner: currentUser ? w.owner_id === currentUser.id : true,
+          ownerName: currentUser && w.owner_id === currentUser.id ? 'Vous' : 'Propriétaire'
+        }));
+
+        if (mappedList.length === 0 && currentUser) {
+          const defaultId = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : Math.random().toString(36).substring(2) + Date.now().toString(36);
+          const nowStr = new Date().toISOString();
+          await electronObj.dbRun(
+            "INSERT INTO workspaces (id, name, owner_id, created_at, sync_status) VALUES (?, ?, ?, ?, 'pending_insert')",
+            [defaultId, 'Mon Espace', currentUser.id, nowStr]
+          );
+          mappedList = [{
+            id: defaultId,
+            name: 'Mon Espace',
+            owner_id: currentUser.id,
+            created_at: nowStr,
+            isOwner: true,
+            ownerName: 'Vous'
+          }];
+          if (electronObj.triggerSync) {
+            electronObj.triggerSync();
+          }
+        }
+
+        setWorkspacesList(mappedList);
+
+        const savedId = localStorage.getItem('minerva_active_workspace_id');
+        let active = mappedList.find((w: Workspace) => w.id === savedId);
+        if (!active && mappedList.length > 0) {
+          active = mappedList.find((w: Workspace) => w.isOwner) || mappedList[0];
+        }
+
+        if (active) {
+          setActiveWorkspace(active);
+          localStorage.setItem('minerva_active_workspace_id', active.id);
+        }
+      } catch (e) {
+        console.error("Error loading local workspaces:", e);
+      }
+      return;
+    }
+
     try {
       const res = await fetch(getApiUrl('/api/workspaces'));
       if (res.ok) {
@@ -369,7 +421,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
     } catch (e) {
       console.error("Error loading workspaces:", e);
     }
-  }, []);
+  }, [user]);
 
   // Workspace Switcher actions
   const switchWorkspace = async (workspaceId: string) => {
@@ -383,6 +435,35 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
 
   const createWorkspace = async (name: string): Promise<Workspace | null> => {
     if (!user) return null;
+    const electronObj = typeof window !== 'undefined' && (window as any).electron;
+    if (electronObj) {
+      try {
+        const id = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : Math.random().toString(36).substring(2) + Date.now().toString(36);
+        const nowStr = new Date().toISOString();
+        await electronObj.dbRun(
+          "INSERT INTO workspaces (id, name, owner_id, created_at, sync_status) VALUES (?, ?, ?, ?, 'pending_insert')",
+          [id, name, user.id, nowStr]
+        );
+        const newWs: Workspace = {
+          id,
+          name,
+          owner_id: user.id,
+          created_at: nowStr,
+          isOwner: true,
+          ownerName: 'Vous'
+        };
+        setWorkspacesList(prev => [...prev, newWs]);
+        
+        if (electronObj.triggerSync) {
+          electronObj.triggerSync();
+        }
+        return newWs;
+      } catch (e) {
+        console.error("Error creating local workspace:", e);
+        return null;
+      }
+    }
+
     try {
       const res = await fetch(getApiUrl('/api/workspaces'), {
         method: 'POST',
@@ -407,6 +488,31 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
 
   const renameWorkspace = async (id: string, name: string) => {
     if (!user) return;
+    const electronObj = typeof window !== 'undefined' && (window as any).electron;
+    if (electronObj) {
+      try {
+        const existing = await electronObj.dbGet("SELECT sync_status FROM workspaces WHERE id = ?", [id]);
+        let nextStatus = 'pending_update';
+        if (existing && existing.sync_status === 'pending_insert') {
+          nextStatus = 'pending_insert';
+        }
+        await electronObj.dbRun(
+          "UPDATE workspaces SET name = ?, sync_status = ? WHERE id = ?",
+          [name, nextStatus, id]
+        );
+        setWorkspacesList(prev => prev.map(w => w.id === id ? { ...w, name } : w));
+        if (activeWorkspace?.id === id) {
+          setActiveWorkspace(prev => prev ? { ...prev, name } : null);
+        }
+        if (electronObj.triggerSync) {
+          electronObj.triggerSync();
+        }
+      } catch (e) {
+        console.error("Error renaming local workspace:", e);
+      }
+      return;
+    }
+
     try {
       const res = await fetch(getApiUrl('/api/workspaces'), {
         method: 'PUT',
@@ -426,6 +532,36 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
 
   const deleteWorkspace = async (id: string) => {
     if (!user) return;
+    const electronObj = typeof window !== 'undefined' && (window as any).electron;
+    if (electronObj) {
+      try {
+        const existing = await electronObj.dbGet("SELECT sync_status FROM workspaces WHERE id = ?", [id]);
+        if (existing && existing.sync_status === 'pending_insert') {
+          await electronObj.dbRun("DELETE FROM workspaces WHERE id = ?", [id]);
+        } else {
+          await electronObj.dbRun("UPDATE workspaces SET sync_status = 'pending_delete' WHERE id = ?", [id]);
+        }
+
+        const updatedList = workspacesList.filter(w => w.id !== id);
+        setWorkspacesList(updatedList);
+        if (activeWorkspace?.id === id) {
+          const fallback = updatedList.find(w => w.isOwner) || updatedList[0] || null;
+          setActiveWorkspace(fallback);
+          if (fallback) {
+            localStorage.setItem('minerva_active_workspace_id', fallback.id);
+          } else {
+            localStorage.removeItem('minerva_active_workspace_id');
+          }
+        }
+        if (electronObj.triggerSync) {
+          electronObj.triggerSync();
+        }
+      } catch (e) {
+        console.error("Error deleting local workspace:", e);
+      }
+      return;
+    }
+
     try {
       const res = await fetch(getApiUrl(`/api/workspaces?id=${id}`), {
         method: 'DELETE',

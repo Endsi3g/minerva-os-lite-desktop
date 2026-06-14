@@ -26,14 +26,56 @@ export async function signup(_state: unknown, formData: FormData): Promise<Actio
   const supabase = createClient();
   const email = formData.get('email') as string;
   const password = formData.get('password') as string;
+  const firstName = formData.get('firstName') as string;
+  const lastName = formData.get('lastName') as string;
+  const phone = formData.get('phone') as string;
+  const companyName = formData.get('companyName') as string;
 
   if (!email || !password) return { error: 'Veuillez saisir votre e-mail et votre mot de passe.' };
   if (password.length < 6) return { error: 'Le mot de passe doit contenir au moins 6 caractères.' };
 
-  const { error } = await supabase.auth.signUp({ email, password });
+  const finalFirstName = firstName?.trim() || '';
+  const finalLastName = lastName?.trim() || '';
+  const finalFullName = `${finalFirstName} ${finalLastName}`.trim() || 'Utilisateur Minerva';
+  const finalPhone = phone?.trim() || '';
+  const finalCompanyName = companyName?.trim() || 'Mon Workspace';
+  const finalEmail = email?.trim() || '';
+
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      data: {
+        first_name: finalFirstName || undefined,
+        last_name: finalLastName || undefined,
+        full_name: finalFullName,
+        phone: finalPhone || undefined,
+        company_name: finalCompanyName || undefined,
+      },
+    },
+  });
   if (error) return { error: error.message || "Erreur lors de l'inscription." };
 
-  window.location.replace('/welcome');
+  if (data?.user) {
+    const { error: settingsError } = await supabase.from('settings').upsert({
+      user_id: data.user.id,
+      full_name: finalFullName,
+      last_name: finalLastName,
+      phone: finalPhone,
+      email: finalEmail,
+      company_name: finalCompanyName,
+      timezone: 'Europe/Paris',
+      niches: ['Boulangerie', 'Coiffure'],
+      cities: ['Paris'],
+      ai_tone: 'Calme & Conseil',
+      ai_density: 'Standard',
+    });
+    if (settingsError) {
+      console.error("Error creating settings during signup:", settingsError);
+    }
+  }
+
+  window.location.replace('/onboarding');
   return {};
 }
 
