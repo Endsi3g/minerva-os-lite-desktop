@@ -42,7 +42,7 @@ export default function LibraryPage() {
 
   return (
     <div className="h-full overflow-y-auto bg-white">
-      <div className="max-w-6xl mx-auto p-8 space-y-8 text-[#26251e] font-sans selection:bg-[#f54e00]/10 text-left">
+      <div className="max-w-6xl mx-auto p-8 space-y-8 text-[#26251e] font-sans selection:bg-[#10b981]/10 text-left">
         
         {/* Header Section */}
         <div className="space-y-1.5 text-left">
@@ -333,7 +333,7 @@ export default function LibraryPage() {
                     <line x1="50" y1="50" x2="25" y2="85" stroke="currentColor" strokeWidth="0.5" strokeDasharray="2" opacity="0.4" />
                     <line x1="50" y1="50" x2="10" y2="40" stroke="currentColor" strokeWidth="0.5" strokeDasharray="2" opacity="0.4" />
                     {/* Colored Radar Data Area */}
-                    <polygon points="50,20 85,42 65,75 35,80 18,45" fill="#f54e00" fillOpacity="0.15" stroke="#f54e00" strokeWidth="1.2" />
+                    <polygon points="50,20 85,42 65,75 35,80 18,45" fill="#10b981" fillOpacity="0.15" stroke="#10b981" strokeWidth="1.2" />
                   </svg>
                 </div>
                 <div className="flex items-center gap-1.5 text-[10px] text-[#555552] font-semibold">

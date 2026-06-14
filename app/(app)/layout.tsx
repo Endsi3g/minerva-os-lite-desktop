@@ -5,15 +5,15 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { getApiUrl } from '@/lib/api-helper';
 import { 
-  PenSquare, 
-  Search, 
-  Folder, 
-  Sparkles, 
-  Plug, 
-  FolderPlus, 
-  ChevronDown, 
-  ChevronRight, 
-  ChevronUp, 
+  PenSquare,
+  Search,
+  Folder,
+  Sparkles,
+  Plug,
+  FolderPlus,
+  ChevronDown,
+  ChevronRight,
+  ChevronUp,
   Settings as SettingsIcon,
   Menu,
   Bell,
@@ -31,7 +31,8 @@ import {
   BarChart3,
   MessageSquare,
   Megaphone,
-  Download
+  Download,
+  LayoutDashboard
 } from 'lucide-react';
 import { BottomBlur } from '@/components/ui/edge-blur';
 import { cn } from '@/lib/utils';
@@ -251,6 +252,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
 
   // Minerva OS Lite navigation items
   const navItems = [
+    { name: t('nav.today'), href: '/today', icon: LayoutDashboard },
     { name: t('nav.prospect'), href: '/prospecting', icon: PenSquare },
     { name: t('nav.search'), href: '/leads', icon: Search },
     { name: t('nav.library'), href: '/library', icon: Folder },
@@ -430,7 +432,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
               <Link
                 href="/chat"
                 onClick={() => setSidebarOpen(false)}
-                className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-[#f54e00] bg-[#f54e00]/10 border border-[#f54e00]/20 rounded-md hover:bg-[#f54e00]/15 transition-all w-full justify-center"
+                className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-[#10b981] bg-[#10b981]/10 border border-[#10b981]/20 rounded-md hover:bg-[#10b981]/15 transition-all w-full justify-center"
               >
                 <MessageSquare className="w-3.5 h-3.5 shrink-0" />
                 <span>{t('nav.new_chat')}</span>
@@ -443,7 +445,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                   <Link
                     href="/chat"
                     onClick={() => setSidebarOpen(false)}
-                    className="flex h-8 w-8 items-center justify-center rounded-md text-[#f54e00] bg-[#f54e00]/10 hover:bg-[#f54e00]/15 border border-[#f54e00]/20 transition-all"
+                    className="flex h-8 w-8 items-center justify-center rounded-md text-[#10b981] bg-[#10b981]/10 hover:bg-[#10b981]/15 border border-[#10b981]/20 transition-all"
                   >
                     <MessageSquare className="w-3.5 h-3.5 shrink-0" />
                   </Link>

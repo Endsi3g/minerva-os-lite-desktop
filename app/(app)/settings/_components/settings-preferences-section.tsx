@@ -255,7 +255,7 @@ export function SettingsPreferencesSection({ data, onChange, isSaving }: Setting
               <div className="aspect-[1.8/1] rounded-lg border border-border bg-white dark:bg-neutral-950 overflow-hidden relative p-1.5 flex gap-1.5">
                 {/* Sidebar mock */}
                 <div className="w-8 shrink-0 h-full border-r border-[#e5e5e0] dark:border-neutral-800 bg-[#f4f4f3] dark:bg-neutral-900 rounded-l flex flex-col gap-1 p-1">
-                  <div className="w-4 h-1.5 bg-[#f54e00]/20 rounded-full" />
+                  <div className="w-4 h-1.5 bg-[#10b981]/20 rounded-full" />
                   <div className="w-5 h-1 bg-border rounded-full" />
                   <div className="w-3 h-1 bg-border rounded-full" />
                 </div>
@@ -289,7 +289,7 @@ export function SettingsPreferencesSection({ data, onChange, isSaving }: Setting
               <div className="aspect-[1.8/1] rounded-lg border border-border/80 bg-white overflow-hidden relative p-1.5 flex gap-1.5">
                 {/* Sidebar mock */}
                 <div className="w-8 shrink-0 h-full border-r border-[#e5e5e0] bg-[#f4f4f3] rounded-l flex flex-col gap-1 p-1">
-                  <div className="w-4 h-1.5 bg-[#f54e00]/20 rounded-full" />
+                  <div className="w-4 h-1.5 bg-[#10b981]/20 rounded-full" />
                   <div className="w-5 h-1 bg-border rounded-full" />
                   <div className="w-3 h-1 bg-border rounded-full" />
                 </div>
@@ -323,7 +323,7 @@ export function SettingsPreferencesSection({ data, onChange, isSaving }: Setting
               <div className="aspect-[1.8/1] rounded-lg border border-neutral-800 bg-neutral-950 overflow-hidden relative p-1.5 flex gap-1.5">
                 {/* Sidebar mock */}
                 <div className="w-8 shrink-0 h-full border-r border-neutral-900 bg-neutral-900 rounded-l flex flex-col gap-1 p-1">
-                  <div className="w-4 h-1.5 bg-[#f54e00]/30 rounded-full" />
+                  <div className="w-4 h-1.5 bg-[#10b981]/30 rounded-full" />
                   <div className="w-5 h-1 bg-neutral-800 rounded-full" />
                   <div className="w-3 h-1 bg-neutral-800 rounded-full" />
                 </div>

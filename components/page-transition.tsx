@@ -69,7 +69,7 @@ export function PageTransition({ children }: { children: React.ReactNode }) {
       {/* Top Progress Loading Bar */}
       {isNavigating && (
         <div 
-          className="fixed top-0 left-0 h-[2.5px] bg-gradient-to-r from-[#10b981] to-[#f54e00] z-[9999] transition-all duration-300 ease-out"
+          className="fixed top-0 left-0 h-[2.5px] bg-gradient-to-r from-[#10b981] to-[#10b981] z-[9999] transition-all duration-300 ease-out"
           style={{ width: `${progress}%` }}
         />
       )}

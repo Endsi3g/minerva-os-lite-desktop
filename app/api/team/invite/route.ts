@@ -143,13 +143,13 @@ export async function POST(request: NextRequest) {
             Vous avez été invité(e) par <strong>${user.email}</strong> à rejoindre son espace de travail sur <strong>Minerva OS Lite</strong> en tant que <strong>${role}</strong>.
           </p>
           <div style="margin: 28px 0; text-align: left;">
-            <a href="${actionLink}" style="background-color: #f54e00; color: #ffffff; padding: 10px 20px; text-decoration: none; font-weight: 600; border-radius: 6px; font-size: 13px; display: inline-block; transition: background-color 0.2s;">
+            <a href="${actionLink}" style="background-color: #10b981; color: #ffffff; padding: 10px 20px; text-decoration: none; font-weight: 600; border-radius: 6px; font-size: 13px; display: inline-block; transition: background-color 0.2s;">
               Accepter l'invitation
             </a>
           </div>
           <p style="color: #807d72; font-size: 11px; line-height: 1.5; border-top: 1px solid #e6e5e0; padding-top: 16px; margin-top: 24px;">
             Si le bouton ci-dessus ne fonctionne pas, vous pouvez copier et coller ce lien dans votre navigateur :<br/>
-            <span style="color: #f54e00; word-break: break-all;">${actionLink}</span>
+            <span style="color: #10b981; word-break: break-all;">${actionLink}</span>
           </p>
         </div>
       `;

@@ -224,7 +224,7 @@ export default function LoginPage() {
           {/* Loader bar with animation */}
           <div className="w-48 bg-neutral-200/80 h-[2.5px] rounded-full overflow-hidden mt-6 relative border border-neutral-300/30">
             <div 
-              className="bg-gradient-to-r from-[#10b981] to-[#f54e00] h-full rounded-full"
+              className="bg-gradient-to-r from-[#10b981] to-[#10b981] h-full rounded-full"
               style={{
                 animation: 'loadProgress 6s cubic-bezier(0.1, 0.85, 0.25, 1) forwards',
               }}

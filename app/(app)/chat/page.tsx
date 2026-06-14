@@ -77,7 +77,7 @@ function ProgressBar({ progress }: { progress: number }) {
       ref.current.style.width = `${progress}%`;
     }
   }, [progress]);
-  return <div ref={ref} className="bg-[#f54e00] h-full rounded-full transition-all" />;
+  return <div ref={ref} className="bg-[#10b981] h-full rounded-full transition-all" />;
 }
 
 export default function ChatPage() {

@@ -371,7 +371,7 @@ export function AnalyticsDashboard() {
         {/* Workflows Card */}
         <Card className="border border-border bg-card shadow-xs">
           <CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2.5 rounded-lg bg-orange-500/10 text-orange-600 dark:text-orange-400">
+            <div className="p-2.5 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-orange-400">
               <Zap className="w-4 h-4" />
             </div>
             <div className="min-w-0">

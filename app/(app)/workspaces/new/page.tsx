@@ -106,8 +106,8 @@ export default function NewWorkspacePage() {
       <div className="flex h-screen w-screen flex-col items-center justify-center bg-[#fcfcfb] font-sans">
         <div className="w-full max-w-sm text-center space-y-6 animate-pulse">
           <div className="relative w-24 h-24 mx-auto flex items-center justify-center">
-            <div className="absolute inset-0 rounded-full border-4 border-[#e5e5e0] border-t-[#f54e00] animate-spin" />
-            <Briefcase className="w-8 h-8 text-[#f54e00]" />
+            <div className="absolute inset-0 rounded-full border-4 border-[#e5e5e0] border-t-[#10b981] animate-spin" />
+            <Briefcase className="w-8 h-8 text-[#10b981]" />
           </div>
           <div className="space-y-2">
             <h2 className="text-sm font-bold text-[#26251e] uppercase tracking-wider">Configuration</h2>

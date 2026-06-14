@@ -63,24 +63,24 @@
     --popover: #ffffff;
     --popover-foreground: #26251e;
     
-    --primary: #f54e00;    /* Cursor Orange primary voltage */
+    --primary: #10b981;    /* Emerald Green brand primary */
     --primary-foreground: #ffffff;
-    
+
     --secondary: #ffffff;
     --secondary-foreground: #26251e;
-    
+
     --muted: #fafaf7;      /* Canvas Soft */
     --muted-foreground: #807d72; /* Muted subtext */
-    
+
     --accent: #f7f7f4;
     --accent-foreground: #26251e;
-    
+
     --destructive: #cf2d56; /* Semantic red */
     --destructive-foreground: #ffffff;
-    
+
     --border: #e6e5e0;     /* Hairline 1px border */
     --input: #e6e5e0;
-    --ring: #f54e00;       /* Ring matches brand primary */
+    --ring: #10b981;       /* Ring matches brand primary */
     
     --chart-1: #dfa88f;
     --chart-2: #9fc9a2;
@@ -92,12 +92,12 @@
     
     --sidebar: #ffffff;
     --sidebar-foreground: #26251e;
-    --sidebar-primary: #f54e00;
+    --sidebar-primary: #10b981;
     --sidebar-primary-foreground: #ffffff;
     --sidebar-accent: #f7f7f4;
     --sidebar-accent-foreground: #26251e;
     --sidebar-border: #e6e5e0;
-    --sidebar-ring: #f54e00;
+    --sidebar-ring: #10b981;
     
     /* Timeline Pills palette tokens */
     --timeline-thinking: #dfa88f;

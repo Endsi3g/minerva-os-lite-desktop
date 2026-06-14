@@ -39,7 +39,7 @@ export async function middleware(request: NextRequest) {
 
   // If user is logged in
   if (isLoginPage) {
-    url.pathname = '/today';
+    url.pathname = '/welcome';
     return NextResponse.redirect(url);
   }
 
@@ -75,14 +75,14 @@ export async function middleware(request: NextRequest) {
   } else {
     // Onboarded: don't let them go back to onboarding page
     if (isOnboardingPage) {
-      url.pathname = '/today';
+      url.pathname = '/welcome';
       return NextResponse.redirect(url);
     }
   }
 
   // Root redirect
   if (url.pathname === '/') {
-    url.pathname = '/today';
+    url.pathname = '/welcome';
     return NextResponse.redirect(url);
   }
 
