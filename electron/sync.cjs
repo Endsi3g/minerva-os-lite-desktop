@@ -4,6 +4,7 @@ const db = require('./database.cjs');
 let supabase = null;
 let currentUserId = null;
 let syncTimer = null;
+let syncInProgress = false;
 
 function setSession(session) {
   if (!session || !session.accessToken || !session.supabaseUrl || !session.supabaseKey) {
@@ -31,10 +32,10 @@ function setSession(session) {
 
 function startSyncTimer() {
   stopSyncTimer();
-  // Sync every 5 minutes (300000 ms)
+  // Sync every 10 minutes — on-demand sync via triggerSync() handles immediate needs
   syncTimer = setInterval(() => {
     triggerSync().catch(err => console.error("Periodic sync failed:", err));
-  }, 300000);
+  }, 10 * 60 * 1000);
 }
 
 function stopSyncTimer() {
@@ -45,13 +46,15 @@ function stopSyncTimer() {
 }
 
 async function triggerSync() {
-  if (!supabase || !currentUserId) return;
-
+  if (!supabase || !currentUserId || syncInProgress) return;
+  syncInProgress = true;
   try {
     await syncPush();
     await syncPull();
   } catch (err) {
     console.error("Sync error:", err);
+  } finally {
+    syncInProgress = false;
   }
 }
 
@@ -324,10 +327,13 @@ async function syncPull() {
     .eq('user_id', currentUserId);
 
   if (!leadsError && remoteLeads) {
+    const localLeadsRows = await db.all("SELECT id, updated_at, sync_status FROM leads WHERE user_id = ?", [currentUserId]);
+    const localLeadsMap = new Map(localLeadsRows.map(l => [l.id, l]));
+
     for (const lead of remoteLeads) {
       const { id, user_id, business_name, contact_name, contact_email, niche, city, source, status, temperature, next_action, next_action_date, owner, image_url, workspace_id, created_at, updated_at } = lead;
-      
-      const localLead = await db.get("SELECT updated_at, sync_status FROM leads WHERE id = ?", [id]);
+
+      const localLead = localLeadsMap.get(id);
       if (!localLead) {
         await db.run(`INSERT INTO leads (id, user_id, business_name, contact_name, contact_email, niche, city, source, status, temperature, next_action, next_action_date, owner, image_url, workspace_id, created_at, updated_at, sync_status)
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced')`,
@@ -402,9 +408,12 @@ async function syncPull() {
     .eq('user_id', currentUserId);
 
   if (!tasksError && remoteTasks) {
+    const localTasksRows = await db.all("SELECT id, sync_status FROM tasks WHERE user_id = ?", [currentUserId]);
+    const localTasksMap = new Map(localTasksRows.map(t => [t.id, t]));
+
     for (const task of remoteTasks) {
       const { id, user_id, title, completed, category, due_date, workspace_id, created_at } = task;
-      const localTask = await db.get("SELECT sync_status FROM tasks WHERE id = ?", [id]);
+      const localTask = localTasksMap.get(id);
       const completedInt = completed ? 1 : 0;
       if (!localTask) {
         await db.run(`INSERT INTO tasks (id, user_id, title, completed, category, due_date, workspace_id, created_at, updated_at, sync_status)
@@ -424,12 +433,16 @@ async function syncPull() {
   // 6. Workspaces Pull
   const { data: remoteWorkspaces, error: workspacesError } = await supabase
     .from('workspaces')
-    .select('*');
+    .select('*')
+    .eq('owner_id', currentUserId);
 
   if (!workspacesError && remoteWorkspaces) {
+    const localWsRows = await db.all("SELECT id, sync_status FROM workspaces");
+    const localWsMap = new Map(localWsRows.map(w => [w.id, w]));
+
     for (const ws of remoteWorkspaces) {
       const { id, name, owner_id, created_at } = ws;
-      const localWs = await db.get("SELECT sync_status FROM workspaces WHERE id = ?", [id]);
+      const localWs = localWsMap.get(id);
       if (!localWs) {
         await db.run(`INSERT INTO workspaces (id, name, owner_id, created_at, sync_status)
           VALUES (?, ?, ?, ?, 'synced')`,

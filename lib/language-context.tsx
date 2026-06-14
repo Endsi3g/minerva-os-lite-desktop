@@ -20,13 +20,10 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   // Load locale from localStorage immediately to avoid flash of FR
   useEffect(() => {
     const saved = localStorage.getItem('minerva_locale') as Locale;
-    const timer = setTimeout(() => {
-      if (saved && (saved === 'fr' || saved === 'en' || saved === 'de')) {
-        setLocaleState(saved);
-      }
-      setIsLoading(false);
-    }, 0);
-    return () => clearTimeout(timer);
+    if (saved && (saved === 'fr' || saved === 'en' || saved === 'de')) {
+      setLocaleState(saved);
+    }
+    setIsLoading(false);
   }, []);
 
   // Sync with Supabase when authenticated

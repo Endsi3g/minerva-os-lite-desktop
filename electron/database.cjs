@@ -113,6 +113,22 @@ function initDb() {
       updated_at TEXT,
       sync_status TEXT DEFAULT 'synced'
     )`);
+
+    // Indexes to avoid full table scans during sync
+    db.run(`CREATE INDEX IF NOT EXISTS idx_leads_user_id ON leads(user_id)`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_leads_sync_status ON leads(sync_status)`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_leads_workspace_id ON leads(workspace_id)`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_tasks_user_id ON tasks(user_id)`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_tasks_sync_status ON tasks(sync_status)`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_tasks_workspace_id ON tasks(workspace_id)`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_drafts_user_id ON drafts(user_id)`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_drafts_sync_status ON drafts(sync_status)`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_drafts_lead_id ON drafts(lead_id)`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_notes_user_id ON notes(user_id)`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_notes_sync_status ON notes(sync_status)`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_notes_lead_id ON notes(lead_id)`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_workspaces_sync_status ON workspaces(sync_status)`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_workspaces_owner_id ON workspaces(owner_id)`);
   });
 }
 

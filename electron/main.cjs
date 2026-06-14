@@ -7,6 +7,15 @@ const os = require('os');
 const db = require('./database.cjs');
 const sync = require('./sync.cjs');
 
+// Workaround for Electron 42 + macOS 26 DCHECK crash in Chromium GPU/Metal stack
+app.disableHardwareAcceleration();
+app.commandLine.appendSwitch('disable-gpu-sandbox');
+app.commandLine.appendSwitch('no-sandbox');
+// Disable unused Chromium features to reduce memory and CPU overhead
+app.commandLine.appendSwitch('disable-features', 'TranslateUI,WebRtcHideLocalIpsWithMdns');
+// Cap V8 JS heap at 512 MB (default ~1.5 GB per renderer process)
+app.commandLine.appendSwitch('js-flags', '--max-old-space-size=512');
+
 // Register the custom scheme 'app' as standard and secure
 protocol.registerSchemesAsPrivileged([
   { scheme: 'app', privileges: { standard: true, secure: true, supportFetchAPI: true } }
@@ -38,6 +47,8 @@ function createWindow() {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
+      spellcheck: false,
+      backgroundThrottling: true,
       preload: path.join(__dirname, 'preload.js')
     }
   });
@@ -51,15 +62,20 @@ function createWindow() {
     mainWindow.loadURL('http://localhost:3000');
     mainWindow.webContents.openDevTools();
   } else {
-    mainWindow.webContents.openDevTools();
     mainWindow.loadURL('app://minerva/').catch(err => {
       console.error("Failed to load app url in Electron:", err);
     });
   }
 
-  mainWindow.webContents.on('console-message', (event, level, message, line, sourceId) => {
-    console.log(`[Renderer Console] [Level ${level}] ${message} (at ${sourceId}:${line})`);
-  });
+  if (isDev) {
+    mainWindow.webContents.on('console-message', (event, level, message, line, sourceId) => {
+      console.log(`[Renderer Console] [Level ${level}] ${message} (at ${sourceId}:${line})`);
+    });
+  } else {
+    mainWindow.webContents.on('console-message', (event, level, message) => {
+      if (level >= 2) console.warn(`[Renderer] ${message}`);
+    });
+  }
 
   // Intercept the close event to hide the window instead of quitting
   mainWindow.on('close', (event) => {
@@ -247,9 +263,12 @@ function checkUpdates() {
     });
   });
 
-  autoUpdater.checkForUpdatesAndNotify().catch(err => {
-    console.error("Failed to check for updates on startup:", err);
-  });
+  // Defer update check 5s to not slow down initial window load
+  setTimeout(() => {
+    autoUpdater.checkForUpdatesAndNotify().catch(err => {
+      console.error("Failed to check for updates on startup:", err);
+    });
+  }, 5000);
 }
 
 function setupIpcHandlers() {
@@ -361,7 +380,7 @@ function setupIpcHandlers() {
 
   // 8. Spotlight Quick Search window handlers
   ipcMain.on('hide-spotlight', () => {
-    if (spotlightWindow) spotlightWindow.hide();
+    if (spotlightWindow && !spotlightWindow.isDestroyed()) spotlightWindow.hide();
   });
 
   ipcMain.on('open-lead-in-main', (event, leadId) => {
@@ -437,7 +456,9 @@ function setupIpcHandlers() {
   });
 }
 
-function createSpotlightWindow() {
+function ensureSpotlightWindow() {
+  if (spotlightWindow && !spotlightWindow.isDestroyed()) return;
+
   spotlightWindow = new BrowserWindow({
     width: 600,
     height: 400,
@@ -450,6 +471,8 @@ function createSpotlightWindow() {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
+      spellcheck: false,
+      backgroundThrottling: true,
       preload: path.join(__dirname, 'preload.js')
     }
   });
@@ -465,11 +488,14 @@ function createSpotlightWindow() {
   }
 
   spotlightWindow.on('blur', () => {
-    spotlightWindow.hide();
+    if (spotlightWindow && !spotlightWindow.isDestroyed()) spotlightWindow.hide();
   });
+  spotlightWindow.on('closed', () => { spotlightWindow = null; });
 }
 
-function createTrayWindow() {
+function ensureTrayWindow() {
+  if (trayWindow && !trayWindow.isDestroyed()) return;
+
   trayWindow = new BrowserWindow({
     width: 360,
     height: 450,
@@ -482,6 +508,8 @@ function createTrayWindow() {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
+      spellcheck: false,
+      backgroundThrottling: true,
       preload: path.join(__dirname, 'preload.js')
     }
   });
@@ -501,11 +529,13 @@ function createTrayWindow() {
   }
 
   trayWindow.on('blur', () => {
-    trayWindow.hide();
+    if (trayWindow && !trayWindow.isDestroyed()) trayWindow.hide();
   });
+  trayWindow.on('closed', () => { trayWindow = null; });
 }
 
 function showTrayWindow() {
+  ensureTrayWindow();
   if (!tray || !trayWindow) return;
 
   const trayBounds = tray.getBounds();
@@ -749,10 +779,10 @@ function setupProtocol() {
 }
 
 function setupBackgroundScraper() {
-  // Check immediately on launch
-  runBackgroundScrapeIfNeeded();
-  // Check every 5 minutes (300000 ms)
-  setInterval(runBackgroundScrapeIfNeeded, 300000);
+  // Delay first check by 30s to not slow down app startup
+  setTimeout(runBackgroundScrapeIfNeeded, 30000);
+  // Check every 30 minutes — actual scrape only triggers if last_scrape_at > 6h ago
+  setInterval(runBackgroundScrapeIfNeeded, 30 * 60 * 1000);
 }
 
 app.whenReady().then(() => {
@@ -760,8 +790,6 @@ app.whenReady().then(() => {
   db.initDb();
   setupIpcHandlers();
   createWindow();
-  createSpotlightWindow();
-  createTrayWindow();
   createTray();
   setupMenuAndShortcuts();
   checkUpdates();
@@ -774,16 +802,15 @@ app.whenReady().then(() => {
     console.warn(`Global shortcut ${shortcutKey} is already registered by another application.`);
   } else {
     const success = globalShortcut.register(shortcutKey, () => {
-      if (spotlightWindow) {
-        if (spotlightWindow.isVisible()) {
-          spotlightWindow.hide();
-        } else {
-          const { screen } = require('electron');
-          const primaryDisplay = screen.getPrimaryDisplay();
-          const { width, height } = primaryDisplay.workAreaSize;
-          spotlightWindow.setPosition(Math.round((width - 600) / 2), Math.round(height * 0.15));
-          spotlightWindow.show();
-        }
+      ensureSpotlightWindow();
+      if (spotlightWindow.isVisible()) {
+        spotlightWindow.hide();
+      } else {
+        const { screen } = require('electron');
+        const primaryDisplay = screen.getPrimaryDisplay();
+        const { width, height } = primaryDisplay.workAreaSize;
+        spotlightWindow.setPosition(Math.round((width - 600) / 2), Math.round(height * 0.15));
+        spotlightWindow.show();
       }
     });
 
