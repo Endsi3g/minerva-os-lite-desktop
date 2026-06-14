@@ -7,8 +7,7 @@ const os = require('os');
 const db = require('./database.cjs');
 const sync = require('./sync.cjs');
 
-// Workaround for Electron 42 + macOS 26 DCHECK crash in Chromium GPU/Metal stack
-app.disableHardwareAcceleration();
+// Sandbox flags — required for Electron 42 stability on macOS 26
 app.commandLine.appendSwitch('disable-gpu-sandbox');
 app.commandLine.appendSwitch('no-sandbox');
 // Disable Chrome translation UI (unused in this app)
