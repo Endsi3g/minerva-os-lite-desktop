@@ -69,6 +69,7 @@
   "build": {
     "appId": "com.minerva.reachlite",
     "productName": "Minerva OS Reach Lite",
+    "icon": "public/icon-512.png",
     "directories": {
       "output": "dist"
     },
@@ -83,10 +84,12 @@
       "repo": "minerva-os-lite-desktop"
     },
     "win": {
-      "target": "nsis"
+      "target": "nsis",
+      "icon": "public/icon-512.png"
     },
     "mac": {
-      "target": "dmg"
+      "target": "dmg",
+      "icon": "public/icon-512.png"
     }
   }
 }
