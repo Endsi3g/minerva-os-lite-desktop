@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="Minerva OS Lite/minerva-os-lite-desktop/public/favicon.ico" alt="Minerva Logo" width="80" height="80" />
+  <img src="public/icon.svg" alt="Minerva Logo" width="80" height="80" />
 </p>
 
 <h1 align="center">Minerva OS Reach Lite</h1>

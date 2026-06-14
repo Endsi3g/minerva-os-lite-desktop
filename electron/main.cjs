@@ -4,7 +4,6 @@ const { autoUpdater } = require('electron-updater');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
-const { pathToFileURL } = require('url');
 const db = require('./database.cjs');
 const sync = require('./sync.cjs');
 
@@ -622,21 +621,121 @@ async function runBackgroundScrapeIfNeeded() {
 }
 
 function setupProtocol() {
-  protocol.handle('app', (request) => {
-    let url = decodeURIComponent(request.url.replace('app://', ''));
-    if (url.startsWith('/')) {
-      url = url.substring(1);
-    }
-    const cleanPath = url.split('?')[0].split('#')[0];
-    let filePath = path.join(__dirname, '../out', cleanPath);
+  const mimeTypes = {
+    '.html': 'text/html',
+    '.js': 'application/javascript',
+    '.css': 'text/css',
+    '.svg': 'image/svg+xml',
+    '.png': 'image/png',
+    '.jpg': 'image/jpeg',
+    '.jpeg': 'image/jpeg',
+    '.gif': 'image/gif',
+    '.json': 'application/json',
+    '.txt': 'text/plain',
+    '.woff': 'font/woff',
+    '.woff2': 'font/woff2',
+    '.ttf': 'font/ttf',
+    '.ico': 'image/x-icon',
+  };
 
-    if (cleanPath === '' || cleanPath === 'index.html') {
-      filePath = path.join(__dirname, '../out/index.html');
-    } else if (!fs.existsSync(filePath) && fs.existsSync(filePath + '.html')) {
-      filePath += '.html';
+  const findStaticFile = (startPath, suffix) => {
+    const exactPath = startPath + suffix;
+    if (fs.existsSync(exactPath)) {
+      return exactPath;
     }
+    
+    const outDir = path.resolve(__dirname, '../out');
+    let currentDir = path.dirname(exactPath);
+    
+    while (currentDir.startsWith(outDir)) {
+      const placeholderPath = path.join(currentDir, `_placeholder_${suffix}`);
+      if (fs.existsSync(placeholderPath)) {
+        return placeholderPath;
+      }
+      const nextDir = path.dirname(currentDir);
+      if (nextDir === currentDir) break;
+      currentDir = nextDir;
+    }
+    
+    const indexPath = path.join(outDir, `index${suffix}`);
+    if (fs.existsSync(indexPath)) {
+      return indexPath;
+    }
+    return null;
+  };
 
-    return net.fetch(pathToFileURL(filePath).toString());
+  protocol.handle('app', async (request) => {
+    try {
+      let url = decodeURIComponent(request.url.replace('app://', ''));
+      if (url.startsWith('/')) {
+        url = url.substring(1);
+      }
+      let cleanPath = url.split('?')[0].split('#')[0];
+      if (cleanPath.endsWith('/')) {
+        cleanPath = cleanPath.slice(0, -1);
+      }
+
+      let filePath = path.join(__dirname, '../out', cleanPath);
+
+      if (cleanPath === '' || cleanPath === 'index.html') {
+        filePath = path.join(__dirname, '../out/index.html');
+      }
+
+      const ext = path.extname(filePath).toLowerCase();
+      const isHtmlOrRoute = ext === '' || ext === '.html';
+
+      let finalPath = filePath;
+      if (isHtmlOrRoute) {
+        const isRsc = request.url.includes('_rsc=') || request.headers.get('rsc') === '1' || request.headers.get('RSC') === '1';
+        const suffix = isRsc ? '.txt' : '.html';
+        
+        if (ext === '') {
+          const resolved = findStaticFile(filePath, suffix);
+          if (resolved) {
+            finalPath = resolved;
+          } else {
+            finalPath = path.join(__dirname, `../out/index${suffix}`);
+          }
+        } else {
+          if (!fs.existsSync(filePath)) {
+            const pathWithoutExt = filePath.slice(0, -5);
+            const resolved = findStaticFile(pathWithoutExt, suffix);
+            if (resolved) {
+              finalPath = resolved;
+            } else {
+              finalPath = path.join(__dirname, `../out/index${suffix}`);
+            }
+          }
+        }
+      }
+
+      // If it's a static asset (non-HTML/route) and doesn't exist, return 404
+      if (!isHtmlOrRoute && !fs.existsSync(filePath)) {
+        return new Response('Not Found', { status: 404 });
+      }
+
+      const fileExtension = path.extname(finalPath).toLowerCase();
+      const contentType = mimeTypes[fileExtension] || 'application/octet-stream';
+
+      const data = await fs.promises.readFile(finalPath);
+      return new Response(data, {
+        status: 200,
+        headers: { 'content-type': contentType }
+      });
+    } catch (err) {
+      console.error('Failed to handle app protocol request:', err);
+      // Absolute fallback to index.html to keep the app loading
+      try {
+        const fallbackPath = path.join(__dirname, '../out/index.html');
+        const data = await fs.promises.readFile(fallbackPath);
+        return new Response(data, {
+          status: 200,
+          headers: { 'content-type': 'text/html' }
+        });
+      } catch (fallbackErr) {
+        return new Response('Internal Server Error', { status: 500 });
+      }
+    }
   });
 }
 

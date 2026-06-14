@@ -8,7 +8,7 @@
  * Built entirely with native Node modules to ensure zero-dependency requirements.
  */
 
-import { execSync, spawnSync } from 'child_process';
+import { execSync, spawnSync, exec } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 import readline from 'readline';
@@ -179,6 +179,88 @@ function runTests() {
   return true;
 }
 
+function openPackagedApp() {
+  console.log(`\n${CYAN}Recherche de l'application compilée pour ouverture automatique...${NC}`);
+  const distPath = path.resolve(projectRoot, 'dist');
+  
+  if (!fs.existsSync(distPath)) {
+    console.log(`${RED}Dossier dist/ introuvable. Impossible d'ouvrir l'application.${NC}`);
+    return;
+  }
+
+  let appPath = null;
+
+  if (process.platform === 'darwin') {
+    const possibleDirs = ['mac', 'mac-arm64', 'mac-x64', 'mac-universal'];
+    for (const dir of possibleDirs) {
+      const fullDir = path.join(distPath, dir);
+      if (fs.existsSync(fullDir)) {
+        const files = fs.readdirSync(fullDir);
+        const appFile = files.find(f => f.endsWith('.app'));
+        if (appFile) {
+          appPath = path.join(fullDir, appFile);
+          break;
+        }
+      }
+    }
+    if (!appPath) {
+      const findApp = (dir) => {
+        const files = fs.readdirSync(dir);
+        for (const file of files) {
+          const fullPath = path.join(dir, file);
+          if (fs.statSync(fullPath).isDirectory()) {
+            if (file.endsWith('.app')) {
+              return fullPath;
+            }
+            if (file !== 'node_modules' && file !== '.git') {
+              const res = findApp(fullPath);
+              if (res) return res;
+            }
+          }
+        }
+        return null;
+      };
+      try {
+        appPath = findApp(distPath);
+      } catch (e) {}
+    }
+  } else if (process.platform === 'win32') {
+    const possibleDirs = ['win-unpacked'];
+    for (const dir of possibleDirs) {
+      const fullDir = path.join(distPath, dir);
+      if (fs.existsSync(fullDir)) {
+        const files = fs.readdirSync(fullDir);
+        const exeFile = files.find(f => f.endsWith('.exe'));
+        if (exeFile) {
+          appPath = path.join(fullDir, exeFile);
+          break;
+        }
+      }
+    }
+  }
+
+  if (appPath) {
+    console.log(`${GREEN}Application trouvée : ${appPath}${NC}`);
+    console.log(`${CYAN}Lancement de l'application...${NC}`);
+    let cmd = '';
+    if (process.platform === 'darwin') {
+      cmd = `open "${appPath}"`;
+    } else if (process.platform === 'win32') {
+      cmd = `start "" "${appPath}"`;
+    } else {
+      cmd = `"${appPath}" &`;
+    }
+    
+    exec(cmd, (err) => {
+      if (err) {
+        console.error(`${RED}Erreur lors du lancement de l'application : ${err.message}${NC}`);
+      }
+    });
+  } else {
+    console.log(`${YELLOW}Aucune application compilée (.app ou .exe) n'a été trouvée dans dist/.${NC}`);
+  }
+}
+
 // 3. Electron App Packaging
 function compileDesktop(rl) {
   return new Promise((resolve) => {
@@ -194,7 +276,9 @@ function compileDesktop(rl) {
       switch (choice.trim()) {
         case '1':
           console.log(`\nCompilation de l'application de bureau pour l'OS courant...`);
-          runCommand(`${pkgManager} run electron:build`);
+          if (runCommand(`${pkgManager} run electron:build`)) {
+            openPackagedApp();
+          }
           break;
         case '2':
           console.log(`\nCross-compilation pour Windows (.exe)...`);

@@ -31,6 +31,28 @@ export default function TrayPage() {
 
   const isElectron = typeof window !== 'undefined' && (window as any).electron;
 
+  const loadSettingsAndTasks = async () => {
+    if (!isElectron) return;
+    const electron = (window as any).electron;
+
+    try {
+      // Get settings (last_scrape_at)
+      const setting = await electron.dbGet("SELECT last_scrape_at FROM settings ORDER BY updated_at DESC LIMIT 1");
+      if (setting && setting.last_scrape_at) {
+        const dateObj = new Date(setting.last_scrape_at);
+        setLastScrapeTime(dateObj.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) + ' le ' + dateObj.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }));
+      } else {
+        setLastScrapeTime(null);
+      }
+
+      // Get 3 uncompleted tasks
+      const rows = await electron.dbAll("SELECT id, title, completed, category FROM tasks WHERE completed = 0 ORDER BY created_at DESC LIMIT 3");
+      setTasks(rows || []);
+    } catch (err) {
+      console.error("Failed to load local DB data in Tray popover:", err);
+    }
+  };
+
   // 1. Initial loads and event subscriptions
   useEffect(() => {
     if (!isElectron) return;
@@ -55,28 +77,6 @@ export default function TrayPage() {
       return unsubscribe;
     }
   }, [isElectron]);
-
-  const loadSettingsAndTasks = async () => {
-    if (!isElectron) return;
-    const electron = (window as any).electron;
-
-    try {
-      // Get settings (last_scrape_at)
-      const setting = await electron.dbGet("SELECT last_scrape_at FROM settings ORDER BY updated_at DESC LIMIT 1");
-      if (setting && setting.last_scrape_at) {
-        const dateObj = new Date(setting.last_scrape_at);
-        setLastScrapeTime(dateObj.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) + ' le ' + dateObj.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }));
-      } else {
-        setLastScrapeTime(null);
-      }
-
-      // Get 3 uncompleted tasks
-      const rows = await electron.dbAll("SELECT id, title, completed, category FROM tasks WHERE completed = 0 ORDER BY created_at DESC LIMIT 3");
-      setTasks(rows || []);
-    } catch (err) {
-      console.error("Failed to load local DB data in Tray popover:", err);
-    }
-  };
 
   // 2. Trigger background scraping
   const handleTriggerScraping = async () => {

@@ -1,5 +1,7 @@
 import readline from 'readline';
-import { spawn } from 'child_process';
+import { spawn, exec } from 'child_process';
+import fs from 'fs';
+import path from 'path';
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -31,7 +33,7 @@ function printMenu() {
   rl.question("Entrez votre choix (1-11) : ", handleChoice);
 }
 
-function runCommand(command, args = []) {
+function runCommand(command, args = [], callback = null) {
   console.log(`\n\x1b[90m> Exécution de : ${command} ${args.join(' ')}\x1b[0m\n`);
   rl.close();
   
@@ -39,7 +41,11 @@ function runCommand(command, args = []) {
   
   child.on('close', (code) => {
     console.log(`\n\x1b[32mProcessus terminé avec le code ${code}\x1b[0m\n`);
-    process.exit(code || 0);
+    if (code === 0 && callback) {
+      callback();
+    } else {
+      process.exit(code || 0);
+    }
   });
 }
 
@@ -59,7 +65,9 @@ function handleChoice(answer) {
       runCommand('pnpm', ['run', 'electron:dev']);
       break;
     case '5':
-      runCommand('pnpm', ['run', 'electron:build']);
+      runCommand('pnpm', ['run', 'electron:build'], () => {
+        openPackagedApp();
+      });
       break;
     case '6':
       runCommand('pnpm', ['run', 'cap:sync']);
@@ -85,6 +93,93 @@ function handleChoice(answer) {
       console.log("\n\x1b[31mChoix invalide. Veuillez saisir un nombre entre 1 et 10.\x1b[0m");
       setTimeout(printMenu, 1500);
       break;
+  }
+}
+
+function openPackagedApp() {
+  console.log("\n\x1b[36mRecherche de l'application compilée pour ouverture automatique...\x1b[0m");
+  const distPath = path.resolve(process.cwd(), 'dist');
+  
+  if (!fs.existsSync(distPath)) {
+    console.log("\x1b[31mDossier dist/ introuvable. Impossible d'ouvrir l'application.\x1b[0m");
+    process.exit(0);
+  }
+
+  let appPath = null;
+
+  if (process.platform === 'darwin') {
+    // macOS: Look for .app folders inside dist/mac, dist/mac-arm64, dist/mac-x64, etc.
+    const possibleDirs = ['mac', 'mac-arm64', 'mac-x64', 'mac-universal'];
+    for (const dir of possibleDirs) {
+      const fullDir = path.join(distPath, dir);
+      if (fs.existsSync(fullDir)) {
+        const files = fs.readdirSync(fullDir);
+        const appFile = files.find(f => f.endsWith('.app'));
+        if (appFile) {
+          appPath = path.join(fullDir, appFile);
+          break;
+        }
+      }
+    }
+    // Fallback: search dist root or any subdirectory for .app
+    if (!appPath) {
+      const findApp = (dir) => {
+        const files = fs.readdirSync(dir);
+        for (const file of files) {
+          const fullPath = path.join(dir, file);
+          if (fs.statSync(fullPath).isDirectory()) {
+            if (file.endsWith('.app')) {
+              return fullPath;
+            }
+            if (file !== 'node_modules' && file !== '.git') {
+              const res = findApp(fullPath);
+              if (res) return res;
+            }
+          }
+        }
+        return null;
+      };
+      try {
+        appPath = findApp(distPath);
+      } catch (e) {}
+    }
+  } else if (process.platform === 'win32') {
+    // Windows: Look for unpacked exe or similar
+    const possibleDirs = ['win-unpacked'];
+    for (const dir of possibleDirs) {
+      const fullDir = path.join(distPath, dir);
+      if (fs.existsSync(fullDir)) {
+        const files = fs.readdirSync(fullDir);
+        const exeFile = files.find(f => f.endsWith('.exe'));
+        if (exeFile) {
+          appPath = path.join(fullDir, exeFile);
+          break;
+        }
+      }
+    }
+  }
+
+  if (appPath) {
+    console.log(`\x1b[32mApplication trouvée : ${appPath}\x1b[0m`);
+    console.log("\x1b[36mLancement de l'application...\x1b[0m");
+    let cmd = '';
+    if (process.platform === 'darwin') {
+      cmd = `open "${appPath}"`;
+    } else if (process.platform === 'win32') {
+      cmd = `start "" "${appPath}"`;
+    } else {
+      cmd = `"${appPath}" &`;
+    }
+    
+    exec(cmd, (err) => {
+      if (err) {
+        console.error(`\x1b[31mErreur lors du lancement de l'application : ${err.message}\x1b[0m`);
+      }
+      process.exit(0);
+    });
+  } else {
+    console.log("\x1b[33mAucune application compilée (.app ou .exe) n'a été trouvée dans dist/.\x1b[0m");
+    process.exit(0);
   }
 }
 
