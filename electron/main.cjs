@@ -1,11 +1,17 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
-const { app, BrowserWindow, Menu, Tray, nativeImage, dialog, ipcMain, Notification, globalShortcut, clipboard } = require('electron');
+const { app, protocol, net, BrowserWindow, Menu, Tray, nativeImage, dialog, ipcMain, Notification, globalShortcut, clipboard } = require('electron');
 const { autoUpdater } = require('electron-updater');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
+const { pathToFileURL } = require('url');
 const db = require('./database.cjs');
 const sync = require('./sync.cjs');
+
+// Register the custom scheme 'app' as standard and secure
+protocol.registerSchemesAsPrivileged([
+  { scheme: 'app', privileges: { standard: true, secure: true, supportFetchAPI: true } }
+]);
 
 let mainWindow;
 let spotlightWindow;
@@ -46,9 +52,8 @@ function createWindow() {
     mainWindow.loadURL('http://localhost:3000');
     mainWindow.webContents.openDevTools();
   } else {
-    const indexPath = path.join(__dirname, '../out/index.html');
-    mainWindow.loadFile(indexPath).catch(err => {
-      console.error("Failed to load static assets in Electron:", err);
+    mainWindow.loadURL('app:///').catch(err => {
+      console.error("Failed to load app url in Electron:", err);
     });
   }
 
@@ -238,9 +243,9 @@ function checkUpdates() {
     });
   });
 
-  if (process.env.NODE_ENV === 'development') return;
-
-  autoUpdater.checkForUpdatesAndNotify();
+  autoUpdater.checkForUpdatesAndNotify().catch(err => {
+    console.error("Failed to check for updates on startup:", err);
+  });
 }
 
 function setupIpcHandlers() {
@@ -450,9 +455,8 @@ function createSpotlightWindow() {
   if (isDev) {
     spotlightWindow.loadURL('http://localhost:3000/spotlight');
   } else {
-    const spotlightPath = path.join(__dirname, '../out/spotlight.html');
-    spotlightWindow.loadFile(spotlightPath).catch(err => {
-      console.error("Failed to load static spotlight assets in Electron:", err);
+    spotlightWindow.loadURL('app:///spotlight').catch(err => {
+      console.error("Failed to load spotlight url in Electron:", err);
     });
   }
 
@@ -483,9 +487,8 @@ function createTrayWindow() {
   if (isDev) {
     trayWindow.loadURL('http://localhost:3000/tray');
   } else {
-    const trayPath = path.join(__dirname, '../out/tray.html');
-    trayWindow.loadFile(trayPath).catch(err => {
-      console.error("Failed to load static tray assets in Electron:", err);
+    trayWindow.loadURL('app:///tray').catch(err => {
+      console.error("Failed to load tray url in Electron:", err);
     });
   }
 
@@ -618,6 +621,25 @@ async function runBackgroundScrapeIfNeeded() {
   }
 }
 
+function setupProtocol() {
+  protocol.handle('app', (request) => {
+    let url = decodeURIComponent(request.url.replace('app://', ''));
+    if (url.startsWith('/')) {
+      url = url.substring(1);
+    }
+    const cleanPath = url.split('?')[0].split('#')[0];
+    let filePath = path.join(__dirname, '../out', cleanPath);
+
+    if (cleanPath === '' || cleanPath === 'index.html') {
+      filePath = path.join(__dirname, '../out/index.html');
+    } else if (!fs.existsSync(filePath) && fs.existsSync(filePath + '.html')) {
+      filePath += '.html';
+    }
+
+    return net.fetch(pathToFileURL(filePath).toString());
+  });
+}
+
 function setupBackgroundScraper() {
   // Check immediately on launch
   runBackgroundScrapeIfNeeded();
@@ -626,6 +648,7 @@ function setupBackgroundScraper() {
 }
 
 app.whenReady().then(() => {
+  setupProtocol();
   db.initDb();
   setupIpcHandlers();
   createWindow();
