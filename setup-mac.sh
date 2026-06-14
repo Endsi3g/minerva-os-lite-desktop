@@ -179,14 +179,19 @@ echo ""
 
 # Options interactives
 read -p "Voulez-vous ouvrir Xcode maintenant pour compiler/configurer l'application iOS ? (y/N) : " open_xcode
-if [[ "$open_xcode" =~ ^[yY](es)?$ ]]; then
-  echo -e "${CYAN}Ouverture de Xcode via Capacitor...${NC}"
-  npx cap open ios
-fi
+case "$open_xcode" in
+  [yY]|[yY][eE][sS])
+    echo -e "${CYAN}Ouverture de Xcode via Capacitor...${NC}"
+    npx cap open ios
+    ;;
+esac
 
 echo ""
 read -p "Voulez-vous tenter de lancer l'application directement sur votre iPhone connecté en USB ? (y/N) : " run_ios
-if [[ "$run_ios" =~ ^[yY](es)?$ ]]; then
-  echo -e "${CYAN}Déploiement sur votre iPhone connecté...${NC}"
-  npx cap run ios --live-reload --external
-fi
+case "$run_ios" in
+  [yY]|[yY][eE][sS])
+    echo -e "${CYAN}Déploiement sur votre iPhone connecté...${NC}"
+    npx cap run ios --live-reload --external
+    ;;
+esac
+
