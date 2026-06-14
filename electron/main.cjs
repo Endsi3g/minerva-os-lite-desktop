@@ -11,10 +11,8 @@ const sync = require('./sync.cjs');
 app.disableHardwareAcceleration();
 app.commandLine.appendSwitch('disable-gpu-sandbox');
 app.commandLine.appendSwitch('no-sandbox');
-// Disable unused Chromium features to reduce memory and CPU overhead
-app.commandLine.appendSwitch('disable-features', 'TranslateUI,WebRtcHideLocalIpsWithMdns');
-// Cap V8 JS heap at 512 MB (default ~1.5 GB per renderer process)
-app.commandLine.appendSwitch('js-flags', '--max-old-space-size=512');
+// Disable Chrome translation UI (unused in this app)
+app.commandLine.appendSwitch('disable-features', 'TranslateUI');
 
 // Register the custom scheme 'app' as standard and secure
 protocol.registerSchemesAsPrivileged([
