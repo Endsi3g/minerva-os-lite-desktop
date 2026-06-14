@@ -6,6 +6,7 @@ import { MinervaIcon } from '@/components/icons';
 import { Lock, Mail, Loader2, Sparkles, Eye, EyeOff, ArrowLeft, CheckCircle2, User, Building2, Phone } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { TextureOverlay } from '@/components/ui/texture-overlay';
+import { useLanguage } from '@/lib/language-context';
 
 // ─── types ────────────────────────────────────────────────────────────────────
 type MainMode = 'login' | 'signup' | 'otp';
@@ -64,6 +65,7 @@ export default function LoginPage() {
   const [mode, setMode] = useState<MainMode>('login');
   const [view, setView] = useState<SubView>('main');
   const [showPwd, setShowPwd] = useState(false);
+  const { locale, setLocale } = useLanguage();
 
   const [showSplash, setShowSplash] = useState(false);
 
@@ -165,16 +167,40 @@ export default function LoginPage() {
         <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-grid-pattern" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(16,185,129,0.06)_0%,_transparent_60%)] pointer-events-none" />
 
-        {/* Skip button top-right */}
-        <button
-          onClick={() => {
-            setShowSplash(false);
-            sessionStorage.setItem('minerva_splash_shown', 'true');
-          }}
-          className="absolute top-6 right-6 rounded-full border border-[#e6e5e0] bg-white hover:bg-neutral-50 text-[10px] font-bold px-4 py-1.5 text-[#807d72] hover:text-[#26251e] transition-all cursor-pointer select-none uppercase tracking-wider shadow-none"
-        >
-          Passer
-        </button>
+        {/* Top-right: language toggle + skip */}
+        <div className="absolute top-6 right-6 flex items-center gap-2">
+          <div className="flex items-center bg-white border border-[#e6e5e0] rounded-full overflow-hidden shadow-none">
+            <button
+              type="button"
+              onClick={() => setLocale('fr')}
+              className={cn(
+                'px-2.5 py-1.5 text-[9px] font-bold transition-all',
+                locale === 'fr' ? 'bg-[#26251e] text-white' : 'text-[#807d72] hover:text-[#26251e]',
+              )}
+            >
+              FR
+            </button>
+            <button
+              type="button"
+              onClick={() => setLocale('en')}
+              className={cn(
+                'px-2.5 py-1.5 text-[9px] font-bold transition-all',
+                locale === 'en' ? 'bg-[#26251e] text-white' : 'text-[#807d72] hover:text-[#26251e]',
+              )}
+            >
+              EN
+            </button>
+          </div>
+          <button
+            onClick={() => {
+              setShowSplash(false);
+              sessionStorage.setItem('minerva_splash_shown', 'true');
+            }}
+            className="rounded-full border border-[#e6e5e0] bg-white hover:bg-neutral-50 text-[10px] font-bold px-4 py-1.5 text-[#807d72] hover:text-[#26251e] transition-all cursor-pointer select-none uppercase tracking-wider shadow-none"
+          >
+            {locale === 'en' ? 'Skip' : 'Passer'}
+          </button>
+        </div>
 
         {/* Core content */}
         <div className="flex flex-col items-center gap-6 text-center z-10 max-w-sm">
@@ -733,10 +759,34 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {/* ── Footer branding ── */}
-          <div className="flex items-center justify-center gap-1.5 text-[9px] text-[#807d72] font-semibold pt-2 border-t border-[#e6e5e0]">
-            <Sparkles className="h-3 w-3 text-[#10b981]" />
-            <span>Propulsé par Minerva OS</span>
+          {/* ── Footer branding + language toggle ── */}
+          <div className="flex items-center justify-between pt-2 border-t border-[#e6e5e0]">
+            <div className="flex items-center gap-1.5 text-[9px] text-[#807d72] font-semibold">
+              <Sparkles className="h-3 w-3 text-[#10b981]" />
+              <span>Propulsé par Minerva OS</span>
+            </div>
+            <div className="flex items-center bg-[#f7f7f4] border border-[#e6e5e0] rounded-full overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setLocale('fr')}
+                className={cn(
+                  'px-2.5 py-1 text-[9px] font-bold transition-all',
+                  locale === 'fr' ? 'bg-[#26251e] text-white' : 'text-[#807d72] hover:text-[#26251e]',
+                )}
+              >
+                FR
+              </button>
+              <button
+                type="button"
+                onClick={() => setLocale('en')}
+                className={cn(
+                  'px-2.5 py-1 text-[9px] font-bold transition-all',
+                  locale === 'en' ? 'bg-[#26251e] text-white' : 'text-[#807d72] hover:text-[#26251e]',
+                )}
+              >
+                EN
+              </button>
+            </div>
           </div>
         </div>
       </div>

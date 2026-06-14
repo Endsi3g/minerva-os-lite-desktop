@@ -67,7 +67,8 @@ export async function middleware(request: NextRequest) {
 
   if (!onboardingComplete) {
     // Logged in but not onboarded: force redirect to /onboarding
-    if (!isOnboardingPage && !isUpdatePasswordPage) {
+    // Allow /welcome so users can land there right after the finalizing step completes
+    if (!isOnboardingPage && !isWelcomePage && !isUpdatePasswordPage) {
       url.pathname = '/onboarding';
       return NextResponse.redirect(url);
     }

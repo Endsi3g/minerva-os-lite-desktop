@@ -18,7 +18,7 @@ import {
 import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
 import { MinervaIcon } from '@/components/icons';
-import { TextureOverlay } from '@/components/ui/texture-overlay';
+import { useLanguage } from '@/lib/language-context';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Step = 'login' | 'otp' | 'selection' | 'workspace' | 'pricing' | 'analytics' | 'finalizing';
@@ -137,6 +137,7 @@ function FinalizingCheck({ index, delay }: { index: number; delay: number }) {
 // ─── Main Component ────────────────────────────────────────────────────────────
 export default function OnboardingPage() {
   const router = useRouter();
+  const { locale, setLocale } = useLanguage();
   const [step, setStep] = useState<Step>('selection');
   const [direction, setDirection] = useState<Direction>('forward');
   const [slidePhase, setSlidePhase] = useState<'idle' | 'exit' | 'enter'>('idle');
@@ -280,15 +281,19 @@ export default function OnboardingPage() {
     const firstName = nameParts[0] || '';
     const lastName = nameParts.slice(1).join(' ') || '';
     const company = workspaceName.trim() || 'Mon Workspace';
+
+    goToStep('finalizing', 'forward');
+
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
-      await supabase.from('settings').upsert({
+      // Try full upsert first
+      const { error: fullError } = await supabase.from('settings').upsert({
         user_id: user.id,
         full_name: name,
         last_name: lastName,
         phone: '',
-        email: email || '',
+        email: email || user.email || '',
         company_name: company,
         timezone: 'Europe/Paris',
         niches: selectedNiches.length > 0 ? selectedNiches : ['Boulangerie', 'Coiffure'],
@@ -296,24 +301,34 @@ export default function OnboardingPage() {
         ai_tone: aiTone === 'casual' ? 'Calme & Conseil' : aiTone === 'professional' ? 'Direct & Closer' : 'Storytelling',
         ai_density: 'Standard',
       });
+
+      // If full upsert fails (e.g. missing columns), fall back to minimal required fields
+      if (fullError) {
+        await supabase.from('settings').upsert({
+          user_id: user.id,
+          full_name: name,
+          company_name: company,
+        });
+      }
     }
+
     const localSettings = {
       profile: {
-        firstName: firstName,
-        lastName: lastName,
+        firstName,
+        lastName,
         email: email || 'contact@uprising.studio',
         phone: '',
-        language: 'fr',
-        timezone: 'Europe/Paris'
+        language: locale,
+        timezone: 'Europe/Paris',
       },
       prospecting: { niches: selectedNiches, cities: selectedCities, services: { website: true, seoAudit: true, acquisition: false }, language: 'both' },
       ai: { tone: aiTone },
       theme: 'light',
     };
     localStorage.setItem('minerva_settings', JSON.stringify(localSettings));
-    goToStep('finalizing', 'forward');
+
     setTimeout(() => {
-      router.push('/today');
+      router.push('/welcome');
     }, 5000);
   };
 
@@ -323,7 +338,6 @@ export default function OnboardingPage() {
 
   return (
     <div className="min-h-screen w-screen bg-white text-[#26251e] font-sans selection:bg-[#10b981]/10 flex flex-col justify-between overflow-x-hidden relative">
-      <TextureOverlay texture="grid" opacity={0.6} />
 
       {/* ── SPLIT ONBOARDING LAYOUT ── */}
       <div className="flex-grow flex flex-col lg:flex-row h-screen min-h-screen overflow-hidden">
@@ -337,10 +351,33 @@ export default function OnboardingPage() {
               <MinervaIcon size={18} className="text-[#10b981]" />
               <span className="text-xs">Minerva Reach</span>
             </div>
-            <div className="flex items-center gap-4 text-[10px] font-semibold text-[#807d72] bg-[#f7f7f4] border border-[#e6e5e0] rounded-full px-4 py-1.5">
-              <span className="hover:text-[#26251e] transition-colors cursor-pointer">Overview</span>
-              <span className="hover:text-[#26251e] transition-colors cursor-pointer">Pricing</span>
-              <span className="hover:text-[#26251e] transition-colors cursor-pointer">FAQ</span>
+            <div className="flex items-center gap-3">
+              {/* Language toggle */}
+              <div className="flex items-center bg-[#f7f7f4] border border-[#e6e5e0] rounded-full overflow-hidden">
+                <button
+                  onClick={() => setLocale('fr')}
+                  className={cn(
+                    'px-3 py-1.5 text-[10px] font-bold transition-all',
+                    locale === 'fr' ? 'bg-[#26251e] text-white' : 'text-[#807d72] hover:text-[#26251e]',
+                  )}
+                >
+                  FR
+                </button>
+                <button
+                  onClick={() => setLocale('en')}
+                  className={cn(
+                    'px-3 py-1.5 text-[10px] font-bold transition-all',
+                    locale === 'en' ? 'bg-[#26251e] text-white' : 'text-[#807d72] hover:text-[#26251e]',
+                  )}
+                >
+                  EN
+                </button>
+              </div>
+              <div className="flex items-center gap-4 text-[10px] font-semibold text-[#807d72] bg-[#f7f7f4] border border-[#e6e5e0] rounded-full px-4 py-1.5">
+                <span className="hover:text-[#26251e] transition-colors cursor-pointer">Overview</span>
+                <span className="hover:text-[#26251e] transition-colors cursor-pointer">Pricing</span>
+                <span className="hover:text-[#26251e] transition-colors cursor-pointer">FAQ</span>
+              </div>
             </div>
           </div>
 

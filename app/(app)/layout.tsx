@@ -202,7 +202,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
     return (
       <div className="flex h-screen w-screen items-center justify-center bg-[#f7f7f4] text-[#26251e] font-sans">
         <div className="flex flex-col items-center gap-3">
-          <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#f54e00] border-t-transparent" />
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#10b981] border-t-transparent" />
           <span className="text-[11px] font-medium tracking-wider text-[#7a7a76] uppercase">Minerva OS...</span>
         </div>
       </div>
@@ -269,7 +269,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
   ];
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-white text-[#26251e] font-sans selection:bg-[#f54e00]/10">
+    <div className="flex h-screen w-screen overflow-hidden bg-white text-[#26251e] font-sans selection:bg-[#10b981]/10">
       {/* Mobile Sidebar Overlay */}
       {sidebarOpen && (
         <div 
