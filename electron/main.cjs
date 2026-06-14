@@ -7,6 +7,8 @@ const os = require('os');
 const db = require('./database.cjs');
 const sync = require('./sync.cjs');
 
+app.setName('Minerva OS Reach Lite');
+
 // Sandbox flags — required for Electron 42 stability on macOS 26
 app.commandLine.appendSwitch('disable-gpu-sandbox');
 app.commandLine.appendSwitch('no-sandbox');
@@ -95,6 +97,25 @@ function createWindow() {
 
   mainWindow.on('closed', () => {
     mainWindow = null;
+  });
+
+  // Auto-reload instead of closing when the renderer process crashes during navigation
+  mainWindow.webContents.on('render-process-gone', (event, details) => {
+    if (details.reason !== 'clean-exit') {
+      console.error('[Main] Renderer crashed:', details.reason, '— reloading in 500ms');
+      setTimeout(() => {
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.loadURL(isDev ? 'http://localhost:3000' : 'app://minerva/');
+        }
+      }, 500);
+    }
+  });
+
+  mainWindow.webContents.on('unresponsive', () => {
+    console.warn('[Main] Renderer unresponsive — forcing reload');
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.reload();
+    }
   });
 }
 
