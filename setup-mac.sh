@@ -107,6 +107,21 @@ echo "Installation des dépendances dans le dossier : $DESKTOP_DIR..."
 cd "$DESKTOP_DIR"
 pnpm install
 
+# 6b. Vérification des variables d'environnement
+echo -e "${CYAN}[5b/6] Vérification des variables d'environnement...${NC}"
+if [ ! -f ".env.local" ] && [ ! -f ".env" ]; then
+  echo -e "${YELLOW}[ATTENTION] Aucun fichier .env ou .env.local détecté.${NC}"
+  if [ -f ".env.example" ]; then
+    echo -e "Copie de .env.example vers .env.local..."
+    cp .env.example .env.local
+    echo -e "${GREEN}[OK] Fichier .env.local créé à partir de .env.example.${NC}"
+    echo -e "${YELLOW}[IMPORTANT] Veuillez modifier .env.local avec vos clés Supabase réelles pour que la synchronisation et la connexion fonctionnent sur votre iPhone/simulateur.${NC}"
+  else
+    echo -e "${RED}[ERREUR] Le fichier de modèle .env.example est manquant.${NC}"
+  fi
+else
+  echo -e "${GREEN}[OK] Fichier d'environnement détecté.${NC}"
+fi
 
 # 7. Initialisation / Synchronisation des plateformes mobiles Capacitor
 echo -e "${CYAN}[6/6] Initialisation des plateformes mobiles...${NC}"
