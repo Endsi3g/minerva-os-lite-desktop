@@ -37,5 +37,16 @@ contextBridge.exposeInMainWorld('electron', {
     return () => {
       ipcRenderer.removeListener('focus-lead', subscription);
     };
+  },
+
+  // Tray Popover API
+  openMainWindow: () => ipcRenderer.send('open-main-window'),
+  triggerBackgroundScrapeOnDemand: () => ipcRenderer.invoke('trigger-background-scrape-on-demand'),
+  onScrapingStatusChanged: (callback) => {
+    const subscription = (event, statusData) => callback(statusData);
+    ipcRenderer.on('scraping-status-changed', subscription);
+    return () => {
+      ipcRenderer.removeListener('scraping-status-changed', subscription);
+    };
   }
 });

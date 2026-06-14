@@ -9,10 +9,21 @@ const sync = require('./sync.cjs');
 
 let mainWindow;
 let spotlightWindow;
+let trayWindow = null;
 let tray = null;
 let isQuitting = false;
 let scrapingStatus = { status: 'idle', niche: '', city: '' };
 let hasNotifiedBackground = false;
+
+function broadcastScrapingStatus() {
+  updateTrayMenu();
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('scraping-status-changed', scrapingStatus);
+  }
+  if (trayWindow && !trayWindow.isDestroyed()) {
+    trayWindow.webContents.send('scraping-status-changed', scrapingStatus);
+  }
+}
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -114,11 +125,19 @@ function createTray() {
 
   // Click tray icon to toggle window visibility
   tray.on('click', () => {
-    if (mainWindow) {
-      if (mainWindow.isVisible()) {
-        mainWindow.hide();
+    if (trayWindow) {
+      if (trayWindow.isVisible()) {
+        trayWindow.hide();
       } else {
-        mainWindow.show();
+        showTrayWindow();
+      }
+    } else {
+      if (mainWindow) {
+        if (mainWindow.isVisible()) {
+          mainWindow.hide();
+        } else {
+          mainWindow.show();
+        }
       }
     }
   });
@@ -290,7 +309,7 @@ function setupIpcHandlers() {
   // 4. Update scraping status in System Tray menu
   ipcMain.on('update-scraping-status', (event, { status, niche, city }) => {
     scrapingStatus = { status, niche, city };
-    updateTrayMenu();
+    broadcastScrapingStatus();
   });
 
   // 5. Trigger update check manually from settings / download view
@@ -385,6 +404,28 @@ function setupIpcHandlers() {
     pdfWindow.close();
     return { success: false };
   });
+
+  // 10. Open main window from tray
+  ipcMain.on('open-main-window', () => {
+    if (mainWindow) {
+      mainWindow.show();
+      mainWindow.focus();
+    }
+  });
+
+  // 11. Get current scraping status for tray popover
+  ipcMain.handle('get-scraping-status', () => {
+    return scrapingStatus;
+  });
+
+  // 12. Trigger manual background scrape on demand from tray
+  ipcMain.handle('trigger-background-scrape-on-demand', async () => {
+    const setting = await db.get("SELECT * FROM settings ORDER BY updated_at DESC LIMIT 1");
+    if (!setting) {
+      return { success: false, error: "Aucun paramètre configuré. Veuillez vous connecter." };
+    }
+    return await executeScrape(setting);
+  });
 }
 
 function createSpotlightWindow() {
@@ -420,6 +461,146 @@ function createSpotlightWindow() {
   });
 }
 
+function createTrayWindow() {
+  trayWindow = new BrowserWindow({
+    width: 360,
+    height: 450,
+    frame: false,
+    resizable: false,
+    show: false,
+    transparent: true,
+    alwaysOnTop: true,
+    skipTaskbar: true,
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true,
+      preload: path.join(__dirname, 'preload.js')
+    }
+  });
+
+  const isDev = process.env.NODE_ENV === 'development';
+
+  if (isDev) {
+    trayWindow.loadURL('http://localhost:3000/tray');
+  } else {
+    const trayPath = path.join(__dirname, '../out/tray.html');
+    trayWindow.loadFile(trayPath).catch(err => {
+      console.error("Failed to load static tray assets in Electron:", err);
+    });
+  }
+
+  if (process.platform === 'darwin') {
+    trayWindow.setVibrancy('under-window');
+  }
+
+  trayWindow.on('blur', () => {
+    trayWindow.hide();
+  });
+}
+
+function showTrayWindow() {
+  if (!tray || !trayWindow) return;
+
+  const trayBounds = tray.getBounds();
+  const windowBounds = trayWindow.getBounds();
+  const { screen } = require('electron');
+  const primaryDisplay = screen.getPrimaryDisplay();
+  const { width: screenWidth, height: screenHeight } = primaryDisplay.workAreaSize;
+
+  let x = Math.round(trayBounds.x + (trayBounds.width / 2) - (windowBounds.width / 2));
+  let y = Math.round(trayBounds.y + trayBounds.height);
+
+  if (x < 10) x = 10;
+  if (x + windowBounds.width > screenWidth - 10) {
+    x = screenWidth - windowBounds.width - 10;
+  }
+
+  if (y + windowBounds.height > screenHeight) {
+    y = Math.round(trayBounds.y - windowBounds.height);
+  }
+
+  trayWindow.setPosition(x, y);
+  trayWindow.show();
+  trayWindow.focus();
+}
+
+async function executeScrape(setting) {
+  try {
+    const niches = JSON.parse(setting.niches || '[]');
+    const cities = JSON.parse(setting.cities || '[]');
+
+    if (niches.length === 0 || cities.length === 0) {
+      return { success: false, error: "Veuillez configurer au moins un secteur (niche) et une ville dans les paramètres." };
+    }
+
+    const niche = niches[Math.floor(Math.random() * niches.length)];
+    const city = cities[Math.floor(Math.random() * cities.length)];
+    const query = `${niche} ${city}`;
+
+    // Broadcast running status
+    scrapingStatus = { status: 'running', niche, city };
+    broadcastScrapingStatus();
+
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://minerva-os-lite.com';
+    const response = await fetch(`${appUrl}/api/scrape-maps`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        niche,
+        city,
+        query,
+        sources: ['google']
+      })
+    });
+
+    const data = await response.json();
+    
+    // Update the last_scrape_at timestamp locally right away
+    const nowStr = new Date().toISOString();
+    await db.run("UPDATE settings SET last_scrape_at = ? WHERE user_id = ?", [nowStr, setting.user_id]);
+
+    let addedCount = 0;
+    if (data.leads && data.leads.length > 0) {
+      for (const item of data.leads) {
+        const existing = await db.get("SELECT id FROM leads WHERE business_name = ? AND city = ?", [item.businessName, item.city]);
+        if (!existing) {
+          const leadId = 'lead-' + Date.now() + Math.random().toString(36).substr(2, 5);
+          let temp = 'Warm';
+          if (item.rating < 4.0 || !item.website) temp = 'Hot';
+
+          await db.run(`INSERT INTO leads (id, user_id, business_name, contact_name, contact_email, niche, city, source, status, temperature, next_action, next_action_date, owner, image_url, workspace_id, created_at, updated_at, sync_status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending_insert')`,
+            [leadId, setting.user_id, item.businessName, 'Gérant', item.email || '', item.niche, item.city, `Background Maps - ${item.rating}★`, 'New', temp, item.seoAudit || 'Vérifier la fiche', new Date().toISOString().split('T')[0], 'Moi', '', '', new Date().toISOString(), new Date().toISOString()]
+          );
+          addedCount++;
+        }
+      }
+
+      if (addedCount > 0) {
+        await sync.triggerSync();
+
+        if (Notification.isSupported()) {
+          new Notification({
+            title: 'Prospection Autonome',
+            body: `${addedCount} nouveaux prospects trouvés pour "${niche}" à "${city}" !`,
+            icon: path.join(__dirname, '../public/icon-192.png')
+          }).show();
+        }
+      }
+    }
+
+    scrapingStatus = { status: 'idle', niche: '', city: '' };
+    broadcastScrapingStatus();
+
+    return { success: true, addedCount };
+  } catch (err) {
+    console.error("Scraping execution error:", err);
+    scrapingStatus = { status: 'idle', niche: '', city: '' };
+    broadcastScrapingStatus();
+    return { success: false, error: err.message || "Erreur lors du scraping de leads." };
+  }
+}
+
 async function runBackgroundScrapeIfNeeded() {
   try {
     const setting = await db.get("SELECT * FROM settings ORDER BY updated_at DESC LIMIT 1");
@@ -430,65 +611,10 @@ async function runBackgroundScrapeIfNeeded() {
     const sixHoursMs = 6 * 60 * 60 * 1000; // 21600000 ms
 
     if (now - lastScrapeTime >= sixHoursMs) {
-      const niches = JSON.parse(setting.niches || '[]');
-      const cities = JSON.parse(setting.cities || '[]');
-
-      if (niches.length > 0 && cities.length > 0) {
-        const niche = niches[Math.floor(Math.random() * niches.length)];
-        const city = cities[Math.floor(Math.random() * cities.length)];
-        const query = `${niche} ${city}`;
-
-        const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://minerva-os-lite.com';
-        const response = await fetch(`${appUrl}/api/scrape-maps`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            niche,
-            city,
-            query,
-            sources: ['google']
-          })
-        });
-
-        const data = await response.json();
-        
-        // Update the last_scrape_at timestamp locally right away
-        const nowStr = new Date().toISOString();
-        await db.run("UPDATE settings SET last_scrape_at = ? WHERE user_id = ?", [nowStr, setting.user_id]);
-
-        if (data.leads && data.leads.length > 0) {
-          let addedCount = 0;
-          for (const item of data.leads) {
-            const existing = await db.get("SELECT id FROM leads WHERE business_name = ? AND city = ?", [item.businessName, item.city]);
-            if (!existing) {
-              const leadId = 'lead-' + Date.now() + Math.random().toString(36).substr(2, 5);
-              let temp = 'Warm';
-              if (item.rating < 4.0 || !item.website) temp = 'Hot';
-
-              await db.run(`INSERT INTO leads (id, user_id, business_name, contact_name, contact_email, niche, city, source, status, temperature, next_action, next_action_date, owner, image_url, workspace_id, created_at, updated_at, sync_status)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending_insert')`,
-                [leadId, setting.user_id, item.businessName, 'Gérant', item.email || '', item.niche, item.city, `Background Maps - ${item.rating}★`, 'New', temp, item.seoAudit || 'Vérifier la fiche', new Date().toISOString().split('T')[0], 'Moi', '', '', new Date().toISOString(), new Date().toISOString()]
-              );
-              addedCount++;
-            }
-          }
-
-          if (addedCount > 0) {
-            await sync.triggerSync();
-
-            if (Notification.isSupported()) {
-              new Notification({
-                title: 'Prospection Autonome',
-                body: `${addedCount} nouveaux prospects trouvés pour "${niche}" à "${city}" !`,
-                icon: path.join(__dirname, '../public/icon-192.png')
-              }).show();
-            }
-          }
-        }
-      }
+      await executeScrape(setting);
     }
   } catch (err) {
-    console.error("Background autonomous scraper error:", err);
+    console.error("Background autonomous scraper scheduler error:", err);
   }
 }
 
@@ -504,6 +630,7 @@ app.whenReady().then(() => {
   setupIpcHandlers();
   createWindow();
   createSpotlightWindow();
+  createTrayWindow();
   createTray();
   setupMenuAndShortcuts();
   checkUpdates();
