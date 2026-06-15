@@ -1,5 +1,21 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
 const { app, protocol, net, BrowserWindow, Menu, Tray, nativeImage, dialog, ipcMain, Notification, globalShortcut, clipboard, powerMonitor } = require('electron');
+
+// Prevent JIT-related crashes on macOS by restarting the main process with V8 JIT disabled if not already done.
+// Calling app.commandLine.appendSwitch('js-flags') inside main.cjs does not affect the main process itself
+// because V8 is initialized before loading main.cjs. We therefore force a relaunch with JIT-less flags.
+if (process.platform === 'darwin' && !process.env.MINERVA_JITLESS_RESTART) {
+  const hasJitless = process.argv.some(arg => arg.includes('--jitless') || arg.includes('--js-flags'));
+  if (!hasJitless) {
+    process.env.MINERVA_JITLESS_RESTART = 'true';
+    process.env.NODE_OPTIONS = (process.env.NODE_OPTIONS || '') + ' --jitless';
+    app.relaunch({
+      args: process.argv.slice(1).concat(['--js-flags=--jitless', '--jitless'])
+    });
+    app.exit(0);
+  }
+}
+
 const { autoUpdater } = require('electron-updater');
 const path = require('path');
 const fs = require('fs');
