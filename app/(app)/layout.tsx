@@ -36,6 +36,7 @@ import {
 } from 'lucide-react';
 import { BottomBlur } from '@/components/ui/edge-blur';
 import { cn } from '@/lib/utils';
+import { RealtimeSyncListener } from '@/components/realtime-sync-listener';
 import { ReachProvider, useReach } from '@/lib/reach-context';
 import { useLanguage } from '@/lib/language-context';
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
@@ -136,6 +137,69 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
     }
   }, [onboarding.percent]);
 
+  const [userProfile, setUserProfile] = useState<{ fullName: string; companyName: string } | null>(null);
+
+  // Real-time Presence state
+  const [onlineUsers, setOnlineUsers] = useState<Array<{
+    userId: string;
+    fullName: string;
+    activePage: string;
+    color: string;
+  }>>([]);
+
+  useEffect(() => {
+    if (!activeWorkspace || !userProfile) return;
+
+    const supabase = createClient();
+    const channelId = `workspace_presence_${activeWorkspace.id}`;
+    
+    // Assign a consistent color based on user full name
+    const colors = [
+      'bg-indigo-500 text-white',
+      'bg-emerald-500 text-white',
+      'bg-sky-500 text-white',
+      'bg-rose-500 text-white',
+      'bg-amber-500 text-white',
+      'bg-violet-500 text-white'
+    ];
+    const hash = userProfile.fullName.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    const myColor = colors[hash % colors.length];
+
+    const presenceChannel = supabase.channel(channelId);
+
+    presenceChannel
+      .on('presence', { event: 'sync' }, () => {
+        const state = presenceChannel.presenceState();
+        const joined: any[] = [];
+        Object.keys(state).forEach((key) => {
+          state[key].forEach((pres: any) => {
+            // Avoid duplicates
+            if (!joined.some(u => u.userId === pres.userId)) {
+              joined.push(pres);
+            }
+          });
+        });
+        setOnlineUsers(joined);
+      })
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          const { data: { user: currUser } } = await supabase.auth.getUser();
+          if (currUser) {
+            await presenceChannel.track({
+              userId: currUser.id,
+              fullName: userProfile.fullName,
+              activePage: pathname,
+              color: myColor
+            });
+          }
+        }
+      });
+
+    return () => {
+      presenceChannel.unsubscribe();
+    };
+  }, [activeWorkspace, userProfile, pathname]);
+
   // Invite Users modal states
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
@@ -210,8 +274,6 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
     setInviteError('');
     setShowInviteModal(false);
   };
-
-  const [userProfile, setUserProfile] = useState<{ fullName: string; companyName: string } | null>(null);
 
   useEffect(() => {
     const checkUserAndSettings = async () => {
@@ -826,6 +888,47 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
               <span>{t('nav.invite_members')}</span>
             </Button>
 
+            {/* Real-time Presence list */}
+            {onlineUsers.length > 1 && (
+              <div className="flex items-center -space-x-1.5 mr-1 ml-1 select-none">
+                {onlineUsers.map((u) => {
+                  const initials = u.fullName
+                    .split(' ')
+                    .map(n => n[0])
+                    .join('')
+                    .substring(0, 2)
+                    .toUpperCase();
+                  
+                  // Friendly page label
+                  let pageLabel = u.activePage;
+                  if (u.activePage === '/today') pageLabel = "Aujourd'hui";
+                  else if (u.activePage === '/leads') pageLabel = 'Prospects';
+                  else if (u.activePage === '/prospecting') pageLabel = 'Prospection';
+                  else if (u.activePage === '/pipeline') pageLabel = 'Pipeline';
+                  else if (u.activePage === '/library') pageLabel = 'Bibliothèque';
+                  else if (u.activePage === '/settings') pageLabel = 'Paramètres';
+                  else if (u.activePage === '/team') pageLabel = 'Équipe';
+
+                  return (
+                    <Tooltip key={u.userId}>
+                      <TooltipTrigger asChild>
+                        <div className={cn(
+                          "w-6 h-6 rounded-full border-2 border-white flex items-center justify-center text-[9px] font-bold shrink-0 shadow-xs cursor-default select-none transition-transform hover:scale-105",
+                          u.color
+                        )}>
+                          {initials}
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent className="text-xs bg-[#26251e] text-white p-2 rounded-lg font-sans border border-neutral-800 shadow-lg">
+                        <span className="font-bold block">{u.fullName}</span>
+                        <span className="text-[10px] opacity-75 block mt-0.5">Activité : {pageLabel}</span>
+                      </TooltipContent>
+                    </Tooltip>
+                  );
+                })}
+              </div>
+            )}
+
             <Popover>
               <PopoverTrigger asChild>
                 <Button variant="ghost" size="icon" className="text-[#7a7a76] hover:text-[#26251e] h-8 w-8 relative cursor-pointer">
@@ -902,6 +1005,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
         {/* Page Content Slot */}
         <main className="flex-1 overflow-hidden bg-white mobile-main-content">
           {children}
+          <RealtimeSyncListener />
         </main>
       </div>
 

@@ -274,6 +274,8 @@ export const translations = {
     "lead.tone_calm": "Calme & Conseil",
     "lead.tone_direct": "Direct & Closer",
     "lead.tone_story": "Storytelling",
+    "lead.collision_warning_editor": "🛑 {users} est en train de modifier ce prospect. Les modifications sont temporairement désactivées pour éviter les conflits d'écriture.",
+    "lead.collision_warning_viewer": "⚠️ {users} consulte également ce prospect.",
     
     // Download page & Nav
     "nav.download": "Téléchargement",
@@ -632,6 +634,8 @@ export const translations = {
     "lead.tone_calm": "Calm & Advisor",
     "lead.tone_direct": "Direct & Closer",
     "lead.tone_story": "Storytelling",
+    "lead.collision_warning_editor": "🛑 {users} is currently editing this lead. Modifying fields is temporarily disabled to prevent write conflicts.",
+    "lead.collision_warning_viewer": "⚠️ {users} is also viewing this lead.",
 
     // Download page & Nav
     "nav.download": "Download",
@@ -990,6 +994,8 @@ export const translations = {
     "lead.tone_calm": "Ruhig & Beratend",
     "lead.tone_direct": "Direkt & Abschließend",
     "lead.tone_story": "Storytelling",
+    "lead.collision_warning_editor": "🛑 {users} bearbeitet diesen Lead gerade. Die Bearbeitung ist vorübergehend deaktiviert, um Schreibkonflikte zu vermeiden.",
+    "lead.collision_warning_viewer": "⚠️ {users} sieht sich diesen Lead ebenfalls an.",
 
     // Download page & Nav
     "nav.download": "Herunterladen",

@@ -1,6 +1,6 @@
 {
   "name": "minerva-os-lite-desktop",
-  "version": "2.7.0",
+  "version": "2.7.1",
   "type": "module",
   "main": "electron/main.cjs",
   "private": true,
@@ -90,7 +90,10 @@
     },
     "mac": {
       "target": "dmg",
-      "icon": "public/icon-512.png"
+      "icon": "public/icon-512.png",
+      "hardenedRuntime": true,
+      "entitlements": "electron/entitlements.mac.plist",
+      "entitlementsInherit": "electron/entitlements.mac.plist"
     }
   }
 }

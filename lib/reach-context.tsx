@@ -753,6 +753,17 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
     }
   }, [user, activeWorkspace, loadData]);
 
+  // Listen to remote changes to refresh data dynamically from SQLite
+  useEffect(() => {
+    const handleRemoteChange = () => {
+      if (user && activeWorkspace) {
+        loadData(user, activeWorkspace);
+      }
+    };
+    window.addEventListener('minerva_sync_complete', handleRemoteChange);
+    return () => window.removeEventListener('minerva_sync_complete', handleRemoteChange);
+  }, [user, activeWorkspace, loadData]);
+
   const addLead = async (leadData: {
     businessName: string;
     contactName: string;

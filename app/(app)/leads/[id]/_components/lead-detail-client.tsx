@@ -47,9 +47,11 @@ interface InlineTextEditProps {
   placeholder?: string;
   className?: string;
   inputClassName?: string;
+  disabled?: boolean;
+  onEditStateChange?: (isEditing: boolean) => void;
 }
 
-function InlineTextEdit({ value, onSave, placeholder = 'Non spécifié', className, inputClassName }: InlineTextEditProps) {
+function InlineTextEdit({ value, onSave, placeholder = 'Non spécifié', className, inputClassName, disabled, onEditStateChange }: InlineTextEditProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [val, setVal] = useState(value);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -69,6 +71,7 @@ function InlineTextEdit({ value, onSave, placeholder = 'Non spécifié', classNa
 
   const handleBlur = () => {
     setIsEditing(false);
+    onEditStateChange?.(false);
     if (val.trim() !== value) {
       onSave(val.trim());
     }
@@ -81,10 +84,11 @@ function InlineTextEdit({ value, onSave, placeholder = 'Non spécifié', classNa
     if (e.key === 'Escape') {
       setVal(value);
       setIsEditing(false);
+      onEditStateChange?.(false);
     }
   };
 
-  if (isEditing) {
+  if (isEditing && !disabled) {
     return (
       <Input
         ref={inputRef}
@@ -100,10 +104,16 @@ function InlineTextEdit({ value, onSave, placeholder = 'Non spécifié', classNa
 
   return (
     <div 
-      onClick={() => setIsEditing(true)}
+      onClick={() => {
+        if (!disabled) {
+          setIsEditing(true);
+          onEditStateChange?.(true);
+        }
+      }}
       className={cn(
         "cursor-pointer hover:bg-muted/60 px-1 py-0.5 rounded border border-transparent hover:border-border/50 transition-all text-xs min-h-6 flex items-center min-w-0 break-all",
         !value && "text-muted-foreground italic",
+        disabled && "cursor-not-allowed hover:bg-transparent hover:border-transparent opacity-85",
         className
       )}
     >
@@ -127,6 +137,93 @@ export function LeadDetailClient({ id }: { id: string }) {
   // States for new note form
   const [noteType, setNoteType] = useState<Note['type']>('general');
   const [noteContent, setNoteContent] = useState('');
+
+  // Load workspace and user profile for realtime collaboration
+  const { activeWorkspace } = useReach();
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [userProfile, setUserProfile] = useState<{ fullName: string } | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [onlineUsers, setOnlineUsers] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setCurrentUser(user);
+        const { data: settings } = await supabase
+          .from('settings')
+          .select('full_name')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        setUserProfile({
+          fullName: settings?.full_name || user.email || 'Membre'
+        });
+      }
+    };
+    fetchUser();
+  }, []);
+
+  useEffect(() => {
+    if (!activeWorkspace || !currentUser || !userProfile) return;
+
+    const supabase = createClient();
+    const channelId = `workspace_presence_${activeWorkspace.id}`;
+    
+    // Assign a consistent color based on user full name
+    const colors = [
+      'bg-indigo-500 text-white',
+      'bg-emerald-500 text-white',
+      'bg-sky-500 text-white',
+      'bg-rose-500 text-white',
+      'bg-amber-500 text-white',
+      'bg-violet-500 text-white'
+    ];
+    const hash = userProfile.fullName.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    const myColor = colors[hash % colors.length];
+
+    const presenceChannel = supabase.channel(channelId);
+
+    presenceChannel
+      .on('presence', { event: 'sync' }, () => {
+        const state = presenceChannel.presenceState();
+        const joined: any[] = [];
+        Object.keys(state).forEach((key) => {
+          state[key].forEach((pres: any) => {
+            // Avoid duplicates
+            if (!joined.some(u => u.userId === pres.userId)) {
+              joined.push(pres);
+            }
+          });
+        });
+        setOnlineUsers(joined);
+      })
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          await presenceChannel.track({
+            userId: currentUser.id,
+            fullName: userProfile.fullName,
+            activePage: `/leads/${id}`,
+            activeLeadId: id,
+            editingLeadId: isEditing ? id : null,
+            color: myColor
+          });
+        }
+      });
+
+    return () => {
+      presenceChannel.unsubscribe();
+    };
+  }, [activeWorkspace, currentUser, userProfile, id, isEditing]);
+
+  const editors = onlineUsers.filter(
+    (u) => u.userId !== currentUser?.id && u.editingLeadId === id
+  );
+  const viewers = onlineUsers.filter(
+    (u) => u.userId !== currentUser?.id && u.activeLeadId === id && u.editingLeadId !== id
+  );
+
+  const isLocked = editors.length > 0;
 
   interface Draft {
     id: string;
@@ -527,6 +624,25 @@ export function LeadDetailClient({ id }: { id: string }) {
           </div>
         </div>
 
+        {/* Anti-collision Warn Alerts */}
+        {editors.length > 0 && (
+          <div className="bg-red-50 border border-red-200 text-red-800 rounded-lg p-4 text-xs font-medium flex items-center gap-2.5 animate-in fade-in duration-200 shadow-sm font-sans">
+            <span className="text-base">🛑</span>
+            <div>
+              {t('lead.collision_warning_editor').replace('{users}', editors.map((u) => u.fullName).join(', '))}
+            </div>
+          </div>
+        )}
+
+        {editors.length === 0 && viewers.length > 0 && (
+          <div className="bg-amber-50 border border-amber-200 text-amber-800 rounded-lg p-4 text-xs font-medium flex items-center gap-2.5 animate-in fade-in duration-200 shadow-sm font-sans">
+            <span className="text-base">⚠️</span>
+            <div>
+              {t('lead.collision_warning_viewer').replace('{users}', viewers.map((u) => u.fullName).join(', '))}
+            </div>
+          </div>
+        )}
+
         {/* Notion Document Canvas */}
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-8 bg-card border border-border rounded-lg shadow-sm p-6 sm:p-8">
           
@@ -540,6 +656,8 @@ export function LeadDetailClient({ id }: { id: string }) {
                 placeholder="Nom de l'entreprise"
                 className="text-2xl sm:text-3xl font-bold font-sans tracking-tight hover:bg-muted/40 rounded px-2 py-0.5 -ml-2 text-foreground focus:outline-none"
                 inputClassName="text-2xl sm:text-3xl font-bold font-sans h-12 -ml-2"
+                disabled={isLocked}
+                onEditStateChange={setIsEditing}
               />
               <p className="text-xs text-muted-foreground px-0.5">
                 {t('lead.created_at')} {new Date(lead.createdAt).toLocaleDateString('fr-FR')} • {t('lead.owner')} {lead.owner}
@@ -586,6 +704,7 @@ export function LeadDetailClient({ id }: { id: string }) {
                       <Select
                         value={noteType}
                         onValueChange={(val: Note['type']) => setNoteType(val)}
+                        disabled={isLocked}
                       >
                         <SelectTrigger className="h-7 w-[110px] text-xs bg-background">
                           <SelectValue />
@@ -604,9 +723,12 @@ export function LeadDetailClient({ id }: { id: string }) {
                       onChange={(e) => setNoteContent(e.target.value)}
                       className="text-xs min-h-[70px] resize-y bg-background"
                       required
+                      disabled={isLocked}
+                      onFocus={() => setIsEditing(true)}
+                      onBlur={() => setIsEditing(false)}
                     />
                     <div className="flex justify-end">
-                      <Button type="submit" size="sm" className="h-8 text-xs font-semibold gap-1.5 bg-primary hover:bg-primary/90">
+                      <Button type="submit" size="sm" className="h-8 text-xs font-semibold gap-1.5 bg-primary hover:bg-primary/90" disabled={isLocked}>
                         <Plus className="h-3.5 w-3.5" />
                         <span>{t('lead.add_note_btn')}</span>
                       </Button>
@@ -669,6 +791,7 @@ export function LeadDetailClient({ id }: { id: string }) {
                         <Select
                           value={draftChannel}
                           onValueChange={(val: 'Email' | 'DM' | 'Call') => setDraftChannel(val)}
+                          disabled={isLocked}
                         >
                           <SelectTrigger className="h-8 text-xs bg-background">
                             <SelectValue />
@@ -687,6 +810,7 @@ export function LeadDetailClient({ id }: { id: string }) {
                         <Select
                           value={draftTone}
                           onValueChange={(val) => setDraftTone(val)}
+                          disabled={isLocked}
                         >
                           <SelectTrigger className="h-8 text-xs bg-background">
                             <SelectValue />
@@ -708,6 +832,9 @@ export function LeadDetailClient({ id }: { id: string }) {
                         value={draftInstructions}
                         onChange={(e) => setDraftInstructions(e.target.value)}
                         className="text-xs min-h-[50px] resize-y bg-background"
+                        disabled={isLocked}
+                        onFocus={() => setIsEditing(true)}
+                        onBlur={() => setIsEditing(false)}
                       />
                     </div>
 
@@ -784,7 +911,7 @@ export function LeadDetailClient({ id }: { id: string }) {
                     <div className="flex justify-end pt-1">
                       <Button
                         onClick={handleGenerateDraft}
-                        disabled={generating}
+                        disabled={generating || isLocked}
                         className="h-8.5 text-xs font-semibold gap-1.5 bg-primary hover:bg-primary/95 text-primary-foreground transition-all"
                       >
                         {generating ? (
@@ -843,6 +970,9 @@ export function LeadDetailClient({ id }: { id: string }) {
                         value={generatedContent}
                         onChange={(e) => setGeneratedContent(e.target.value)}
                         className="text-xs font-sans min-h-[160px] leading-relaxed bg-background focus-visible:ring-1 focus-visible:ring-primary"
+                        disabled={isLocked}
+                        onFocus={() => setIsEditing(true)}
+                        onBlur={() => setIsEditing(false)}
                       />
                       
                       {/* Send button panel */}
@@ -862,7 +992,7 @@ export function LeadDetailClient({ id }: { id: string }) {
                         </div>
                         <Button
                           onClick={handleSendEmail}
-                          disabled={sendingEmail || !lead.contactEmail}
+                          disabled={sendingEmail || !lead.contactEmail || isLocked}
                           size="sm"
                           className="h-8 text-xs font-bold gap-1.5 bg-primary hover:bg-primary/95 text-primary-foreground self-end sm:self-auto"
                         >
@@ -925,6 +1055,7 @@ export function LeadDetailClient({ id }: { id: string }) {
                                   onClick={() => setGeneratedContent(draft.content)}
                                   className="h-6.5 w-6.5 text-muted-foreground hover:text-foreground"
                                   title="Ouvrir dans l'éditeur"
+                                  disabled={isLocked}
                                 >
                                   <FileText className="h-3.5 w-3.5" />
                                 </Button>
@@ -934,6 +1065,7 @@ export function LeadDetailClient({ id }: { id: string }) {
                                   onClick={() => handleDeleteDraft(draft.id)}
                                   className="h-6.5 w-6.5 text-muted-foreground hover:text-red-500"
                                   title="Supprimer"
+                                  disabled={isLocked}
                                 >
                                   <Trash2 className="h-3.5 w-3.5" />
                                 </Button>
@@ -972,6 +1104,7 @@ export function LeadDetailClient({ id }: { id: string }) {
                   <Select
                     value={lead.status}
                     onValueChange={(val: Lead['status']) => handleSaveProperty('status', val)}
+                    disabled={isLocked}
                   >
                     <SelectTrigger className={cn("h-7 w-full text-xs font-semibold", getStatusColor(lead.status))}>
                       <SelectValue />
@@ -995,6 +1128,7 @@ export function LeadDetailClient({ id }: { id: string }) {
                   <Select
                     value={lead.temperature}
                     onValueChange={(val: Lead['temperature']) => handleSaveProperty('temperature', val)}
+                    disabled={isLocked}
                   >
                     <SelectTrigger className={cn("h-7 w-full text-xs font-semibold", getTemperatureColor(lead.temperature))}>
                       <SelectValue />
@@ -1017,6 +1151,8 @@ export function LeadDetailClient({ id }: { id: string }) {
                     value={lead.niche} 
                     onSave={(val) => handleSaveProperty('niche', val)}
                     placeholder="ex: Restauration"
+                    disabled={isLocked}
+                    onEditStateChange={setIsEditing}
                   />
                 </div>
 
@@ -1030,6 +1166,8 @@ export function LeadDetailClient({ id }: { id: string }) {
                     value={lead.city} 
                     onSave={(val) => handleSaveProperty('city', val)}
                     placeholder="ex: Lyon"
+                    disabled={isLocked}
+                    onEditStateChange={setIsEditing}
                   />
                 </div>
 
@@ -1043,6 +1181,8 @@ export function LeadDetailClient({ id }: { id: string }) {
                     value={lead.contactName} 
                     onSave={(val) => handleSaveProperty('contactName', val)}
                     placeholder="Nom du gérant"
+                    disabled={isLocked}
+                    onEditStateChange={setIsEditing}
                   />
                 </div>
 
@@ -1056,6 +1196,8 @@ export function LeadDetailClient({ id }: { id: string }) {
                     value={lead.contactEmail || ''} 
                     onSave={(val) => handleSaveProperty('contactEmail', val)}
                     placeholder="email@contact.com"
+                    disabled={isLocked}
+                    onEditStateChange={setIsEditing}
                   />
                 </div>
 
@@ -1069,6 +1211,8 @@ export function LeadDetailClient({ id }: { id: string }) {
                     value={lead.source} 
                     onSave={(val) => handleSaveProperty('source', val)}
                     placeholder="ex: Google Maps"
+                    disabled={isLocked}
+                    onEditStateChange={setIsEditing}
                   />
                 </div>
 
@@ -1082,6 +1226,8 @@ export function LeadDetailClient({ id }: { id: string }) {
                     value={lead.nextAction} 
                     onSave={(val) => handleSaveProperty('nextAction', val)}
                     placeholder="ex: Rappeler"
+                    disabled={isLocked}
+                    onEditStateChange={setIsEditing}
                   />
                 </div>
 
@@ -1096,6 +1242,7 @@ export function LeadDetailClient({ id }: { id: string }) {
                     value={lead.nextActionDate}
                     onChange={(e) => handleSaveProperty('nextActionDate', e.target.value)}
                     className="h-7 text-xs bg-background py-0.5 px-2"
+                    disabled={isLocked}
                   />
                 </div>
               </div>
@@ -1121,6 +1268,7 @@ export function LeadDetailClient({ id }: { id: string }) {
                         size="xs" 
                         onClick={handleCapturePhoto}
                         className="h-7 text-[10px] font-semibold"
+                        disabled={isLocked}
                       >
                         {t('lead.change_photo')}
                       </Button>
@@ -1130,6 +1278,7 @@ export function LeadDetailClient({ id }: { id: string }) {
                         size="xs" 
                         onClick={() => handleSaveProperty('imageUrl', '')}
                         className="h-7 text-[10px] font-semibold bg-red-600 hover:bg-red-700 text-white"
+                        disabled={isLocked}
                       >
                         {t('lead.delete_photo')}
                       </Button>
@@ -1137,8 +1286,15 @@ export function LeadDetailClient({ id }: { id: string }) {
                   </div>
                 ) : (
                   <div 
-                    onClick={handleCapturePhoto}
-                    className="border border-dashed border-border hover:border-primary/50 hover:bg-secondary/10 rounded-lg p-6 flex flex-col items-center justify-center gap-1.5 cursor-pointer transition-all"
+                    onClick={() => {
+                      if (!isLocked) {
+                        handleCapturePhoto();
+                      }
+                    }}
+                    className={cn(
+                      "border border-dashed border-border hover:border-primary/50 hover:bg-secondary/10 rounded-lg p-6 flex flex-col items-center justify-center gap-1.5 cursor-pointer transition-all",
+                      isLocked && "cursor-not-allowed opacity-50 hover:bg-transparent hover:border-transparent"
+                    )}
                   >
                     <Camera className="h-5 w-5 text-muted-foreground" />
                     <span className="text-[10px] font-medium text-muted-foreground">{t('lead.take_photo_btn')}</span>
