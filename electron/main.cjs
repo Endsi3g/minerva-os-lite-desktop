@@ -12,8 +12,18 @@ app.setName('Minerva OS Reach Lite');
 // Sandbox flags — required for Electron 42 stability on macOS 26
 app.commandLine.appendSwitch('disable-gpu-sandbox');
 app.commandLine.appendSwitch('no-sandbox');
-// Disable Chrome translation UI (unused in this app)
-app.commandLine.appendSwitch('disable-features', 'TranslateUI');
+
+// Disable Chromium background network services that trigger Data Abort / DCHECK crashes
+// on macOS 26 with Electron 42. The IOThread memmove fault observed in crash reports
+// is caused by these services making requests through Chromium's net stack.
+app.commandLine.appendSwitch('disable-background-networking');
+app.commandLine.appendSwitch('disable-features',
+  'TranslateUI,AutofillServerCommunication,CertificateTransparencyComponentUpdater,MediaRouter,NetworkServiceInProcess2'
+);
+app.commandLine.appendSwitch('disable-default-apps');
+app.commandLine.appendSwitch('no-first-run');
+app.commandLine.appendSwitch('safebrowsing-disable-auto-update');
+app.commandLine.appendSwitch('disable-sync');
 
 // Register the custom scheme 'app' as standard and secure
 protocol.registerSchemesAsPrivileged([
@@ -281,12 +291,14 @@ function checkUpdates() {
     });
   });
 
-  // Defer update check 5s to not slow down initial window load
+  // Defer update check by 10 minutes — Squirrel's HTTPS requests through Chromium's
+  // network stack trigger a Data Abort / DCHECK crash on macOS 26 + Electron 42
+  // when fired too early. Giving the app time to fully stabilize first.
   setTimeout(() => {
     autoUpdater.checkForUpdatesAndNotify().catch(err => {
-      console.error("Failed to check for updates on startup:", err);
+      console.error("Failed to check for updates:", err);
     });
-  }, 5000);
+  }, 600000);
 }
 
 function setupIpcHandlers() {
