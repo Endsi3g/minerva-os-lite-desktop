@@ -160,6 +160,23 @@ const DEFAULT_INTEGRATIONS: IntegrationItem[] = [
     assets: '100 pages limit',
     access: 'Entire workspace',
     description: 'Update to enterprise to index more pages. Limited to 100 pages'
+  },
+  {
+    id: 'todoist',
+    name: 'Todoist',
+    category: 'task',
+    owner: 'Alex Smith',
+    email: 'alexsmith@minerva-os-lite.com',
+    accEmail: 'Todoist Task Connector',
+    icon: () => (
+      <div className="w-7 h-7 rounded-lg bg-[#de4c3a]/10 flex items-center justify-center border border-[#de4c3a]/20 shrink-0">
+        <CheckCircle2 className="w-4 h-4 text-[#de4c3a]" />
+      </div>
+    ),
+    status: 'Inactive',
+    assets: '—',
+    access: 'Private',
+    description: 'Synchronisez vos tâches et objectifs de la journée avec vos projets Todoist.'
   }
 ];
 
@@ -170,6 +187,12 @@ export default function IntegrationsPage() {
 
   // Store-backed states
   const [connectedIds, setConnectedIds] = useState<string[]>([]);
+
+  // Todoist States
+  const [todoistToken, setTodoistToken] = useState('');
+  const [todoistProjectId, setTodoistProjectId] = useState('');
+  const [todoistProjects, setTodoistProjects] = useState<{ id: string; name: string }[]>([]);
+  const [loadingProjects, setLoadingProjects] = useState(false);
 
   // Selection state for connect modal
   const [selectedIntegration, setSelectedIntegration] = useState<IntegrationItem | null>(null);
@@ -204,6 +227,61 @@ export default function IntegrationsPage() {
   // User details
   const [userName, setUserName] = useState('Moi');
   const [userEmail, setUserEmail] = useState('');
+
+  // Todoist Functions
+  const fetchTodoistProjects = async (token: string) => {
+    if (!token) return;
+    setLoadingProjects(true);
+    try {
+      const res = await fetch('https://api.todoist.com/rest/v2/projects', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setTodoistProjects(data);
+      } else {
+        alert("Impossible de charger les projets. Vérifiez votre jeton API.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Erreur de connexion à l'API Todoist.");
+    } finally {
+      setLoadingProjects(false);
+    }
+  };
+
+  const saveTodoistSettings = async () => {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const electronObj = typeof window !== 'undefined' && (window as any).electron;
+    if (electronObj) {
+      try {
+        const nowStr = new Date().toISOString();
+        await electronObj.dbRun(
+          "UPDATE settings SET todoist_token = ?, todoist_project_id = ?, updated_at = ?, sync_status = 'pending_update' WHERE user_id = ?",
+          [todoistToken, todoistProjectId, nowStr, user.id]
+        );
+        
+        setConnectedIds(prev => Array.from(new Set([...prev, 'todoist'])));
+        setIntegrationsList(prev => prev.map(item => {
+          if (item.id === 'todoist') {
+            return { ...item, status: 'Active', accEmail: 'Compte connecté' };
+          }
+          return item;
+        }));
+        
+        alert("Configuration Todoist sauvegardée !");
+        setActiveIntegrationEditId(null);
+      } catch (err) {
+        console.error(err);
+        alert("Erreur lors de la sauvegarde.");
+      }
+    }
+  };
 
   useEffect(() => {
     const syncStore = () => {
@@ -266,6 +344,33 @@ export default function IntegrationsPage() {
             }
             return item;
           }));
+          // Fetch Todoist local configurations
+          const electronObj = typeof window !== 'undefined' && (window as any).electron;
+          if (electronObj) {
+            try {
+              const dbSettings = await electronObj.dbGet(
+                "SELECT todoist_token, todoist_project_id FROM settings WHERE user_id = ? LIMIT 1",
+                [user.id]
+              );
+              if (dbSettings && dbSettings.todoist_token) {
+                setConnectedIds(prev => Array.from(new Set([...prev, 'todoist'])));
+                setTodoistToken(dbSettings.todoist_token);
+                setTodoistProjectId(dbSettings.todoist_project_id || '');
+                
+                // Pre-load projects if token exists
+                fetchTodoistProjects(dbSettings.todoist_token);
+
+                setIntegrationsList(prev => prev.map(item => {
+                  if (item.id === 'todoist') {
+                    return { ...item, status: 'Active', accEmail: 'Compte connecté' };
+                  }
+                  return item;
+                }));
+              }
+            } catch (dbErr) {
+              console.error("Error loading Todoist local settings on mount:", dbErr);
+            }
+          }
         }
       } catch (err) {
         console.error("Error loading settings in integrations:", err);
@@ -446,47 +551,139 @@ export default function IntegrationsPage() {
                     </div>
 
                     {activeBuildSubTab === 'auth' && (
-                      <div className="border border-[#e5e5e0] rounded-xl bg-white p-6 space-y-6 shadow-2xs">
-                        <div className="flex items-center justify-between border-b border-[#e5e5e0]/60 pb-3">
-                          <h2 className="font-bold text-sm">Authentication</h2>
-                          <Button
-                            onClick={handleSaveEditChanges}
-                            disabled={isSavingEdit || editSavedSuccess}
-                            className={`h-8 font-bold text-xs rounded-lg px-4 flex items-center gap-1.5 transition-all ${editSavedSuccess ? 'bg-[#059669]/10 text-[#059669] border border-[#059669]/20 hover:bg-[#059669]/10' : 'bg-[#059669] hover:bg-[#047857] text-white'}`}
-                          >
-                            {isSavingEdit ? (
-                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                            ) : editSavedSuccess ? (
-                              <>
-                                <Check className="w-3.5 h-3.5" />
-                                <span>Enregistré !</span>
-                              </>
-                            ) : (
-                              <span>Save</span>
-                            )}
-                          </Button>
-                        </div>
-
-                        <div className="space-y-4 max-w-md">
-                          <div className="space-y-1">
-                            <span className="text-[10px] font-bold bg-[#f4f4f3] px-2 py-0.5 border border-[#e5e5e0] rounded">Step 1</span>
-                            <h3 className="text-xs font-bold mt-1 text-[#26251e]">Type</h3>
-                            <p className="text-[11px] text-[#7a7a76]">Select the authentication type that your app requires.</p>
+                      activeEditIntegration.id === 'todoist' ? (
+                        <div className="border border-[#e5e5e0] rounded-xl bg-white p-6 space-y-6 shadow-2xs">
+                          <div className="flex items-center justify-between border-b border-[#e5e5e0]/60 pb-3">
+                            <h2 className="font-bold text-sm">Configuration Todoist</h2>
+                            <Button
+                              onClick={saveTodoistSettings}
+                              disabled={!todoistToken}
+                              className="h-8 font-bold text-xs rounded-lg px-4 bg-[#059669] hover:bg-[#047857] text-white"
+                            >
+                              Sauvegarder
+                            </Button>
                           </div>
-                          
-                          <select
-                            id="auth-type-select"
-                            title="Type d'authentification"
-                            value={authType}
-                            onChange={(e) => setAuthType(e.target.value as 'none' | 'key' | 'oauth')}
-                            className="w-full text-xs p-2.5 bg-white border border-[#e6e5e0] rounded-md focus:outline-none focus:ring-1 focus:ring-[#059669]"
-                          >
-                            <option value="none">None (Pas d&apos;authentification nécessaire)</option>
-                            <option value="key">API Key (Clé API de sécurité)</option>
-                            <option value="oauth">OAuth 2.0 Client Credentials</option>
-                          </select>
+
+                          <div className="space-y-4 max-w-md">
+                            <div className="space-y-1.5">
+                              <h3 className="text-xs font-bold text-[#26251e]">Jeton d'accès API (Token)</h3>
+                              <p className="text-[11px] text-[#7a7a76] leading-relaxed">Entrez votre jeton développeur Todoist (Paramètres Todoist &gt; Intégrations &gt; Developer token).</p>
+                              <div className="flex gap-2 pt-1">
+                                <input
+                                  type="password"
+                                  placeholder="Jeton Todoist API"
+                                  value={todoistToken}
+                                  onChange={(e) => setTodoistToken(e.target.value)}
+                                  className="flex-1 text-xs p-2 bg-white border border-[#e6e5e0] rounded focus:outline-none focus:ring-1 focus:ring-[#059669]"
+                                />
+                                <Button
+                                  type="button"
+                                  onClick={() => fetchTodoistProjects(todoistToken)}
+                                  disabled={loadingProjects || !todoistToken}
+                                  className="h-8 text-xs font-semibold px-3 border border-[#e5e5e0] text-[#555552] bg-white hover:bg-slate-50 shrink-0"
+                                >
+                                  {loadingProjects ? <Loader2 className="w-3 animate-spin" /> : "Charger les projets"}
+                                </Button>
+                              </div>
+                            </div>
+
+                            <div className="space-y-1.5 pt-2">
+                              <h3 className="text-xs font-bold text-[#26251e]">Projet cible</h3>
+                              <p className="text-[11px] text-[#7a7a76]">Sélectionnez le projet Todoist duquel Minerva doit extraire les objectifs.</p>
+                              <select
+                                value={todoistProjectId}
+                                onChange={(e) => setTodoistProjectId(e.target.value)}
+                                className="w-full text-xs p-2 bg-white border border-[#e6e5e0] rounded focus:outline-none focus:ring-1 focus:ring-[#059669] mt-1"
+                              >
+                                <option value="">-- Choisir un projet --</option>
+                                {todoistProjects.map(proj => (
+                                  <option key={proj.id} value={proj.id}>{proj.name}</option>
+                                ))}
+                              </select>
+                            </div>
+
+                            <div className="pt-4 border-t border-[#e5e5e0]/60 flex items-center justify-between">
+                              <Button
+                                type="button"
+                                onClick={async () => {
+                                  const supabase = createClient();
+                                  const { data: { user } } = await supabase.auth.getUser();
+                                  if (!user) return;
+                                  const electronObj = typeof window !== 'undefined' && (window as any).electron;
+                                  if (electronObj) {
+                                    await electronObj.dbRun("UPDATE settings SET todoist_token = NULL, todoist_project_id = NULL WHERE user_id = ?", [user.id]);
+                                    setConnectedIds(prev => prev.filter(id => id !== 'todoist'));
+                                    setTodoistToken('');
+                                    setTodoistProjectId('');
+                                    setTodoistProjects([]);
+                                    setIntegrationsList(prev => prev.map(item => {
+                                      if (item.id === 'todoist') {
+                                        return { ...item, status: 'Inactive', accEmail: 'Todoist Task Connector' };
+                                      }
+                                      return item;
+                                    }));
+                                    alert("Todoist déconnecté !");
+                                    setActiveIntegrationEditId(null);
+                                  }
+                                }}
+                                className="h-8 border border-red-200 text-red-600 bg-red-50 hover:bg-red-100 font-bold text-xs rounded-lg px-4"
+                              >
+                                Déconnecter l'intégration
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                onClick={() => setActiveIntegrationEditId(null)}
+                                className="h-8 text-xs text-[#555552]"
+                              >
+                                Retour
+                              </Button>
+                            </div>
+                          </div>
                         </div>
-                      </div>
+                      ) : (
+                        <div className="border border-[#e5e5e0] rounded-xl bg-white p-6 space-y-6 shadow-2xs">
+                          <div className="flex items-center justify-between border-b border-[#e5e5e0]/60 pb-3">
+                            <h2 className="font-bold text-sm">Authentication</h2>
+                            <Button
+                              onClick={handleSaveEditChanges}
+                              disabled={isSavingEdit || editSavedSuccess}
+                              className={`h-8 font-bold text-xs rounded-lg px-4 flex items-center gap-1.5 transition-all ${editSavedSuccess ? 'bg-[#059669]/10 text-[#059669] border border-[#059669]/20 hover:bg-[#059669]/10' : 'bg-[#059669] hover:bg-[#047857] text-white'}`}
+                            >
+                              {isSavingEdit ? (
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              ) : editSavedSuccess ? (
+                                <>
+                                  <Check className="w-3.5 h-3.5" />
+                                  <span>Enregistré !</span>
+                                </>
+                              ) : (
+                                <span>Save</span>
+                              )}
+                            </Button>
+                          </div>
+
+                          <div className="space-y-4 max-w-md">
+                            <div className="space-y-1">
+                              <span className="text-[10px] font-bold bg-[#f4f4f3] px-2 py-0.5 border border-[#e5e5e0] rounded">Step 1</span>
+                              <h3 className="text-xs font-bold mt-1 text-[#26251e]">Type</h3>
+                              <p className="text-[11px] text-[#7a7a76]">Select the authentication type that your app requires.</p>
+                            </div>
+                            
+                            <select
+                              id="auth-type-select"
+                              title="Type d'authentification"
+                              value={authType}
+                              onChange={(e) => setAuthType(e.target.value as 'none' | 'key' | 'oauth')}
+                              className="w-full text-xs p-2.5 bg-white border border-[#e6e5e0] rounded-md focus:outline-none focus:ring-1 focus:ring-[#059669]"
+                            >
+                              <option value="none">None (Pas d&apos;authentification nécessaire)</option>
+                              <option value="key">API Key (Clé API de sécurité)</option>
+                              <option value="oauth">OAuth 2.0 Client Credentials</option>
+                            </select>
+                          </div>
+                        </div>
+                      )
                     )}
 
                     {activeBuildSubTab === 'actions' && (

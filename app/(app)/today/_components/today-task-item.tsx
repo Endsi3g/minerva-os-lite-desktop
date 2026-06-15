@@ -12,9 +12,11 @@ import { cn } from '@/lib/utils';
 
 interface TodayTaskItemProps {
   task: Task;
+  onToggle?: (id: string) => void;
+  onDelete?: (id: string) => void;
 }
 
-export function TodayTaskItem({ task }: TodayTaskItemProps) {
+export function TodayTaskItem({ task, onToggle, onDelete }: TodayTaskItemProps) {
   const { toggleTask, deleteTask, addTask } = useReach();
 
   const getCategoryColor = (cat: Task['category']) => {
@@ -30,42 +32,83 @@ export function TodayTaskItem({ task }: TodayTaskItemProps) {
     }
   };
 
+  const handleToggle = () => {
+    if (onToggle) {
+      onToggle(task.id);
+    } else {
+      toggleTask(task.id);
+    }
+  };
+
+  const handleDelete = () => {
+    if (onDelete) {
+      onDelete(task.id);
+    } else {
+      deleteTask(task.id);
+    }
+  };
+
   const handleMoveToTomorrow = () => {
-    deleteTask(task.id);
+    handleDelete();
   };
 
   const handleMakeUrgent = () => {
-    deleteTask(task.id);
+    handleDelete();
     addTask(`🔥 [URGENT] ${task.title.replace('🔥 [URGENT] ', '')}`, task.category);
   };
 
   return (
     <div className="flex items-center justify-between p-3 rounded-lg border border-border bg-card/60 hover:bg-muted/30 transition-all group">
-      <div className="flex items-center gap-3 min-w-0">
+      <div className="flex items-start gap-3 min-w-0">
         <Checkbox 
           id={`task-${task.id}`}
           checked={task.completed}
-          onCheckedChange={() => toggleTask(task.id)}
+          onCheckedChange={handleToggle}
+          className="mt-0.5"
         />
-        <label 
-          htmlFor={`task-${task.id}`}
-          className={cn(
-            "text-xs font-medium cursor-pointer leading-none truncate select-none",
-            task.completed ? "line-through text-muted-foreground" : "text-foreground"
+        <div className="flex flex-col gap-0.5 min-w-0 text-left">
+          <label 
+            htmlFor={`task-${task.id}`}
+            className={cn(
+              "text-xs font-semibold cursor-pointer leading-tight select-none",
+              task.completed ? "line-through text-muted-foreground font-normal" : "text-foreground font-medium"
+            )}
+          >
+            {task.title}
+          </label>
+          
+          {task.description && (
+            <span className="text-[10px] text-muted-foreground leading-normal line-clamp-2 text-left">
+              {task.description}
+            </span>
           )}
-        >
-          {task.title}
-        </label>
+
+          {task.dueDate && (
+            <span className="text-[9px] text-amber-600 font-bold flex items-center gap-1 mt-0.5 text-left">
+              <Calendar className="w-2.5 h-2.5" />
+              Échéance : {task.dueDate}
+            </span>
+          )}
+        </div>
       </div>
 
-      <div className="flex items-center gap-2.5 shrink-0">
+      <div className="flex items-center gap-2 shrink-0">
+        {task.isTodoist && (
+          <Badge 
+            variant="outline" 
+            className="text-[8px] bg-red-50 text-red-700 border-red-200 px-1.5 py-0.5 rounded font-bold"
+          >
+            Todoist
+          </Badge>
+        )}
+
         <Badge 
           variant="outline" 
           className={cn("text-[9px] font-semibold tracking-wider uppercase px-2 py-0.5 rounded", getCategoryColor(task.category))}
         >
           {task.category === 'Follow-up' ? 'Relance' : task.category === 'Preparation' ? 'Prép.' : task.category === 'Meeting' ? 'RDV' : 'Général'}
         </Badge>
-
+ 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity">
@@ -82,7 +125,7 @@ export function TodayTaskItem({ task }: TodayTaskItemProps) {
               <span>Marquer urgent</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => deleteTask(task.id)} className="text-xs gap-2 text-destructive focus:text-destructive">
+            <DropdownMenuItem onClick={handleDelete} className="text-xs gap-2 text-destructive focus:text-destructive">
               <Trash2 className="h-3.5 w-3.5" />
               <span>Supprimer</span>
             </DropdownMenuItem>

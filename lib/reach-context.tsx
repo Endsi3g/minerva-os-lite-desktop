@@ -10,6 +10,10 @@ export interface Workspace {
   id: string;
   name: string;
   owner_id: string;
+  description?: string;
+  tag?: string;
+  accent_color?: string;
+  logo_base64?: string;
   created_at: string;
   isOwner: boolean;
   ownerName: string;
@@ -27,6 +31,7 @@ interface ReachContextType {
   switchWorkspace: (workspaceId: string) => Promise<void>;
   createWorkspace: (name: string) => Promise<Workspace | null>;
   renameWorkspace: (id: string, name: string) => Promise<void>;
+  updateWorkspace: (id: string, fields: Partial<Workspace>) => Promise<void>;
   deleteWorkspace: (id: string) => Promise<void>;
   addLead: (leadData: {
     businessName: string;
@@ -361,6 +366,10 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
           id: w.id,
           name: w.name,
           owner_id: w.owner_id,
+          description: w.description || '',
+          tag: w.tag || '',
+          accent_color: w.accent_color || '',
+          logo_base64: w.logo_base64 || '',
           created_at: w.created_at || new Date().toISOString(),
           isOwner: currentUser ? w.owner_id === currentUser.id : true,
           ownerName: currentUser && w.owner_id === currentUser.id ? 'Vous' : 'Propriétaire'
@@ -377,6 +386,10 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
             id: defaultId,
             name: 'Mon Espace',
             owner_id: currentUser.id,
+            description: '',
+            tag: '',
+            accent_color: '',
+            logo_base64: '',
             created_at: nowStr,
             isOwner: true,
             ownerName: 'Vous'
@@ -534,11 +547,83 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const deleteWorkspace = async (id: string) => {
+  const updateWorkspace = async (id: string, fields: Partial<Workspace>) => {
     if (!user) return;
     const electronObj = typeof window !== 'undefined' && (window as any).electron;
     if (electronObj) {
       try {
+        const existing = await electronObj.dbGet("SELECT sync_status FROM workspaces WHERE id = ?", [id]);
+        let nextStatus = 'pending_update';
+        if (existing && existing.sync_status === 'pending_insert') {
+          nextStatus = 'pending_insert';
+        }
+
+        const updates: string[] = [];
+        const params: any[] = [];
+        Object.entries(fields).forEach(([key, val]) => {
+          if (['name', 'description', 'tag', 'accent_color', 'logo_base64'].includes(key)) {
+            updates.push(`${key} = ?`);
+            params.push(val);
+          }
+        });
+
+        if (updates.length > 0) {
+          updates.push("sync_status = ?");
+          params.push(nextStatus);
+          params.push(id); // for WHERE id = ?
+
+          await electronObj.dbRun(
+            `UPDATE workspaces SET ${updates.join(', ')} WHERE id = ?`,
+            params
+          );
+
+          setWorkspacesList(prev => prev.map(w => w.id === id ? { ...w, ...fields } : w));
+          if (activeWorkspace?.id === id) {
+            setActiveWorkspace(prev => prev ? { ...prev, ...fields } : null);
+          }
+          if (electronObj.triggerSync) {
+            electronObj.triggerSync();
+          }
+        }
+      } catch (e) {
+        console.error("Error updating local workspace:", e);
+      }
+      return;
+    }
+
+    try {
+      const res = await fetch(getApiUrl('/api/workspaces'), {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, ...fields }),
+      });
+      if (res.ok) {
+        setWorkspacesList(prev => prev.map(w => w.id === id ? { ...w, ...fields } : w));
+        if (activeWorkspace?.id === id) {
+          setActiveWorkspace(prev => prev ? { ...prev, ...fields } : null);
+        }
+      }
+    } catch (e) {
+      console.error("Error updating workspace:", e);
+    }
+  };
+
+  const deleteWorkspace = async (id: string) => {
+    if (!user) return;
+    
+    const updatedList = workspacesList.filter(w => w.id !== id);
+    const fallback = updatedList.find(w => w.isOwner) || updatedList[0] || null;
+    
+    const electronObj = typeof window !== 'undefined' && (window as any).electron;
+    if (electronObj) {
+      try {
+        if (fallback) {
+          await electronObj.dbRun("UPDATE leads SET workspace_id = ?, sync_status = 'pending_update' WHERE workspace_id = ?", [fallback.id, id]);
+          await electronObj.dbRun("UPDATE tasks SET workspace_id = ?, sync_status = 'pending_update' WHERE workspace_id = ?", [fallback.id, id]);
+          await electronObj.dbRun("UPDATE notes SET workspace_id = ?, sync_status = 'pending_update' WHERE workspace_id = ?", [fallback.id, id]);
+          await electronObj.dbRun("UPDATE drafts SET workspace_id = ?, sync_status = 'pending_update' WHERE workspace_id = ?", [fallback.id, id]);
+        }
+
         const existing = await electronObj.dbGet("SELECT sync_status FROM workspaces WHERE id = ?", [id]);
         if (existing && existing.sync_status === 'pending_insert') {
           await electronObj.dbRun("DELETE FROM workspaces WHERE id = ?", [id]);
@@ -546,10 +631,8 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
           await electronObj.dbRun("UPDATE workspaces SET sync_status = 'pending_delete' WHERE id = ?", [id]);
         }
 
-        const updatedList = workspacesList.filter(w => w.id !== id);
         setWorkspacesList(updatedList);
         if (activeWorkspace?.id === id) {
-          const fallback = updatedList.find(w => w.isOwner) || updatedList[0] || null;
           setActiveWorkspace(fallback);
           if (fallback) {
             localStorage.setItem('minerva_active_workspace_id', fallback.id);
@@ -567,14 +650,20 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
     }
 
     try {
+      if (fallback) {
+        const supabase = createClient();
+        await supabase.from('leads').update({ workspace_id: fallback.id }).eq('workspace_id', id);
+        await supabase.from('tasks').update({ workspace_id: fallback.id }).eq('workspace_id', id);
+        await supabase.from('notes').update({ workspace_id: fallback.id }).eq('workspace_id', id);
+        await supabase.from('drafts').update({ workspace_id: fallback.id }).eq('workspace_id', id);
+      }
+
       const res = await fetch(getApiUrl(`/api/workspaces?id=${id}`), {
         method: 'DELETE',
       });
       if (res.ok) {
-        const updatedList = workspacesList.filter(w => w.id !== id);
         setWorkspacesList(updatedList);
         if (activeWorkspace?.id === id) {
-          const fallback = updatedList.find(w => w.isOwner) || updatedList[0] || null;
           setActiveWorkspace(fallback);
           if (fallback) {
             localStorage.setItem('minerva_active_workspace_id', fallback.id);
@@ -1247,6 +1336,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
         switchWorkspace,
         createWorkspace,
         renameWorkspace,
+        updateWorkspace,
         deleteWorkspace,
         addLead,
         toggleTask,

@@ -31,6 +31,9 @@ export interface Task {
   completed: boolean;
   category: 'Follow-up' | 'Preparation' | 'General' | 'Meeting';
   dueDate: string;
+  description?: string;
+  isTodoist?: boolean;
+  rawTodoistId?: string;
 }
 
 export interface AiSuggestion {

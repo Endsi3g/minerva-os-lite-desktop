@@ -26,6 +26,8 @@ function initDb() {
       focus_title TEXT,
       focus_items TEXT,
       last_scrape_at TEXT,
+      todoist_token TEXT,
+      todoist_project_id TEXT,
       updated_at TEXT,
       sync_status TEXT DEFAULT 'synced'
     )`);
@@ -37,6 +39,12 @@ function initDb() {
       // Ignore if column already exists
     });
     db.run(`ALTER TABLE settings ADD COLUMN email TEXT`, () => {
+      // Ignore if column already exists
+    });
+    db.run(`ALTER TABLE settings ADD COLUMN todoist_token TEXT`, () => {
+      // Ignore if column already exists
+    });
+    db.run(`ALTER TABLE settings ADD COLUMN todoist_project_id TEXT`, () => {
       // Ignore if column already exists
     });
 
@@ -109,10 +117,19 @@ function initDb() {
       id TEXT PRIMARY KEY,
       name TEXT,
       owner_id TEXT,
+      description TEXT,
+      tag TEXT,
+      accent_color TEXT,
+      logo_base64 TEXT,
       created_at TEXT,
       updated_at TEXT,
       sync_status TEXT DEFAULT 'synced'
     )`);
+
+    db.run(`ALTER TABLE workspaces ADD COLUMN description TEXT`, () => {});
+    db.run(`ALTER TABLE workspaces ADD COLUMN tag TEXT`, () => {});
+    db.run(`ALTER TABLE workspaces ADD COLUMN accent_color TEXT`, () => {});
+    db.run(`ALTER TABLE workspaces ADD COLUMN logo_base64 TEXT`, () => {});
 
     // Indexes to avoid full table scans during sync
     db.run(`CREATE INDEX IF NOT EXISTS idx_leads_user_id ON leads(user_id)`);

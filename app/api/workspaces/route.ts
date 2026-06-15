@@ -114,9 +114,9 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { id, name } = await request.json();
-  if (!id || !name || !name.trim()) {
-    return NextResponse.json({ error: 'ID et nom requis' }, { status: 400 });
+  const { id, name, description, tag, accent_color, logo_base64 } = await request.json();
+  if (!id) {
+    return NextResponse.json({ error: 'ID requis' }, { status: 400 });
   }
 
   // Check ownership
@@ -127,12 +127,19 @@ export async function PUT(request: NextRequest) {
     .single();
 
   if (!existing || existing.owner_id !== user.id) {
-    return NextResponse.json({ error: 'Accès interdit — seul le propriétaire peut renommer le workspace' }, { status: 403 });
+    return NextResponse.json({ error: 'Accès interdit — seul le propriétaire peut modifier le workspace' }, { status: 403 });
   }
+
+  const updateFields: any = {};
+  if (name !== undefined) updateFields.name = name.trim();
+  if (description !== undefined) updateFields.description = description;
+  if (tag !== undefined) updateFields.tag = tag;
+  if (accent_color !== undefined) updateFields.accent_color = accent_color;
+  if (logo_base64 !== undefined) updateFields.logo_base64 = logo_base64;
 
   const { data: updated, error: updateError } = await supabase
     .from('workspaces')
-    .update({ name: name.trim() })
+    .update(updateFields)
     .eq('id', id)
     .select()
     .single();

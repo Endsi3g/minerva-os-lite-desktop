@@ -9,6 +9,7 @@ import { TodayTasksCard } from './today-tasks-card';
 import { PipelineSummaryCard } from './pipeline-summary-card';
 import { AiSuggestionsCard } from './ai-suggestions-card';
 import { TodayQuickNoteCard } from './today-quick-note-card';
+import { TodayStatsCard } from './today-stats-card';
 
 export function TodayRoot() {
   return (
@@ -32,6 +33,7 @@ export function TodayRoot() {
             <PipelineSummaryCard />
             <AiSuggestionsCard />
             <TodayQuickNoteCard />
+            <TodayStatsCard />
           </div>
         </div>
       </div>

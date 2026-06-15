@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { 
   Briefcase, Plus, Trash2, Edit3, Check, Loader2, 
-  AlertCircle, ArrowRight
+  AlertCircle, ArrowRight, Settings2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useReach } from '@/lib/reach-context';
@@ -233,6 +233,13 @@ export default function WorkspacesPage() {
 
                         {ws.isOwner && !isEditing && !isConfirmingDelete && (
                           <>
+                            <button
+                              onClick={() => router.push(`/workspaces/${ws.id}`)}
+                              className="p-2 text-[#7a7a76] hover:text-[#26251e] hover:bg-[#e5e5e2]/60 rounded-lg transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
+                              title="Configurer"
+                            >
+                              <Settings2 className="w-4 h-4" />
+                            </button>
                             <button
                               onClick={() => handleStartRename(ws.id, ws.name)}
                               className="p-2 text-[#7a7a76] hover:text-[#26251e] hover:bg-[#e5e5e2]/60 rounded-lg transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"

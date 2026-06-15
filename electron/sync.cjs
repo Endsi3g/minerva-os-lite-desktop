@@ -1,10 +1,28 @@
 const { createClient } = require('@supabase/supabase-js');
+const { app, powerMonitor } = require('electron');
 const db = require('./database.cjs');
 
 let supabase = null;
 let currentUserId = null;
 let syncTimer = null;
 let syncInProgress = false;
+
+app.whenReady().then(() => {
+  powerMonitor.on('suspend', () => {
+    console.log('[sync] System suspending, stopping sync timer...');
+    stopSyncTimer();
+  });
+
+  powerMonitor.on('resume', () => {
+    console.log('[sync] System resumed, waiting 45s for network to stabilize before starting sync timer...');
+    setTimeout(() => {
+      if (supabase && currentUserId) {
+        startSyncTimer();
+        triggerSync().catch(err => console.error("Sync on resume failed:", err));
+      }
+    }, 45000);
+  });
+});
 
 function setSession(session) {
   if (!session || !session.accessToken || !session.supabaseUrl || !session.supabaseKey) {
@@ -224,11 +242,15 @@ async function syncPush() {
   const pendingWorkspaces = await db.all("SELECT * FROM workspaces WHERE sync_status != 'synced'");
   for (const ws of pendingWorkspaces) {
     if (ws.sync_status === 'pending_insert') {
-      const { id, name, owner_id, created_at } = ws;
+      const { id, name, owner_id, description, tag, accent_color, logo_base64, created_at } = ws;
       const { error } = await supabase.from('workspaces').upsert({
         id,
         name,
         owner_id,
+        description,
+        tag,
+        accent_color,
+        logo_base64,
         created_at
       });
       if (!error) {
@@ -237,9 +259,13 @@ async function syncPush() {
         console.error("Error pushing insert for workspace", id, error);
       }
     } else if (ws.sync_status === 'pending_update') {
-      const { id, name } = ws;
+      const { id, name, description, tag, accent_color, logo_base64 } = ws;
       const { error } = await supabase.from('workspaces').update({
-        name
+        name,
+        description,
+        tag,
+        accent_color,
+        logo_base64
       }).eq('id', id);
       if (!error) {
         await db.run("UPDATE workspaces SET sync_status = 'synced' WHERE id = ?", [id]);
@@ -441,16 +467,16 @@ async function syncPull() {
     const localWsMap = new Map(localWsRows.map(w => [w.id, w]));
 
     for (const ws of remoteWorkspaces) {
-      const { id, name, owner_id, created_at } = ws;
+      const { id, name, owner_id, description, tag, accent_color, logo_base64, created_at } = ws;
       const localWs = localWsMap.get(id);
       if (!localWs) {
-        await db.run(`INSERT INTO workspaces (id, name, owner_id, created_at, sync_status)
-          VALUES (?, ?, ?, ?, 'synced')`,
-          [id, name, owner_id, created_at]
+        await db.run(`INSERT INTO workspaces (id, name, owner_id, description, tag, accent_color, logo_base64, created_at, sync_status)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'synced')`,
+          [id, name, owner_id, description, tag, accent_color, logo_base64, created_at]
         );
       } else if (localWs.sync_status === 'synced') {
-        await db.run(`UPDATE workspaces SET name = ?, owner_id = ?, created_at = ? WHERE id = ?`,
-          [name, owner_id, created_at, id]
+        await db.run(`UPDATE workspaces SET name = ?, owner_id = ?, description = ?, tag = ?, accent_color = ?, logo_base64 = ?, created_at = ? WHERE id = ?`,
+          [name, owner_id, description, tag, accent_color, logo_base64, created_at, id]
         );
       }
     }

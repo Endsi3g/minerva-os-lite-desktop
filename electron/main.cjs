@@ -1,11 +1,15 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
-const { app, protocol, net, BrowserWindow, Menu, Tray, nativeImage, dialog, ipcMain, Notification, globalShortcut, clipboard } = require('electron');
+const { app, protocol, net, BrowserWindow, Menu, Tray, nativeImage, dialog, ipcMain, Notification, globalShortcut, clipboard, powerMonitor } = require('electron');
 const { autoUpdater } = require('electron-updater');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
 const db = require('./database.cjs');
 const sync = require('./sync.cjs');
+
+let scraperTimeout = null;
+let scraperInterval = null;
+let updateTimeout = null;
 
 app.setName('Minerva OS Reach Lite');
 
@@ -273,7 +277,7 @@ function setupMenuAndShortcuts() {
   Menu.setApplicationMenu(menu);
 }
 
-function checkUpdates() {
+function setupAutoUpdater() {
   // Setup standard update event listeners to broadcast to renderer
   autoUpdater.on('checking-for-update', () => {
     if (mainWindow) mainWindow.webContents.send('update-status', 'checking');
@@ -304,15 +308,25 @@ function checkUpdates() {
       }
     });
   });
+}
 
+function scheduleUpdateCheck() {
+  clearUpdateTimeout();
   // Defer update check by 10 minutes — Squirrel's HTTPS requests through Chromium's
   // network stack trigger a Data Abort / DCHECK crash on macOS 26 + Electron 42
   // when fired too early. Giving the app time to fully stabilize first.
-  setTimeout(() => {
+  updateTimeout = setTimeout(() => {
     autoUpdater.checkForUpdatesAndNotify().catch(err => {
       console.error("Failed to check for updates:", err);
     });
   }, 600000);
+}
+
+function clearUpdateTimeout() {
+  if (updateTimeout) {
+    clearTimeout(updateTimeout);
+    updateTimeout = null;
+  }
 }
 
 function setupIpcHandlers() {
@@ -827,10 +841,22 @@ function setupProtocol() {
 }
 
 function setupBackgroundScraper() {
+  clearBackgroundScraper();
   // Delay first check by 30s to not slow down app startup
-  setTimeout(runBackgroundScrapeIfNeeded, 30000);
+  scraperTimeout = setTimeout(runBackgroundScrapeIfNeeded, 30000);
   // Check every 30 minutes — actual scrape only triggers if last_scrape_at > 6h ago
-  setInterval(runBackgroundScrapeIfNeeded, 30 * 60 * 1000);
+  scraperInterval = setInterval(runBackgroundScrapeIfNeeded, 30 * 60 * 1000);
+}
+
+function clearBackgroundScraper() {
+  if (scraperTimeout) {
+    clearTimeout(scraperTimeout);
+    scraperTimeout = null;
+  }
+  if (scraperInterval) {
+    clearInterval(scraperInterval);
+    scraperInterval = null;
+  }
 }
 
 app.whenReady().then(() => {
@@ -840,8 +866,24 @@ app.whenReady().then(() => {
   createWindow();
   createTray();
   setupMenuAndShortcuts();
-  checkUpdates();
+  setupAutoUpdater();
+  scheduleUpdateCheck();
   setupBackgroundScraper();
+
+  // Listen to power state changes to avoid macOS sleep/wake crashes
+  powerMonitor.on('suspend', () => {
+    console.log('[main] System suspending, clearing scraper and update timers...');
+    clearBackgroundScraper();
+    clearUpdateTimeout();
+  });
+
+  powerMonitor.on('resume', () => {
+    console.log('[main] System resumed, waiting 45s for network to stabilize before re-scheduling...');
+    setTimeout(() => {
+      scheduleUpdateCheck();
+      setupBackgroundScraper();
+    }, 45000);
+  });
 
   // Register global shortcut platform-adaptively
   const shortcutKey = process.platform === 'darwin' ? 'Option+Space' : 'Alt+Space';

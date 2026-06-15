@@ -7,9 +7,11 @@ import { ClipboardList } from 'lucide-react';
 
 interface TodayTasksListProps {
   tasks: Task[];
+  onToggleTodoist?: (id: string) => void;
+  onDeleteTodoist?: (id: string) => void;
 }
 
-export function TodayTasksList({ tasks }: TodayTasksListProps) {
+export function TodayTasksList({ tasks, onToggleTodoist, onDeleteTodoist }: TodayTasksListProps) {
   if (tasks.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-8 px-4 text-center rounded-lg border border-dashed border-border bg-card/30">
@@ -32,7 +34,12 @@ export function TodayTasksList({ tasks }: TodayTasksListProps) {
   return (
     <div className="space-y-2 max-h-[350px] overflow-y-auto pr-1">
       {sortedTasks.map((task) => (
-        <TodayTaskItem key={task.id} task={task} />
+        <TodayTaskItem 
+          key={task.id} 
+          task={task} 
+          onToggle={task.isTodoist ? onToggleTodoist : undefined}
+          onDelete={task.isTodoist ? onDeleteTodoist : undefined}
+        />
       ))}
     </div>
   );

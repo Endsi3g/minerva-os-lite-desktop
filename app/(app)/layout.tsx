@@ -43,6 +43,9 @@ import { Button } from '@/components/ui/button';
 import { createClient } from '@/lib/supabase/client';
 import { signout } from '@/app/login/actions';
 import { MinervaIcon } from '@/components/icons';
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
+import { User as UserIcon } from 'lucide-react';
 import { 
   getOnboardingProgress, 
   getOnboardingState, 
@@ -66,7 +69,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
   const { t } = useLanguage();
   
   // Workspace Context
-  const { activeWorkspace, workspacesList, switchWorkspace } = useReach();
+  const { activeWorkspace, workspacesList, switchWorkspace, leads } = useReach();
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [checkingWelcome, setCheckingWelcome] = useState(true);
@@ -86,6 +89,45 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
   const [projects, setProjects] = useState<string[]>([]);
   const [onboarding, setOnboarding] = useState({ percent: 12, score: 0 });
   const [completedTasks, setCompletedTasks] = useState<string[]>([]);
+
+  // Spotlight search states
+  const [showSearchModal, setShowSearchModal] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Notifications states
+  const [notificationsList, setNotificationsList] = useState([
+    { id: '1', title: 'Nouvelle opportunité', body: 'Un prospect chaud dans le secteur Boulangerie a été identifié.', time: 'Il y a 5 min' },
+    { id: '2', title: 'Synchronisation réussie', body: 'La synchronisation bidirectionnelle avec Supabase a été complétée.', time: 'Il y a 20 min' },
+    { id: '3', title: 'Tâche arrivant à échéance', body: 'Relancer Marc-Antoine Café du Montréal est prévu pour aujourd\'hui.', time: 'Il y a 1 heure' },
+  ]);
+  const [hasNewNotifications, setHasNewNotifications] = useState(true);
+  const clearNotifications = () => {
+    setHasNewNotifications(false);
+  };
+
+  // Dynamic Workspace Accent Color injection
+  useEffect(() => {
+    if (activeWorkspace?.accent_color) {
+      document.documentElement.style.setProperty('--primary', activeWorkspace.accent_color);
+      document.documentElement.style.setProperty('--ring', activeWorkspace.accent_color);
+      document.documentElement.style.setProperty('--sidebar-primary', activeWorkspace.accent_color);
+    } else {
+      document.documentElement.style.removeProperty('--primary');
+      document.documentElement.style.removeProperty('--ring');
+      document.documentElement.style.removeProperty('--sidebar-primary');
+    }
+  }, [activeWorkspace]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === '/' && document.activeElement?.tagName !== 'INPUT' && document.activeElement?.tagName !== 'TEXTAREA') {
+        e.preventDefault();
+        setShowSearchModal(true);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const progressCallback = React.useCallback((node: HTMLDivElement | null) => {
     if (node !== null) {
@@ -293,7 +335,16 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
           isCollapsed ? "md:justify-center md:px-0" : "justify-between"
         )}>
           <div className="flex items-center gap-2 font-sans font-semibold text-sm tracking-tight text-[#26251e] w-full min-w-0">
-            <MinervaIcon size={20} className="shrink-0" />
+            {activeWorkspace?.logo_base64 ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img 
+                src={activeWorkspace.logo_base64} 
+                alt="Logo" 
+                className="w-5 h-5 object-contain rounded shrink-0" 
+              />
+            ) : (
+              <MinervaIcon size={20} className="shrink-0" />
+            )}
             {!isCollapsed && (
               <div 
                 onClick={() => setIsWorkspaceMenuOpen(!isWorkspaceMenuOpen)}
@@ -384,7 +435,21 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                               }}
                               className="w-full flex items-center justify-between px-3 py-2 text-xs font-semibold text-[#555552] hover:text-[#26251e] hover:bg-[#e5e5e2]/60 transition-colors text-left"
                             >
-                              <span className="truncate max-w-[120px]">{ws.name}</span>
+                              <span className="flex items-center gap-2 min-w-0">
+                                {ws.logo_base64 ? (
+                                  // eslint-disable-next-line @next/next/no-img-element
+                                  <img 
+                                    src={ws.logo_base64} 
+                                    alt="" 
+                                    className="w-4 h-4 object-contain rounded-sm shrink-0" 
+                                  />
+                                ) : (
+                                  <div className="w-4 h-4 rounded-sm bg-neutral-100 border flex items-center justify-center font-bold text-[8px] text-neutral-500 shrink-0">
+                                    {ws.name.substring(0, 1).toUpperCase()}
+                                  </div>
+                                )}
+                                <span className="truncate max-w-[120px]">{ws.name}</span>
+                              </span>
                               {isWsActive && <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />}
                             </button>
                           );
@@ -740,8 +805,11 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
               <span className="absolute inset-y-0 left-2 flex items-center text-[#7a7a76]">
                 <Search className="h-3 w-3" />
               </span>
-              <button className="flex w-full items-center justify-between rounded border border-[#e5e5e0] bg-white py-1 pl-7 pr-2 text-left text-[10px] text-[#7a7a76] hover:bg-[#f4f4f3] transition-colors">
-                <span>Search chats...</span>
+              <button 
+                onClick={() => setShowSearchModal(true)}
+                className="flex w-full items-center justify-between rounded border border-[#e5e5e0] bg-white py-1 pl-7 pr-2 text-left text-[10px] text-[#7a7a76] hover:bg-[#f4f4f3] transition-colors cursor-pointer"
+              >
+                <span>Recherche globale...</span>
                 <kbd className="pointer-events-none inline-flex select-none items-center rounded border bg-muted px-1 font-mono text-[9px] text-[#7a7a76]">
                   /
                 </kbd>
@@ -749,30 +817,85 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
             </div>
 
             <Button 
-              onClick={() => setShowInviteModal(true)}
+              onClick={() => router.push('/team/invite')}
               variant="ghost" 
               size="sm" 
-              className="h-8 text-xs font-semibold text-[#555552] hover:text-[#26251e] hover:bg-[#e5e5e2]/60 flex items-center gap-1.5 rounded-md px-3 border border-[#e5e5e0]"
+              className="h-8 text-xs font-semibold text-[#555552] hover:text-[#26251e] hover:bg-[#e5e5e2]/60 flex items-center gap-1.5 rounded-md px-3 border border-[#e5e5e0] cursor-pointer"
             >
               <UserPlus className="h-3.5 w-3.5" />
               <span>{t('nav.invite_members')}</span>
             </Button>
 
-            <Button variant="ghost" size="icon" className="text-[#7a7a76] hover:text-[#26251e] h-8 w-8 relative">
-              <Bell className="h-4 w-4" />
-              <span className="absolute top-2 right-2 h-1.5 w-1.5 rounded-full bg-[#10b981]" />
-            </Button>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="ghost" size="icon" className="text-[#7a7a76] hover:text-[#26251e] h-8 w-8 relative cursor-pointer">
+                  <Bell className="h-4 w-4" />
+                  {hasNewNotifications && <span className="absolute top-2 right-2 h-1.5 w-1.5 rounded-full bg-[#10b981]" />}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-80 p-0 text-left bg-white border border-[#e5e5e0] shadow-md rounded-xl font-sans" align="end">
+                <div className="p-3 border-b border-[#e5e5e0] flex items-center justify-between">
+                  <span className="text-xs font-bold text-[#26251e]">Notifications</span>
+                  {hasNewNotifications && (
+                    <button onClick={clearNotifications} className="text-[10px] font-semibold text-[#059669] hover:underline cursor-pointer">
+                      Marquer comme lu
+                    </button>
+                  )}
+                </div>
+                <div className="max-h-64 overflow-y-auto divide-y divide-[#e5e5e0]/60">
+                  {notificationsList.length === 0 ? (
+                    <div className="p-8 text-center text-xs text-[#7a7a76]">
+                      Aucune notification pour le moment.
+                    </div>
+                  ) : (
+                    notificationsList.map(notif => (
+                      <div key={notif.id} className="p-3 hover:bg-[#f4f4f3]/25 transition-colors flex gap-2.5 items-start">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#10b981] mt-1.5 shrink-0" />
+                        <div className="space-y-0.5 text-left">
+                          <p className="text-xs font-semibold text-[#26251e] leading-snug">{notif.title}</p>
+                          <p className="text-[10px] text-[#7a7a76] leading-relaxed">{notif.body}</p>
+                          <p className="text-[9px] text-neutral-400">{notif.time}</p>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </PopoverContent>
+            </Popover>
 
             <div className="h-4 w-px bg-[#e5e5e0] mx-1" />
 
-            <div className="h-7 w-7 rounded-full overflow-hidden border border-[#e5e5e0] bg-[#e5e5e2] flex items-center justify-center shrink-0" title={userProfile?.fullName || 'Utilisateur'}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img 
-                src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=facearea&facepad=2&w=256&h=256&q=80" 
-                alt="Profile" 
-                className="w-full h-full object-cover"
-              />
-            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger className="focus:outline-hidden">
+                <div className="h-7 w-7 rounded-full overflow-hidden border border-[#e5e5e0] bg-[#e5e5e2] flex items-center justify-center shrink-0 cursor-pointer" title={userProfile?.fullName || 'Utilisateur'}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img 
+                    src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=facearea&facepad=2&w=256&h=256&q=80" 
+                    alt="Profile" 
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-48 text-xs font-semibold bg-white border border-[#e5e5e0] shadow-md rounded-xl p-1 font-sans" align="end">
+                <div className="px-2.5 py-2 border-b border-[#e5e5e0]/60 flex flex-col text-left">
+                  <span className="font-bold text-[#26251e] text-[11px] truncate">{userProfile?.fullName || 'Utilisateur'}</span>
+                  <span className="text-[9px] text-[#7a7a76] truncate">{userProfile?.companyName || 'Uprising Studio'}</span>
+                </div>
+                <DropdownMenuItem onClick={() => router.push('/settings?tab=profile')} className="hover:bg-slate-50 cursor-pointer p-2 rounded-lg text-[#26251e] flex items-center gap-1.5">
+                  <UserIcon className="h-3.5 w-3.5" />
+                  <span>Mon profil</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => router.push('/settings')} className="hover:bg-slate-50 cursor-pointer p-2 rounded-lg text-[#26251e] flex items-center gap-1.5">
+                  <SettingsIcon className="h-3.5 w-3.5" />
+                  <span>Paramètres</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator className="bg-[#e5e5e0]/60 my-1" />
+                <DropdownMenuItem onClick={async () => { await signout(); router.push('/login'); }} className="hover:bg-slate-50 cursor-pointer p-2 rounded-lg text-rose-600 flex items-center gap-1.5 animate-none">
+                  <LogOut className="h-3.5 w-3.5" />
+                  <span>Déconnexion</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </header>
 
@@ -960,6 +1083,131 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
               </>
             )}
           </form>
+        </div>
+      )}
+
+      {/* Spotlight modal overlay */}
+      {showSearchModal && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/45 backdrop-blur-xs" onClick={() => setShowSearchModal(false)}>
+          <div 
+            className="w-full max-w-xl bg-white border border-[#e6e5e0] rounded-2xl shadow-2xl p-5 flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-150 text-left" 
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Search Input bar */}
+            <div className="relative">
+              <Search className="absolute left-3.5 top-3 h-4 w-4 text-[#7a7a76]" />
+              <input
+                type="text"
+                autoFocus
+                placeholder="Rechercher des prospects, des espaces de travail ou naviguer..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full text-xs font-semibold px-4 py-2.5 pl-10 bg-white border border-[#e6e5e0] focus:border-[#10b981] rounded-xl outline-none transition-colors shadow-none text-[#26251e]"
+              />
+            </div>
+
+            {/* Results categorized list */}
+            <div className="max-h-96 overflow-y-auto space-y-4 pr-1">
+              {/* Section 1: Navigation Tabs */}
+              <div className="space-y-1">
+                <span className="text-[9px] font-bold uppercase tracking-wider text-[#7a7a76] block px-1.5">Navigation</span>
+                <div className="grid grid-cols-2 gap-1.5 text-left">
+                  {[
+                    { name: "Aujourd'hui (Tableau de bord)", path: '/today' },
+                    { name: 'Prospection (Scraper local)', path: '/prospecting' },
+                    { name: 'Prospects ciblés (Recherche)', path: '/leads' },
+                    { name: 'Pipeline commercial (Kanban)', path: '/pipeline' },
+                    { name: 'Bibliothèque de contenu', path: '/library' },
+                    { name: "Espace de configuration IA", path: '/settings' },
+                    { name: "Configuration d'équipe", path: '/team' },
+                    { name: 'Historique des versions (Changelog)', path: '/changelog' },
+                    { name: 'Diagnostics & Téléchargements', path: '/download' },
+                  ]
+                    .filter(t => t.name.toLowerCase().includes(searchQuery.toLowerCase()))
+                    .slice(0, 4)
+                    .map(tab => (
+                      <button
+                        key={tab.path}
+                        onClick={() => {
+                          router.push(tab.path);
+                          setShowSearchModal(false);
+                        }}
+                        className="px-2.5 py-1.5 rounded-lg border border-[#e5e5e0]/60 hover:bg-[#f4f4f3]/45 hover:border-neutral-300 bg-[#fdfdfc] text-left text-xs text-[#555552] hover:text-[#26251e] font-semibold transition-all cursor-pointer"
+                      >
+                        {tab.name}
+                      </button>
+                    ))}
+                </div>
+              </div>
+
+              {/* Section 2: Projets / Espaces de travail */}
+              {workspacesList && workspacesList.length > 0 && (
+                <div className="space-y-1 text-left">
+                  <span className="text-[9px] font-bold uppercase tracking-wider text-[#7a7a76] block px-1.5">Espaces de travail (Projets)</span>
+                  <div className="space-y-1">
+                    {workspacesList
+                      .filter(w => w.name.toLowerCase().includes(searchQuery.toLowerCase()))
+                      .slice(0, 3)
+                      .map(ws => (
+                        <div
+                          key={ws.id}
+                          onClick={() => {
+                            switchWorkspace(ws.id);
+                            setShowSearchModal(false);
+                          }}
+                          className="p-2 border border-[#e5e5e0]/60 rounded-xl hover:bg-[#fdfdfc] cursor-pointer transition-all flex items-center justify-between"
+                        >
+                          <div className="flex items-center gap-2">
+                            <div className="w-6 h-6 rounded-md bg-[#10b981]/10 border border-[#10b981]/20 flex items-center justify-center font-bold text-[10px] text-[#10b981]">
+                              {ws.name.substring(0, 2).toUpperCase()}
+                            </div>
+                            <span className="text-xs font-semibold text-[#26251e]">{ws.name}</span>
+                          </div>
+                          <span className="text-[9px] text-[#7a7a76] font-semibold">Changer d'espace</span>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Section 3: Prospects */}
+              {leads && leads.length > 0 && (
+                <div className="space-y-1 text-left">
+                  <span className="text-[9px] font-bold uppercase tracking-wider text-[#7a7a76] block px-1.5">Prospects (Leads)</span>
+                  <div className="space-y-1 text-left">
+                    {leads
+                      .filter(l => l.businessName.toLowerCase().includes(searchQuery.toLowerCase()) || l.city.toLowerCase().includes(searchQuery.toLowerCase()) || l.niche.toLowerCase().includes(searchQuery.toLowerCase()))
+                      .slice(0, 4)
+                      .map(lead => (
+                        <div
+                          key={lead.id}
+                          onClick={() => {
+                            router.push(`/leads?focus=${lead.id}`);
+                            setShowSearchModal(false);
+                          }}
+                          className="p-2.5 border border-[#e5e5e0]/60 rounded-xl hover:bg-[#fdfdfc] cursor-pointer transition-all flex items-center justify-between text-left"
+                        >
+                          <div className="flex flex-col gap-0.5 text-left">
+                            <span className="text-xs font-bold text-[#26251e]">{lead.businessName}</span>
+                            <div className="flex items-center gap-1.5 text-[9px] text-[#7a7a76] font-medium text-left">
+                              <span>{lead.niche}</span>
+                              <span>•</span>
+                              <span>{lead.city}</span>
+                            </div>
+                          </div>
+                          <span className="text-[9px] px-2 py-0.5 rounded-md bg-neutral-100 text-[#555552] border border-[#e5e5e0] font-bold uppercase">{lead.status}</span>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
+
+            </div>
+            <div className="flex items-center justify-between text-[9px] text-[#7a7a76] font-semibold pt-2 border-t border-[#e5e5e0]/60">
+              <span>Appuyez sur <kbd className="border bg-neutral-50 px-1 rounded">Échap</kbd> pour fermer</span>
+              <span>Minerva OS Spotlight</span>
+            </div>
+          </div>
         </div>
       )}
 

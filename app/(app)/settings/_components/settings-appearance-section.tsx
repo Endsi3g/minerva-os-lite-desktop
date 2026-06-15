@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SettingsSectionWrapper } from './settings-section-wrapper';
@@ -21,9 +21,47 @@ interface SettingsAppearanceSectionProps {
 export function SettingsAppearanceSection({ data, onChange, isSaving }: SettingsAppearanceSectionProps) {
   const { setTheme } = useTheme();
 
+  // Local states for custom properties
+  const [radius, setRadius] = useState('10px');
+  const [gridOpacity, setGridOpacity] = useState(100);
+
+  // Load custom properties from localStorage on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const storedRadius = localStorage.getItem('minerva_ui_radius') || '10px';
+      const storedOpacity = localStorage.getItem('minerva_ui_grid_opacity') || '100';
+      setRadius(storedRadius);
+      setGridOpacity(Number(storedOpacity));
+    }
+  }, []);
+
   const handleThemeChange = (val: 'system' | 'light' | 'dark') => {
     onChange({ theme: val });
     setTheme(val);
+  };
+
+  const handleDensityChange = (val: 'comfortable' | 'compact') => {
+    onChange({ density: val });
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('minerva_ui_density', val);
+      document.documentElement.classList.toggle('compact', val === 'compact');
+    }
+  };
+
+  const handleRadiusChange = (val: string) => {
+    setRadius(val);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('minerva_ui_radius', val);
+      document.documentElement.style.setProperty('--radius', val);
+    }
+  };
+
+  const handleGridOpacityChange = (val: number) => {
+    setGridOpacity(val);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('minerva_ui_grid_opacity', String(val));
+      document.documentElement.style.setProperty('--grid-opacity', String(val / 100));
+    }
   };
 
   const densities = [
@@ -31,72 +69,138 @@ export function SettingsAppearanceSection({ data, onChange, isSaving }: Settings
     { id: 'compact' as const, name: 'Compact', description: 'Layout dense optimisé pour maximiser le nombre de leads affichés sur l\'écran.' }
   ];
 
+  const radii = [
+    { label: 'Carré (0px)', value: '0px' },
+    { label: 'Fin (4px)', value: '4px' },
+    { label: 'Standard (8px)', value: '8px' },
+    { label: 'Arrondi (12px)', value: '12px' },
+    { label: 'Très Arrondi (16px)', value: '16px' }
+  ];
+
   return (
     <SettingsSectionWrapper
       title="Apparence"
-      description="Configure le thème visuel et la densité de l&apos;interface de Minerva Reach."
+      description="Configure le thème visuel et la densité de l'interface de Minerva Reach."
       isSaving={isSaving}
     >
-      {/* Density Card switcher buttons */}
-      <Card className="border border-border bg-card">
-        <CardContent className="p-5 space-y-4">
-          <h3 className="text-xs font-bold text-foreground uppercase tracking-wider">Densité de l&apos;affichage</h3>
-          <p className="text-[11px] text-muted-foreground leading-normal">
-            Ajuste le niveau d&apos;espacement dans les tableaux et fiches détaillées de l&apos;application.
-          </p>
+      <div className="space-y-6 text-left">
+        
+        {/* Density Card */}
+        <Card className="border border-border bg-card">
+          <CardContent className="p-5 space-y-4">
+            <h3 className="text-xs font-bold text-foreground uppercase tracking-wider">Densité de l'affichage</h3>
+            <p className="text-[11px] text-muted-foreground leading-normal">
+              Ajuste le niveau d'espacement dans les tableaux et fiches détaillées de l'application.
+            </p>
 
-          <div className="grid grid-cols-1 gap-2.5 pt-1">
-            {densities.map((d) => {
-              const isSelected = data.density === d.id;
-              return (
+            <div className="grid grid-cols-1 gap-2.5 pt-1">
+              {densities.map((d) => {
+                const isSelected = data.density === d.id;
+                return (
+                  <button
+                    key={d.id}
+                    type="button"
+                    onClick={() => handleDensityChange(d.id)}
+                    className={cn(
+                      "text-left p-3 rounded-lg border transition-all flex flex-col gap-1 w-full cursor-pointer",
+                      isSelected 
+                        ? "border-primary bg-primary/5 text-foreground ring-1 ring-primary/30" 
+                        : "border-border/60 bg-card hover:border-border text-muted-foreground"
+                    )}
+                  >
+                    <span className="text-xs font-bold text-foreground">{d.name}</span>
+                    <span className="text-[10px] text-muted-foreground leading-normal">{d.description}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Theme Card Selector */}
+        <Card className="border border-border bg-card">
+          <CardContent className="p-5 space-y-4">
+            <h3 className="text-xs font-bold text-foreground uppercase tracking-wider font-sans">Thème visuel</h3>
+            <p className="text-[11px] text-muted-foreground leading-normal">
+              Bascule l'interface en mode clair, sombre, ou laisse le système choisir.
+            </p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+              <div className="grid gap-1.5">
+                <label htmlFor="theme-select" className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Thème de l'application</label>
+                <Select 
+                  value={data.theme} 
+                  onValueChange={(val: 'system' | 'light' | 'dark') => handleThemeChange(val)}
+                >
+                  <SelectTrigger id="theme-select" className="text-xs bg-card">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="system" className="text-xs">Identique au système (Automatique)</SelectItem>
+                    <SelectItem value="light" className="text-xs">Clair (Light Mode)</SelectItem>
+                    <SelectItem value="dark" className="text-xs">Sombre (Dark Mode)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Border Radius Card */}
+        <Card className="border border-border bg-card">
+          <CardContent className="p-5 space-y-4">
+            <h3 className="text-xs font-bold text-foreground uppercase tracking-wider font-sans">Rayon des bordures (Border Radius)</h3>
+            <p className="text-[11px] text-muted-foreground leading-normal">
+              Ajuste l'arrondi des angles des cartes, boutons et éléments interactifs de l'application.
+            </p>
+
+            <div className="flex flex-wrap gap-2.5 pt-1">
+              {radii.map(r => (
                 <button
-                  key={d.id}
+                  key={r.value}
                   type="button"
-                  onClick={() => onChange({ density: d.id })}
+                  onClick={() => handleRadiusChange(r.value)}
                   className={cn(
-                    "text-left p-3 rounded-lg border transition-all flex flex-col gap-1 w-full",
-                    isSelected 
-                      ? "border-primary bg-primary/5 text-foreground ring-1 ring-primary/30" 
-                      : "border-border/60 bg-card hover:border-border text-muted-foreground"
+                    "px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all cursor-pointer",
+                    radius === r.value
+                      ? "border-primary bg-primary/5 text-foreground ring-1 ring-primary/30"
+                      : "border-border/60 bg-white text-[#555552] hover:bg-slate-50"
                   )}
                 >
-                  <span className="text-xs font-bold text-foreground">{d.name}</span>
-                  <span className="text-[10px] text-muted-foreground leading-normal">{d.description}</span>
+                  {r.label}
                 </button>
-              );
-            })}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Theme Card Selector */}
-      <Card className="border border-border bg-card">
-        <CardContent className="p-5 space-y-4">
-          <h3 className="text-xs font-bold text-foreground uppercase tracking-wider font-sans">Thème visuel</h3>
-          <p className="text-[11px] text-muted-foreground leading-normal">
-            Bascule l&apos;interface en mode clair, sombre, ou laisse le système choisir.
-          </p>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
-            <div className="grid gap-1.5">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Thème de l&apos;application</label>
-              <Select 
-                value={data.theme} 
-                onValueChange={(val: 'system' | 'light' | 'dark') => handleThemeChange(val)}
-              >
-                <SelectTrigger className="text-xs bg-card">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="system" className="text-xs">Identique au système (Automatique)</SelectItem>
-                  <SelectItem value="light" className="text-xs">Clair (Light Mode)</SelectItem>
-                  <SelectItem value="dark" className="text-xs">Sombre (Dark Mode)</SelectItem>
-                </SelectContent>
-              </Select>
+              ))}
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+
+        {/* Grid Opacity Card */}
+        <Card className="border border-border bg-card">
+          <CardContent className="p-5 space-y-4">
+            <h3 className="text-xs font-bold text-foreground uppercase tracking-wider font-sans">Opacité du quadrillage</h3>
+            <p className="text-[11px] text-muted-foreground leading-normal">
+              Ajuste le niveau de visibilité des lignes de fond de grille esthétique (0% à 100%).
+            </p>
+
+            <div className="space-y-2 pt-2">
+              <div className="flex items-center justify-between text-xs font-semibold text-foreground">
+                <span>Visibilité du quadrillage</span>
+                <span className="font-mono text-primary font-bold">{gridOpacity}%</span>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="100"
+                step="5"
+                value={gridOpacity}
+                onChange={(e) => handleGridOpacityChange(Number(e.target.value))}
+                className="w-full h-1.5 bg-neutral-200 rounded-lg appearance-none cursor-pointer accent-primary focus:outline-none"
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+      </div>
     </SettingsSectionWrapper>
   );
 }
