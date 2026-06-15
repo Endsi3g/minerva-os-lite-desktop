@@ -13,14 +13,12 @@ app.setName('Minerva OS Reach Lite');
 app.commandLine.appendSwitch('disable-gpu-sandbox');
 app.commandLine.appendSwitch('no-sandbox');
 
-// Fix crash EXC_BREAKPOINT (v2.5.6) : race condition V8 JIT concurrent + cppgc GC.
-// Sur macOS 26 / A18 Pro, Oilpan GC corrompt la mémoire pendant que TurboFan
-// recompile en background → DCHECK brk0 dans CompilationDependencies (Thread 0)
-// + Data Abort dans cppgc::TraceTraitFromInnerAddressImpl (Chrome_IOThread).
-// --no-concurrent-recompilation force le JIT à compiler sur le thread principal.
-app.commandLine.appendSwitch('js-flags',
-  '--no-concurrent-recompilation --no-concurrent-osr'
-);
+// Fix crash EXC_BREAKPOINT v2.5.7 : DCHECK dans cppgc::MakeGarbageCollectedTraitInternal::Allocate
+// appelé depuis CompilationDependencies::FieldTypeDependencyOffTheRecord (TurboFan JIT).
+// L'allocation cppgc est interdite pendant la phase GC atomique — brk0 sur main thread aussi.
+// --jitless désactive entièrement TurboFan/Maglev/Sparkplug : CompilationDependencies
+// n'est jamais appelé. Perf JS -30% acceptable pour app UI/API.
+app.commandLine.appendSwitch('js-flags', '--jitless');
 
 // Chromium features — réduire activité background + agressivité cppgc GC
 app.commandLine.appendSwitch('disable-features',
