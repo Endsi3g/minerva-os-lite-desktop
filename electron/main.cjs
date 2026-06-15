@@ -9,16 +9,23 @@ const sync = require('./sync.cjs');
 
 app.setName('Minerva OS Reach Lite');
 
-// Sandbox flags — required for Electron 42 stability on macOS 26
+// GPU sandbox — requis pour macOS 26
 app.commandLine.appendSwitch('disable-gpu-sandbox');
 app.commandLine.appendSwitch('no-sandbox');
 
-// Disable Chromium background network services that trigger Data Abort / DCHECK crashes
-// on macOS 26 with Electron 42. The IOThread memmove fault observed in crash reports
-// is caused by these services making requests through Chromium's net stack.
-app.commandLine.appendSwitch('disable-background-networking');
+// Fix crash EXC_BREAKPOINT (v2.5.6) : race condition V8 JIT concurrent + cppgc GC.
+// Sur macOS 26 / A18 Pro, Oilpan GC corrompt la mémoire pendant que TurboFan
+// recompile en background → DCHECK brk0 dans CompilationDependencies (Thread 0)
+// + Data Abort dans cppgc::TraceTraitFromInnerAddressImpl (Chrome_IOThread).
+// --no-concurrent-recompilation force le JIT à compiler sur le thread principal.
+app.commandLine.appendSwitch('js-flags',
+  '--no-concurrent-recompilation --no-concurrent-osr'
+);
+
+// Chromium features — réduire activité background + agressivité cppgc GC
 app.commandLine.appendSwitch('disable-features',
-  'TranslateUI,AutofillServerCommunication,CertificateTransparencyComponentUpdater,MediaRouter,NetworkServiceInProcess2'
+  'TranslateUI,AutofillServerCommunication,CertificateTransparencyComponentUpdater,' +
+  'MediaRouter,NetworkServiceInProcess2,ConcurrentMarkingHighPriorityThreads'
 );
 app.commandLine.appendSwitch('disable-default-apps');
 app.commandLine.appendSwitch('no-first-run');
