@@ -82,6 +82,9 @@ export async function POST(req: NextRequest) {
     if (!recipientEmail) {
       return NextResponse.json({ error: "Ce prospect n'a pas d'adresse e-mail configurée" }, { status: 400 });
     }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipientEmail)) {
+      return NextResponse.json({ error: "L'adresse e-mail du prospect est invalide" }, { status: 400 });
+    }
 
     // 3. Fetch User Google tokens
     const { data: settings } = await supabase

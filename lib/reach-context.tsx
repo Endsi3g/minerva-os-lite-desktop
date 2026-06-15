@@ -315,17 +315,21 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
       const uiTasks = (dbTasks || []).map(mapDbTaskToUi);
       setTasks(uiTasks);
 
-      // 3. Fetch settings for the owner of the active workspace
+      // 3. Fetch settings for the current user (focus/quicknote are personal, not workspace-wide)
       const { data: dbSettings } = await supabase
         .from('settings')
         .select('*')
-        .eq('user_id', activeWs.owner_id)
+        .eq('user_id', currUser.id)
         .maybeSingle();
 
       if (dbSettings) {
         setQuickNote(dbSettings.quick_note || '');
         setFocusTitle(dbSettings.focus_title || 'Objectif principal du jour');
-        setFocusItems(dbSettings.focus_items || []);
+        try {
+          setFocusItems(dbSettings.focus_items ? JSON.parse(dbSettings.focus_items) : []);
+        } catch {
+          setFocusItems([]);
+        }
       } else {
         setQuickNote('');
         setFocusTitle('Objectif principal du jour');
@@ -344,7 +348,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
     } catch (e) {
       console.error("Error loading data from Supabase:", e);
     }
-  }, [populateMockData]);
+  }, []);
 
   // Load Workspaces List
   const loadWorkspaces = useCallback(async () => {
@@ -679,9 +683,9 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
 
     if (electronObj) {
       try {
-        const leadId = 'lead-' + Date.now();
+        const leadId = crypto.randomUUID();
         const nowStr = new Date().toISOString();
-        
+
         await electronObj.dbRun(`INSERT INTO leads (id, user_id, business_name, contact_name, contact_email, niche, city, source, status, temperature, next_action, next_action_date, owner, image_url, workspace_id, created_at, updated_at, sync_status)
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending_insert')`,
           [leadId, user.id, leadData.businessName, leadData.contactName, leadData.contactEmail || '', leadData.niche, leadData.city, leadData.source, leadData.status, leadData.temperature, leadData.nextAction, leadData.nextActionDate || null, 'Moi', leadData.imageUrl || null, activeWorkspace.id, nowStr, nowStr]
@@ -689,7 +693,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
 
         const insertedNotes: DbNote[] = [];
         if (leadData.notes) {
-          const noteId = 'note-' + Date.now();
+          const noteId = crypto.randomUUID();
           await electronObj.dbRun(`INSERT INTO notes (id, lead_id, user_id, type, content, workspace_id, created_at, updated_at, sync_status)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending_insert')`,
             [noteId, leadId, user.id, 'general', leadData.notes, activeWorkspace.id, nowStr, nowStr]
@@ -833,7 +837,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
 
     if (electronObj) {
       try {
-        const taskId = 'task-' + Date.now();
+        const taskId = crypto.randomUUID();
         const nowStr = new Date().toISOString();
         const dueDate = nowStr.split('T')[0];
 
@@ -1149,7 +1153,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
     const electronObj = typeof window !== 'undefined' && (window as any).electron;
     if (electronObj) {
       try {
-        const noteId = 'note-' + Date.now();
+        const noteId = crypto.randomUUID();
         const nowStr = new Date().toISOString();
         await electronObj.dbRun(`INSERT INTO notes (id, lead_id, user_id, type, content, workspace_id, created_at, updated_at, sync_status)
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending_insert')`,

@@ -268,13 +268,13 @@ async function syncPush() {
       email,
       company_name,
       timezone,
-      niches: JSON.parse(niches || '[]'),
-      cities: JSON.parse(cities || '[]'),
+      niches: (() => { try { return JSON.parse(niches || '[]'); } catch { return []; } })(),
+      cities: (() => { try { return JSON.parse(cities || '[]'); } catch { return []; } })(),
       ai_tone,
       ai_density,
       quick_note,
       focus_title,
-      focus_items: JSON.parse(focus_items || '[]')
+      focus_items: (() => { try { return JSON.parse(focus_items || '[]'); } catch { return []; } })()
     });
     if (!error) {
       await db.run("UPDATE settings SET sync_status = 'synced' WHERE user_id = ?", [user_id]);

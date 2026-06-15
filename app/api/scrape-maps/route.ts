@@ -280,7 +280,7 @@ async function runCustomScraper(niche: string, city: string): Promise<ScrapedLea
       const cleanNiche = niche.split(' / ')[0];
       
       leads.push({
-        id: `native-${item.osm_id || i}-${Date.now()}`,
+        id: crypto.randomUUID(),
         businessName,
         niche: cleanNiche,
         city,
@@ -413,7 +413,7 @@ async function scrapeDirectoryFromDDG(niche: string, city: string, source: 'yelp
       const cleanNiche = niche.split(' / ')[0];
       
       leads.push({
-        id: `${source}-${Date.now()}-${j}`,
+        id: crypto.randomUUID(),
         businessName,
         niche: cleanNiche,
         city,
@@ -524,7 +524,7 @@ export async function POST(req: NextRequest) {
                   }
 
                   return {
-                    id: `apify-${item.cid || idx}-${Date.now()}`,
+                    id: crypto.randomUUID(),
                     businessName: item.title || 'Commerce Local',
                     niche: niche,
                     city: city,

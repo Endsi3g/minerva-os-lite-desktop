@@ -48,6 +48,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'leadId manquant' }, { status: 400 });
     }
 
+    const VALID_TONES = ['Calme & Conseil', 'Direct', 'Dynamique'];
+    if (tone && !VALID_TONES.includes(tone)) {
+      return NextResponse.json({ error: `Ton invalide. Valeurs acceptées : ${VALID_TONES.join(', ')}` }, { status: 400 });
+    }
+
     // 2. Fetch Lead Context
     const { data: lead, error: leadErr } = await supabase
       .from('leads')

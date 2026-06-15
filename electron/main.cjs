@@ -9,6 +9,14 @@ const sync = require('./sync.cjs');
 
 app.setName('Minerva OS Reach Lite');
 
+// Keep the main process alive on unhandled errors — log and continue
+process.on('uncaughtException', (err) => {
+  console.error('[main] uncaughtException:', err);
+});
+process.on('unhandledRejection', (reason) => {
+  console.error('[main] unhandledRejection:', reason);
+});
+
 // GPU sandbox — requis pour macOS 26
 app.commandLine.appendSwitch('disable-gpu-sandbox');
 app.commandLine.appendSwitch('no-sandbox');
@@ -42,6 +50,7 @@ let tray = null;
 let isQuitting = false;
 let scrapingStatus = { status: 'idle', niche: '', city: '' };
 let hasNotifiedBackground = false;
+let scrapeInProgress = false;
 
 function broadcastScrapingStatus() {
   updateTrayMenu();
@@ -391,15 +400,15 @@ function setupIpcHandlers() {
 
   // 6. Local SQLite database handlers
   ipcMain.handle('db-all', async (event, { sql, params }) => {
-    return await db.all(sql, params);
+    try { return await db.all(sql, params); } catch (err) { console.error('[ipc] db-all:', err); throw err; }
   });
 
   ipcMain.handle('db-run', async (event, { sql, params }) => {
-    return await db.run(sql, params);
+    try { return await db.run(sql, params); } catch (err) { console.error('[ipc] db-run:', err); throw err; }
   });
 
   ipcMain.handle('db-get', async (event, { sql, params }) => {
-    return await db.get(sql, params);
+    try { return await db.get(sql, params); } catch (err) { console.error('[ipc] db-get:', err); throw err; }
   });
 
   // 7. Supabase session and sync handlers
@@ -597,6 +606,8 @@ function showTrayWindow() {
 }
 
 async function executeScrape(setting) {
+  if (scrapeInProgress) return { success: false, error: 'Scrape already in progress' };
+  scrapeInProgress = true;
   try {
     const niches = JSON.parse(setting.niches || '[]');
     const cities = JSON.parse(setting.cities || '[]');
@@ -636,7 +647,7 @@ async function executeScrape(setting) {
       for (const item of data.leads) {
         const existing = await db.get("SELECT id FROM leads WHERE business_name = ? AND city = ?", [item.businessName, item.city]);
         if (!existing) {
-          const leadId = 'lead-' + Date.now() + Math.random().toString(36).substr(2, 5);
+          const leadId = require('crypto').randomUUID();
           let temp = 'Warm';
           if (item.rating < 4.0 || !item.website) temp = 'Hot';
 
@@ -670,6 +681,8 @@ async function executeScrape(setting) {
     scrapingStatus = { status: 'idle', niche: '', city: '' };
     broadcastScrapingStatus();
     return { success: false, error: err.message || "Erreur lors du scraping de leads." };
+  } finally {
+    scrapeInProgress = false;
   }
 }
 

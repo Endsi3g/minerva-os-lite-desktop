@@ -1,4 +1,5 @@
 import { TodayRoot } from './_components/today-root';
+import { ErrorBoundary } from '@/components/error-boundary';
 
 export const metadata = {
   title: 'Today - Minerva Reach',
@@ -6,5 +7,9 @@ export const metadata = {
 };
 
 export default function TodayPage() {
-  return <TodayRoot />;
+  return (
+    <ErrorBoundary>
+      <TodayRoot />
+    </ErrorBoundary>
+  );
 }

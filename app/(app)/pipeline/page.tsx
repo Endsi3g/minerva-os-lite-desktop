@@ -1,4 +1,5 @@
 import { PipelineRoot } from './_components/pipeline-root';
+import { ErrorBoundary } from '@/components/error-boundary';
 
 export const metadata = {
   title: 'Pipeline - Minerva Reach',
@@ -6,5 +7,9 @@ export const metadata = {
 };
 
 export default function PipelinePage() {
-  return <PipelineRoot />;
+  return (
+    <ErrorBoundary>
+      <PipelineRoot />
+    </ErrorBoundary>
+  );
 }

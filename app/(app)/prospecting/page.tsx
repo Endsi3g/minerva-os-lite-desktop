@@ -1,4 +1,5 @@
 import ProspectingRoot from './_components/prospecting-root';
+import { ErrorBoundary } from '@/components/error-boundary';
 
 export const metadata = {
   title: 'Prospecter - Minerva Reach',
@@ -6,5 +7,9 @@ export const metadata = {
 };
 
 export default function ProspectingPage() {
-  return <ProspectingRoot />;
+  return (
+    <ErrorBoundary>
+      <ProspectingRoot />
+    </ErrorBoundary>
+  );
 }

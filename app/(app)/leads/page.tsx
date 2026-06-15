@@ -1,4 +1,5 @@
 import { LeadsRoot } from './_components/leads-root';
+import { ErrorBoundary } from '@/components/error-boundary';
 
 export const metadata = {
   title: 'Leads - Minerva Reach',
@@ -6,5 +7,9 @@ export const metadata = {
 };
 
 export default function LeadsPage() {
-  return <LeadsRoot />;
+  return (
+    <ErrorBoundary>
+      <LeadsRoot />
+    </ErrorBoundary>
+  );
 }
