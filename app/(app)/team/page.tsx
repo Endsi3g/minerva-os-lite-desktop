@@ -4,12 +4,14 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import {
   Mail, Search, Download, Filter, Check, X,
-  Loader2, ChevronDown, Info, Trash2, ArrowUpDown
+  Loader2, ChevronDown, Info, Trash2, ArrowUpDown,
+  MessageSquare, Send
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
 import { useLanguage } from '@/lib/language-context';
 import { getApiUrl } from '@/lib/api-helper';
+import { useReach } from '@/lib/reach-context';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 type Role = 'admin' | 'editor' | 'viewer';
@@ -37,7 +39,11 @@ export default function TeamPage() {
   // Data State
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
-  const [currentUser, setCurrentUser] = useState<{ email: string; name: string } | null>(null);
+  const [currentUser, setCurrentUser] = useState<{ id: string; email: string; name: string } | null>(null);
+  const [activeTab, setActiveTab] = useState<'members' | 'chat'>('members');
+  const [chatMessage, setChatMessage] = useState('');
+  const chatEndRef = useRef<HTMLDivElement>(null);
+  const { teamMessages, sendTeamMessage, activeWorkspace } = useReach();
 
   // Search and Filter States
   const [searchQuery, setSearchQuery] = useState('');
@@ -84,6 +90,13 @@ export default function TeamPage() {
     };
   }, []);
 
+  // Auto-scroll chat to bottom on new messages
+  useEffect(() => {
+    if (activeTab === 'chat') {
+      chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [teamMessages, activeTab]);
+
   // Fetch Members
   const fetchMembers = useCallback(async () => {
     setLoading(true);
@@ -112,6 +125,7 @@ export default function TeamPage() {
           .eq('user_id', user.id)
           .maybeSingle();
         setCurrentUser({
+          id: user.id,
           email: user.email || '',
           name: settings?.full_name || user.email?.split('@')[0] || 'User',
         });
@@ -336,6 +350,114 @@ export default function TeamPage() {
             {t('team.members_subtitle')}
           </p>
         </div>
+
+        {/* ── Tab Bar ── */}
+        <div className="flex gap-1 border-b border-[#e5e5e0] -mx-8 px-8 bg-white/60">
+          <button
+            onClick={() => setActiveTab('members')}
+            className={cn(
+              "px-4 py-2 text-xs font-bold rounded-t-lg border border-b-0 transition-colors",
+              activeTab === 'members'
+                ? 'bg-white border-[#e5e5e0] text-[#26251e]'
+                : 'bg-[#f4f4f3] border-transparent text-[#807d72] hover:text-[#26251e]'
+            )}
+          >
+            Membres de l&apos;équipe
+          </button>
+          <button
+            onClick={() => setActiveTab('chat')}
+            className={cn(
+              "px-4 py-2 text-xs font-bold rounded-t-lg border border-b-0 transition-colors flex items-center gap-1.5",
+              activeTab === 'chat'
+                ? 'bg-white border-[#e5e5e0] text-[#26251e]'
+                : 'bg-[#f4f4f3] border-transparent text-[#807d72] hover:text-[#26251e]'
+            )}
+          >
+            <MessageSquare className="w-3.5 h-3.5" />
+            Chat d&apos;équipe
+          </button>
+        </div>
+
+        {/* ── Chat Panel (shown when activeTab === 'chat') ── */}
+        {activeTab === 'chat' && (
+          <div className="flex flex-col bg-white border border-[#e5e5e0] rounded-xl overflow-hidden shadow-2xs" style={{ height: 'calc(100vh - 280px)', minHeight: '400px' }}>
+            {/* Messages list */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-3">
+              {teamMessages.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-full gap-2 text-[#807d72]">
+                  <MessageSquare className="w-10 h-10 opacity-30" />
+                  <p className="text-sm font-semibold">Aucun message pour le moment.</p>
+                  <p className="text-xs">Commencez la conversation avec votre équipe.</p>
+                </div>
+              ) : (
+                teamMessages.map(msg => {
+                  const isMe = msg.senderId === currentUser?.id;
+                  return (
+                    <div key={msg.id} className={cn("flex gap-2.5 items-end", isMe && "flex-row-reverse")}>
+                      <div className={cn(
+                        "w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0",
+                        isMe ? "bg-[#10b981] text-white" : "bg-[#e5e5e0] text-[#26251e]"
+                      )}>
+                        {msg.senderName.charAt(0).toUpperCase()}
+                      </div>
+                      <div className={cn("max-w-[70%] space-y-0.5", isMe && "items-end flex flex-col")}>
+                        <span className="text-[10px] font-semibold text-[#807d72]">
+                          {isMe ? 'Vous' : msg.senderName}
+                        </span>
+                        <div className={cn(
+                          "px-3 py-2 rounded-2xl text-xs leading-relaxed",
+                          isMe
+                            ? "bg-[#10b981] text-white rounded-br-sm"
+                            : "bg-[#f4f4f3] text-[#26251e] rounded-bl-sm"
+                        )}>
+                          {msg.content}
+                        </div>
+                        <span className="text-[9px] text-[#a3a39c]">
+                          {new Date(msg.createdAt).toLocaleTimeString('fr-CA', { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+              <div ref={chatEndRef} />
+            </div>
+
+            {/* Input bar */}
+            <div className="border-t border-[#e5e5e0] p-3 flex gap-2 items-center bg-white shrink-0">
+              <input
+                type="text"
+                value={chatMessage}
+                onChange={e => setChatMessage(e.target.value)}
+                onKeyDown={async e => {
+                  if (e.key === 'Enter' && !e.shiftKey && chatMessage.trim()) {
+                    e.preventDefault();
+                    const msg = chatMessage.trim();
+                    setChatMessage('');
+                    await sendTeamMessage(msg);
+                  }
+                }}
+                placeholder="Message à l'équipe... (Entrée pour envoyer)"
+                className="flex-1 text-xs bg-[#f4f4f3] border border-[#e5e5e0] rounded-xl px-3 py-2 focus:outline-none focus:ring-1 focus:ring-[#10b981]"
+              />
+              <button
+                onClick={async () => {
+                  if (!chatMessage.trim()) return;
+                  const msg = chatMessage.trim();
+                  setChatMessage('');
+                  await sendTeamMessage(msg);
+                }}
+                disabled={!chatMessage.trim()}
+                className="h-8 w-8 flex items-center justify-center rounded-xl bg-[#10b981] text-white hover:bg-[#059669] transition-colors disabled:opacity-50"
+              >
+                <Send className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ── Members Tab Content ── */}
+        {activeTab === 'members' && <>
 
         {/* ── Banner 1: Plan limits alert ── */}
         <div className="flex gap-3 bg-[#059669]/5 border border-[#059669]/20 rounded-lg p-4 text-xs text-neutral-700 leading-relaxed shadow-2xs">
@@ -859,6 +981,8 @@ export default function TeamPage() {
             </div>
           </div>
         </div>
+
+        </>}
       </div>
 
       {/* ── Invite User Modal Overlay ── */}

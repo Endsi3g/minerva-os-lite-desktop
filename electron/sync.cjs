@@ -196,7 +196,28 @@ async function syncPush() {
     }
   }
 
-  // 4. Tasks
+  // 4. Team Messages
+  const pendingMessages = await db.all("SELECT * FROM team_messages WHERE sync_status = 'pending_insert'");
+  for (const msg of pendingMessages) {
+    try {
+      const { error } = await supabase.from('team_messages').upsert({
+        id: msg.id,
+        workspace_id: msg.workspace_id,
+        sender_id: msg.sender_id,
+        sender_name: msg.sender_name,
+        content: msg.content,
+        created_at: msg.created_at,
+        updated_at: msg.updated_at
+      });
+      if (!error) {
+        await db.run("UPDATE team_messages SET sync_status = 'synced' WHERE id = ?", [msg.id]);
+      }
+    } catch (e) {
+      console.error("Error syncing team message:", e);
+    }
+  }
+
+  // 5. Tasks
   const pendingTasks = await db.all("SELECT * FROM tasks WHERE sync_status != 'synced'");
   for (const task of pendingTasks) {
     if (task.sync_status === 'pending_insert') {

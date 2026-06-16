@@ -172,6 +172,23 @@ function initDb() {
     db.run(`ALTER TABLE leads ADD COLUMN social_links TEXT DEFAULT NULL`, () => {});
     db.run(`ALTER TABLE leads ADD COLUMN assigned_to TEXT DEFAULT NULL`, () => {});
 
+    // 8. Team messages table
+    db.run(`CREATE TABLE IF NOT EXISTS team_messages (
+      id TEXT PRIMARY KEY,
+      workspace_id TEXT,
+      sender_id TEXT,
+      sender_name TEXT,
+      content TEXT,
+      created_at TEXT,
+      updated_at TEXT,
+      sync_status TEXT DEFAULT 'synced'
+    )`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_team_messages_workspace_id ON team_messages(workspace_id)`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_team_messages_created_at ON team_messages(created_at)`);
+
+    // v2.12.0 team_messages migrations (safe re-run)
+    db.run(`ALTER TABLE team_messages ADD COLUMN sender_name TEXT`, () => {});
+
     // Indexes to avoid full table scans during sync
     db.run(`CREATE INDEX IF NOT EXISTS idx_leads_user_id ON leads(user_id)`);
     db.run(`CREATE INDEX IF NOT EXISTS idx_leads_sync_status ON leads(sync_status)`);

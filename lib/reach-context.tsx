@@ -33,6 +33,15 @@ export interface AppNotification {
   updatedAt: string;
 }
 
+export interface TeamMessage {
+  id: string;
+  workspaceId: string;
+  senderId: string;
+  senderName: string;
+  content: string;
+  createdAt: string;
+}
+
 interface ReachContextType {
   leads: Lead[];
   tasks: Task[];
@@ -83,6 +92,8 @@ interface ReachContextType {
   addNotification: (notif: Omit<AppNotification, 'id' | 'isRead' | 'createdAt' | 'updatedAt'>) => Promise<void>;
   markNotificationRead: (id: string) => Promise<void>;
   markAllNotificationsRead: () => Promise<void>;
+  teamMessages: TeamMessage[];
+  sendTeamMessage: (content: string) => Promise<void>;
 }
 
 const ReachContext = createContext<ReachContextType | undefined>(undefined);
@@ -209,6 +220,18 @@ function mapDbNotifToUi(r: any): AppNotification {
   };
 }
 
+// Mapping database team_message to UI TeamMessage
+function mapDbMsgToUi(r: any): TeamMessage {
+  return {
+    id: r.id,
+    workspaceId: r.workspace_id || '',
+    senderId: r.sender_id || '',
+    senderName: r.sender_name || 'Membre',
+    content: r.content || '',
+    createdAt: r.created_at,
+  };
+}
+
 // Mapping database suggestion to UI AiSuggestion
 function mapDbSuggestionToUi(s: DbSuggestion, leads: Lead[]): AiSuggestion {
   const lead = leads.find(l => l.id === s.lead_id);
@@ -243,6 +266,9 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
   // Notifications State
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const unreadCount = notifications.filter(n => !n.isRead).length;
+
+  // Team Messages State
+  const [teamMessages, setTeamMessages] = useState<TeamMessage[]>([]);
 
   const loadDataLocal = useCallback(async (userId: string, workspaceId: string) => {
     const electronObj = typeof window !== 'undefined' && (window as any).electron;
@@ -286,6 +312,12 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
         [userId]
       );
       setNotifications((dbNotifs || []).map(mapDbNotifToUi));
+
+      const dbMsgs = await electronObj.dbAll(
+        "SELECT * FROM team_messages WHERE workspace_id = ? ORDER BY created_at DESC LIMIT 50",
+        [workspaceId]
+      );
+      setTeamMessages(((dbMsgs || []) as any[]).map(mapDbMsgToUi).reverse());
     } catch (err) {
       console.error("Failed to load local SQLite data in ReachProvider:", err);
     }
@@ -432,6 +464,15 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
         .order('created_at', { ascending: false })
         .limit(30);
       if (dbNotifs) setNotifications(dbNotifs.map(mapDbNotifToUi));
+
+      // 6. Fetch team messages for the active workspace
+      const { data: dbMsgs } = await supabase
+        .from('team_messages')
+        .select('*')
+        .eq('workspace_id', activeWs.id)
+        .order('created_at', { ascending: false })
+        .limit(50);
+      if (dbMsgs) setTeamMessages(dbMsgs.map(mapDbMsgToUi).reverse());
 
     } catch (e) {
       console.error("Error loading data from Supabase:", e);
@@ -1581,6 +1622,81 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const sendTeamMessage = async (content: string) => {
+    if (!user || !activeWorkspace) return;
+    const id = crypto.randomUUID();
+    const nowStr = new Date().toISOString();
+
+    // Resolve sender name: prefer settings full_name, fallback to email prefix
+    let senderName = user.user_metadata?.full_name as string | undefined;
+    if (!senderName) {
+      senderName = user.email?.split('@')[0] || 'Membre';
+    }
+
+    const optimisticMsg: TeamMessage = {
+      id,
+      workspaceId: activeWorkspace.id,
+      senderId: user.id,
+      senderName,
+      content,
+      createdAt: nowStr,
+    };
+
+    setTeamMessages(prev => [...prev, optimisticMsg].slice(-50));
+
+    const electronObj = typeof window !== 'undefined' && (window as any).electron;
+    if (electronObj) {
+      try {
+        await electronObj.dbRun(
+          `INSERT INTO team_messages (id, workspace_id, sender_id, sender_name, content, created_at, updated_at, sync_status)
+           VALUES (?, ?, ?, ?, ?, ?, ?, 'pending_insert')`,
+          [id, activeWorkspace.id, user.id, senderName, content, nowStr, nowStr]
+        );
+        if (electronObj.triggerSync) electronObj.triggerSync();
+      } catch (err) {
+        console.error("Local sendTeamMessage error:", err);
+      }
+      return;
+    }
+
+    const supabase = createClient();
+    try {
+      await supabase.from('team_messages').insert({
+        id,
+        workspace_id: activeWorkspace.id,
+        sender_id: user.id,
+        sender_name: senderName,
+        content,
+        created_at: nowStr,
+        updated_at: nowStr,
+      });
+    } catch (err) {
+      console.error("Error in sendTeamMessage:", err);
+    }
+  };
+
+  // Supabase Realtime subscription for incoming team messages
+  useEffect(() => {
+    if (!activeWorkspace) return;
+    const supabase = createClient();
+    const channel = supabase.channel(`team_messages_${activeWorkspace.id}`)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'team_messages',
+        filter: `workspace_id=eq.${activeWorkspace.id}`
+      }, (payload: { new: Record<string, unknown> }) => {
+        const newMsg = mapDbMsgToUi(payload.new as any);
+        // Avoid duplicates from optimistic updates (same id)
+        setTeamMessages(prev => {
+          if (prev.some(m => m.id === newMsg.id)) return prev;
+          return [...prev, newMsg].slice(-50);
+        });
+      })
+      .subscribe();
+    return () => { channel.unsubscribe(); };
+  }, [activeWorkspace]);
+
   const importDemoData = async () => {
     if (!user || !activeWorkspace) return;
     await populateMockData(user.id, activeWorkspace.id);
@@ -1620,6 +1736,8 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
         addNotification,
         markNotificationRead,
         markAllNotificationsRead,
+        teamMessages,
+        sendTeamMessage,
       }}
     >
       {children}
