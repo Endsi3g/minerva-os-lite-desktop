@@ -364,7 +364,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
     if (electronObj) {
       try {
         const list = await electronObj.dbAll("SELECT * FROM workspaces WHERE sync_status != 'pending_delete'");
-        const currentUser = user || (await createClient().auth.getUser()).data.user;
+        const currentUser = (await createClient().auth.getUser()).data.user;
         let mappedList = (list || []).map((w: any) => ({
           id: w.id,
           name: w.name,
@@ -445,7 +445,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
       // Network error (e.g. server not yet ready, Supabase timeout) — will retry
       // automatically on the next auth state change or workspace switch.
     }
-  }, [user]);
+  }, []);
 
   // Workspace Switcher actions
   const switchWorkspace = async (workspaceId: string) => {

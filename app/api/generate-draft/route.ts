@@ -81,6 +81,7 @@ export async function POST(req: NextRequest) {
     const companyName = settings?.company_name || 'Uprising Studio';
     const fullName = settings?.full_name || 'Moi';
     const aiTone = tone || settings?.ai_tone || 'Calme & Conseil';
+    const emailSignature = settings?.email_signature || null;
 
     const aiProvider = settings?.ai_provider || 'anthropic';
     const openrouterKey = settings?.openrouter_key || process.env.OPENROUTER_API_KEY;
@@ -91,7 +92,7 @@ export async function POST(req: NextRequest) {
     let draftContent = '';
 
     const notesText = (notes || []).map(n => `- [${n.type}] : ${n.content}`).join('\n');
-    
+
     const systemPrompt = `Tu es un copilote de prospection pour ${fullName} de l'agence "${companyName}".
 Ton but est de rédiger un message de prospection ultra-personnalisé, court et percutant en français.
 Il doit être rédigé pour le canal : ${channel}.
@@ -101,7 +102,7 @@ Directives :
 1. Pas de formules de politesse bateau comme "J'espère que vous allez bien" ou "En tant que leader...". Sois direct, naturel, et humain.
 2. Utilise les observations terrain et les notes du prospect ci-dessous pour rendre le message unique et hautement personnalisé.
 3. Reste concis (maximum 3 paragraphes pour un e-mail, très court pour un DM ou SMS).
-4. Termine par un appel à l'action simple et direct (ex: proposer un appel de 5 minutes).`;
+4. Termine par un appel à l'action simple et direct (ex: proposer un appel de 5 minutes).${emailSignature ? `\n5. Termine le message par cette signature exacte :\n${emailSignature}` : ''}`;
 
     const userPrompt = `Prospect : ${lead.business_name}
 Contact : ${lead.contact_name || 'Inconnu'} (E-mail: ${lead.contact_email || 'Inconnu'})

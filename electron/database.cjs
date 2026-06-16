@@ -137,6 +137,12 @@ function initDb() {
     db.run(`ALTER TABLE settings ADD COLUMN groq_api_key TEXT DEFAULT NULL`, () => {});
     db.run(`ALTER TABLE settings ADD COLUMN together_api_key TEXT DEFAULT NULL`, () => {});
 
+    // v2.9.1 profile migrations
+    db.run(`ALTER TABLE settings ADD COLUMN avatar_base64 TEXT DEFAULT NULL`, () => {});
+    db.run(`ALTER TABLE settings ADD COLUMN user_role TEXT DEFAULT NULL`, () => {});
+    db.run(`ALTER TABLE settings ADD COLUMN bio TEXT DEFAULT NULL`, () => {});
+    db.run(`ALTER TABLE settings ADD COLUMN email_signature TEXT DEFAULT NULL`, () => {});
+
     // Indexes to avoid full table scans during sync
     db.run(`CREATE INDEX IF NOT EXISTS idx_leads_user_id ON leads(user_id)`);
     db.run(`CREATE INDEX IF NOT EXISTS idx_leads_sync_status ON leads(sync_status)`);

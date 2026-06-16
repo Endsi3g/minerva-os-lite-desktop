@@ -14,6 +14,10 @@ import {
   ShieldCheck,
   BarChart3,
   Zap,
+  Camera,
+  Upload,
+  User,
+  ChevronDown,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
@@ -21,11 +25,18 @@ import { MinervaIcon } from '@/components/icons';
 import { useLanguage } from '@/lib/language-context';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-type Step = 'login' | 'otp' | 'selection' | 'workspace' | 'pricing' | 'analytics' | 'finalizing';
+type Step = 'login' | 'otp' | 'selection' | 'workspace' | 'pricing' | 'analytics' | 'profile' | 'finalizing';
 type Direction = 'forward' | 'backward';
 
 // Steps that show the progress dots (excludes landing)
-const FLOW_STEPS: Step[] = ['login', 'otp', 'selection', 'workspace', 'pricing', 'analytics'];
+const FLOW_STEPS: Step[] = ['login', 'otp', 'selection', 'workspace', 'pricing', 'analytics', 'profile'];
+
+const PRESET_ROLES = [
+  'Fondateur / CEO',
+  'Commercial / Prospecteur',
+  'Chargé de compte',
+  'Développeur / Designer',
+];
 
 const PRESET_NICHES = [
   'Boulangerie', 'Coiffure', 'Restaurant', 'Garage',
@@ -67,6 +78,11 @@ const RIGHT_PANEL_CONTENT: Record<string, { headline: string; sub: string; badge
     headline: 'Aidez-nous à progresser',
     sub: 'Partagez anonymement vos données d\'usage pour améliorer Minerva pour tous.',
     badge: 'Données anonymisées',
+  },
+  profile: {
+    headline: 'Votre identité dans Minerva',
+    sub: 'Votre photo et rôle apparaîtront dans l\'en-tête, sur la page équipe et dans les emails générés par l\'IA.',
+    badge: 'Profil personnel',
   },
   finalizing: {
     headline: 'Configuration en cours',
@@ -156,6 +172,20 @@ export default function OnboardingPage() {
   const [customNiche, setCustomNiche] = useState('');
   const [customCity, setCustomCity] = useState('');
   const [aiTone, setAiTone] = useState<'casual' | 'professional' | 'storytelling'>('professional');
+
+  // Profile step states
+  const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
+  const [photoTab, setPhotoTab] = useState<'file' | 'webcam'>('file');
+  const [userRole, setUserRole] = useState('');
+  const [userRoleCustom, setUserRoleCustom] = useState('');
+  const [bio, setBio] = useState('');
+  const [emailSignature, setEmailSignature] = useState('');
+  const [webcamActive, setWebcamActive] = useState(false);
+  const [webcamError, setWebcamError] = useState('');
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   // Loader
   const [creatingWorkspace, setCreatingWorkspace] = useState(false);
@@ -268,6 +298,72 @@ export default function OnboardingPage() {
     if (t && !selectedCities.includes(t)) { setSelectedCities((p) => [...p, t]); setCustomCity(''); }
   };
 
+  // ── Webcam helpers ──────────────────────────────────────────────────────────
+  const startWebcam = async () => {
+    setWebcamError('');
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 256, height: 256, facingMode: 'user' } });
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        videoRef.current.play();
+      }
+      setWebcamActive(true);
+    } catch {
+      setWebcamError('Caméra inaccessible. Vérifiez les permissions.');
+    }
+  };
+
+  const stopWebcam = () => {
+    streamRef.current?.getTracks().forEach((t) => t.stop());
+    streamRef.current = null;
+    setWebcamActive(false);
+  };
+
+  const capturePhoto = () => {
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    if (!video || !canvas) return;
+    const size = 256;
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.drawImage(video, 0, 0, size, size);
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+    setProfilePhoto(dataUrl);
+    stopWebcam();
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const size = 256;
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+        const scale = Math.max(size / img.width, size / img.height);
+        const w = img.width * scale;
+        const h = img.height * scale;
+        ctx.drawImage(img, (size - w) / 2, (size - h) / 2, w, h);
+        setProfilePhoto(canvas.toDataURL('image/jpeg', 0.85));
+      };
+      img.src = ev.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Stop webcam when switching tabs or leaving step
+  useEffect(() => {
+    if (photoTab !== 'webcam' || step !== 'profile') stopWebcam();
+  }, [photoTab, step]);
+
   const handleCreateWorkspace = async () => {
     setCreatingWorkspace(true);
     await new Promise((r) => setTimeout(r, 2200));
@@ -281,6 +377,7 @@ export default function OnboardingPage() {
     const firstName = nameParts[0] || '';
     const lastName = nameParts.slice(1).join(' ') || '';
     const company = workspaceName.trim() || 'Mon Workspace';
+    const finalRole = userRole === 'Autre' ? (userRoleCustom.trim() || 'Autre') : userRole;
 
     goToStep('finalizing', 'forward');
 
@@ -300,6 +397,10 @@ export default function OnboardingPage() {
         cities: selectedCities.length > 0 ? selectedCities : ['Paris'],
         ai_tone: aiTone === 'casual' ? 'Calme & Conseil' : aiTone === 'professional' ? 'Direct & Closer' : 'Storytelling',
         ai_density: 'Standard',
+        avatar_base64: profilePhoto || null,
+        user_role: finalRole || null,
+        bio: bio.trim() || null,
+        email_signature: emailSignature.trim() || null,
       });
 
       // If full upsert fails (e.g. missing columns), fall back to minimal required fields
@@ -798,11 +899,207 @@ export default function OnboardingPage() {
                 </div>
 
                 <div className="flex items-center gap-3 pt-4 border-t border-[#e6e5e0]/60">
-                  <button onClick={handleFinalizeOnboarding} className="flex-1 rounded-full bg-neutral-100 hover:bg-neutral-200 text-xs font-bold text-[#555552] py-2.5 transition-colors text-center">
+                  <button onClick={() => goToStep('profile', 'forward')} className="flex-1 rounded-full bg-neutral-100 hover:bg-neutral-200 text-xs font-bold text-[#555552] py-2.5 transition-colors text-center">
                     Don&apos;t share
                   </button>
-                  <button onClick={handleFinalizeOnboarding} className="flex-1 rounded-full bg-[#26251e] hover:bg-[#1a1a19] text-white text-xs font-bold py-2.5 transition-colors shadow-none text-center">
+                  <button onClick={() => goToStep('profile', 'forward')} className="flex-1 rounded-full bg-[#26251e] hover:bg-[#1a1a19] text-white text-xs font-bold py-2.5 transition-colors shadow-none text-center">
                     Share analytics
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* ─── PROFILE ─────────────────────────────────────────────── */}
+            {step === 'profile' && (
+              <div className="space-y-6">
+                <div className="space-y-2">
+                  <h2 className="text-3xl tracking-tight text-[#26251e] font-serif font-light font-georgia">Votre profil</h2>
+                  <p className="text-xs text-[#807d72] font-semibold leading-relaxed">
+                    Personnalisez votre identité dans Minerva. Seul le rôle est requis.
+                  </p>
+                </div>
+
+                {/* ── Photo ── */}
+                <div className="space-y-3">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-[#807d72] flex items-center gap-1">
+                    <User className="w-3.5 h-3.5 text-[#10b981]" /><span>Photo de profil <span className="text-[#c8c6be] normal-case font-semibold">(optionnel)</span></span>
+                  </label>
+
+                  {/* Tab switcher */}
+                  <div className="flex items-center bg-[#f7f7f4] border border-[#e6e5e0] rounded-full overflow-hidden w-fit">
+                    {(['file', 'webcam'] as const).map((tab) => (
+                      <button
+                        key={tab}
+                        onClick={() => { setPhotoTab(tab); if (tab !== 'webcam') stopWebcam(); }}
+                        className={cn(
+                          'px-4 py-1.5 text-[10px] font-bold transition-all flex items-center gap-1',
+                          photoTab === tab ? 'bg-[#26251e] text-white' : 'text-[#807d72] hover:text-[#26251e]',
+                        )}
+                      >
+                        {tab === 'file' ? <><Upload className="w-3 h-3" /><span>Fichier</span></> : <><Camera className="w-3 h-3" /><span>Webcam</span></>}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Preview or capture area */}
+                  <div className="flex items-center gap-4">
+                    {/* Avatar preview */}
+                    <div className="w-16 h-16 rounded-full bg-[#f7f7f4] border-2 border-[#e6e5e0] flex items-center justify-center overflow-hidden shrink-0">
+                      {profilePhoto ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={profilePhoto} alt="Aperçu" className="w-full h-full object-cover" />
+                      ) : (
+                        <User className="w-7 h-7 text-[#c8c6be]" />
+                      )}
+                    </div>
+
+                    {photoTab === 'file' && (
+                      <div className="flex-1 space-y-2">
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept="image/jpeg,image/png,image/webp"
+                          className="hidden"
+                          onChange={handleFileUpload}
+                        />
+                        <button
+                          onClick={() => fileInputRef.current?.click()}
+                          className="inline-flex items-center gap-1.5 rounded-full border border-[#e6e5e0] bg-white hover:bg-neutral-50 px-4 py-2 text-xs font-bold text-[#26251e] transition-colors"
+                        >
+                          <Upload className="w-3.5 h-3.5" />
+                          {profilePhoto ? 'Changer la photo' : 'Choisir un fichier'}
+                        </button>
+                        {profilePhoto && (
+                          <button onClick={() => setProfilePhoto(null)} className="block text-[10px] font-semibold text-rose-500 hover:underline">
+                            Supprimer
+                          </button>
+                        )}
+                      </div>
+                    )}
+
+                    {photoTab === 'webcam' && (
+                      <div className="flex-1 space-y-2">
+                        {!webcamActive && !profilePhoto && (
+                          <button
+                            onClick={startWebcam}
+                            className="inline-flex items-center gap-1.5 rounded-full border border-[#e6e5e0] bg-white hover:bg-neutral-50 px-4 py-2 text-xs font-bold text-[#26251e] transition-colors"
+                          >
+                            <Camera className="w-3.5 h-3.5" />
+                            Activer la caméra
+                          </button>
+                        )}
+                        {webcamActive && (
+                          <div className="space-y-2">
+                            <video ref={videoRef} className="w-24 h-24 rounded-full object-cover border-2 border-[#10b981]" muted playsInline />
+                            <div className="flex gap-2">
+                              <button onClick={capturePhoto} className="rounded-full bg-[#10b981] text-white text-[10px] font-bold px-3 py-1.5 hover:bg-[#059669] transition-colors">
+                                Capturer
+                              </button>
+                              <button onClick={stopWebcam} className="rounded-full border border-[#e6e5e0] text-[10px] font-bold px-3 py-1.5 text-[#807d72] hover:bg-neutral-50 transition-colors">
+                                Annuler
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                        {profilePhoto && !webcamActive && (
+                          <button onClick={() => { setProfilePhoto(null); startWebcam(); }} className="inline-flex items-center gap-1.5 rounded-full border border-[#e6e5e0] bg-white hover:bg-neutral-50 px-4 py-2 text-xs font-bold text-[#26251e] transition-colors">
+                            <Camera className="w-3.5 h-3.5" />
+                            Reprendre
+                          </button>
+                        )}
+                        {webcamError && <p className="text-[10px] text-rose-500 font-semibold">{webcamError}</p>}
+                        <canvas ref={canvasRef} className="hidden" />
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* ── Role ── */}
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-[#807d72] flex items-center gap-1">
+                    <Briefcase className="w-3.5 h-3.5 text-[#10b981]" />
+                    <span>Rôle <span className="text-[#f54e00] normal-case font-semibold">*</span></span>
+                  </label>
+                  <div className="relative">
+                    <select
+                      value={userRole}
+                      onChange={(e) => setUserRole(e.target.value)}
+                      className="w-full appearance-none text-xs font-semibold px-4 py-2.5 bg-white border border-[#e6e5e0] focus:border-[#10b981] rounded-full outline-none pr-8 text-[#26251e]"
+                    >
+                      <option value="">Sélectionnez votre rôle…</option>
+                      {PRESET_ROLES.map((r) => (
+                        <option key={r} value={r}>{r}</option>
+                      ))}
+                      <option value="Autre">Autre…</option>
+                    </select>
+                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#807d72] pointer-events-none" />
+                  </div>
+                  {userRole === 'Autre' && (
+                    <input
+                      type="text"
+                      placeholder="Précisez votre rôle…"
+                      value={userRoleCustom}
+                      onChange={(e) => setUserRoleCustom(e.target.value)}
+                      className="w-full text-xs font-semibold px-4 py-2.5 bg-white border border-[#e6e5e0] focus:border-[#10b981] rounded-full outline-none"
+                    />
+                  )}
+                </div>
+
+                {/* ── Bio ── */}
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-[#807d72]">
+                    Bio <span className="text-[#c8c6be] normal-case font-semibold">(optionnel)</span>
+                  </label>
+                  <textarea
+                    value={bio}
+                    onChange={(e) => setBio(e.target.value)}
+                    placeholder="En 2–3 lignes, décrivez votre parcours ou spécialité…"
+                    rows={3}
+                    className="w-full text-xs font-semibold px-4 py-3 bg-white border border-[#e6e5e0] focus:border-[#10b981] rounded-2xl outline-none resize-none"
+                  />
+                </div>
+
+                {/* ── Email Signature ── */}
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-[#807d72]">
+                    Signature email <span className="text-[#c8c6be] normal-case font-semibold">(optionnel · injectée dans les brouillons IA)</span>
+                  </label>
+                  <textarea
+                    value={emailSignature}
+                    onChange={(e) => setEmailSignature(e.target.value)}
+                    placeholder={`${fullName || 'Prénom Nom'}\nFondateur, Uprising Agency\n+1 (514) 000-0000`}
+                    rows={3}
+                    className="w-full text-xs font-semibold px-4 py-3 bg-white border border-[#e6e5e0] focus:border-[#10b981] rounded-2xl outline-none resize-none font-mono"
+                  />
+                </div>
+
+                {/* ── Actions ── */}
+                <div className="flex items-center gap-3 pt-4 border-t border-[#e6e5e0]/60">
+                  <button
+                    onClick={() => goToStep('analytics', 'backward')}
+                    className="inline-flex items-center justify-center rounded-full border border-[#e6e5e0] bg-white hover:bg-neutral-50 px-6 py-2.5 text-xs font-bold text-[#26251e] shadow-none transition-colors"
+                  >
+                    Retour
+                  </button>
+                  <button
+                    onClick={handleFinalizeOnboarding}
+                    disabled={!userRole || (userRole === 'Autre' && !userRoleCustom.trim())}
+                    className={cn(
+                      'flex-1 rounded-full py-2.5 text-xs font-bold transition-all shadow-none text-center',
+                      (userRole && (userRole !== 'Autre' || userRoleCustom.trim()))
+                        ? 'bg-[#26251e] hover:bg-[#1a1a19] text-white cursor-pointer'
+                        : 'bg-neutral-100 text-[#807d72] cursor-not-allowed border border-[#e6e5e0]',
+                    )}
+                  >
+                    Finaliser
+                  </button>
+                </div>
+                <div className="text-center">
+                  <button
+                    onClick={handleFinalizeOnboarding}
+                    className="text-[10px] font-semibold text-[#807d72] hover:text-[#26251e] underline transition-colors"
+                  >
+                    Passer cette étape
                   </button>
                 </div>
               </div>

@@ -285,7 +285,7 @@ async function syncPush() {
   // 5. Settings
   const pendingSettings = await db.all("SELECT * FROM settings WHERE sync_status != 'synced'");
   for (const setting of pendingSettings) {
-    const { user_id, full_name, last_name, phone, email, company_name, timezone, niches, cities, ai_tone, ai_density, quick_note, focus_title, focus_items } = setting;
+    const { user_id, full_name, last_name, phone, email, company_name, timezone, niches, cities, ai_tone, ai_density, quick_note, focus_title, focus_items, smtp_config, groq_api_key, together_api_key, avatar_base64, user_role, bio, email_signature } = setting;
     const { error } = await supabase.from('settings').upsert({
       user_id,
       full_name,
@@ -300,7 +300,14 @@ async function syncPush() {
       ai_density,
       quick_note,
       focus_title,
-      focus_items: (() => { try { return JSON.parse(focus_items || '[]'); } catch { return []; } })()
+      focus_items: (() => { try { return JSON.parse(focus_items || '[]'); } catch { return []; } })(),
+      smtp_config: smtp_config || null,
+      groq_api_key: groq_api_key || null,
+      together_api_key: together_api_key || null,
+      avatar_base64: avatar_base64 || null,
+      user_role: user_role || null,
+      bio: bio || null,
+      email_signature: email_signature || null,
     });
     if (!error) {
       await db.run("UPDATE settings SET sync_status = 'synced' WHERE user_id = ?", [user_id]);
@@ -322,9 +329,9 @@ async function syncPull() {
                          (localSetting.sync_status === 'synced' && 
                           new Date(remoteSettings.updated_at) > new Date(localSetting.updated_at || 0));
     if (shouldUpdate) {
-      const { user_id, full_name, last_name, phone, email, company_name, timezone, niches, cities, ai_tone, ai_density, quick_note, focus_title, focus_items, updated_at } = remoteSettings;
-      await db.run(`INSERT INTO settings (user_id, full_name, last_name, phone, email, company_name, timezone, niches, cities, ai_tone, ai_density, quick_note, focus_title, focus_items, updated_at, sync_status)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced')
+      const { user_id, full_name, last_name, phone, email, company_name, timezone, niches, cities, ai_tone, ai_density, quick_note, focus_title, focus_items, smtp_config, groq_api_key, together_api_key, avatar_base64, user_role, bio, email_signature, updated_at } = remoteSettings;
+      await db.run(`INSERT INTO settings (user_id, full_name, last_name, phone, email, company_name, timezone, niches, cities, ai_tone, ai_density, quick_note, focus_title, focus_items, smtp_config, groq_api_key, together_api_key, avatar_base64, user_role, bio, email_signature, updated_at, sync_status)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced')
         ON CONFLICT(user_id) DO UPDATE SET
           full_name = excluded.full_name,
           last_name = excluded.last_name,
@@ -339,9 +346,16 @@ async function syncPull() {
           quick_note = excluded.quick_note,
           focus_title = excluded.focus_title,
           focus_items = excluded.focus_items,
+          smtp_config = excluded.smtp_config,
+          groq_api_key = excluded.groq_api_key,
+          together_api_key = excluded.together_api_key,
+          avatar_base64 = excluded.avatar_base64,
+          user_role = excluded.user_role,
+          bio = excluded.bio,
+          email_signature = excluded.email_signature,
           updated_at = excluded.updated_at,
           sync_status = 'synced'`,
-        [user_id, full_name, last_name, phone, email, company_name, timezone, JSON.stringify(niches || []), JSON.stringify(cities || []), ai_tone, ai_density, quick_note, focus_title, JSON.stringify(focus_items || []), updated_at]
+        [user_id, full_name, last_name, phone, email, company_name, timezone, JSON.stringify(niches || []), JSON.stringify(cities || []), ai_tone, ai_density, quick_note, focus_title, JSON.stringify(focus_items || []), smtp_config || null, groq_api_key || null, together_api_key || null, avatar_base64 || null, user_role || null, bio || null, email_signature || null, updated_at]
       );
     }
   }

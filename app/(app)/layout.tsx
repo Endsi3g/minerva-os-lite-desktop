@@ -139,7 +139,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
     }
   }, [onboarding.percent]);
 
-  const [userProfile, setUserProfile] = useState<{ fullName: string; companyName: string } | null>(null);
+  const [userProfile, setUserProfile] = useState<{ fullName: string; companyName: string; avatarBase64?: string | null } | null>(null);
 
   // Real-time Presence state
   const [onlineUsers, setOnlineUsers] = useState<Array<{
@@ -288,7 +288,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
 
       const { data: settings } = await supabase
         .from('settings')
-        .select('full_name, company_name')
+        .select('full_name, company_name, avatar_base64')
         .eq('user_id', user.id)
         .maybeSingle();
 
@@ -297,7 +297,8 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
       } else {
         setUserProfile({
           fullName: settings.full_name,
-          companyName: settings.company_name || 'Uprising Studio'
+          companyName: settings.company_name || 'Uprising Studio',
+          avatarBase64: settings.avatar_base64 ?? null,
         });
         setCheckingWelcome(false);
       }
@@ -369,8 +370,6 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
     { name: t('nav.integrations'), href: '/integrations', icon: Plug },
     { name: t('nav.team'), href: '/team', icon: Users },
     { name: t('nav.download'), href: '/download', icon: Download },
-    { name: 'Facturation', href: '/billing', icon: CreditCard },
-    { name: 'Aide & Docs', href: '/help', icon: HelpCircle },
   ];
 
   const recentFiles = [
@@ -745,41 +744,48 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
             </div>
           )}
 
-          {/* Changelog link just above Settings */}
-          <div className="mb-1.5">
-            {isCollapsed ? (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Link 
-                    href="/changelog"
-                    className={cn(
-                      "flex h-8 w-8 mx-auto items-center justify-center rounded-md transition-colors",
-                      pathname === '/changelog'
-                        ? "bg-[#e5e5e2] text-[#26251e]"
-                        : "text-[#555552] hover:bg-[#e5e5e2]/60 hover:text-[#26251e]"
-                    )}
-                  >
-                    <Megaphone className="h-4 w-4" />
-                  </Link>
-                </TooltipTrigger>
-                <TooltipContent side="right" className="text-xs bg-[#26251e] text-white">
-                  {t('nav.changelog')}
-                </TooltipContent>
-              </Tooltip>
-            ) : (
-              <Link
-                href="/changelog"
-                className={cn(
-                  "flex items-center gap-2.5 text-xs font-semibold px-2.5 py-1.5 rounded-md transition-colors",
-                  pathname === '/changelog'
-                    ? "bg-[#e5e5e2] text-[#26251e] font-semibold"
-                    : "text-[#555552] hover:text-[#26251e] hover:bg-[#e5e5e2]/60"
-                )}
-              >
-                <Megaphone className="h-4 w-4 text-[#555552]" />
-                <span>{t('nav.changelog')}</span>
-              </Link>
-            )}
+          {/* Billing, Help, Changelog links above Settings */}
+          <div className="space-y-0.5">
+            {[
+              { href: '/billing', icon: CreditCard, label: 'Facturation' },
+              { href: '/help', icon: HelpCircle, label: 'Aide & Docs' },
+              { href: '/changelog', icon: Megaphone, label: t('nav.changelog') },
+            ].map(({ href, icon: Icon, label }) => (
+              isCollapsed ? (
+                <Tooltip key={href}>
+                  <TooltipTrigger asChild>
+                    <Link
+                      href={href}
+                      className={cn(
+                        "flex h-8 w-8 mx-auto items-center justify-center rounded-md transition-colors",
+                        pathname === href
+                          ? "bg-[#e5e5e2] text-[#26251e]"
+                          : "text-[#555552] hover:bg-[#e5e5e2]/60 hover:text-[#26251e]"
+                      )}
+                    >
+                      <Icon className="h-4 w-4" />
+                    </Link>
+                  </TooltipTrigger>
+                  <TooltipContent side="right" className="text-xs bg-[#26251e] text-white">
+                    {label}
+                  </TooltipContent>
+                </Tooltip>
+              ) : (
+                <Link
+                  key={href}
+                  href={href}
+                  className={cn(
+                    "flex items-center gap-2.5 text-xs font-semibold px-2.5 py-1.5 rounded-md transition-colors",
+                    pathname === href
+                      ? "bg-[#e5e5e2] text-[#26251e] font-semibold"
+                      : "text-[#555552] hover:text-[#26251e] hover:bg-[#e5e5e2]/60"
+                  )}
+                >
+                  <Icon className="h-4 w-4 text-[#555552]" />
+                  <span>{label}</span>
+                </Link>
+              )
+            ))}
           </div>
 
           {/* Settings and user control row */}
@@ -977,12 +983,14 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
             <DropdownMenu>
               <DropdownMenuTrigger className="focus:outline-hidden">
                 <div className="h-7 w-7 rounded-full overflow-hidden border border-[#e5e5e0] bg-[#e5e5e2] flex items-center justify-center shrink-0 cursor-pointer" title={userProfile?.fullName || 'Utilisateur'}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img 
-                    src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=facearea&facepad=2&w=256&h=256&q=80" 
-                    alt="Profile" 
-                    className="w-full h-full object-cover"
-                  />
+                  {userProfile?.avatarBase64 ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={userProfile.avatarBase64} alt="Profile" className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-[10px] font-bold text-[#807d72] select-none">
+                      {(userProfile?.fullName || 'U').charAt(0).toUpperCase()}
+                    </span>
+                  )}
                 </div>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-48 text-xs font-semibold bg-white border border-[#e5e5e0] shadow-md rounded-xl p-1 font-sans" align="end">
