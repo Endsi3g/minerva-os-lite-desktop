@@ -434,9 +434,13 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
           setActiveWorkspace(active);
           localStorage.setItem('minerva_active_workspace_id', active.id);
         }
+      } else if (res.status !== 401) {
+        // 401 = session not ready yet, silently skip; log anything else unexpected
+        console.error("Error loading workspaces:", res.status, res.statusText);
       }
-    } catch (e) {
-      console.error("Error loading workspaces:", e);
+    } catch {
+      // Network error (e.g. server not yet ready, Supabase timeout) — will retry
+      // automatically on the next auth state change or workspace switch.
     }
   }, [user]);
 
@@ -682,23 +686,28 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
     const supabase = createClient();
     
     const fetchSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        setUser(session.user);
-        
-        const electronObj = typeof window !== 'undefined' && (window as any).electron;
-        if (electronObj && electronObj.setSession) {
-          electronObj.setSession({
-            accessToken: session.access_token,
-            supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL,
-            supabaseKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-            userId: session.user.id
-          });
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          setUser(session.user);
+
+          const electronObj = typeof window !== 'undefined' && (window as any).electron;
+          if (electronObj && electronObj.setSession) {
+            electronObj.setSession({
+              accessToken: session.access_token,
+              supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL,
+              supabaseKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+              userId: session.user.id
+            });
+          }
+          await loadWorkspaces();
         }
-        await loadWorkspaces();
+      } catch {
+        // Auth network error on init (e.g. Supabase unreachable) — session will
+        // be recovered via onAuthStateChange when connectivity resumes.
       }
     };
-    
+
     fetchSession();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -713,7 +722,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
             userId: session.user.id
           });
         }
-        loadWorkspaces();
+        loadWorkspaces().catch(() => {});
       } else {
         setUser(null);
         if (electronObj && electronObj.setSession) {

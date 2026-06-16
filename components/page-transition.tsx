@@ -42,11 +42,15 @@ export function PageTransition({ children }: { children: React.ReactNode }) {
     return () => document.removeEventListener('click', handleLinkClick);
   }, []);
 
-  // Intercept window unload events (like redirects using location.replace)
+  // Intercept window unload events (like redirects using location.replace).
+  // startTransition defers the setState outside React's current render cycle,
+  // preventing the "setState during render of Router" violation in Next.js 16.
   useEffect(() => {
     const handleBeforeUnload = () => {
-      setIsNavigating(true);
-      setProgress(50);
+      startTransition(() => {
+        setIsNavigating(true);
+        setProgress(50);
+      });
     };
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
