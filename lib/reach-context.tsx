@@ -20,6 +20,19 @@ export interface Workspace {
   ownerName: string;
 }
 
+export interface AppNotification {
+  id: string;
+  userId: string;
+  workspaceId: string;
+  type: 'info' | 'lead_assigned' | 'overdue' | 'digest' | 'report' | 'team_message';
+  title: string;
+  body: string;
+  link?: string;
+  isRead: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 interface ReachContextType {
   leads: Lead[];
   tasks: Task[];
@@ -65,6 +78,11 @@ interface ReachContextType {
   deleteLeads: (ids: string[]) => void;
   updateLeadsStatus: (ids: string[], status: Lead['status']) => void;
   importDemoData: () => Promise<void>;
+  notifications: AppNotification[];
+  unreadCount: number;
+  addNotification: (notif: Omit<AppNotification, 'id' | 'isRead' | 'createdAt' | 'updatedAt'>) => Promise<void>;
+  markNotificationRead: (id: string) => Promise<void>;
+  markAllNotificationsRead: () => Promise<void>;
 }
 
 const ReachContext = createContext<ReachContextType | undefined>(undefined);
@@ -175,6 +193,22 @@ function mapDbTaskToUi(dbTask: DbTask): Task {
   };
 }
 
+// Mapping database notification to UI AppNotification
+function mapDbNotifToUi(r: any): AppNotification {
+  return {
+    id: r.id,
+    userId: r.user_id,
+    workspaceId: r.workspace_id || '',
+    type: r.type || 'info',
+    title: r.title || '',
+    body: r.body || '',
+    link: r.link || undefined,
+    isRead: Boolean(r.is_read),
+    createdAt: r.created_at,
+    updatedAt: r.updated_at,
+  };
+}
+
 // Mapping database suggestion to UI AiSuggestion
 function mapDbSuggestionToUi(s: DbSuggestion, leads: Lead[]): AiSuggestion {
   const lead = leads.find(l => l.id === s.lead_id);
@@ -205,6 +239,10 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
   // Workspaces State
   const [workspacesList, setWorkspacesList] = useState<Workspace[]>([]);
   const [activeWorkspace, setActiveWorkspace] = useState<Workspace | null>(null);
+
+  // Notifications State
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const unreadCount = notifications.filter(n => !n.isRead).length;
 
   const loadDataLocal = useCallback(async (userId: string, workspaceId: string) => {
     const electronObj = typeof window !== 'undefined' && (window as any).electron;
@@ -242,6 +280,12 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
         setFocusTitle(dbSettings.focus_title || 'Objectif principal du jour');
         setFocusItems(dbSettings.focus_items ? JSON.parse(dbSettings.focus_items) : []);
       }
+
+      const dbNotifs = await electronObj.dbAll(
+        "SELECT * FROM notifications WHERE user_id = ? ORDER BY created_at DESC LIMIT 30",
+        [userId]
+      );
+      setNotifications((dbNotifs || []).map(mapDbNotifToUi));
     } catch (err) {
       console.error("Failed to load local SQLite data in ReachProvider:", err);
     }
@@ -379,6 +423,15 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
 
       const uiSuggestions = (dbSuggestions || []).map((s: DbSuggestion) => mapDbSuggestionToUi(s, uiLeads));
       setAiSuggestions(uiSuggestions);
+
+      // 5. Fetch notifications for the current user
+      const { data: dbNotifs } = await supabase
+        .from('notifications')
+        .select('*')
+        .eq('user_id', currUser.id)
+        .order('created_at', { ascending: false })
+        .limit(30);
+      if (dbNotifs) setNotifications(dbNotifs.map(mapDbNotifToUi));
 
     } catch (e) {
       console.error("Error loading data from Supabase:", e);
@@ -1407,6 +1460,127 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // Supabase Realtime subscription for incoming notifications
+  useEffect(() => {
+    if (!user) return;
+    const supabase = createClient();
+    const channel = supabase.channel(`notifications_${user.id}`)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'notifications',
+        filter: `user_id=eq.${user.id}`
+      }, (payload: { new: Record<string, unknown> }) => {
+        setNotifications(prev => [mapDbNotifToUi(payload.new), ...prev.slice(0, 29)]);
+      })
+      .subscribe();
+    return () => { channel.unsubscribe(); };
+  }, [user]);
+
+  const addNotification = async (notif: Omit<AppNotification, 'id' | 'isRead' | 'createdAt' | 'updatedAt'>) => {
+    if (!user) return;
+    const id = crypto.randomUUID();
+    const nowStr = new Date().toISOString();
+    const newNotif: AppNotification = {
+      ...notif,
+      id,
+      isRead: false,
+      createdAt: nowStr,
+      updatedAt: nowStr,
+    };
+
+    setNotifications(prev => [newNotif, ...prev]);
+
+    const electronObj = typeof window !== 'undefined' && (window as any).electron;
+    if (electronObj) {
+      try {
+        await electronObj.dbRun(
+          `INSERT INTO notifications (id, user_id, workspace_id, type, title, body, link, is_read, created_at, updated_at, sync_status)
+           VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?, 'pending_insert')`,
+          [id, user.id, notif.workspaceId, notif.type, notif.title, notif.body, notif.link ?? null, nowStr, nowStr]
+        );
+        if (electronObj.triggerSync) electronObj.triggerSync();
+      } catch (err) {
+        console.error("Local addNotification error:", err);
+      }
+      return;
+    }
+
+    const supabase = createClient();
+    try {
+      await supabase.from('notifications').insert({
+        id,
+        user_id: user.id,
+        workspace_id: notif.workspaceId,
+        type: notif.type,
+        title: notif.title,
+        body: notif.body,
+        link: notif.link ?? null,
+        is_read: false,
+        created_at: nowStr,
+        updated_at: nowStr,
+      });
+    } catch (err) {
+      console.error("Error in addNotification:", err);
+    }
+  };
+
+  const markNotificationRead = async (id: string) => {
+    setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
+
+    const electronObj = typeof window !== 'undefined' && (window as any).electron;
+    if (electronObj) {
+      try {
+        await electronObj.dbRun(
+          "UPDATE notifications SET is_read = 1, updated_at = ?, sync_status = 'pending_update' WHERE id = ?",
+          [new Date().toISOString(), id]
+        );
+        if (electronObj.triggerSync) electronObj.triggerSync();
+      } catch (err) {
+        console.error("Local markNotificationRead error:", err);
+      }
+      return;
+    }
+
+    const supabase = createClient();
+    try {
+      await supabase.from('notifications').update({ is_read: true, updated_at: new Date().toISOString() }).eq('id', id);
+    } catch (err) {
+      console.error("Error in markNotificationRead:", err);
+    }
+  };
+
+  const markAllNotificationsRead = async () => {
+    setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+
+    const electronObj = typeof window !== 'undefined' && (window as any).electron;
+    if (electronObj) {
+      if (!user) return;
+      try {
+        await electronObj.dbRun(
+          "UPDATE notifications SET is_read = 1, updated_at = ?, sync_status = 'pending_update' WHERE user_id = ? AND is_read = 0",
+          [new Date().toISOString(), user.id]
+        );
+        if (electronObj.triggerSync) electronObj.triggerSync();
+      } catch (err) {
+        console.error("Local markAllNotificationsRead error:", err);
+      }
+      return;
+    }
+
+    if (!user) return;
+    const supabase = createClient();
+    try {
+      await supabase
+        .from('notifications')
+        .update({ is_read: true, updated_at: new Date().toISOString() })
+        .eq('user_id', user.id)
+        .eq('is_read', false);
+    } catch (err) {
+      console.error("Error in markAllNotificationsRead:", err);
+    }
+  };
+
   const importDemoData = async () => {
     if (!user || !activeWorkspace) return;
     await populateMockData(user.id, activeWorkspace.id);
@@ -1440,7 +1614,12 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
         addNoteToLead,
         deleteLeads,
         updateLeadsStatus,
-        importDemoData
+        importDemoData,
+        notifications,
+        unreadCount,
+        addNotification,
+        markNotificationRead,
+        markAllNotificationsRead,
       }}
     >
       {children}

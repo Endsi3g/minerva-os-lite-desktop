@@ -40,7 +40,7 @@ import {
 import { BottomBlur } from '@/components/ui/edge-blur';
 import { cn } from '@/lib/utils';
 import { RealtimeSyncListener } from '@/components/realtime-sync-listener';
-import { ReachProvider, useReach } from '@/lib/reach-context';
+import { ReachProvider, useReach, type AppNotification } from '@/lib/reach-context';
 import { useLanguage } from '@/lib/language-context';
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { Button } from '@/components/ui/button';
@@ -74,7 +74,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
   const { t } = useLanguage();
   
   // Workspace Context
-  const { activeWorkspace, workspacesList, switchWorkspace, leads } = useReach();
+  const { activeWorkspace, workspacesList, switchWorkspace, leads, notifications, unreadCount, markNotificationRead, markAllNotificationsRead } = useReach();
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [checkingWelcome, setCheckingWelcome] = useState(true);
@@ -99,16 +99,17 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Notifications states
-  const [notificationsList, setNotificationsList] = useState([
-    { id: '1', title: 'Nouvelle opportunité', body: 'Un prospect chaud dans le secteur Boulangerie a été identifié.', time: 'Il y a 5 min' },
-    { id: '2', title: 'Synchronisation réussie', body: 'La synchronisation bidirectionnelle avec Supabase a été complétée.', time: 'Il y a 20 min' },
-    { id: '3', title: 'Tâche arrivant à échéance', body: 'Relancer Marc-Antoine Café du Montréal est prévu pour aujourd\'hui.', time: 'Il y a 1 heure' },
-  ]);
-  const [hasNewNotifications, setHasNewNotifications] = useState(true);
-  const clearNotifications = () => {
-    setHasNewNotifications(false);
-  };
+  // Relative time helper for notification timestamps
+  function relativeTime(iso: string): string {
+    if (!iso) return '';
+    const diff = Date.now() - new Date(iso).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return "À l'instant";
+    if (mins < 60) return `Il y a ${mins} min`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `Il y a ${hours} heure${hours > 1 ? 's' : ''}`;
+    return new Date(iso).toLocaleDateString('fr-CA', { day: 'numeric', month: 'short' });
+  }
 
   // Dynamic Workspace Accent Color injection
   useEffect(() => {
@@ -955,31 +956,42 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
               <PopoverTrigger asChild>
                 <Button variant="ghost" size="icon" className="text-[#7a7a76] hover:text-[#26251e] h-8 w-8 relative cursor-pointer">
                   <Bell className="h-4 w-4" />
-                  {hasNewNotifications && <span className="absolute top-2 right-2 h-1.5 w-1.5 rounded-full bg-[#10b981]" />}
+                  {unreadCount > 0 && <span className="absolute top-2 right-2 h-1.5 w-1.5 rounded-full bg-[#10b981]" />}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-80 p-0 text-left bg-white border border-[#e5e5e0] shadow-md rounded-xl font-sans" align="end">
                 <div className="p-3 border-b border-[#e5e5e0] flex items-center justify-between">
                   <span className="text-xs font-bold text-[#26251e]">Notifications</span>
-                  {hasNewNotifications && (
-                    <button onClick={clearNotifications} className="text-[10px] font-semibold text-[#059669] hover:underline cursor-pointer">
+                  {unreadCount > 0 && (
+                    <button onClick={markAllNotificationsRead} className="text-[10px] font-semibold text-[#059669] hover:underline cursor-pointer">
                       Marquer comme lu
                     </button>
                   )}
                 </div>
                 <div className="max-h-64 overflow-y-auto divide-y divide-[#e5e5e0]/60">
-                  {notificationsList.length === 0 ? (
+                  {notifications.length === 0 ? (
                     <div className="p-8 text-center text-xs text-[#7a7a76]">
                       Aucune notification pour le moment.
                     </div>
                   ) : (
-                    notificationsList.map(notif => (
-                      <div key={notif.id} className="p-3 hover:bg-[#f4f4f3]/25 transition-colors flex gap-2.5 items-start">
-                        <span className="w-1.5 h-1.5 rounded-full bg-[#10b981] mt-1.5 shrink-0" />
+                    notifications.map((notif: AppNotification) => (
+                      <div
+                        key={notif.id}
+                        className="p-3 hover:bg-[#f4f4f3]/25 transition-colors flex gap-2.5 items-start cursor-pointer"
+                        onClick={() => {
+                          if (!notif.isRead) markNotificationRead(notif.id);
+                          if (notif.link) router.push(notif.link);
+                        }}
+                      >
+                        {!notif.isRead ? (
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#10b981] mt-1.5 shrink-0" />
+                        ) : (
+                          <span className="w-1.5 h-1.5 mt-1.5 shrink-0" />
+                        )}
                         <div className="space-y-0.5 text-left">
                           <p className="text-xs font-semibold text-[#26251e] leading-snug">{notif.title}</p>
                           <p className="text-[10px] text-[#7a7a76] leading-relaxed">{notif.body}</p>
-                          <p className="text-[9px] text-neutral-400">{notif.time}</p>
+                          <p className="text-[9px] text-neutral-400">{relativeTime(notif.createdAt)}</p>
                         </div>
                       </div>
                     ))

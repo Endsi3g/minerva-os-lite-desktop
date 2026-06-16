@@ -131,6 +131,23 @@ function initDb() {
     db.run(`ALTER TABLE workspaces ADD COLUMN accent_color TEXT`, () => {});
     db.run(`ALTER TABLE workspaces ADD COLUMN logo_base64 TEXT`, () => {});
 
+    // 7. Notifications table
+    db.run(`CREATE TABLE IF NOT EXISTS notifications (
+      id TEXT PRIMARY KEY,
+      user_id TEXT,
+      workspace_id TEXT,
+      type TEXT DEFAULT 'info',
+      title TEXT,
+      body TEXT,
+      link TEXT,
+      is_read INTEGER DEFAULT 0,
+      created_at TEXT,
+      updated_at TEXT,
+      sync_status TEXT DEFAULT 'synced'
+    )`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON notifications(user_id)`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_notifications_is_read ON notifications(is_read)`);
+
     // v2.9.0 migrations
     db.run(`ALTER TABLE leads ADD COLUMN score INTEGER DEFAULT 0`, () => {});
     db.run(`ALTER TABLE settings ADD COLUMN smtp_config TEXT DEFAULT NULL`, () => {});
@@ -142,6 +159,9 @@ function initDb() {
     db.run(`ALTER TABLE settings ADD COLUMN user_role TEXT DEFAULT NULL`, () => {});
     db.run(`ALTER TABLE settings ADD COLUMN bio TEXT DEFAULT NULL`, () => {});
     db.run(`ALTER TABLE settings ADD COLUMN email_signature TEXT DEFAULT NULL`, () => {});
+
+    // v2.12.0 notification migrations (safe re-run)
+    db.run(`ALTER TABLE notifications ADD COLUMN workspace_id TEXT`, () => {});
 
     // v2.12.0 lead enrichment migrations
     db.run(`ALTER TABLE leads ADD COLUMN website TEXT DEFAULT NULL`, () => {});
