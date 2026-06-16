@@ -22,6 +22,8 @@ interface ProfileData {
   phone: string;
   language: string;
   timezone: string;
+  bio: string;
+  avatarBase64: string;
 }
 
 interface ProspectingData {
@@ -76,7 +78,9 @@ const DEFAULT_SETTINGS: AppSettings = {
     email: "contact@uprising.studio",
     phone: "+1 (514) 123-4567",
     language: "fr",
-    timezone: "America/Montreal"
+    timezone: "America/Montreal",
+    bio: "",
+    avatarBase64: ""
   },
   prospecting: {
     niches: ["Boulangerie / Artisanat", "Automobile", "Restauration", "Coiffure & Beauté"],
@@ -107,7 +111,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   },
   appearance: {
     density: "comfortable",
-    theme: "light"
+    theme: "system"
   },
   preferences: {
     defaultModel: "None",
@@ -143,7 +147,9 @@ export function SettingsRoot() {
                 email: dbSettings.email || dbSettings.company_name || '',
                 phone: dbSettings.phone || '',
                 language: dbSettings.language || 'fr',
-                timezone: dbSettings.timezone || 'Europe/Paris'
+                timezone: dbSettings.timezone || 'Europe/Paris',
+                bio: dbSettings.bio || '',
+                avatarBase64: dbSettings.avatar_base64 || ''
               },
               prospecting: {
                 niches: dbSettings.niches || [],
@@ -170,7 +176,7 @@ export function SettingsRoot() {
               },
               appearance: {
                 density: 'comfortable',
-                theme: 'dark'
+                theme: ((typeof window !== 'undefined' && localStorage.getItem('theme')) as AppearanceData['theme']) || 'system'
               },
               preferences: {
                 defaultModel: dbSettings.default_model || 'None',
@@ -254,9 +260,12 @@ export function SettingsRoot() {
               full_name: nextSettings.profile.firstName,
               last_name: nextSettings.profile.lastName,
               phone: nextSettings.profile.phone,
-              email: nextSettings.profile.email,
+              // The live 'settings' table has no 'email' column yet (only company_name
+              // exists), so email is persisted there until that column is migrated.
               company_name: nextSettings.profile.email,
               timezone: nextSettings.profile.timezone,
+              bio: nextSettings.profile.bio,
+              avatar_base64: nextSettings.profile.avatarBase64,
               niches: nextSettings.prospecting.niches,
               cities: nextSettings.prospecting.cities,
               ai_tone: nextSettings.ai.tone === 'casual' ? 'Calme & Conseil' : nextSettings.ai.tone === 'professional' ? 'Direct & Closer' : 'Storytelling',

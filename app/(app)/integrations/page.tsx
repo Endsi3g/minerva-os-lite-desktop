@@ -41,19 +41,27 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { useLanguage } from '@/lib/language-context';
+import { TranslationKey } from '@/lib/translations';
 
 interface IntegrationItem {
   id: string;
   name: string;
+  nameKey?: TranslationKey;
   category: string;
   owner: string;
   email: string;
   accEmail: string;
+  accEmailKey?: TranslationKey;
   icon: React.ComponentType<{ size?: number; className?: string }> | (() => React.ReactNode);
   status: string;
+  statusKey?: TranslationKey;
   assets: string;
+  assetsKey?: TranslationKey;
   access: string;
+  accessKey?: TranslationKey;
   description: string;
+  descriptionKey?: TranslationKey;
   custom?: boolean;
 }
 
@@ -67,9 +75,12 @@ const DEFAULT_INTEGRATIONS: IntegrationItem[] = [
     accEmail: 'alexsmith.mobbin@gmail.com',
     icon: GoogleCalendarIcon,
     status: 'Active',
+    statusKey: 'integrations.status.active',
     assets: '—',
     access: 'Private',
-    description: 'Synchronise your Google Calendar to extract context from upcoming events and schedules.'
+    accessKey: 'integrations.access.private',
+    description: 'Synchronise your Google Calendar to extract context from upcoming events and schedules.',
+    descriptionKey: 'integrations.google_calendar.description'
   },
   {
     id: 'demo-website-1',
@@ -78,15 +89,19 @@ const DEFAULT_INTEGRATIONS: IntegrationItem[] = [
     owner: 'Alex Smith',
     email: 'alexsmith@minerva-os-lite.com',
     accEmail: 'This is a demo website integration',
+    accEmailKey: 'integrations.demo_website.acc_email',
     icon: () => (
       <div className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 shrink-0">
         <CheckCircle2 className="w-4 h-4 text-[#26251e]" />
       </div>
     ),
     status: 'Active',
+    statusKey: 'integrations.status.active',
     assets: '1',
     access: 'Entire workspace',
-    description: 'Why AI Will Save the World — Article page analysis and content parsing.'
+    accessKey: 'integrations.access.entire_workspace',
+    description: 'Why AI Will Save the World — Article page analysis and content parsing.',
+    descriptionKey: 'integrations.demo_website_1.description'
   },
   {
     id: 'demo-website-2',
@@ -95,19 +110,24 @@ const DEFAULT_INTEGRATIONS: IntegrationItem[] = [
     owner: 'Alex Smith',
     email: 'alexsmith@minerva-os-lite.com',
     accEmail: 'This is a demo website integration',
+    accEmailKey: 'integrations.demo_website.acc_email',
     icon: () => (
       <div className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 shrink-0">
         <CheckCircle2 className="w-4 h-4 text-[#26251e]" />
       </div>
     ),
     status: 'Active',
+    statusKey: 'integrations.status.active',
     assets: '1',
     access: 'Entire workspace',
-    description: 'NVIDIA Announces Financial Results — Parsing dynamic charts and financial data.'
+    accessKey: 'integrations.access.entire_workspace',
+    description: 'NVIDIA Announces Financial Results — Parsing dynamic charts and financial data.',
+    descriptionKey: 'integrations.demo_website_2.description'
   },
   {
     id: 'meeting-recorder',
     name: 'Meeting recorder',
+    nameKey: 'integrations.meeting_recorder.name',
     category: 'meeting',
     owner: 'Alex Smith',
     email: 'alexsmith@minerva-os-lite.com',
@@ -121,9 +141,12 @@ const DEFAULT_INTEGRATIONS: IntegrationItem[] = [
       </div>
     ),
     status: 'Active',
+    statusKey: 'integrations.status.active',
     assets: '—',
     access: 'Private',
-    description: 'Record, transcribe, and unlock knowledge from your meetings in Google Meet, Zoom, or Microsoft Teams.'
+    accessKey: 'integrations.access.private',
+    description: 'Record, transcribe, and unlock knowledge from your meetings in Google Meet, Zoom, or Microsoft Teams.',
+    descriptionKey: 'integrations.meeting_recorder.description'
   },
   {
     id: 'sharepoint',
@@ -134,9 +157,12 @@ const DEFAULT_INTEGRATIONS: IntegrationItem[] = [
     accEmail: 'alexsmith.sharepoint@minerva-os.com',
     icon: SharePointIcon,
     status: 'Active',
+    statusKey: 'integrations.status.active',
     assets: '—',
     access: 'Private',
-    description: 'Find and access all of your SharePoint content. Limited to your 1,000 most recent files in the Free tier.'
+    accessKey: 'integrations.access.private',
+    description: 'Find and access all of your SharePoint content. Limited to your 1,000 most recent files in the Free tier.',
+    descriptionKey: 'integrations.sharepoint.description'
   },
   {
     id: 'google-drive',
@@ -147,22 +173,30 @@ const DEFAULT_INTEGRATIONS: IntegrationItem[] = [
     accEmail: 'alexsmith.drive@gmail.com',
     icon: GoogleDriveIcon,
     status: 'Active',
+    statusKey: 'integrations.status.active',
     assets: '—',
     access: 'Private',
-    description: 'Ask your docs, sheets, presentations, and files anything. Limited to your 1,000 most recent files in the Free tier.'
+    accessKey: 'integrations.access.private',
+    description: 'Ask your docs, sheets, presentations, and files anything. Limited to your 1,000 most recent files in the Free tier.',
+    descriptionKey: 'integrations.google_drive.description'
   },
   {
     id: 'website',
     name: 'Website',
+    nameKey: 'integrations.website.name',
     category: 'website',
     owner: 'Alex Smith',
     email: 'alexsmith@minerva-os-lite.com',
     accEmail: 'https://minerva-os-lite.com',
     icon: () => <Globe className="w-[18px] h-[18px] text-[#7a7a76]" />,
     status: 'Active',
+    statusKey: 'integrations.status.active',
     assets: '100 pages limit',
+    assetsKey: 'integrations.website.assets_limit',
     access: 'Entire workspace',
-    description: 'Update to enterprise to index more pages. Limited to 100 pages'
+    accessKey: 'integrations.access.entire_workspace',
+    description: 'Update to enterprise to index more pages. Limited to 100 pages',
+    descriptionKey: 'integrations.website.description'
   },
   {
     id: 'todoist',
@@ -171,20 +205,25 @@ const DEFAULT_INTEGRATIONS: IntegrationItem[] = [
     owner: 'Alex Smith',
     email: 'alexsmith@minerva-os-lite.com',
     accEmail: 'Todoist Task Connector',
+    accEmailKey: 'integrations.todoist.acc_email',
     icon: () => (
       <div className="w-7 h-7 rounded-lg bg-[#de4c3a]/10 flex items-center justify-center border border-[#de4c3a]/20 shrink-0">
         <CheckCircle2 className="w-4 h-4 text-[#de4c3a]" />
       </div>
     ),
     status: 'Inactive',
+    statusKey: 'integrations.status.inactive',
     assets: '—',
     access: 'Private',
-    description: 'Synchronisez vos tâches et objectifs de la journée avec vos projets Todoist.'
+    accessKey: 'integrations.access.private',
+    description: 'Synchronisez vos tâches et objectifs de la journée avec vos projets Todoist.',
+    descriptionKey: 'integrations.todoist.description'
   }
 ];
 
 export default function IntegrationsPage() {
   const router = useRouter();
+  const { t } = useLanguage();
   const [searchQuery, setSearchQuery] = useState('');
   const [availableSearchQuery, setAvailableSearchQuery] = useState('');
   const [filterTab, setFilterTab] = useState<'all' | 'connected' | 'custom' | 'needs-config'>('all');
@@ -246,11 +285,11 @@ export default function IntegrationsPage() {
         const data = await res.json();
         setTodoistProjects(data);
       } else {
-        alert("Impossible de charger les projets. Vérifiez votre jeton API.");
+        alert(t('integrations.todoist.error_load_projects'));
       }
     } catch (err) {
       console.error(err);
-      alert("Erreur de connexion à l'API Todoist.");
+      alert(t('integrations.todoist.error_connection'));
     } finally {
       setLoadingProjects(false);
     }
@@ -273,16 +312,16 @@ export default function IntegrationsPage() {
         setConnectedIds(prev => Array.from(new Set([...prev, 'todoist'])));
         setIntegrationsList(prev => prev.map(item => {
           if (item.id === 'todoist') {
-            return { ...item, status: 'Active', accEmail: 'Compte connecté' };
+            return { ...item, status: 'Active', statusKey: 'integrations.status.active', accEmail: 'Compte connecté', accEmailKey: 'integrations.todoist.acc_email_connected' };
           }
           return item;
         }));
-        
-        alert("Configuration Todoist sauvegardée !");
+
+        alert(t('integrations.todoist.saved_success'));
         setActiveIntegrationEditId(null);
       } catch (err) {
         console.error(err);
-        alert("Erreur lors de la sauvegarde.");
+        alert(t('integrations.todoist.error_save'));
       }
     }
   };
@@ -304,14 +343,17 @@ export default function IntegrationsPage() {
             owner: 'Moi',
             email: '',
             accEmail: imp.authMethod === 'oauth' ? 'OAuth' : imp.authMethod === 'key' ? 'Clé API' : 'Aucune authentification',
+            accEmailKey: (imp.authMethod === 'oauth' ? 'integrations.auth.oauth' : imp.authMethod === 'key' ? 'integrations.auth.api_key' : 'integrations.auth.none') as TranslationKey,
             icon: () => (
               <div className="w-7 h-7 rounded-lg bg-[#059669]/10 flex items-center justify-center border border-[#059669]/20 shrink-0">
                 <Plug className="w-4 h-4 text-[#059669]" />
               </div>
             ),
             status: 'Active',
+            statusKey: 'integrations.status.active' as TranslationKey,
             assets: '—',
             access: 'Private',
+            accessKey: 'integrations.access.private' as TranslationKey,
             description: imp.description,
             custom: true
           }));
@@ -393,7 +435,7 @@ export default function IntegrationsPage() {
 
                 setIntegrationsList(prev => prev.map(item => {
                   if (item.id === 'todoist') {
-                    return { ...item, status: 'Active', accEmail: 'Compte connecté' };
+                    return { ...item, status: 'Active', statusKey: 'integrations.status.active' as TranslationKey, accEmail: 'Compte connecté', accEmailKey: 'integrations.todoist.acc_email_connected' as TranslationKey };
                   }
                   return item;
                 }));
@@ -422,15 +464,19 @@ export default function IntegrationsPage() {
       owner: userName,
       email: userEmail || `${userName.toLowerCase().replace(/\s/g, '')}@minerva-os-lite.com`,
       accEmail: 'Custom Connected Integration',
+      accEmailKey: 'integrations.custom.acc_email',
       icon: () => (
         <div className="w-7 h-7 rounded-lg bg-[#059669]/10 flex items-center justify-center border border-[#059669]/20 shrink-0">
           <Plug className="w-4 h-4 text-[#059669]" />
         </div>
       ),
       status: 'Active',
+      statusKey: 'integrations.status.active',
       assets: '—',
       access: 'Private',
+      accessKey: 'integrations.access.private',
       description: customDescription.trim() || 'Custom created integration connector.',
+      descriptionKey: customDescription.trim() ? undefined : 'integrations.custom.default_description',
       custom: true
     };
 
@@ -487,6 +533,13 @@ export default function IntegrationsPage() {
 
   const activeEditIntegration = integrationsList.find(i => i.id === activeIntegrationEditId);
 
+  const resolveItemName = (item: IntegrationItem) => item.nameKey ? t(item.nameKey, item.name) : item.name;
+  const resolveItemDescription = (item: IntegrationItem) => item.descriptionKey ? t(item.descriptionKey, item.description) : item.description;
+  const resolveItemStatus = (item: IntegrationItem) => item.statusKey ? t(item.statusKey, item.status) : item.status;
+  const resolveItemAccess = (item: IntegrationItem) => item.accessKey ? t(item.accessKey, item.access) : item.access;
+  const resolveItemAccEmail = (item: IntegrationItem) => item.accEmailKey ? t(item.accEmailKey, item.accEmail) : item.accEmail;
+  const resolveItemAssets = (item: IntegrationItem) => item.assetsKey ? t(item.assetsKey, item.assets) : item.assets;
+
   return (
     <div className="h-full flex flex-col overflow-hidden bg-white text-[#26251e] font-sans selection:bg-[#059669]/10 relative">
       <div className="absolute inset-0 opacity-[0.25] pointer-events-none bg-grid-pattern-20 z-0" />
@@ -510,9 +563,9 @@ export default function IntegrationsPage() {
                     </div>
                   )}
                   <div className="space-y-1">
-                    <h1 className="text-xl font-bold leading-none">{activeEditIntegration.name}</h1>
-                    <p className="text-xs text-[#7a7a76] line-clamp-1">{activeEditIntegration.description}</p>
-                    <p className="text-[10px] text-[#7a7a76]">Par <span className="font-semibold text-[#26251e]">{activeEditIntegration.owner}</span></p>
+                    <h1 className="text-xl font-bold leading-none">{resolveItemName(activeEditIntegration)}</h1>
+                    <p className="text-xs text-[#7a7a76] line-clamp-1">{resolveItemDescription(activeEditIntegration)}</p>
+                    <p className="text-[10px] text-[#7a7a76]">{t('integrations.editor.by')} <span className="font-semibold text-[#26251e]">{activeEditIntegration.owner}</span></p>
                   </div>
                 </div>
 
@@ -522,11 +575,11 @@ export default function IntegrationsPage() {
                     size="sm"
                     className="h-8.5 text-xs font-semibold px-3.5 border-[#e5e5e0] text-[#555552] hover:text-[#26251e] bg-white rounded-md"
                   >
-                    Export
+                    {t('integrations.editor.export')}
                   </Button>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <button title="Plus d'options" aria-label="Plus d'options" className="h-8.5 w-8.5 flex items-center justify-center rounded-md border border-[#e5e5e0] hover:bg-slate-50 text-[#7a7a76]">
+                      <button title={t('integrations.editor.more_options')} aria-label={t('integrations.editor.more_options')} className="h-8.5 w-8.5 flex items-center justify-center rounded-md border border-[#e5e5e0] hover:bg-slate-50 text-[#7a7a76]">
                         <MoreHorizontal className="w-4 h-4" />
                       </button>
                     </DropdownMenuTrigger>
@@ -539,7 +592,7 @@ export default function IntegrationsPage() {
                         }}
                         className="hover:bg-red-50 cursor-pointer p-2 rounded text-red-600"
                       >
-                        Déconnecter
+                        {t('integrations.editor.disconnect')}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -549,51 +602,51 @@ export default function IntegrationsPage() {
               {/* Editor Tabs Navigation */}
               <div className="flex items-center justify-between border-b border-[#e5e5e0] pb-px">
                 <div className="flex gap-6 text-xs font-bold text-[#7a7a76]">
-                  <button 
+                  <button
                     onClick={() => setActiveTab('build')}
                     className={`pb-2.5 transition-colors border-b-2 -mb-px ${activeTab === 'build' ? 'border-[#059669] text-[#26251e]' : 'border-transparent hover:text-[#26251e]'}`}
                   >
-                    &lt;/&gt; Build
+                    &lt;/&gt; {t('integrations.editor.tab_build')}
                   </button>
-                  <button 
+                  <button
                     onClick={() => setActiveTab('share')}
                     className={`pb-2.5 transition-colors border-b-2 -mb-px ${activeTab === 'share' ? 'border-[#059669] text-[#26251e]' : 'border-transparent hover:text-[#26251e]'}`}
                   >
-                    👥 Share
+                    👥 {t('integrations.editor.tab_share')}
                   </button>
-                  <button 
+                  <button
                     onClick={() => setActiveTab('insights')}
                     className={`pb-2.5 transition-colors border-b-2 -mb-px ${activeTab === 'insights' ? 'border-[#059669] text-[#26251e]' : 'border-transparent hover:text-[#26251e]'}`}
                   >
-                    📈 Insights
+                    📈 {t('integrations.editor.tab_insights')}
                   </button>
                 </div>
               </div>
 
               {/* Tab Content Area */}
               <div className="text-left">
-                
+
                 {/* Build Tab */}
                 {activeTab === 'build' && (
                   <div className="space-y-6">
                     <div className="flex gap-4 border-b border-[#e5e5e0] pb-px text-xs font-bold text-[#7a7a76] mb-4">
-                      <button 
+                      <button
                         onClick={() => setActiveBuildSubTab('auth')}
                         className={`pb-2 ${activeBuildSubTab === 'auth' ? 'text-[#26251e] border-b-2 border-[#26251e]' : 'hover:text-[#26251e]'}`}
                       >
-                        Authentication
+                        {t('integrations.editor.subtab_authentication')}
                       </button>
-                      <button 
+                      <button
                         onClick={() => setActiveBuildSubTab('actions')}
                         className={`pb-2 ${activeBuildSubTab === 'actions' ? 'text-[#26251e] border-b-2 border-[#26251e]' : 'hover:text-[#26251e]'}`}
                       >
-                        Actions
+                        {t('integrations.editor.subtab_actions')}
                       </button>
-                      <button 
+                      <button
                         onClick={() => setActiveBuildSubTab('triggers')}
                         className={`pb-2 ${activeBuildSubTab === 'triggers' ? 'text-[#26251e] border-b-2 border-[#26251e]' : 'hover:text-[#26251e]'}`}
                       >
-                        Triggers
+                        {t('integrations.editor.subtab_triggers')}
                       </button>
                     </div>
 
@@ -601,24 +654,24 @@ export default function IntegrationsPage() {
                       activeEditIntegration.id === 'todoist' ? (
                         <div className="border border-[#e5e5e0] rounded-xl bg-white p-6 space-y-6 shadow-2xs">
                           <div className="flex items-center justify-between border-b border-[#e5e5e0]/60 pb-3">
-                            <h2 className="font-bold text-sm">Configuration Todoist</h2>
+                            <h2 className="font-bold text-sm">{t('integrations.todoist.config_title')}</h2>
                             <Button
                               onClick={saveTodoistSettings}
                               disabled={!todoistToken}
                               className="h-8 font-bold text-xs rounded-lg px-4 bg-[#059669] hover:bg-[#047857] text-white"
                             >
-                              Sauvegarder
+                              {t('integrations.editor.save')}
                             </Button>
                           </div>
 
                           <div className="space-y-4 max-w-md">
                             <div className="space-y-1.5">
-                              <h3 className="text-xs font-bold text-[#26251e]">Jeton d'accès API (Token)</h3>
-                              <p className="text-[11px] text-[#7a7a76] leading-relaxed">Entrez votre jeton développeur Todoist (Paramètres Todoist &gt; Intégrations &gt; Developer token).</p>
+                              <h3 className="text-xs font-bold text-[#26251e]">{t('integrations.todoist.token_label')}</h3>
+                              <p className="text-[11px] text-[#7a7a76] leading-relaxed">{t('integrations.todoist.token_desc')}</p>
                               <div className="flex gap-2 pt-1">
                                 <input
                                   type="password"
-                                  placeholder="Jeton Todoist API"
+                                  placeholder={t('integrations.todoist.token_placeholder')}
                                   value={todoistToken}
                                   onChange={(e) => setTodoistToken(e.target.value)}
                                   className="flex-1 text-xs p-2 bg-white border border-[#e6e5e0] rounded focus:outline-none focus:ring-1 focus:ring-[#059669]"
@@ -629,20 +682,20 @@ export default function IntegrationsPage() {
                                   disabled={loadingProjects || !todoistToken}
                                   className="h-8 text-xs font-semibold px-3 border border-[#e5e5e0] text-[#555552] bg-white hover:bg-slate-50 shrink-0"
                                 >
-                                  {loadingProjects ? <Loader2 className="w-3 animate-spin" /> : "Charger les projets"}
+                                  {loadingProjects ? <Loader2 className="w-3 animate-spin" /> : t('integrations.todoist.load_projects')}
                                 </Button>
                               </div>
                             </div>
 
                             <div className="space-y-1.5 pt-2">
-                              <h3 className="text-xs font-bold text-[#26251e]">Projet cible</h3>
-                              <p className="text-[11px] text-[#7a7a76]">Sélectionnez le projet Todoist duquel Minerva doit extraire les objectifs.</p>
+                              <h3 className="text-xs font-bold text-[#26251e]">{t('integrations.todoist.target_project_label')}</h3>
+                              <p className="text-[11px] text-[#7a7a76]">{t('integrations.todoist.target_project_desc')}</p>
                               <select
                                 value={todoistProjectId}
                                 onChange={(e) => setTodoistProjectId(e.target.value)}
                                 className="w-full text-xs p-2 bg-white border border-[#e6e5e0] rounded focus:outline-none focus:ring-1 focus:ring-[#059669] mt-1"
                               >
-                                <option value="">-- Choisir un projet --</option>
+                                <option value="">{t('integrations.todoist.choose_project_option')}</option>
                                 {todoistProjects.map(proj => (
                                   <option key={proj.id} value={proj.id}>{proj.name}</option>
                                 ))}
@@ -665,17 +718,17 @@ export default function IntegrationsPage() {
                                     setTodoistProjects([]);
                                     setIntegrationsList(prev => prev.map(item => {
                                       if (item.id === 'todoist') {
-                                        return { ...item, status: 'Inactive', accEmail: 'Todoist Task Connector' };
+                                        return { ...item, status: 'Inactive', statusKey: 'integrations.status.inactive', accEmail: 'Todoist Task Connector', accEmailKey: 'integrations.todoist.acc_email' };
                                       }
                                       return item;
                                     }));
-                                    alert("Todoist déconnecté !");
+                                    alert(t('integrations.todoist.disconnected_success'));
                                     setActiveIntegrationEditId(null);
                                   }
                                 }}
                                 className="h-8 border border-red-200 text-red-600 bg-red-50 hover:bg-red-100 font-bold text-xs rounded-lg px-4"
                               >
-                                Déconnecter l'intégration
+                                {t('integrations.editor.disconnect_integration')}
                               </Button>
                               <Button
                                 type="button"
@@ -683,7 +736,7 @@ export default function IntegrationsPage() {
                                 onClick={() => setActiveIntegrationEditId(null)}
                                 className="h-8 text-xs text-[#555552]"
                               >
-                                Retour
+                                {t('integrations.editor.back')}
                               </Button>
                             </div>
                           </div>
@@ -691,7 +744,7 @@ export default function IntegrationsPage() {
                       ) : (
                         <div className="border border-[#e5e5e0] rounded-xl bg-white p-6 space-y-6 shadow-2xs">
                           <div className="flex items-center justify-between border-b border-[#e5e5e0]/60 pb-3">
-                            <h2 className="font-bold text-sm">Authentication</h2>
+                            <h2 className="font-bold text-sm">{t('integrations.editor.subtab_authentication')}</h2>
                             <Button
                               onClick={handleSaveEditChanges}
                               disabled={isSavingEdit || editSavedSuccess}
@@ -702,31 +755,31 @@ export default function IntegrationsPage() {
                               ) : editSavedSuccess ? (
                                 <>
                                   <Check className="w-3.5 h-3.5" />
-                                  <span>Enregistré !</span>
+                                  <span>{t('integrations.editor.saved_success')}</span>
                                 </>
                               ) : (
-                                <span>Save</span>
+                                <span>{t('integrations.editor.save')}</span>
                               )}
                             </Button>
                           </div>
 
                           <div className="space-y-4 max-w-md">
                             <div className="space-y-1">
-                              <span className="text-[10px] font-bold bg-[#f4f4f3] px-2 py-0.5 border border-[#e5e5e0] rounded">Step 1</span>
-                              <h3 className="text-xs font-bold mt-1 text-[#26251e]">Type</h3>
-                              <p className="text-[11px] text-[#7a7a76]">Select the authentication type that your app requires.</p>
+                              <span className="text-[10px] font-bold bg-[#f4f4f3] px-2 py-0.5 border border-[#e5e5e0] rounded">{t('integrations.editor.step_1')}</span>
+                              <h3 className="text-xs font-bold mt-1 text-[#26251e]">{t('integrations.editor.auth_type_title')}</h3>
+                              <p className="text-[11px] text-[#7a7a76]">{t('integrations.editor.auth_type_desc')}</p>
                             </div>
-                            
+
                             <select
                               id="auth-type-select"
-                              title="Type d'authentification"
+                              title={t('integrations.editor.auth_type_select_title')}
                               value={authType}
                               onChange={(e) => setAuthType(e.target.value as 'none' | 'key' | 'oauth')}
                               className="w-full text-xs p-2.5 bg-white border border-[#e6e5e0] rounded-md focus:outline-none focus:ring-1 focus:ring-[#059669]"
                             >
-                              <option value="none">None (Pas d&apos;authentification nécessaire)</option>
-                              <option value="key">API Key (Clé API de sécurité)</option>
-                              <option value="oauth">OAuth 2.0 Client Credentials</option>
+                              <option value="none">{t('integrations.editor.auth_option_none')}</option>
+                              <option value="key">{t('integrations.editor.auth_option_key')}</option>
+                              <option value="oauth">{t('integrations.editor.auth_option_oauth')}</option>
                             </select>
                           </div>
                         </div>
@@ -737,10 +790,10 @@ export default function IntegrationsPage() {
                       <div className="border border-[#e5e5e0] rounded-xl bg-white p-6 space-y-4 shadow-2xs flex flex-col items-center justify-center py-12">
                         <Cpu className="w-8 h-8 text-[#7a7a76]" />
                         <div className="text-center space-y-1">
-                          <h3 className="font-bold text-xs">Aucune action configurée</h3>
-                          <p className="text-[11px] text-[#7a7a76] max-w-xs leading-relaxed">Déclarez des requêtes API et des méthodes de requêtes pour que Minerva puisse interagir avec ce connecteur.</p>
+                          <h3 className="font-bold text-xs">{t('integrations.editor.no_actions_title')}</h3>
+                          <p className="text-[11px] text-[#7a7a76] max-w-xs leading-relaxed">{t('integrations.editor.no_actions_desc')}</p>
                         </div>
-                        <Button className="h-8 text-xs font-bold bg-[#059669] hover:bg-[#047857] text-white">Ajouter une action</Button>
+                        <Button className="h-8 text-xs font-bold bg-[#059669] hover:bg-[#047857] text-white">{t('integrations.editor.add_action')}</Button>
                       </div>
                     )}
 
@@ -748,10 +801,10 @@ export default function IntegrationsPage() {
                       <div className="border border-[#e5e5e0] rounded-xl bg-white p-6 space-y-4 shadow-2xs flex flex-col items-center justify-center py-12">
                         <Cpu className="w-8 h-8 text-[#7a7a76]" />
                         <div className="text-center space-y-1">
-                          <h3 className="font-bold text-xs">Aucun déclencheur configuré</h3>
-                          <p className="text-[11px] text-[#7a7a76] max-w-xs leading-relaxed">Configurez des webhooks ou des processus périodiques de scrutation (polling).</p>
+                          <h3 className="font-bold text-xs">{t('integrations.editor.no_triggers_title')}</h3>
+                          <p className="text-[11px] text-[#7a7a76] max-w-xs leading-relaxed">{t('integrations.editor.no_triggers_desc')}</p>
                         </div>
-                        <Button className="h-8 text-xs font-bold bg-[#059669] hover:bg-[#047857] text-white">Ajouter un trigger</Button>
+                        <Button className="h-8 text-xs font-bold bg-[#059669] hover:bg-[#047857] text-white">{t('integrations.editor.add_trigger')}</Button>
                       </div>
                     )}
 
@@ -762,7 +815,7 @@ export default function IntegrationsPage() {
                 {activeTab === 'share' && (
                   <div className="border border-[#e5e5e0] rounded-xl bg-white p-6 space-y-6 shadow-2xs">
                     <div className="flex items-center justify-between border-b border-[#e5e5e0]/60 pb-3">
-                      <h2 className="font-bold text-sm">Partager l&apos;intégration</h2>
+                      <h2 className="font-bold text-sm">{t('integrations.editor.share_title')}</h2>
                       <Button
                         onClick={handleSaveEditChanges}
                         disabled={isSavingEdit || editSavedSuccess}
@@ -773,10 +826,10 @@ export default function IntegrationsPage() {
                         ) : editSavedSuccess ? (
                           <>
                             <Check className="w-3.5 h-3.5" />
-                            <span>Partagé !</span>
+                            <span>{t('integrations.editor.shared_success')}</span>
                           </>
                         ) : (
-                          <span>Save</span>
+                          <span>{t('integrations.editor.save')}</span>
                         )}
                       </Button>
                     </div>
@@ -784,72 +837,72 @@ export default function IntegrationsPage() {
                     <div className="space-y-4">
                       {/* Invite input */}
                       <div className="space-y-1.5">
-                        <label htmlFor="invite-email-input-field" className="text-xs font-bold text-[#26251e]">Invite users, groups or API keys</label>
+                        <label htmlFor="invite-email-input-field" className="text-xs font-bold text-[#26251e]">{t('integrations.editor.invite_users_label')}</label>
                         <div className="flex gap-2">
-                          <Input 
+                          <Input
                             id="invite-email-input-field"
-                            title="Invite users, groups or API keys"
-                            placeholder="Add users, groups and API keys"
+                            title={t('integrations.editor.invite_users_label')}
+                            placeholder={t('integrations.editor.invite_users_placeholder')}
                             value={inviteEmailInput}
                             onChange={(e) => setInviteEmailInput(e.target.value)}
                             className="h-9 text-xs border-[#e5e5e0] focus-visible:ring-[#059669]"
                           />
-                          <Button 
-                            type="button" 
+                          <Button
+                            type="button"
                             onClick={() => {
                               if (inviteEmailInput.trim()) {
                                 setInviteEmailInput('');
-                                alert("Utilisateur invité avec succès !");
+                                alert(t('integrations.editor.invite_user_success'));
                               }
                             }}
                             className="h-9 text-xs font-bold bg-[#059669] hover:bg-[#047857] text-white"
                           >
-                            Add
+                            {t('integrations.editor.add')}
                           </Button>
                         </div>
                       </div>
 
                       {/* People with access list */}
                       <div className="space-y-2">
-                        <label htmlFor="access-role-select" className="text-xs font-bold text-[#26251e] block">People with access</label>
+                        <label htmlFor="access-role-select" className="text-xs font-bold text-[#26251e] block">{t('integrations.editor.people_with_access')}</label>
                         <div className="border border-[#e5e5e0]/60 rounded-xl p-3 bg-[#fdfdfc] flex items-center justify-between">
                           <div className="flex items-center gap-3">
                             <div className="w-8 h-8 rounded-full bg-[#059669]/10 flex items-center justify-center font-bold text-xs text-[#059669]">
                               {userName.substring(0, 1).toUpperCase()}
                             </div>
                             <div className="text-left">
-                              <p className="text-xs font-bold text-[#26251e]">{userName} (You)</p>
+                              <p className="text-xs font-bold text-[#26251e]">{userName} {t('integrations.editor.you_suffix')}</p>
                               <p className="text-[10px] text-[#7a7a76]">{activeEditIntegration.email}</p>
                             </div>
                           </div>
-                          <select id="access-role-select" title="Rôle d'accès" className="text-xs bg-white border border-[#e5e5e0] p-1.5 rounded cursor-pointer">
-                            <option value="editor">Editor</option>
-                            <option value="viewer">Viewer</option>
-                            <option value="admin">Owner</option>
+                          <select id="access-role-select" title={t('integrations.editor.access_role_title')} className="text-xs bg-white border border-[#e5e5e0] p-1.5 rounded cursor-pointer">
+                            <option value="editor">{t('integrations.editor.role_editor')}</option>
+                            <option value="viewer">{t('integrations.editor.role_viewer')}</option>
+                            <option value="admin">{t('integrations.editor.role_owner')}</option>
                           </select>
                         </div>
                       </div>
 
                       {/* General access */}
                       <div className="space-y-2">
-                        <label htmlFor="general-access-select" className="text-xs font-bold text-[#26251e] block">General access</label>
+                        <label htmlFor="general-access-select" className="text-xs font-bold text-[#26251e] block">{t('integrations.editor.general_access')}</label>
                         <div className="flex items-start gap-3 bg-[#fcfcfb] border border-[#e5e5e0] p-4 rounded-xl">
                           <div className="w-7 h-7 rounded-full bg-[#e5e5e2]/80 flex items-center justify-center text-[#7a7a76] shrink-0">
                             {generalAccessType === 'restricted' ? <Lock className="w-3.5 h-3.5" /> : <Globe className="w-3.5 h-3.5" />}
                           </div>
                           <div className="space-y-1">
-                            <select 
+                            <select
                               id="general-access-select"
-                              title="Accès général"
+                              title={t('integrations.editor.general_access')}
                               value={generalAccessType}
                               onChange={(e) => setGeneralAccessType(e.target.value as 'restricted' | 'public')}
                               className="text-xs bg-transparent border-none font-bold text-[#26251e] focus:outline-none p-0 cursor-pointer"
                             >
-                              <option value="restricted">Restricted (Privé)</option>
-                              <option value="public">Entire Workspace (Public)</option>
+                              <option value="restricted">{t('integrations.editor.access_restricted')}</option>
+                              <option value="public">{t('integrations.editor.access_public')}</option>
                             </select>
                             <p className="text-[10px] text-[#7a7a76] leading-relaxed">
-                              {generalAccessType === 'restricted' ? 'Only people with access can use this integration.' : 'Everyone in this workspace can view and use this integration.'}
+                              {generalAccessType === 'restricted' ? t('integrations.editor.access_restricted_desc') : t('integrations.editor.access_public_desc')}
                             </p>
                           </div>
                         </div>
@@ -863,11 +916,11 @@ export default function IntegrationsPage() {
                 {activeTab === 'insights' && (
                   <div className="border border-[#e5e5e0] rounded-xl bg-white p-6 space-y-6 shadow-2xs">
                     <div className="flex items-center justify-between border-b border-[#e5e5e0]/60 pb-3">
-                      <h2 className="font-bold text-sm">Insights</h2>
+                      <h2 className="font-bold text-sm">{t('integrations.editor.insights_title')}</h2>
                       <div className="flex gap-2">
-                        <select id="time-filter-select" title="Filtre de temps" className="text-xs bg-white border border-[#e5e5e0] p-1.5 rounded cursor-pointer">
-                          <option value="30">Last 30 days</option>
-                          <option value="7">Last 7 days</option>
+                        <select id="time-filter-select" title={t('integrations.editor.time_filter_title')} className="text-xs bg-white border border-[#e5e5e0] p-1.5 rounded cursor-pointer">
+                          <option value="30">{t('integrations.editor.last_30_days')}</option>
+                          <option value="7">{t('integrations.editor.last_7_days')}</option>
                         </select>
                         <div className="text-xs bg-slate-50 border border-[#e5e5e0] px-3 py-1.5 rounded font-mono text-[#555552]">
                           Mar 23 - Apr 21
@@ -880,8 +933,8 @@ export default function IntegrationsPage() {
                         <Wrench className="w-5 h-5" />
                       </div>
                       <div className="text-center space-y-1">
-                        <h4 className="font-bold text-xs text-[#26251e]">No actions configured</h4>
-                        <p className="text-[11px] text-[#7a7a76] max-w-xs leading-relaxed">Configure actions to start seeing insights about their usage statistics.</p>
+                        <h4 className="font-bold text-xs text-[#26251e]">{t('integrations.editor.no_actions_configured_title')}</h4>
+                        <p className="text-[11px] text-[#7a7a76] max-w-xs leading-relaxed">{t('integrations.editor.no_actions_configured_desc')}</p>
                       </div>
                     </div>
                   </div>
@@ -902,34 +955,34 @@ export default function IntegrationsPage() {
                 {/* Header Row */}
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 text-left">
                   <div className="space-y-1">
-                    <h1 className="text-xl font-bold tracking-tight text-[#26251e]">Connected integrations</h1>
-                    <p className="text-xs text-[#7a7a76]">Manage your connected data sources</p>
+                    <h1 className="text-xl font-bold tracking-tight text-[#26251e]">{t('integrations.connected_title')}</h1>
+                    <p className="text-xs text-[#7a7a76]">{t('integrations.connected_subtitle')}</p>
                   </div>
-                  
+
                   {/* Dropdown Menu for Add integration */}
                   <div className="shrink-0 self-start sm:self-center">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button 
+                        <Button
                           className="h-8.5 text-xs font-bold bg-[#059669] hover:bg-[#047857] text-white flex items-center gap-1.5 rounded-md px-3.5"
                         >
                           <Plus className="h-3.5 w-3.5" />
-                          <span>Add integration</span>
+                          <span>{t('integrations.add_integration')}</span>
                           <ChevronDown className="h-3 w-3 ml-0.5" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="w-44 text-xs font-semibold bg-white border-[#e5e5e0] shadow-md rounded-md p-1 font-sans">
-                        <DropdownMenuItem 
+                        <DropdownMenuItem
                           onClick={() => setShowAddScratchModal(true)}
                           className="hover:bg-slate-50 cursor-pointer p-2 rounded text-[#26251e]"
                         >
-                          + Start from scratch
+                          + {t('integrations.start_from_scratch')}
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           onClick={() => router.push('/integrations/import')}
                           className="hover:bg-slate-50 cursor-pointer p-2 rounded text-[#26251e]"
                         >
-                          Import integration
+                          {t('integrations.import_integration')}
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -942,10 +995,10 @@ export default function IntegrationsPage() {
                     {/* Search */}
                     <div className="relative w-64">
                       <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-[#7a7a76]" />
-                      <Input 
+                      <Input
                         id="search-integrations-input"
-                        title="Rechercher des intégrations"
-                        placeholder="Search integrations"
+                        title={t('integrations.search_title')}
+                        placeholder={t('integrations.search_placeholder')}
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="h-8.5 pl-8.5 text-xs bg-white border-[#e5e5e0] focus-visible:ring-1 focus-visible:ring-[#059669] rounded-md"
@@ -954,23 +1007,23 @@ export default function IntegrationsPage() {
 
                     {/* Filter tabs */}
                     <div className="flex border border-[#e5e5e0] rounded-md bg-[#f4f4f3]/40 p-0.5 text-xs">
-                      <button 
-                        onClick={() => setFilterTab('all')} 
+                      <button
+                        onClick={() => setFilterTab('all')}
                         className={`px-3 py-1 rounded font-semibold transition-all ${filterTab === 'all' ? 'bg-white text-[#26251e] shadow-2xs' : 'text-[#7a7a76] hover:text-[#26251e]'}`}
                       >
-                        All
+                        {t('integrations.filter_all')}
                       </button>
-                      <button 
-                        onClick={() => setFilterTab('connected')} 
+                      <button
+                        onClick={() => setFilterTab('connected')}
                         className={`px-3 py-1 rounded font-semibold transition-all ${filterTab === 'connected' ? 'bg-white text-[#26251e] shadow-2xs' : 'text-[#7a7a76] hover:text-[#26251e]'}`}
                       >
-                        Connected
+                        {t('integrations.filter_connected')}
                       </button>
-                      <button 
-                        onClick={() => setFilterTab('custom')} 
+                      <button
+                        onClick={() => setFilterTab('custom')}
                         className={`px-3 py-1 rounded font-semibold transition-all ${filterTab === 'custom' ? 'bg-white text-[#26251e] shadow-2xs' : 'text-[#7a7a76] hover:text-[#26251e]'}`}
                       >
-                        Built by me
+                        {t('integrations.filter_built_by_me')}
                       </button>
                     </div>
                   </div>
@@ -982,13 +1035,13 @@ export default function IntegrationsPage() {
                     <thead>
                       <tr className="bg-[#f4f4f3]/40 border-b border-[#e5e5e0] text-[#7a7a76] font-semibold">
                         <th className="py-2.5 px-4 font-bold flex items-center gap-1 cursor-pointer hover:text-[#26251e]">
-                          <span>Name</span>
+                          <span>{t('integrations.table_name')}</span>
                           <ChevronDown className="h-3 w-3" />
                         </th>
-                        <th className="py-2.5 px-4 font-bold">Connection status</th>
-                        <th className="py-2.5 px-4 font-bold">Assets</th>
+                        <th className="py-2.5 px-4 font-bold">{t('integrations.table_connection_status')}</th>
+                        <th className="py-2.5 px-4 font-bold">{t('integrations.table_assets')}</th>
                         <th className="py-2.5 px-4 font-bold flex items-center gap-1 cursor-pointer hover:text-[#26251e]">
-                          <span>Access</span>
+                          <span>{t('integrations.table_access')}</span>
                           <ChevronDown className="h-3 w-3" />
                         </th>
                         <th className="py-2.5 px-4 font-bold">Added by</th>
@@ -999,7 +1052,7 @@ export default function IntegrationsPage() {
                       {filteredConnected.length === 0 ? (
                         <tr>
                           <td colSpan={6} className="py-8 text-center text-xs text-[#7a7a76]">
-                            Aucune intégration connectée ne correspond à vos filtres.
+                            {t('integrations.no_connected_match')}
                           </td>
                         </tr>
                       ) : (
@@ -1017,22 +1070,22 @@ export default function IntegrationsPage() {
                                     </div>
                                   )}
                                   <div className="flex flex-col text-left">
-                                    <span className="font-semibold text-sm text-[#26251e]">{item.name}</span>
-                                    <span className="text-[10px] text-[#7a7a76]">{item.accEmail}</span>
+                                    <span className="font-semibold text-sm text-[#26251e]">{resolveItemName(item)}</span>
+                                    <span className="text-[10px] text-[#7a7a76]">{resolveItemAccEmail(item)}</span>
                                   </div>
                                 </div>
                               </td>
                               <td className="py-3 px-4">
                                 <div className="flex items-center gap-1.5">
                                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
-                                  <span className="font-medium text-[#26251e]">{item.status}</span>
+                                  <span className="font-medium text-[#26251e]">{resolveItemStatus(item)}</span>
                                 </div>
                               </td>
-                              <td className="py-3 px-4 text-[#7a7a76] font-medium text-left">{item.assets}</td>
+                              <td className="py-3 px-4 text-[#7a7a76] font-medium text-left">{resolveItemAssets(item)}</td>
                               <td className="py-3 px-4">
                                 <div className="flex items-center gap-1 bg-[#f4f4f3] px-2 py-0.5 rounded-md text-[10px] font-semibold text-[#555552] w-fit">
                                   {item.access === 'Private' ? <Lock className="h-2.5 w-2.5" /> : <Globe className="h-2.5 w-2.5 text-[#7a7a76]" />}
-                                  <span>{item.access}</span>
+                                  <span>{resolveItemAccess(item)}</span>
                                 </div>
                               </td>
                               <td className="py-3 px-4">
@@ -1042,13 +1095,13 @@ export default function IntegrationsPage() {
                                 </div>
                               </td>
                               <td className="py-3 px-4 text-right">
-                                <Button 
+                                <Button
                                   onClick={() => setActiveIntegrationEditId(item.id)}
-                                  variant="ghost" 
-                                  size="sm" 
+                                  variant="ghost"
+                                  size="sm"
                                   className="h-7 text-xs font-semibold px-2 text-[#7a7a76] hover:text-[#059669] hover:bg-emerald-50/50"
                                 >
-                                  Configure
+                                  {t('integrations.configure')}
                                 </Button>
                               </td>
                             </tr>
@@ -1063,20 +1116,20 @@ export default function IntegrationsPage() {
 
               {/* Available Integrations Section */}
               <div className="space-y-5 text-left">
-                
+
                 {/* Header */}
                 <div className="space-y-1">
-                  <h2 className="text-xl font-bold tracking-tight text-[#26251e]">Available integrations</h2>
-                  <p className="text-xs text-[#7a7a76]">Browse and connect your data sources</p>
+                  <h2 className="text-xl font-bold tracking-tight text-[#26251e]">{t('integrations.available_title')}</h2>
+                  <p className="text-xs text-[#7a7a76]">{t('integrations.available_subtitle')}</p>
                 </div>
 
                 {/* Search Available integrations */}
                 <div className="relative w-64 pb-2">
                   <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-[#7a7a76]" />
-                  <Input 
+                  <Input
                     id="search-available-integrations-input"
-                    title="Rechercher des intégrations disponibles"
-                    placeholder="Search integrations"
+                    title={t('integrations.search_available_title')}
+                    placeholder={t('integrations.search_placeholder')}
                     value={availableSearchQuery}
                     onChange={(e) => setAvailableSearchQuery(e.target.value)}
                     className="h-8.5 pl-8.5 text-xs bg-white border-[#e5e5e0] focus-visible:ring-1 focus-visible:ring-[#059669] rounded-md"
@@ -1087,14 +1140,14 @@ export default function IntegrationsPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {filteredAvailable.length === 0 ? (
                     <div className="col-span-2 py-8 text-center text-xs text-[#7a7a76]">
-                      All available integrations are already connected.
+                      {t('integrations.all_available_connected')}
                     </div>
                   ) : (
                     filteredAvailable.map((item) => {
                       const IconComponent = item.icon;
                       return (
-                        <div 
-                          key={item.id} 
+                        <div
+                          key={item.id}
                           onClick={() => {
                             setSelectedIntegration(item);
                             setShowConnectModal(true);
@@ -1109,13 +1162,13 @@ export default function IntegrationsPage() {
                                 <Plug className="w-5 h-5 text-[#7a7a76]" />
                               )}
                             </div>
-                            <h3 className="font-bold text-sm text-[#26251e] text-left">{item.name}</h3>
+                            <h3 className="font-bold text-sm text-[#26251e] text-left">{resolveItemName(item)}</h3>
                             <p className="text-[11px] text-[#7a7a76] leading-relaxed text-left">
-                              {item.description}
+                              {resolveItemDescription(item)}
                             </p>
                           </div>
                           <span className="text-[10px] font-bold text-[#7a7a76] uppercase tracking-wider group-hover:text-[#26251e] transition-colors mt-2 text-left">
-                            Connect
+                            {t('integrations.connect')}
                           </span>
                         </div>
                       );
@@ -1135,11 +1188,11 @@ export default function IntegrationsPage() {
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-xs">
           <div className="w-full max-w-sm bg-white border border-[#e6e5e0] rounded-xl p-5 space-y-4 shadow-xl animate-in fade-in zoom-in-95 duration-150">
             <div className="space-y-1 text-left">
-              <h3 className="text-sm font-bold text-[#26251e]">Connecter {selectedIntegration.name}</h3>
-              <p className="text-xs text-[#7a7a76]">Voulez-vous connecter cette intégration à votre espace de travail Minerva OS Lite ?</p>
+              <h3 className="text-sm font-bold text-[#26251e]">{t('integrations.connect_modal.title')} {resolveItemName(selectedIntegration)}</h3>
+              <p className="text-xs text-[#7a7a76]">{t('integrations.connect_modal.body')}</p>
             </div>
             <div className="flex justify-end gap-2 text-xs pt-1">
-              <Button 
+              <Button
                 variant="ghost"
                 onClick={() => {
                   setSelectedIntegration(null);
@@ -1147,9 +1200,9 @@ export default function IntegrationsPage() {
                 }}
                 className="h-8 text-[#555552]"
               >
-                Annuler
+                {t('integrations.cancel')}
               </Button>
-              <Button 
+              <Button
                 onClick={() => {
                   connectIntegration(selectedIntegration.id);
                   setConnectedIds(prev => [...prev, selectedIntegration.id]);
@@ -1158,7 +1211,7 @@ export default function IntegrationsPage() {
                 }}
                 className="h-8 bg-[#059669] hover:bg-[#047857] text-white font-bold"
               >
-                Confirmer la connexion
+                {t('integrations.connect_modal.confirm')}
               </Button>
             </div>
           </div>
@@ -1171,15 +1224,15 @@ export default function IntegrationsPage() {
           <form onSubmit={handleCreateCustomIntegration} className="w-full max-w-xl bg-white border border-[#e6e5e0] rounded-2xl p-6 space-y-5 shadow-2xl animate-in fade-in zoom-in-95 duration-150 text-left">
             <div className="flex justify-between items-start">
               <div className="space-y-1">
-                <h3 className="text-sm font-bold text-[#26251e]">Add integration</h3>
-                <p className="text-xs text-[#7a7a76]">Connect external tools to retrieve data, take actions, and more.</p>
+                <h3 className="text-sm font-bold text-[#26251e]">{t('integrations.add_integration')}</h3>
+                <p className="text-xs text-[#7a7a76]">{t('integrations.add_modal.subtitle')}</p>
               </div>
-              <button 
-                type="button" 
+              <button
+                type="button"
                 onClick={() => setShowAddScratchModal(false)}
                 className="text-[#7a7a76] hover:text-[#26251e] p-1 rounded-md hover:bg-slate-100"
-                title="Fermer"
-                aria-label="Fermer"
+                title={t('integrations.close')}
+                aria-label={t('integrations.close')}
               >
                 <X className="w-4 h-4" />
               </button>
@@ -1187,62 +1240,62 @@ export default function IntegrationsPage() {
 
             {/* Type selector */}
             <div className="space-y-2">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Type</label>
+              <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">{t('integrations.add_modal.type_label')}</label>
               <div className="grid grid-cols-3 gap-3">
                 {/* Scratch Card */}
-                <div 
+                <div
                   onClick={() => setCustomType('scratch')}
                   className={`p-4 border rounded-xl flex flex-col items-center justify-center text-center cursor-pointer transition-all ${customType === 'scratch' ? 'border-[#059669] bg-[#059669]/5 shadow-xs' : 'border-[#e5e5e0] hover:border-[#7a7a76] bg-white'}`}
                 >
                   <div className="w-10 h-10 rounded-lg bg-emerald-500/10 text-[#059669] flex items-center justify-center font-bold text-sm mb-3">
                     &lt;/&gt;
                   </div>
-                  <h4 className="font-bold text-[11px] text-[#26251e] mb-1">Build integration from scratch</h4>
-                  <input 
-                    type="radio" 
-                    title="Build integration from scratch"
-                    aria-label="Build integration from scratch"
-                    checked={customType === 'scratch'} 
+                  <h4 className="font-bold text-[11px] text-[#26251e] mb-1">{t('integrations.add_modal.type_scratch')}</h4>
+                  <input
+                    type="radio"
+                    title={t('integrations.add_modal.type_scratch')}
+                    aria-label={t('integrations.add_modal.type_scratch')}
+                    checked={customType === 'scratch'}
                     onChange={() => setCustomType('scratch')}
-                    className="text-[#059669] focus:ring-[#059669] mt-2" 
+                    className="text-[#059669] focus:ring-[#059669] mt-2"
                   />
                 </div>
 
                 {/* MCP Card */}
-                <div 
+                <div
                   onClick={() => setCustomType('mcp')}
                   className={`p-4 border rounded-xl flex flex-col items-center justify-center text-center cursor-pointer transition-all ${customType === 'mcp' ? 'border-[#059669] bg-[#059669]/5 shadow-xs' : 'border-[#e5e5e0] hover:border-[#7a7a76] bg-white'}`}
                 >
                   <div className="w-10 h-10 rounded-lg bg-emerald-500/10 text-[#059669] flex items-center justify-center font-bold text-[10px] mb-3">
                     MCP
                   </div>
-                  <h4 className="font-bold text-[11px] text-[#26251e] mb-1">Connect remote MCP</h4>
-                  <input 
-                    type="radio" 
-                    title="Connect remote MCP"
-                    aria-label="Connect remote MCP"
-                    checked={customType === 'mcp'} 
+                  <h4 className="font-bold text-[11px] text-[#26251e] mb-1">{t('integrations.add_modal.type_mcp')}</h4>
+                  <input
+                    type="radio"
+                    title={t('integrations.add_modal.type_mcp')}
+                    aria-label={t('integrations.add_modal.type_mcp')}
+                    checked={customType === 'mcp'}
                     onChange={() => setCustomType('mcp')}
-                    className="text-[#059669] focus:ring-[#059669] mt-2" 
+                    className="text-[#059669] focus:ring-[#059669] mt-2"
                   />
                 </div>
 
                 {/* A2A Card */}
-                <div 
+                <div
                   onClick={() => setCustomType('a2a')}
                   className={`p-4 border rounded-xl flex flex-col items-center justify-center text-center cursor-pointer transition-all ${customType === 'a2a' ? 'border-[#059669] bg-[#059669]/5 shadow-xs' : 'border-[#e5e5e0] hover:border-[#7a7a76] bg-white'}`}
                 >
                   <div className="w-10 h-10 rounded-lg bg-emerald-500/10 text-[#059669] flex items-center justify-center font-bold text-[10px] mb-3">
                     A2A
                   </div>
-                  <h4 className="font-bold text-[11px] text-[#26251e] mb-1">Connect Remote Agent (A2A)</h4>
-                  <input 
-                    type="radio" 
-                    title="Connect Remote Agent (A2A)"
-                    aria-label="Connect Remote Agent (A2A)"
-                    checked={customType === 'a2a'} 
+                  <h4 className="font-bold text-[11px] text-[#26251e] mb-1">{t('integrations.add_modal.type_a2a')}</h4>
+                  <input
+                    type="radio"
+                    title={t('integrations.add_modal.type_a2a')}
+                    aria-label={t('integrations.add_modal.type_a2a')}
+                    checked={customType === 'a2a'}
                     onChange={() => setCustomType('a2a')}
-                    className="text-[#059669] focus:ring-[#059669] mt-2" 
+                    className="text-[#059669] focus:ring-[#059669] mt-2"
                   />
                 </div>
               </div>
@@ -1250,13 +1303,13 @@ export default function IntegrationsPage() {
 
             {/* Inputs */}
             <div className="space-y-1.5">
-              <label htmlFor="custom-integration-name" className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Name</label>
-              <input 
+              <label htmlFor="custom-integration-name" className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">{t('integrations.add_modal.name_label')}</label>
+              <input
                 id="custom-integration-name"
-                title="Nom de l'intégration"
-                type="text" 
+                title={t('integrations.add_modal.name_field_title')}
+                type="text"
                 required
-                placeholder="Enter integration name"
+                placeholder={t('integrations.add_modal.name_placeholder')}
                 value={customName}
                 onChange={(e) => setCustomName(e.target.value)}
                 className="w-full text-xs p-2.5 bg-white border border-[#e6e5e0] rounded-md focus:outline-none focus:ring-1 focus:ring-[#059669]"
@@ -1264,11 +1317,11 @@ export default function IntegrationsPage() {
             </div>
 
             <div className="space-y-1.5">
-              <label htmlFor="custom-integration-description" className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Integration description</label>
-              <textarea 
+              <label htmlFor="custom-integration-description" className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">{t('integrations.add_modal.description_label')}</label>
+              <textarea
                 id="custom-integration-description"
-                title="Description de l'intégration"
-                placeholder="Enter integration description"
+                title={t('integrations.add_modal.description_field_title')}
+                placeholder={t('integrations.add_modal.description_placeholder')}
                 value={customDescription}
                 onChange={(e) => setCustomDescription(e.target.value)}
                 className="w-full text-xs p-2.5 bg-white border border-[#e6e5e0] rounded-md focus:outline-none focus:ring-1 focus:ring-[#059669] h-20 resize-none"
@@ -1276,19 +1329,19 @@ export default function IntegrationsPage() {
             </div>
 
             <div className="flex justify-end gap-2 text-xs pt-2 border-t border-[#e5e5e0]/60">
-              <Button 
+              <Button
                 type="button"
                 variant="ghost"
                 onClick={() => setShowAddScratchModal(false)}
                 className="h-8.5 text-[#555552]"
               >
-                Cancel
+                {t('integrations.cancel')}
               </Button>
-              <Button 
+              <Button
                 type="submit"
                 className="h-8.5 bg-[#059669] hover:bg-[#047857] text-white font-bold"
               >
-                Create
+                {t('integrations.create')}
               </Button>
             </div>
           </form>
@@ -1302,26 +1355,26 @@ export default function IntegrationsPage() {
             <div className="space-y-1">
               <h3 className="text-sm font-bold text-[#26251e] flex items-center gap-2">
                 <UserPlus className="w-4 h-4 text-[#059669]" />
-                <span>Inviter des Collaborateurs</span>
+                <span>{t('integrations.invite_modal.title')}</span>
               </h3>
-              <p className="text-xs text-[#7a7a76]">Ajoutez des membres d&apos;équipe pour collaborer sur vos campagnes de prospection.</p>
+              <p className="text-xs text-[#7a7a76]">{t('integrations.invite_modal.subtitle')}</p>
             </div>
 
             {inviteSuccess ? (
               <div className="py-6 flex flex-col items-center justify-center space-y-2 text-[#059669]">
                 <Check className="w-8 h-8 rounded-full bg-[#059669]/10 p-1.5 border border-[#059669]/20 animate-bounce" />
-                <p className="text-xs font-bold">Invitation envoyée avec succès !</p>
+                <p className="text-xs font-bold">{t('integrations.invite_modal.success')}</p>
               </div>
             ) : (
               <>
                 <div className="space-y-1">
-                  <label htmlFor="invite-email-input" className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Adresse e-mail</label>
-                  <input 
+                  <label htmlFor="invite-email-input" className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">{t('integrations.invite_modal.email_label')}</label>
+                  <input
                     id="invite-email-input"
-                    title="Adresse e-mail"
-                    type="email" 
+                    title={t('integrations.invite_modal.email_label')}
+                    type="email"
                     required
-                    placeholder="Ex: collaborateur@agence.com"
+                    placeholder={t('integrations.invite_modal.email_placeholder')}
                     value={inviteEmail}
                     onChange={(e) => setInviteEmail(e.target.value)}
                     className="w-full text-xs p-2.5 bg-white border border-[#e6e5e0] rounded-md focus:outline-none focus:ring-1 focus:ring-[#059669]"
@@ -1329,7 +1382,7 @@ export default function IntegrationsPage() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76] block mb-1">Rôle d&apos;accès</label>
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76] block mb-1">{t('integrations.invite_modal.role_label')}</label>
                   <div className="flex gap-2">
                     {(['editor', 'viewer', 'admin'] as const).map(role => (
                       <button
@@ -1338,14 +1391,14 @@ export default function IntegrationsPage() {
                         onClick={() => setInviteRole(role)}
                         className={`flex-1 py-1.5 text-xs font-semibold rounded-md border text-center transition-colors capitalize ${inviteRole === role ? 'bg-[#059669] border-[#059669] text-white' : 'bg-white border-[#e6e5e0] text-[#555552] hover:bg-slate-50'}`}
                       >
-                        {role}
+                        {role === 'editor' ? t('integrations.invite_modal.role_editor') : role === 'viewer' ? t('integrations.invite_modal.role_viewer') : t('integrations.invite_modal.role_admin')}
                       </button>
                     ))}
                   </div>
                 </div>
 
                 <div className="flex justify-end gap-2 text-xs pt-2 border-t border-[#e5e5e0]/60">
-                  <Button 
+                  <Button
                     type="button"
                     variant="ghost"
                     onClick={() => {
@@ -1356,9 +1409,9 @@ export default function IntegrationsPage() {
                     className="h-8 text-[#555552]"
                     disabled={isSendingInvite}
                   >
-                    Annuler
+                    {t('integrations.cancel')}
                   </Button>
-                  <Button 
+                  <Button
                     type="submit"
                     disabled={isSendingInvite}
                     className="h-8 bg-[#059669] hover:bg-[#047857] text-white font-bold flex items-center gap-1.5"
@@ -1366,10 +1419,10 @@ export default function IntegrationsPage() {
                     {isSendingInvite ? (
                       <>
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                        <span>Envoi...</span>
+                        <span>{t('integrations.invite_modal.sending')}</span>
                       </>
                     ) : (
-                      <span>Envoyer l&apos;invitation</span>
+                      <span>{t('integrations.invite_modal.send')}</span>
                     )}
                   </Button>
                 </div>

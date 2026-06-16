@@ -46,6 +46,13 @@ interface ReachContextType {
     nextAction: string;
     nextActionDate: string;
     notes?: string;
+    website?: string;
+    rating?: number;
+    reviewsCount?: number;
+    mapsUrl?: string;
+    photos?: string[];
+    socialLinks?: Record<string, string>;
+    assignedTo?: string;
   }) => void;
   toggleTask: (id: string) => void;
   addTask: (title: string, category: Task['category']) => void;
@@ -79,6 +86,14 @@ interface DbLead {
   score?: number | null;
   created_at: string;
   updated_at: string;
+  // Enrichment fields
+  website?: string | null;
+  rating?: number | null;
+  reviews_count?: number | null;
+  maps_url?: string | null;
+  photos?: string | null;     // JSON string in SQLite, jsonb in Supabase
+  social_links?: string | null; // JSON string in SQLite, jsonb in Supabase
+  assigned_to?: string | null;
 }
 
 interface DbNote {
@@ -108,6 +123,11 @@ interface DbSuggestion {
 
 // Mapping database Lead to UI Lead
 function mapDbLeadToUi(dbLead: DbLead, dbNotes: DbNote[] = []): Lead {
+  let photos: string[] = [];
+  let socialLinks: Record<string, string> = {};
+  try { photos = dbLead.photos ? JSON.parse(dbLead.photos as string) : []; } catch { photos = []; }
+  try { socialLinks = dbLead.social_links ? JSON.parse(dbLead.social_links as string) : {}; } catch { socialLinks = {}; }
+
   return {
     id: dbLead.id,
     businessName: dbLead.business_name,
@@ -125,6 +145,13 @@ function mapDbLeadToUi(dbLead: DbLead, dbNotes: DbNote[] = []): Lead {
     score: dbLead.score ?? 0,
     createdAt: dbLead.created_at,
     updatedAt: dbLead.updated_at,
+    website: dbLead.website || undefined,
+    rating: dbLead.rating ?? undefined,
+    reviewsCount: dbLead.reviews_count ?? undefined,
+    mapsUrl: dbLead.maps_url || undefined,
+    photos,
+    socialLinks,
+    assignedTo: dbLead.assigned_to || undefined,
     notes: dbNotes
       .filter(n => n.lead_id === dbLead.id)
       .map(n => ({
@@ -789,6 +816,13 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
     nextActionDate: string;
     notes?: string;
     imageUrl?: string;
+    website?: string;
+    rating?: number;
+    reviewsCount?: number;
+    mapsUrl?: string;
+    photos?: string[];
+    socialLinks?: Record<string, string>;
+    assignedTo?: string;
   }) => {
     if (!user || !activeWorkspace) return;
     const electronObj = typeof window !== 'undefined' && (window as any).electron;
@@ -803,9 +837,9 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
           source: leadData.source
         });
 
-        await electronObj.dbRun(`INSERT INTO leads (id, user_id, business_name, contact_name, contact_email, niche, city, source, status, temperature, next_action, next_action_date, owner, image_url, workspace_id, score, created_at, updated_at, sync_status)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending_insert')`,
-          [leadId, user.id, leadData.businessName, leadData.contactName, leadData.contactEmail || '', leadData.niche, leadData.city, leadData.source, leadData.status, leadData.temperature, leadData.nextAction, leadData.nextActionDate || null, 'Moi', leadData.imageUrl || null, activeWorkspace.id, leadScore, nowStr, nowStr]
+        await electronObj.dbRun(`INSERT INTO leads (id, user_id, business_name, contact_name, contact_email, niche, city, source, status, temperature, next_action, next_action_date, owner, image_url, workspace_id, score, website, rating, reviews_count, maps_url, photos, social_links, assigned_to, created_at, updated_at, sync_status)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending_insert')`,
+          [leadId, user.id, leadData.businessName, leadData.contactName, leadData.contactEmail || '', leadData.niche, leadData.city, leadData.source, leadData.status, leadData.temperature, leadData.nextAction, leadData.nextActionDate || null, 'Moi', leadData.imageUrl || null, activeWorkspace.id, leadScore, leadData.website || null, leadData.rating ?? null, leadData.reviewsCount ?? null, leadData.mapsUrl || null, leadData.photos ? JSON.stringify(leadData.photos) : null, leadData.socialLinks ? JSON.stringify(leadData.socialLinks) : null, leadData.assignedTo || null, nowStr, nowStr]
         );
 
         const insertedNotes: DbNote[] = [];
@@ -840,7 +874,14 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
           image_url: leadData.imageUrl || null,
           score: leadScore,
           created_at: nowStr,
-          updated_at: nowStr
+          updated_at: nowStr,
+          website: leadData.website || null,
+          rating: leadData.rating ?? null,
+          reviews_count: leadData.reviewsCount ?? null,
+          maps_url: leadData.mapsUrl || null,
+          photos: leadData.photos ? JSON.stringify(leadData.photos) : null,
+          social_links: leadData.socialLinks ? JSON.stringify(leadData.socialLinks) : null,
+          assigned_to: leadData.assignedTo || null
         }, insertedNotes);
 
         setLeads(prev => [newUiLead, ...prev]);
@@ -870,7 +911,14 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
           next_action: leadData.nextAction,
           next_action_date: leadData.nextActionDate || null,
           image_url: leadData.imageUrl || null,
-          owner: 'Moi'
+          owner: 'Moi',
+          website: leadData.website || null,
+          rating: leadData.rating ?? null,
+          reviews_count: leadData.reviewsCount ?? null,
+          maps_url: leadData.mapsUrl || null,
+          photos: leadData.photos || null,
+          social_links: leadData.socialLinks || null,
+          assigned_to: leadData.assignedTo || null
         })
         .select()
         .single();
@@ -1138,6 +1186,13 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
         if (fields.nextAction !== undefined) { dbFields.push("next_action = ?"); params.push(fields.nextAction); }
         if (fields.nextActionDate !== undefined) { dbFields.push("next_action_date = ?"); params.push(fields.nextActionDate || null); }
         if (fields.imageUrl !== undefined) { dbFields.push("image_url = ?"); params.push(fields.imageUrl || null); }
+        if (fields.website !== undefined) { dbFields.push("website = ?"); params.push(fields.website || null); }
+        if (fields.rating !== undefined) { dbFields.push("rating = ?"); params.push(fields.rating ?? null); }
+        if (fields.reviewsCount !== undefined) { dbFields.push("reviews_count = ?"); params.push(fields.reviewsCount ?? null); }
+        if (fields.mapsUrl !== undefined) { dbFields.push("maps_url = ?"); params.push(fields.mapsUrl || null); }
+        if (fields.photos !== undefined) { dbFields.push("photos = ?"); params.push(fields.photos ? JSON.stringify(fields.photos) : null); }
+        if (fields.socialLinks !== undefined) { dbFields.push("social_links = ?"); params.push(fields.socialLinks ? JSON.stringify(fields.socialLinks) : null); }
+        if (fields.assignedTo !== undefined) { dbFields.push("assigned_to = ?"); params.push(fields.assignedTo || null); }
 
         if (dbFields.length > 0) {
           dbFields.push("updated_at = ?");
@@ -1159,7 +1214,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
 
     const supabase = createClient();
 
-    const dbFields: Record<string, string | boolean | null | undefined> = {};
+    const dbFields: Record<string, string | number | boolean | string[] | Record<string, string> | null | undefined> = {};
     if (fields.businessName !== undefined) dbFields.business_name = fields.businessName;
     if (fields.contactName !== undefined) dbFields.contact_name = fields.contactName;
     if (fields.contactEmail !== undefined) dbFields.contact_email = fields.contactEmail;
@@ -1171,6 +1226,13 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
     if (fields.nextAction !== undefined) dbFields.next_action = fields.nextAction;
     if (fields.nextActionDate !== undefined) dbFields.next_action_date = fields.nextActionDate || null;
     if (fields.imageUrl !== undefined) dbFields.image_url = fields.imageUrl || null;
+    if (fields.website !== undefined) dbFields.website = fields.website || null;
+    if (fields.rating !== undefined) dbFields.rating = fields.rating ?? null;
+    if (fields.reviewsCount !== undefined) dbFields.reviews_count = fields.reviewsCount ?? null;
+    if (fields.mapsUrl !== undefined) dbFields.maps_url = fields.mapsUrl || null;
+    if (fields.photos !== undefined) dbFields.photos = (fields.photos ?? null) as any;
+    if (fields.socialLinks !== undefined) dbFields.social_links = (fields.socialLinks ?? null) as any;
+    if (fields.assignedTo !== undefined) dbFields.assigned_to = fields.assignedTo || null;
 
     try {
       const { error } = await supabase

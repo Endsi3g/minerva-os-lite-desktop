@@ -143,10 +143,20 @@ function initDb() {
     db.run(`ALTER TABLE settings ADD COLUMN bio TEXT DEFAULT NULL`, () => {});
     db.run(`ALTER TABLE settings ADD COLUMN email_signature TEXT DEFAULT NULL`, () => {});
 
+    // v2.12.0 lead enrichment migrations
+    db.run(`ALTER TABLE leads ADD COLUMN website TEXT DEFAULT NULL`, () => {});
+    db.run(`ALTER TABLE leads ADD COLUMN rating REAL DEFAULT NULL`, () => {});
+    db.run(`ALTER TABLE leads ADD COLUMN reviews_count INTEGER DEFAULT NULL`, () => {});
+    db.run(`ALTER TABLE leads ADD COLUMN maps_url TEXT DEFAULT NULL`, () => {});
+    db.run(`ALTER TABLE leads ADD COLUMN photos TEXT DEFAULT NULL`, () => {});
+    db.run(`ALTER TABLE leads ADD COLUMN social_links TEXT DEFAULT NULL`, () => {});
+    db.run(`ALTER TABLE leads ADD COLUMN assigned_to TEXT DEFAULT NULL`, () => {});
+
     // Indexes to avoid full table scans during sync
     db.run(`CREATE INDEX IF NOT EXISTS idx_leads_user_id ON leads(user_id)`);
     db.run(`CREATE INDEX IF NOT EXISTS idx_leads_sync_status ON leads(sync_status)`);
     db.run(`CREATE INDEX IF NOT EXISTS idx_leads_workspace_id ON leads(workspace_id)`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_leads_assigned_to ON leads(assigned_to)`);
     db.run(`CREATE INDEX IF NOT EXISTS idx_tasks_user_id ON tasks(user_id)`);
     db.run(`CREATE INDEX IF NOT EXISTS idx_tasks_sync_status ON tasks(sync_status)`);
     db.run(`CREATE INDEX IF NOT EXISTS idx_tasks_workspace_id ON tasks(workspace_id)`);

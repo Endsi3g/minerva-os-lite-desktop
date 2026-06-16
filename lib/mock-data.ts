@@ -24,6 +24,14 @@ export interface Lead {
   score?: number;
   createdAt: string;
   updatedAt: string;
+  // Enrichment fields (Phase 3)
+  website?: string;
+  rating?: number;
+  reviewsCount?: number;
+  mapsUrl?: string;
+  photos?: string[];
+  socialLinks?: Record<string, string>;
+  assignedTo?: string;
 }
 
 export interface Task {

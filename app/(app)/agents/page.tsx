@@ -27,28 +27,39 @@ import { MinervaIcon } from '@/components/icons';
 import { getAgents, addAgent, deleteAgent, Agent } from '@/lib/onboarding-store';
 import { useReach } from '@/lib/reach-context';
 import { createClient } from '@/lib/supabase/client';
+import { useLanguage } from '@/lib/language-context';
+import { TranslationKey } from '@/lib/translations';
 
 // Static builtin agents — always visible, defined here rather than in the local store.
 const BUILTIN_AGENTS = [
   {
     id: 'audit-gmb',
     name: 'Audit GMB Montréal',
+    nameKey: 'agents.builtin.audit_gmb.name' as TranslationKey,
     description: "Analyse la fiche Google My Business d'un commerce montréalais et génère un rapport de recommandations avec un score GMB sur 100.",
+    descriptionKey: 'agents.builtin.audit_gmb.description' as TranslationKey,
     category: 'Audit',
+    categoryKey: 'agents.builtin.category_audit' as TranslationKey,
     chatsCount: '< 50',
   },
   {
     id: 'pitcheur-qc',
     name: 'Pitcheur Québécois',
+    nameKey: 'agents.builtin.pitcheur_qc.name' as TranslationKey,
     description: 'Rédige un pitch de vente authentiquement québécois, adapté au marché local. Choisis ton canal et ton ton.',
+    descriptionKey: 'agents.builtin.pitcheur_qc.description' as TranslationKey,
     category: 'Prospection',
+    categoryKey: 'agents.builtin.category_prospecting' as TranslationKey,
     chatsCount: '< 30',
   },
   {
     id: 'radar-reputation',
     name: 'Radar Réputation',
+    nameKey: 'agents.builtin.radar_reputation.name' as TranslationKey,
     description: 'Analyse la réputation en ligne, identifie les avis négatifs et propose des réponses professionnelles adaptées.',
+    descriptionKey: 'agents.builtin.radar_reputation.description' as TranslationKey,
     category: 'Réputation',
+    categoryKey: 'agents.builtin.category_reputation' as TranslationKey,
     chatsCount: '< 20',
   },
 ] as const;
@@ -74,6 +85,7 @@ interface AgentResult {
 }
 
 export default function AgentsPage() {
+  const { t } = useLanguage();
   const [userAgents, setUserAgents] = useState<Agent[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'popular' | 'newest'>('popular');
@@ -165,10 +177,10 @@ export default function AgentsPage() {
   const allAgents: ListedAgent[] = [
     ...BUILTIN_AGENTS.map(a => ({
       id: a.id,
-      name: a.name,
-      description: a.description,
+      name: t(a.nameKey, a.name),
+      description: t(a.descriptionKey, a.description),
       isBuiltin: true,
-      category: a.category,
+      category: t(a.categoryKey, a.category),
       chatsCount: a.chatsCount,
       owner: 'Minerva',
     })),
@@ -196,7 +208,7 @@ export default function AgentsPage() {
 
   const getActiveAgentInfo = () => {
     const builtin = BUILTIN_AGENTS.find(a => a.id === activeAgentId);
-    if (builtin) return { name: builtin.name, isBuiltin: true };
+    if (builtin) return { name: t(builtin.nameKey, builtin.name), isBuiltin: true };
     const user = userAgents.find(a => a.id === activeAgentId);
     if (user) return { name: user.name, isBuiltin: false };
     return { name: '', isBuiltin: false };
@@ -382,7 +394,7 @@ export default function AgentsPage() {
                 setSaveSuccess(false);
               }}
               className="p-2 -ml-2 rounded-lg hover:bg-slate-100 text-[#7a7a76] hover:text-[#26251e] transition-colors"
-              title="Retour aux agents"
+              title={t('agents.workspace.back')}
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
@@ -390,12 +402,12 @@ export default function AgentsPage() {
               <MinervaAgentIcon />
               <div className="text-left">
                 <h2 className="font-bold text-sm leading-tight">{activeAgentInfo.name}</h2>
-                <p className="text-[10px] text-[#7a7a76] font-medium">Workspace Interactif</p>
+                <p className="text-[10px] text-[#7a7a76] font-medium">{t('agents.workspace.interactive_workspace')}</p>
               </div>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-[11px] text-[#7a7a76]">Par : <strong className="text-[#26251e] font-semibold">{activeAgentInfo.isBuiltin ? 'Minerva' : userName}</strong></span>
+            <span className="text-[11px] text-[#7a7a76]">{t('agents.workspace.by')} <strong className="text-[#26251e] font-semibold">{activeAgentInfo.isBuiltin ? 'Minerva' : userName}</strong></span>
           </div>
         </div>
 
@@ -406,11 +418,11 @@ export default function AgentsPage() {
           <div className="w-96 border-r border-[#e5e5e0] bg-[#fdfdfc]/50 p-6 flex flex-col justify-between overflow-y-auto shrink-0 text-left">
             <div className="space-y-6">
               <div>
-                <h3 className="text-xs font-bold text-[#7a7a76] uppercase tracking-wider mb-2">1. Configurer le Prospect</h3>
-                <label htmlFor="lead-select" className="block text-xs font-bold text-[#26251e] mb-1.5">Choisir un prospect ciblé</label>
+                <h3 className="text-xs font-bold text-[#7a7a76] uppercase tracking-wider mb-2">{t('agents.workspace.step1_configure_lead')}</h3>
+                <label htmlFor="lead-select" className="block text-xs font-bold text-[#26251e] mb-1.5">{t('agents.workspace.choose_lead_label')}</label>
                 <select
                   id="lead-select"
-                  title="Choisir un prospect ciblé"
+                  title={t('agents.workspace.choose_lead_label')}
                   value={selectedLeadId}
                   onChange={(e) => {
                     setSelectedLeadId(e.target.value);
@@ -420,15 +432,15 @@ export default function AgentsPage() {
                   }}
                   className="w-full text-xs p-2.5 bg-white border border-[#e6e5e0] rounded-md focus:outline-none focus:ring-1 focus:ring-[#059669] cursor-pointer"
                 >
-                  <option value="">-- Sélectionner un prospect --</option>
+                  <option value="">{t('agents.workspace.select_lead_option')}</option>
                   {leads.map(lead => (
                     <option key={lead.id} value={lead.id}>
-                      {lead.businessName} ({lead.city || 'Sans ville'})
+                      {lead.businessName} ({lead.city || t('agents.workspace.no_city')})
                     </option>
                   ))}
                 </select>
                 {leads.length === 0 && (
-                  <p className="text-[10px] text-red-500 mt-1">Aucun prospect disponible. Veuillez d&apos;abord en créer un dans l&apos;application.</p>
+                  <p className="text-[10px] text-red-500 mt-1">{t('agents.workspace.no_lead_available')}</p>
                 )}
               </div>
 
@@ -436,7 +448,7 @@ export default function AgentsPage() {
               {activeAgentId === 'audit-gmb' && (
                 <div className="space-y-4">
                   <div>
-                    <h3 className="text-xs font-bold text-[#7a7a76] uppercase tracking-wider mb-2">2. Mode d&apos;audit</h3>
+                    <h3 className="text-xs font-bold text-[#7a7a76] uppercase tracking-wider mb-2">{t('agents.workspace.step2_audit_mode')}</h3>
                     <div className="flex gap-4">
                       <label className="flex items-center gap-1.5 cursor-pointer text-xs">
                         <input
@@ -446,7 +458,7 @@ export default function AgentsPage() {
                           onChange={() => setAuditMode('quick')}
                           className="text-[#059669] focus:ring-[#059669]"
                         />
-                        <span>Scan rapide</span>
+                        <span>{t('agents.workspace.audit_mode_quick')}</span>
                       </label>
                       <label className="flex items-center gap-1.5 cursor-pointer text-xs">
                         <input
@@ -456,7 +468,7 @@ export default function AgentsPage() {
                           onChange={() => setAuditMode('deep')}
                           className="text-[#059669] focus:ring-[#059669]"
                         />
-                        <span>Analyse complète</span>
+                        <span>{t('agents.workspace.audit_mode_deep')}</span>
                       </label>
                     </div>
                   </div>
@@ -466,8 +478,8 @@ export default function AgentsPage() {
               {activeAgentId === 'pitcheur-qc' && (
                 <div className="space-y-4">
                   <div>
-                    <h3 className="text-xs font-bold text-[#7a7a76] uppercase tracking-wider mb-2">2. Canal & ton</h3>
-                    <label className="block text-xs font-bold text-[#26251e] mb-1.5">Canal de prospection</label>
+                    <h3 className="text-xs font-bold text-[#7a7a76] uppercase tracking-wider mb-2">{t('agents.workspace.step2_channel_tone')}</h3>
+                    <label className="block text-xs font-bold text-[#26251e] mb-1.5">{t('agents.workspace.prospecting_channel_label')}</label>
                     <div className="flex gap-2">
                       {(['Email', 'SMS', 'Appel'] as const).map(ch => (
                         <button
@@ -476,23 +488,23 @@ export default function AgentsPage() {
                           onClick={() => setPitchChannel(ch)}
                           className={`flex-1 py-1.5 text-xs font-semibold rounded-md border text-center transition-colors ${pitchChannel === ch ? 'bg-[#059669] border-[#059669] text-white' : 'bg-white border-[#e6e5e0] text-[#555552] hover:bg-slate-50'}`}
                         >
-                          {ch}
+                          {ch === 'Email' ? t('agents.workspace.channel_email') : ch === 'SMS' ? t('agents.workspace.channel_sms') : t('agents.workspace.channel_call')}
                         </button>
                       ))}
                     </div>
                   </div>
                   <div>
-                    <label htmlFor="pitch-tone-select" className="block text-xs font-bold text-[#26251e] mb-1.5">Ton du pitch</label>
+                    <label htmlFor="pitch-tone-select" className="block text-xs font-bold text-[#26251e] mb-1.5">{t('agents.workspace.pitch_tone_label')}</label>
                     <select
                       id="pitch-tone-select"
-                      title="Ton du pitch"
+                      title={t('agents.workspace.pitch_tone_label')}
                       value={pitchTone}
                       onChange={(e) => setPitchTone(e.target.value)}
                       className="w-full text-xs p-2.5 bg-white border border-[#e6e5e0] rounded-md focus:outline-none focus:ring-1 focus:ring-[#059669]"
                     >
-                      <option value="Chaleureux">Chaleureux & Amical</option>
-                      <option value="Direct">Direct & Sans détour</option>
-                      <option value="Storytelling">Storytelling</option>
+                      <option value="Chaleureux">{t('agents.workspace.tone_warm')}</option>
+                      <option value="Direct">{t('agents.workspace.tone_direct')}</option>
+                      <option value="Storytelling">{t('agents.workspace.tone_storytelling')}</option>
                     </select>
                   </div>
                 </div>
@@ -501,11 +513,11 @@ export default function AgentsPage() {
               {activeAgentId === 'radar-reputation' && (
                 <div className="space-y-4">
                   <div>
-                    <h3 className="text-xs font-bold text-[#7a7a76] uppercase tracking-wider mb-2">2. Source d&apos;extraction</h3>
-                    <label htmlFor="review-source-select" className="block text-xs font-bold text-[#26251e] mb-1.5">Réseau d&apos;avis</label>
+                    <h3 className="text-xs font-bold text-[#7a7a76] uppercase tracking-wider mb-2">{t('agents.workspace.step2_extraction_source')}</h3>
+                    <label htmlFor="review-source-select" className="block text-xs font-bold text-[#26251e] mb-1.5">{t('agents.workspace.review_network_label')}</label>
                     <select
                       id="review-source-select"
-                      title="Réseau d'avis"
+                      title={t('agents.workspace.review_network_label')}
                       value={reviewSource}
                       onChange={(e) => setReviewSource(e.target.value as 'google' | 'yelp' | 'facebook')}
                       className="w-full text-xs p-2.5 bg-white border border-[#e6e5e0] rounded-md focus:outline-none focus:ring-1 focus:ring-[#059669]"
@@ -528,12 +540,12 @@ export default function AgentsPage() {
                 {isRunning ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Exécution en cours...</span>
+                    <span>{t('agents.workspace.running')}</span>
                   </>
                 ) : (
                   <>
                     <Play className="w-4 h-4 fill-white" />
-                    <span>Lancer l&apos;Agent</span>
+                    <span>{t('agents.workspace.run_agent')}</span>
                   </>
                 )}
               </Button>
@@ -548,8 +560,8 @@ export default function AgentsPage() {
               {(isRunning || logs.length > 0) && (
                 <div className="border border-[#e5e5e0] bg-[#181717] text-[#10b981] font-mono text-[11px] p-4.5 rounded-xl space-y-1.5 shadow-xs overflow-hidden max-h-[160px] flex flex-col justify-end shrink-0">
                   <div className="text-[#7a7a76] text-[10px] mb-1 uppercase tracking-wider pb-1 border-b border-white/10 flex justify-between">
-                    <span>Terminal d&apos;exécution</span>
-                    {isRunning && <span className="animate-pulse flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span>Live</span>}
+                    <span>{t('agents.workspace.terminal_label')}</span>
+                    {isRunning && <span className="animate-pulse flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span>{t('agents.workspace.live_badge')}</span>}
                   </div>
                   <div className="overflow-y-auto max-h-[110px] space-y-1 scrollbar-thin scrollbar-thumb-white/15">
                     {logs.map((log, idx) => (
@@ -561,7 +573,7 @@ export default function AgentsPage() {
                     {isRunning && (
                       <div className="flex gap-2 text-white/60 animate-pulse">
                         <span className="text-white/40">&gt;</span>
-                        <span>Analyse en cours...</span>
+                        <span>{t('agents.workspace.analyzing')}</span>
                       </div>
                     )}
                   </div>
@@ -575,16 +587,16 @@ export default function AgentsPage() {
                     <Sparkles className="w-5 h-5 text-[#059669]" />
                   </div>
                   <div className="space-y-1.5 text-center max-w-sm">
-                    <h4 className="font-bold text-sm text-[#26251e]">Espace de Travail Prêt</h4>
-                    <p className="text-xs text-[#7a7a76]">Sélectionnez un prospect local dans la colonne latérale gauche puis cliquez sur <strong>Lancer l&apos;Agent</strong> pour débuter l&apos;analyse automatisée.</p>
+                    <h4 className="font-bold text-sm text-[#26251e]">{t('agents.workspace.ready_title')}</h4>
+                    <p className="text-xs text-[#7a7a76]">{t('agents.workspace.ready_desc')}</p>
                   </div>
                 </div>
               ) : isRunning ? (
                 <div className="flex-1 border border-[#e5e5e0] rounded-2xl flex flex-col items-center justify-center p-10 bg-white space-y-4 shadow-2xs">
                   <Loader2 className="w-8 h-8 text-[#059669] animate-spin" />
                   <div className="space-y-1.5 text-center">
-                    <h4 className="font-bold text-sm text-[#26251e]">Agent en Action</h4>
-                    <p className="text-xs text-[#7a7a76] max-w-xs leading-relaxed">Veuillez patienter pendant que Minerva récolte les informations et structure le rendu...</p>
+                    <h4 className="font-bold text-sm text-[#26251e]">{t('agents.workspace.in_action_title')}</h4>
+                    <p className="text-xs text-[#7a7a76] max-w-xs leading-relaxed">{t('agents.workspace.in_action_desc')}</p>
                   </div>
                 </div>
               ) : (
@@ -597,10 +609,10 @@ export default function AgentsPage() {
                         <div className="flex items-center justify-between border-b border-[#e5e5e0] pb-4">
                           <div className="flex items-center gap-2">
                             <FileText className="w-4 h-4 text-[#059669]" />
-                            <span className="font-bold text-xs">Rapport GMB généré</span>
+                            <span className="font-bold text-xs">{t('agents.workspace.gmb_report_title')}</span>
                           </div>
                           <div className="flex items-center gap-3">
-                            <span className="text-xs text-[#7a7a76]">Score :</span>
+                            <span className="text-xs text-[#7a7a76]">{t('agents.workspace.gmb_score_label')}</span>
                             <div className="h-7 px-2.5 rounded-full bg-[#059669]/10 border border-[#059669]/20 flex items-center justify-center font-bold text-xs text-[#059669]">
                               {resultData.score}/100
                             </div>
@@ -612,7 +624,7 @@ export default function AgentsPage() {
                       </div>
 
                       <div className="flex items-center justify-between pt-4 border-t border-[#e5e5e0]/60">
-                        <p className="text-[10px] text-[#7a7a76]">Le rapport sera enregistré dans l&apos;historique des notes de ce prospect.</p>
+                        <p className="text-[10px] text-[#7a7a76]">{t('agents.workspace.gmb_save_note')}</p>
                         <Button
                           onClick={handleSaveResult}
                           disabled={isSaving || saveSuccess}
@@ -623,10 +635,10 @@ export default function AgentsPage() {
                           ) : saveSuccess ? (
                             <>
                               <Check className="w-3.5 h-3.5" />
-                              <span>Audit Enregistré !</span>
+                              <span>{t('agents.workspace.gmb_saved')}</span>
                             </>
                           ) : (
-                            <span>Enregistrer dans les notes</span>
+                            <span>{t('agents.workspace.gmb_save_btn')}</span>
                           )}
                         </Button>
                       </div>
@@ -640,21 +652,21 @@ export default function AgentsPage() {
                         <div className="flex items-center justify-between border-b border-[#e5e5e0] pb-4">
                           <div className="flex items-center gap-2">
                             <Mail className="w-4 h-4 text-[#059669]" />
-                            <span className="font-bold text-xs">Pitch québécois ({pitchChannel})</span>
+                            <span className="font-bold text-xs">{t('agents.workspace.pitch_report_title')} ({pitchChannel})</span>
                           </div>
                           <span className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76] bg-[#fdfdfc] border border-[#e5e5e0] px-2 py-0.5 rounded">
-                            Ton: {pitchTone}
+                            {t('agents.workspace.pitch_tone_badge')}: {pitchTone}
                           </span>
                         </div>
 
                         <div className="border border-[#e5e5e0] rounded-xl overflow-hidden shadow-2xs">
                           <div className="bg-[#fcfcfb] px-4 py-2 border-b border-[#e5e5e0] text-[11px] text-[#7a7a76] space-y-1 font-medium">
-                            <div><span className="text-[#26251e] font-semibold">Destinataire :</span> {leads.find(l => l.id === selectedLeadId)?.contactEmail || 'non-renseigne@prospect.qc.ca'}</div>
-                            <div><span className="text-[#26251e] font-semibold">Expéditeur :</span> {userName} ({companyName})</div>
+                            <div><span className="text-[#26251e] font-semibold">{t('agents.workspace.pitch_recipient')} :</span> {leads.find(l => l.id === selectedLeadId)?.contactEmail || 'non-renseigne@prospect.qc.ca'}</div>
+                            <div><span className="text-[#26251e] font-semibold">{t('agents.workspace.pitch_sender')} :</span> {userName} ({companyName})</div>
                           </div>
                           <textarea
-                            title="Contenu du pitch"
-                            placeholder="Contenu du pitch"
+                            title={t('agents.workspace.pitch_content_title')}
+                            placeholder={t('agents.workspace.pitch_content_title')}
                             value={resultData.content}
                             onChange={(e) => setResultData({ content: e.target.value })}
                             className="w-full text-xs p-4 bg-white focus:outline-none h-64 font-sans leading-relaxed resize-none"
@@ -663,7 +675,7 @@ export default function AgentsPage() {
                       </div>
 
                       <div className="flex items-center justify-between pt-4 border-t border-[#e5e5e0]/60">
-                        <p className="text-[10px] text-[#7a7a76]">Le pitch sera enregistré dans la section brouillons de ce prospect.</p>
+                        <p className="text-[10px] text-[#7a7a76]">{t('agents.workspace.pitch_save_note')}</p>
                         <Button
                           onClick={handleSaveResult}
                           disabled={isSaving || saveSuccess}
@@ -674,10 +686,10 @@ export default function AgentsPage() {
                           ) : saveSuccess ? (
                             <>
                               <Check className="w-3.5 h-3.5" />
-                              <span>Pitch enregistré !</span>
+                              <span>{t('agents.workspace.pitch_saved')}</span>
                             </>
                           ) : (
-                            <span>Enregistrer dans les Brouillons</span>
+                            <span>{t('agents.workspace.pitch_save_btn')}</span>
                           )}
                         </Button>
                       </div>
@@ -691,12 +703,12 @@ export default function AgentsPage() {
                         <div className="flex items-center justify-between border-b border-[#e5e5e0] pb-4">
                           <div className="flex items-center gap-2">
                             <Star className="w-4 h-4 text-[#26251e] fill-[#26251e]" />
-                            <span className="font-bold text-xs">Rapport de Réputation</span>
+                            <span className="font-bold text-xs">{t('agents.workspace.radar_report_title')}</span>
                           </div>
                           <div className="flex items-center gap-1">
-                            <span className="text-[11px] text-[#7a7a76] font-medium mr-1.5">Note estimée :</span>
+                            <span className="text-[11px] text-[#7a7a76] font-medium mr-1.5">{t('agents.workspace.radar_rating_label')}</span>
                             <span className="font-bold text-xs">{resultData.rating}/5</span>
-                            <span className="text-[10px] text-[#7a7a76]">({resultData.totalReviews} avis)</span>
+                            <span className="text-[10px] text-[#7a7a76]">({resultData.totalReviews} {t('agents.workspace.radar_reviews_suffix')})</span>
                           </div>
                         </div>
                         <div className="bg-[#fcfcfb] border border-[#e5e5e0]/60 p-4 rounded-xl text-xs font-mono whitespace-pre-wrap leading-relaxed max-h-[300px] overflow-y-auto text-left">
@@ -705,7 +717,7 @@ export default function AgentsPage() {
                       </div>
 
                       <div className="flex items-center justify-between pt-4 border-t border-[#e5e5e0]/60">
-                        <p className="text-[10px] text-[#7a7a76]">Ces modèles seront sauvegardés dans les notes du prospect.</p>
+                        <p className="text-[10px] text-[#7a7a76]">{t('agents.workspace.radar_save_note')}</p>
                         <Button
                           onClick={handleSaveResult}
                           disabled={isSaving || saveSuccess}
@@ -716,10 +728,10 @@ export default function AgentsPage() {
                           ) : saveSuccess ? (
                             <>
                               <Check className="w-3.5 h-3.5" />
-                              <span>Plan enregistré !</span>
+                              <span>{t('agents.workspace.radar_saved')}</span>
                             </>
                           ) : (
-                            <span>Sauvegarder dans les Notes</span>
+                            <span>{t('agents.workspace.radar_save_btn')}</span>
                           )}
                         </Button>
                       </div>
@@ -753,9 +765,9 @@ export default function AgentsPage() {
         {/* Header Title Section */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="space-y-1.5 text-left">
-            <h1 className="text-xl font-bold text-[#26251e]">Agents</h1>
+            <h1 className="text-xl font-bold text-[#26251e]">{t('agents.page_title')}</h1>
             <p className="text-xs text-[#7a7a76]">
-              Assistants IA spécialisés pour la prospection montréalaise.
+              {t('agents.page_subtitle')}
             </p>
           </div>
           <div className="flex items-center gap-2.5 shrink-0 self-start sm:self-center">
@@ -766,7 +778,7 @@ export default function AgentsPage() {
                 className="h-8.5 text-xs font-semibold px-3 text-[#555552] hover:text-[#26251e] hover:bg-[#e5e5e2]/60 flex items-center gap-1.5 rounded-md"
               >
                 <Store className="h-3.5 w-3.5" />
-                <span>Agents Store</span>
+                <span>{t('agents.store_btn')}</span>
               </Button>
             </Link>
             <Button
@@ -775,7 +787,7 @@ export default function AgentsPage() {
               className="h-8.5 text-xs font-bold bg-[#059669] hover:bg-[#047857] text-white flex items-center gap-1.5 rounded-md px-3.5"
             >
               <Plus className="h-3.5 w-3.5" />
-              <span>Créer un agent</span>
+              <span>{t('agents.create_btn')}</span>
             </Button>
           </div>
         </div>
@@ -788,14 +800,14 @@ export default function AgentsPage() {
             className="h-8.5 text-xs font-semibold px-3 border-[#e5e5e0] text-[#555552] hover:text-[#26251e] rounded-md flex items-center gap-1.5 bg-white"
           >
             <SlidersHorizontal className="h-3.5 w-3.5 text-[#7a7a76]" />
-            <span>Filtres</span>
+            <span>{t('agents.filters_btn')}</span>
             <ChevronDown className="h-3.5 w-3.5 text-[#7a7a76] ml-0.5" />
           </Button>
 
           <div className="relative w-64">
             <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-[#7a7a76]" />
             <Input
-              placeholder="Rechercher un agent..."
+              placeholder={t('agents.search_placeholder')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="h-8.5 pl-8.5 text-xs bg-white border-[#e5e5e0] focus-visible:ring-1 focus-visible:ring-[#059669] rounded-md"
@@ -807,8 +819,8 @@ export default function AgentsPage() {
         <div className="relative border border-[#e5e5e0] rounded-xl overflow-hidden shadow-2xs h-[75px] bg-[#f4f4f3]/10 flex items-center justify-between px-6 py-4">
           <div className="absolute inset-0 opacity-[0.2] pointer-events-none bg-grid-pattern" />
           <div className="z-10 text-left space-y-0.5">
-            <h3 className="text-xs font-bold text-[#26251e]">Partagez vos agents avec la communauté</h3>
-            <p className="text-[11px] text-[#7a7a76]">Créez vos propres agents et publiez-les dans l&apos;Agents Store pour que tous les utilisateurs Minerva puissent les utiliser</p>
+            <h3 className="text-xs font-bold text-[#26251e]">{t('agents.community_banner_title')}</h3>
+            <p className="text-[11px] text-[#7a7a76]">{t('agents.community_banner_desc')}</p>
           </div>
           <Link href="/agents/store">
             <Button
@@ -816,7 +828,7 @@ export default function AgentsPage() {
               size="sm"
               className="h-8 text-xs font-semibold px-3 border-[#e5e5e0] text-[#26251e] bg-white rounded-md z-10 shrink-0 hover:bg-[#f4f4f3]/60"
             >
-              Voir le Store
+              {t('agents.community_store_btn')}
             </Button>
           </Link>
         </div>
@@ -825,9 +837,9 @@ export default function AgentsPage() {
         <div className="space-y-4">
           <div className="flex justify-between items-center border-b border-[#e5e5e0] pb-2">
             <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#7a7a76]">
-              <span>Tous les agents</span>
+              <span>{t('agents.all_agents_label')}</span>
               <span className="text-[10px] lowercase font-normal text-[#7a7a76]">
-                | {sortedAgents.length + (showLucifeeCard ? 1 : 0)} agents
+                | {sortedAgents.length + (showLucifeeCard ? 1 : 0)} {t('agents.agents_count_suffix')}
               </span>
             </div>
 
@@ -837,7 +849,7 @@ export default function AgentsPage() {
               onClick={() => setSortBy(sortBy === 'popular' ? 'newest' : 'popular')}
               className="h-7 text-xs font-semibold px-2 text-[#7a7a76] hover:text-[#26251e] flex items-center gap-1 rounded"
             >
-              <span>{sortBy === 'popular' ? 'Les plus populaires' : 'Les plus récents'}</span>
+              <span>{sortBy === 'popular' ? t('agents.sort_popular') : t('agents.sort_newest')}</span>
               <ChevronDown className="h-3 w-3" />
             </Button>
           </div>
@@ -863,7 +875,7 @@ export default function AgentsPage() {
                           deleteAgent(agent.id);
                         }}
                         className="text-[#7a7a76] hover:text-red-600 p-0.5 rounded-md hover:bg-slate-100 opacity-0 group-hover:opacity-100 transition-opacity"
-                        title="Supprimer l'agent"
+                        title={t('agents.delete_agent_title')}
                       >
                         <X className="w-3.5 h-3.5" />
                       </button>
@@ -901,12 +913,12 @@ export default function AgentsPage() {
                         <Heart className="w-4 h-4 text-[#7c3aed] fill-[#7c3aed]" />
                       </div>
                       <span className="text-[9px] font-bold uppercase tracking-wider bg-[#7c3aed]/20 text-[#7c3aed] px-1.5 py-0.5 rounded border border-[#7c3aed]/30">
-                        🥚 Easter Egg
+                        🥚 {t('agents.lucifee_badge')}
                       </span>
                     </div>
                     <h3 className="font-bold text-xs text-[#7c3aed]">Lucifee 💜</h3>
                     <p className="text-[11px] text-[#7a7a76] leading-relaxed line-clamp-4">
-                      Ton assistante IA préférée… ou presque. Drôle, attachante, et toujours là pour toi — même si ses conseils sont parfois un peu créatifs. 🌙
+                      {t('agents.lucifee_description')}
                     </p>
                   </div>
                   <div className="flex items-center justify-between text-[10px] text-[#7c3aed] font-medium border-t border-[#7c3aed]/20 pt-2.5 mt-2 relative z-10">
@@ -918,7 +930,7 @@ export default function AgentsPage() {
                     </div>
                     <div className="flex items-center gap-1">
                       <ExternalLink className="h-3 w-3" />
-                      <span>Ouvrir</span>
+                      <span>{t('agents.lucifee_open_btn')}</span>
                     </div>
                   </div>
                 </div>
@@ -931,8 +943,8 @@ export default function AgentsPage() {
                   <Sparkles className="h-5 w-5 text-[#7a7a76]" />
                 </div>
                 <div className="space-y-1 text-center">
-                  <h4 className="text-sm font-bold text-[#26251e]">Aucun agent trouvé</h4>
-                  <p className="text-xs text-[#7a7a76]">Essayez un autre terme de recherche.</p>
+                  <h4 className="text-sm font-bold text-[#26251e]">{t('agents.empty_state_title')}</h4>
+                  <p className="text-xs text-[#7a7a76]">{t('agents.empty_state_desc')}</p>
                 </div>
               </div>
             )}
@@ -946,16 +958,16 @@ export default function AgentsPage() {
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-xs">
           <form onSubmit={handleCreateAgent} className="w-full max-w-sm bg-white border border-[#e6e5e0] rounded-xl p-5 space-y-4 shadow-xl animate-in fade-in zoom-in-95 duration-150">
             <div className="space-y-1">
-              <h3 className="text-sm font-bold text-[#26251e] text-left">Créer un Agent</h3>
-              <p className="text-xs text-[#7a7a76] text-left">Configurez un nouvel assistant IA spécialisé.</p>
+              <h3 className="text-sm font-bold text-[#26251e] text-left">{t('agents.modal.title')}</h3>
+              <p className="text-xs text-[#7a7a76] text-left">{t('agents.modal.subtitle')}</p>
             </div>
 
             <div className="space-y-1 text-left">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Nom de l&apos;agent</label>
+              <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">{t('agents.modal.name_label')}</label>
               <input
                 type="text"
                 required
-                placeholder="Ex: Expert SEO Local"
+                placeholder={t('agents.modal.name_placeholder')}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 className="w-full text-xs p-2.5 bg-white border border-[#e6e5e0] rounded-md focus:outline-none focus:ring-1 focus:ring-[#059669]"
@@ -963,9 +975,9 @@ export default function AgentsPage() {
             </div>
 
             <div className="space-y-1 text-left">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Description</label>
+              <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">{t('agents.modal.desc_label')}</label>
               <textarea
-                placeholder="Ex: Analyse la structure de vos pages web et rédige des suggestions."
+                placeholder={t('agents.modal.desc_placeholder')}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 className="w-full text-xs p-2.5 bg-white border border-[#e6e5e0] rounded-md focus:outline-none focus:ring-1 focus:ring-[#059669] h-20 resize-none"
@@ -973,7 +985,7 @@ export default function AgentsPage() {
             </div>
 
             <div className="space-y-1 text-left">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76] block mb-1.5">Style d&apos;icône</label>
+              <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76] block mb-1.5">{t('agents.modal.icon_style_label')}</label>
               <div className="flex gap-4">
                 <label className="flex items-center gap-1.5 cursor-pointer text-xs">
                   <input
@@ -983,7 +995,7 @@ export default function AgentsPage() {
                     onChange={() => setIconType('minerva')}
                     className="text-[#059669] focus:ring-[#059669]"
                   />
-                  <span>Minerva M</span>
+                  <span>{t('agents.modal.icon_minerva')}</span>
                 </label>
                 <label className="flex items-center gap-1.5 cursor-pointer text-xs">
                   <input
@@ -993,7 +1005,7 @@ export default function AgentsPage() {
                     onChange={() => setIconType('gradient')}
                     className="text-[#059669] focus:ring-[#059669]"
                   />
-                  <span>Gradient</span>
+                  <span>{t('agents.modal.icon_gradient')}</span>
                 </label>
                 <label className="flex items-center gap-1.5 cursor-pointer text-xs">
                   <input
@@ -1003,7 +1015,7 @@ export default function AgentsPage() {
                     onChange={() => setIconType('black')}
                     className="text-[#059669] focus:ring-[#059669]"
                   />
-                  <span>Noir</span>
+                  <span>{t('agents.modal.icon_black')}</span>
                 </label>
               </div>
             </div>
@@ -1020,13 +1032,13 @@ export default function AgentsPage() {
                 }}
                 className="h-8 text-[#555552]"
               >
-                Annuler
+                {t('agents.modal.cancel_btn')}
               </Button>
               <Button
                 type="submit"
                 className="h-8 bg-[#059669] hover:bg-[#047857] text-white font-bold"
               >
-                Créer l&apos;agent
+                {t('agents.modal.create_btn')}
               </Button>
             </div>
           </form>

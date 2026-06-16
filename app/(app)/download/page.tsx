@@ -1,19 +1,20 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { 
-  Download, 
-  Monitor, 
-  Cpu, 
-  HardDrive, 
-  Clock, 
-  RefreshCw, 
-  CheckCircle2, 
-  AlertCircle, 
+import {
+  Download,
+  Monitor,
+  Cpu,
+  HardDrive,
+  Clock,
+  RefreshCw,
+  CheckCircle2,
+  AlertCircle,
   HelpCircle,
   FileDown,
   Activity,
-  Bell
+  Bell,
+  Smartphone
 } from 'lucide-react';
 import { useLanguage } from '@/lib/language-context';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -334,6 +335,70 @@ export default function DownloadPage() {
                   <FileDown className="h-4 w-4" />
                   <span>{t('download.btn_download')}</span>
                 </a>
+              </Button>
+            </div>
+          </Card>
+
+          {/* Android Card */}
+          <Card className="border border-[#e5e5e0] bg-white rounded-xl shadow-xs p-6 flex flex-col justify-between min-h-[220px] transition-all hover:border-[#7a7a76]">
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-[#fdfdfc] border border-[#e5e5e0] flex items-center justify-center shadow-2xs">
+                  <Smartphone className="h-5 w-5 text-[#34a853]" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-sm text-[#26251e]">
+                    {t('download.android_title')}
+                  </h3>
+                  <span className="inline-flex items-center bg-[#34a853]/5 px-2 py-0.5 rounded text-[9px] font-bold text-[#34a853] border border-[#34a853]/10 mt-0.5">
+                    Google Play
+                  </span>
+                </div>
+              </div>
+              <p className="text-xs text-[#7a7a76] leading-relaxed">
+                {t('download.android_desc')}
+              </p>
+            </div>
+
+            <div className="pt-6">
+              <Button
+                disabled
+                className="w-full h-9 text-xs font-bold bg-[#f0f0ed] text-[#a3a39c] rounded-lg gap-2 cursor-not-allowed hover:bg-[#f0f0ed]"
+              >
+                <FileDown className="h-4 w-4" />
+                <span>{t('download.btn_coming_soon')}</span>
+              </Button>
+            </div>
+          </Card>
+
+          {/* iOS Card */}
+          <Card className="border border-[#e5e5e0] bg-white rounded-xl shadow-xs p-6 flex flex-col justify-between min-h-[220px] transition-all hover:border-[#7a7a76]">
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-[#fdfdfc] border border-[#e5e5e0] flex items-center justify-center shadow-2xs">
+                  <Smartphone className="h-5 w-5 text-[#26251e]" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-sm text-[#26251e]">
+                    {t('download.ios_title')}
+                  </h3>
+                  <span className="inline-flex items-center bg-[#26251e]/5 px-2 py-0.5 rounded text-[9px] font-bold text-[#26251e] border border-[#26251e]/10 mt-0.5">
+                    App Store
+                  </span>
+                </div>
+              </div>
+              <p className="text-xs text-[#7a7a76] leading-relaxed">
+                {t('download.ios_desc')}
+              </p>
+            </div>
+
+            <div className="pt-6">
+              <Button
+                disabled
+                className="w-full h-9 text-xs font-bold bg-[#f0f0ed] text-[#a3a39c] rounded-lg gap-2 cursor-not-allowed hover:bg-[#f0f0ed]"
+              >
+                <FileDown className="h-4 w-4" />
+                <span>{t('download.btn_coming_soon')}</span>
               </Button>
             </div>
           </Card>

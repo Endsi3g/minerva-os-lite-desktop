@@ -35,6 +35,7 @@ import {
   LayoutDashboard,
   CreditCard,
   HelpCircle,
+  Tag,
 } from 'lucide-react';
 import { BottomBlur } from '@/components/ui/edge-blur';
 import { cn } from '@/lib/utils';
@@ -365,6 +366,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
     { name: t('nav.today'), href: '/today', icon: LayoutDashboard },
     { name: t('nav.prospect'), href: '/prospecting', icon: PenSquare },
     { name: t('nav.search'), href: '/leads', icon: Users },
+    { name: 'Services & Tarifs', href: '/services', icon: Tag },
     { name: t('nav.library'), href: '/library', icon: Folder },
     { name: t('nav.agents'), href: '/agents', icon: Sparkles },
     { name: t('nav.analytics'), href: '/analytics', icon: BarChart3 },
@@ -516,7 +518,12 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                                     {ws.name.substring(0, 1).toUpperCase()}
                                   </div>
                                 )}
-                                <span className="truncate max-w-[120px]">{ws.name}</span>
+                                <span className="flex flex-col min-w-0">
+                                  <span className="truncate max-w-[120px]">{ws.name}</span>
+                                  {ws.description && (
+                                    <span className="truncate max-w-[120px] text-[10px] font-normal text-[#9b9588]">{ws.description}</span>
+                                  )}
+                                </span>
                               </span>
                               {isWsActive && <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />}
                             </button>
@@ -596,6 +603,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
               
               const navLink = (
                 <Link
+                  key={item.name}
                   href={item.href}
                   onClick={() => setSidebarOpen(false)}
                   className={cn(

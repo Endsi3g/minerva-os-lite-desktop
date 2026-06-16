@@ -13,16 +13,16 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { 
-  ChevronLeft, 
-  MapPin, 
-  Mail, 
-  Calendar, 
-  User, 
-  Activity, 
-  Building, 
-  Plus, 
-  Flame, 
+import {
+  ChevronLeft,
+  MapPin,
+  Mail,
+  Calendar,
+  User,
+  Activity,
+  Building,
+  Plus,
+  Flame,
   Sparkles,
   ArrowRight,
   ClipboardList,
@@ -34,7 +34,9 @@ import {
   Send,
   Cloud,
   Camera,
-  HardDrive
+  HardDrive,
+  Tag,
+  ExternalLink
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
@@ -288,6 +290,24 @@ export function LeadDetailClient({ id }: { id: string }) {
   const [draftInstructions, setDraftInstructions] = useState('');
   const [generatedContent, setGeneratedContent] = useState('');
   const [copied, setCopied] = useState(false);
+
+  // Team members for "Assigner à"
+  interface TeamMember { id: string; email: string; full_name: string; role: string }
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  useEffect(() => {
+    const fetchTeamMembers = async () => {
+      try {
+        const res = await fetch(getApiUrl('/api/team/members'));
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data)) setTeamMembers(data);
+        }
+      } catch (e) {
+        console.error('Error fetching team members:', e);
+      }
+    };
+    fetchTeamMembers();
+  }, []);
 
   // Gmail OAuth status states
   const [gmailConnected, setGmailConnected] = useState(false);
@@ -1260,6 +1280,71 @@ export function LeadDetailClient({ id }: { id: string }) {
                     className="h-7 text-xs bg-background py-0.5 px-2"
                     disabled={isLocked}
                   />
+                </div>
+              </div>
+
+              {/* Assigner à */}
+              <div className="pt-4 border-t border-border mt-4 space-y-2">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                  <User className="h-3 w-3" />
+                  Assigner à
+                </span>
+                <Select
+                  value={lead.assignedTo || '__none__'}
+                  onValueChange={(val) => {
+                    const newVal = val === '__none__' ? undefined : val;
+                    updateLead(lead.id, { assignedTo: newVal });
+                  }}
+                  disabled={isLocked}
+                >
+                  <SelectTrigger className="h-7 w-full text-xs bg-background">
+                    <SelectValue placeholder="Non assigné" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__" className="text-xs text-muted-foreground">Non assigné</SelectItem>
+                    {teamMembers.map((m) => (
+                      <SelectItem key={m.id} value={m.id} className="text-xs">
+                        {m.full_name || m.email}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {lead.assignedTo && (
+                  <p className="text-[10px] text-muted-foreground">
+                    Assigné à : <span className="font-semibold text-foreground">{teamMembers.find(m => m.id === lead.assignedTo)?.full_name || teamMembers.find(m => m.id === lead.assignedTo)?.email || 'Membre'}</span>
+                  </p>
+                )}
+              </div>
+
+              {/* Actions terrain */}
+              <div className="pt-4 border-t border-border mt-4 space-y-2">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Actions terrain</span>
+                <div className="flex flex-col gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 text-xs gap-1.5 justify-start"
+                    onClick={() => {
+                      const url = lead.mapsUrl
+                        ? lead.mapsUrl
+                        : `https://www.google.com/maps/search/${encodeURIComponent((lead.businessName || '') + ' ' + (lead.city || ''))}`;
+                      window.open(url, '_blank');
+                    }}
+                  >
+                    <MapPin className="h-3.5 w-3.5 text-rose-500" />
+                    Voir sur Google Maps
+                    <ExternalLink className="h-3 w-3 ml-auto text-muted-foreground" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 text-xs gap-1.5 justify-start"
+                    onClick={() => { window.location.href = '/services'; }}
+                  >
+                    <Tag className="h-3.5 w-3.5 text-emerald-600" />
+                    Présenter une offre
+                    <ExternalLink className="h-3 w-3 ml-auto text-muted-foreground" />
+                  </Button>
                 </div>
               </div>
 

@@ -55,7 +55,7 @@
 }
 
 /* Base Theme variables - Cursor Inspired Warm Cream */
-:root, .dark {
+:root {
     --background: #f7f7f4; /* Warm Cream canvas */
     --foreground: #26251e; /* Warm Ink text */
     --card: #ffffff;       /* Surface Card */
@@ -107,6 +107,56 @@
     --timeline-done: #c08532;
 }
 
+/* Dark variant - same warm/emerald identity, inverted onto a warm-charcoal canvas */
+.dark {
+    --background: #16150f; /* Warm charcoal canvas */
+    --foreground: #f2f0e9; /* Warm off-white text */
+    --card: #1f1e17;       /* Elevated dark surface */
+    --card-foreground: #f2f0e9;
+    --popover: #1f1e17;
+    --popover-foreground: #f2f0e9;
+
+    --primary: #10b981;    /* Emerald Green brand primary stays consistent */
+    --primary-foreground: #052e1d;
+
+    --secondary: #232219;
+    --secondary-foreground: #f2f0e9;
+
+    --muted: #211f18;
+    --muted-foreground: #9b9588;
+
+    --accent: #232219;
+    --accent-foreground: #f2f0e9;
+
+    --destructive: #e0395c;
+    --destructive-foreground: #ffffff;
+
+    --border: #322f25;     /* Hairline border on dark surfaces */
+    --input: #322f25;
+    --ring: #10b981;
+
+    --chart-1: #dfa88f;
+    --chart-2: #9fc9a2;
+    --chart-3: #9fbbe0;
+    --chart-4: #c0a8dd;
+    --chart-5: #c08532;
+
+    --sidebar: #1b1a14;
+    --sidebar-foreground: #f2f0e9;
+    --sidebar-primary: #10b981;
+    --sidebar-primary-foreground: #052e1d;
+    --sidebar-accent: #232219;
+    --sidebar-accent-foreground: #f2f0e9;
+    --sidebar-border: #322f25;
+    --sidebar-ring: #10b981;
+
+    --timeline-thinking: #dfa88f;
+    --timeline-grep: #9fc9a2;
+    --timeline-read: #9fbbe0;
+    --timeline-edit: #c0a8dd;
+    --timeline-done: #c08532;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -150,11 +200,11 @@
 
 /* Dynamic background grids */
 .bg-grid-pattern {
-  background-image: linear-gradient(#e6e5e0 1px, transparent 1px), linear-gradient(90deg, #e6e5e0 1px, transparent 1px);
+  background-image: linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px);
   background-size: 16px 16px;
 }
 .bg-grid-pattern-20 {
-  background-image: linear-gradient(#e6e5e0 1px, transparent 1px), linear-gradient(90deg, #e6e5e0 1px, transparent 1px);
+  background-image: linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px);
   background-size: 20px 20px;
 }
 
