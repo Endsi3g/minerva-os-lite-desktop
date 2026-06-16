@@ -751,40 +751,41 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
               { href: '/help', icon: HelpCircle, label: 'Aide & Docs' },
               { href: '/changelog', icon: Megaphone, label: t('nav.changelog') },
             ].map(({ href, icon: Icon, label }) => (
-              isCollapsed ? (
-                <Tooltip key={href}>
-                  <TooltipTrigger asChild>
-                    <Link
-                      href={href}
-                      className={cn(
-                        "flex h-8 w-8 mx-auto items-center justify-center rounded-md transition-colors",
-                        pathname === href
-                          ? "bg-[#e5e5e2] text-[#26251e]"
-                          : "text-[#555552] hover:bg-[#e5e5e2]/60 hover:text-[#26251e]"
-                      )}
-                    >
-                      <Icon className="h-4 w-4" />
-                    </Link>
-                  </TooltipTrigger>
-                  <TooltipContent side="right" className="text-xs bg-[#26251e] text-white">
-                    {label}
-                  </TooltipContent>
-                </Tooltip>
-              ) : (
-                <Link
-                  key={href}
-                  href={href}
-                  className={cn(
-                    "flex items-center gap-2.5 text-xs font-semibold px-2.5 py-1.5 rounded-md transition-colors",
-                    pathname === href
-                      ? "bg-[#e5e5e2] text-[#26251e] font-semibold"
-                      : "text-[#555552] hover:text-[#26251e] hover:bg-[#e5e5e2]/60"
-                  )}
-                >
-                  <Icon className="h-4 w-4 text-[#555552]" />
-                  <span>{label}</span>
-                </Link>
-              )
+              <React.Fragment key={href}>
+                {isCollapsed ? (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Link
+                        href={href}
+                        className={cn(
+                          "flex h-8 w-8 mx-auto items-center justify-center rounded-md transition-colors",
+                          pathname === href
+                            ? "bg-[#e5e5e2] text-[#26251e]"
+                            : "text-[#555552] hover:bg-[#e5e5e2]/60 hover:text-[#26251e]"
+                        )}
+                      >
+                        <Icon className="h-4 w-4" />
+                      </Link>
+                    </TooltipTrigger>
+                    <TooltipContent side="right" className="text-xs bg-[#26251e] text-white">
+                      {label}
+                    </TooltipContent>
+                  </Tooltip>
+                ) : (
+                  <Link
+                    href={href}
+                    className={cn(
+                      "flex items-center gap-2.5 text-xs font-semibold px-2.5 py-1.5 rounded-md transition-colors",
+                      pathname === href
+                        ? "bg-[#e5e5e2] text-[#26251e] font-semibold"
+                        : "text-[#555552] hover:text-[#26251e] hover:bg-[#e5e5e2]/60"
+                    )}
+                  >
+                    <Icon className="h-4 w-4 text-[#555552]" />
+                    <span>{label}</span>
+                  </Link>
+                )}
+              </React.Fragment>
             ))}
           </div>
 
