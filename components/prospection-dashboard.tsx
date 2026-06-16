@@ -15,8 +15,8 @@ const STATUS_LABELS: Record<Lead['status'], string> = {
   Won: 'Gagnés',
   Lost: 'Perdus',
 };
-const FUNNEL_COLORS = ['#6366f1', '#f59e0b', '#8b5cf6', '#10b981', '#f43f5e'];
-const SOURCE_COLORS = ['#f54e00', '#6366f1', '#10b981', '#f59e0b', '#8b5cf6', '#06b6d4'];
+const FUNNEL_COLORS = ['#10b981', '#059669', '#047857', '#065f46', '#26251e'];
+const SOURCE_COLORS = ['#10b981', '#059669', '#047857', '#065f46', '#26251e', '#807d72'];
 
 function pct(num: number, den: number) {
   if (!den) return '0%';
@@ -79,10 +79,10 @@ export function ProspectionDashboard() {
   }, [leads]);
 
   const kpis = [
-    { label: 'Total leads', value: stats.total, sub: 'dans le pipeline', icon: Users, color: 'text-indigo-600' },
-    { label: 'Taux de contact', value: pct(stats.contacted, stats.total), sub: `${stats.contacted} contactés`, icon: TrendingUp, color: 'text-amber-600' },
-    { label: 'Taux de RDV', value: pct(stats.meeting, stats.total), sub: `${stats.meeting} rendez-vous`, icon: Calendar, color: 'text-purple-600' },
-    { label: 'Taux de conversion', value: pct(stats.won, stats.total), sub: `${stats.won} gagnés`, icon: Trophy, color: 'text-emerald-600' },
+    { label: 'Total leads', value: stats.total, sub: 'dans le pipeline', icon: Users, color: 'text-[#10b981]' },
+    { label: 'Taux de contact', value: pct(stats.contacted, stats.total), sub: `${stats.contacted} contactés`, icon: TrendingUp, color: 'text-[#10b981]' },
+    { label: 'Taux de RDV', value: pct(stats.meeting, stats.total), sub: `${stats.meeting} rendez-vous`, icon: Calendar, color: 'text-[#26251e]' },
+    { label: 'Taux de conversion', value: pct(stats.won, stats.total), sub: `${stats.won} gagnés`, icon: Trophy, color: 'text-[#10b981]' },
   ];
 
   if (stats.total === 0) {
@@ -180,7 +180,7 @@ export function ProspectionDashboard() {
                 <XAxis dataKey="niche" tick={{ fontSize: 9 }} interval={0} />
                 <YAxis hide />
                 <Tooltip contentStyle={{ fontSize: 11, borderRadius: 8 }} />
-                <Bar dataKey="total" name="Total" fill="#6366f1" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="total" name="Total" fill="#26251e" radius={[4, 4, 0, 0]} />
                 <Bar dataKey="won" name="Gagnés" fill="#10b981" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
@@ -211,8 +211,8 @@ export function ProspectionDashboard() {
                     <tr key={row.owner} className="border-b border-border/40 hover:bg-muted/30">
                       <td className="py-2 font-medium text-foreground">{row.owner}</td>
                       <td className="py-2 text-center text-foreground">{row.total}</td>
-                      <td className="py-2 text-center text-amber-600 font-semibold">{row.contacted}</td>
-                      <td className="py-2 text-center text-purple-600 font-semibold">{row.meeting}</td>
+                      <td className="py-2 text-center text-[#10b981] font-semibold">{row.contacted}</td>
+                      <td className="py-2 text-center text-[#26251e] font-semibold">{row.meeting}</td>
                       <td className="py-2 text-center text-emerald-600 font-bold">{row.won}</td>
                     </tr>
                   ))}

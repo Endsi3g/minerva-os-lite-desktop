@@ -10,17 +10,18 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { 
-  Search, 
-  MapPin, 
-  Building, 
-  Loader2, 
-  Sparkles, 
-  Check, 
-  Globe, 
-  Phone, 
-  Star, 
-  AlertCircle, 
+import { Map, MapMarker, MarkerContent, MarkerPopup } from '@/components/ui/map';
+import {
+  Search,
+  MapPin,
+  Building,
+  Loader2,
+  Sparkles,
+  Check,
+  Globe,
+  Phone,
+  Star,
+  AlertCircle,
   Database,
   Plus
 } from 'lucide-react';
@@ -37,6 +38,14 @@ interface ScrapedLead {
   reviewsCount: number;
   mapsUrl: string;
   seoAudit: string;
+  latitude?: number;
+  longitude?: number;
+}
+
+function getLeadMarkerColor(item: ScrapedLead): string {
+  if (!item.website) return '#f54e00'; // Hot
+  if (item.rating < 4.0) return '#10b981'; // Warm
+  return '#807d72'; // Cold
 }
 
 export function ProspectingRoot() {
@@ -592,6 +601,51 @@ export function ProspectingRoot() {
                   ))}
                 </TableBody>
               </Table>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Quebec map of scraped results */}
+        {!scraping && (
+          <Card className="border border-border bg-card">
+            <CardHeader className="pb-3 border-b border-border/50">
+              <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                <MapPin className="h-4 w-4 text-primary" />
+                <span>Carte des résultats</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              {scrapedLeads.length > 0 ? (
+                <div className="rounded-b-2xl overflow-hidden" style={{ height: 400 }}>
+                  <Map center={[-72.5, 46.8]} zoom={5.5} theme="light">
+                    {scrapedLeads.map((item) => (
+                      <MapMarker
+                        key={item.id}
+                        longitude={item.longitude ?? -73.5674}
+                        latitude={item.latitude ?? 45.5019}
+                      >
+                        <MarkerContent>
+                          <div
+                            className="h-3.5 w-3.5 rounded-full border-2 border-white shadow-lg"
+                            style={{ backgroundColor: getLeadMarkerColor(item) }}
+                          />
+                        </MarkerContent>
+                        <MarkerPopup>
+                          <div className="text-xs space-y-0.5 p-1">
+                            <p className="font-bold text-foreground">{item.businessName}</p>
+                            <p className="text-muted-foreground">{item.niche} · {item.city}</p>
+                            <p className="text-muted-foreground">{item.rating}★ ({item.reviewsCount} avis)</p>
+                          </div>
+                        </MarkerPopup>
+                      </MapMarker>
+                    ))}
+                  </Map>
+                </div>
+              ) : (
+                <div className="h-[200px] flex items-center justify-center text-xs text-muted-foreground p-6 text-center">
+                  Lance un scrape pour voir les résultats sur la carte
+                </div>
+              )}
             </CardContent>
           </Card>
         )}

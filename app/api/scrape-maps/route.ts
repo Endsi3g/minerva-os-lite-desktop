@@ -14,6 +14,42 @@ interface ScrapedLead {
   reviewsCount: number;
   mapsUrl: string;
   seoAudit: string;
+  latitude?: number;
+  longitude?: number;
+}
+
+// Known coordinates for major Quebec cities, used when a precise geocode isn't available
+const QUEBEC_CITY_COORDS: Record<string, [number, number]> = {
+  'montreal': [45.5019, -73.5674],
+  'montréal': [45.5019, -73.5674],
+  'quebec': [46.8139, -71.2080],
+  'québec': [46.8139, -71.2080],
+  'laval': [45.6066, -73.7124],
+  'gatineau': [45.4765, -75.7013],
+  'longueuil': [45.5312, -73.5183],
+  'sherbrooke': [45.4042, -71.8929],
+  'saguenay': [48.4279, -71.0686],
+  'levis': [46.8033, -71.1778],
+  'lévis': [46.8033, -71.1778],
+  'trois-rivieres': [46.3432, -72.5429],
+  'trois-rivières': [46.3432, -72.5429],
+  'terrebonne': [45.7000, -73.6334],
+  'saint-jean-sur-richelieu': [45.3072, -73.2619],
+  'repentigny': [45.7423, -73.4513],
+  'drummondville': [45.8835, -72.4831],
+  'granby': [45.4042, -72.7340],
+  'saint-jerome': [45.7805, -74.0034],
+  'saint-jérôme': [45.7805, -74.0034],
+};
+
+const DEFAULT_QUEBEC_COORDS: [number, number] = [46.8, -72.5]; // Province centroid fallback
+
+function getCityCoords(city: string): { latitude: number; longitude: number } {
+  const key = city.toLowerCase().trim();
+  const [lat, lng] = QUEBEC_CITY_COORDS[key] || DEFAULT_QUEBEC_COORDS;
+  // Small jitter so multiple leads in the same city don't fully overlap on the map
+  const jitter = () => (Math.random() - 0.5) * 0.04;
+  return { latitude: lat + jitter(), longitude: lng + jitter() };
 }
 
 // Dynamic generators for realistic local business data
@@ -90,7 +126,8 @@ function generateRealisticLeads(niche: string, city: string): ScrapedLead[] {
       rating: tpl.rating,
       reviewsCount: tpl.reviews,
       mapsUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(formattedName + ' ' + city)}`,
-      seoAudit: tpl.audit
+      seoAudit: tpl.audit,
+      ...getCityCoords(city)
     };
   });
 }
@@ -278,7 +315,13 @@ async function runCustomScraper(niche: string, city: string): Promise<ScrapedLea
       }
       
       const cleanNiche = niche.split(' / ')[0];
-      
+
+      const itemLat = parseFloat(item.lat);
+      const itemLon = parseFloat(item.lon);
+      const coords = Number.isFinite(itemLat) && Number.isFinite(itemLon)
+        ? { latitude: itemLat, longitude: itemLon }
+        : getCityCoords(city);
+
       leads.push({
         id: crypto.randomUUID(),
         businessName,
@@ -290,10 +333,11 @@ async function runCustomScraper(niche: string, city: string): Promise<ScrapedLea
         rating,
         reviewsCount,
         mapsUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(businessName + ' ' + city)}`,
-        seoAudit
+        seoAudit,
+        ...coords
       });
     }
-    
+
     return leads;
   } catch (err) {
     console.error("Native scraper failed:", err);
@@ -411,7 +455,7 @@ async function scrapeDirectoryFromDDG(niche: string, city: string, source: 'yelp
       }
       
       const cleanNiche = niche.split(' / ')[0];
-      
+
       leads.push({
         id: crypto.randomUUID(),
         businessName,
@@ -423,10 +467,11 @@ async function scrapeDirectoryFromDDG(niche: string, city: string, source: 'yelp
         rating,
         reviewsCount,
         mapsUrl: url,
-        seoAudit
+        seoAudit,
+        ...getCityCoords(city)
       });
     }
-    
+
     return leads;
   } catch (err) {
     console.error(`DDG Scraper failed for ${source}:`, err);
@@ -512,16 +557,20 @@ export async function POST(req: NextRequest) {
               if (datasetRes.ok) {
                 const items = await datasetRes.json();
                 
-                googleLeads = items.slice(0, 5).map((item: { stars?: number; website?: string; title?: string; phone?: string; email?: string; url?: string; cid?: string; reviewsCount?: number }, idx: number) => {
+                googleLeads = items.slice(0, 5).map((item: { stars?: number; website?: string; title?: string; phone?: string; email?: string; url?: string; cid?: string; reviewsCount?: number; location?: { lat?: number; lng?: number } }, idx: number) => {
                   const rating = item.stars || 4.0;
                   const website = item.website || '';
-                  
+
                   let seoAudit = "Fiche Google Maps standard.";
                   if (!website) {
                     seoAudit = "Fiche Maps non revendiquée. Aucun site internet référencé. Excellente opportunité de création de site internet.";
                   } else if (rating < 4.0) {
                     seoAudit = `Note locale faible (${rating}/5). Fiche Google Maps sans optimisation ni récolte active d'avis clients.`;
                   }
+
+                  const coords = Number.isFinite(item.location?.lat) && Number.isFinite(item.location?.lng)
+                    ? { latitude: item.location!.lat as number, longitude: item.location!.lng as number }
+                    : getCityCoords(city);
 
                   return {
                     id: crypto.randomUUID(),
@@ -534,7 +583,8 @@ export async function POST(req: NextRequest) {
                     rating: rating,
                     reviewsCount: item.reviewsCount || 0,
                     mapsUrl: item.url || `https://google.com/maps?cid=${item.cid}`,
-                    seoAudit: seoAudit
+                    seoAudit: seoAudit,
+                    ...coords
                   };
                 });
                 

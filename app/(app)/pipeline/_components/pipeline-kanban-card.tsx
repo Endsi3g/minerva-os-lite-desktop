@@ -100,9 +100,9 @@ export function PipelineKanbanCard({ lead }: PipelineKanbanCardProps) {
             {!!lead.score && (
               <div className={cn(
                 "flex items-center justify-center w-8 h-5 rounded border text-[9px] font-black",
-                lead.score >= 80 ? 'bg-emerald-50 text-emerald-700 border-emerald-100 dark:bg-emerald-950/20 dark:text-emerald-400'
-                  : lead.score >= 60 ? 'bg-amber-50 text-amber-700 border-amber-100 dark:bg-amber-950/20 dark:text-amber-400'
-                  : 'bg-slate-50 text-slate-600 border-slate-100 dark:bg-slate-900 dark:text-slate-400'
+                lead.score >= 80 ? 'bg-[#10b981]/10 text-[#059669] border-[#10b981]/20'
+                  : lead.score >= 60 ? 'bg-[#26251e]/10 text-[#26251e] border-[#26251e]/20'
+                  : 'bg-[#e5e5e0] text-[#807d72] border-[#e5e5e0]'
               )}>
                 {lead.score}
               </div>

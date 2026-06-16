@@ -363,7 +363,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
   const navItems = [
     { name: t('nav.today'), href: '/today', icon: LayoutDashboard },
     { name: t('nav.prospect'), href: '/prospecting', icon: PenSquare },
-    { name: t('nav.search'), href: '/leads', icon: Search },
+    { name: t('nav.search'), href: '/leads', icon: Users },
     { name: t('nav.library'), href: '/library', icon: Folder },
     { name: t('nav.agents'), href: '/agents', icon: Sparkles },
     { name: t('nav.analytics'), href: '/analytics', icon: BarChart3 },
@@ -1029,7 +1029,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
         <div className="flex items-center justify-around h-16 px-2">
           {[
             { name: t('nav.prospect'), href: '/prospecting', icon: PenSquare },
-            { name: t('nav.search'), href: '/leads', icon: Search },
+            { name: t('nav.search'), href: '/leads', icon: Users },
             { name: t('nav.library'), href: '/library', icon: Folder },
             { name: t('nav.agents'), href: '/agents', icon: Sparkles },
             { name: t('nav.integrations'), href: '/integrations', icon: Plug },
@@ -1336,18 +1336,6 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
 }
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
-
-  if (pathname === '/integrations') {
-    return (
-      <ReachProvider>
-        <TooltipProvider>
-          {children}
-        </TooltipProvider>
-      </ReachProvider>
-    );
-  }
-
   return (
     <ReachProvider>
       <TooltipProvider>

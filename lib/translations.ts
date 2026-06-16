@@ -4,7 +4,7 @@ export const translations = {
   fr: {
     // Sidebar & Layout
     "nav.prospect": "Prospecter",
-    "nav.search": "Rechercher",
+    "nav.search": "Leads",
     "nav.library": "Bibliothèque",
     "nav.agents": "Agents",
     "nav.integrations": "Intégrations",

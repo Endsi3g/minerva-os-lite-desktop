@@ -14,12 +14,12 @@ import { TodayStatsCard } from './today-stats-card';
 export function TodayRoot() {
   return (
     <div className="h-full overflow-y-auto">
-      <div className="flex flex-col gap-6 p-6 max-w-7xl mx-auto">
+      <div className="flex flex-col gap-4 p-3 sm:p-6 max-w-7xl mx-auto">
         {/* Header Section */}
         <TodayHeader />
 
         {/* Dashboard Grid */}
-        <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+        <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
           {/* Main Operational Flow (Left Column) */}
           <div className="flex flex-col gap-6">
             <TodayFocusCard />

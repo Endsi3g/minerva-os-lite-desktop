@@ -13,6 +13,14 @@ const eslintConfig = defineConfig([
       "react-hooks/set-state-in-effect": "off",
     },
   },
+  {
+    // Vendored shadcn/MapCN component — uses the ref-sync-in-render pattern
+    // intentionally to avoid stale closures in MapLibre event handlers.
+    files: ["components/ui/map.tsx"],
+    rules: {
+      "react-hooks/refs": "off",
+    },
+  },
   // Override default ignores of eslint-config-next.
   globalIgnores([
     // Default ignores of eslint-config-next:

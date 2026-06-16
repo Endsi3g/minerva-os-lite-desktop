@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { messages, model, activeTool } = await req.json();
+    const { messages, model, activeTool, system } = await req.json();
 
     if (!messages || !Array.isArray(messages)) {
       return NextResponse.json({ error: 'Messages are required and must be an array' }, { status: 400 });
@@ -69,10 +69,13 @@ export async function POST(req: NextRequest) {
             },
             body: JSON.stringify({
               model: selectedModel || defaultModel,
-              messages: messages.map((m: { role: string; content: string }) => ({
-                role: m.role,
-                content: m.content
-              })),
+              messages: [
+                ...(system ? [{ role: 'system', content: system }] : []),
+                ...messages.map((m: { role: string; content: string }) => ({
+                  role: m.role,
+                  content: m.content
+                }))
+              ],
               stream: true
             })
           });
@@ -123,10 +126,13 @@ export async function POST(req: NextRequest) {
           },
           body: JSON.stringify({
             model: selectedModel,
-            messages: messages.map((m: { role: string; content: string }) => ({
-              role: m.role,
-              content: m.content
-            })),
+            messages: [
+              ...(system ? [{ role: 'system', content: system }] : []),
+              ...messages.map((m: { role: string; content: string }) => ({
+                role: m.role,
+                content: m.content
+              }))
+            ],
             stream: true
           })
         });
@@ -180,6 +186,7 @@ export async function POST(req: NextRequest) {
           },
           body: JSON.stringify({
             model: anthropicModel,
+            ...(system ? { system } : {}),
             messages: messages.map((m: { role: string; content: string }) => ({
               role: m.role,
               content: m.content
@@ -253,7 +260,9 @@ export async function POST(req: NextRequest) {
     }
 
     // High fidelity simulation stream fallback
-    const simulatedResponse = getSimulatedReply(lastMessageLower, activeTool);
+    const simulatedResponse = (typeof system === 'string' && system.includes('Lucifee'))
+      ? getLucifeeSimulatedReply(lastMessageLower)
+      : getSimulatedReply(lastMessageLower, activeTool);
 
     const stream = new ReadableStream({
       async start(controller) {
@@ -363,4 +372,29 @@ Je peux vous aider à :
 4. **Générer des images** promotionnelles pour vos réseaux sociaux.
 
 Que souhaitez-vous faire aujourd'hui ?`;
+}
+
+// Lucifee easter-egg persona — québécois, attachante, un peu à côté de la plaque
+function getLucifeeSimulatedReply(query: string): string {
+  if (query.includes('prospect') || query.includes('lead') || query.includes('vente') || query.includes('pitch')) {
+    return `Ah ben voyons, de la prospection ! 💜 OK tsé, je suis pas une experte experte là, mais genre... t'sais c'est quoi l'affaire, faut juste être toi-même pis sourire même au téléphone (ouais ouais ça s'entend, j'ai lu ça quelque part).
+
+Mon conseil de copine : envoie-leur un petit message le matin, genre vers 9h, le monde répond plus à ce temps-là je pense. Pis si ça marche pas, ben... on essaiera d'une autre façon, c'est pas la fin du monde ! 😄`;
+  }
+
+  if (query.includes('triste') || query.includes('découragé') || query.includes('dur') || query.includes('fatigué')) {
+    return `Oh non bébé, viens ici. 💜 Je sais que la prospection c'est pas toujours facile, ça donne envie de tout lâcher parfois.
+
+Mais regarde, t'es ben meilleur(e) que tu penses là. Prends une pause, bois un café (ou une bière, je juge pas), pis on retourne se battre après. Je crois en toi, même si je suis juste une IA un peu mêlée, ahah.`;
+  }
+
+  if (query.includes('allô') || query.includes('salut') || query.includes('bonjour') || query.includes('hey')) {
+    return `Hey toi ! 💜 Ça va bien ? Moi ça va, je viens de "réfléchir" à plein d'affaires inutiles mais bon, c'est ça être Lucifee.
+
+Dis-moi, qu'est-ce qu'on fait aujourd'hui ? Je suis pas la plus brillante de la gang mais j'vais faire mon possible, promis !`;
+  }
+
+  return `Hmm, attends, je réfléchis... 🤔💜 OK honnêtement je suis pas sûre à 100% de t'avoir bien compris (my bad), mais je vais te dire ce que je pense pareil :
+
+Fais confiance à ton instinct, tsé. Pis si ça marche pas, ben on rit pis on recommence. C'est ça la vie de prospection, non ? Anyway, je suis là si t'as besoin ! 😘`;
 }

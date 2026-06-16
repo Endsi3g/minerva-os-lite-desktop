@@ -33,7 +33,7 @@ export function HotLeadsCard() {
           </div>
         </div>
         {hotLeads.length > 0 && (
-          <Badge className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500 hover:bg-amber-600 text-white">
+          <Badge className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#10b981] hover:bg-[#059669] text-white">
             {hotLeads.length}
           </Badge>
         )}

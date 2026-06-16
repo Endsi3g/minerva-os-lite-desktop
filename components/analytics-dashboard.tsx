@@ -26,7 +26,7 @@ import { useReach } from '@/lib/reach-context';
 
 export function AnalyticsDashboard() {
   const { t, locale } = useLanguage();
-  const { leads, tasks } = useReach();
+  const { leads, tasks, workspacesList } = useReach();
 
   // Date locale mapping
   const dateLocale = useMemo(() => {
@@ -55,22 +55,19 @@ export function AnalyticsDashboard() {
     setIsCalendarOpen(false);
   };
 
-  // Mock workspace statistics calculated dynamically based on existing app state
   const kpiData = useMemo(() => {
-    // total agents - calculate based on workspace/leads or seed
-    const totalAgents = Math.max(3, Math.floor(leads.length * 0.4));
-    const totalWorkflows = Math.max(5, tasks.length + 2);
-    // users in workspace
-    const totalUsers = 4; // Seeded team members count
-    const totalGroups = 2; // general + marketing
+    const distinctOwners = new Set(leads.map((l) => l.owner).filter(Boolean)).size;
+    const totalUsers = Math.max(1, distinctOwners);
+    const totalWorkflows = tasks.filter((t) => !t.completed).length;
+    const totalGroups = Math.max(1, workspacesList.length);
 
     return {
       users: totalUsers,
-      agents: totalAgents,
+      agents: 3,
       workflows: totalWorkflows,
-      groups: totalGroups
+      groups: totalGroups,
     };
-  }, [leads, tasks]);
+  }, [leads, tasks, workspacesList]);
 
   // Generate historical data points within date range
   const chartPoints = useMemo(() => {
@@ -337,7 +334,7 @@ export function AnalyticsDashboard() {
         {/* User Card */}
         <Card className="border border-border bg-card shadow-xs">
           <CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2.5 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+            <div className="p-2.5 rounded-lg bg-[#10b981]/10 text-[#10b981]">
               <Users className="w-4 h-4" />
             </div>
             <div className="min-w-0">
@@ -354,7 +351,7 @@ export function AnalyticsDashboard() {
         {/* Agents Card */}
         <Card className="border border-border bg-card shadow-xs">
           <CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2.5 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400">
+            <div className="p-2.5 rounded-lg bg-[#26251e]/10 text-[#26251e]">
               <Bot className="w-4 h-4" />
             </div>
             <div className="min-w-0">
@@ -371,7 +368,7 @@ export function AnalyticsDashboard() {
         {/* Workflows Card */}
         <Card className="border border-border bg-card shadow-xs">
           <CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2.5 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-orange-400">
+            <div className="p-2.5 rounded-lg bg-[#10b981]/10 text-[#10b981]">
               <Zap className="w-4 h-4" />
             </div>
             <div className="min-w-0">
@@ -388,7 +385,7 @@ export function AnalyticsDashboard() {
         {/* Groups Card */}
         <Card className="border border-border bg-card shadow-xs">
           <CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2.5 rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400">
+            <div className="p-2.5 rounded-lg bg-[#26251e]/10 text-[#26251e]">
               <Network className="w-4 h-4" />
             </div>
             <div className="min-w-0">

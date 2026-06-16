@@ -221,10 +221,10 @@ export const columns: ColumnDef<Lead>[] = [
     cell: ({ row }) => {
       const score = (row.getValue('score') as number) ?? 0;
       const colorClass = score >= 80
-        ? 'bg-emerald-50 text-emerald-700 border-emerald-100 dark:bg-emerald-950/20 dark:text-emerald-400'
+        ? 'bg-[#10b981]/10 text-[#059669] border-[#10b981]/20'
         : score >= 60
-        ? 'bg-amber-50 text-amber-700 border-amber-100 dark:bg-amber-950/20 dark:text-amber-400'
-        : 'bg-slate-50 text-slate-600 border-slate-100 dark:bg-slate-900 dark:text-slate-400';
+        ? 'bg-[#26251e]/10 text-[#26251e] border-[#26251e]/20'
+        : 'bg-[#e5e5e0] text-[#807d72] border-[#e5e5e0]';
       if (!score) return <span className="text-[10px] text-muted-foreground/40">—</span>;
       return (
         <div className={`inline-flex items-center justify-center w-10 h-6 rounded border text-[10px] font-black ${colorClass}`}>

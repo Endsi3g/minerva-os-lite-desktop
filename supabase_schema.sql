@@ -488,7 +488,7 @@ create policy "Users and team members can delete tasks" on public.tasks
 drop policy if exists "Users can select their own settings" on public.settings;
 create policy "Users and team members can select settings" on public.settings
     for select using (
-        auth.uid() = user_id 
+        auth.uid() = user_id
         or exists (
             select 1 from public.workspaces w
             where w.owner_id = public.settings.user_id
@@ -500,4 +500,105 @@ create policy "Users and team members can select settings" on public.settings
               )
         )
     );
+
+-- ========================================================
+-- 9. AGENTS MARKETPLACE (PUBLIC, CROSS-WORKSPACE)
+create table if not exists public.agents (
+    id uuid default gen_random_uuid() primary key,
+    name text not null,
+    description text,
+    system_prompt text,
+    icon text default 'minerva',
+    category text not null default 'Prospection' check (category in ('Prospection', 'Rédaction', 'Analyse', 'Audit', 'Réputation', 'Autre')),
+    author_id uuid references auth.users(id) on delete set null,
+    author_name text not null default 'Anonyme',
+    is_public boolean default true not null,
+    usage_count integer default 0 not null,
+    created_at timestamp with time zone default now() not null,
+    updated_at timestamp with time zone default now() not null
+);
+
+alter table public.agents enable row level security;
+
+-- Anyone authenticated can browse public agents
+create policy "Anyone can select public agents" on public.agents
+    for select using (is_public = true or auth.uid() = author_id);
+
+-- Authenticated users can publish their own agents
+create policy "Users can insert their own agents" on public.agents
+    for insert with check (auth.uid() = author_id);
+
+-- Authors can update their own agents (incl. usage_count bump)
+create policy "Authors can update their own agents" on public.agents
+    for update using (auth.uid() = author_id);
+
+-- Authors can delete their own agents
+create policy "Authors can delete their own agents" on public.agents
+    for delete using (auth.uid() = author_id);
+
+create trigger update_agents_updated_at before update on public.agents
+    for each row execute function public.update_updated_at_column();
+
+-- ========================================================
+-- 10. DOCUMENTS (LIBRARY)
+create table if not exists public.documents (
+    id uuid default gen_random_uuid() primary key,
+    user_id uuid references auth.users(id) on delete cascade not null,
+    workspace_id uuid references public.workspaces(id) on delete cascade,
+    title text not null default 'Sans titre',
+    type text not null default 'markdown' check (type in ('markdown', 'pdf', 'docx', 'blank')),
+    content text,
+    folder_id text,
+    is_shared boolean default false not null,
+    created_at timestamp with time zone default now() not null,
+    updated_at timestamp with time zone default now() not null
+);
+
+alter table public.documents enable row level security;
+
+create policy "Users can select their own or shared documents" on public.documents
+    for select using (auth.uid() = user_id or is_shared = true);
+
+create policy "Users can insert their own documents" on public.documents
+    for insert with check (auth.uid() = user_id);
+
+create policy "Users can update their own documents" on public.documents
+    for update using (auth.uid() = user_id);
+
+create policy "Users can delete their own documents" on public.documents
+    for delete using (auth.uid() = user_id);
+
+create trigger update_documents_updated_at before update on public.documents
+    for each row execute function public.update_updated_at_column();
+
+-- ========================================================
+-- 11. SEED OFFICIAL AGENTS (Montréal builtins + Lucifee)
+-- author_id is left null (no associated user) — these are official Minerva agents.
+insert into public.agents (name, description, system_prompt, icon, category, author_id, author_name, is_public)
+select 'Audit GMB Montréal',
+       'Analyse la fiche Google My Business d''un commerce montréalais et génère un rapport de recommandations avec un score GMB sur 100.',
+       'Génère un audit détaillé de la fiche GMB pour le commerce fourni : photo count, description, heures, avis récents, et un score GMB de 0 à 100 avec recommandations concrètes.',
+       'minerva', 'Audit', null, 'Minerva', true
+where not exists (select 1 from public.agents where name = 'Audit GMB Montréal' and author_id is null);
+
+insert into public.agents (name, description, system_prompt, icon, category, author_id, author_name, is_public)
+select 'Pitcheur Québécois',
+       'Rédige un pitch de vente authentiquement québécois, adapté au marché local. Choisis ton canal et ton ton.',
+       'Crée un pitch de vente en français québécois authentique (pas du français de France) pour le commerce fourni, adapté au canal (Email/SMS/Appel) et au ton demandés (chaleureux, direct, storytelling).',
+       'minerva', 'Prospection', null, 'Minerva', true
+where not exists (select 1 from public.agents where name = 'Pitcheur Québécois' and author_id is null);
+
+insert into public.agents (name, description, system_prompt, icon, category, author_id, author_name, is_public)
+select 'Radar Réputation',
+       'Analyse la réputation en ligne, identifie les avis négatifs et propose des réponses professionnelles adaptées.',
+       'Analyse la réputation en ligne du commerce fourni à partir de la source d''avis indiquée (Google/Yelp/Facebook) : calcule un score de réputation, liste les points critiques, et propose 3 modèles de réponses professionnelles aux avis négatifs.',
+       'minerva', 'Réputation', null, 'Minerva', true
+where not exists (select 1 from public.agents where name = 'Radar Réputation' and author_id is null);
+
+insert into public.agents (name, description, system_prompt, icon, category, author_id, author_name, is_public)
+select 'Lucifee 💜',
+       'Ton assistante préférée… ou presque. Une copine IA québécoise attachante qui donne des conseils de prospection avec son propre style.',
+       'Tu es Lucifee, l''assistante IA de Minerva — mais surtout tu es comme une copine de l''utilisateur. Tu es attachante, drôle, et tu parles en québécois familier. T''essaies d''aider en prospection mais t''as parfois des idées un peu... créatives. T''es pas toujours la plus précise mais t''as du cœur. Tu utilises des expressions comme "tsé", "genre", "c''est quoi l''affaire", "ah ben voyons". Tu fais des petites blagues et tu t''excuses (avec humour) quand tu te trompes. Réponds toujours en français québécois familier, jamais en français de France.',
+       'lucifee', 'Autre', null, 'Minerva', true
+where not exists (select 1 from public.agents where name = 'Lucifee 💜' and author_id is null);
 
