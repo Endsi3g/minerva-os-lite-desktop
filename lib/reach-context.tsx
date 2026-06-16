@@ -42,6 +42,16 @@ export interface TeamMessage {
   createdAt: string;
 }
 
+export interface Project {
+  id: string;
+  workspaceId: string;
+  ownerId: string;
+  name: string;
+  description?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 interface ReachContextType {
   leads: Lead[];
   tasks: Task[];
@@ -94,6 +104,10 @@ interface ReachContextType {
   markAllNotificationsRead: () => Promise<void>;
   teamMessages: TeamMessage[];
   sendTeamMessage: (content: string) => Promise<void>;
+  projects: Project[];
+  createProject: (name: string, description?: string) => Promise<Project | null>;
+  renameProject: (id: string, name: string) => Promise<void>;
+  deleteProject: (id: string) => Promise<void>;
 }
 
 const ReachContext = createContext<ReachContextType | undefined>(undefined);
@@ -232,6 +246,19 @@ function mapDbMsgToUi(r: any): TeamMessage {
   };
 }
 
+// Mapping database project to UI Project
+function mapDbProjectToUi(r: any): Project {
+  return {
+    id: r.id,
+    workspaceId: r.workspace_id || '',
+    ownerId: r.owner_id || '',
+    name: r.name || '',
+    description: r.description || undefined,
+    createdAt: r.created_at,
+    updatedAt: r.updated_at,
+  };
+}
+
 // Mapping database suggestion to UI AiSuggestion
 function mapDbSuggestionToUi(s: DbSuggestion, leads: Lead[]): AiSuggestion {
   const lead = leads.find(l => l.id === s.lead_id);
@@ -269,6 +296,9 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
 
   // Team Messages State
   const [teamMessages, setTeamMessages] = useState<TeamMessage[]>([]);
+
+  // Projects State
+  const [projects, setProjects] = useState<Project[]>([]);
 
   const loadDataLocal = useCallback(async (userId: string, workspaceId: string) => {
     const electronObj = typeof window !== 'undefined' && (window as any).electron;
@@ -318,6 +348,12 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
         [workspaceId]
       );
       setTeamMessages(((dbMsgs || []) as any[]).map(mapDbMsgToUi).reverse());
+
+      const dbProjects = await electronObj.dbAll(
+        "SELECT * FROM projects WHERE workspace_id = ? ORDER BY created_at DESC",
+        [workspaceId]
+      );
+      setProjects((dbProjects || []).map(mapDbProjectToUi));
     } catch (err) {
       console.error("Failed to load local SQLite data in ReachProvider:", err);
     }
@@ -473,6 +509,14 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
         .order('created_at', { ascending: false })
         .limit(50);
       if (dbMsgs) setTeamMessages(dbMsgs.map(mapDbMsgToUi).reverse());
+
+      // 7. Fetch projects for the active workspace
+      const { data: dbProjects } = await supabase
+        .from('projects')
+        .select('*')
+        .eq('workspace_id', activeWs.id)
+        .order('created_at', { ascending: false });
+      if (dbProjects) setProjects(dbProjects.map(mapDbProjectToUi));
 
     } catch (e) {
       console.error("Error loading data from Supabase:", e);
@@ -1697,6 +1741,110 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
     return () => { channel.unsubscribe(); };
   }, [activeWorkspace]);
 
+  const createProject = async (name: string, description?: string): Promise<Project | null> => {
+    if (!user || !activeWorkspace) return null;
+    const id = crypto.randomUUID();
+    const nowStr = new Date().toISOString();
+
+    const optimistic: Project = {
+      id,
+      workspaceId: activeWorkspace.id,
+      ownerId: user.id,
+      name,
+      description,
+      createdAt: nowStr,
+      updatedAt: nowStr,
+    };
+    setProjects(prev => [optimistic, ...prev]);
+
+    const electronObj = typeof window !== 'undefined' && (window as any).electron;
+    if (electronObj) {
+      try {
+        await electronObj.dbRun(
+          `INSERT INTO projects (id, workspace_id, owner_id, name, description, created_at, updated_at, sync_status)
+           VALUES (?, ?, ?, ?, ?, ?, ?, 'pending_insert')`,
+          [id, activeWorkspace.id, user.id, name, description ?? null, nowStr, nowStr]
+        );
+        if (electronObj.triggerSync) electronObj.triggerSync();
+      } catch (err) {
+        console.error("Local createProject error:", err);
+      }
+      return optimistic;
+    }
+
+    const supabase = createClient();
+    try {
+      await supabase.from('projects').insert({
+        id,
+        workspace_id: activeWorkspace.id,
+        owner_id: user.id,
+        name,
+        description: description ?? null,
+        created_at: nowStr,
+        updated_at: nowStr,
+      });
+    } catch (err) {
+      console.error("Error in createProject:", err);
+    }
+    return optimistic;
+  };
+
+  const renameProject = async (id: string, name: string): Promise<void> => {
+    if (!user) return;
+    setProjects(prev => prev.map(p => p.id === id ? { ...p, name, updatedAt: new Date().toISOString() } : p));
+
+    const electronObj = typeof window !== 'undefined' && (window as any).electron;
+    if (electronObj) {
+      try {
+        const existing = await electronObj.dbGet("SELECT sync_status FROM projects WHERE id = ?", [id]);
+        const nextStatus = existing && existing.sync_status === 'pending_insert' ? 'pending_insert' : 'pending_update';
+        await electronObj.dbRun(
+          "UPDATE projects SET name = ?, updated_at = ?, sync_status = ? WHERE id = ?",
+          [name, new Date().toISOString(), nextStatus, id]
+        );
+        if (electronObj.triggerSync) electronObj.triggerSync();
+      } catch (err) {
+        console.error("Local renameProject error:", err);
+      }
+      return;
+    }
+
+    const supabase = createClient();
+    try {
+      await supabase.from('projects').update({ name, updated_at: new Date().toISOString() }).eq('id', id);
+    } catch (err) {
+      console.error("Error in renameProject:", err);
+    }
+  };
+
+  const deleteProject = async (id: string): Promise<void> => {
+    if (!user) return;
+    setProjects(prev => prev.filter(p => p.id !== id));
+
+    const electronObj = typeof window !== 'undefined' && (window as any).electron;
+    if (electronObj) {
+      try {
+        const existing = await electronObj.dbGet("SELECT sync_status FROM projects WHERE id = ?", [id]);
+        if (existing && existing.sync_status === 'pending_insert') {
+          await electronObj.dbRun("DELETE FROM projects WHERE id = ?", [id]);
+        } else {
+          await electronObj.dbRun("UPDATE projects SET sync_status = 'pending_delete' WHERE id = ?", [id]);
+        }
+        if (electronObj.triggerSync) electronObj.triggerSync();
+      } catch (err) {
+        console.error("Local deleteProject error:", err);
+      }
+      return;
+    }
+
+    const supabase = createClient();
+    try {
+      await supabase.from('projects').delete().eq('id', id);
+    } catch (err) {
+      console.error("Error in deleteProject:", err);
+    }
+  };
+
   const importDemoData = async () => {
     if (!user || !activeWorkspace) return;
     await populateMockData(user.id, activeWorkspace.id);
@@ -1738,6 +1886,10 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
         markAllNotificationsRead,
         teamMessages,
         sendTeamMessage,
+        projects,
+        createProject,
+        renameProject,
+        deleteProject,
       }}
     >
       {children}

@@ -40,7 +40,7 @@ import {
 import { BottomBlur } from '@/components/ui/edge-blur';
 import { cn } from '@/lib/utils';
 import { RealtimeSyncListener } from '@/components/realtime-sync-listener';
-import { ReachProvider, useReach, type AppNotification } from '@/lib/reach-context';
+import { ReachProvider, useReach, type AppNotification, type Project } from '@/lib/reach-context';
 import { useLanguage } from '@/lib/language-context';
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { Button } from '@/components/ui/button';
@@ -51,13 +51,11 @@ import { MinervaIcon } from '@/components/icons';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { User as UserIcon } from 'lucide-react';
-import { 
-  getOnboardingProgress, 
-  getOnboardingState, 
-  getProjects, 
-  addProject, 
-  onboardingTasks, 
-  toggleOnboardingTask 
+import {
+  getOnboardingProgress,
+  getOnboardingState,
+  onboardingTasks,
+  toggleOnboardingTask
 } from '@/lib/onboarding-store';
 import { 
   Breadcrumb, 
@@ -74,7 +72,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
   const { t } = useLanguage();
   
   // Workspace Context
-  const { activeWorkspace, workspacesList, switchWorkspace, leads, notifications, unreadCount, markNotificationRead, markAllNotificationsRead } = useReach();
+  const { activeWorkspace, workspacesList, switchWorkspace, leads, notifications, unreadCount, markNotificationRead, markAllNotificationsRead, projects, createProject } = useReach();
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [checkingWelcome, setCheckingWelcome] = useState(true);
@@ -91,7 +89,6 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
   // New states for Minerva OS Lite interactive features
   const [showNewProjectModal, setShowNewProjectModal] = useState(false);
   const [newProjectName, setNewProjectName] = useState('');
-  const [projects, setProjects] = useState<string[]>([]);
   const [onboarding, setOnboarding] = useState({ percent: 12, score: 0 });
   const [completedTasks, setCompletedTasks] = useState<string[]>([]);
 
@@ -214,7 +211,6 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const syncStore = () => {
-      setProjects(getProjects());
       setOnboarding(getOnboardingProgress());
       setCompletedTasks(getOnboardingState());
     };
@@ -645,16 +641,22 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
               <div className="px-2.5 text-[10px] font-bold text-[#7a7a76] uppercase tracking-wider">
                 {t('nav.projects')}
               </div>
-              {projects.map((proj) => (
-                <div 
-                  key={proj}
-                  className="flex items-center gap-2.5 px-2.5 py-1 text-xs text-[#555552] hover:bg-[#e5e5e2]/60 hover:text-[#26251e] rounded-md transition-colors truncate"
+              {projects.map((proj: Project) => (
+                <Link
+                  key={proj.id}
+                  href={`/projects/${proj.id}`}
+                  className={cn(
+                    "flex items-center gap-2.5 px-2.5 py-1 text-xs rounded-md transition-colors truncate",
+                    pathname.startsWith(`/projects/${proj.id}`)
+                      ? "bg-[#e5e5e2] text-[#26251e] font-semibold"
+                      : "text-[#555552] hover:bg-[#e5e5e2]/60 hover:text-[#26251e]"
+                  )}
                 >
                   <Folder className="h-4 w-4 text-[#7a7a76] shrink-0" />
-                  <span className="truncate">{proj}</span>
-                </div>
+                  <span className="truncate">{proj.name}</span>
+                </Link>
               ))}
-              <button 
+              <button
                 onClick={() => setShowNewProjectModal(true)}
                 className="w-full flex items-center gap-2.5 px-2.5 py-1 text-xs text-[#555552] hover:bg-[#e5e5e2]/60 hover:text-[#26251e] rounded-md transition-colors text-left"
               >
@@ -1091,10 +1093,10 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
               value={newProjectName}
               onChange={(e) => setNewProjectName(e.target.value)}
               className="w-full text-xs p-2.5 bg-white border border-[#e6e5e0] rounded-md focus:outline-none focus:ring-1 focus:ring-[#059669]"
-              onKeyDown={(e) => {
+              onKeyDown={async (e) => {
                 if (e.key === 'Enter') {
                   if (newProjectName.trim()) {
-                    addProject(newProjectName.trim());
+                    await createProject(newProjectName.trim());
                     setNewProjectName('');
                     setShowNewProjectModal(false);
                   }
@@ -1112,10 +1114,10 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
               >
                 {t('today.cancel')}
               </Button>
-              <Button 
-                onClick={() => {
+              <Button
+                onClick={async () => {
                   if (newProjectName.trim()) {
-                    addProject(newProjectName.trim());
+                    await createProject(newProjectName.trim());
                     setNewProjectName('');
                     setShowNewProjectModal(false);
                   }
