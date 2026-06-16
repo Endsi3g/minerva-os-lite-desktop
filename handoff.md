@@ -78,17 +78,16 @@ Core tables: `settings`, `leads`, `notes`, `tasks`, `drafts`, `workspaces`, team
 
 ## 6. Known Limitations / Honest Readiness Assessment
 
-**Readiness: ~97%** for real-world production use, up from ~90% before this cycle.
+**Readiness: ~98%** for real-world production use, up from ~90% before this cycle.
 
-What's solid: full route coverage, RLS on every table, the dual-store (SQLite/Supabase) sync architecture, AI key masking, hardened team APIs, no dead-end UI, no genuinely dead/duplicated code left.
+What's solid: full route coverage, RLS on every table, the dual-store (SQLite/Supabase) sync architecture, AI key masking, hardened team APIs, no dead-end UI, no genuinely dead/duplicated code left, and a fully clean `pnpm typecheck` (0 errors) / `pnpm lint` (0 errors, 129 warnings — all pre-existing `no-explicit-any` style warnings, none new).
 
 What's still missing to call this 100%:
 
 1. **No automated test suite exists** (confirmed — no test runner is even configured in `package.json`). This is the single biggest gap: there is currently no regression safety net beyond `pnpm typecheck` + `pnpm lint`. Recommended next step: add Vitest/Playwright, starting with the dual-store sync logic (`lib/reach-context.tsx`, `electron/sync.cjs`) and the newly-hardened `/api/team/*` and `/api/settings/ai-keys` routes, since those are the highest-blast-radius areas.
 2. **No dependency audit has been run.** Run `pnpm audit` and address any high/critical findings.
-3. **8 pre-existing TypeScript errors** (all `TS7006: implicitly has an 'any' type`, harmless but worth cleaning up): `app/(app)/layout.tsx:186`, `app/(app)/leads/[id]/_components/lead-detail-client.tsx:202`, `components/realtime-sync-listener.tsx:71`, and `lib/reach-context.tsx:310,311,353,716×2`. These predate this audit cycle and were intentionally left untouched (out of scope), but are easy, low-risk cleanup for a future pass.
-4. **No error monitoring/observability** (e.g., Sentry) is wired up. Worth considering before a wider production rollout.
-5. **Electron SQLite IPC** accepts raw parameterized SQL from the renderer (see Security section) — low risk today, but if the Electron app ever loads remote/untrusted content this should be revisited.
+3. **No error monitoring/observability** (e.g., Sentry) is wired up. Worth considering before a wider production rollout.
+4. **Electron SQLite IPC** accepts raw parameterized SQL from the renderer (see Security section) — low risk today, but if the Electron app ever loads remote/untrusted content this should be revisited.
 
 None of the above blocks shipping; they're the gap between "solid and secure" (today) and "fully hardened with a regression safety net" (100%).
 
@@ -114,6 +113,5 @@ In priority order:
 
 1. Stand up a test runner (Vitest for unit, Playwright for e2e) and cover the dual-store sync engine and the `/api/team/*` + `/api/settings/ai-keys` routes first — this is the largest remaining risk.
 2. Run `pnpm audit` and remediate findings.
-3. Clean up the 8 pre-existing `TS7006` implicit-any errors listed above.
-4. Evaluate adding error monitoring (Sentry or equivalent) before any significant user growth.
-5. Revisit the Electron SQLite IPC surface if the app's threat model changes (e.g., if it ever renders remote/untrusted content).
+3. Evaluate adding error monitoring (Sentry or equivalent) before any significant user growth.
+4. Revisit the Electron SQLite IPC surface if the app's threat model changes (e.g., if it ever renders remote/untrusted content).

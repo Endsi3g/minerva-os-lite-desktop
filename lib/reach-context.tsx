@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { getApiUrl } from './api-helper';
-import { User as SupabaseUser } from '@supabase/supabase-js';
+import { User as SupabaseUser, AuthChangeEvent, Session } from '@supabase/supabase-js';
 import { Lead, Task, Note, AiSuggestion, initialLeads, initialTasks } from './mock-data';
 import { computeLeadScore } from './lead-scoring';
 import { createClient } from './supabase/client';
@@ -307,8 +307,8 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
         .order('created_at', { ascending: true });
 
       // Combine
-      const uiLeads = (dbLeads || []).map(lead => {
-        const leadNotes = (dbNotes || []).filter(n => n.lead_id === lead.id);
+      const uiLeads = (dbLeads || []).map((lead: DbLead) => {
+        const leadNotes = (dbNotes || []).filter((n: DbNote) => n.lead_id === lead.id);
         return mapDbLeadToUi(lead, leadNotes);
       });
       setLeads(uiLeads);
@@ -350,7 +350,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
         .select('*')
         .eq('workspace_id', activeWs.id);
 
-      const uiSuggestions = (dbSuggestions || []).map(s => mapDbSuggestionToUi(s, uiLeads));
+      const uiSuggestions = (dbSuggestions || []).map((s: DbSuggestion) => mapDbSuggestionToUi(s, uiLeads));
       setAiSuggestions(uiSuggestions);
 
     } catch (e) {
@@ -713,7 +713,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
 
     fetchSession();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event: AuthChangeEvent, session: Session | null) => {
       const electronObj = typeof window !== 'undefined' && (window as any).electron;
       if (session?.user) {
         setUser(session.user);

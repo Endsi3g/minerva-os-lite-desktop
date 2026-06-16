@@ -5,6 +5,11 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [2.11.1] - 2026-06-16
+
+### Corrigé
+- Correction des 8 erreurs TypeScript `TS7006` (paramètres implicitement typés `any`) restées en suspens depuis l'audit v2.11.0, dans `app/(app)/layout.tsx`, `app/(app)/leads/[id]/_components/lead-detail-client.tsx`, `components/realtime-sync-listener.tsx` et `lib/reach-context.tsx`. `pnpm typecheck` est désormais à 0 erreur.
+
 ## [2.11.0] - 2026-06-16
 
 ### Sécurité

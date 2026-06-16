@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { useReach } from '@/lib/reach-context';
 import { createClient } from '@/lib/supabase/client';
+import type { REALTIME_SUBSCRIBE_STATES } from '@supabase/supabase-js';
 
 export function RealtimeSyncListener() {
   const { activeWorkspace } = useReach();
@@ -68,7 +69,7 @@ export function RealtimeSyncListener() {
           triggerQuietSync();
         }
       )
-      .subscribe((status) => {
+      .subscribe((status: REALTIME_SUBSCRIBE_STATES) => {
         if (status === 'SUBSCRIBED') {
           console.log(`[RealtimeSync] Subscribed to real-time changes for workspace: ${workspaceId}`);
         }

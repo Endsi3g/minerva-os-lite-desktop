@@ -38,6 +38,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
+import type { REALTIME_SUBSCRIBE_STATES } from '@supabase/supabase-js';
 
 
 // Helper inline edit component for text properties
@@ -199,7 +200,7 @@ export function LeadDetailClient({ id }: { id: string }) {
         });
         setOnlineUsers(joined);
       })
-      .subscribe(async (status) => {
+      .subscribe(async (status: REALTIME_SUBSCRIBE_STATES) => {
         if (status === 'SUBSCRIBED') {
           await presenceChannel.track({
             userId: currentUser.id,

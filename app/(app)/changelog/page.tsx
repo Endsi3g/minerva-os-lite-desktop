@@ -18,6 +18,16 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v2.11.1',
+      date: '2026-06-16',
+      titleKey: 'changelog.v2_11_1_title',
+      descKey: 'changelog.v2_11_1_desc',
+      highlights: [
+        'Fixed all 8 remaining TS7006 implicit-any TypeScript errors flagged after the v2.11.0 audit.',
+        'pnpm typecheck now passes with 0 errors.'
+      ]
+    },
+    {
       version: 'v2.11.0',
       date: '2026-06-16',
       titleKey: 'changelog.v2_11_0_title',

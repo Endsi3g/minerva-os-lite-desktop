@@ -44,6 +44,7 @@ import { useLanguage } from '@/lib/language-context';
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { Button } from '@/components/ui/button';
 import { createClient } from '@/lib/supabase/client';
+import type { REALTIME_SUBSCRIBE_STATES } from '@supabase/supabase-js';
 import { signout } from '@/app/login/actions';
 import { MinervaIcon } from '@/components/icons';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
@@ -183,7 +184,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
         });
         setOnlineUsers(joined);
       })
-      .subscribe(async (status) => {
+      .subscribe(async (status: REALTIME_SUBSCRIBE_STATES) => {
         if (status === 'SUBSCRIBED') {
           const { data: { user: currUser } } = await supabase.auth.getUser();
           if (currUser) {
