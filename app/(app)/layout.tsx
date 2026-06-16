@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { getApiUrl } from '@/lib/api-helper';
-import { 
+import {
   PenSquare,
   Search,
   Folder,
@@ -32,7 +32,9 @@ import {
   MessageSquare,
   Megaphone,
   Download,
-  LayoutDashboard
+  LayoutDashboard,
+  CreditCard,
+  HelpCircle,
 } from 'lucide-react';
 import { BottomBlur } from '@/components/ui/edge-blur';
 import { cn } from '@/lib/utils';
@@ -339,6 +341,8 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
       else if (segment === 'workspaces') label = t('nav.workspaces');
       else if (segment === 'agents') label = t('nav.agents');
       else if (segment === 'download') label = t('nav.download');
+      else if (segment === 'billing') label = 'Facturation';
+      else if (segment === 'help') label = 'Aide & Docs';
 
       if (segments[index - 1] === 'leads' && segment !== 'leads') {
         label = 'Details';
@@ -365,6 +369,8 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
     { name: t('nav.integrations'), href: '/integrations', icon: Plug },
     { name: t('nav.team'), href: '/team', icon: Users },
     { name: t('nav.download'), href: '/download', icon: Download },
+    { name: 'Facturation', href: '/billing', icon: CreditCard },
+    { name: 'Aide & Docs', href: '/help', icon: HelpCircle },
   ];
 
   const recentFiles = [
