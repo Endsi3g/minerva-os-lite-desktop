@@ -123,6 +123,35 @@ export const connectIntegration = (id: string) => {
   }
 };
 
+export const disconnectIntegration = (id: string) => {
+  const connected = getConnectedIntegrations().filter((existingId) => existingId !== id);
+  setStorageItem('minerva_connected_integrations', JSON.stringify(connected));
+};
+
+export interface ImportedIntegration {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+  authMethod: 'none' | 'key' | 'oauth';
+}
+
+export const getImportedIntegrations = (): ImportedIntegration[] => {
+  const stored = getStorageItem('minerva_imported_integrations', '[]');
+  try {
+    return JSON.parse(stored) as ImportedIntegration[];
+  } catch {
+    return [];
+  }
+};
+
+export const addImportedIntegration = (integration: ImportedIntegration) => {
+  const imported = getImportedIntegrations().filter((existing) => existing.id !== integration.id);
+  imported.push(integration);
+  setStorageItem('minerva_imported_integrations', JSON.stringify(imported));
+  connectIntegration(integration.id);
+};
+
 // Agents store
 export interface Agent {
   id: string;

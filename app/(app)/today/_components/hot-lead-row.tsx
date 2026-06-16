@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Lead } from '@/lib/mock-data';
 import { useReach } from '@/lib/reach-context';
 import { cn } from '@/lib/utils';
+import { getTemperatureStyle, getTemperatureLabel } from '@/lib/lead-badges';
 
 interface HotLeadRowProps {
   lead: Lead;
@@ -14,17 +15,6 @@ interface HotLeadRowProps {
 
 export function HotLeadRow({ lead }: HotLeadRowProps) {
   const { updateLeadStatus } = useReach();
-
-  const getTemperatureStyle = (temp: Lead['temperature']) => {
-    switch (temp) {
-      case 'Hot':
-        return 'bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800';
-      case 'Warm':
-        return 'bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800';
-      default:
-        return 'bg-slate-50 text-slate-700 border border-slate-200 dark:bg-slate-900 dark:text-slate-300 dark:border-slate-800';
-    }
-  };
 
   return (
     <TableRow className="hover:bg-muted/50 transition-colors">
@@ -47,7 +37,7 @@ export function HotLeadRow({ lead }: HotLeadRowProps) {
             getTemperatureStyle(lead.temperature)
           )}
         >
-          {lead.temperature === 'Hot' ? '🔥 Chaud' : '☀️ Tiède'}
+          {getTemperatureLabel(lead.temperature)}
         </Badge>
       </TableCell>
 

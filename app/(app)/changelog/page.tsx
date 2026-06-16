@@ -18,6 +18,125 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v2.11.0',
+      date: '2026-06-16',
+      titleKey: 'changelog.v2_11_0_title',
+      descKey: 'changelog.v2_11_0_desc',
+      highlights: [
+        'AI provider keys (OpenRouter, Groq, Together.ai) are now masked end-to-end — never returned in clear text to the browser or cached in localStorage.',
+        'Hardened /api/team/members and /api/team/invite with explicit workspace-membership checks before returning or mutating data.',
+        'New dedicated pages: /integrations/import (catalog + JSON import) and /help/guides/[slug] (six real step-by-step guides).',
+        'Removed every dead link, inert menu, and placeholder alert across /team, /welcome, /integrations and /billing.',
+        'Consolidated duplicated lead-temperature badge logic into lib/lead-badges.ts and removed an unused mock export.'
+      ]
+    },
+    {
+      version: 'v2.10.0',
+      date: '2026-06-16',
+      titleKey: 'changelog.v2_10_0_title',
+      descKey: 'changelog.v2_10_0_desc',
+      highlights: [
+        'Interactive Quebec map for geolocated prospecting.',
+        'Custom AI agents marketplace.',
+        'TipTap-based rich text editor for the library.'
+      ]
+    },
+    {
+      version: 'v2.9.1',
+      date: '2026-06-15',
+      titleKey: 'changelog.v2_9_1_title',
+      descKey: 'changelog.v2_9_1_desc',
+      highlights: [
+        'New profile step in the onboarding flow.',
+        'Dynamically generated user avatar.',
+        'AI-generated email signature.'
+      ]
+    },
+    {
+      version: 'v2.9.0',
+      date: '2026-06-15',
+      titleKey: 'changelog.v2_9_0_title',
+      descKey: 'changelog.v2_9_0_desc',
+      highlights: [
+        'Persisted lead scoring.',
+        'Generic SMTP configuration beyond Gmail.',
+        'New prospecting dashboard.',
+        'Groq and Together.ai provider support.',
+        'New /billing and /help pages.'
+      ]
+    },
+    {
+      version: 'v2.8.0',
+      date: '2026-06-15',
+      titleKey: 'changelog.v2_8_0_title',
+      descKey: 'changelog.v2_8_0_desc',
+      highlights: [
+        'Upgraded to Electron 43 with macOS 26 Tahoe support.'
+      ]
+    },
+    {
+      version: 'v2.7.0',
+      date: '2026-06-15',
+      titleKey: 'changelog.v2_7_0_title',
+      descKey: 'changelog.v2_7_0_desc',
+      highlights: [
+        'Real-time presence and anti-collision handling for shared data.',
+        'JIT-less main-process restart mechanism fixing a recurring macOS Sequoia crash.'
+      ]
+    },
+    {
+      version: 'v2.5.x',
+      date: '2026-06-14',
+      titleKey: 'changelog.v2_5_x_title',
+      descKey: 'changelog.v2_5_x_desc',
+      highlights: [
+        'Replaced orange with green across the whole UI; Welcome is now the home screen, Today remains in the sidebar.',
+        'Disabled concurrent V8 JIT (--jitless) to eliminate a recurring EXC_BREAKPOINT crash on macOS 26.',
+        'Disabled Chromium background networking to mitigate a DCHECK crash.',
+        'Auto-recovery from renderer crashes during navigation; removed an OOM-causing heap cap.'
+      ]
+    },
+    {
+      version: 'v2.4.0',
+      date: '2026-06-14',
+      titleKey: 'changelog.v2_4_0_title',
+      descKey: 'changelog.v2_4_0_desc',
+      highlights: [
+        'Landing page extracted to the root route.',
+        'Fixed onboarding flow and startup theme flash.'
+      ]
+    },
+    {
+      version: 'v2.3.0',
+      date: '2026-06-14',
+      titleKey: 'changelog.v2_3_0_title',
+      descKey: 'changelog.v2_3_0_desc',
+      highlights: [
+        'New system tray popover widget with glassmorphism design.',
+        'On-demand scraping trigger and SQLite task check from the tray.'
+      ]
+    },
+    {
+      version: 'v2.1.0',
+      date: '2026-06-13',
+      titleKey: 'changelog.v2_1_0_title',
+      descKey: 'changelog.v2_1_0_desc',
+      highlights: [
+        'Capacitor native-bridge for iOS/Android.',
+        'Android platform configuration and Fastlane CI/CD workflows.'
+      ]
+    },
+    {
+      version: 'v2.0.0',
+      date: '2026-06-13',
+      titleKey: 'changelog.v2_0_0_title',
+      descKey: 'changelog.v2_0_0_desc',
+      highlights: [
+        'Electron system tray icon and window close-to-tray behavior.',
+        'Native application menu shortcuts and auto-updater.'
+      ]
+    },
+    {
       version: 'v1.4.0',
       date: '2026-06-12',
       titleKey: 'changelog.v1_4_0_title',

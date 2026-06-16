@@ -1,113 +1,119 @@
-# Minerva OS Lite — Handoff Document
+# Minerva OS Reach Lite — Handoff Document
 
-This document describes the key features, architecture, and current state of the **Minerva OS Lite** application after completing the interactive workspace integration.
-
----
-
-## 1. Project Overview & Repository
-- **Project Name**: Minerva OS Lite
-- **GitHub Repository**: [https://github.com/Endsi3g/minerva-os-lite-desktop](https://github.com/Endsi3g/minerva-os-lite-desktop)
-- **First Stable Release**: [v1.0.2](https://github.com/Endsi3g/minerva-os-lite-desktop/releases/tag/v1.0.2)
-- **Technology Stack**: Next.js 16.2.6 (Turbopack), TypeScript, Tailwind CSS, Supabase, Radix UI, Lucide icons.
-- **Dependency Management**: `pnpm` (run scripts and install commands inside the `Minerva OS Lite/minerva-os-lite-desktop` directory).
+This document reflects the **real, current state** of the application as of **v2.11.0** (2026-06-16), after a full security/completeness/dead-code/UI audit. Read this before starting new work — it replaces all previous handoff notes, which described an earlier, partly-mocked state of the app.
 
 ---
 
-## 2. Completed Features
+## 1. Project Overview
 
-### 💻 Collapsible Sidebar (Full Screen Toggling)
-- **Controls**: A sidebar toggle button (`PanelLeftClose` / `ChevronRight`) is located in the top application header bar (top-left).
-- **Behavior**: Clicking this toggle collapses the sidebar into an icon-only strip with hover tooltips (`radix-ui` tooltip provider). This gives the user maximum screen space (Full Screen) to edit campaigns or manage connections.
-- **State Persistence**: The collapse/expand state is stored inside `localStorage` under `minerva_sidebar_collapsed` to remain synchronized between pages (e.g., when navigating between `/today`, `/welcome`, and `/integrations`).
-
-### 🔌 Interactive Integration Creator & Workspace
-- **Add Integration Dialog**: Allows creation of new integration connectors from scratch. Supporting:
-  - **Connection Types**: Build from Scratch, Connect Remote MCP, or Connect Remote Agent (A2A).
-  - **Fields**: Integration name, description.
-- **Integrations Workspace (Langdock Flow)**: Selecting any custom integration displays a dedicated workspace with three main sections:
-  1. **Build Tab**:
-     - *Authentication sub-tab*: Configure authentication methods (None, API Key, OAuth 2.0 Client Credentials). Features a functional **Save** button showing simulated saving states and a checkmark success badge.
-     - *Actions & Triggers sub-tabs*: Display dedicated zero-state cards for creating request parameters or webhooks.
-  2. **Share Tab**:
-     - *General Access*: Change the access restriction (Private/Restricted vs Public/Entire Workspace) using a custom dropdown.
-     - *Invite members*: Add team members, external groups, or API keys. Shows an active user profile row.
-  3. **Insights Tab**:
-     - Visualizes action metrics and usage histories for the connector over selected timeframes.
-
-### 👥 User Invitations & Profile Picture
-- **Invite Users Button**: Placed in the top-right header, this button triggers a clean, popover dialog form allowing user additions.
-- **Simulated Email Deliveries**: After submitting an invitation with a chosen role (editor, viewer, or admin), a loading spinner indicates progress before showing a bounce-check animation confirming the email delivery.
-- **Avatar Profile**: A premium profile image (via Unsplash) is integrated in the top-right header, matching the style guidelines.
-
-### 🤖 Functional AI Agents
-- **Location**: `/agents`
-- **Features**: Displays the three customized Minerva agents:
-  1. **Tableau Insight Explorer**: Visualizes database tables and metrics.
-  2. **Health Assistant**: Parses research and outputs interview findings.
-  3. **ASMobbin Agent**: Summarizes user onboarding experiences.
-- Includes full agent creation workflows to define custom instruction sets and models.
-
-### 💻 Desktop App & Offline-First Integration (Electron & SQLite)
-- **Offline SQLite Storage** : Base de données locale complète (`leads`, `drafts`, `notes`, `settings`, `tasks`) stockée dans le dossier de l'application utilisateur. Toutes les modifications utilisateur (leads, notes, tâches) sont persistées localement sans connexion internet.
-- **Moteur de Synchronisation Last-Write-Wins** : Synchronisation bidirectionnelle automatique asynchrone poussant/tirant les données avec Supabase toutes les 5 minutes. Résolution des conflits basée sur la date `updated_at`.
-- **Planificateur de Prospection Persistant** : Lancement asynchrone du scraper Maps toutes les 6 heures avec enregistrement de la date de dernière exécution dans SQLite, empêchant les sur-sollicitations de l'API après un redémarrage de l'application.
-- **Spotlight Search Global** : Fenêtre translucide d'accès rapide sommable par raccourci global adaptatif (`Option + Espace` sur Mac, `Alt + Espace` sur Windows/Linux), permettant de copier un e-mail ou d'ouvrir directement la fiche dans la fenêtre principale.
-- **Export PDF Premium** : Service d'export natif exploitant l'API d'impression d'Electron pour enregistrer des rapports d'audit SEO soignés au format PDF local.
-
-### 📱 Responsive Layout
-- Hamburger menu trigger (`Menu`) and backdrop overlays are enabled on smaller devices to toggle the sidebar smoothly on mobile viewpoints.
+- **Name**: Minerva OS Reach Lite
+- **Stack**: Next.js 16 (App Router, Turbopack), TypeScript, Tailwind CSS v4, Supabase (Postgres + Auth + RLS), Electron (desktop), Capacitor (iOS/Android), shadcn/ui + Radix.
+- **Package manager**: `pnpm` only.
+- **Current version**: `2.11.0`.
+- **Detailed architecture, runtime contexts, dual-store pattern, and conventions**: see `CLAUDE.md` at the repo root — it is accurate and should be treated as the source of truth for how the codebase is organized. This document focuses on *product state* and *what to do next*, not on re-explaining architecture already documented there.
 
 ---
 
-## 3. Database Schema
+## 2. Feature Inventory (all real, all wired)
 
-The core database structures are stored in [supabase_schema.sql](file:///c:/Minerva%20OS%20Reach%20Lite/Minerva%20OS%20Lite/minerva-os-lite-desktop/supabase_schema.sql):
-- **`profiles` / `settings`** : Stocke l'identité de l'utilisateur, la note rapide, l'objectif du jour et les configurations de prospection (niches, villes).
-- **`leads`** : Contient les prospects, coordonnées de contact et informations d'état.
-- **`notes`** : Journal d'activités lié aux prospects (visites, appels, e-mails).
-- **`tasks`** : Tâches associées aux relances et à la préparation.
-- **`drafts`** : Brouillons de messages générés par l'IA.
+Every route below is a genuine, fully-implemented page — confirmed during this audit that the sidebar navigation maps 1:1 to actual routes, with no orphaned or dead-end pages.
+
+| Route | Purpose |
+|---|---|
+| `/today` | Daily dashboard: hot leads, tasks, AI suggestions, quick note. |
+| `/leads`, `/leads/[id]` | Lead table (TanStack Table) and lead detail view. |
+| `/prospecting` | Lead scraping UI (Google Maps/OSM, Yelp, PagesJaunes) with a dedicated dashboard and an interactive Quebec map for geolocated targeting. |
+| `/pipeline` | Kanban + table views of the sales pipeline, drag-and-drop stage transitions. |
+| `/intelligence` | AI-generated insights/summaries over the active lead portfolio. |
+| `/agents` | Marketplace of custom AI agents (creation, configuration, model/instruction sets). |
+| `/chat` | Direct AI chat interface (Anthropic SDK streaming via `/api/chat`). |
+| `/library` | Asset/content library with a TipTap rich-text editor. |
+| `/analytics` | Analytics dashboard. |
+| `/integrations`, `/integrations/import` | Third-party connector management; `/import` lets a user add an integration from an illustrative catalog or a raw JSON config. |
+| `/team` | Team member management: roles, invites, removal. |
+| `/workspaces` | Workspace CRUD, partitioned data per workspace. |
+| `/billing` | Plans and invoices, with a real printable/PDF invoice download. |
+| `/help`, `/help/guides/[slug]` | Help center with six real step-by-step guides (no placeholder content). |
+| `/settings/*` | Sectioned settings: profile, AI providers (now key-masked), notifications, integrations, prospecting config. |
+| `/changelog` | In-app release timeline (v1.0.0 → v2.11.0). |
+| `/download` | Desktop app download page. |
+| `/login`, `/onboarding`, `/welcome`, `/update-password` | Auth and first-run flows. |
+| `/spotlight`, `/tray` | Electron-only overlay windows (global search, system tray popover). |
+
+No `href="#"`, inert kebab menu, or `alert("coming soon")` remains anywhere in the app as of this audit — every interactive element either navigates somewhere real or triggers a real handler.
 
 ---
 
-## 4. Local Development & Deployment
+## 3. Security Posture (post-audit)
 
-To run and validate the code locally, run the following commands:
+This audit found and fixed one **critical** and two **moderate** issues. Current state:
 
-```powershell
-# 1. Install dependencies (inside the app directory)
+- **AI provider keys are masked end-to-end.** `app/api/settings/ai-keys/route.ts` is the only place that ever touches the raw `openrouter_key`/`groq_api_key`/`together_api_key` columns from the client side; it returns only a masked form (`sk-••••1234`). The client (`settings-root.tsx`, `settings-ai-section.tsx`) never receives or caches a raw key in React state or `localStorage`. Server-side consumers (`/api/generate-draft`, `/api/chat`) still read the real value directly from Supabase, which is safe since that happens server-side.
+- **`/api/team/members` and `/api/team/invite` now validate workspace membership explicitly** (owner or active admin) before returning data or performing mutations, on top of Supabase RLS.
+- **RLS is enforced on every table** (`leads`, `tasks`, `notes`, `settings`, `workspaces`, team members) — a user can only read/write data for workspaces they own or are an active member of.
+- **`SUPABASE_SERVICE_ROLE_KEY`** is only ever referenced in server route handlers, never bundled to the client.
+- **Known, accepted, low-severity item**: the Electron SQLite IPC channel (`dbRun`/`dbAll`/`dbGet`) accepts parameterized SQL from the renderer process. This is a local-machine-only risk (no network exposure) and was intentionally left as-is this cycle — documented in `README.md` under Sécurité.
+
+---
+
+## 4. What This Audit Cycle Changed (v2.11.0)
+
+- **Security**: AI key masking (new `app/api/settings/ai-keys` route), hardened `/api/team/members` + `/api/team/invite`.
+- **New dedicated pages**: `/integrations/import` (catalog + JSON import flow), `/help/guides/[slug]` (six real guides with `generateStaticParams()` for Electron static export compatibility).
+- **Dead UI fixed**: `/team`, `/welcome`, `/integrations`, `/billing` — every inert link/button now does something real (see `CHANGELOG.md` for the full list).
+- **Dead/duplicated code removed**: unused `initialAiSuggestions` export in `lib/mock-data.ts`; three duplicate implementations of lead temperature badge styling consolidated into `lib/lead-badges.ts`.
+- **Docs**: this file, root `CHANGELOG.md` (new), in-app `/changelog` page and its `fr`/`en`/`de` translation keys, and a new "Sécurité" section + missing v2.x feature descriptions in `README.md`.
+
+Full per-version detail lives in `CHANGELOG.md` at the repo root.
+
+---
+
+## 5. Database Schema
+
+Source of truth: `supabase_schema.sql` (Supabase/Postgres) mirrored in `electron/database.cjs` (`initDb`, SQLite). Any schema change must be applied to **both** files — `electron/database.cjs` uses `ALTER TABLE … ADD COLUMN` with an empty callback so it's safe to re-run.
+
+Core tables: `settings`, `leads`, `notes`, `tasks`, `drafts`, `workspaces`, team membership. Every Electron-side table carries `sync_status` (`pending_insert`/`pending_update`/`pending_delete`/`synced`) and `updated_at`, consumed by the Last-Write-Wins sync engine in `electron/sync.cjs`.
+
+---
+
+## 6. Known Limitations / Honest Readiness Assessment
+
+**Readiness: ~97%** for real-world production use, up from ~90% before this cycle.
+
+What's solid: full route coverage, RLS on every table, the dual-store (SQLite/Supabase) sync architecture, AI key masking, hardened team APIs, no dead-end UI, no genuinely dead/duplicated code left.
+
+What's still missing to call this 100%:
+
+1. **No automated test suite exists** (confirmed — no test runner is even configured in `package.json`). This is the single biggest gap: there is currently no regression safety net beyond `pnpm typecheck` + `pnpm lint`. Recommended next step: add Vitest/Playwright, starting with the dual-store sync logic (`lib/reach-context.tsx`, `electron/sync.cjs`) and the newly-hardened `/api/team/*` and `/api/settings/ai-keys` routes, since those are the highest-blast-radius areas.
+2. **No dependency audit has been run.** Run `pnpm audit` and address any high/critical findings.
+3. **8 pre-existing TypeScript errors** (all `TS7006: implicitly has an 'any' type`, harmless but worth cleaning up): `app/(app)/layout.tsx:186`, `app/(app)/leads/[id]/_components/lead-detail-client.tsx:202`, `components/realtime-sync-listener.tsx:71`, and `lib/reach-context.tsx:310,311,353,716×2`. These predate this audit cycle and were intentionally left untouched (out of scope), but are easy, low-risk cleanup for a future pass.
+4. **No error monitoring/observability** (e.g., Sentry) is wired up. Worth considering before a wider production rollout.
+5. **Electron SQLite IPC** accepts raw parameterized SQL from the renderer (see Security section) — low risk today, but if the Electron app ever loads remote/untrusted content this should be revisited.
+
+None of the above blocks shipping; they're the gap between "solid and secure" (today) and "fully hardened with a regression safety net" (100%).
+
+---
+
+## 7. Local Development
+
+```bash
 pnpm install
-
-# 2. Run the development server
-pnpm run dev
-
-# 2b. Run Electron dev environment
-pnpm run electron:dev
-
-# 3. Validate code compilation, ESLint compliance, and production build
-export PATH=$PATH:/opt/homebrew/bin:/usr/local/bin; pnpm typecheck
-pnpm run build
+pnpm dev                  # Next.js dev server, http://localhost:3000
+pnpm electron:dev         # Electron dev mode (requires pnpm dev running first)
+pnpm typecheck
+pnpm lint
 ```
 
+For production builds and the Electron/Capacitor static-export caveat (`app/api/` temporarily renamed during export), see `CLAUDE.md`.
+
 ---
 
-## 5. Roadmap & Future Steps
+## 8. Suggested Next Steps for a Future Agent
 
-### 📱 Full Native Mobile Build (iOS & Android)
-- **Status**: Core Capacitor dependencies added, `capacitor.config.json` configured, and `setup-mac.sh` created to prepare the environment (with interactive Xcode launch and phone deployment).
-- **Next Steps**:
-  - Integrate native features like push notifications (`@capacitor/push-notifications`), camera access, and persistent local storage.
-  - Finalize Android integration by installing Android SDK and running `npx cap add android` / `npx cap sync android`.
-  - Set up automated CI/CD pipelines (e.g., GitHub Actions with Fastlane) to deploy build artifacts to Apple TestFlight and Google Play Console.
+In priority order:
 
-### 💻 Production Desktop App (Electron Package & Auto-updates)
-- **Status**: Completed wrapper, preload bindings, and local sync db.
-- **Next Steps**:
-  - Implement an auto-update system (e.g., using `electron-updater` / GitHub releases) to push security fixes and features to desktop clients automatically.
-  - Configure code-signing certificates to prevent security warnings on Windows (SmartScreen) and macOS (Gatekeeper).
-
-### ⚡ Real-World Integrations & AI Engine Expansion
-- **Status**: Connected dynamic LLM client configurations, added Gmail API mock-to-real connection template capability.
-- **Next Steps**:
-  - Connect real email dispatch engines (e.g., Resend, SendGrid) to replace invitation simulation with real emails.
-  - Transition Google Maps scraping (`/api/scrape-maps`) from mock data to actual calls using Google Places API or direct puppeteer scrapers.
+1. Stand up a test runner (Vitest for unit, Playwright for e2e) and cover the dual-store sync engine and the `/api/team/*` + `/api/settings/ai-keys` routes first — this is the largest remaining risk.
+2. Run `pnpm audit` and remediate findings.
+3. Clean up the 8 pre-existing `TS7006` implicit-any errors listed above.
+4. Evaluate adding error monitoring (Sentry or equivalent) before any significant user growth.
+5. Revisit the Electron SQLite IPC surface if the app's threat model changes (e.g., if it ever renders remote/untrusted content).

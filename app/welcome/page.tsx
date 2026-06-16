@@ -41,6 +41,12 @@ import {
   onboardingTasks 
 } from '@/lib/onboarding-store';
 import { getApiUrl } from '@/lib/api-helper';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 function WelcomePageContent() {
   const router = useRouter();
@@ -59,6 +65,7 @@ function WelcomePageContent() {
   // Tasks list expand state
   const [chatExpanded, setChatExpanded] = useState(true);
   const [setupExpanded, setSetupExpanded] = useState(false);
+  const [showSetupPanel, setShowSetupPanel] = useState(true);
   const [todayCollapsed, setTodayCollapsed] = useState(false);
 
   // Synchronized store hooks
@@ -547,15 +554,28 @@ function WelcomePageContent() {
           </div>
 
           {/* Setup Task List area */}
+          {showSetupPanel && (
           <div className="w-full max-w-xl mt-12 bg-white border border-[#e5e5e0] rounded-xl overflow-hidden shadow-xs">
             <div className="p-4 border-b border-[#e5e5e0] flex justify-between items-start">
               <div>
                 <h3 className="text-sm font-bold text-[#26251e] text-left">Get started with Minerva OS Lite</h3>
                 <p className="text-xs text-[#7a7a76] text-left">Learn about everything Minerva OS Lite can do for you and get up and running.</p>
               </div>
-              <button title="Options de configuration" aria-label="Options de configuration" className="h-7 w-7 flex items-center justify-center rounded hover:bg-[#f4f4f3] text-[#7a7a76]">
-                <MoreHorizontal className="h-4 w-4" />
-              </button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button title="Options de configuration" aria-label="Options de configuration" className="h-7 w-7 flex items-center justify-center rounded hover:bg-[#f4f4f3] text-[#7a7a76]">
+                    <MoreHorizontal className="h-4 w-4" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48 text-xs font-semibold bg-white border-[#e5e5e0] shadow-md rounded-md p-1 font-sans">
+                  <DropdownMenuItem
+                    onClick={() => setShowSetupPanel(false)}
+                    className="hover:bg-slate-50 cursor-pointer p-2 rounded text-[#26251e]"
+                  >
+                    Masquer ce panneau
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
 
             {/* Setup workspace Accordion */}
@@ -672,10 +692,10 @@ function WelcomePageContent() {
                               >
                                 Start chatting
                               </Button>
-                              <a href="#" className="text-xs text-[#555552] hover:text-[#26251e] flex items-center gap-1 transition-colors">
+                              <Link href="/help" className="text-xs text-[#555552] hover:text-[#26251e] flex items-center gap-1 transition-colors">
                                 <span>Learn more</span>
                                 <ExternalLinkIcon className="h-3 w-3 text-[#7a7a76]" />
-                              </a>
+                              </Link>
                             </div>
                           </div>
                         </div>
@@ -710,6 +730,7 @@ function WelcomePageContent() {
             </div>
 
           </div>
+          )}
         </div>
 
       </div>

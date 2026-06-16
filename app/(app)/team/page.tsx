@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import Link from 'next/link';
 import {
   Mail, Search, Download, Filter, Check, X,
   Loader2, ChevronDown, Info, Trash2, ArrowUpDown
@@ -341,9 +342,9 @@ export default function TeamPage() {
           <Info className="w-4 h-4 text-[#059669] shrink-0 mt-0.5" />
           <div>
             <span>{t('team.banner_usage')} </span>
-            <a href="#" className="underline font-semibold hover:text-[#047857] transition-colors">
+            <Link href="/billing" className="underline font-semibold hover:text-[#047857] transition-colors">
               {t('team.banner_usage_link')}
-            </a>
+            </Link>
           </div>
         </div>
 
@@ -362,9 +363,9 @@ export default function TeamPage() {
                 </span>
               </div>
             </div>
-            <a href="#" className="text-xs text-[#059669] hover:text-[#047857] font-semibold underline block transition-colors">
+            <Link href="/billing" className="text-xs text-[#059669] hover:text-[#047857] font-semibold underline block transition-colors">
               {t('team.stats_details')}
-            </a>
+            </Link>
           </div>
         </div>
 
@@ -373,9 +374,9 @@ export default function TeamPage() {
           <Info className="w-4 h-4 text-[#059669] shrink-0 mt-0.5" />
           <div>
             <span>{t('team.banner_billing')} </span>
-            <a href="#" className="underline font-semibold hover:text-[#047857] transition-colors">
+            <Link href="/billing" className="underline font-semibold hover:text-[#047857] transition-colors">
               {t('team.banner_billing_link')}
-            </a>
+            </Link>
             <span>{locale === 'en' ? t('team.banner_billing_suffix') : '.'}</span>
           </div>
         </div>

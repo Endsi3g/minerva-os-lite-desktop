@@ -27,6 +27,7 @@
 
 - [Présentation](#présentation)
 - [Fonctionnalités principales](#fonctionnalités-principales)
+- [Sécurité](#sécurité)
 - [Architecture du projet](#architecture-du-projet)
 - [Prérequis et configuration](#prérequis-et-configuration)
 - [Développement local](#développement-local)
@@ -86,7 +87,34 @@ Minerva OS Reach Lite est conçu pour aider les agences et les professionnels du
 - **Synchronisation bidirectionnelle automatique** : Moteur de synchronisation asynchrone utilisant la politique **Last-Write-Wins** basée sur les dates `updated_at` pour résoudre les conflits avec Supabase.
 - **Planificateur de prospection persistant** : Déclenchement automatique et persistant du scraping de leads toutes les 6 heures avec notifications natives sur le système d'exploitation.
 - **Spotlight Search global** : Barre de recherche rapide de type Spotlight accessible par-dessus toutes les applications via `Option + Espace` (macOS) ou `Alt + Espace` (Windows/Linux).
+- **Popover de la barre système (`/tray`)** : Widget compact accessible depuis l'icône de la barre système, avec vérification rapide des tâches du jour et déclenchement manuel d'un scraping.
 - **Exportation PDF native enrichie** : Impression PDF native des rapports d'audits SEO sous forme hautement stylisée sans dépendance lourde tierce.
+
+### Application Mobile Capacitor (Nouveau)
+- **Pont natif unifié** (`lib/native-bridge.ts`) : accès à la caméra, aux notifications push et au stockage de préférences natif, avec repli automatique sur les API web en environnement navigateur.
+- **Synchronisation iOS et Android** via `pnpm cap:sync`, avec workflows CI/CD Fastlane pour l'automatisation des builds Android.
+
+### Prospection Avancée & Intelligence (Nouveau)
+- **Carte interactive du Québec** : visualisation géolocalisée des leads pour cibler les zones de prospection.
+- **Tableau de bord de prospection** dédié, avec score de leads persisté en base de données.
+- **Page Intelligence** : synthèses et recommandations générées par IA à partir du portefeuille de leads actif.
+- **Marketplace d'agents IA personnalisés** (`/agents`) : création et configuration d'agents IA dédiés à des tâches spécifiques.
+- **Bibliothèque de contenus** (`/library`) avec éditeur de texte enrichi basé sur TipTap.
+- **Interface de chat IA** (`/chat`) pour interagir directement avec les modèles configurés.
+- **Tableau de bord analytique** (`/analytics`) et page de facturation dédiée (`/billing`).
+- **Centre d'aide** (`/help`) avec guides pas-à-pas dédiés pour chaque fonctionnalité clé du produit.
+- **Support multi-fournisseurs IA** : OpenRouter, Anthropic, Groq et Together.ai, ainsi qu'une configuration SMTP générique pour l'envoi d'emails au-delà de Gmail.
+
+---
+
+## Sécurité
+
+- **Masquage des clés API** : les clés des fournisseurs IA (OpenRouter, Groq, Together.ai) saisies par l'utilisateur ne sont jamais renvoyées en clair au client. Elles sont gérées exclusivement côté serveur via `app/api/settings/ai-keys`, qui ne renvoie qu'une version masquée (`sk-••••1234`) ; aucune valeur brute n'est mise en cache dans `localStorage`.
+- **Row Level Security (RLS) Supabase** : chaque table (`leads`, `tasks`, `notes`, `settings`, `workspaces`, membres d'équipe) est protégée par des politiques RLS strictes garantissant qu'un utilisateur ne peut lire ou écrire que les données des workspaces qu'il possède ou dont il est membre actif.
+- **Routes d'administration d'équipe durcies** : `app/api/team/members` et `app/api/team/invite` valident explicitement l'appartenance au workspace (propriétaire ou rôle admin) avant toute lecture ou mutation, en plus des politiques RLS.
+- **Clé de rôle de service isolée** : `SUPABASE_SERVICE_ROLE_KEY` n'est utilisée que dans les route handlers serveur (jamais exposée au bundle client) pour les opérations d'administration (invitations, gestion des rôles).
+- **Authentification** : connexion par mot de passe ou par code OTP passwordless, réinitialisation de mot de passe via un flux PKCE sécurisé.
+- **IPC SQLite (Electron)** : le canal IPC `dbRun`/`dbAll`/`dbGet` accepte des requêtes SQL paramétrées envoyées depuis le renderer. Le risque est circonscrit à la machine locale de l'utilisateur (pas d'exposition réseau) ; aucune donnée sensible distante n'est accessible par ce canal.
 
 ---
 
@@ -128,8 +156,14 @@ SUPABASE_SERVICE_ROLE_KEY=votre-cle-service-role
 GOOGLE_CLIENT_ID=votre-client-id.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=votre-client-secret
 
-# Intelligence Artificielle & Fournisseurs
+# Intelligence Artificielle & Fournisseurs (clé serveur par défaut ; les utilisateurs
+# peuvent aussi configurer leurs propres clés OpenRouter, Groq et Together.ai
+# depuis /settings, stockées et masquées côté serveur — voir section Sécurité)
 ANTHROPIC_API_KEY=votre-cle-anthropic
+
+# URL publique de l'application, utilisée par Electron et Capacitor pour router
+# les appels vers les routes API (sans objet en mode web classique)
+NEXT_PUBLIC_APP_URL=https://votre-domaine.com
 ```
 
 ---

@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, MapPin, Calendar, X, ArrowUpRight } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
+import { getTemperatureStyle, getTemperatureLabel } from '@/lib/lead-badges';
 
 interface PipelineKanbanCardProps {
   lead: Lead;
@@ -43,17 +44,6 @@ export function PipelineKanbanCard({ lead }: PipelineKanbanCardProps) {
     e.preventDefault();
     e.stopPropagation();
     updateLeadStatus(lead.id, 'Lost');
-  };
-
-  const getTemperatureStyle = (temp: Lead['temperature']) => {
-    switch (temp) {
-      case 'Hot':
-        return 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/30 dark:text-rose-300 dark:border-rose-800';
-      case 'Warm':
-        return 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-300 dark:border-amber-800';
-      default:
-        return 'bg-slate-50 text-slate-700 border-slate-200 dark:bg-slate-900 dark:text-slate-300 dark:border-slate-800';
-    }
   };
 
   const isOverdue = lead.nextActionDate && lead.nextActionDate <= new Date().toISOString().split('T')[0];
@@ -93,7 +83,7 @@ export function PipelineKanbanCard({ lead }: PipelineKanbanCardProps) {
             variant="secondary"
             className={cn("text-[8px] font-bold px-1.5 py-0 rounded", getTemperatureStyle(lead.temperature))}
           >
-            {lead.temperature === 'Hot' ? '🔥 Chaud' : lead.temperature === 'Warm' ? '☀️ Tiède' : '❄️ Froid'}
+            {getTemperatureLabel(lead.temperature)}
           </Badge>
 
           <div className="flex items-center gap-1.5">

@@ -82,6 +82,47 @@ export default function BillingPage() {
     { id: 'invoices', label: 'Factures' },
   ];
 
+  const handleDownloadInvoice = (invoice: typeof INVOICES[number]) => {
+    const printWindow = window.open('', '_blank', 'width=800,height=900');
+    if (!printWindow) return;
+    printWindow.document.write(`
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <title>Facture ${invoice.id}</title>
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 50px; color: #26251e; }
+            .header { border-bottom: 2px solid #059669; padding-bottom: 20px; margin-bottom: 30px; }
+            h1 { font-size: 22px; font-weight: 800; margin: 0 0 6px 0; }
+            .meta { font-size: 11px; color: #7a7a76; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 13px; }
+            td { padding: 8px 0; border-bottom: 1px solid #e5e5e0; }
+            td:first-child { color: #7a7a76; }
+            td:last-child { text-align: right; font-weight: 700; }
+            .footer { margin-top: 60px; font-size: 10px; color: #7a7a76; text-align: center; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div class="meta">MINERVA OS REACH LITE · FACTURE</div>
+            <h1>Facture ${invoice.id}</h1>
+            <div class="meta">Date d'émission : ${invoice.date}</div>
+          </div>
+          <table>
+            <tr><td>Référence</td><td>${invoice.id}</td></tr>
+            <tr><td>Date</td><td>${invoice.date}</td></tr>
+            <tr><td>Statut</td><td>${invoice.status}</td></tr>
+            <tr><td>Montant total</td><td>${invoice.amount}</td></tr>
+          </table>
+          <div class="footer">Document généré via Minerva OS Reach Lite</div>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+  };
+
   return (
     <div className="h-full overflow-y-auto min-h-0 scrollbar-thin">
       <div className="mx-auto flex max-w-5xl flex-col gap-6 p-6">
@@ -261,7 +302,10 @@ export default function BillingPage() {
                       </span>
                     </td>
                     <td className="px-5 py-3.5 text-right">
-                      <button className="inline-flex items-center gap-1 text-[10px] font-bold text-[#555552] hover:text-[#26251e] transition-colors">
+                      <button
+                        onClick={() => handleDownloadInvoice(inv)}
+                        className="inline-flex items-center gap-1 text-[10px] font-bold text-[#555552] hover:text-[#26251e] transition-colors"
+                      >
                         <Download className="h-3 w-3" />
                         Télécharger
                       </button>
@@ -286,7 +330,10 @@ export default function BillingPage() {
               Workspaces illimités, membres d'équipe et IA premium — pour 39$/mois en facturation annuelle.
             </p>
           </div>
-          <button className="shrink-0 px-4 py-2 rounded-lg bg-[#059669] hover:bg-[#047857] text-white text-xs font-bold transition-colors flex items-center gap-1.5">
+          <button
+            onClick={() => setTab('plans')}
+            className="shrink-0 px-4 py-2 rounded-lg bg-[#059669] hover:bg-[#047857] text-white text-xs font-bold transition-colors flex items-center gap-1.5"
+          >
             Voir les forfaits
             <ChevronRight className="h-3.5 w-3.5" />
           </button>

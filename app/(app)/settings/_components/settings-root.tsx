@@ -11,6 +11,7 @@ import { SettingsIntegrationsSection } from './settings-integrations-section';
 import { SettingsPreferencesSection, PreferencesData } from './settings-preferences-section';
 import { Locale } from '@/lib/translations';
 import { createClient } from '@/lib/supabase/client';
+import { getApiUrl } from '@/lib/api-helper';
 import { AnalyticsDashboard } from '@/components/analytics-dashboard';
 import { cn } from '@/lib/utils';
 
@@ -40,9 +41,10 @@ interface AiData {
   autoInsights: boolean;
   autoFollowUps: boolean;
   aiProvider: 'anthropic' | 'openrouter' | 'groq' | 'together';
-  openrouterKey: string;
-  groqKey: string;
-  togetherKey: string;
+  // Never the raw key — only a masked display value fetched from /api/settings/ai-keys.
+  openrouterKeyMasked: string | null;
+  groqKeyMasked: string | null;
+  togetherKeyMasked: string | null;
   aiModel: string;
 }
 
@@ -92,9 +94,9 @@ const DEFAULT_SETTINGS: AppSettings = {
     autoInsights: true,
     autoFollowUps: false,
     aiProvider: "anthropic",
-    openrouterKey: "",
-    groqKey: "",
-    togetherKey: "",
+    openrouterKeyMasked: null,
+    groqKeyMasked: null,
+    togetherKeyMasked: null,
     aiModel: "meta-llama/llama-3-8b-instruct:free"
   },
   notifications: {
@@ -155,9 +157,9 @@ export function SettingsRoot() {
                 autoInsights: true,
                 autoFollowUps: false,
                 aiProvider: dbSettings.ai_provider || 'anthropic',
-                openrouterKey: dbSettings.openrouter_key || '',
-                groqKey: dbSettings.groq_api_key || '',
-                togetherKey: dbSettings.together_api_key || '',
+                openrouterKeyMasked: null,
+                groqKeyMasked: null,
+                togetherKeyMasked: null,
                 aiModel: dbSettings.ai_model || 'meta-llama/llama-3-8b-instruct:free'
               },
               notifications: {
@@ -188,15 +190,44 @@ export function SettingsRoot() {
       const stored = localStorage.getItem('minerva_reach_settings');
       if (stored) {
         try {
-          setSettings(JSON.parse(stored));
+          const parsed = JSON.parse(stored);
+          // Scrub raw key values that may have been cached by older app versions —
+          // this cache must never carry secrets, only masked display strings.
+          if (parsed?.ai) {
+            delete parsed.ai.openrouterKey;
+            delete parsed.ai.groqKey;
+            delete parsed.ai.togetherKey;
+          }
+          setSettings(parsed);
+          localStorage.setItem('minerva_reach_settings', JSON.stringify(parsed));
         } catch (e) {
           console.error('Failed to parse settings', e);
         }
       }
     };
 
+    const fetchAiKeysStatus = async () => {
+      try {
+        const res = await fetch(getApiUrl('/api/settings/ai-keys'));
+        if (!res.ok) return;
+        const keys = await res.json();
+        setSettings((prev) => ({
+          ...prev,
+          ai: {
+            ...prev.ai,
+            openrouterKeyMasked: keys.openrouterKeyMasked,
+            groqKeyMasked: keys.groqKeyMasked,
+            togetherKeyMasked: keys.togetherKeyMasked,
+          },
+        }));
+      } catch (e) {
+        console.error('Failed to fetch AI key status', e);
+      }
+    };
+
     const timer = setTimeout(() => {
       fetchDbSettings();
+      fetchAiKeysStatus();
     }, 0);
     return () => clearTimeout(timer);
   }, []);
@@ -231,9 +262,6 @@ export function SettingsRoot() {
               ai_tone: nextSettings.ai.tone === 'casual' ? 'Calme & Conseil' : nextSettings.ai.tone === 'professional' ? 'Direct & Closer' : 'Storytelling',
               ai_density: nextSettings.ai.customization === 'low' ? 'Standard' : nextSettings.ai.customization === 'medium' ? 'Personnalisé' : 'Profond',
               ai_provider: nextSettings.ai.aiProvider,
-              openrouter_key: nextSettings.ai.openrouterKey,
-              groq_api_key: nextSettings.ai.groqKey,
-              together_api_key: nextSettings.ai.togetherKey,
               ai_model: nextSettings.ai.aiModel,
             });
             if (baseError) console.error("Error saving base settings:", baseError.message);
@@ -269,6 +297,38 @@ export function SettingsRoot() {
     }, 800);
   };
 
+  // AI provider keys never flow through updateSettingsSection — they're written
+  // via a dedicated server route that returns only a masked value, never the raw key.
+  const FIELD_BY_PROVIDER = {
+    openrouter: 'openrouter_key',
+    groq: 'groq_api_key',
+    together: 'together_api_key',
+  } as const;
+  const MASK_KEY_BY_PROVIDER = {
+    openrouter: 'openrouterKeyMasked',
+    groq: 'groqKeyMasked',
+    together: 'togetherKeyMasked',
+  } as const;
+
+  const saveAiKey = async (provider: keyof typeof FIELD_BY_PROVIDER, value: string) => {
+    const res = await fetch(getApiUrl('/api/settings/ai-keys'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ field: FIELD_BY_PROVIDER[provider], value }),
+    });
+    if (!res.ok) return;
+    const { masked } = await res.json();
+    setSettings((prev) => ({ ...prev, ai: { ...prev.ai, [MASK_KEY_BY_PROVIDER[provider]]: masked } }));
+  };
+
+  const deleteAiKey = async (provider: keyof typeof FIELD_BY_PROVIDER) => {
+    const res = await fetch(getApiUrl(`/api/settings/ai-keys?field=${FIELD_BY_PROVIDER[provider]}`), {
+      method: 'DELETE',
+    });
+    if (!res.ok) return;
+    setSettings((prev) => ({ ...prev, ai: { ...prev.ai, [MASK_KEY_BY_PROVIDER[provider]]: null } }));
+  };
+
   return (
     <div className="flex h-full min-h-0 bg-background overflow-hidden">
       {/* Sidebar nav selector */}
@@ -300,6 +360,8 @@ export function SettingsRoot() {
             <SettingsAiSection
               data={settings.ai}
               onChange={(updates) => updateSettingsSection('ai', updates)}
+              onSaveKey={saveAiKey}
+              onDeleteKey={deleteAiKey}
               isSaving={!!savingSection.ai}
             />
           )}

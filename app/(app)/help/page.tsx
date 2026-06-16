@@ -1,8 +1,10 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import { HelpCircle, ChevronDown, PlayCircle, BookOpen, ExternalLink, Mail } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { HELP_GUIDES } from '@/lib/help-guides';
 
 type HelpTab = 'faq' | 'tutorials' | 'videos';
 
@@ -49,50 +51,7 @@ const FAQ_ITEMS = [
   },
 ];
 
-const TUTORIALS = [
-  {
-    slug: 'premiere-campagne',
-    title: 'Lancer votre première campagne de prospection locale',
-    duration: '5 min',
-    level: 'Débutant',
-    description: 'Créez un workspace, définissez votre zone géographique et lancez votre premier scraping de leads.',
-  },
-  {
-    slug: 'pipeline-kanban',
-    title: 'Gérer vos prospects dans le pipeline Kanban',
-    duration: '4 min',
-    level: 'Débutant',
-    description: 'Organisez vos leads par statut (Nouveau → Contacté → RDV → Signé) avec le vue Kanban.',
-  },
-  {
-    slug: 'workspace-equipe',
-    title: 'Configurer un workspace d\'équipe avec rôles et permissions',
-    duration: '7 min',
-    level: 'Intermédiaire',
-    description: 'Invitez des collaborateurs, définissez les rôles et suivez l\'activité en temps réel.',
-  },
-  {
-    slug: 'email-ia',
-    title: 'Générer et envoyer des emails de prospection avec l\'IA',
-    duration: '6 min',
-    level: 'Intermédiaire',
-    description: 'Utilisez la génération IA pour produire des emails personnalisés et les envoyer via Gmail.',
-  },
-  {
-    slug: 'agents-ia',
-    title: 'Configurer un agent IA personnalisé',
-    duration: '8 min',
-    level: 'Avancé',
-    description: 'Créez des agents spécialisés avec votre propre ton et style de prospection.',
-  },
-  {
-    slug: 'export-drive',
-    title: 'Exporter vos rapports vers Google Drive',
-    duration: '3 min',
-    level: 'Débutant',
-    description: 'Exportez des audits PDF directement dans votre Google Drive depuis la fiche prospect.',
-  },
-];
+const TUTORIALS = HELP_GUIDES;
 
 const VIDEOS = [
   {
@@ -252,10 +211,10 @@ export default function HelpPage() {
                         {tuto.level}
                       </span>
                     </div>
-                    <button className="text-[10px] font-bold text-[#059669] hover:text-[#047857] flex items-center gap-1 transition-colors">
+                    <Link href={`/help/guides/${tuto.slug}`} className="text-[10px] font-bold text-[#059669] hover:text-[#047857] flex items-center gap-1 transition-colors">
                       Voir le guide
                       <ExternalLink className="h-3 w-3" />
-                    </button>
+                    </Link>
                   </div>
                 </div>
               ))}

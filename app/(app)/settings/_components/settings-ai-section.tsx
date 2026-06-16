@@ -16,19 +16,95 @@ interface AiData {
   autoInsights: boolean;
   autoFollowUps: boolean;
   aiProvider: 'anthropic' | 'openrouter' | 'groq' | 'together';
-  openrouterKey: string;
-  groqKey: string;
-  togetherKey: string;
+  // Only a masked display value (e.g. "••••1234") — the raw key never reaches the browser.
+  openrouterKeyMasked: string | null;
+  groqKeyMasked: string | null;
+  togetherKeyMasked: string | null;
   aiModel: string;
 }
+
+type AiKeyProvider = 'openrouter' | 'groq' | 'together';
 
 interface SettingsAiSectionProps {
   data: AiData;
   onChange: (updates: Partial<AiData>) => void;
+  onSaveKey: (provider: AiKeyProvider, value: string) => Promise<void>;
+  onDeleteKey: (provider: AiKeyProvider) => Promise<void>;
   isSaving: boolean;
 }
 
-export function SettingsAiSection({ data, onChange, isSaving }: SettingsAiSectionProps) {
+function ApiKeyField({
+  label,
+  placeholder,
+  hint,
+  masked,
+  provider,
+  onSaveKey,
+  onDeleteKey,
+}: {
+  label: string;
+  placeholder: string;
+  hint: string;
+  masked: string | null;
+  provider: AiKeyProvider;
+  onSaveKey: (provider: AiKeyProvider, value: string) => Promise<void>;
+  onDeleteKey: (provider: AiKeyProvider) => Promise<void>;
+}) {
+  const [draft, setDraft] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  const handleSave = async () => {
+    if (!draft.trim()) return;
+    setBusy(true);
+    await onSaveKey(provider, draft.trim());
+    setDraft('');
+    setBusy(false);
+  };
+
+  const handleDelete = async () => {
+    setBusy(true);
+    await onDeleteKey(provider);
+    setBusy(false);
+  };
+
+  return (
+    <div className="grid gap-1.5">
+      <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{label}</label>
+      <div className="flex gap-2">
+        <Input
+          type="password"
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          placeholder={masked ? `Clé configurée (${masked})` : placeholder}
+          className="text-xs bg-card font-mono"
+        />
+        <Button
+          type="button"
+          onClick={handleSave}
+          disabled={busy || !draft.trim()}
+          className="h-9 px-3 text-xs bg-[#26251e] hover:bg-[#3d3c36] text-white"
+        >
+          Enregistrer
+        </Button>
+      </div>
+      <div className="flex items-center justify-between">
+        <span className="text-[9px] text-muted-foreground leading-none">{hint}</span>
+        {masked && (
+          <button
+            type="button"
+            onClick={handleDelete}
+            disabled={busy}
+            className="text-[9px] font-semibold text-red-600 hover:underline cursor-pointer"
+          >
+            Supprimer
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export function SettingsAiSection({ data, onChange, onSaveKey, onDeleteKey, isSaving }: SettingsAiSectionProps) {
   const tones = [
     { id: 'casual' as const, name: 'Calme & Conseil', description: 'Ton d\'accompagnement chaleureux et axé sur l\'audit technique gratuit.' },
     { id: 'professional' as const, name: 'Direct & Closer', description: 'Ton direct de closing rapide, insistant sur le ROI commercial immédiat.' },
@@ -135,19 +211,15 @@ export function SettingsAiSection({ data, onChange, isSaving }: SettingsAiSectio
 
             {data.aiProvider === 'openrouter' && (
               <div className="space-y-4 pt-4 border-t border-border/50">
-                <div className="grid gap-1.5">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Clé API OpenRouter</label>
-                  <Input
-                    type="password"
-                    value={data.openrouterKey}
-                    onChange={(e) => onChange({ openrouterKey: e.target.value })}
-                    placeholder="sk-or-v1-..."
-                    className="text-xs bg-card font-mono"
-                  />
-                  <span className="text-[9px] text-muted-foreground leading-none">
-                    Ta clé API est stockée de manière sécurisée et sert uniquement à générer tes messages.
-                  </span>
-                </div>
+                <ApiKeyField
+                  label="Clé API OpenRouter"
+                  placeholder="sk-or-v1-..."
+                  hint="Ta clé API est stockée de manière sécurisée et sert uniquement à générer tes messages."
+                  masked={data.openrouterKeyMasked}
+                  provider="openrouter"
+                  onSaveKey={onSaveKey}
+                  onDeleteKey={onDeleteKey}
+                />
 
                 <div className="grid gap-1.5">
                   <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Modèle d'IA</label>
@@ -196,19 +268,15 @@ export function SettingsAiSection({ data, onChange, isSaving }: SettingsAiSectio
 
             {data.aiProvider === 'groq' && (
               <div className="space-y-4 pt-4 border-t border-border/50">
-                <div className="grid gap-1.5">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Clé API Groq</label>
-                  <Input
-                    type="password"
-                    value={data.groqKey}
-                    onChange={(e) => onChange({ groqKey: e.target.value })}
-                    placeholder="gsk_..."
-                    className="text-xs bg-card font-mono"
-                  />
-                  <span className="text-[9px] text-muted-foreground leading-none">
-                    Clé disponible gratuitement sur console.groq.com
-                  </span>
-                </div>
+                <ApiKeyField
+                  label="Clé API Groq"
+                  placeholder="gsk_..."
+                  hint="Clé disponible gratuitement sur console.groq.com"
+                  masked={data.groqKeyMasked}
+                  provider="groq"
+                  onSaveKey={onSaveKey}
+                  onDeleteKey={onDeleteKey}
+                />
                 <div className="grid gap-1.5">
                   <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Modèle Groq</label>
                   <Select value={data.aiModel || 'llama-3.1-70b-versatile'} onValueChange={(val) => onChange({ aiModel: val })}>
@@ -227,19 +295,15 @@ export function SettingsAiSection({ data, onChange, isSaving }: SettingsAiSectio
 
             {data.aiProvider === 'together' && (
               <div className="space-y-4 pt-4 border-t border-border/50">
-                <div className="grid gap-1.5">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Clé API Together.ai</label>
-                  <Input
-                    type="password"
-                    value={data.togetherKey}
-                    onChange={(e) => onChange({ togetherKey: e.target.value })}
-                    placeholder="together-..."
-                    className="text-xs bg-card font-mono"
-                  />
-                  <span className="text-[9px] text-muted-foreground leading-none">
-                    Clé disponible sur api.together.xyz
-                  </span>
-                </div>
+                <ApiKeyField
+                  label="Clé API Together.ai"
+                  placeholder="together-..."
+                  hint="Clé disponible sur api.together.xyz"
+                  masked={data.togetherKeyMasked}
+                  provider="together"
+                  onSaveKey={onSaveKey}
+                  onDeleteKey={onDeleteKey}
+                />
                 <div className="grid gap-1.5">
                   <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Modèle Together.ai</label>
                   <Select value={data.aiModel || 'meta-llama/Llama-3-70b-chat-hf'} onValueChange={(val) => onChange({ aiModel: val })}>

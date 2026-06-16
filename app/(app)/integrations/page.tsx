@@ -27,10 +27,13 @@ import {
   TeamsIcon, 
   GoogleMeetIcon
 } from '@/components/icons';
-import { 
-  getConnectedIntegrations, 
-  connectIntegration
+import {
+  getConnectedIntegrations,
+  connectIntegration,
+  disconnectIntegration,
+  getImportedIntegrations
 } from '@/lib/onboarding-store';
+import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import {
   DropdownMenu,
@@ -181,6 +184,7 @@ const DEFAULT_INTEGRATIONS: IntegrationItem[] = [
 ];
 
 export default function IntegrationsPage() {
+  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [availableSearchQuery, setAvailableSearchQuery] = useState('');
   const [filterTab, setFilterTab] = useState<'all' | 'connected' | 'custom' | 'needs-config'>('all');
@@ -286,6 +290,33 @@ export default function IntegrationsPage() {
   useEffect(() => {
     const syncStore = () => {
       setConnectedIds(getConnectedIntegrations());
+
+      const imported = getImportedIntegrations();
+      if (imported.length === 0) return;
+      setIntegrationsList(prev => {
+        const existingIds = new Set(prev.map(item => item.id));
+        const newItems: IntegrationItem[] = imported
+          .filter(imp => !existingIds.has(imp.id))
+          .map(imp => ({
+            id: imp.id,
+            name: imp.name,
+            category: imp.category,
+            owner: 'Moi',
+            email: '',
+            accEmail: imp.authMethod === 'oauth' ? 'OAuth' : imp.authMethod === 'key' ? 'Clé API' : 'Aucune authentification',
+            icon: () => (
+              <div className="w-7 h-7 rounded-lg bg-[#059669]/10 flex items-center justify-center border border-[#059669]/20 shrink-0">
+                <Plug className="w-4 h-4 text-[#059669]" />
+              </div>
+            ),
+            status: 'Active',
+            assets: '—',
+            access: 'Private',
+            description: imp.description,
+            custom: true
+          }));
+        return newItems.length > 0 ? [...prev, ...newItems] : prev;
+      });
     };
     syncStore();
     window.addEventListener('minerva_store_update', syncStore);
@@ -493,9 +524,25 @@ export default function IntegrationsPage() {
                   >
                     Export
                   </Button>
-                  <button title="Plus d'options" aria-label="Plus d'options" className="h-8.5 w-8.5 flex items-center justify-center rounded-md border border-[#e5e5e0] hover:bg-slate-50 text-[#7a7a76]">
-                    <MoreHorizontal className="w-4 h-4" />
-                  </button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button title="Plus d'options" aria-label="Plus d'options" className="h-8.5 w-8.5 flex items-center justify-center rounded-md border border-[#e5e5e0] hover:bg-slate-50 text-[#7a7a76]">
+                        <MoreHorizontal className="w-4 h-4" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-44 text-xs font-semibold bg-white border-[#e5e5e0] shadow-md rounded-md p-1 font-sans">
+                      <DropdownMenuItem
+                        onClick={() => {
+                          disconnectIntegration(activeEditIntegration.id);
+                          setConnectedIds(prev => prev.filter(id => id !== activeEditIntegration.id));
+                          setActiveIntegrationEditId(null);
+                        }}
+                        className="hover:bg-red-50 cursor-pointer p-2 rounded text-red-600"
+                      >
+                        Déconnecter
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               </div>
 
@@ -878,8 +925,8 @@ export default function IntegrationsPage() {
                         >
                           + Start from scratch
                         </DropdownMenuItem>
-                        <DropdownMenuItem 
-                          onClick={() => alert("Fonctionnalité d'import bientôt disponible !")}
+                        <DropdownMenuItem
+                          onClick={() => router.push('/integrations/import')}
                           className="hover:bg-slate-50 cursor-pointer p-2 rounded text-[#26251e]"
                         >
                           Import integration

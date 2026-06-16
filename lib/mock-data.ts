@@ -197,24 +197,3 @@ export const initialTasks: Task[] = [
     dueDate: new Date().toISOString().split('T')[0]
   }
 ];
-
-export const initialAiSuggestions: AiSuggestion[] = [
-  {
-    id: "sug-1",
-    leadId: "lead-1",
-    leadName: "Boulangerie L'Épi d'Or",
-    actionText: "Relancer par SMS pour le créneau de démo proposé hier.",
-    suggestedChannel: "Call",
-    reasoning: "Jean Dupont a montré un intérêt élevé lors de la visite mais n'a pas encore répondu par mail pour confirmer le créneau.",
-    draftPrompt: "Écris un SMS court et chaleureux à Jean pour lui proposer de bloquer le créneau de vendredi matin à 10h pour notre démo Minerva."
-  },
-  {
-    id: "sug-2",
-    leadId: "lead-2",
-    leadName: "Garage du Centre",
-    actionText: "Envoyer un audit de visibilité Google Maps par Email.",
-    suggestedChannel: "Email",
-    reasoning: "Le garage n'a pas d'avis récents et son concurrent direct à 300m a une note de 4.8 avec 150 avis.",
-    draftPrompt: "Rédige un e-mail d'introduction de 3 paragraphes pour Michel Martin. Souligne le manque d'avis récents sur sa fiche Maps par rapport à ses concurrents locaux, et propose une solution simple."
-  }
-];

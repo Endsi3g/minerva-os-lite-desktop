@@ -39,41 +39,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // 2. Verify the caller is admin or owner
-    const { data: membership } = await supabase
-      .from('team_members')
-      .select('role')
-      .eq('workspace_owner_id', user.id)
-      .eq('member_user_id', user.id)
-      .maybeSingle();
-
-    // The owner themselves can always invite — check if they are owner of the workspace
-    // OR have admin role assigned
-    const { data: callerMember } = await supabase
-      .from('team_members')
-      .select('role')
-      .eq('workspace_owner_id', user.id)
-      .eq('member_user_id', user.id)
-      .maybeSingle();
-
-    const isOwner = !membership && !callerMember; // If no record, they ARE the owner
-    const isAdmin = callerMember?.role === 'admin';
-
-    if (!isOwner && !isAdmin) {
-      // Check if they're an admin of someone else's workspace
-      const { data: asAdmin } = await supabase
-        .from('team_members')
-        .select('role')
-        .eq('member_user_id', user.id)
-        .eq('role', 'admin')
-        .maybeSingle();
-
-      if (!asAdmin) {
-        return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
-      }
-    }
-
-    // 3. Parse request body
+    // 2. Parse request body — needed before authorization since the target
+    // workspace (ownerId) determines who is allowed to invite into it.
     const { email, role, workspaceOwnerId } = await request.json();
 
     if (!email || !role || !['admin', 'editor', 'viewer'].includes(role)) {
@@ -81,6 +48,24 @@ export async function POST(request: NextRequest) {
     }
 
     const ownerId = workspaceOwnerId || user.id;
+
+    // 3. Verify the caller is the owner of THIS workspace, or an admin member of it.
+    // (Previously this checked a self-referential row that never exists, which made
+    // the check pass for nearly any authenticated user regardless of `ownerId`.)
+    let isAuthorized = ownerId === user.id;
+    if (!isAuthorized) {
+      const { data: callerMembership } = await supabase
+        .from('team_members')
+        .select('role')
+        .eq('workspace_owner_id', ownerId)
+        .eq('member_user_id', user.id)
+        .maybeSingle();
+      isAuthorized = callerMembership?.role === 'admin';
+    }
+
+    if (!isAuthorized) {
+      return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
+    }
 
     // 4. Check if already invited
     const { data: existing } = await supabase
