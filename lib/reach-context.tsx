@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { getApiUrl } from './api-helper';
 import { User as SupabaseUser } from '@supabase/supabase-js';
 import { Lead, Task, Note, AiSuggestion, initialLeads, initialTasks } from './mock-data';
+import { computeLeadScore } from './lead-scoring';
 import { createClient } from './supabase/client';
 
 export interface Workspace {
@@ -75,6 +76,7 @@ interface DbLead {
   next_action_date?: string | null;
   owner?: string | null;
   image_url?: string | null;
+  score?: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -120,6 +122,7 @@ function mapDbLeadToUi(dbLead: DbLead, dbNotes: DbNote[] = []): Lead {
     nextActionDate: dbLead.next_action_date || '',
     owner: dbLead.owner || 'Moi',
     imageUrl: dbLead.image_url || '',
+    score: dbLead.score ?? 0,
     createdAt: dbLead.created_at,
     updatedAt: dbLead.updated_at,
     notes: dbNotes
@@ -795,9 +798,14 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
         const leadId = crypto.randomUUID();
         const nowStr = new Date().toISOString();
 
-        await electronObj.dbRun(`INSERT INTO leads (id, user_id, business_name, contact_name, contact_email, niche, city, source, status, temperature, next_action, next_action_date, owner, image_url, workspace_id, created_at, updated_at, sync_status)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending_insert')`,
-          [leadId, user.id, leadData.businessName, leadData.contactName, leadData.contactEmail || '', leadData.niche, leadData.city, leadData.source, leadData.status, leadData.temperature, leadData.nextAction, leadData.nextActionDate || null, 'Moi', leadData.imageUrl || null, activeWorkspace.id, nowStr, nowStr]
+        const leadScore = computeLeadScore({
+          notes: leadData.notes ? [{ id: '', leadId: leadId, type: 'general', content: leadData.notes, createdAt: nowStr }] : [],
+          source: leadData.source
+        });
+
+        await electronObj.dbRun(`INSERT INTO leads (id, user_id, business_name, contact_name, contact_email, niche, city, source, status, temperature, next_action, next_action_date, owner, image_url, workspace_id, score, created_at, updated_at, sync_status)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending_insert')`,
+          [leadId, user.id, leadData.businessName, leadData.contactName, leadData.contactEmail || '', leadData.niche, leadData.city, leadData.source, leadData.status, leadData.temperature, leadData.nextAction, leadData.nextActionDate || null, 'Moi', leadData.imageUrl || null, activeWorkspace.id, leadScore, nowStr, nowStr]
         );
 
         const insertedNotes: DbNote[] = [];
@@ -830,6 +838,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
           next_action_date: leadData.nextActionDate || null,
           owner: 'Moi',
           image_url: leadData.imageUrl || null,
+          score: leadScore,
           created_at: nowStr,
           updated_at: nowStr
         }, insertedNotes);

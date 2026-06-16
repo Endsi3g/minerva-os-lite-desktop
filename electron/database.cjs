@@ -131,6 +131,12 @@ function initDb() {
     db.run(`ALTER TABLE workspaces ADD COLUMN accent_color TEXT`, () => {});
     db.run(`ALTER TABLE workspaces ADD COLUMN logo_base64 TEXT`, () => {});
 
+    // v2.9.0 migrations
+    db.run(`ALTER TABLE leads ADD COLUMN score INTEGER DEFAULT 0`, () => {});
+    db.run(`ALTER TABLE settings ADD COLUMN smtp_config TEXT DEFAULT NULL`, () => {});
+    db.run(`ALTER TABLE settings ADD COLUMN groq_api_key TEXT DEFAULT NULL`, () => {});
+    db.run(`ALTER TABLE settings ADD COLUMN together_api_key TEXT DEFAULT NULL`, () => {});
+
     // Indexes to avoid full table scans during sync
     db.run(`CREATE INDEX IF NOT EXISTS idx_leads_user_id ON leads(user_id)`);
     db.run(`CREATE INDEX IF NOT EXISTS idx_leads_sync_status ON leads(sync_status)`);

@@ -39,8 +39,10 @@ interface AiData {
   customization: 'low' | 'medium' | 'high';
   autoInsights: boolean;
   autoFollowUps: boolean;
-  aiProvider: 'anthropic' | 'openrouter';
+  aiProvider: 'anthropic' | 'openrouter' | 'groq' | 'together';
   openrouterKey: string;
+  groqKey: string;
+  togetherKey: string;
   aiModel: string;
 }
 
@@ -91,6 +93,8 @@ const DEFAULT_SETTINGS: AppSettings = {
     autoFollowUps: false,
     aiProvider: "anthropic",
     openrouterKey: "",
+    groqKey: "",
+    togetherKey: "",
     aiModel: "meta-llama/llama-3-8b-instruct:free"
   },
   notifications: {
@@ -152,6 +156,8 @@ export function SettingsRoot() {
                 autoFollowUps: false,
                 aiProvider: dbSettings.ai_provider || 'anthropic',
                 openrouterKey: dbSettings.openrouter_key || '',
+                groqKey: dbSettings.groq_api_key || '',
+                togetherKey: dbSettings.together_api_key || '',
                 aiModel: dbSettings.ai_model || 'meta-llama/llama-3-8b-instruct:free'
               },
               notifications: {
@@ -226,6 +232,8 @@ export function SettingsRoot() {
               ai_density: nextSettings.ai.customization === 'low' ? 'Standard' : nextSettings.ai.customization === 'medium' ? 'Personnalisé' : 'Profond',
               ai_provider: nextSettings.ai.aiProvider,
               openrouter_key: nextSettings.ai.openrouterKey,
+              groq_api_key: nextSettings.ai.groqKey,
+              together_api_key: nextSettings.ai.togetherKey,
               ai_model: nextSettings.ai.aiModel,
             });
             if (baseError) console.error("Error saving base settings:", baseError.message);

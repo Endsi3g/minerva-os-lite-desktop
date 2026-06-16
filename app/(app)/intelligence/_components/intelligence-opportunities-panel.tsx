@@ -5,6 +5,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Target, ArrowUpRight, TrendingUp, AlertTriangle } from 'lucide-react';
 import { useReach } from '@/lib/reach-context';
+import { computeLeadScore } from '@/lib/lead-scoring';
 import Link from 'next/link';
 
 interface Opportunity {
@@ -37,48 +38,43 @@ export function IntelligenceOpportunitiesPanel() {
 
     let hasIssue = false;
     let signal = '';
-    let score = 50;
     let type: 'seo' | 'website' | 'reviews' = 'seo';
 
     if (allNotesText.toLowerCase().includes('aucun site') || allNotesText.toLowerCase().includes('pas de site') || !lead.contactEmail) {
       signal = "Absence de site internet référencé. Excellente opportunité de création de site internet.";
-      score += 35;
       type = 'website';
       hasIssue = true;
     } else if (allNotesText.toLowerCase().includes('non sécurisé') || allNotesText.toLowerCase().includes('pas de https')) {
       signal = "Site internet existant non sécurisé (pas de HTTPS), pénalisant le SEO local.";
-      score += 20;
       type = 'seo';
       hasIssue = true;
     } else if (allNotesText.toLowerCase().includes('non optimisé mobiles') || allNotesText.toLowerCase().includes('viewport absent')) {
       signal = "Site web non optimisé pour les mobiles (viewport absent). Perte de clients mobiles.";
-      score += 25;
       type = 'website';
       hasIssue = true;
     } else if (allNotesText.toLowerCase().includes('temps de réponse lent') || allNotesText.toLowerCase().includes('lent à charger')) {
       signal = "Vitesse de chargement lente, impactant négativement le positionnement de la fiche.";
-      score += 15;
       type = 'website';
       hasIssue = true;
     }
 
     if (rating < 4.0) {
-      signal = signal 
-        ? `${signal} Note Google Maps faible (${rating}★, ${reviews} avis).` 
+      signal = signal
+        ? `${signal} Note Google Maps faible (${rating}★, ${reviews} avis).`
         : `Note Google Maps faible (${rating}★) avec seulement ${reviews} avis. Besoin d'e-réputation.`;
-      score += 15;
       if (type === 'seo') type = 'reviews';
       hasIssue = true;
     }
 
     if (allNotesText.toLowerCase().includes('non revendiquée')) {
-      signal = signal 
-        ? `${signal} Fiche GMB non revendiquée.` 
+      signal = signal
+        ? `${signal} Fiche GMB non revendiquée.`
         : "Fiche Google My Business non revendiquée par le propriétaire actuel.";
-      score += 20;
       type = 'seo';
       hasIssue = true;
     }
+
+    const score = lead.score ?? computeLeadScore({ notes: lead.notes, source: lead.source });
 
     if (hasIssue) {
       dynamicOpportunities.push({

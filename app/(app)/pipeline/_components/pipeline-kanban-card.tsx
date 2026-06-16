@@ -87,18 +87,30 @@ export function PipelineKanbanCard({ lead }: PipelineKanbanCardProps) {
           </div>
         </div>
 
-        {/* Temp badge */}
+        {/* Temp badge + score */}
         <div className="flex items-center justify-between">
-          <Badge 
-            variant="secondary" 
+          <Badge
+            variant="secondary"
             className={cn("text-[8px] font-bold px-1.5 py-0 rounded", getTemperatureStyle(lead.temperature))}
           >
             {lead.temperature === 'Hot' ? '🔥 Chaud' : lead.temperature === 'Warm' ? '☀️ Tiède' : '❄️ Froid'}
           </Badge>
-          
-          <span className="text-[9px] text-muted-foreground font-mono">
-            {lead.owner}
-          </span>
+
+          <div className="flex items-center gap-1.5">
+            {!!lead.score && (
+              <div className={cn(
+                "flex items-center justify-center w-8 h-5 rounded border text-[9px] font-black",
+                lead.score >= 80 ? 'bg-emerald-50 text-emerald-700 border-emerald-100 dark:bg-emerald-950/20 dark:text-emerald-400'
+                  : lead.score >= 60 ? 'bg-amber-50 text-amber-700 border-amber-100 dark:bg-amber-950/20 dark:text-amber-400'
+                  : 'bg-slate-50 text-slate-600 border-slate-100 dark:bg-slate-900 dark:text-slate-400'
+              )}>
+                {lead.score}
+              </div>
+            )}
+            <span className="text-[9px] text-muted-foreground font-mono">
+              {lead.owner}
+            </span>
+          </div>
         </div>
 
         {/* Next Action Box */}

@@ -37,19 +37,80 @@ export async function POST(req: NextRequest) {
     // Get user settings to look for API Keys
     const { data: dbSettings } = await supabase
       .from('settings')
-      .select('openrouter_key, ai_provider, ai_model')
+      .select('openrouter_key, ai_provider, ai_model, groq_api_key, together_api_key')
       .eq('user_id', user.id)
       .maybeSingle();
 
     const provider = dbSettings?.ai_provider || 'anthropic';
     const openrouterKey = dbSettings?.openrouter_key || process.env.OPENROUTER_API_KEY || '';
+    const groqKey = dbSettings?.groq_api_key || process.env.GROQ_API_KEY || '';
+    const togetherKey = dbSettings?.together_api_key || process.env.TOGETHER_API_KEY || '';
     const anthropicKey = process.env.ANTHROPIC_API_KEY || '';
     const selectedModel = model || dbSettings?.ai_model || 'meta-llama/llama-3-8b-instruct:free';
 
     const lastMessage = messages[messages.length - 1]?.content || '';
     const lastMessageLower = lastMessage.toLowerCase();
 
-    // 1. OpenRouter Integration (Real OpenRouter API)
+    // 1. Groq / Together.ai (OpenAI-compatible)
+    if ((provider === 'groq' || provider === 'together') ) {
+      const apiKey = provider === 'groq' ? groqKey : togetherKey;
+      const baseURL = provider === 'groq'
+        ? 'https://api.groq.com/openai/v1'
+        : 'https://api.together.xyz/v1';
+      const defaultModel = provider === 'groq' ? 'llama-3.1-70b-versatile' : 'meta-llama/Llama-3-70b-chat-hf';
+
+      if (apiKey && apiKey.trim() !== '') {
+        try {
+          const response = await fetch(`${baseURL}/chat/completions`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${apiKey.trim()}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              model: selectedModel || defaultModel,
+              messages: messages.map((m: { role: string; content: string }) => ({
+                role: m.role,
+                content: m.content
+              })),
+              stream: true
+            })
+          });
+
+          if (response.ok && response.body) {
+            const stream = new ReadableStream({
+              async start(controller) {
+                const reader = response.body!.getReader();
+                try {
+                  while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    controller.enqueue(value);
+                  }
+                } catch (e) {
+                  controller.error(e);
+                } finally {
+                  controller.close();
+                }
+              }
+            });
+            return new NextResponse(stream, {
+              headers: {
+                'Content-Type': 'text/event-stream',
+                'Cache-Control': 'no-cache',
+                'Connection': 'keep-alive',
+              }
+            });
+          } else {
+            console.warn(`${provider} API returned error:`, await response.text());
+          }
+        } catch (err) {
+          console.error(`Failed to connect to ${provider}, falling back to simulated stream:`, err);
+        }
+      }
+    }
+
+    // 2. OpenRouter Integration (Real OpenRouter API)
     if (provider === 'openrouter' && openrouterKey && openrouterKey.trim() !== '') {
       try {
         const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
@@ -102,7 +163,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 2. Native Anthropic Integration
+    // 3. Native Anthropic Integration
     if (provider === 'anthropic' && anthropicKey && anthropicKey.trim() !== '') {
       try {
         let anthropicModel = 'claude-3-5-sonnet-20241022';

@@ -528,6 +528,46 @@ function setupIpcHandlers() {
     }
     return await executeScrape(setting);
   });
+
+  // 13. Send email via SMTP (credentials stay local, never leave device)
+  ipcMain.handle('send-smtp-email', async (event, { to, subject, html, smtpConfig }) => {
+    try {
+      const nodemailer = require('nodemailer');
+      const transporter = nodemailer.createTransport({
+        host: smtpConfig.host,
+        port: parseInt(smtpConfig.port, 10),
+        secure: parseInt(smtpConfig.port, 10) === 465,
+        auth: { user: smtpConfig.user, pass: smtpConfig.pass }
+      });
+      const info = await transporter.sendMail({
+        from: smtpConfig.fromName ? `${smtpConfig.fromName} <${smtpConfig.user}>` : smtpConfig.user,
+        to,
+        subject,
+        html
+      });
+      return { success: true, messageId: info.messageId };
+    } catch (err) {
+      console.error('[SMTP] send error:', err);
+      return { success: false, error: err.message };
+    }
+  });
+
+  // 14. Test SMTP connection
+  ipcMain.handle('test-smtp-connection', async (event, smtpConfig) => {
+    try {
+      const nodemailer = require('nodemailer');
+      const transporter = nodemailer.createTransport({
+        host: smtpConfig.host,
+        port: parseInt(smtpConfig.port, 10),
+        secure: parseInt(smtpConfig.port, 10) === 465,
+        auth: { user: smtpConfig.user, pass: smtpConfig.pass }
+      });
+      await transporter.verify();
+      return { success: true };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  });
 }
 
 function ensureSpotlightWindow() {

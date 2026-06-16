@@ -84,6 +84,8 @@ export async function POST(req: NextRequest) {
 
     const aiProvider = settings?.ai_provider || 'anthropic';
     const openrouterKey = settings?.openrouter_key || process.env.OPENROUTER_API_KEY;
+    const groqKey = settings?.groq_api_key || process.env.GROQ_API_KEY;
+    const togetherKey = settings?.together_api_key || process.env.TOGETHER_API_KEY;
     const aiModel = settings?.ai_model || 'meta-llama/llama-3-8b-instruct:free';
     const apiKey = process.env.ANTHROPIC_API_KEY;
     let draftContent = '';
@@ -115,7 +117,45 @@ ${instructions}
 
 Rédige uniquement le corps du message final en français :`;
 
-    if (aiProvider === 'openrouter' && openrouterKey && !openrouterKey.includes('placeholder')) {
+    if ((aiProvider === 'groq' || aiProvider === 'together')) {
+      const providerKey = aiProvider === 'groq' ? groqKey : togetherKey;
+      const baseURL = aiProvider === 'groq'
+        ? 'https://api.groq.com/openai/v1'
+        : 'https://api.together.xyz/v1';
+      const defaultModel = aiProvider === 'groq' ? 'llama-3.1-70b-versatile' : 'meta-llama/Llama-3-70b-chat-hf';
+
+      if (providerKey && !providerKey.includes('placeholder')) {
+        try {
+          const response = await fetch(`${baseURL}/chat/completions`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${providerKey}`,
+            },
+            body: JSON.stringify({
+              model: aiModel || defaultModel,
+              messages: [
+                { role: 'system', content: systemPrompt },
+                { role: 'user', content: userPrompt }
+              ]
+            })
+          });
+
+          if (!response.ok) {
+            const errData = await response.json();
+            throw new Error(errData.error?.message || `Erreur ${aiProvider}`);
+          }
+
+          const data = await response.json();
+          draftContent = data.choices?.[0]?.message?.content?.trim() || '';
+        } catch (err) {
+          console.warn(`Failed calling ${aiProvider} API, falling back:`, err);
+          draftContent = generateMockDraft(lead, notes || [], channel, aiTone, companyName, fullName);
+        }
+      } else {
+        draftContent = generateMockDraft(lead, notes || [], channel, aiTone, companyName, fullName);
+      }
+    } else if (aiProvider === 'openrouter' && openrouterKey && !openrouterKey.includes('placeholder')) {
       try {
         const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
           method: 'POST',
@@ -145,7 +185,7 @@ Rédige uniquement le corps du message final en français :`;
         console.warn("Failed calling OpenRouter API, falling back to local generator:", err);
         draftContent = generateMockDraft(lead, notes || [], channel, aiTone, companyName, fullName);
       }
-    } else if (aiProvider === 'anthropic' && apiKey && !apiKey.includes('placeholder')) {
+    } else if (aiProvider === 'anthropic' && apiKey && !apiKey.includes('placeholder') && draftContent === '') {
       try {
         const anthropic = new Anthropic({ apiKey });
         const msg = await anthropic.messages.create({
@@ -161,7 +201,7 @@ Rédige uniquement le corps du message final en français :`;
         console.warn("Failed calling Anthropic API, falling back to local generator:", err);
         draftContent = generateMockDraft(lead, notes || [], channel, aiTone, companyName, fullName);
       }
-    } else {
+    } else if (draftContent === '') {
       // Offline/Test fallback mode
       draftContent = generateMockDraft(lead, notes || [], channel, aiTone, companyName, fullName);
     }

@@ -6,18 +6,34 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { SettingsSectionWrapper } from './settings-section-wrapper';
-import { Mail, Search, Globe, RefreshCw, Check, Key } from 'lucide-react';
+import { Mail, Search, Globe, RefreshCw, Check, Key, Server, ChevronDown, ChevronUp } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+
+interface SmtpConfig {
+  host: string;
+  port: string;
+  user: string;
+  pass: string;
+  fromName: string;
+}
 
 export function SettingsIntegrationsSection() {
   const [loading, setLoading] = useState(true);
   const [savingApify, setSavingApify] = useState(false);
   const [apifyInput, setApifyInput] = useState('');
   const [scraperEngine, setScraperEngine] = useState<'native' | 'apify'>('native');
-  
+
   // Real integration states
   const [gmailConnected, setGmailConnected] = useState(false);
   const [gmailEmail, setGmailEmail] = useState('');
+
+  // SMTP state
+  const [smtpExpanded, setSmtpExpanded] = useState(false);
+  const [smtpConfig, setSmtpConfig] = useState<SmtpConfig>({ host: '', port: '587', user: '', pass: '', fromName: '' });
+  const [savingSmtp, setSavingSmtp] = useState(false);
+  const [testingSmtp, setTestingSmtp] = useState(false);
+  const [smtpSaved, setSmtpSaved] = useState(false);
+  const isElectron = typeof window !== 'undefined' && !!(window as any).electron;
 
   useEffect(() => {
     const fetchConnections = async () => {
@@ -27,7 +43,7 @@ export function SettingsIntegrationsSection() {
         if (user) {
           const { data } = await supabase
             .from('settings')
-            .select('google_refresh_token, google_email, apify_token')
+            .select('google_refresh_token, google_email, apify_token, smtp_config')
             .eq('user_id', user.id)
             .maybeSingle();
 
@@ -35,6 +51,13 @@ export function SettingsIntegrationsSection() {
             if (data.google_refresh_token) {
               setGmailConnected(true);
               setGmailEmail(data.google_email || 'Connecté');
+            }
+            if (data.smtp_config) {
+              try {
+                const parsed = JSON.parse(data.smtp_config);
+                setSmtpConfig(parsed);
+                setSmtpSaved(true);
+              } catch {}
             }
             if (data.apify_token) {
               if (data.apify_token === 'native' || !data.apify_token.startsWith('apify_api_')) {
@@ -130,6 +153,56 @@ export function SettingsIntegrationsSection() {
     setSavingApify(false);
   };
 
+  const handleSaveSmtp = async () => {
+    setSavingSmtp(true);
+    try {
+      const electronObj = typeof window !== 'undefined' && (window as any).electron;
+      const configJson = JSON.stringify(smtpConfig);
+
+      if (electronObj) {
+        const settings = await electronObj.dbGet("SELECT user_id FROM settings LIMIT 1");
+        if (settings) {
+          await electronObj.dbRun(
+            "UPDATE settings SET smtp_config = ?, updated_at = ?, sync_status = 'pending_update' WHERE user_id = ?",
+            [configJson, new Date().toISOString(), settings.user_id]
+          );
+          if (electronObj.triggerSync) electronObj.triggerSync();
+        }
+      } else {
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          await supabase.from('settings').update({ smtp_config: configJson }).eq('user_id', user.id);
+        }
+      }
+      setSmtpSaved(true);
+    } catch (e) {
+      console.error(e);
+      alert("Erreur lors de la sauvegarde SMTP");
+    }
+    setSavingSmtp(false);
+  };
+
+  const handleTestSmtp = async () => {
+    setTestingSmtp(true);
+    try {
+      const electronObj = typeof window !== 'undefined' && (window as any).electron;
+      if (electronObj && electronObj.testSmtpConnection) {
+        const result = await electronObj.testSmtpConnection(smtpConfig);
+        if (result.success) {
+          alert("Connexion SMTP réussie !");
+        } else {
+          alert(`Échec de la connexion SMTP : ${result.error}`);
+        }
+      } else {
+        alert("Le test SMTP est disponible uniquement dans l'application Electron.");
+      }
+    } catch (e: any) {
+      alert("Erreur : " + e.message);
+    }
+    setTestingSmtp(false);
+  };
+
   if (loading) {
     return (
       <SettingsSectionWrapper
@@ -200,6 +273,119 @@ export function SettingsIntegrationsSection() {
                 </Button>
               )}
             </div>
+          </CardContent>
+        </Card>
+
+        {/* SMTP Card */}
+        <Card className="border border-border bg-card">
+          <CardContent className="p-5">
+            <button
+              type="button"
+              onClick={() => setSmtpExpanded(!smtpExpanded)}
+              className="flex items-start justify-between w-full gap-4 text-left"
+            >
+              <div className="flex gap-4 min-w-0">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary shrink-0">
+                  <Server className="h-5 w-5" />
+                </div>
+                <div className="space-y-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-xs font-bold text-foreground">SMTP générique</span>
+                    <Badge variant="outline" className={`text-[9px] font-bold rounded px-1.5 py-0 ${smtpSaved ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/20 dark:text-emerald-400' : 'bg-slate-50 text-slate-500 border-slate-200 dark:bg-slate-900 dark:text-slate-400 dark:border-slate-800'}`}>
+                      {smtpSaved ? `Configuré (${smtpConfig.user || 'SMTP'})` : 'Non configuré'}
+                    </Badge>
+                    {!isElectron && (
+                      <Badge variant="outline" className="text-[9px] font-bold rounded px-1.5 py-0 bg-amber-50 text-amber-700 border-amber-200">
+                        Electron uniquement
+                      </Badge>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-muted-foreground leading-relaxed">
+                    Envoie depuis OVH, Proton, Outlook ou tout serveur SMTP. Les identifiants restent sur ton appareil.
+                  </p>
+                </div>
+              </div>
+              <div className="shrink-0 self-center text-muted-foreground">
+                {smtpExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              </div>
+            </button>
+
+            {smtpExpanded && (
+              <div className="mt-4 pt-4 border-t border-border/50 space-y-3 pl-14">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="grid gap-1">
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Serveur SMTP (host)</label>
+                    <Input
+                      value={smtpConfig.host}
+                      onChange={(e) => setSmtpConfig(c => ({ ...c, host: e.target.value }))}
+                      placeholder="smtp.ovh.net"
+                      className="text-xs bg-card h-8"
+                    />
+                  </div>
+                  <div className="grid gap-1">
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Port</label>
+                    <Input
+                      value={smtpConfig.port}
+                      onChange={(e) => setSmtpConfig(c => ({ ...c, port: e.target.value }))}
+                      placeholder="587"
+                      className="text-xs bg-card h-8"
+                    />
+                  </div>
+                  <div className="grid gap-1">
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Adresse email</label>
+                    <Input
+                      type="email"
+                      value={smtpConfig.user}
+                      onChange={(e) => setSmtpConfig(c => ({ ...c, user: e.target.value }))}
+                      placeholder="moi@exemple.com"
+                      className="text-xs bg-card h-8"
+                    />
+                  </div>
+                  <div className="grid gap-1">
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Mot de passe</label>
+                    <Input
+                      type="password"
+                      value={smtpConfig.pass}
+                      onChange={(e) => setSmtpConfig(c => ({ ...c, pass: e.target.value }))}
+                      placeholder="••••••••"
+                      className="text-xs bg-card h-8"
+                    />
+                  </div>
+                  <div className="grid gap-1 sm:col-span-2">
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Nom expéditeur</label>
+                    <Input
+                      value={smtpConfig.fromName}
+                      onChange={(e) => setSmtpConfig(c => ({ ...c, fromName: e.target.value }))}
+                      placeholder="Mon Agence"
+                      className="text-xs bg-card h-8"
+                    />
+                  </div>
+                </div>
+                <div className="flex gap-2 pt-1">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={handleTestSmtp}
+                    disabled={testingSmtp || !smtpConfig.host || !smtpConfig.user}
+                    className="h-8 text-xs font-bold gap-1"
+                  >
+                    {testingSmtp ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <Server className="h-3.5 w-3.5" />}
+                    Tester
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={handleSaveSmtp}
+                    disabled={savingSmtp || !smtpConfig.host || !smtpConfig.user}
+                    className="h-8 text-xs font-bold gap-1 bg-primary hover:bg-primary/95 text-primary-foreground"
+                  >
+                    {savingSmtp ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+                    Sauvegarder
+                  </Button>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 

@@ -21,6 +21,7 @@ export interface Lead {
   notes: Note[];
   owner: string;
   imageUrl?: string;
+  score?: number;
   createdAt: string;
   updatedAt: string;
 }

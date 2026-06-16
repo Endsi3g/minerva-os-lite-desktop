@@ -39,6 +39,10 @@ contextBridge.exposeInMainWorld('electron', {
     };
   },
 
+  // SMTP Email API (credentials stay local)
+  sendSmtpEmail: (params) => ipcRenderer.invoke('send-smtp-email', params),
+  testSmtpConnection: (smtpConfig) => ipcRenderer.invoke('test-smtp-connection', smtpConfig),
+
   // Tray Popover API
   openMainWindow: () => ipcRenderer.send('open-main-window'),
   triggerBackgroundScrapeOnDemand: () => ipcRenderer.invoke('trigger-background-scrape-on-demand'),

@@ -15,8 +15,10 @@ interface AiData {
   customization: 'low' | 'medium' | 'high';
   autoInsights: boolean;
   autoFollowUps: boolean;
-  aiProvider: 'anthropic' | 'openrouter';
+  aiProvider: 'anthropic' | 'openrouter' | 'groq' | 'together';
   openrouterKey: string;
+  groqKey: string;
+  togetherKey: string;
   aiModel: string;
 }
 
@@ -35,7 +37,9 @@ export function SettingsAiSection({ data, onChange, isSaving }: SettingsAiSectio
 
   const providers = [
     { id: 'anthropic' as const, name: 'Anthropic Claude', description: 'Génération native via Claude 3.5 Sonnet' },
-    { id: 'openrouter' as const, name: 'OpenRouter AI', description: 'Modèles gratuits et alternatifs' }
+    { id: 'openrouter' as const, name: 'OpenRouter AI', description: 'Modèles gratuits et alternatifs' },
+    { id: 'groq' as const, name: 'Groq (Llama 3)', description: 'Ultra-rapide, tier gratuit disponible' },
+    { id: 'together' as const, name: 'Together.ai', description: 'Modèles open source hébergés' }
   ];
 
   const FREE_MODELS = [
@@ -44,6 +48,18 @@ export function SettingsAiSection({ data, onChange, isSaving }: SettingsAiSectio
     { id: 'openchat/openchat-7b:free', name: 'OpenChat 7B (Free)' },
     { id: 'microsoft/phi-3-medium-128k-instruct:free', name: 'Phi-3 Medium (Free)' },
     { id: 'qwen/qwen-2-7b-instruct:free', name: 'Qwen 2 7B (Free)' },
+  ];
+
+  const GROQ_MODELS = [
+    { id: 'llama-3.1-70b-versatile', name: 'Llama 3.1 70B (Recommandé)' },
+    { id: 'llama-3.1-8b-instant', name: 'Llama 3.1 8B (Ultra-rapide)' },
+    { id: 'mixtral-8x7b-32768', name: 'Mixtral 8x7B' },
+  ];
+
+  const TOGETHER_MODELS = [
+    { id: 'meta-llama/Llama-3-70b-chat-hf', name: 'Llama 3 70B' },
+    { id: 'mistralai/Mixtral-8x7B-Instruct-v0.1', name: 'Mixtral 8x7B' },
+    { id: 'meta-llama/Llama-3-8b-chat-hf', name: 'Llama 3 8B' },
   ];
 
   const isCustomModel = data.aiProvider === 'openrouter' && !FREE_MODELS.some(m => m.id === data.aiModel);
@@ -121,10 +137,10 @@ export function SettingsAiSection({ data, onChange, isSaving }: SettingsAiSectio
               <div className="space-y-4 pt-4 border-t border-border/50">
                 <div className="grid gap-1.5">
                   <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Clé API OpenRouter</label>
-                  <Input 
+                  <Input
                     type="password"
-                    value={data.openrouterKey} 
-                    onChange={(e) => onChange({ openrouterKey: e.target.value })} 
+                    value={data.openrouterKey}
+                    onChange={(e) => onChange({ openrouterKey: e.target.value })}
                     placeholder="sk-or-v1-..."
                     className="text-xs bg-card font-mono"
                   />
@@ -135,8 +151,8 @@ export function SettingsAiSection({ data, onChange, isSaving }: SettingsAiSectio
 
                 <div className="grid gap-1.5">
                   <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Modèle d'IA</label>
-                  <Select 
-                    value={selectedSelectValue} 
+                  <Select
+                    value={selectedSelectValue}
                     onValueChange={(val) => {
                       if (val === 'custom') {
                         onChange({ aiModel: '' });
@@ -164,9 +180,9 @@ export function SettingsAiSection({ data, onChange, isSaving }: SettingsAiSectio
                 {isCustomModel && (
                   <div className="grid gap-1.5 pl-2 border-l-2 border-primary/40">
                     <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Identifiant du modèle personnalisé</label>
-                    <Input 
-                      value={data.aiModel} 
-                      onChange={(e) => onChange({ aiModel: e.target.value })} 
+                    <Input
+                      value={data.aiModel}
+                      onChange={(e) => onChange({ aiModel: e.target.value })}
                       placeholder="e.g. meta-llama/llama-3-70b-instruct"
                       className="text-xs bg-card font-mono"
                     />
@@ -175,6 +191,68 @@ export function SettingsAiSection({ data, onChange, isSaving }: SettingsAiSectio
                     </span>
                   </div>
                 )}
+              </div>
+            )}
+
+            {data.aiProvider === 'groq' && (
+              <div className="space-y-4 pt-4 border-t border-border/50">
+                <div className="grid gap-1.5">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Clé API Groq</label>
+                  <Input
+                    type="password"
+                    value={data.groqKey}
+                    onChange={(e) => onChange({ groqKey: e.target.value })}
+                    placeholder="gsk_..."
+                    className="text-xs bg-card font-mono"
+                  />
+                  <span className="text-[9px] text-muted-foreground leading-none">
+                    Clé disponible gratuitement sur console.groq.com
+                  </span>
+                </div>
+                <div className="grid gap-1.5">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Modèle Groq</label>
+                  <Select value={data.aiModel || 'llama-3.1-70b-versatile'} onValueChange={(val) => onChange({ aiModel: val })}>
+                    <SelectTrigger className="text-xs bg-card">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {GROQ_MODELS.map((m) => (
+                        <SelectItem key={m.id} value={m.id} className="text-xs font-mono">{m.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
+
+            {data.aiProvider === 'together' && (
+              <div className="space-y-4 pt-4 border-t border-border/50">
+                <div className="grid gap-1.5">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Clé API Together.ai</label>
+                  <Input
+                    type="password"
+                    value={data.togetherKey}
+                    onChange={(e) => onChange({ togetherKey: e.target.value })}
+                    placeholder="together-..."
+                    className="text-xs bg-card font-mono"
+                  />
+                  <span className="text-[9px] text-muted-foreground leading-none">
+                    Clé disponible sur api.together.xyz
+                  </span>
+                </div>
+                <div className="grid gap-1.5">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Modèle Together.ai</label>
+                  <Select value={data.aiModel || 'meta-llama/Llama-3-70b-chat-hf'} onValueChange={(val) => onChange({ aiModel: val })}>
+                    <SelectTrigger className="text-xs bg-card">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {TOGETHER_MODELS.map((m) => (
+                        <SelectItem key={m.id} value={m.id} className="text-xs font-mono">{m.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             )}
           </CardContent>
