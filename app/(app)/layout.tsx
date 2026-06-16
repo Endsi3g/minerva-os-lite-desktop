@@ -684,7 +684,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
         </div>
 
         {/* Sidebar Footer */}
-        <div className="border-t border-[#e5e5e0] bg-[#f4f4f3] py-2 px-3 space-y-2">
+        <div className="border-t border-[#e5e5e0] bg-[#f4f4f3] py-2 px-3 space-y-2 shrink-0 overflow-y-auto">
           
           {/* Collapsible Get Started progress card */}
           {!isCollapsed && (

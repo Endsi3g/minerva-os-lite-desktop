@@ -144,6 +144,7 @@ export function LeadDetailClient({ id }: { id: string }) {
   const [userProfile, setUserProfile] = useState<{ fullName: string } | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [onlineUsers, setOnlineUsers] = useState<any[]>([]);
+  const presenceChannelRef = useRef<ReturnType<ReturnType<typeof createClient>['channel']> | null>(null);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -164,13 +165,13 @@ export function LeadDetailClient({ id }: { id: string }) {
     fetchUser();
   }, []);
 
+  // Set up the presence channel once — never torn down due to isEditing changes
   useEffect(() => {
     if (!activeWorkspace || !currentUser || !userProfile) return;
 
     const supabase = createClient();
     const channelId = `workspace_presence_${activeWorkspace.id}`;
-    
-    // Assign a consistent color based on user full name
+
     const colors = [
       'bg-indigo-500 text-white',
       'bg-emerald-500 text-white',
@@ -183,6 +184,7 @@ export function LeadDetailClient({ id }: { id: string }) {
     const myColor = colors[hash % colors.length];
 
     const presenceChannel = supabase.channel(channelId);
+    presenceChannelRef.current = presenceChannel;
 
     presenceChannel
       .on('presence', { event: 'sync' }, () => {
@@ -190,7 +192,6 @@ export function LeadDetailClient({ id }: { id: string }) {
         const joined: any[] = [];
         Object.keys(state).forEach((key) => {
           state[key].forEach((pres: any) => {
-            // Avoid duplicates
             if (!joined.some(u => u.userId === pres.userId)) {
               joined.push(pres);
             }
@@ -205,16 +206,30 @@ export function LeadDetailClient({ id }: { id: string }) {
             fullName: userProfile.fullName,
             activePage: `/leads/${id}`,
             activeLeadId: id,
-            editingLeadId: isEditing ? id : null,
+            editingLeadId: null,
             color: myColor
           });
         }
       });
 
     return () => {
+      presenceChannelRef.current = null;
       presenceChannel.unsubscribe();
     };
-  }, [activeWorkspace, currentUser, userProfile, id, isEditing]);
+  }, [activeWorkspace, currentUser, userProfile, id]);
+
+  // Re-track editing state without tearing down the channel
+  useEffect(() => {
+    const ch = presenceChannelRef.current;
+    if (!ch || !currentUser) return;
+    ch.track({
+      userId: currentUser.id,
+      fullName: userProfile?.fullName ?? '',
+      activePage: `/leads/${id}`,
+      activeLeadId: id,
+      editingLeadId: isEditing ? id : null,
+    }).catch(() => {});
+  }, [isEditing, currentUser, userProfile, id]);
 
   const editors = onlineUsers.filter(
     (u) => u.userId !== currentUser?.id && u.editingLeadId === id
