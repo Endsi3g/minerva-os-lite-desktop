@@ -234,6 +234,8 @@ function initDb() {
     db.run(`ALTER TABLE leads ADD COLUMN last_activity_at TEXT DEFAULT NULL`, () => {});
     db.run(`ALTER TABLE leads ADD COLUMN reply_detected_at TEXT DEFAULT NULL`, () => {});
     db.run(`ALTER TABLE leads ADD COLUMN gmail_thread_id TEXT DEFAULT NULL`, () => {});
+    // v2.50.0 — inbox reply_status
+    db.run(`ALTER TABLE leads ADD COLUMN reply_status TEXT DEFAULT NULL`, () => {});
     db.run(`ALTER TABLE leads ADD COLUMN latitude REAL DEFAULT NULL`, () => {});
     db.run(`ALTER TABLE leads ADD COLUMN longitude REAL DEFAULT NULL`, () => {});
 

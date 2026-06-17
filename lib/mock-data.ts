@@ -54,6 +54,7 @@ export interface Lead {
   lastActivityAt?: string;
   replyDetectedAt?: string;
   gmailThreadId?: string;
+  replyStatus?: 'positive' | 'followup' | 'negative' | null;
 }
 
 export interface Task {

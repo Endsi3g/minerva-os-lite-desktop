@@ -191,6 +191,7 @@ interface DbLead {
   last_activity_at?: string | null;
   reply_detected_at?: string | null;
   gmail_thread_id?: string | null;
+  reply_status?: 'positive' | 'followup' | 'negative' | null;
 }
 
 interface DbNote {
@@ -267,6 +268,7 @@ function mapDbLeadToUi(dbLead: DbLead, dbNotes: DbNote[] = []): Lead {
     lastActivityAt: dbLead.last_activity_at || undefined,
     replyDetectedAt: dbLead.reply_detected_at || undefined,
     gmailThreadId: dbLead.gmail_thread_id || undefined,
+    replyStatus: (dbLead.reply_status as Lead['replyStatus']) ?? null,
     notes: dbNotes
       .filter(n => n.lead_id === dbLead.id)
       .map(n => ({
@@ -1452,6 +1454,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
         if (fields.lastActivityAt !== undefined) { dbFields.push("last_activity_at = ?"); params.push(fields.lastActivityAt || null); }
         if (fields.replyDetectedAt !== undefined) { dbFields.push("reply_detected_at = ?"); params.push(fields.replyDetectedAt || null); }
         if (fields.gmailThreadId !== undefined) { dbFields.push("gmail_thread_id = ?"); params.push(fields.gmailThreadId || null); }
+        if (fields.replyStatus !== undefined) { dbFields.push("reply_status = ?"); params.push(fields.replyStatus ?? null); }
 
         if (dbFields.length > 0) {
           dbFields.push("updated_at = ?");
@@ -1508,6 +1511,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
     if (fields.lastActivityAt !== undefined) dbFields.last_activity_at = fields.lastActivityAt || null;
     if (fields.replyDetectedAt !== undefined) dbFields.reply_detected_at = fields.replyDetectedAt || null;
     if (fields.gmailThreadId !== undefined) dbFields.gmail_thread_id = fields.gmailThreadId || null;
+    if (fields.replyStatus !== undefined) dbFields.reply_status = fields.replyStatus ?? null;
 
     try {
       const { error } = await supabase

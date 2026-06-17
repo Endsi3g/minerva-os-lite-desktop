@@ -105,7 +105,7 @@ async function syncPush() {
         console.error("Error pushing insert for lead", id, error);
       }
     } else if (lead.sync_status === 'pending_update') {
-      const { id, business_name, contact_name, contact_email, niche, city, source, status, temperature, next_action, next_action_date, owner, image_url } = lead;
+      const { id, business_name, contact_name, contact_email, niche, city, source, status, temperature, next_action, next_action_date, owner, image_url, reply_status } = lead;
       const { error } = await supabase.from('leads').update({
         business_name,
         contact_name,
@@ -118,7 +118,8 @@ async function syncPush() {
         next_action,
         next_action_date,
         owner,
-        image_url
+        image_url,
+        reply_status: reply_status ?? null
       }).eq('id', id);
       if (!error) {
         await db.run("UPDATE leads SET sync_status = 'synced' WHERE id = ?", [id]);
