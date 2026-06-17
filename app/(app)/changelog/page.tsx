@@ -24,7 +24,7 @@ export default function ChangelogPage() {
       descKey: 'changelog.v2_37_0_desc',
       highlights: [
         'Tracking Gmail : l\'envoi via Gmail API sauvegarde maintenant le threadId sur le lead.',
-        'Cron toutes les 30 min : détecte automatiquement les réponses à vos e-mails de prospection.',
+        'Cron quotidien (10h) : détecte automatiquement les réponses à vos e-mails de prospection.',
         'Détection de réponse : si le prospect répond, le statut passe à "Meeting Booked" + notification créée.',
         'Notification en temps réel : "Réponse détectée — [Prospect] a répondu à votre e-mail."',
       ],
