@@ -18,7 +18,7 @@
 [![pnpm Package Manager](https://img.shields.io/badge/pnpm-%3E%3D9.0.0-orange.svg?style=flat-square)](https://pnpm.io/)
 [![Framework Next.js](https://img.shields.io/badge/next.js-16.2.6-black.svg?style=flat-square)](https://nextjs.org/)
 [![Database Supabase](https://img.shields.io/badge/database-supabase-emerald.svg?style=flat-square)](https://supabase.com/)
-[![Version](https://img.shields.io/badge/version-2.45.0-f54e00.svg?style=flat-square)](#changelog)
+[![Version](https://img.shields.io/badge/version-2.50.0-f54e00.svg?style=flat-square)](#changelog)
 
 </div>
 
@@ -131,6 +131,15 @@ L'application fonctionne dans trois contextes distincts partageant le même code
 - **Apify** : enrichissement via Google Places (clé API configurée dans les paramètres).
 - OpenRouter, Groq, Together.ai, Anthropic : cascades IA configurables par utilisateur.
 
+### Boîte de réception Gmail (`/inbox`)
+- **Liste unifiée** de tous les fils de discussion Gmail liés aux leads, triés par date du dernier message.
+- **Filtres** : Tous / Réponses positives / À relancer / Négatifs — statut `reply_status` persisté sur le lead (dual-store SQLite + Supabase).
+- **Panneau détail** : messages décodés (base64url → UTF-8), affichage en bulles gauche/droite selon l'expéditeur.
+- **Suggestions IA** : 3 propositions de réponse générées par claude-haiku à la demande, avec fallback statique si l'API est indisponible.
+- **Quick-reply préréglés** : "Proposer un créneau", "Demander plus de contexte", "Remercier et fermer" — remplissent le compositeur en un clic.
+- **Re-auth automatique** : banner d'alerte si le scope `gmail.readonly` manque (utilisateurs existants).
+- Envoi de réponse via la route `/api/send-email` existante (réutilisation totale).
+
 ### Notifications & Rappels
 - Sonnette de notification dans la topbar avec compteur non-lus.
 - Rappels en retard (`/api/cron/overdue-check`) et digest quotidien (`/api/cron/daily-digest`) via Vercel Cron.
@@ -195,6 +204,7 @@ app/
     prospecting/              # UI de scraping
     pipeline/                 # Kanban + tableau
     map/                      # Carte MapLibre (SSR désactivé via map-loader.tsx)
+    inbox/                    # Boîte de réception prospection Gmail
     sequences/                # Séquences email + new/
     campaigns/                # Campagnes + new/
     intelligence/             # Insights IA
@@ -226,6 +236,7 @@ app/
     send-email/               # Envoi Gmail
     export-drive/             # Export Google Drive
     email-sequences/          # CRUD séquences
+    inbox/                    # threads/ thread/[threadId]/ suggest-reply/
     enrich-contact/           # Enrichissement lead
     support/contact/          # Formulaire de support SMTP
     team/                     # invite/ members/ role/
@@ -354,6 +365,17 @@ pnpm cap:open:android     # ouvre dans Android Studio
 
 ## Changelog
 
+### v2.50.0
+- **feat**: page `/inbox` — boîte de réception prospection Gmail avec liste de tous les fils liés aux leads
+- **feat**: filtres Tous / Positif / À relancer / Négatif avec persistance `reply_status` sur le lead (dual-store SQLite + Supabase)
+- **feat**: panneau détail — corps des messages Gmail décodés (base64url → UTF-8), affichage en bulles
+- **feat**: suggestions IA (claude-haiku) et quick-reply préréglés dans le compositeur
+- **feat**: banner de re-autorisation automatique si le scope `gmail.readonly` est manquant
+- **api**: `GET /api/inbox/threads` (format=minimal, Promise.allSettled), `GET /api/inbox/thread/[threadId]` (format=full), `POST /api/inbox/suggest-reply`
+- **oauth**: scope `gmail.readonly` ajouté à la route de connexion Google
+- **db**: colonne `reply_status TEXT DEFAULT NULL` sur `leads` (SQLite migration + Supabase `ALTER TABLE`)
+- **nav**: "Boîte de réception" ajouté dans CRM & Prospection avec breadcrumb
+
 ### v2.45.0
 - **fix**: carte MapLibre ne crashait plus en SSR — `dynamic({ ssr: false })` déplacé dans un Client Component dédié (`map-loader.tsx`) pour compatibilité Next.js 16 / Turbopack
 - **feat**: géolocalisation dans la carte — bouton « Afficher ma position », point bleu sur la carte, distances Haversine affichées par lead
@@ -392,4 +414,4 @@ pnpm cap:open:android     # ouvre dans Android Studio
 
 ---
 
-*Minerva OS Reach Lite — v2.45.0*
+*Minerva OS Reach Lite — v2.50.0*
