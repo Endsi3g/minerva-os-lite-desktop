@@ -24,10 +24,11 @@ interface ProfileData {
 interface SettingsProfileSectionProps {
   data: ProfileData;
   onChange: (updates: Partial<ProfileData>) => void;
+  onSave: () => void;
   isSaving: boolean;
 }
 
-export function SettingsProfileSection({ data, onChange, isSaving }: SettingsProfileSectionProps) {
+export function SettingsProfileSection({ data, onChange, onSave, isSaving }: SettingsProfileSectionProps) {
   const { importDemoData } = useReach();
   const [isImporting, setIsImporting] = useState(false);
   const [importSuccess, setImportSuccess] = useState(false);
@@ -69,6 +70,7 @@ export function SettingsProfileSection({ data, onChange, isSaving }: SettingsPro
       title="Profil & Compte"
       description="Configure tes informations de contact et tes préférences linguistiques."
       isSaving={isSaving}
+      onSave={onSave}
     >
       {/* Avatar + Bio card */}
       <Card className="border border-border bg-card">

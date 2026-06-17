@@ -1,12 +1,12 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { MinervaIcon } from '@/components/icons';
 import { createClient } from '@/lib/supabase/client';
-import { ArrowLeft, Play, Star, MessageSquare, User } from 'lucide-react';
+import { ArrowLeft, Play, Star, MessageSquare, User, Camera, Pencil, Check, X } from 'lucide-react';
 
 interface AgentMeta {
   id: string;
@@ -66,6 +66,13 @@ export function AgentDetailRoot({ agentId }: { agentId: string }) {
   const [creatorCompany, setCreatorCompany] = useState('Minerva OS Reach Lite');
   const [creatorUserId, setCreatorUserId] = useState<string | null>(null);
 
+  // Banner & description editing
+  const [bannerBase64, setBannerBase64] = useState<string>('');
+  const [editingDescription, setEditingDescription] = useState(false);
+  const [descriptionDraft, setDescriptionDraft] = useState('');
+  const [customDescription, setCustomDescription] = useState<string | null>(null);
+  const bannerInputRef = useRef<HTMLInputElement>(null);
+
   const meta: AgentMeta = agentId in BUILTIN_META
     ? { id: agentId, ...BUILTIN_META[agentId] }
     : {
@@ -83,6 +90,12 @@ export function AgentDetailRoot({ agentId }: { agentId: string }) {
     if (stored) {
       try { setReviews(JSON.parse(stored)); } catch {}
     }
+
+    // Load banner and custom description
+    const storedBanner = localStorage.getItem(`minerva_agent_banner_${agentId}`);
+    if (storedBanner) setBannerBase64(storedBanner);
+    const storedDesc = localStorage.getItem(`minerva_agent_desc_${agentId}`);
+    if (storedDesc) setCustomDescription(storedDesc);
 
     // Load user + creator info
     const loadUser = async () => {
@@ -115,6 +128,31 @@ export function AgentDetailRoot({ agentId }: { agentId: string }) {
     ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
     : null;
 
+  const displayDescription = customDescription ?? meta.description;
+
+  const handleBannerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const b64 = reader.result as string;
+      setBannerBase64(b64);
+      localStorage.setItem(`minerva_agent_banner_${agentId}`, b64);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleSaveDescription = () => {
+    setCustomDescription(descriptionDraft);
+    localStorage.setItem(`minerva_agent_desc_${agentId}`, descriptionDraft);
+    setEditingDescription(false);
+  };
+
+  const handleCancelDescription = () => {
+    setDescriptionDraft(displayDescription);
+    setEditingDescription(false);
+  };
+
   const handleSubmitReview = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newComment.trim()) return;
@@ -145,6 +183,27 @@ export function AgentDetailRoot({ agentId }: { agentId: string }) {
           Retour aux agents
         </button>
 
+        {/* Banner */}
+        <div className="relative w-full h-36 rounded-2xl overflow-hidden bg-gradient-to-br from-[#059669]/10 to-[#047857]/5 border border-[#e5e5e0] group">
+          {bannerBase64 ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={bannerBase64} alt="Bannière" className="w-full h-full object-cover" />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center opacity-20">
+              <MinervaIcon size={48} />
+            </div>
+          )}
+          <input ref={bannerInputRef} type="file" accept="image/*" className="hidden" onChange={handleBannerChange} />
+          <button
+            type="button"
+            onClick={() => bannerInputRef.current?.click()}
+            className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity text-white text-xs font-semibold gap-2"
+          >
+            <Camera className="w-4 h-4" />
+            Changer la bannière
+          </button>
+        </div>
+
         {/* Header */}
         <div className="flex items-start gap-5">
           <div className="w-16 h-16 rounded-2xl bg-[#059669]/10 border border-[#059669]/20 flex items-center justify-center shrink-0">
@@ -169,7 +228,39 @@ export function AgentDetailRoot({ agentId }: { agentId: string }) {
                 </span>
               )}
             </div>
-            <p className="text-sm text-[#555552] mt-2 leading-relaxed">{meta.description}</p>
+
+            {/* Editable description */}
+            {editingDescription ? (
+              <div className="mt-2 space-y-2">
+                <textarea
+                  value={descriptionDraft}
+                  onChange={(e) => setDescriptionDraft(e.target.value)}
+                  className="w-full text-sm p-2 border border-[#e5e5e0] rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-[#059669] resize-none"
+                  rows={4}
+                  autoFocus
+                />
+                <div className="flex items-center gap-2">
+                  <button type="button" onClick={handleSaveDescription} className="flex items-center gap-1 text-xs font-semibold text-white bg-[#059669] hover:bg-[#047857] px-3 py-1.5 rounded-md transition-colors">
+                    <Check className="w-3 h-3" /> Enregistrer
+                  </button>
+                  <button type="button" onClick={handleCancelDescription} className="flex items-center gap-1 text-xs font-semibold text-[#7a7a76] hover:text-[#26251e] px-3 py-1.5 rounded-md border border-[#e5e5e0] transition-colors">
+                    <X className="w-3 h-3" /> Annuler
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="group/desc mt-2 flex items-start gap-2">
+                <p className="text-sm text-[#555552] leading-relaxed flex-1">{displayDescription}</p>
+                <button
+                  type="button"
+                  onClick={() => { setDescriptionDraft(displayDescription); setEditingDescription(true); }}
+                  className="opacity-0 group-hover/desc:opacity-100 transition-opacity p-1 rounded hover:bg-[#e5e5e2] text-[#7a7a76] hover:text-[#26251e] shrink-0"
+                  title="Modifier la description"
+                >
+                  <Pencil className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
           </div>
         </div>
 

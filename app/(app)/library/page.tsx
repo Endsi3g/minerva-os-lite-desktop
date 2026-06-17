@@ -51,6 +51,37 @@ const formatRelativeTime = (dateStr: string) => {
   return `il y a ${days}j`;
 };
 
+const ENTREPRENEUR_TEMPLATES = [
+  {
+    id: 'business-plan',
+    label: 'Plan d\'affaires',
+    emoji: '📊',
+    type: 'markdown' as const,
+    content: `# Plan d'affaires\n\n## 1. Résumé exécutif\n\n_Décrivez votre entreprise en 2-3 paragraphes._\n\n## 2. Description de l'entreprise\n\n- **Nom :** \n- **Secteur :** \n- **Date de fondation :** \n- **Mission :** \n\n## 3. Analyse du marché\n\n### Marché cible\n\n### Concurrents principaux\n\n## 4. Produits / Services\n\n## 5. Stratégie de vente & marketing\n\n## 6. Structure opérationnelle\n\n## 7. Projections financières\n\n| Année | Revenus | Dépenses | Bénéfice |\n|-------|---------|----------|----------|\n| 2025  |         |          |          |\n| 2026  |         |          |          |\n| 2027  |         |          |          |\n`,
+  },
+  {
+    id: 'audit-gmb',
+    label: 'Audit GMB',
+    emoji: '🔍',
+    type: 'markdown' as const,
+    content: `# Audit Google My Business\n\n**Client :** \n**Date :** \n**Score GMB :** /100\n\n## ✅ Points positifs\n\n- \n- \n\n## ❌ Points à améliorer\n\n### Informations de base\n- [ ] Nom exact\n- [ ] Adresse complète\n- [ ] Numéro de téléphone\n- [ ] Site web\n- [ ] Horaires à jour\n\n### Photos\n- [ ] Photo de profil\n- [ ] Photos de l'intérieur\n- [ ] Photos des produits/services\n\n### Avis\n- [ ] Réponses aux avis négatifs\n- [ ] Invitation à laisser des avis\n\n### Catégories & attributs\n- [ ] Catégorie principale correcte\n- [ ] Attributs renseignés\n\n## 💡 Recommandations prioritaires\n\n1. \n2. \n3. \n`,
+  },
+  {
+    id: 'email-prospection',
+    label: 'Email de prospection',
+    emoji: '✉️',
+    type: 'markdown' as const,
+    content: `# Email de prospection\n\n**Sujet :** [Prénom], j'ai trouvé quelque chose d'intéressant pour [Entreprise]\n\n---\n\nBonjour [Prénom],\n\nJ'ai récemment découvert [Entreprise] et j'ai remarqué [observation spécifique].\n\nJe me spécialise dans [votre service] et j'aide des entreprises comme la vôtre à [bénéfice principal].\n\nPar exemple, j'ai récemment aidé [entreprise similaire] à [résultat concret] en seulement [délai].\n\nSeriez-vous disponible pour un appel de 15 minutes cette semaine afin que je puisse vous montrer comment nous pourrions obtenir des résultats similaires pour [Entreprise] ?\n\nCordialement,\n[Votre nom]\n[Votre poste] | [Votre entreprise]\n[Téléphone] | [Site web]\n\n---\n\n**Notes :** _Personnalisez [les crochets] avant d'envoyer._\n`,
+  },
+  {
+    id: 'rapport-hebdo',
+    label: 'Rapport hebdo',
+    emoji: '📅',
+    type: 'markdown' as const,
+    content: `# Rapport hebdomadaire\n\n**Semaine du :** \n**Préparé par :** \n\n## 📈 Résultats de la semaine\n\n| Métrique | Objectif | Résultat | Écart |\n|----------|----------|----------|-------|\n| Leads contactés | | | |\n| Rendez-vous obtenus | | | |\n| Propositions envoyées | | | |\n| Ventes conclues | | | |\n\n## 🎯 Objectifs atteints\n\n- \n- \n\n## ⚠️ Défis rencontrés\n\n- \n\n## 📋 Plan pour la semaine prochaine\n\n1. \n2. \n3. \n\n## 💬 Notes & observations\n\n`,
+  },
+];
+
 export default function LibraryPage() {
   const { t } = useLanguage();
   const router = useRouter();
@@ -177,6 +208,32 @@ export default function LibraryPage() {
     }
   };
 
+  const handleCreateFromTemplate = async (template: typeof ENTREPRENEUR_TEMPLATES[number]) => {
+    try {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from('documents')
+        .insert({
+          user_id: user.id,
+          workspace_id: activeWorkspace?.id || null,
+          title: template.label,
+          type: template.type,
+          content: template.content,
+          is_shared: false,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      router.push(`/library/${data.id}`);
+    } catch (err) {
+      console.error('Error creating from template:', err);
+    }
+  };
+
   const filteredDocuments = documents.filter(doc =>
     doc.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -235,6 +292,19 @@ export default function LibraryPage() {
                 <span className="text-[10px] font-bold text-[#7a7a76] uppercase tracking-wider">{t('library.add_template')}</span>
               </button>
             </div>
+
+            {/* Entrepreneur template cards */}
+            {ENTREPRENEUR_TEMPLATES.map((tpl) => (
+              <div key={tpl.id} className="flex flex-col gap-2">
+                <button
+                  onClick={() => handleCreateFromTemplate(tpl)}
+                  className="aspect-[4/3] w-full border border-[#e5e5e0] hover:border-[#059669]/50 rounded-lg bg-[#f4f4f3]/30 hover:bg-[#059669]/5 flex flex-col items-center justify-center cursor-pointer transition-all gap-1"
+                >
+                  <span className="text-2xl">{tpl.emoji}</span>
+                </button>
+                <div className="text-xs px-1 font-semibold text-[#26251e] truncate">{tpl.label}</div>
+              </div>
+            ))}
 
           </div>
         </div>
@@ -350,14 +420,25 @@ export default function LibraryPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5">
               {filteredDocuments.map((doc) => {
                 const Icon = getFileIcon(doc.type);
+                const previewText = doc.content
+                  ? doc.content.replace(/[#*`_\[\]]/g, '').trim().slice(0, 120)
+                  : null;
                 return (
                   <button
                     key={doc.id}
                     onClick={() => router.push(`/library/${doc.id}`)}
                     className="border border-[#e5e5e0] hover:border-[#7a7a76] rounded-lg overflow-hidden bg-white shadow-xs flex flex-col group cursor-pointer transition-all text-left"
                   >
-                    <div className="aspect-[4/3] bg-[#f4f4f3]/40 border-b border-[#e5e5e0] p-3 flex flex-col justify-center items-center overflow-hidden">
-                      <Icon className="h-8 w-8 text-[#10b981]" />
+                    <div className="aspect-[4/3] bg-[#f4f4f3]/40 border-b border-[#e5e5e0] p-3 flex flex-col justify-start overflow-hidden relative">
+                      {previewText ? (
+                        <p className="text-[9px] text-[#7a7a76] leading-relaxed line-clamp-6 whitespace-pre-line select-none">
+                          {previewText}
+                        </p>
+                      ) : (
+                        <div className="flex items-center justify-center h-full">
+                          <Icon className="h-8 w-8 text-[#10b981]" />
+                        </div>
+                      )}
                     </div>
                     <div className="p-3 space-y-1 w-full">
                       <div className="flex items-center justify-between text-[10px] text-[#7a7a76]">

@@ -176,6 +176,30 @@ export default function LibraryEditorClient({ id }: { id: string }) {
     URL.revokeObjectURL(url);
   };
 
+  const handleExportPdf = () => {
+    if (!editor) return;
+    const html = editor.getHTML();
+    const win = window.open('', '_blank');
+    if (!win) return;
+    win.document.write(`<!DOCTYPE html>
+<html><head>
+<meta charset="utf-8">
+<title>${title.trim() || 'document'}</title>
+<style>
+  body { font-family: Georgia, serif; max-width: 700px; margin: 40px auto; font-size: 13px; line-height: 1.7; color: #26251e; }
+  h1 { font-size: 22px; margin-bottom: 8px; } h2 { font-size: 17px; } h3 { font-size: 14px; }
+  p { margin: 0 0 12px; } ul, ol { margin: 0 0 12px 20px; } li { margin-bottom: 4px; }
+  @media print { @page { margin: 1.5cm 2cm; } body { margin: 0; } }
+</style>
+</head><body>
+<h1 style="margin-bottom:24px">${title.trim() || 'Document'}</h1>
+${html}
+</body></html>`);
+    win.document.close();
+    win.focus();
+    setTimeout(() => { win.print(); win.close(); }, 400);
+  };
+
   const handleDownloadFile = () => {
     if (!doc?.content) return;
     const a = document.createElement('a');
@@ -239,15 +263,26 @@ export default function LibraryEditorClient({ id }: { id: string }) {
             <span>{isShared ? 'Partagé' : 'Privé'}</span>
           </button>
           {isEditable && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleExportMd}
-              className="h-7 text-xs font-semibold px-2.5 border-[#e5e5e0] text-[#555552] flex items-center gap-1"
-            >
-              <Download className="w-3 h-3" />
-              <span>Exporter MD</span>
-            </Button>
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleExportPdf}
+                className="h-7 text-xs font-semibold px-2.5 border-[#e5e5e0] text-[#555552] flex items-center gap-1"
+              >
+                <Download className="w-3 h-3" />
+                <span>PDF</span>
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleExportMd}
+                className="h-7 text-xs font-semibold px-2.5 border-[#e5e5e0] text-[#555552] flex items-center gap-1"
+              >
+                <Download className="w-3 h-3" />
+                <span>MD</span>
+              </Button>
+            </>
           )}
           <Button
             onClick={handleSave}

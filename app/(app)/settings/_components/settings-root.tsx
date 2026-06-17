@@ -9,6 +9,7 @@ import { SettingsNotificationsSection } from './settings-notifications-section';
 import { SettingsAppearanceSection } from './settings-appearance-section';
 import { SettingsIntegrationsSection } from './settings-integrations-section';
 import { SettingsPreferencesSection, PreferencesData } from './settings-preferences-section';
+import { SettingsApiKeysSection } from './settings-api-keys-section';
 import { Locale } from '@/lib/translations';
 import { createClient } from '@/lib/supabase/client';
 import { getApiUrl } from '@/lib/api-helper';
@@ -353,6 +354,7 @@ export function SettingsRoot() {
             <SettingsProfileSection
               data={settings.profile}
               onChange={(updates) => updateSettingsSection('profile', updates)}
+              onSave={() => updateSettingsSection('profile', {})}
               isSaving={!!savingSection.profile}
             />
           )}
@@ -396,6 +398,19 @@ export function SettingsRoot() {
               data={settings.preferences}
               onChange={(updates) => updateSettingsSection('preferences', updates)}
               isSaving={!!savingSection.preferences}
+            />
+          )}
+
+          {section === 'api_keys' && (
+            <SettingsApiKeysSection
+              data={{
+                openrouterKeyMasked: settings.ai.openrouterKeyMasked,
+                groqKeyMasked: settings.ai.groqKeyMasked,
+                togetherKeyMasked: settings.ai.togetherKeyMasked,
+              }}
+              onSaveKey={saveAiKey}
+              onDeleteKey={deleteAiKey}
+              isSaving={!!savingSection.ai}
             />
           )}
 

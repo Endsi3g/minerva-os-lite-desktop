@@ -741,14 +741,14 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="flex h-full w-full bg-white select-none overflow-hidden relative">
+    <div className="flex h-full w-full select-none overflow-hidden relative">
       {/* Hidden file selector */}
-      <input 
-        type="file" 
+      <input
+        type="file"
         multiple
-        ref={fileInputRef} 
-        onChange={handleFileChange} 
-        className="hidden" 
+        ref={fileInputRef}
+        onChange={handleFileChange}
+        className="hidden"
         accept=".pdf,.doc,.docx,.txt,.csv,.png,.jpg"
         title="Sélectionner des fichiers"
         aria-label="Sélectionner des fichiers"
@@ -756,12 +756,21 @@ export default function ChatPage() {
 
       {/* Main Chat Layout Area (width splits dynamically when canvas is open) */}
       <div className={cn(
-        "flex flex-col h-full bg-[#fcfcfb] border-r border-[#e5e5e0] transition-all duration-300",
+        "flex flex-col h-full border-r border-[#e5e5e0] transition-all duration-300 relative",
         isCanvasOpen ? "w-1/2" : "w-full"
       )}>
+        {/* Dot pattern background */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 z-0 opacity-25"
+          style={{
+            backgroundImage: 'radial-gradient(circle, #a1a1aa 1px, transparent 1px)',
+            backgroundSize: '22px 22px',
+          }}
+        />
         
         {/* Top Header bar with Model & Tool pill selector */}
-        <div className="flex h-12 shrink-0 items-center justify-between border-b border-[#e5e5e0] bg-white px-6">
+        <div className="flex h-12 shrink-0 items-center justify-between border-b border-[#e5e5e0] bg-white/80 backdrop-blur-sm px-6 relative z-10">
           <div className="flex items-center gap-2">
             <span className="text-xs font-bold text-[#26251e] uppercase tracking-wider">Copilot</span>
           </div>
@@ -777,7 +786,7 @@ export default function ChatPage() {
         </div>
 
         {/* Messaging Container */}
-        <div className="flex-1 overflow-y-auto min-h-0 scrollbar-thin p-6 flex flex-col">
+        <div className="flex-1 overflow-y-auto min-h-0 scrollbar-thin p-6 flex flex-col relative z-10">
           <div className={cn(
             "max-w-2xl mx-auto flex flex-col gap-6 w-full",
             (!currentSession || currentSession.messages.length === 0) ? "my-auto justify-center" : "flex-1"
@@ -801,11 +810,6 @@ export default function ChatPage() {
                   <h1 className="text-2xl font-bold tracking-tight text-[#26251e]">
                     {getGreetingText()}
                   </h1>
-                </div>
-
-                {/* Centered Input Card */}
-                <div className="w-full max-w-xl mx-auto">
-                  {renderInputCard(true)}
                 </div>
 
                 {/* Quick Action Suggestion Cards */}
@@ -982,14 +986,12 @@ export default function ChatPage() {
           </div>
         </div>
 
-        {/* Chat input wrapper (rendered at bottom ONLY when chat is active) */}
-        {currentSession && currentSession.messages.length > 0 && (
-          <div className="p-4 bg-white border-t border-[#e5e5e0] shrink-0">
-            <div className="max-w-2xl mx-auto">
-              {renderInputCard(false)}
-            </div>
+        {/* Input bar — always visible at the bottom */}
+        <div className="p-4 bg-white/80 backdrop-blur-sm border-t border-[#e5e5e0] shrink-0 relative z-10">
+          <div className="max-w-2xl mx-auto">
+            {renderInputCard(false)}
           </div>
-        )}
+        </div>
 
       </div>
 
