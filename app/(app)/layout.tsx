@@ -77,7 +77,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
   const { t } = useLanguage();
   
   // Workspace Context
-  const { activeWorkspace, workspacesList, switchWorkspace, leads, notifications, unreadCount, markNotificationRead, markAllNotificationsRead, projects, createProject } = useReach();
+  const { user: contextUser, activeWorkspace, workspacesList, switchWorkspace, leads, notifications, unreadCount, markNotificationRead, markAllNotificationsRead, projects, createProject } = useReach();
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [checkingWelcome, setCheckingWelcome] = useState(true);
@@ -196,16 +196,13 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
         setOnlineUsers(joined);
       })
       .subscribe(async (status: REALTIME_SUBSCRIBE_STATES) => {
-        if (status === 'SUBSCRIBED') {
-          const { data: { user: currUser } } = await supabase.auth.getUser();
-          if (currUser) {
-            await presenceChannel.track({
-              userId: currUser.id,
-              fullName: userProfile.fullName,
-              activePage: pathname,
-              color: myColor
-            });
-          }
+        if (status === 'SUBSCRIBED' && contextUser) {
+          await presenceChannel.track({
+            userId: contextUser.id,
+            fullName: userProfile.fullName,
+            activePage: pathname,
+            color: myColor
+          });
         }
       });
 

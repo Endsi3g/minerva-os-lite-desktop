@@ -46,6 +46,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useLanguage } from '@/lib/language-context';
+import { useReach } from '@/lib/reach-context';
 import { TranslationKey } from '@/lib/translations';
 
 interface IntegrationItem {
@@ -290,6 +291,7 @@ const DEFAULT_INTEGRATIONS: IntegrationItem[] = [
 export default function IntegrationsPage() {
   const router = useRouter();
   const { t } = useLanguage();
+  const { user: contextUser } = useReach();
   const [searchQuery, setSearchQuery] = useState('');
   const [availableSearchQuery, setAvailableSearchQuery] = useState('');
   const [filterTab, setFilterTab] = useState<'all' | 'connected' | 'custom' | 'needs-config'>('all');
@@ -367,17 +369,14 @@ export default function IntegrationsPage() {
   };
 
   const saveTodoistSettings = async () => {
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-
+    if (!contextUser) return;
     const electronObj = typeof window !== 'undefined' && (window as any).electron;
     if (electronObj) {
       try {
         const nowStr = new Date().toISOString();
         await electronObj.dbRun(
           "UPDATE settings SET todoist_token = ?, todoist_project_id = ?, updated_at = ?, sync_status = 'pending_update' WHERE user_id = ?",
-          [todoistToken, todoistProjectId, nowStr, user.id]
+          [todoistToken, todoistProjectId, nowStr, contextUser.id]
         );
         
         setConnectedIds(prev => Array.from(new Set([...prev, 'todoist'])));
@@ -438,19 +437,19 @@ export default function IntegrationsPage() {
 
   useEffect(() => {
     const fetchUser = async () => {
+      const user = contextUser;
       try {
-        const supabase = createClient();
-        const { data: { user } } = await supabase.auth.getUser();
         if (user) {
           if (user.email) {
             setUserEmail(user.email);
           }
+          const supabase = createClient();
           const { data: settings } = await supabase
             .from('settings')
             .select('full_name')
             .eq('user_id', user.id)
             .maybeSingle();
-          
+
           let currentUserName = 'Moi';
           if (settings?.full_name) {
             currentUserName = settings.full_name;
@@ -521,7 +520,7 @@ export default function IntegrationsPage() {
       }
     };
     fetchUser();
-  }, []);
+  }, [contextUser]);
 
   const handleCreateCustomIntegration = (e: React.FormEvent) => {
     e.preventDefault();
@@ -807,12 +806,10 @@ export default function IntegrationsPage() {
                               <Button
                                 type="button"
                                 onClick={async () => {
-                                  const supabase = createClient();
-                                  const { data: { user } } = await supabase.auth.getUser();
-                                  if (!user) return;
+                                  if (!contextUser) return;
                                   const electronObj = typeof window !== 'undefined' && (window as any).electron;
                                   if (electronObj) {
-                                    await electronObj.dbRun("UPDATE settings SET todoist_token = NULL, todoist_project_id = NULL WHERE user_id = ?", [user.id]);
+                                    await electronObj.dbRun("UPDATE settings SET todoist_token = NULL, todoist_project_id = NULL WHERE user_id = ?", [contextUser.id]);
                                     setConnectedIds(prev => prev.filter(id => id !== 'todoist'));
                                     setTodoistToken('');
                                     setTodoistProjectId('');

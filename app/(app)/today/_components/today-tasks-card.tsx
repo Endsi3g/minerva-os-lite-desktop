@@ -6,11 +6,10 @@ import { TodayTasksList } from './today-tasks-list';
 import { useReach } from '@/lib/reach-context';
 import { useLanguage } from '@/lib/language-context';
 import { ListTodo, Loader2 } from 'lucide-react';
-import { createClient } from '@/lib/supabase/client';
 import { Task } from '@/lib/mock-data';
 
 export function TodayTasksCard() {
-  const { tasks } = useReach();
+  const { tasks, user } = useReach();
   const { t } = useLanguage();
   
   // Todoist states
@@ -52,54 +51,43 @@ export function TodayTasksCard() {
     });
   };
 
-  // Load Todoist settings and fetch tasks
+  // Load Todoist settings and fetch tasks — mount only, user from ReachContext
   useEffect(() => {
+    if (!user) return;
     const fetchTodoistTasks = async () => {
       try {
-        const supabase = createClient();
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
-
         const electronObj = typeof window !== 'undefined' && (window as any).electron;
-        if (electronObj) {
-          const dbSettings = await electronObj.dbGet(
-             "SELECT todoist_token, todoist_project_id FROM settings WHERE user_id = ? LIMIT 1",
-            [user.id]
-          );
-          if (dbSettings && dbSettings.todoist_token) {
-            setTodoistToken(dbSettings.todoist_token);
-            setTodoistProjectId(dbSettings.todoist_project_id || '');
-            
-            // Start loading tasks
-            setLoadingTodoist(true);
-            const url = dbSettings.todoist_project_id 
-              ? `https://api.todoist.com/rest/v2/tasks?project_id=${dbSettings.todoist_project_id}`
-              : 'https://api.todoist.com/rest/v2/tasks';
-            
-            const res = await fetch(url, {
-              headers: {
-                'Authorization': `Bearer ${dbSettings.todoist_token}`
-              }
-            });
+        if (!electronObj) return;
 
-            if (res.ok) {
-              const data = await res.json();
-              const mapped: Task[] = data.map((item: any) => ({
-                id: `todoist-${item.id}`,
-                title: item.content,
-                completed: false, // REST API only returns active tasks
-                category: 'General',
-                dueDate: item.due ? item.due.date : '',
-                description: item.description || '',
-                isTodoist: true,
-                rawTodoistId: item.id
-              }));
-              setTodoistTasks(mapped);
+        const dbSettings = await electronObj.dbGet(
+          "SELECT todoist_token, todoist_project_id FROM settings WHERE user_id = ? LIMIT 1",
+          [user.id]
+        );
+        if (!dbSettings?.todoist_token) return;
 
-              // Check deadlines & trigger notification alerts
-              checkDeadlinesAndNotify(mapped);
-            }
-          }
+        setTodoistToken(dbSettings.todoist_token);
+        setTodoistProjectId(dbSettings.todoist_project_id || '');
+        setLoadingTodoist(true);
+
+        const url = dbSettings.todoist_project_id
+          ? `https://api.todoist.com/rest/v2/tasks?project_id=${dbSettings.todoist_project_id}`
+          : 'https://api.todoist.com/rest/v2/tasks';
+
+        const res = await fetch(url, { headers: { 'Authorization': `Bearer ${dbSettings.todoist_token}` } });
+        if (res.ok) {
+          const data = await res.json();
+          const mapped: Task[] = data.map((item: any) => ({
+            id: `todoist-${item.id}`,
+            title: item.content,
+            completed: false,
+            category: 'General',
+            dueDate: item.due ? item.due.date : '',
+            description: item.description || '',
+            isTodoist: true,
+            rawTodoistId: item.id
+          }));
+          setTodoistTasks(mapped);
+          checkDeadlinesAndNotify(mapped);
         }
       } catch (err) {
         console.error("Failed to load Todoist tasks:", err);
@@ -107,9 +95,8 @@ export function TodayTasksCard() {
         setLoadingTodoist(false);
       }
     };
-
     fetchTodoistTasks();
-  }, [tasks]); // Reload whenever local tasks change (to keep view updated)
+  }, [user]); // Only re-run when user identity changes, not on every task mutation
 
   // Toggle Todoist task completion (Close on Todoist)
   const handleToggleTodoist = async (id: string) => {

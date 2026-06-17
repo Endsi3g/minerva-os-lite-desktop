@@ -7,7 +7,7 @@ import { useReach } from '@/lib/reach-context';
 import { createClient } from '@/lib/supabase/client';
 
 export function TodayStatsCard() {
-  const { leads, tasks } = useReach();
+  const { leads, tasks, user } = useReach();
 
   const [todoistConnected, setTodoistConnected] = useState(false);
   const [todoistTaskCount, setTodoistTaskCount] = useState({ completed: 0, total: 0 });
@@ -27,11 +27,9 @@ export function TodayStatsCard() {
 
   useEffect(() => {
     const fetchStats = async () => {
+      if (!user) return;
       try {
         const supabase = createClient();
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
-
         const electronObj = typeof window !== 'undefined' && (window as any).electron;
         if (electronObj) {
           const dbSettings = await electronObj.dbGet(
@@ -69,7 +67,7 @@ export function TodayStatsCard() {
       }
     };
     fetchStats();
-  }, [tasks]);
+  }, [tasks, user]);
 
   return (
     <Card className="border border-border bg-card shadow-sm">

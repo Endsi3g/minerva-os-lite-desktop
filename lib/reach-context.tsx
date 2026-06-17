@@ -53,6 +53,7 @@ export interface Project {
 }
 
 interface ReachContextType {
+  user: SupabaseUser | null;
   leads: Lead[];
   tasks: Task[];
   aiSuggestions: AiSuggestion[];
@@ -310,54 +311,32 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
     if (!electronObj) return;
 
     try {
-      const dbLeads = await electronObj.dbAll(
-        "SELECT * FROM leads WHERE workspace_id = ? ORDER BY created_at DESC",
-        [workspaceId]
-      );
-      const dbNotes = await electronObj.dbAll(
-        "SELECT * FROM notes WHERE workspace_id = ? ORDER BY created_at ASC",
-        [workspaceId]
-      );
+      // All IPC calls in parallel — no round-trip sequencing overhead
+      const [dbLeads, dbNotes, dbTasks, dbSettings, dbNotifs, dbMsgs, dbProjects] = await Promise.all([
+        electronObj.dbAll("SELECT * FROM leads WHERE workspace_id = ? ORDER BY created_at DESC", [workspaceId]),
+        electronObj.dbAll("SELECT * FROM notes WHERE workspace_id = ? ORDER BY created_at ASC", [workspaceId]),
+        electronObj.dbAll("SELECT * FROM tasks WHERE workspace_id = ? ORDER BY created_at DESC", [workspaceId]),
+        electronObj.dbGet("SELECT * FROM settings WHERE user_id = ? ORDER BY updated_at DESC LIMIT 1", [userId]),
+        electronObj.dbAll("SELECT * FROM notifications WHERE user_id = ? ORDER BY created_at DESC LIMIT 30", [userId]),
+        electronObj.dbAll("SELECT * FROM team_messages WHERE workspace_id = ? ORDER BY created_at DESC LIMIT 50", [workspaceId]),
+        electronObj.dbAll("SELECT * FROM projects WHERE workspace_id = ? ORDER BY created_at DESC", [workspaceId]),
+      ]);
 
       const uiLeads = (dbLeads || []).map((lead: any) => {
         const leadNotes = (dbNotes || []).filter((n: any) => n.lead_id === lead.id);
         return mapDbLeadToUi(lead, leadNotes);
       });
       setLeads(uiLeads);
+      setTasks((dbTasks || []).map(mapDbTaskToUi));
 
-      const dbTasks = await electronObj.dbAll(
-        "SELECT * FROM tasks WHERE workspace_id = ? ORDER BY created_at DESC",
-        [workspaceId]
-      );
-      const uiTasks = (dbTasks || []).map(mapDbTaskToUi);
-      setTasks(uiTasks);
-
-      const dbSettings = await electronObj.dbGet(
-        "SELECT * FROM settings WHERE user_id = ? ORDER BY updated_at DESC LIMIT 1",
-        [userId]
-      );
       if (dbSettings) {
         setQuickNote(dbSettings.quick_note || '');
         setFocusTitle(dbSettings.focus_title || 'Objectif principal du jour');
         setFocusItems(dbSettings.focus_items ? JSON.parse(dbSettings.focus_items) : []);
       }
 
-      const dbNotifs = await electronObj.dbAll(
-        "SELECT * FROM notifications WHERE user_id = ? ORDER BY created_at DESC LIMIT 30",
-        [userId]
-      );
       setNotifications((dbNotifs || []).map(mapDbNotifToUi));
-
-      const dbMsgs = await electronObj.dbAll(
-        "SELECT * FROM team_messages WHERE workspace_id = ? ORDER BY created_at DESC LIMIT 50",
-        [workspaceId]
-      );
       setTeamMessages(((dbMsgs || []) as any[]).map(mapDbMsgToUi).reverse());
-
-      const dbProjects = await electronObj.dbAll(
-        "SELECT * FROM projects WHERE workspace_id = ? ORDER BY created_at DESC",
-        [workspaceId]
-      );
       setProjects((dbProjects || []).map(mapDbProjectToUi));
     } catch (err) {
       console.error("Failed to load local SQLite data in ReachProvider:", err);
@@ -434,93 +413,47 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
     }
     const supabase = createClient();
     try {
-      // 1. Fetch leads & notes for the active workspace
-      const { data: dbLeads } = await supabase
-        .from('leads')
-        .select('*')
-        .eq('workspace_id', activeWs.id)
-        .order('created_at', { ascending: false });
+      // All 7 queries fired in parallel — one network round-trip instead of 7 sequential
+      const [
+        { data: dbLeads },
+        { data: dbNotes },
+        { data: dbTasks },
+        { data: dbSettings },
+        { data: dbSuggestions },
+        { data: dbNotifs },
+        { data: dbMsgs },
+        { data: dbProjects },
+      ] = await Promise.all([
+        supabase.from('leads').select('*').eq('workspace_id', activeWs.id).order('created_at', { ascending: false }),
+        supabase.from('notes').select('*').eq('workspace_id', activeWs.id).order('created_at', { ascending: true }),
+        supabase.from('tasks').select('*').eq('workspace_id', activeWs.id).order('created_at', { ascending: false }),
+        supabase.from('settings').select('*').eq('user_id', currUser.id).maybeSingle(),
+        supabase.from('ai_suggestions').select('*').eq('workspace_id', activeWs.id),
+        supabase.from('notifications').select('*').eq('user_id', currUser.id).order('created_at', { ascending: false }).limit(30),
+        supabase.from('team_messages').select('*').eq('workspace_id', activeWs.id).order('created_at', { ascending: false }).limit(50),
+        supabase.from('projects').select('*').eq('workspace_id', activeWs.id).order('created_at', { ascending: false }),
+      ]);
 
-      // Auto-population of mock data has been disabled for clean workspaces.
-      // Demo data can be imported manually via settings.
-
-      const { data: dbNotes } = await supabase
-        .from('notes')
-        .select('*')
-        .eq('workspace_id', activeWs.id)
-        .order('created_at', { ascending: true });
-
-      // Combine
       const uiLeads = (dbLeads || []).map((lead: DbLead) => {
         const leadNotes = (dbNotes || []).filter((n: DbNote) => n.lead_id === lead.id);
         return mapDbLeadToUi(lead, leadNotes);
       });
       setLeads(uiLeads);
-
-      // 2. Fetch tasks
-      const { data: dbTasks } = await supabase
-        .from('tasks')
-        .select('*')
-        .eq('workspace_id', activeWs.id)
-        .order('created_at', { ascending: false });
-
-      const uiTasks = (dbTasks || []).map(mapDbTaskToUi);
-      setTasks(uiTasks);
-
-      // 3. Fetch settings for the current user (focus/quicknote are personal, not workspace-wide)
-      const { data: dbSettings } = await supabase
-        .from('settings')
-        .select('*')
-        .eq('user_id', currUser.id)
-        .maybeSingle();
+      setTasks((dbTasks || []).map(mapDbTaskToUi));
 
       if (dbSettings) {
         setQuickNote(dbSettings.quick_note || '');
         setFocusTitle(dbSettings.focus_title || 'Objectif principal du jour');
-        try {
-          setFocusItems(dbSettings.focus_items ? JSON.parse(dbSettings.focus_items) : []);
-        } catch {
-          setFocusItems([]);
-        }
+        try { setFocusItems(dbSettings.focus_items ? JSON.parse(dbSettings.focus_items) : []); } catch { setFocusItems([]); }
       } else {
         setQuickNote('');
         setFocusTitle('Objectif principal du jour');
         setFocusItems([]);
       }
 
-      // 4. Fetch AI suggestions
-      const { data: dbSuggestions } = await supabase
-        .from('ai_suggestions')
-        .select('*')
-        .eq('workspace_id', activeWs.id);
-
-      const uiSuggestions = (dbSuggestions || []).map((s: DbSuggestion) => mapDbSuggestionToUi(s, uiLeads));
-      setAiSuggestions(uiSuggestions);
-
-      // 5. Fetch notifications for the current user
-      const { data: dbNotifs } = await supabase
-        .from('notifications')
-        .select('*')
-        .eq('user_id', currUser.id)
-        .order('created_at', { ascending: false })
-        .limit(30);
+      setAiSuggestions((dbSuggestions || []).map((s: DbSuggestion) => mapDbSuggestionToUi(s, uiLeads)));
       if (dbNotifs) setNotifications(dbNotifs.map(mapDbNotifToUi));
-
-      // 6. Fetch team messages for the active workspace
-      const { data: dbMsgs } = await supabase
-        .from('team_messages')
-        .select('*')
-        .eq('workspace_id', activeWs.id)
-        .order('created_at', { ascending: false })
-        .limit(50);
       if (dbMsgs) setTeamMessages(dbMsgs.map(mapDbMsgToUi).reverse());
-
-      // 7. Fetch projects for the active workspace
-      const { data: dbProjects } = await supabase
-        .from('projects')
-        .select('*')
-        .eq('workspace_id', activeWs.id)
-        .order('created_at', { ascending: false });
       if (dbProjects) setProjects(dbProjects.map(mapDbProjectToUi));
 
     } catch (e) {
@@ -1912,6 +1845,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
   return (
     <ReachContext.Provider
       value={{
+        user,
         leads,
         tasks,
         aiSuggestions,
