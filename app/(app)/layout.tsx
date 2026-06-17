@@ -87,6 +87,13 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
   // Get started onboarding menu state
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [todayCollapsed, setTodayCollapsed] = useState(false);
+  const [collapsedCategories, setCollapsedCategories] = useState<Record<string, boolean>>({
+    ai: false, data: false, platform: true
+  });
+
+  const toggleCategory = (id: string) => {
+    setCollapsedCategories(prev => ({ ...prev, [id]: !prev[id] }));
+  };
 
   // New states for Minerva OS Lite interactive features
   const [showNewProjectModal, setShowNewProjectModal] = useState(false);
@@ -362,20 +369,48 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
     return crumbs;
   };
 
-  // Minerva OS Lite navigation items
-  const navItems = [
+  // Pinned nav items — always visible
+  const pinnedItems = [
     { name: t('nav.get_started'), href: '/welcome', icon: Gift },
     { name: t('nav.today'), href: '/today', icon: LayoutDashboard },
     { name: t('nav.prospect'), href: '/prospecting', icon: PenSquare },
     { name: t('nav.search'), href: '/leads', icon: Users },
-    { name: 'Services & Tarifs', href: '/services', icon: Tag },
-    { name: t('nav.library'), href: '/library', icon: Folder },
-    { name: t('nav.agents'), href: '/agents', icon: Sparkles },
-    { name: t('nav.assistant'), href: '/assistant', icon: Brain },
-    { name: t('nav.analytics'), href: '/analytics', icon: BarChart3 },
-    { name: t('nav.integrations'), href: '/integrations', icon: Plug },
     { name: t('nav.team'), href: '/team', icon: Users },
-    { name: t('nav.download'), href: '/download', icon: Download },
+  ];
+
+  // Collapsible nav categories
+  const navCategories = [
+    {
+      id: 'ai',
+      label: 'Intelligence IA',
+      items: [
+        { name: t('nav.assistant'), href: '/assistant', icon: Brain },
+        { name: t('nav.agents'), href: '/agents', icon: Sparkles },
+        { name: t('nav.analytics'), href: '/analytics', icon: BarChart3 },
+      ],
+    },
+    {
+      id: 'data',
+      label: 'Données & Fichiers',
+      items: [
+        { name: 'Services & Tarifs', href: '/services', icon: Tag },
+        { name: t('nav.library'), href: '/library', icon: Folder },
+      ],
+    },
+    {
+      id: 'platform',
+      label: 'Plateforme',
+      items: [
+        { name: t('nav.integrations'), href: '/integrations', icon: Plug },
+        { name: t('nav.download'), href: '/download', icon: Download },
+      ],
+    },
+  ];
+
+  // Flat list used for active-state detection across all items
+  const allNavItems = [
+    ...pinnedItems,
+    ...navCategories.flatMap(c => c.items),
   ];
 
   const recentFiles = [
@@ -600,10 +635,11 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
             </div>
           ))}
           
+          {/* Pinned nav items */}
           <nav className={cn("space-y-[2px]", isCollapsed ? "px-2" : "px-3")}>
-            {navItems.map((item) => {
-              const isActive = pathname === item.href || (item.href !== '/today' && pathname.startsWith(item.href));
-              
+            {pinnedItems.map((item) => {
+              const isActive = pathname === item.href || (item.href !== '/today' && item.href !== '/welcome' && pathname.startsWith(item.href));
+
               const navLink = (
                 <Link
                   key={item.name}
@@ -611,11 +647,9 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                   onClick={() => setSidebarOpen(false)}
                   className={cn(
                     "flex items-center rounded-md text-xs font-medium transition-all duration-150",
-                    isCollapsed 
-                      ? "justify-center p-2" 
-                      : "gap-2.5 px-2.5 py-1.5",
-                    isActive 
-                      ? "bg-[#e5e5e2] text-[#26251e] font-semibold" 
+                    isCollapsed ? "justify-center p-2" : "gap-2.5 px-2.5 py-1.5",
+                    isActive
+                      ? "bg-[#e5e5e2] text-[#26251e] font-semibold"
                       : "text-[#555552] hover:bg-[#e5e5e2]/60 hover:text-[#26251e]"
                   )}
                 >
@@ -627,19 +661,61 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
               if (isCollapsed) {
                 return (
                   <Tooltip key={item.name}>
-                    <TooltipTrigger asChild>
-                      {navLink}
-                    </TooltipTrigger>
-                    <TooltipContent side="right" className="text-xs bg-[#26251e] text-white">
-                      {item.name}
-                    </TooltipContent>
+                    <TooltipTrigger asChild>{navLink}</TooltipTrigger>
+                    <TooltipContent side="right" className="text-xs bg-[#26251e] text-white">{item.name}</TooltipContent>
                   </Tooltip>
                 );
               }
-
               return navLink;
             })}
           </nav>
+
+          {/* Collapsible nav categories */}
+          {!isCollapsed && (
+            <div className="px-3 space-y-1">
+              {navCategories.map((cat) => {
+                const isCatCollapsed = collapsedCategories[cat.id] ?? false;
+                const hasCatActive = cat.items.some(item => pathname.startsWith(item.href));
+                return (
+                  <div key={cat.id} className="space-y-[2px]">
+                    <button
+                      onClick={() => toggleCategory(cat.id)}
+                      className={cn(
+                        "w-full flex items-center justify-between px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider transition-colors",
+                        hasCatActive ? "text-[#26251e]" : "text-[#7a7a76] hover:text-[#26251e]"
+                      )}
+                    >
+                      <span>{cat.label}</span>
+                      <ChevronDown className={cn("h-3 w-3 transition-transform duration-200", isCatCollapsed && "-rotate-90")} />
+                    </button>
+                    {!isCatCollapsed && (
+                      <div className="space-y-[2px]">
+                        {cat.items.map((item) => {
+                          const isActive = pathname.startsWith(item.href);
+                          return (
+                            <Link
+                              key={item.name}
+                              href={item.href}
+                              onClick={() => setSidebarOpen(false)}
+                              className={cn(
+                                "flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-all duration-150",
+                                isActive
+                                  ? "bg-[#e5e5e2] text-[#26251e] font-semibold"
+                                  : "text-[#555552] hover:bg-[#e5e5e2]/60 hover:text-[#26251e]"
+                              )}
+                            >
+                              <item.icon className="h-4 w-4 shrink-0 text-[#555552]" />
+                              <span className="truncate">{item.name}</span>
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
 
           {/* Projects Section */}
           {!isCollapsed && (

@@ -72,7 +72,17 @@ export default function WelcomePage() {
   };
 
   return (
-    <div className="flex-1 overflow-y-auto py-8 px-4 md:px-8 flex flex-col items-center relative z-10 bg-background">
+    <div className="h-full overflow-y-auto relative bg-background">
+      {/* Cult UI dot pattern */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 z-0 opacity-40 dark:opacity-20"
+        style={{
+          backgroundImage: 'radial-gradient(circle, #a1a1aa 1px, transparent 1px)',
+          backgroundSize: '20px 20px',
+        }}
+      />
+    <div className="relative z-10 py-8 px-4 md:px-8 flex flex-col items-center">
 
       {/* Progress circle */}
       <div className="flex flex-col items-center space-y-4 mt-4">
@@ -340,6 +350,7 @@ export default function WelcomePage() {
       )}
 
       <div className="h-12" />
+    </div>
     </div>
   );
 }

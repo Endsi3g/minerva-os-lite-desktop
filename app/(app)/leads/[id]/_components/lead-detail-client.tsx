@@ -218,6 +218,7 @@ export function LeadDetailClient({ id }: { id: string }) {
     return () => {
       presenceChannelRef.current = null;
       presenceChannel.unsubscribe();
+      supabase.removeChannel(presenceChannel);
     };
   }, [activeWorkspace, currentUser, userProfile, id]);
 
