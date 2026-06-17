@@ -45,6 +45,7 @@ import {
   Kanban,
   RefreshCw,
   Inbox,
+  ListChecks,
 } from 'lucide-react';
 import { BottomBlur } from '@/components/ui/edge-blur';
 import { cn } from '@/lib/utils';
@@ -399,6 +400,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
       else if (segment === 'billing') label = 'Facturation';
       else if (segment === 'help') label = 'Aide & Docs';
       else if (segment === 'inbox') label = 'Boîte de réception';
+      else if (segment === 'setup') label = 'Configuration';
 
       if (segments[index - 1] === 'leads' && segment !== 'leads') {
         label = 'Details';
@@ -459,6 +461,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
       id: 'platform',
       label: 'Plateforme',
       items: [
+        { name: 'Configuration', href: '/setup', icon: ListChecks },
         { name: t('nav.integrations'), href: '/integrations', icon: Plug },
         { name: t('nav.download'), href: '/download', icon: Download },
       ],

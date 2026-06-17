@@ -11,6 +11,7 @@ import { TodayFocusCard } from './today-focus-card';
 import { TodayActivityFeedCard } from './today-activity-feed-card';
 import { TodayProjectsCard } from './today-projects-card';
 import { TodayStatsCard } from './today-stats-card';
+import { TodaySetupBanner } from './today-setup-banner';
 
 export function TodayRoot() {
   return (
@@ -26,6 +27,9 @@ export function TodayRoot() {
       />
 
       <div className="relative z-10 flex flex-col gap-4 p-3 sm:p-6 max-w-5xl mx-auto">
+        {/* Setup checklist banner (hidden once dismissed or complete) */}
+        <TodaySetupBanner />
+
         {/* Greeting + add actions */}
         <TodayHeader />
 
