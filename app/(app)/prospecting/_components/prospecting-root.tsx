@@ -23,8 +23,42 @@ import {
   Star,
   AlertCircle,
   Database,
-  Plus
+  Plus,
+  X,
+  ChevronDown,
+  WifiOff,
+  CheckCircle2,
+  Settings2,
 } from 'lucide-react';
+
+// ── Montreal popular niches ──────────────────────────────────────────────────
+const MONTREAL_NICHES = [
+  'Restaurant / Café',
+  'Salon de coiffure',
+  'Clinique dentaire',
+  'Plombier',
+  'Électricien',
+  'Garage auto / Mécanicien',
+  'Avocat / Notaire',
+  'Comptable / Fiscaliste',
+  'Physiothérapie / Chiro',
+  'Agence immobilière',
+  'Serrurier / Vitrier',
+  'Nettoyage résidentiel',
+  'Photographe / Vidéaste',
+  'Gym / Studio yoga',
+  'Pizzeria / Fast-food',
+  'Pharmacie indépendante',
+  'Fleuriste',
+  'Tatoueur / Perceur',
+  'Esthéticienne / Spa',
+  'Traiteur / Événements',
+  'Déménageur',
+  'École de conduite',
+  'Garderie / CPE',
+  'Clinique vétérinaire',
+  'Boulangerie / Pâtisserie',
+];
 
 interface ScrapedLead {
   id: string;
@@ -38,26 +72,38 @@ interface ScrapedLead {
   reviewsCount: number;
   mapsUrl: string;
   seoAudit: string;
+  address?: string;
   latitude?: number;
   longitude?: number;
 }
 
+interface SourceDef {
+  id: string;
+  label: string;
+  description: string;
+  available: boolean | 'checking';
+  needsKey?: boolean;
+  keyLabel?: string;
+}
+
 function getLeadMarkerColor(item: ScrapedLead): string {
-  if (!item.website) return '#f54e00'; // Hot
-  if (item.rating < 4.0) return '#10b981'; // Warm
-  return '#807d72'; // Cold
+  if (!item.website) return '#ef4444';
+  if (item.rating < 4.0) return '#f59e0b';
+  return '#10b981';
 }
 
 export function ProspectingRoot() {
   const { addLead, leads } = useReach();
-  
-  // Local settings preferences
-  const [niches, setNiches] = useState<string[]>([]);
+
   const [cities, setCities] = useState<string[]>([]);
   const [loadingPrefs, setLoadingPrefs] = useState(true);
+  const [apifyConfigured, setApifyConfigured] = useState<boolean | 'checking'>('checking');
 
-  // Search state parameters
-  const [selectedNiche, setSelectedNiche] = useState('');
+  // Multi-niche selection
+  const [selectedNiches, setSelectedNiches] = useState<string[]>([]);
+  const [nicheSearchQuery, setNicheSearchQuery] = useState('');
+  const [nicheDropdownOpen, setNicheDropdownOpen] = useState(false);
+
   const [selectedCity, setSelectedCity] = useState('');
   const [customQuery, setCustomQuery] = useState('');
 
@@ -69,53 +115,101 @@ export function ProspectingRoot() {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [importing, setImporting] = useState(false);
   const [importCount, setImportCount] = useState<number | null>(null);
-  const [sources, setSources] = useState<string[]>(['google', 'yelp', 'pagesjaunes']);
+
+  // Sources
+  const [selectedSources, setSelectedSources] = useState<string[]>(['google']);
+
   // Filters
   const [minRating, setMinRating] = useState(0);
+  const [maxResults, setMaxResults] = useState(25);
   const [excludeExisting, setExcludeExisting] = useState(true);
-
-  const handleToggleSource = (source: string, checked: boolean) => {
-    if (checked) {
-      setSources(prev => [...prev, source]);
-    } else {
-      setSources(prev => prev.filter(s => s !== source));
-    }
-  };
+  const [onlyNoWebsite, setOnlyNoWebsite] = useState(false);
 
   const scrapeSteps = [
     "Initialisation de l'agent de recherche Minerva...",
-    "Localisation des commerces locaux sur Google Maps...",
+    "Localisation des commerces locaux sur Google Maps / OSM...",
     "Extraction des fiches et statistiques de visibilité...",
-    "Recherche des coordonnées de contact et réseaux...",
-    "Analyse de l'optimisation SEO locale par l'IA..."
+    "Recherche des coordonnées de contact...",
+    "Analyse de l'optimisation SEO locale par l'IA...",
   ];
 
-  // Load target preferences on mount
   useEffect(() => {
-    const fetchPrefs = async () => {
+    const init = async () => {
       try {
         const supabase = createClient();
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
           const { data } = await supabase
             .from('settings')
-            .select('niches, cities')
+            .select('niches, cities, apify_api_key')
             .eq('user_id', user.id)
             .maybeSingle();
           if (data) {
-            setNiches(data.niches || []);
             setCities(data.cities || []);
-            if (data.niches?.length > 0) setSelectedNiche(data.niches[0]);
             if (data.cities?.length > 0) setSelectedCity(data.cities[0]);
+            setApifyConfigured(!!data.apify_api_key);
+          } else {
+            setApifyConfigured(false);
           }
         }
-      } catch (e) {
-        console.error("Failed to load user settings preferences:", e);
+      } catch {
+        setApifyConfigured(false);
       }
       setLoadingPrefs(false);
     };
-    fetchPrefs();
+    init();
   }, []);
+
+  const sources: SourceDef[] = [
+    {
+      id: 'google',
+      label: 'Google Maps / OSM',
+      description: 'Données ouvertes — toujours disponible',
+      available: true,
+    },
+    {
+      id: 'yelp',
+      label: 'Yelp',
+      description: 'Annuaire nord-américain, données limitées',
+      available: true,
+    },
+    {
+      id: 'pagesjaunes',
+      label: 'PagesJaunes / 411',
+      description: 'Annuaire Québec / Canada',
+      available: true,
+    },
+    {
+      id: 'apify',
+      label: 'Apify Scraper',
+      description: apifyConfigured === true
+        ? 'Clé API configurée — résultats enrichis'
+        : apifyConfigured === false
+          ? 'Clé API manquante → configurer dans Paramètres > Intégrations'
+          : 'Vérification de la clé API...',
+      available: apifyConfigured,
+      needsKey: true,
+      keyLabel: 'apify_api_key',
+    },
+  ];
+
+  const filteredNiches = MONTREAL_NICHES.filter(n =>
+    n.toLowerCase().includes(nicheSearchQuery.toLowerCase())
+  );
+
+  const toggleNiche = (niche: string) => {
+    setSelectedNiches(prev =>
+      prev.includes(niche) ? prev.filter(n => n !== niche) : [...prev, niche]
+    );
+  };
+
+  const toggleSource = (id: string, checked: boolean) => {
+    const src = sources.find(s => s.id === id);
+    if (src && src.available !== true) return;
+    setSelectedSources(prev =>
+      checked ? [...prev, id] : prev.filter(s => s !== id)
+    );
+  };
 
   const handleStartScrape = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -127,42 +221,36 @@ export function ProspectingRoot() {
     setScrapeProgress(10);
 
     const electronObj = typeof window !== 'undefined' && (window as any).electron;
-    if (electronObj && electronObj.updateScrapingStatus) {
-      electronObj.updateScrapingStatus(
-        'running',
-        customQuery ? 'Recherche libre' : selectedNiche,
-        customQuery ? 'Recherche libre' : selectedCity
-      );
+    if (electronObj?.updateScrapingStatus) {
+      electronObj.updateScrapingStatus('running', selectedNiches[0] ?? customQuery, selectedCity);
     }
 
-    // Dynamic step progression interval
     const stepInterval = setInterval(() => {
-      setScrapeStep(prev => {
-        if (prev < scrapeSteps.length - 1) return prev + 1;
-        return prev;
-      });
-      setScrapeProgress(prev => {
-        if (prev < 90) return prev + 20;
-        return prev;
-      });
+      setScrapeStep(prev => (prev < scrapeSteps.length - 1 ? prev + 1 : prev));
+      setScrapeProgress(prev => (prev < 90 ? prev + 20 : prev));
     }, 2500);
 
     try {
-      const nicheQuery = customQuery ? customQuery : `${selectedNiche} ${selectedCity}`;
-      const nativeSources = sources.filter(s => s !== 'apify');
-      const useApify = sources.includes('apify');
+      const nicheQuery = customQuery
+        ? customQuery
+        : selectedNiches.length > 0
+          ? `${selectedNiches.join(' OR ')} ${selectedCity}`
+          : selectedCity;
 
-      // Run native and Apify scrapes in parallel when both selected
+      const nativeSources = selectedSources.filter(s => s !== 'apify');
+      const useApify = selectedSources.includes('apify') && apifyConfigured === true;
+
       const fetches: Promise<Response>[] = [];
       if (nativeSources.length > 0) {
         fetches.push(fetch(getApiUrl('/api/scrape-maps'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            niche: customQuery ? 'Recherche libre' : selectedNiche,
-            city: customQuery ? 'Recherche libre' : selectedCity,
+            niche: selectedNiches[0] ?? 'commerce local',
+            city: selectedCity || 'Montréal',
             query: nicheQuery,
             sources: nativeSources,
+            maxResults,
           }),
         }));
       }
@@ -171,338 +259,342 @@ export function ProspectingRoot() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            niche: customQuery ? 'Recherche libre' : selectedNiche,
-            city: customQuery ? 'Recherche libre' : selectedCity,
+            niche: selectedNiches[0] ?? 'commerce local',
+            city: selectedCity || 'Montréal',
             query: nicheQuery,
+            maxResults,
           }),
         }));
       }
 
       const responses = await Promise.all(fetches);
       const dataArr = await Promise.all(responses.map(r => r.json()));
-      const allLeads: ScrapedLead[] = dataArr.flatMap((d: any) => d.leads ?? []);
+      let allLeads: ScrapedLead[] = dataArr.flatMap((d: any) => d.leads ?? []);
+
+      // Deduplicate by businessName+city
+      const seen = new Set<string>();
+      allLeads = allLeads.filter(l => {
+        const key = `${l.businessName}|${l.city}`.toLowerCase();
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
 
       // Apply filters
       const existingMapsUrls = new Set(
         excludeExisting ? leads.map(l => l.mapsUrl).filter(Boolean) : []
       );
-      const filtered = allLeads.filter(l => {
-        if (minRating > 0 && l.rating < minRating) return false;
-        if (excludeExisting && l.mapsUrl && existingMapsUrls.has(l.mapsUrl)) return false;
-        return true;
-      });
-
-      const data = { leads: filtered };
+      const filtered = allLeads
+        .filter(l => {
+          if (minRating > 0 && l.rating < minRating) return false;
+          if (excludeExisting && l.mapsUrl && existingMapsUrls.has(l.mapsUrl)) return false;
+          if (onlyNoWebsite && l.website) return false;
+          return true;
+        })
+        .slice(0, maxResults);
 
       clearInterval(stepInterval);
       setScrapeProgress(100);
 
-      // Delay slightly to let the 100% state display
       setTimeout(() => {
-        if (data.leads) {
-          setScrapedLeads(data.leads);
-          // Auto select all scraped leads by default
-          setSelectedIds(data.leads.map((l: ScrapedLead) => l.id));
-
-          if (electronObj && electronObj.updateScrapingStatus) {
-            electronObj.updateScrapingStatus('idle');
-          }
-          if (electronObj && electronObj.sendNotification) {
-            electronObj.sendNotification(
-              "Minerva OS Reach Lite",
-              `${data.leads.length} prospects extraits avec succès !`
-            );
-          }
-        }
+        setScrapedLeads(filtered);
+        setSelectedIds(filtered.map(l => l.id));
         setScraping(false);
-      }, 800);
-
+        if (electronObj?.updateScrapingStatus) electronObj.updateScrapingStatus('idle');
+        if (electronObj?.sendNotification) {
+          electronObj.sendNotification('Minerva OS', `${filtered.length} prospects extraits !`);
+        }
+      }, 600);
     } catch (err) {
-      console.error("Scrape failed:", err);
+      console.error('Scrape failed:', err);
       clearInterval(stepInterval);
       setScraping(false);
-
-      if (electronObj && electronObj.updateScrapingStatus) {
-        electronObj.updateScrapingStatus('idle');
-      }
-      if (electronObj && electronObj.sendNotification) {
-        electronObj.sendNotification(
-          "Erreur du Scraper",
-          "La recherche de prospects a échoué."
-        );
-      }
-      alert("La prospection a échoué. Veuillez réessayer.");
-    }
-  };
-
-  const handleToggleSelectAll = (checked: boolean) => {
-    if (checked) {
-      setSelectedIds(scrapedLeads.map(l => l.id));
-    } else {
-      setSelectedIds([]);
-    }
-  };
-
-  const handleToggleSelectRow = (id: string, checked: boolean) => {
-    if (checked) {
-      setSelectedIds(prev => [...prev, id]);
-    } else {
-      setSelectedIds(prev => prev.filter(rowId => rowId !== id));
+      if (electronObj?.updateScrapingStatus) electronObj.updateScrapingStatus('idle');
     }
   };
 
   const handleImportLeads = async () => {
     if (selectedIds.length === 0) return;
     setImporting(true);
-    
     const leadsToImport = scrapedLeads.filter(l => selectedIds.includes(l.id));
-    
     try {
       for (const item of leadsToImport) {
-        // Temperature based on opportunity
-        let temp: 'Hot' | 'Warm' | 'Cold' = 'Warm';
-        if (item.rating < 4.0 || !item.website) {
-          temp = 'Hot';
-        }
-
-        // Import using the unified addLead method
+        const temp: 'Hot' | 'Warm' | 'Cold' = !item.website || item.rating < 4.0 ? 'Hot' : 'Warm';
         await addLead({
           businessName: item.businessName,
           contactName: 'Gérant',
           contactEmail: item.email || '',
           niche: item.niche,
           city: item.city,
-          source: 'Scraper Google Maps',
+          source: 'Scraper Minerva',
           status: 'New',
           temperature: temp,
-          nextAction: !item.website 
-            ? "Proposer la création d'un site web responsive mobile-first"
-            : "Créer un audit de référencement local Google Maps gratuit",
+          nextAction: !item.website
+            ? "Proposer la création d'un site web"
+            : "Audit SEO local Google Maps gratuit",
           nextActionDate: new Date().toISOString().split('T')[0],
-          notes: `Données importées via Google Maps Scraper :\n- Note : ${item.rating}/5 (${item.reviewsCount} avis)\n- Site Internet : ${item.website || 'Aucun détecté'}\n- Téléphone : ${item.phone || 'Non spécifié'}\n- Opportunité : ${item.seoAudit}\n- URL Maps : ${item.mapsUrl}`
+          notes: `Importé via Minerva Scraper\n- Note : ${item.rating}/5 (${item.reviewsCount} avis)\n- Site : ${item.website || 'Aucun'}\n- Tél : ${item.phone || 'N/A'}\n- Adresse : ${item.address || 'N/A'}\n- Maps : ${item.mapsUrl}`,
         });
       }
-
       setImportCount(leadsToImport.length);
-      // Remove imported leads from results list
       setScrapedLeads(prev => prev.filter(l => !selectedIds.includes(l.id)));
       setSelectedIds([]);
     } catch (e) {
       console.error(e);
-      alert("Une erreur est survenue lors de l'importation");
     }
     setImporting(false);
   };
 
   const getOpportunityBadge = (rating: number, website: string) => {
-    if (!website) {
-      return (
-        <Badge variant="outline" className="bg-rose-50 text-rose-700 border-rose-200 text-[9px] font-bold rounded">
-          ⚠️ Pas de site web
-        </Badge>
-      );
-    }
-    if (rating < 4.0) {
-      return (
-        <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 text-[9px] font-bold rounded">
-          🔥 SEO Faible ({rating}★)
-        </Badge>
-      );
-    }
+    if (!website) return (
+      <Badge variant="outline" className="bg-rose-50 text-rose-700 border-rose-200 text-[9px] font-bold">⚠️ Sans site</Badge>
+    );
+    if (rating < 4.0) return (
+      <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 text-[9px] font-bold">🔥 SEO Faible</Badge>
+    );
     return (
-      <Badge variant="outline" className="bg-slate-50 text-slate-600 border-slate-200 text-[9px] font-bold rounded">
-        ✓ Profil correct
-      </Badge>
+      <Badge variant="outline" className="bg-slate-50 text-slate-600 border-slate-200 text-[9px] font-bold">✓ Correct</Badge>
     );
   };
 
   return (
-    <div className="h-full overflow-y-auto bg-white relative">
-      <div className="absolute inset-0 opacity-[0.25] pointer-events-none bg-grid-pattern-20" />
-      <div className="max-w-6xl mx-auto p-6 space-y-6 relative z-10">
-        
-        {/* Title Header */}
+    <div className="h-full overflow-y-auto bg-background relative">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 z-0 opacity-30 dark:opacity-15"
+        style={{ backgroundImage: 'radial-gradient(circle, #a1a1aa 1px, transparent 1px)', backgroundSize: '24px 24px' }}
+      />
+      <div className="relative z-10 max-w-6xl mx-auto p-6 space-y-6">
+
+        {/* Header */}
         <div className="space-y-1">
-          <h1 className="text-xl sm:text-2xl font-bold font-sans tracking-tight text-foreground flex items-center gap-2">
-            <Search className="h-5.5 w-5.5 text-primary" />
-            <span>Prospection Google Maps</span>
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
+            <Search className="h-5 w-5 text-primary" />
+            Prospection locale — Montréal
           </h1>
           <p className="text-xs text-muted-foreground">
-            Scrape les fiches locales, identifie les opportunités SEO/web et importe-les instantanément dans ton CRM.
+            Trouvez des entreprises sans site web ou avec un site daté, enrichissez-les et importez-les en un clic dans votre CRM.
           </p>
         </div>
 
-        {/* Configuration panels */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Settings Shortcuts card */}
-          <Card className="border border-border bg-card md:col-span-2">
+          {/* Main config card */}
+          <Card className="md:col-span-2 border border-border bg-card">
             <CardHeader className="pb-3 border-b border-border/50">
               <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
                 <Building className="h-4 w-4 text-primary" />
-                <span>Paramètres de recherche</span>
+                Paramètres de recherche
               </CardTitle>
             </CardHeader>
             <CardContent className="p-5">
-              <form onSubmit={handleStartScrape} className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {/* Select Niche */}
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Niche cible</label>
-                    <select
-                      value={selectedNiche}
-                      onChange={(e) => {
-                        setSelectedNiche(e.target.value);
-                        setCustomQuery('');
-                      }}
-                      disabled={scraping || loadingPrefs}
-                      className="w-full text-xs rounded-md border border-input bg-card h-8.5 px-3 focus:outline-none focus:ring-1 focus:ring-primary"
+              <form onSubmit={handleStartScrape} className="space-y-5">
+
+                {/* Multi-niche selector */}
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                    Niches cibles <span className="normal-case font-normal">(sélection multiple)</span>
+                  </label>
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setNicheDropdownOpen(!nicheDropdownOpen)}
+                      disabled={scraping}
+                      className="w-full flex items-center justify-between text-xs rounded-md border border-input bg-card h-9 px-3 focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50 text-left"
                     >
-                      {niches.length > 0 ? (
-                        niches.map(n => <option key={n} value={n}>{n}</option>)
-                      ) : (
-                        <option value="">Chargement...</option>
-                      )}
-                    </select>
+                      <span className="truncate text-muted-foreground">
+                        {selectedNiches.length === 0
+                          ? 'Choisir des niches…'
+                          : `${selectedNiches.length} niche${selectedNiches.length > 1 ? 's' : ''} sélectionnée${selectedNiches.length > 1 ? 's' : ''}`}
+                      </span>
+                      <ChevronDown className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                    </button>
+
+                    {nicheDropdownOpen && (
+                      <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-lg shadow-lg z-20 max-h-64 overflow-y-auto">
+                        <div className="p-2 border-b border-border/60 sticky top-0 bg-card">
+                          <Input
+                            placeholder="Rechercher une niche…"
+                            value={nicheSearchQuery}
+                            onChange={e => setNicheSearchQuery(e.target.value)}
+                            className="h-7 text-xs"
+                          />
+                        </div>
+                        <div className="p-1">
+                          {filteredNiches.map(n => (
+                            <button
+                              type="button"
+                              key={n}
+                              onClick={() => toggleNiche(n)}
+                              className="w-full flex items-center gap-2.5 px-2.5 py-1.5 text-xs hover:bg-muted/50 rounded transition-colors text-left"
+                            >
+                              <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${selectedNiches.includes(n) ? 'bg-primary border-primary' : 'border-input'}`}>
+                                {selectedNiches.includes(n) && <Check className="w-2.5 h-2.5 text-primary-foreground" />}
+                              </div>
+                              <span className={selectedNiches.includes(n) ? 'font-semibold text-foreground' : 'text-muted-foreground'}>{n}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
 
-                  {/* Select City */}
+                  {/* Selected niche tags */}
+                  {selectedNiches.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 pt-0.5">
+                      {selectedNiches.map(n => (
+                        <span key={n} className="inline-flex items-center gap-1 bg-primary/10 text-primary text-[10px] font-semibold px-2 py-0.5 rounded-full">
+                          {n}
+                          <button type="button" onClick={() => toggleNiche(n)} className="hover:text-primary/70">
+                            <X className="w-2.5 h-2.5" />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* City + free query */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Ville cible</label>
                     <select
                       value={selectedCity}
-                      onChange={(e) => {
-                        setSelectedCity(e.target.value);
-                        setCustomQuery('');
-                      }}
+                      onChange={e => { setSelectedCity(e.target.value); setCustomQuery(''); }}
                       disabled={scraping || loadingPrefs}
-                      className="w-full text-xs rounded-md border border-input bg-card h-8.5 px-3 focus:outline-none focus:ring-1 focus:ring-primary"
+                      className="w-full text-xs rounded-md border border-input bg-card h-9 px-3 focus:outline-none focus:ring-1 focus:ring-primary"
                     >
-                      {cities.length > 0 ? (
-                        cities.map(c => <option key={c} value={c}>{c}</option>)
-                      ) : (
-                        <option value="">Chargement...</option>
-                      )}
+                      <option value="Montréal">Montréal</option>
+                      {cities.filter(c => c !== 'Montréal').map(c => <option key={c} value={c}>{c}</option>)}
                     </select>
                   </div>
-                </div>
-
-                <div className="h-px bg-border/50 my-2" />
-
-                {/* Free query override */}
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center justify-between">
-                    <span>Recherche libre (écrase les sélecteurs)</span>
-                    {customQuery && <span className="text-[9px] text-primary lowercase italic">Actif</span>}
-                  </label>
-                  <Input
-                    placeholder="Ex: Clinique dentaire Lyon, Boulangerie Villeurbanne..."
-                    value={customQuery}
-                    onChange={(e) => setCustomQuery(e.target.value)}
-                    disabled={scraping}
-                    className="text-xs h-8.5 bg-card"
-                  />
-                </div>
-
-                <div className="h-px bg-border/50 my-2" />
-
-                {/* Sources list selection checklist */}
-                <div className="space-y-2">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Sources & Annuaires à scraper</label>
-                  <div className="flex flex-wrap gap-5 py-1">
-                    <label className="flex items-center gap-2 text-xs font-semibold text-foreground cursor-pointer">
-                      <Checkbox
-                        checked={sources.includes('google')}
-                        onCheckedChange={(checked) => handleToggleSource('google', !!checked)}
-                        disabled={scraping}
-                      />
-                      <span>Google Maps / OSM</span>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex justify-between">
+                      <span>Recherche libre</span>
+                      {customQuery && <span className="text-primary normal-case italic text-[9px]">Actif</span>}
                     </label>
-                    <label className="flex items-center gap-2 text-xs font-semibold text-foreground cursor-pointer">
-                      <Checkbox
-                        checked={sources.includes('yelp')}
-                        onCheckedChange={(checked) => handleToggleSource('yelp', !!checked)}
-                        disabled={scraping}
-                      />
-                      <span>Yelp</span>
-                    </label>
-                    <label className="flex items-center gap-2 text-xs font-semibold text-foreground cursor-pointer">
-                      <Checkbox
-                        checked={sources.includes('pagesjaunes')}
-                        onCheckedChange={(checked) => handleToggleSource('pagesjaunes', !!checked)}
-                        disabled={scraping}
-                      />
-                      <span>PagesJaunes</span>
-                    </label>
-                    <label className="flex items-center gap-2 text-xs font-semibold text-foreground cursor-pointer">
-                      <Checkbox
-                        checked={sources.includes('apify')}
-                        onCheckedChange={(checked) => handleToggleSource('apify', !!checked)}
-                        disabled={scraping}
-                      />
-                      <span className="flex items-center gap-1">
-                        Apify
-                        <span className="text-[9px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded">+riche</span>
-                      </span>
-                    </label>
+                    <Input
+                      placeholder="Ex: Clinique dentaire Laval..."
+                      value={customQuery}
+                      onChange={e => setCustomQuery(e.target.value)}
+                      disabled={scraping}
+                      className="text-xs h-9 bg-card"
+                    />
                   </div>
                 </div>
 
-                <div className="h-px bg-border/50 my-2" />
+                <div className="h-px bg-border/50" />
+
+                {/* Sources */}
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Sources</label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {sources.map(src => {
+                      const available = src.available === true;
+                      const checking = src.available === 'checking';
+                      return (
+                        <label
+                          key={src.id}
+                          className={`flex items-start gap-2.5 p-2.5 rounded-lg border text-xs transition-colors ${
+                            available
+                              ? 'border-border bg-card cursor-pointer hover:bg-muted/30'
+                              : 'border-border/40 bg-muted/20 cursor-not-allowed opacity-60'
+                          }`}
+                        >
+                          <Checkbox
+                            checked={selectedSources.includes(src.id)}
+                            onCheckedChange={c => toggleSource(src.id, !!c)}
+                            disabled={scraping || !available}
+                            className="mt-0.5 shrink-0"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-1.5 font-semibold text-foreground">
+                              {src.label}
+                              {available && <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0" />}
+                              {!available && !checking && <WifiOff className="w-3 h-3 text-rose-400 shrink-0" />}
+                              {checking && <Loader2 className="w-3 h-3 text-muted-foreground animate-spin shrink-0" />}
+                            </div>
+                            <p className="text-[10px] text-muted-foreground leading-snug mt-0.5">
+                              {src.description}
+                            </p>
+                            {src.needsKey && !available && !checking && (
+                              <a href="/settings" className="text-[9px] text-primary underline mt-0.5 inline-block">
+                                Configurer dans Paramètres →
+                              </a>
+                            )}
+                          </div>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="h-px bg-border/50" />
 
                 {/* Filters */}
                 <div className="space-y-3">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Filtres de résultats</label>
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Filtres & Limites</label>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* Note min */}
                     <div className="space-y-1.5">
-                      <label className="text-[10px] font-medium text-muted-foreground flex items-center justify-between">
+                      <label className="text-[10px] font-medium text-muted-foreground flex justify-between">
                         <span>Note minimum</span>
                         <span className="font-bold text-foreground">{minRating > 0 ? `${minRating}★` : 'Aucune'}</span>
                       </label>
                       <input
-                        type="range"
-                        min={0}
-                        max={5}
-                        step={0.5}
-                        value={minRating}
-                        onChange={(e) => setMinRating(parseFloat(e.target.value))}
+                        type="range" min={0} max={5} step={0.5} value={minRating}
+                        onChange={e => setMinRating(parseFloat(e.target.value))}
                         disabled={scraping}
                         className="w-full accent-primary h-1.5 cursor-pointer"
                       />
-                      <div className="flex justify-between text-[9px] text-muted-foreground">
-                        <span>0</span><span>2.5</span><span>5</span>
-                      </div>
+                      <div className="flex justify-between text-[9px] text-muted-foreground"><span>0</span><span>2.5</span><span>5</span></div>
                     </div>
-                    <div className="flex items-start gap-2.5 pt-1">
+
+                    {/* Max results */}
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-medium text-muted-foreground flex justify-between">
+                        <span>Limite de résultats</span>
+                        <span className="font-bold text-foreground">{maxResults}</span>
+                      </label>
+                      <input
+                        type="range" min={5} max={100} step={5} value={maxResults}
+                        onChange={e => setMaxResults(parseInt(e.target.value))}
+                        disabled={scraping}
+                        className="w-full accent-primary h-1.5 cursor-pointer"
+                      />
+                      <div className="flex justify-between text-[9px] text-muted-foreground"><span>5</span><span>50</span><span>100</span></div>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap gap-5">
+                    <label className="flex items-center gap-2 text-xs font-medium text-foreground cursor-pointer">
                       <Checkbox
-                        id="excludeExisting"
                         checked={excludeExisting}
-                        onCheckedChange={(c) => setExcludeExisting(!!c)}
+                        onCheckedChange={c => setExcludeExisting(!!c)}
                         disabled={scraping}
                       />
-                      <label htmlFor="excludeExisting" className="text-xs font-medium text-foreground cursor-pointer leading-snug">
-                        Exclure les leads déjà dans le CRM
-                        <span className="block text-[10px] text-muted-foreground font-normal">Comparaison par URL Google Maps</span>
-                      </label>
-                    </div>
+                      <span>Exclure les leads déjà en CRM</span>
+                    </label>
+                    <label className="flex items-center gap-2 text-xs font-medium text-foreground cursor-pointer">
+                      <Checkbox
+                        checked={onlyNoWebsite}
+                        onCheckedChange={c => setOnlyNoWebsite(!!c)}
+                        disabled={scraping}
+                      />
+                      <span>Sans site web uniquement <span className="text-muted-foreground font-normal">(opportunité max)</span></span>
+                    </label>
                   </div>
                 </div>
 
-                <div className="flex justify-end pt-1">
-                  <Button 
-                    type="submit" 
-                    disabled={scraping || loadingPrefs}
-                    className="h-9 text-xs font-bold gap-1.5 bg-primary text-primary-foreground hover:bg-primary/95"
+                <div className="flex justify-end">
+                  <Button
+                    type="submit"
+                    disabled={scraping || loadingPrefs || (selectedSources.length === 0)}
+                    className="h-9 text-xs font-bold gap-1.5"
                   >
                     {scraping ? (
-                      <>
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                        <span>Recherche en cours...</span>
-                      </>
+                      <><Loader2 className="h-3.5 w-3.5 animate-spin" />Recherche…</>
                     ) : (
-                      <>
-                        <Sparkles className="h-3.5 w-3.5" />
-                        <span>Lancer la recherche</span>
-                      </>
+                      <><Sparkles className="h-3.5 w-3.5" />Lancer la recherche</>
                     )}
                   </Button>
                 </div>
@@ -510,177 +602,129 @@ export function ProspectingRoot() {
             </CardContent>
           </Card>
 
-          {/* Quick Info Explanation Card */}
+          {/* Info card */}
           <Card className="border border-border bg-card">
             <CardHeader className="pb-3 border-b border-border/50">
               <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-                <AlertCircle className="h-4 w-4 text-primary" />
-                <span>Comment ça marche ?</span>
+                <Settings2 className="h-4 w-4 text-primary" />
+                Légende & Opportunités
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-5 text-xs text-muted-foreground space-y-3 leading-relaxed">
-              <p>
-                1. <strong>Sélectionnez vos filtres</strong> ou tapez une recherche personnalisée.
-              </p>
-              <p>
-                2. Minerva va interroger l&apos;API de scraping Google Maps pour extraire les profils d&apos;établissements physiques.
-              </p>
-              <p>
-                3. L&apos;outil analyse les faiblesses des fiches (<strong>mauvaise note</strong>, <strong>pas de site responsive</strong>) pour qualifier le prospect.
-              </p>
-              <p>
-                4. Cochez les opportunités intéressantes pour les insérer directement dans votre pipeline CRM local.
-              </p>
+            <CardContent className="p-5 space-y-4 text-xs text-muted-foreground leading-relaxed">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-red-500 shrink-0" /> Sans site web — offre directe</div>
+                <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-amber-400 shrink-0" /> Site daté / note &lt; 4★ — refonte</div>
+                <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-emerald-500 shrink-0" /> Profil correct — SEO local</div>
+              </div>
+              <div className="h-px bg-border/60" />
+              <p><strong>Résultats de carte :</strong> cliquez sur un marqueur pour voir l'adresse et le téléphone directement.</p>
+              <p><strong>Filtre «&nbsp;Sans site web&nbsp;»</strong> : n'affiche que les entreprises sans URL détectée — les meilleures opportunités d'approche directe.</p>
+              <p><strong>Apify</strong> retourne des données plus riches (photos, horaires, avis). Configurez votre clé dans <a href="/settings" className="text-primary underline">Paramètres</a>.</p>
             </CardContent>
           </Card>
         </div>
 
-        {/* Loading progress visualization */}
+        {/* Progress */}
         {scraping && (
-          <Card className="border border-primary/20 bg-primary/5 shadow-xs animate-pulse">
+          <Card className="border border-primary/20 bg-primary/5 animate-pulse">
             <CardContent className="p-6 flex flex-col gap-4">
               <div className="flex items-center gap-3">
                 <Loader2 className="h-5 w-5 text-primary animate-spin" />
-                <span className="text-xs font-semibold text-foreground">
-                  {scrapeSteps[scrapeStep]}
-                </span>
+                <span className="text-xs font-semibold text-foreground">{scrapeSteps[scrapeStep]}</span>
               </div>
               <div className="w-full bg-border h-2 rounded-full overflow-hidden">
-                <div 
-                  className="bg-primary h-full transition-all duration-500 ease-out rounded-full" 
-                  style={{ ['--progress' as string]: `${scrapeProgress}%`, width: 'var(--progress)' } as React.CSSProperties}
-                />
+                <div className="bg-primary h-full transition-all duration-500 ease-out rounded-full" style={{ width: `${scrapeProgress}%` }} />
               </div>
-              <div className="flex items-center justify-between text-[10px] text-muted-foreground font-mono">
-                <span>Phase {scrapeStep + 1} sur {scrapeSteps.length}</span>
-                <span>{scrapeProgress}% complété</span>
+              <div className="flex justify-between text-[10px] text-muted-foreground font-mono">
+                <span>Phase {scrapeStep + 1}/{scrapeSteps.length}</span>
+                <span>{scrapeProgress}%</span>
               </div>
             </CardContent>
           </Card>
         )}
 
-        {/* Scraped Leads list results */}
+        {/* Results table */}
         {!scraping && scrapedLeads.length > 0 && (
           <Card className="border border-border bg-card">
             <CardHeader className="pb-3 border-b border-border/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-5">
               <div>
                 <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
                   <Database className="h-4 w-4 text-primary" />
-                  <span>Résultats du scraping ({scrapedLeads.length} trouvés)</span>
+                  Résultats ({scrapedLeads.length} prospects)
                 </CardTitle>
-                <p className="text-[10px] text-muted-foreground mt-0.5">
-                  Sélectionnez les fiches à importer. Les leads avec de fortes opportunités de refonte ou de référencement local sont marqués d&apos;un indicateur.
-                </p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">Cochez les opportunités à importer dans votre pipeline.</p>
               </div>
-              
               <div className="flex items-center gap-3">
-                <span className="text-[10px] font-medium text-muted-foreground font-mono">
-                  {selectedIds.length} sélectionné(s)
-                </span>
-                <Button 
-                  onClick={handleImportLeads} 
+                <span className="text-[10px] font-mono text-muted-foreground">{selectedIds.length} sélectionné(s)</span>
+                <Button
+                  onClick={handleImportLeads}
                   disabled={importing || selectedIds.length === 0}
                   size="sm"
                   className="h-8 text-xs font-bold gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white"
                 >
-                  {importing ? (
-                    <>
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      <span>Importation...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Plus className="h-3.5 w-3.5" />
-                      <span>Importer dans le CRM</span>
-                    </>
-                  )}
+                  {importing ? <><Loader2 className="h-3.5 w-3.5 animate-spin" />Importation…</> : <><Plus className="h-3.5 w-3.5" />Importer dans le CRM</>}
                 </Button>
               </div>
             </CardHeader>
-            
             <CardContent className="p-0 overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow className="hover:bg-transparent">
-                    <TableHead className="w-[40px] text-center pl-4">
-                      <Checkbox 
-                        checked={selectedIds.length === scrapedLeads.length}
-                        onCheckedChange={handleToggleSelectAll}
+                    <TableHead className="w-10 text-center pl-4">
+                      <Checkbox
+                        checked={selectedIds.length === scrapedLeads.length && scrapedLeads.length > 0}
+                        onCheckedChange={c => setSelectedIds(c ? scrapedLeads.map(l => l.id) : [])}
                       />
                     </TableHead>
                     <TableHead className="text-[10px] font-bold uppercase tracking-wider">Établissement</TableHead>
                     <TableHead className="text-[10px] font-bold uppercase tracking-wider">Secteur / Ville</TableHead>
-                    <TableHead className="text-[10px] font-bold uppercase tracking-wider">Avis Google Maps</TableHead>
+                    <TableHead className="text-[10px] font-bold uppercase tracking-wider">Note</TableHead>
                     <TableHead className="text-[10px] font-bold uppercase tracking-wider">Coordonnées</TableHead>
-                    <TableHead className="text-[10px] font-bold uppercase tracking-wider pr-4">Opportunité de vente</TableHead>
+                    <TableHead className="text-[10px] font-bold uppercase tracking-wider pr-4">Opportunité</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {scrapedLeads.map((item) => (
+                  {scrapedLeads.map(item => (
                     <TableRow key={item.id} className="hover:bg-muted/30">
                       <TableCell className="text-center pl-4">
-                        <Checkbox 
+                        <Checkbox
                           checked={selectedIds.includes(item.id)}
-                          onCheckedChange={(checked) => handleToggleSelectRow(item.id, !!checked)}
+                          onCheckedChange={c => setSelectedIds(prev => c ? [...prev, item.id] : prev.filter(id => id !== item.id))}
                         />
                       </TableCell>
                       <TableCell>
-                        <div className="font-semibold text-xs text-foreground truncate max-w-[200px]" title={item.businessName}>
-                          {item.businessName}
-                        </div>
-                        <a 
-                          href={item.mapsUrl} 
-                          target="_blank" 
-                          rel="noopener noreferrer" 
-                          className="text-[9px] text-primary hover:underline"
-                        >
-                          Fiche Google Maps ↗
-                        </a>
+                        <div className="font-semibold text-xs text-foreground truncate max-w-[180px]">{item.businessName}</div>
+                        {item.mapsUrl && (
+                          <a href={item.mapsUrl} target="_blank" rel="noopener noreferrer" className="text-[9px] text-primary hover:underline">
+                            Fiche Maps ↗
+                          </a>
+                        )}
                       </TableCell>
                       <TableCell className="text-xs">
                         <div className="font-medium text-foreground">{item.niche}</div>
                         <div className="text-[9px] text-muted-foreground flex items-center gap-0.5">
-                          <MapPin className="h-2.5 w-2.5" />
-                          {item.city}
+                          <MapPin className="h-2.5 w-2.5" />{item.city}
                         </div>
                       </TableCell>
                       <TableCell className="text-xs">
                         <div className="flex items-center gap-1">
                           <Star className="h-3.5 w-3.5 text-amber-500 fill-amber-500" />
                           <span className="font-semibold">{item.rating}</span>
-                          <span className="text-[10px] text-muted-foreground">({item.reviewsCount} avis)</span>
+                          <span className="text-[10px] text-muted-foreground">({item.reviewsCount})</span>
                         </div>
                       </TableCell>
                       <TableCell className="text-xs space-y-0.5">
-                        {item.phone ? (
-                          <div className="text-[10px] text-foreground flex items-center gap-1">
-                            <Phone className="h-3 w-3 text-muted-foreground" />
-                            <span>{item.phone}</span>
-                          </div>
-                        ) : (
-                          <div className="text-[9px] text-muted-foreground italic">Pas de téléphone</div>
-                        )}
-                        {item.website ? (
-                          <a 
-                            href={item.website} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="text-[10px] text-primary hover:underline flex items-center gap-1 max-w-[150px] truncate"
-                          >
-                            <Globe className="h-3 w-3 shrink-0" />
-                            <span>{item.website.replace(/https?:\/\/(www\.)?/, '')}</span>
-                          </a>
-                        ) : (
-                          <div className="text-[9px] text-rose-500/80 italic font-semibold">Aucun site internet</div>
-                        )}
+                        {item.phone
+                          ? <div className="flex items-center gap-1 text-[10px]"><Phone className="h-3 w-3 text-muted-foreground" />{item.phone}</div>
+                          : <div className="text-[9px] text-muted-foreground italic">Pas de tél.</div>
+                        }
+                        {item.website
+                          ? <a href={item.website} target="_blank" rel="noopener noreferrer" className="text-[10px] text-primary hover:underline flex items-center gap-1 max-w-[140px] truncate"><Globe className="h-3 w-3 shrink-0" />{item.website.replace(/https?:\/\/(www\.)?/, '')}</a>
+                          : <div className="text-[9px] text-rose-500 font-semibold">Aucun site</div>
+                        }
                       </TableCell>
                       <TableCell className="pr-4">
-                        <div className="space-y-1">
-                          <div>{getOpportunityBadge(item.rating, item.website)}</div>
-                          <div className="text-[10px] text-muted-foreground leading-snug line-clamp-2 max-w-[220px]" title={item.seoAudit}>
-                            {item.seoAudit}
-                          </div>
-                        </div>
+                        {getOpportunityBadge(item.rating, item.website)}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -690,36 +734,52 @@ export function ProspectingRoot() {
           </Card>
         )}
 
-        {/* Quebec map of scraped results */}
+        {/* Map */}
         {!scraping && (
           <Card className="border border-border bg-card">
             <CardHeader className="pb-3 border-b border-border/50">
               <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
                 <MapPin className="h-4 w-4 text-primary" />
-                <span>Carte des résultats</span>
+                Carte des résultats
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
               {scrapedLeads.length > 0 ? (
-                <div className="rounded-b-2xl overflow-hidden" style={{ height: 400 }}>
-                  <Map center={[-72.5, 46.8]} zoom={5.5} theme="light">
-                    {scrapedLeads.map((item) => (
+                <div className="rounded-b-2xl overflow-hidden" style={{ height: 420 }}>
+                  <Map
+                    center={[-73.5674, 45.5019]}
+                    zoom={scrapedLeads.some(l => l.latitude) ? 11 : 10}
+                    theme="light"
+                  >
+                    {scrapedLeads.map(item => (
                       <MapMarker
                         key={item.id}
-                        longitude={item.longitude ?? -73.5674}
-                        latitude={item.latitude ?? 45.5019}
+                        longitude={item.longitude ?? -73.5674 + (Math.random() - 0.5) * 0.15}
+                        latitude={item.latitude ?? 45.5019 + (Math.random() - 0.5) * 0.1}
                       >
                         <MarkerContent>
                           <div
-                            className="h-3.5 w-3.5 rounded-full border-2 border-white shadow-lg"
-                            style={{ backgroundColor: getLeadMarkerColor(item) }}
-                          />
+                            className="flex items-center justify-center rounded-full border-2 border-white shadow-md text-white font-bold"
+                            style={{
+                              width: 22, height: 22,
+                              backgroundColor: getLeadMarkerColor(item),
+                              fontSize: 9,
+                            }}
+                          >
+                            {!item.website ? '!' : item.rating < 4 ? '~' : '✓'}
+                          </div>
                         </MarkerContent>
                         <MarkerPopup>
-                          <div className="text-xs space-y-0.5 p-1">
-                            <p className="font-bold text-foreground">{item.businessName}</p>
-                            <p className="text-muted-foreground">{item.niche} · {item.city}</p>
-                            <p className="text-muted-foreground">{item.rating}★ ({item.reviewsCount} avis)</p>
+                          <div className="text-xs p-1.5 space-y-1 min-w-[160px]">
+                            <p className="font-bold text-foreground leading-snug">{item.businessName}</p>
+                            <p className="text-muted-foreground text-[10px]">{item.niche}</p>
+                            {item.address && <p className="text-muted-foreground text-[10px] flex items-center gap-1"><MapPin className="w-2.5 h-2.5 shrink-0" />{item.address}</p>}
+                            {item.phone && <p className="text-muted-foreground text-[10px] flex items-center gap-1"><Phone className="w-2.5 h-2.5 shrink-0" />{item.phone}</p>}
+                            <div className="flex items-center gap-1 text-[10px]">
+                              <Star className="w-2.5 h-2.5 text-amber-500 fill-amber-500" />
+                              <span>{item.rating}★ ({item.reviewsCount} avis)</span>
+                            </div>
+                            {!item.website && <span className="text-rose-500 text-[9px] font-bold">Aucun site web</span>}
                           </div>
                         </MarkerPopup>
                       </MapMarker>
@@ -727,25 +787,23 @@ export function ProspectingRoot() {
                   </Map>
                 </div>
               ) : (
-                <div className="h-[200px] flex items-center justify-center text-xs text-muted-foreground p-6 text-center">
-                  Lance un scrape pour voir les résultats sur la carte
+                <div className="h-48 flex items-center justify-center text-xs text-muted-foreground">
+                  Lance une recherche pour voir les résultats sur la carte
                 </div>
               )}
             </CardContent>
           </Card>
         )}
 
-        {/* Import Success notification */}
+        {/* Import success */}
         {importCount !== null && (
-          <Card className="border-emerald-200 bg-emerald-50 dark:bg-emerald-950/20 dark:border-emerald-900/30 p-4 rounded-lg flex items-center gap-3 animate-in fade-in duration-300">
-            <div className="h-8 w-8 rounded-full bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+          <Card className="border-emerald-200 bg-emerald-50 dark:bg-emerald-950/20 dark:border-emerald-900/30 p-4 flex items-center gap-3 animate-in fade-in">
+            <div className="h-8 w-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">
               <Check className="h-4 w-4" />
             </div>
             <div>
-              <h4 className="text-xs font-bold text-emerald-800 dark:text-emerald-300">Prospects importés avec succès !</h4>
-              <p className="text-[10px] text-emerald-700 dark:text-emerald-400 mt-0.5">
-                {importCount} nouveaux prospects locaux ont été ajoutés à votre portefeuille de leads dans le statut <strong>Nouveau (New)</strong>.
-              </p>
+              <h4 className="text-xs font-bold text-emerald-800 dark:text-emerald-300">{importCount} prospects importés !</h4>
+              <p className="text-[10px] text-emerald-700 dark:text-emerald-400 mt-0.5">Ajoutés en statut <strong>Nouveau</strong> dans votre pipeline.</p>
             </div>
           </Card>
         )}
