@@ -164,6 +164,20 @@ CREATE TABLE IF NOT EXISTS notifications (
 );
 CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, is_read);
 
+-- Services / offer catalog
+CREATE TABLE IF NOT EXISTS services (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
+  workspace_id uuid REFERENCES workspaces(id) ON DELETE CASCADE,
+  name text NOT NULL,
+  price numeric,
+  type text DEFAULT 'digital',
+  description text,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_services_workspace ON services(workspace_id);
+
 -- Team invites
 CREATE TABLE IF NOT EXISTS team_invites (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),

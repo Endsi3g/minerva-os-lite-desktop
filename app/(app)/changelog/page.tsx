@@ -18,6 +18,20 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v2.22.0',
+      date: '2026-06-17',
+      titleKey: 'changelog.v2_22_0_title',
+      descKey: 'changelog.v2_22_0_desc',
+      highlights: [
+        'Agents: cliquer sur GPT-4o affiche une modal "Clé API requise" expliquant qu\'une clé OpenRouter est nécessaire, avec bouton "Configurer la clé" → Paramètres et "Sélectionner quand même".',
+        'Bibliothèque: insertion d\'images dans l\'éditeur TipTap — bouton dans la toolbar, upload depuis le disque, stocké en base64 dans le document.',
+        'Services: bannière d\'erreur visible lorsque l\'insert/update échoue (ex. table manquante) avec message explicatif et référence à DEPLOYMENT.md.',
+        'Invitations équipe: quand l\'utilisateur a déjà un compte Supabase, on retrouve son user_id via l\'API admin et le membre est créé avec status "active" immédiatement.',
+        'API team/members: corrigé l\'ordre par "created_at" (était "invited_at" qui n\'existe pas, causant des erreurs silencieuses).',
+        'DEPLOYMENT.md: ajout du SQL de création de la table "services" dans le script de setup Supabase.',
+      ],
+    },
+    {
       version: 'v2.21.0',
       date: '2026-06-17',
       titleKey: 'changelog.v2_21_0_title',

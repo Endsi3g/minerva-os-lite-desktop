@@ -162,6 +162,9 @@ export default function ServicesRoot() {
   // Delete confirm
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
+  // Error banner
+  const [crudError, setCrudError] = useState<string | null>(null);
+
   useEffect(() => {
     if (!activeWorkspace) return;
     fetchServices();
@@ -230,13 +233,20 @@ export default function ServicesRoot() {
         .select()
         .single();
 
-      if (!error && data) {
+      if (error) {
+        const msg = (error as { code?: string; message?: string }).code === '42P01'
+          ? 'Table "services" introuvable dans Supabase. Exécutez le SQL de configuration (voir DEPLOYMENT.md).'
+          : (error as { message?: string }).message || 'Erreur lors de l\'enregistrement.';
+        setCrudError(msg);
+      } else if (data) {
         setServices((prev) => [data as Service, ...prev]);
         setAddForm(EMPTY_FORM);
         setShowAddForm(false);
+        setCrudError(null);
       }
     } catch (e) {
       console.error('Error adding service:', e);
+      setCrudError('Erreur inattendue. Vérifiez la console.');
     }
     setAddSaving(false);
   };
@@ -269,9 +279,12 @@ export default function ServicesRoot() {
         .select()
         .single();
 
-      if (!error && data) {
+      if (error) {
+        setCrudError((error as { message?: string }).message || 'Erreur lors de la mise à jour.');
+      } else if (data) {
         setServices((prev) => prev.map((s) => (s.id === serviceId ? (data as Service) : s)));
         setEditingId(null);
+        setCrudError(null);
       }
     } catch (e) {
       console.error('Error updating service:', e);
@@ -314,6 +327,17 @@ export default function ServicesRoot() {
             Ajouter un service
           </Button>
         </div>
+
+        {/* Error banner */}
+        {crudError && (
+          <div className="flex items-start gap-2.5 p-3 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700">
+            <X className="w-4 h-4 shrink-0 mt-0.5" />
+            <span className="flex-1">{crudError}</span>
+            <button onClick={() => setCrudError(null)} className="text-red-400 hover:text-red-600 transition-colors">
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
 
         {/* Add form */}
         {showAddForm && (

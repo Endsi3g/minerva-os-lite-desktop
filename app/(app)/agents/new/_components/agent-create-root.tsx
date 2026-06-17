@@ -16,10 +16,10 @@ import { createClient } from '@/lib/supabase/client';
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const MODELS = [
-  { id: 'claude-haiku-4-5-20251001', name: 'Claude Haiku', desc: 'Rapide et économique', badge: 'Rapide', badgeColor: 'blue' },
-  { id: 'claude-sonnet-4-6', name: 'Claude Sonnet', desc: 'Équilibré, polyvalent', badge: 'Recommandé', badgeColor: 'green' },
-  { id: 'claude-opus-4-8', name: 'Claude Opus', desc: 'Raisonnement avancé', badge: 'Puissant', badgeColor: 'gray' },
-  { id: 'gpt-4o', name: 'GPT-4o', desc: 'Via OpenRouter', badge: '', badgeColor: '' },
+  { id: 'claude-haiku-4-5-20251001', name: 'Claude Haiku', desc: 'Rapide et économique', badge: 'Rapide', badgeColor: 'blue', requiresKey: false },
+  { id: 'claude-sonnet-4-6', name: 'Claude Sonnet', desc: 'Équilibré, polyvalent', badge: 'Recommandé', badgeColor: 'green', requiresKey: false },
+  { id: 'claude-opus-4-8', name: 'Claude Opus', desc: 'Raisonnement avancé', badge: 'Puissant', badgeColor: 'gray', requiresKey: false },
+  { id: 'gpt-4o', name: 'GPT-4o', desc: 'Via OpenRouter', badge: 'Clé requise', badgeColor: 'orange', requiresKey: true },
 ] as const;
 
 const ACTIONS = [
@@ -91,6 +91,10 @@ export function AgentCreateRoot() {
   const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const [ownerName, setOwnerName] = useState('Moi');
+
+  // Model key config modal
+  const [showKeyModal, setShowKeyModal] = useState(false);
+  const [pendingModel, setPendingModel] = useState<string | null>(null);
 
   // Add field modal state
   const [addFieldModalOpen, setAddFieldModalOpen] = useState(false);
@@ -597,17 +601,26 @@ export function AgentCreateRoot() {
               <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Modèle IA</label>
               <div className="space-y-2">
                 {MODELS.map((m) => (
-                  <label key={m.id} className={`flex items-center gap-3 px-3.5 py-3 border rounded-xl bg-white cursor-pointer transition-colors ${
-                    model === m.id ? 'border-[#059669] bg-[#059669]/5' : 'border-[#e5e5e0] hover:border-[#059669]/30'
-                  }`}>
-                    <input
-                      type="radio"
-                      name="agent-model"
-                      value={m.id}
-                      checked={model === m.id}
-                      onChange={() => setModel(m.id)}
-                      className="accent-[#059669] w-3.5 h-3.5 shrink-0"
-                    />
+                  <button
+                    key={m.id}
+                    type="button"
+                    onClick={() => {
+                      if (m.requiresKey) {
+                        setPendingModel(m.id);
+                        setShowKeyModal(true);
+                      } else {
+                        setModel(m.id);
+                      }
+                    }}
+                    className={`w-full flex items-center gap-3 px-3.5 py-3 border rounded-xl bg-white cursor-pointer transition-colors text-left ${
+                      model === m.id ? 'border-[#059669] bg-[#059669]/5' : 'border-[#e5e5e0] hover:border-[#059669]/30'
+                    }`}
+                  >
+                    <div className={`w-3.5 h-3.5 rounded-full border-2 shrink-0 flex items-center justify-center ${
+                      model === m.id ? 'border-[#059669]' : 'border-[#d0cfc9]'
+                    }`}>
+                      {model === m.id && <div className="w-1.5 h-1.5 rounded-full bg-[#059669]" />}
+                    </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <span className={`text-xs font-bold ${model === m.id ? 'text-[#059669]' : 'text-[#26251e]'}`}>{m.name}</span>
@@ -615,13 +628,14 @@ export function AgentCreateRoot() {
                           <span className={`text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded border ${
                             m.badgeColor === 'green' ? 'bg-[#059669]/10 text-[#059669] border-[#059669]/20' :
                             m.badgeColor === 'blue' ? 'bg-blue-50 text-blue-600 border-blue-200' :
+                            m.badgeColor === 'orange' ? 'bg-orange-50 text-orange-600 border-orange-200' :
                             'bg-[#f7f7f4] text-[#7a7a76] border-[#e5e5e0]'
                           }`}>{m.badge}</span>
                         )}
                       </div>
                       <p className="text-[10px] text-[#7a7a76]">{m.desc}</p>
                     </div>
-                  </label>
+                  </button>
                 ))}
               </div>
             </div>
@@ -866,6 +880,47 @@ export function AgentCreateRoot() {
         </div>
 
       </div>
+
+      {/* ── Model Key Config Modal ── */}
+      {showKeyModal && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 backdrop-blur-xs">
+          <div className="w-full max-w-sm bg-white rounded-2xl shadow-2xl border border-[#e5e5e0] p-6 space-y-4 animate-in fade-in zoom-in-95 duration-150 mx-4">
+            <div className="flex items-start gap-3">
+              <div className="w-9 h-9 rounded-xl bg-orange-50 border border-orange-200 flex items-center justify-center shrink-0 mt-0.5">
+                <Star className="w-4.5 h-4.5 text-orange-500" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-[#26251e]">Clé API requise</h3>
+                <p className="text-xs text-[#7a7a76] mt-1 leading-relaxed">
+                  GPT-4o s&apos;exécute via <strong>OpenRouter</strong>. Configurez votre clé OpenRouter dans
+                  {' '}<strong>Paramètres → Clés API</strong> pour utiliser ce modèle.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2.5 pt-1">
+              <button
+                onClick={() => {
+                  setShowKeyModal(false);
+                  router.push('/settings');
+                }}
+                className="flex-1 py-2 text-xs font-bold bg-[#059669] text-white rounded-lg hover:bg-[#047857] transition-colors"
+              >
+                Configurer la clé
+              </button>
+              <button
+                onClick={() => {
+                  if (pendingModel) setModel(pendingModel);
+                  setShowKeyModal(false);
+                  setPendingModel(null);
+                }}
+                className="flex-1 py-2 text-xs font-semibold text-[#7a7a76] border border-[#e5e5e0] rounded-lg hover:bg-[#f7f7f4] transition-colors"
+              >
+                Sélectionner quand même
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Add Input Field Modal ── */}
       {addFieldModalOpen && (

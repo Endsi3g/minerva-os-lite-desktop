@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
@@ -9,6 +9,7 @@ import TiptapLink from '@tiptap/extension-link';
 import TextAlign from '@tiptap/extension-text-align';
 import Placeholder from '@tiptap/extension-placeholder';
 import CharacterCount from '@tiptap/extension-character-count';
+import Image from '@tiptap/extension-image';
 import {
   ArrowLeft,
   Loader2,
@@ -32,6 +33,7 @@ import {
   Share2,
   Copy,
   X,
+  ImageIcon,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -89,6 +91,7 @@ export default function LibraryEditorClient({ id }: { id: string }) {
   const [notFound, setNotFound] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
+  const imageInputRef = useRef<HTMLInputElement>(null);
 
   const shareUrl = typeof window !== 'undefined' ? `${window.location.origin}/library/${id}` : `/library/${id}`;
 
@@ -107,11 +110,12 @@ export default function LibraryEditorClient({ id }: { id: string }) {
       TextAlign.configure({ types: ['heading', 'paragraph'] }),
       Placeholder.configure({ placeholder: 'Commencez à écrire...' }),
       CharacterCount,
+      Image.configure({ inline: false, allowBase64: true }),
     ],
     content: '',
     editorProps: {
       attributes: {
-        class: 'prose prose-sm max-w-none focus:outline-none min-h-[400px] text-[#26251e] leading-relaxed',
+        class: 'prose prose-sm max-w-none focus:outline-none min-h-[400px] text-[#26251e] leading-relaxed [&_img]:rounded-lg [&_img]:max-w-full [&_img]:my-4',
       },
     },
   });
@@ -212,6 +216,18 @@ ${html}
     win.focus();
     setTimeout(() => { win.print(); win.close(); }, 400);
   };
+
+  const handleImageUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !editor) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const src = ev.target?.result as string;
+      editor.chain().focus().setImage({ src }).run();
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  }, [editor]);
 
   const handleDownloadFile = () => {
     if (!doc?.content) return;
@@ -371,6 +387,11 @@ ${html}
               <ToolbarButton onClick={() => editor.chain().focus().setTextAlign('right').run()} active={editor.isActive({ textAlign: 'right' })} title="Aligner à droite">
                 <AlignRight className="w-3.5 h-3.5" />
               </ToolbarButton>
+              <div className="w-px h-5 bg-[#e5e5e0] mx-1" />
+              <ToolbarButton onClick={() => imageInputRef.current?.click()} title="Insérer une image">
+                <ImageIcon className="w-3.5 h-3.5" />
+              </ToolbarButton>
+              <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
               <div className="flex-1" />
               <span className="text-[10px] text-[#7a7a76] font-mono pr-2 shrink-0">
                 {editor.storage.characterCount?.characters?.() ?? 0} caractères

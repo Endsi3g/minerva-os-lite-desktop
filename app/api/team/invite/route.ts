@@ -84,16 +84,18 @@ export async function POST(request: NextRequest) {
 
     // 5. Generate Supabase invitation link (Service Role)
     const adminClient = createServiceClient();
-    let actionLink = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/login`;
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    let actionLink = `${baseUrl}/login`;
     let inviteData: any = null;
     let inviteError: any = null;
+    let existingUserId: string | null = null;
 
     try {
       const genResult = await adminClient.auth.admin.generateLink({
         type: 'invite',
         email: email.toLowerCase(),
         options: {
-          redirectTo: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/onboarding`,
+          redirectTo: `${baseUrl}/onboarding`,
           data: {
             invited_by: user.id,
             workspace_owner_id: ownerId,
@@ -109,11 +111,26 @@ export async function POST(request: NextRequest) {
 
     if (inviteError) {
       console.error('Supabase generateLink error:', inviteError);
-      // If user already exists in Supabase Auth, we fallback to login link
-      if (!inviteError.message.includes('already been registered')) {
+      const alreadyRegistered =
+        inviteError?.message?.includes('already been registered') ||
+        inviteError?.message?.includes('already registered') ||
+        inviteError?.code === 'email_exists';
+
+      if (!alreadyRegistered) {
         return NextResponse.json({ error: inviteError.message }, { status: 500 });
       }
-      actionLink = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/login`;
+
+      // User already exists in Supabase Auth — look up their ID so we can
+      // immediately activate the membership instead of leaving member_user_id null.
+      try {
+        const { data: listData } = await adminClient.auth.admin.listUsers({ page: 1, perPage: 1000 });
+        const found = (listData?.users ?? []).find((u: any) => u.email?.toLowerCase() === email.toLowerCase());
+        if (found?.id) existingUserId = found.id;
+      } catch (lookupErr) {
+        console.warn('Could not look up existing user ID:', lookupErr);
+      }
+
+      actionLink = `${baseUrl}/login`;
     } else if (inviteData?.properties?.action_link) {
       actionLink = inviteData.properties.action_link;
     }
@@ -167,15 +184,18 @@ export async function POST(request: NextRequest) {
       console.warn('RESEND_API_KEY is not set. Email dispatch skipped.');
     }
 
-    // 6. Insert pending team member record
+    // 6. Insert team member record
+    const resolvedMemberId = existingUserId ?? inviteData?.user?.id ?? null;
+    const resolvedStatus = resolvedMemberId ? 'active' : 'pending';
+
     const { data: member, error: insertError } = await supabase
       .from('team_members')
       .insert({
         workspace_owner_id: ownerId,
-        member_user_id: inviteData?.user?.id ?? null,
+        member_user_id: resolvedMemberId,
         email: email.toLowerCase(),
         role,
-        status: 'pending',
+        status: resolvedStatus,
         invited_by: user.id,
         plan: 'Business',
         usage_count: 0

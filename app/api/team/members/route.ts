@@ -29,7 +29,7 @@ export async function GET() {
     .from('team_members')
     .select('*')
     .eq('workspace_owner_id', user.id)
-    .order('invited_at', { ascending: false });
+    .order('created_at', { ascending: false });
 
   if (fetchError) {
     return NextResponse.json({ error: fetchError.message }, { status: 500 });
