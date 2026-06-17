@@ -18,6 +18,47 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v2.55.0',
+      date: '2026-06-17',
+      titleKey: 'changelog.v2_55_0_title',
+      descKey: 'changelog.v2_55_0_desc',
+      highlights: [
+        'Barre d\'actions rapides par thread : changez le statut du lead (Contacté, RDV Booké, Gagné, Perdu) sans quitter l\'inbox.',
+        'Dialog "Créer un deal" : montant estimé, probabilité (%) et date de clôture — sauvegardés directement sur la fiche lead.',
+        'Dialog "Ajouter une tâche de follow-up" : titre pré-rempli avec le nom du lead, date d\'échéance configurable.',
+        'Filtre par campagne dans la liste : chips horizontaux affichant uniquement les campagnes ayant des threads liés.',
+        'InboxThread enrichi avec leadStatus et campaignId (requête leads enrichie côté API).',
+        'addTask accepte désormais un dueDate optionnel (défaut : aujourd\'hui).',
+      ],
+    },
+    {
+      version: 'v2.53.0',
+      date: '2026-06-17',
+      titleKey: 'changelog.v2_53_0_title',
+      descKey: 'changelog.v2_53_0_desc',
+      highlights: [
+        'Bannière d\'objectifs mensuels pleine largeur : barres de progression compactes pour chaque quota configuré.',
+        'Carte "Emails planifiés" : étapes de séquences prévues aujourd\'hui avec canal, nom du lead et heure d\'envoi.',
+        'Flux d\'activité récente : fusionnel d\'activities Supabase + notifications réply_detected/lead_assigned des dernières 24h.',
+        'Nouveau layout cockpit 2 colonnes : actions du jour (gauche) + contexte & stats (droite).',
+        'Extraction de computeProgress / METRIC_LABELS / PERIOD_LABELS dans lib/goal-utils.ts (partagé entre Today et Settings).',
+      ],
+    },
+    {
+      version: 'v2.50.0',
+      date: '2026-06-17',
+      titleKey: 'changelog.v2_50_0_title',
+      descKey: 'changelog.v2_50_0_desc',
+      highlights: [
+        'Nouvelle page /inbox : liste des threads Gmail liés aux leads avec snippet, compteur de messages et point vert (non lu).',
+        'Onglets de filtrage client-side : Tous / Réponses positives / À relancer / Négatifs (reply_status).',
+        'Panel de détail : corps des messages décodés en base64url, bulles de conversation côté envoyeur/reçu.',
+        'Suggestions IA de réponse via Claude Haiku (3 options) + 3 presets de réponse rapide.',
+        'reply_status : nouvelle colonne sur leads, dual-store SQLite + Supabase, mise à jour via updateLead.',
+        'Banner de ré-authentification Gmail si le scope gmail.readonly est manquant (utilisateurs existants).',
+      ],
+    },
+    {
       version: 'v2.44.0',
       date: '2026-06-17',
       titleKey: 'changelog.v2_44_0_title',
