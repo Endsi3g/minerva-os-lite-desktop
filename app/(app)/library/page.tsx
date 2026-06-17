@@ -54,31 +54,114 @@ const formatRelativeTime = (dateStr: string) => {
 const ENTREPRENEUR_TEMPLATES = [
   {
     id: 'business-plan',
-    label: 'Plan d\'affaires',
+    label: "Plan d'affaires",
     emoji: '📊',
     type: 'markdown' as const,
-    content: `# Plan d'affaires\n\n## 1. Résumé exécutif\n\n_Décrivez votre entreprise en 2-3 paragraphes._\n\n## 2. Description de l'entreprise\n\n- **Nom :** \n- **Secteur :** \n- **Date de fondation :** \n- **Mission :** \n\n## 3. Analyse du marché\n\n### Marché cible\n\n### Concurrents principaux\n\n## 4. Produits / Services\n\n## 5. Stratégie de vente & marketing\n\n## 6. Structure opérationnelle\n\n## 7. Projections financières\n\n| Année | Revenus | Dépenses | Bénéfice |\n|-------|---------|----------|----------|\n| 2025  |         |          |          |\n| 2026  |         |          |          |\n| 2027  |         |          |          |\n`,
+    content: `<h1>Plan d'affaires</h1>
+<h2>1. Résumé exécutif</h2>
+<p><em>Décrivez votre entreprise en 2-3 paragraphes.</em></p>
+<h2>2. Description de l'entreprise</h2>
+<ul>
+  <li><strong>Nom :</strong> </li>
+  <li><strong>Secteur :</strong> </li>
+  <li><strong>Date de fondation :</strong> </li>
+  <li><strong>Mission :</strong> </li>
+</ul>
+<h2>3. Analyse du marché</h2>
+<h3>Marché cible</h3>
+<p></p>
+<h3>Concurrents principaux</h3>
+<p></p>
+<h2>4. Produits / Services</h2>
+<p></p>
+<h2>5. Stratégie de vente &amp; marketing</h2>
+<p></p>
+<h2>6. Structure opérationnelle</h2>
+<p></p>
+<h2>7. Projections financières</h2>
+<p><strong>2025 :</strong> Revenus — Dépenses — Bénéfice</p>
+<p><strong>2026 :</strong> Revenus — Dépenses — Bénéfice</p>
+<p><strong>2027 :</strong> Revenus — Dépenses — Bénéfice</p>`,
   },
   {
     id: 'audit-gmb',
     label: 'Audit GMB',
     emoji: '🔍',
     type: 'markdown' as const,
-    content: `# Audit Google My Business\n\n**Client :** \n**Date :** \n**Score GMB :** /100\n\n## ✅ Points positifs\n\n- \n- \n\n## ❌ Points à améliorer\n\n### Informations de base\n- [ ] Nom exact\n- [ ] Adresse complète\n- [ ] Numéro de téléphone\n- [ ] Site web\n- [ ] Horaires à jour\n\n### Photos\n- [ ] Photo de profil\n- [ ] Photos de l'intérieur\n- [ ] Photos des produits/services\n\n### Avis\n- [ ] Réponses aux avis négatifs\n- [ ] Invitation à laisser des avis\n\n### Catégories & attributs\n- [ ] Catégorie principale correcte\n- [ ] Attributs renseignés\n\n## 💡 Recommandations prioritaires\n\n1. \n2. \n3. \n`,
+    content: `<h1>Audit Google My Business</h1>
+<p><strong>Client :</strong> </p>
+<p><strong>Date :</strong> </p>
+<p><strong>Score GMB :</strong> /100</p>
+<h2>✅ Points positifs</h2>
+<ul><li></li><li></li></ul>
+<h2>❌ Points à améliorer</h2>
+<h3>Informations de base</h3>
+<ul>
+  <li>Nom exact</li>
+  <li>Adresse complète</li>
+  <li>Numéro de téléphone</li>
+  <li>Site web</li>
+  <li>Horaires à jour</li>
+</ul>
+<h3>Photos</h3>
+<ul>
+  <li>Photo de profil</li>
+  <li>Photos de l'intérieur</li>
+  <li>Photos des produits/services</li>
+</ul>
+<h3>Avis</h3>
+<ul>
+  <li>Réponses aux avis négatifs</li>
+  <li>Invitation à laisser des avis</li>
+</ul>
+<h3>Catégories &amp; attributs</h3>
+<ul>
+  <li>Catégorie principale correcte</li>
+  <li>Attributs renseignés</li>
+</ul>
+<h2>💡 Recommandations prioritaires</h2>
+<ol><li></li><li></li><li></li></ol>`,
   },
   {
     id: 'email-prospection',
     label: 'Email de prospection',
     emoji: '✉️',
     type: 'markdown' as const,
-    content: `# Email de prospection\n\n**Sujet :** [Prénom], j'ai trouvé quelque chose d'intéressant pour [Entreprise]\n\n---\n\nBonjour [Prénom],\n\nJ'ai récemment découvert [Entreprise] et j'ai remarqué [observation spécifique].\n\nJe me spécialise dans [votre service] et j'aide des entreprises comme la vôtre à [bénéfice principal].\n\nPar exemple, j'ai récemment aidé [entreprise similaire] à [résultat concret] en seulement [délai].\n\nSeriez-vous disponible pour un appel de 15 minutes cette semaine afin que je puisse vous montrer comment nous pourrions obtenir des résultats similaires pour [Entreprise] ?\n\nCordialement,\n[Votre nom]\n[Votre poste] | [Votre entreprise]\n[Téléphone] | [Site web]\n\n---\n\n**Notes :** _Personnalisez [les crochets] avant d'envoyer._\n`,
+    content: `<h1>Email de prospection</h1>
+<p><strong>Sujet :</strong> [Prénom], j'ai trouvé quelque chose d'intéressant pour [Entreprise]</p>
+<hr>
+<p>Bonjour [Prénom],</p>
+<p>J'ai récemment découvert [Entreprise] et j'ai remarqué [observation spécifique].</p>
+<p>Je me spécialise dans [votre service] et j'aide des entreprises comme la vôtre à [bénéfice principal].</p>
+<p>Par exemple, j'ai récemment aidé [entreprise similaire] à [résultat concret] en seulement [délai].</p>
+<p>Seriez-vous disponible pour un appel de 15 minutes cette semaine afin que je puisse vous montrer comment nous pourrions obtenir des résultats similaires pour [Entreprise] ?</p>
+<p>Cordialement,<br>[Votre nom]<br>[Votre poste] | [Votre entreprise]<br>[Téléphone] | [Site web]</p>
+<hr>
+<p><em>Personnalisez [les crochets] avant d'envoyer.</em></p>`,
   },
   {
     id: 'rapport-hebdo',
     label: 'Rapport hebdo',
     emoji: '📅',
     type: 'markdown' as const,
-    content: `# Rapport hebdomadaire\n\n**Semaine du :** \n**Préparé par :** \n\n## 📈 Résultats de la semaine\n\n| Métrique | Objectif | Résultat | Écart |\n|----------|----------|----------|-------|\n| Leads contactés | | | |\n| Rendez-vous obtenus | | | |\n| Propositions envoyées | | | |\n| Ventes conclues | | | |\n\n## 🎯 Objectifs atteints\n\n- \n- \n\n## ⚠️ Défis rencontrés\n\n- \n\n## 📋 Plan pour la semaine prochaine\n\n1. \n2. \n3. \n\n## 💬 Notes & observations\n\n`,
+    content: `<h1>Rapport hebdomadaire</h1>
+<p><strong>Semaine du :</strong> </p>
+<p><strong>Préparé par :</strong> </p>
+<h2>📈 Résultats de la semaine</h2>
+<ul>
+  <li><strong>Leads contactés :</strong> Objectif — Résultat</li>
+  <li><strong>Rendez-vous obtenus :</strong> Objectif — Résultat</li>
+  <li><strong>Propositions envoyées :</strong> Objectif — Résultat</li>
+  <li><strong>Ventes conclues :</strong> Objectif — Résultat</li>
+</ul>
+<h2>🎯 Objectifs atteints</h2>
+<ul><li></li><li></li></ul>
+<h2>⚠️ Défis rencontrés</h2>
+<ul><li></li></ul>
+<h2>📋 Plan pour la semaine prochaine</h2>
+<ol><li></li><li></li><li></li></ol>
+<h2>💬 Notes &amp; observations</h2>
+<p></p>`,
   },
 ];
 

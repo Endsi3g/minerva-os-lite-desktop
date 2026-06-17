@@ -8,10 +8,103 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { createClient } from '@/lib/supabase/client';
 import { useReach } from '@/lib/reach-context';
-import { Plus, Pencil, Trash2, Check, X, Loader2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, Check, X, Loader2, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 type ServiceType = 'digital' | 'saas' | 'audit' | 'formation' | 'autre';
+
+interface ServiceTemplate {
+  name: string;
+  price: number;
+  type: ServiceType;
+  description: string;
+}
+
+const SERVICE_TEMPLATES_BY_NICHE: Record<string, ServiceTemplate[]> = {
+  restaurant: [
+    { name: 'Création site web restaurant', price: 1200, type: 'digital', description: "Site vitrine responsive avec menu, horaires et réservation en ligne." },
+    { name: 'Gestion avis Google / Yelp', price: 297, type: 'audit', description: "Réponses aux avis négatifs et campagne de récolte d'avis clients." },
+    { name: 'Campagne Instagram food', price: 497, type: 'digital', description: "Création de contenu et gestion de la page Instagram pendant 30 jours." },
+    { name: 'Menu digital QR code', price: 149, type: 'digital', description: "Menu PDF scannable avec QR code imprimable pour les tables." },
+  ],
+  cafe: [
+    { name: 'Site vitrine café', price: 899, type: 'digital', description: "Site avec horaires, localisation et galerie photo." },
+    { name: 'Optimisation fiche Google', price: 297, type: 'audit', description: "Audit et optimisation complète de la fiche Google My Business." },
+    { name: 'Campagne Instagram café', price: 397, type: 'digital', description: "Contenu et stories pour attirer de nouveaux clients locaux." },
+  ],
+  coiffure: [
+    { name: 'Site web + prise de RDV', price: 990, type: 'digital', description: "Site vitrine avec module de réservation en ligne intégré (Calendly ou autre)." },
+    { name: 'Audit Google My Business', price: 249, type: 'audit', description: "Optimisation de la fiche GMB pour améliorer la visibilité locale." },
+    { name: 'Campagne Instagram beauté', price: 397, type: 'digital', description: "Shooting photo et gestion des réseaux sociaux pendant 30 jours." },
+    { name: 'SMS rappel RDV', price: 99, type: 'saas', description: "Automatisation des rappels SMS 24h avant chaque rendez-vous." },
+  ],
+  dentaire: [
+    { name: 'Site web clinique dentaire', price: 1490, type: 'digital', description: "Site avec présentation des soins, équipe et prise de RDV en ligne." },
+    { name: 'Rappels patients SMS', price: 149, type: 'saas', description: "Envoi automatique de rappels de rendez-vous par SMS." },
+    { name: 'Gestion e-réputation', price: 297, type: 'audit', description: "Réponses aux avis et campagne pour augmenter les avis positifs." },
+    { name: 'Formation Google Ads locaux', price: 397, type: 'formation', description: "Session de 2h pour apprendre à gérer ses propres campagnes Google Ads." },
+  ],
+  plombier: [
+    { name: 'Site web plombier urgence', price: 790, type: 'digital', description: "Site avec formulaire d'urgence, zone d'intervention et tarifs." },
+    { name: 'Audit SEO local', price: 197, type: 'audit', description: "Analyse du positionnement local et recommandations concrètes." },
+    { name: 'Fiche Google My Business', price: 149, type: 'audit', description: "Création et optimisation de la fiche GMB avec photos et horaires." },
+  ],
+  electricien: [
+    { name: 'Site web électricien', price: 790, type: 'digital', description: "Site vitrine avec certifications, services et demande de devis." },
+    { name: 'Audit SEO local', price: 197, type: 'audit', description: "Analyse SEO locale pour apparaître en tête des recherches Google." },
+    { name: 'Pack avis Google', price: 149, type: 'audit', description: "Stratégie de récolte d'avis clients pour améliorer la note." },
+  ],
+  garage: [
+    { name: 'Site web garage auto', price: 990, type: 'digital', description: "Site avec présentation des services, devis en ligne et prise de RDV." },
+    { name: 'Campagne Google Ads locale', price: 297, type: 'digital', description: "Campagne ciblée sur les recherches locales (pneus, révision, etc.)." },
+    { name: 'Audit réputation en ligne', price: 197, type: 'audit', description: "Analyse des avis et plan d'action pour améliorer la e-réputation." },
+  ],
+  avocat: [
+    { name: 'Site web cabinet juridique', price: 1490, type: 'digital', description: "Site professionnel avec domaines de pratique, équipe et formulaire de contact." },
+    { name: 'Optimisation LinkedIn', price: 397, type: 'digital', description: "Refonte du profil LinkedIn et stratégie de contenu mensuelle." },
+    { name: 'Audit SEO notoriété', price: 297, type: 'audit', description: "Analyse de la présence en ligne et recommandations pour attirer plus de clients." },
+  ],
+  comptable: [
+    { name: 'Site web comptable', price: 990, type: 'digital', description: "Site avec services, expertises et formulaire de demande de consultation." },
+    { name: 'Automatisation rappels fiscaux', price: 149, type: 'saas', description: "Emails automatiques pour rappeler les échéances fiscales à vos clients." },
+    { name: 'Formation CRM Minerva', price: 297, type: 'formation', description: "Formation de 3h à l'utilisation de Minerva OS pour gérer vos prospects." },
+  ],
+  immobil: [
+    { name: 'Site web agence immobilière', price: 1990, type: 'digital', description: "Site avec listings de propriétés, filtres de recherche et formulaire agent." },
+    { name: 'Gestion avis Google', price: 297, type: 'audit', description: "Stratégie de récolte et réponse aux avis pour les agents immobiliers." },
+    { name: 'Campagne Facebook Ads', price: 497, type: 'digital', description: "Campagnes ciblées acheteurs/vendeurs dans votre zone de service." },
+  ],
+  gym: [
+    { name: 'Site web studio / gym', price: 1090, type: 'digital', description: "Site avec horaires des cours, inscription en ligne et galerie." },
+    { name: 'Campagne Instagram fitness', price: 397, type: 'digital', description: "Contenu vidéo et stories pour attirer de nouveaux membres." },
+    { name: "Système d'abonnements", price: 249, type: 'saas', description: "Intégration d'un module de paiement récurrent pour les abonnements." },
+  ],
+  default: [
+    { name: 'Site web vitrine', price: 990, type: 'digital', description: "Site professionnel responsive avec présentation de vos services." },
+    { name: 'Audit Google My Business', price: 249, type: 'audit', description: "Optimisation complète de la fiche locale pour améliorer la visibilité." },
+    { name: 'Campagne réseaux sociaux', price: 397, type: 'digital', description: "Gestion des réseaux sociaux et création de contenu pendant 30 jours." },
+    { name: 'Formation prospection Minerva', price: 297, type: 'formation', description: "Session d'onboarding Minerva OS pour automatiser votre prospection locale." },
+  ],
+};
+
+function getTemplatesForNiches(niches: string[]): ServiceTemplate[] {
+  if (niches.length === 0) return SERVICE_TEMPLATES_BY_NICHE.default;
+  const templates: ServiceTemplate[] = [];
+  const seen = new Set<string>();
+  for (const niche of niches) {
+    const n = niche.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+    const key = Object.keys(SERVICE_TEMPLATES_BY_NICHE).find(k => n.includes(k));
+    const tpls = SERVICE_TEMPLATES_BY_NICHE[key ?? 'default'] ?? [];
+    for (const t of tpls) {
+      if (!seen.has(t.name)) {
+        seen.add(t.name);
+        templates.push(t);
+      }
+    }
+    if (templates.length >= 8) break;
+  }
+  return templates.length > 0 ? templates : SERVICE_TEMPLATES_BY_NICHE.default;
+}
 
 interface Service {
   id: string;
@@ -53,6 +146,8 @@ export default function ServicesRoot() {
 
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
+  const [userNiches, setUserNiches] = useState<string[]>([]);
+  const [showTemplates, setShowTemplates] = useState(false);
 
   // Add form
   const [showAddForm, setShowAddForm] = useState(false);
@@ -72,6 +167,25 @@ export default function ServicesRoot() {
     fetchServices();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeWorkspace]);
+
+  useEffect(() => {
+    const loadNiches = async () => {
+      try {
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+        const { data } = await supabase
+          .from('settings')
+          .select('niches')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        if (data?.niches && Array.isArray(data.niches)) {
+          setUserNiches(data.niches as string[]);
+        }
+      } catch {}
+    };
+    loadNiches();
+  }, []);
 
   const fetchServices = async () => {
     setLoading(true);
@@ -268,6 +382,66 @@ export default function ServicesRoot() {
               </Button>
             </div>
           </form>
+        )}
+
+        {/* Service templates */}
+        {!showAddForm && (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-primary" />
+                <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                  Templates suggérés
+                </span>
+                {userNiches.length > 0 && (
+                  <span className="text-[10px] text-muted-foreground italic">
+                    basés sur vos niches ({userNiches.slice(0, 2).join(', ')}{userNiches.length > 2 ? '…' : ''})
+                  </span>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowTemplates(p => !p)}
+                className="text-[10px] text-primary hover:underline font-semibold"
+              >
+                {showTemplates ? 'Réduire' : 'Afficher'}
+              </button>
+            </div>
+
+            {showTemplates && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                {getTemplatesForNiches(userNiches).map((tpl) => (
+                  <button
+                    key={tpl.name}
+                    type="button"
+                    onClick={() => {
+                      setAddForm({
+                        name: tpl.name,
+                        price: String(tpl.price),
+                        type: tpl.type,
+                        description: tpl.description,
+                      });
+                      setShowAddForm(true);
+                      setEditingId(null);
+                    }}
+                    className="text-left border border-dashed border-primary/30 hover:border-primary hover:bg-primary/5 rounded-lg p-3 space-y-1 transition-all group"
+                  >
+                    <div className="flex items-center justify-between gap-1">
+                      <span className="text-xs font-semibold text-foreground group-hover:text-primary leading-snug">{tpl.name}</span>
+                      <Plus className="h-3 w-3 text-primary shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <Badge variant="outline" className={cn('text-[8px] font-bold uppercase tracking-wider px-1 py-0 border', TYPE_COLORS[tpl.type])}>
+                        {TYPE_LABELS[tpl.type]}
+                      </Badge>
+                      <span className="text-[10px] font-mono text-muted-foreground">{tpl.price} $</span>
+                    </div>
+                    <p className="text-[9px] text-muted-foreground leading-snug line-clamp-2">{tpl.description}</p>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         )}
 
         {/* Services list */}

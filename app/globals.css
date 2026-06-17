@@ -296,3 +296,14 @@
     padding-bottom: calc(4rem + env(safe-area-inset-bottom, 0px));
   }
 }
+
+/* ── Global: hide all scrollbars, keep scrollability ── */
+html {
+  scroll-behavior: smooth;
+}
+*, *::before, *::after {
+  scrollbar-width: none;
+}
+*::-webkit-scrollbar {
+  display: none;
+}
