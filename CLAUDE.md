@@ -146,6 +146,13 @@ GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
 ANTHROPIC_API_KEY=
 NEXT_PUBLIC_APP_URL=              # Used by Electron/Capacitor for API calls (e.g. https://minerva-os-lite.com)
+
+# Support contact form (app/api/support/contact) — if unset, messages are logged to console only
+SUPPORT_SMTP_HOST=                # e.g. smtp.gmail.com or smtp.resend.com
+SUPPORT_SMTP_PORT=587             # 465 for SSL, 587 for STARTTLS
+SUPPORT_SMTP_USER=                # SMTP login (your sending address or API key username)
+SUPPORT_SMTP_PASS=                # SMTP password or API key
+SUPPORT_EMAIL=support@minervaos.com  # Destination inbox for support tickets
 ```
 
 ## Key Conventions
