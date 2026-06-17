@@ -306,7 +306,7 @@ export function ProspectingRoot() {
       const existingMapsUrls = new Set(excludeExisting ? leads.map(l => l.mapsUrl).filter(Boolean) : []);
       const existingNames = new Set(excludeExisting ? leads.map(l => l.businessName?.toLowerCase().replace(/[^a-z0-9]/g, '')) : []);
       allLeads = allLeads.filter(l => {
-        if (minRating > 0 && l.rating < minRating) return false;
+        if (minRating > 0 && l.rating > 0 && l.rating < minRating) return false;
         if (excludeExisting && l.mapsUrl && existingMapsUrls.has(l.mapsUrl)) return false;
         if (excludeExisting && existingNames.has(l.businessName?.toLowerCase().replace(/[^a-z0-9]/g, ''))) return false;
         if (onlyNoWebsite && l.website) return false;

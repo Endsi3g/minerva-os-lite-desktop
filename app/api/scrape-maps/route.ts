@@ -260,6 +260,7 @@ function cleanPhone(raw: string): string {
 function generateSeoAudit(website: string, rating: number): string {
   if (!website) return 'Aucun site web détecté. Opportunité directe de création / refonte.';
   if (!website.startsWith('https')) return `Site présent (${website}) sans HTTPS. Opportunité SEO + sécurité.`;
+  if (rating === 0) return 'Site HTTPS actif. Note non disponible — vérifier sur Google Maps.';
   if (rating < 3.5) return `Note ${rating}/5 très faible. Gestion de réputation urgente recommandée.`;
   if (rating < 4.0) return `Note ${rating}/5 — campagne de récolte d'avis Google recommandée.`;
   if (rating < 4.5) return `Site HTTPS actif. Note de ${rating}/5 améliorable. Proposer l'automatisation Minerva.`;
@@ -313,9 +314,8 @@ async function runOverpassQuery(filters: string[], lat: number, lon: number, rad
     const openingHours = tags['opening_hours'] ?? '';
 
     const hasWebsite = !!website;
-    const baseRating = hasWebsite ? 3.6 + Math.random() * 1.2 : 2.4 + Math.random() * 1.6;
-    const rating = parseFloat(baseRating.toFixed(1));
-    const reviewsCount = Math.floor(2 + Math.random() * 180);
+    const rating = 0;
+    const reviewsCount = 0;
 
     const cuisine = tags.cuisine ? ` (${tags.cuisine.split(';')[0].trim()})` : '';
     const businessName = `${name}${cuisine}`;
@@ -418,13 +418,11 @@ async function scrapeDirectoryFromDDG(niche: string, city: string, source: 'yelp
       const phoneMatch = snippet.match(phoneRegex);
       const phone = phoneMatch ? cleanPhone(phoneMatch[0]) : '';
 
-      let rating = parseFloat((3.5 + Math.random() * 1.3).toFixed(1));
       const ratingMatch = snippet.match(/([0-9][.,][0-9])\s*(?:\/5|étoiles?|stars?|★)/i);
-      if (ratingMatch) rating = parseFloat(ratingMatch[1].replace(',', '.'));
+      const rating = ratingMatch ? parseFloat(ratingMatch[1].replace(',', '.')) : 0;
 
-      let reviewsCount = Math.floor(Math.random() * 20 + 2);
       const reviewsMatch = snippet.match(/([0-9]+)\s*(?:avis|commentaires|reviews)/i);
-      if (reviewsMatch) reviewsCount = parseInt(reviewsMatch[1]);
+      const reviewsCount = reviewsMatch ? parseInt(reviewsMatch[1]) : 0;
 
       leads.push({
         id: crypto.randomUUID(),
@@ -447,63 +445,6 @@ async function scrapeDirectoryFromDDG(niche: string, city: string, source: 'yelp
   } catch { return []; }
 }
 
-// Fallback simulation for completely unknown niche/city combos
-function generateRealisticLeads(niches: string[], city: string, count: number = 20): ScrapedLead[] {
-  const niche = niches[0] ?? 'Commerce local';
-  const cleanNiche = niche.split(' / ')[0];
-  const slugify = (t: string) => t.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
-
-  const PREFIXES = ['Centre', 'Atelier', 'Boutique', 'Studio', 'Maison', 'Espace', 'Pro', 'Express', 'Prestige', 'Grand', 'Coin', 'Service'];
-  const SUFFIXES = ['du Plateau', 'Artisanal', 'Moderne', '& Co', 'de Quartier', 'Local', 'Expert', 'Premium', 'Tradition', 'Service', 'Plus', 'Innovation'];
-  const FIRST_NAMES = ['Lambert', 'Tremblay', 'Gagné', 'Roy', 'Côté', 'Martin', 'Dubois', 'Morin', 'Lavoie', 'Pelletier', 'Gagnon', 'Fortin'];
-  const AREA_NAMES = ['Nord', 'Sud', 'Est', 'Ouest', 'Centre-Ville', 'Village', 'Parc', 'Marché', 'Plateau', 'Quartier'];
-  const AREA_CODES = ['514', '438', '450', '418', '819', '873', '581'];
-
-  const leads: ScrapedLead[] = [];
-
-  for (let i = 0; i < count; i++) {
-    const pattern = i % 8;
-    let businessName: string;
-    switch (pattern) {
-      case 0: businessName = `${PREFIXES[i % PREFIXES.length]} ${cleanNiche} ${city}`; break;
-      case 1: businessName = `${cleanNiche} ${SUFFIXES[i % SUFFIXES.length]}`; break;
-      case 2: businessName = `Chez ${FIRST_NAMES[i % FIRST_NAMES.length]} — ${cleanNiche}`; break;
-      case 3: businessName = `${cleanNiche} du ${AREA_NAMES[i % AREA_NAMES.length]}`; break;
-      case 4: businessName = `${FIRST_NAMES[(i + 3) % FIRST_NAMES.length]} ${cleanNiche}`; break;
-      case 5: businessName = `${cleanNiche} & Associés`; break;
-      case 6: businessName = `L'${cleanNiche} de ${city}`; break;
-      default: businessName = `${city} ${cleanNiche} Services`; break;
-    }
-
-    const areaCode = AREA_CODES[i % AREA_CODES.length];
-    const phone = `+1 ${areaCode}-${String(500 + i).padStart(3, '0')}-${String(1000 + i * 7).slice(-4)}`;
-    const hasWebsite = i % 3 !== 0;
-    const slugName = slugify(businessName);
-    const rating = parseFloat((3.1 + (i % 20) * 0.09).toFixed(1));
-    const reviewsCount = 3 + (i * 13) % 180;
-    const coords = getCityCoords(city);
-
-    leads.push({
-      id: crypto.randomUUID(),
-      businessName,
-      niche: cleanNiche,
-      city,
-      phone,
-      email: hasWebsite ? `info@${slugName}.ca` : '',
-      website: hasWebsite ? `https://www.${slugName}.ca` : '',
-      address: '',
-      rating,
-      reviewsCount,
-      mapsUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(businessName + ' ' + city)}`,
-      seoAudit: generateSeoAudit(hasWebsite ? `https://www.${slugName}.ca` : '', rating),
-      source: 'simulation',
-      latitude: coords.latitude,
-      longitude: coords.longitude,
-    });
-  }
-
-  return leads;
-}
 
 function dedup(leads: ScrapedLead[]): ScrapedLead[] {
   const seenNames = new Set<string>();
@@ -635,9 +576,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ leads: unique.slice(0, maxResults), source: usedSources.join('+'), total: unique.length });
     }
 
-    // Fallback simulation — generate as many leads as requested
-    const fallback = dedup(generateRealisticLeads(niches, cities[0], maxResults));
-    return NextResponse.json({ leads: fallback, source: 'simulation', total: fallback.length });
+    // No real results found — return empty, never simulate
+    return NextResponse.json({
+      leads: [],
+      source: usedSources.join('+') || 'none',
+      total: 0,
+      message: 'Aucun résultat trouvé pour cette combinaison niche/ville. Essayez une autre niche, une autre ville ou activez Apify pour des résultats Google Maps.',
+    });
 
   } catch (err) {
     console.error('[scrape-maps]', err);

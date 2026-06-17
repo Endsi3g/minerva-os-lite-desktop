@@ -18,6 +18,32 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v2.56.1',
+      date: '2026-06-17',
+      titleKey: 'changelog.v2_56_1_title',
+      descKey: 'changelog.v2_56_1_desc',
+      highlights: [
+        'Suppression définitive de generateRealisticLeads() — le scraper ne retourne plus jamais de leads fictifs en fallback.',
+        'Les résultats OSM et DDG/annuaires ont rating=0 et reviewsCount=0 quand la donnée n\'est pas disponible, au lieu de valeurs aléatoires inventées.',
+        'Le filtre "Note minimum" ignore désormais les leads sans note (rating=0) au lieu de les exclure à tort.',
+        'Audit SEO corrigé : "Note non disponible" au lieu de "Note 0/5 très faible" pour les résultats OSM.',
+        'Réponse API enrichie quand 0 résultat : message explicatif sans jamais générer de faux leads.',
+      ],
+    },
+    {
+      version: 'v2.56.0',
+      date: '2026-06-17',
+      titleKey: 'changelog.v2_56_0_title',
+      descKey: 'changelog.v2_56_0_desc',
+      highlights: [
+        'Nouvelle page /setup : checklist interactive de 6 étapes basée sur l\'état réel de l\'app (aucune donnée fictive).',
+        'Détection automatique : profil, Gmail, premier lead, séquence email, objectifs mensuels, membre équipe.',
+        'Barre de progression et état "Tout est prêt" avec lien vers /today quand les étapes obligatoires sont complètes.',
+        'Mini-bannière sur /today : progression compacte + bouton "Continuer" vers /setup, dismissible via localStorage.',
+        'Sidebar : nouvelle entrée "Configuration" dans la section Plateforme (icône ListChecks).',
+      ],
+    },
+    {
       version: 'v2.55.0',
       date: '2026-06-17',
       titleKey: 'changelog.v2_55_0_title',
