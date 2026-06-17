@@ -18,6 +18,32 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v2.25.0',
+      date: '2026-06-17',
+      titleKey: 'changelog.v2_25_0_title',
+      descKey: 'changelog.v2_25_0_desc',
+      highlights: [
+        'i18n — Page Welcome : tous les textes (titre, promo code, onglets workspace/chat, pourcentage, labels) passent par t() en FR/EN/DE.',
+        'i18n — Page Aujourd\'hui : en-têtes du tableau de relances (Prospect/Canal/Dernier Contact/Action Suivante/Actions) et message vide traduits.',
+        'i18n — Sidebar : placeholder "Recherche globale..." et label nav "Leads" harmonisés dans les 3 langues (EN était "Search").',
+        'Bibliothèque : assignation réelle des fichiers aux dossiers — hover sur une carte → bouton ⋮ → "Déplacer vers un dossier". Clic sur ligne dossier → filtre les docs affichés avec badge ×.',
+        'Bibliothèque : compteur réel de fichiers par dossier + badge folder_name sur les miniatures de prévisualisation. SQL requis : ALTER TABLE documents ADD COLUMN IF NOT EXISTS folder_name text;',
+      ],
+    },
+    {
+      version: 'v2.24.0',
+      date: '2026-06-17',
+      titleKey: 'changelog.v2_24_0_title',
+      descKey: 'changelog.v2_24_0_desc',
+      highlights: [
+        'Onboarding : panneau noir animé supprimé, formulaire full-screen centré sur fond blanc avec switcher de langue FR/EN en haut à droite.',
+        'Avatar sync : sauvegarder une photo de profil dans Paramètres met à jour immédiatement l\'icône topbar sans reload (localStorage + StorageEvent).',
+        'Leads — Proposition PDF : bouton "Générer une proposition PDF" dans le détail d\'un lead. Génère une proposition commerciale complète avec services, TVA 15 % (Québec), validité 30 jours.',
+        'Audit SEO — Export PDF : bouton "Exporter en PDF" sur la page /audit. Rapport brandé Minerva OS avec score coloré et recommandations.',
+        'Vercel Analytics (<Analytics />) et SpeedInsights (<SpeedInsights />) activés dans le root layout. Google OAuth configuré côté Vercel et .env.local.',
+      ],
+    },
+    {
       version: 'v2.23.0',
       date: '2026-06-17',
       titleKey: 'changelog.v2_23_0_title',
