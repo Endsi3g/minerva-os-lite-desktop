@@ -18,6 +18,17 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v2.33.0',
+      date: '2026-06-17',
+      titleKey: 'changelog.v2_33_0_title',
+      descKey: 'changelog.v2_33_0_desc',
+      highlights: [
+        'Page Aide — formulaire de contact support : useReach().user remplace auth.getUser() (une requête Supabase en moins).',
+        'Sélecteur de catégorie (Bug / Fonctionnalité / Facturation / Compte / Autre) préfixé dans le sujet de l\'email.',
+        'Phase 13 complète : support entièrement câblé sans appel auth direct.',
+      ],
+    },
+    {
       version: 'v2.32.0',
       date: '2026-06-17',
       titleKey: 'changelog.v2_32_0_title',

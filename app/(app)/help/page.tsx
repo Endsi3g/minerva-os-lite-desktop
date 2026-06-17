@@ -6,7 +6,7 @@ import { HelpCircle, ChevronDown, PlayCircle, BookOpen, ExternalLink, Mail, Send
 import { cn } from '@/lib/utils';
 import { HELP_GUIDES } from '@/lib/help-guides';
 import { getApiUrl } from '@/lib/api-helper';
-import { createClient } from '@/lib/supabase/client';
+import { useReach } from '@/lib/reach-context';
 
 type HelpTab = 'faq' | 'tutorials' | 'videos' | 'contact';
 
@@ -102,12 +102,22 @@ function FaqItem({ item }: { item: typeof FAQ_ITEMS[0] }) {
   );
 }
 
+const CONTACT_CATEGORIES = [
+  { value: 'bug', label: '🐛 Bug / Problème technique' },
+  { value: 'feature', label: '✨ Demande de fonctionnalité' },
+  { value: 'billing', label: '💳 Facturation / Abonnement' },
+  { value: 'account', label: '👤 Compte / Accès' },
+  { value: 'other', label: '💬 Autre' },
+] as const;
+
 export default function HelpPage() {
+  const { user } = useReach();
   const [tab, setTab] = useState<HelpTab>('faq');
 
   // Contact form state
   const [contactName, setContactName] = useState('');
   const [contactEmail, setContactEmail] = useState('');
+  const [contactCategory, setContactCategory] = useState<string>('bug');
   const [contactSubject, setContactSubject] = useState('');
   const [contactMessage, setContactMessage] = useState('');
   const [contactSending, setContactSending] = useState(false);
@@ -119,15 +129,14 @@ export default function HelpPage() {
     setContactSending(true);
     setContactError('');
     try {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
+      const categoryLabel = CONTACT_CATEGORIES.find(c => c.value === contactCategory)?.label ?? contactCategory;
       const res = await fetch(getApiUrl('/api/support/contact'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: contactName,
           email: contactEmail || user?.email || '',
-          subject: contactSubject,
+          subject: `[${categoryLabel}] ${contactSubject}`,
           message: contactMessage,
         }),
       });
@@ -346,6 +355,18 @@ export default function HelpPage() {
                       className="w-full text-xs p-2.5 border border-[#e6e5e0] rounded-md focus:outline-none focus:ring-1 focus:ring-[#10b981] bg-white"
                     />
                   </div>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Catégorie</label>
+                  <select
+                    value={contactCategory}
+                    onChange={(e) => setContactCategory(e.target.value)}
+                    className="w-full text-xs p-2.5 border border-[#e6e5e0] rounded-md focus:outline-none focus:ring-1 focus:ring-[#10b981] bg-white"
+                  >
+                    {CONTACT_CATEGORIES.map(c => (
+                      <option key={c.value} value={c.value}>{c.label}</option>
+                    ))}
+                  </select>
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Sujet</label>
