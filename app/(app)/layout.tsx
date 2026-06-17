@@ -998,7 +998,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                 onClick={() => setShowSearchModal(true)}
                 className="flex w-full items-center justify-between rounded border border-[#e5e5e0] bg-white py-1 pl-7 pr-2 text-left text-[10px] text-[#7a7a76] hover:bg-[#f4f4f3] transition-colors cursor-pointer"
               >
-                <span>Recherche globale...</span>
+                <span>{t('search.global_placeholder')}</span>
                 <kbd className="pointer-events-none inline-flex select-none items-center rounded border bg-muted px-1 font-mono text-[9px] text-[#7a7a76]">
                   /
                 </kbd>

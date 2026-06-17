@@ -650,12 +650,56 @@ export const translations = {
     "agents.workspace.radar_reviews_suffix": "avis",
     "agents.workspace.radar_save_note": "Ces modèles seront sauvegardés dans les notes du prospect.",
     "agents.workspace.radar_save_btn": "Sauvegarder dans les Notes",
-    "agents.workspace.radar_saved": "Plan enregistré !"
+    "agents.workspace.radar_saved": "Plan enregistré !",
+
+    // Welcome / Get Started page
+    "welcome.all_done_title": "Félicitations, tout est complété !",
+    "welcome.lets_go": "Commençons !",
+    "welcome.complete_tasks_reward": "Complétez toutes les tâches pour débloquer votre récompense.",
+    "welcome.ranking": "Classement #1",
+    "welcome.discount_unlocked": "Votre réduction est débloquée !",
+    "welcome.discount_unlocked_desc": "Profitez de 10 % de réduction sur votre premier mois d'abonnement Minerva OS Lite. Utilisez le code ci-dessous lors du paiement.",
+    "welcome.copied": "Copié !",
+    "welcome.copy": "Copier",
+    "welcome.subscription": "Abonnement",
+    "welcome.progress_title": "Complétez toutes les tâches → 10 % off le premier mois",
+    "welcome.progress_desc": "Un code promo exclusif vous sera remis dès que vous aurez coché toutes les étapes ci-dessous.",
+    "welcome.percent_done_suffix": "complété",
+    "welcome.setup_title": "Démarrer avec Minerva OS Lite",
+    "welcome.setup_desc": "Apprenez tout ce que Minerva OS Lite peut faire pour vous.",
+    "welcome.hide_panel": "Masquer ce panneau",
+    "welcome.workspace_tab": "Configurer l'espace de travail",
+    "welcome.chat_tab": "Chat & Prospection",
+    "welcome.chat_task_desc": "Démarrez une conversation avec Minerva pour découvrir comment l'IA peut vous aider au quotidien dans votre prospection.",
+    "welcome.start": "Commencer",
+    "welcome.percent_done_short": "% fait",
+
+    // Global search modal
+    "search.global_placeholder": "Recherche globale...",
+    "search.leads_result": "Prospects ciblés (Recherche)",
+
+    // Follow-up table (Today page)
+    "today.no_followup_title": "Aucune relance due aujourd'hui",
+    "today.no_followup_desc": "Félicitations ! Toutes tes relances programmées sont à jour. Ajoute de nouveaux prospects ou planifie des actions.",
+    "today.table_prospect": "Prospect",
+    "today.table_channel": "Canal",
+    "today.table_last_contact": "Dernier Contact",
+    "today.table_next_action": "Action Suivante",
+    "today.table_actions": "Actions",
+
+    // Library folder assignment
+    "library.move_to_folder": "Déplacer vers un dossier",
+    "library.remove_from_folder": "Retirer du dossier",
+    "library.no_folder": "Sans dossier",
+    "library.loading": "Chargement des documents...",
+    "library.empty_desc": "Aucun document. Créez-en un avec",
+    "library.empty_desc_suffix": "ci-dessus.",
+    "library.files_count": "fichier(s)"
   },
   en: {
     // Sidebar & Layout
     "nav.prospect": "Prospect",
-    "nav.search": "Search",
+    "nav.search": "Leads",
     "nav.library": "Library",
     "nav.agents": "Agents",
     "nav.integrations": "Integrations",
@@ -1301,12 +1345,56 @@ export const translations = {
     "agents.workspace.radar_reviews_suffix": "reviews",
     "agents.workspace.radar_save_note": "These templates will be saved in the lead's notes.",
     "agents.workspace.radar_save_btn": "Save to Notes",
-    "agents.workspace.radar_saved": "Plan saved!"
+    "agents.workspace.radar_saved": "Plan saved!",
+
+    // Welcome / Get Started page
+    "welcome.all_done_title": "Congratulations, all done!",
+    "welcome.lets_go": "Let's get started!",
+    "welcome.complete_tasks_reward": "Complete all tasks to unlock your reward.",
+    "welcome.ranking": "Ranking #1",
+    "welcome.discount_unlocked": "Your discount is unlocked!",
+    "welcome.discount_unlocked_desc": "Enjoy 10% off your first month of Minerva OS Lite subscription. Use the code below at checkout.",
+    "welcome.copied": "Copied!",
+    "welcome.copy": "Copy",
+    "welcome.subscription": "Subscription",
+    "welcome.progress_title": "Complete all tasks → 10% off your first month",
+    "welcome.progress_desc": "An exclusive promo code will be given once you've checked all the steps below.",
+    "welcome.percent_done_suffix": "done",
+    "welcome.setup_title": "Get started with Minerva OS Lite",
+    "welcome.setup_desc": "Learn everything Minerva OS Lite can do for you.",
+    "welcome.hide_panel": "Hide this panel",
+    "welcome.workspace_tab": "Set up workspace",
+    "welcome.chat_tab": "Chat & Prospecting",
+    "welcome.chat_task_desc": "Start a conversation with Minerva to discover how AI can help you daily in your prospecting.",
+    "welcome.start": "Start",
+    "welcome.percent_done_short": "% done",
+
+    // Global search modal
+    "search.global_placeholder": "Global search...",
+    "search.leads_result": "Targeted Prospects (Search)",
+
+    // Follow-up table (Today page)
+    "today.no_followup_title": "No follow-ups due today",
+    "today.no_followup_desc": "Congratulations! All your scheduled follow-ups are up to date. Add new prospects or schedule actions.",
+    "today.table_prospect": "Prospect",
+    "today.table_channel": "Channel",
+    "today.table_last_contact": "Last Contact",
+    "today.table_next_action": "Next Action",
+    "today.table_actions": "Actions",
+
+    // Library folder assignment
+    "library.move_to_folder": "Move to folder",
+    "library.remove_from_folder": "Remove from folder",
+    "library.no_folder": "No folder",
+    "library.loading": "Loading documents...",
+    "library.empty_desc": "No document. Create one with",
+    "library.empty_desc_suffix": "above.",
+    "library.files_count": "file(s)"
   },
   de: {
     // Sidebar & Layout
     "nav.prospect": "Akquirieren",
-    "nav.search": "Suchen",
+    "nav.search": "Leads",
     "nav.library": "Mediathek",
     "nav.agents": "Agenten",
     "nav.integrations": "Integrationen",
@@ -1952,7 +2040,51 @@ export const translations = {
     "agents.workspace.radar_reviews_suffix": "Bewertungen",
     "agents.workspace.radar_save_note": "Diese Vorlagen werden in den Notizen des Leads gespeichert.",
     "agents.workspace.radar_save_btn": "In Notizen speichern",
-    "agents.workspace.radar_saved": "Plan gespeichert!"
+    "agents.workspace.radar_saved": "Plan gespeichert!",
+
+    // Welcome / Get Started page
+    "welcome.all_done_title": "Herzlichen Glückwunsch, alles erledigt!",
+    "welcome.lets_go": "Los geht's!",
+    "welcome.complete_tasks_reward": "Erledige alle Aufgaben, um deine Belohnung freizuschalten.",
+    "welcome.ranking": "Rang #1",
+    "welcome.discount_unlocked": "Ihr Rabatt ist freigeschaltet!",
+    "welcome.discount_unlocked_desc": "Genießen Sie 10 % Rabatt auf Ihren ersten Monat des Minerva OS Lite-Abonnements. Verwenden Sie den Code unten beim Checkout.",
+    "welcome.copied": "Kopiert!",
+    "welcome.copy": "Kopieren",
+    "welcome.subscription": "Abonnement",
+    "welcome.progress_title": "Erledige alle Aufgaben → 10 % Rabatt im ersten Monat",
+    "welcome.progress_desc": "Ein exklusiver Promo-Code wird vergeben, sobald alle Schritte unten abgehakt sind.",
+    "welcome.percent_done_suffix": "erledigt",
+    "welcome.setup_title": "Starten Sie mit Minerva OS Lite",
+    "welcome.setup_desc": "Erfahren Sie alles, was Minerva OS Lite für Sie tun kann.",
+    "welcome.hide_panel": "Dieses Feld ausblenden",
+    "welcome.workspace_tab": "Arbeitsbereich einrichten",
+    "welcome.chat_tab": "Chat & Akquise",
+    "welcome.chat_task_desc": "Starten Sie eine Unterhaltung mit Minerva, um zu entdecken, wie KI Sie täglich bei der Akquise unterstützen kann.",
+    "welcome.start": "Starten",
+    "welcome.percent_done_short": "% erledigt",
+
+    // Global search modal
+    "search.global_placeholder": "Globale Suche...",
+    "search.leads_result": "Gezielte Interessenten (Suche)",
+
+    // Follow-up table (Today page)
+    "today.no_followup_title": "Keine Nachfassaktionen fällig heute",
+    "today.no_followup_desc": "Glückwunsch! Alle geplanten Nachfassaktionen sind aktuell. Fügen Sie neue Interessenten hinzu oder planen Sie Aktionen.",
+    "today.table_prospect": "Interessent",
+    "today.table_channel": "Kanal",
+    "today.table_last_contact": "Letzter Kontakt",
+    "today.table_next_action": "Nächste Aktion",
+    "today.table_actions": "Aktionen",
+
+    // Library folder assignment
+    "library.move_to_folder": "In Ordner verschieben",
+    "library.remove_from_folder": "Aus Ordner entfernen",
+    "library.no_folder": "Kein Ordner",
+    "library.loading": "Dokumente werden geladen...",
+    "library.empty_desc": "Kein Dokument. Erstellen Sie eines mit",
+    "library.empty_desc_suffix": "oben.",
+    "library.files_count": "Datei(en)"
   }
 } as const;
 

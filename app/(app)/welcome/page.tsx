@@ -30,11 +30,13 @@ import {
   toggleOnboardingTask,
   onboardingTasks,
 } from '@/lib/onboarding-store';
+import { useLanguage } from '@/lib/language-context';
 
 const PROMO_CODE = 'MINERVA10';
 
 export default function WelcomePage() {
   const router = useRouter();
+  const { t } = useLanguage();
 
   const [completedTasks, setCompletedTasks] = useState<string[]>([]);
   const [onboarding, setOnboarding] = useState({ percent: 12, score: 0 });
@@ -106,16 +108,16 @@ export default function WelcomePage() {
             {onboarding.score} <span className="text-base text-muted-foreground font-normal">/ 595</span>
           </div>
           <h2 className="text-base font-bold text-foreground">
-            {allDone ? 'Félicitations, tout est complété !' : "Commençons !"}
+            {allDone ? t('welcome.all_done_title') : t('welcome.lets_go')}
           </h2>
           <p className="text-xs text-muted-foreground leading-relaxed">
             {allDone
-              ? 'Vous avez débloqué votre réduction de bienvenue.'
-              : 'Complétez toutes les tâches pour débloquer votre récompense.'}
+              ? t('welcome.discount_unlocked')
+              : t('welcome.complete_tasks_reward')}
           </p>
           <div className="pt-2">
             <span className="inline-flex items-center gap-1.5 bg-card border border-border px-3 py-1 rounded-full text-xs font-semibold text-foreground shadow-sm">
-              🏆 Classement #1
+              🏆 {t('welcome.ranking')}
             </span>
           </div>
         </div>
@@ -137,9 +139,9 @@ export default function WelcomePage() {
         <div className="flex-1 min-w-0">
           {allDone ? (
             <>
-              <p className="text-sm font-bold text-foreground">Votre réduction est débloquée !</p>
+              <p className="text-sm font-bold text-foreground">{t('welcome.discount_unlocked')}</p>
               <p className="text-xs text-muted-foreground mt-0.5 mb-3">
-                Profitez de <span className="font-bold text-[#10b981]">10 % de réduction</span> sur votre premier mois d'abonnement Minerva OS Lite. Utilisez le code ci-dessous lors du paiement.
+                {t('welcome.discount_unlocked_desc')}
               </p>
               <div className="flex items-center gap-2">
                 <div className="flex items-center gap-2 bg-background border border-[#10b981]/40 rounded-lg px-3 py-1.5">
@@ -152,21 +154,21 @@ export default function WelcomePage() {
                   className="h-8 text-xs gap-1.5 border-[#10b981]/30 text-[#10b981] hover:bg-[#10b981]/10"
                 >
                   {codeCopied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                  {codeCopied ? 'Copié !' : 'Copier'}
+                  {codeCopied ? t('welcome.copied') : t('welcome.copy')}
                 </Button>
                 <Link href="/billing" className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors">
                   <ExternalLink className="w-3.5 h-3.5" />
-                  <span>Abonnement</span>
+                  <span>{t('welcome.subscription')}</span>
                 </Link>
               </div>
             </>
           ) : (
             <>
               <p className="text-sm font-bold text-foreground">
-                Complétez toutes les tâches → <span className="text-[#10b981]">10 % off</span> le premier mois
+                {t('welcome.progress_title')}
               </p>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Un code promo exclusif vous sera remis dès que vous aurez coché toutes les étapes ci-dessous.
+                {t('welcome.progress_desc')}
               </p>
               <div className="mt-2 w-full bg-muted h-1.5 rounded-full overflow-hidden">
                 <div
@@ -174,7 +176,7 @@ export default function WelcomePage() {
                   className="bg-[#10b981] h-full rounded-full"
                 />
               </div>
-              <p className="text-[10px] text-muted-foreground mt-1">{onboarding.percent}% complété</p>
+              <p className="text-[10px] text-muted-foreground mt-1">{onboarding.percent}{t('welcome.percent_done_short')}</p>
             </>
           )}
         </div>
@@ -185,8 +187,8 @@ export default function WelcomePage() {
         <div className="w-full max-w-xl mt-6 bg-card border border-border rounded-xl overflow-hidden shadow-sm">
           <div className="p-4 border-b border-border flex justify-between items-start">
             <div>
-              <h3 className="text-sm font-bold text-foreground text-left">Démarrer avec Minerva OS Lite</h3>
-              <p className="text-xs text-muted-foreground text-left">Apprenez tout ce que Minerva OS Lite peut faire pour vous.</p>
+              <h3 className="text-sm font-bold text-foreground text-left">{t('welcome.setup_title')}</h3>
+              <p className="text-xs text-muted-foreground text-left">{t('welcome.setup_desc')}</p>
             </div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -196,7 +198,7 @@ export default function WelcomePage() {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48 text-xs">
                 <DropdownMenuItem onClick={() => setShowSetupPanel(false)} className="cursor-pointer">
-                  Masquer ce panneau
+                  {t('welcome.hide_panel')}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -210,14 +212,14 @@ export default function WelcomePage() {
             >
               <div className="flex items-center gap-2.5">
                 <Settings className="h-4 w-4 text-muted-foreground" />
-                <span>Configurer l'espace de travail</span>
+                <span>{t('welcome.workspace_tab')}</span>
                 <span className="text-[10px] font-normal text-muted-foreground">
                   {completedTasks.filter(id => onboardingTasks.find(t => t.id === id)?.category === 'workspace').length} / {onboardingTasks.filter(t => t.category === 'workspace').length}
                 </span>
               </div>
               <div className="flex items-center gap-3.5">
                 <span className="text-[10px] text-muted-foreground font-semibold bg-muted px-1.5 py-0.5 rounded">
-                  {Math.round((completedTasks.filter(id => onboardingTasks.find(t => t.id === id)?.category === 'workspace').length / onboardingTasks.filter(t => t.category === 'workspace').length) * 100) || 0}% fait
+                  {Math.round((completedTasks.filter(id => onboardingTasks.find(task => task.id === id)?.category === 'workspace').length / onboardingTasks.filter(task => task.category === 'workspace').length) * 100) || 0}{t('welcome.percent_done_short')}
                 </span>
                 <div className="shrink-0">
                   {completedTasks.filter(id => onboardingTasks.find(t => t.id === id)?.category === 'workspace').length === onboardingTasks.filter(t => t.category === 'workspace').length ? (
@@ -269,14 +271,14 @@ export default function WelcomePage() {
             >
               <div className="flex items-center gap-2.5">
                 <PenSquare className="h-4 w-4 text-muted-foreground" />
-                <span>Chat & Prospection</span>
+                <span>{t('welcome.chat_tab')}</span>
                 <span className="text-[10px] font-normal text-muted-foreground">
                   {completedTasks.filter(id => onboardingTasks.find(t => t.id === id)?.category === 'chat').length} / {onboardingTasks.filter(t => t.category === 'chat').length}
                 </span>
               </div>
               <div className="flex items-center gap-3.5">
                 <span className="text-[10px] text-muted-foreground font-semibold bg-muted px-1.5 py-0.5 rounded">
-                  {Math.round((completedTasks.filter(id => onboardingTasks.find(t => t.id === id)?.category === 'chat').length / onboardingTasks.filter(t => t.category === 'chat').length) * 100) || 0}% fait
+                  {Math.round((completedTasks.filter(id => onboardingTasks.find(task => task.id === id)?.category === 'chat').length / onboardingTasks.filter(task => task.category === 'chat').length) * 100) || 0}{t('welcome.percent_done_short')}
                 </span>
                 <div className="shrink-0">
                   {completedTasks.filter(id => onboardingTasks.find(t => t.id === id)?.category === 'chat').length === onboardingTasks.filter(t => t.category === 'chat').length ? (
@@ -306,7 +308,7 @@ export default function WelcomePage() {
                             <span className="text-[#059669] font-mono text-[10px] font-bold bg-[#059669]/10 px-1.5 py-0.5 rounded">+{task.pts} pts</span>
                           </div>
                           <p className="text-[11px] text-muted-foreground leading-relaxed max-w-md text-left">
-                            Démarrez une conversation avec Minerva pour découvrir comment l'IA peut vous aider au quotidien dans votre prospection.
+                            {t('welcome.chat_task_desc')}
                           </p>
                           <div className="flex items-center gap-4 pt-1">
                             <Button
@@ -314,7 +316,7 @@ export default function WelcomePage() {
                               size="sm"
                               className="h-8 bg-[#059669] hover:bg-[#047857] text-white rounded text-xs font-bold px-3"
                             >
-                              Commencer
+                              {t('welcome.start')}
                             </Button>
                           </div>
                         </div>

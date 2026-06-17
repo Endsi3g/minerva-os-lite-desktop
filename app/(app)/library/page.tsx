@@ -12,7 +12,10 @@ import {
   Search,
   Lock,
   Globe,
-  Loader2
+  Loader2,
+  MoreHorizontal,
+  FolderInput,
+  X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -21,6 +24,13 @@ import { getFolders, addFolder } from '@/lib/onboarding-store';
 import { useLanguage } from '@/lib/language-context';
 import { useReach } from '@/lib/reach-context';
 import { createClient } from '@/lib/supabase/client';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 interface DocumentRow {
   id: string;
@@ -30,6 +40,7 @@ interface DocumentRow {
   type: 'markdown' | 'pdf' | 'docx' | 'blank';
   content: string | null;
   is_shared: boolean;
+  folder_name: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -172,6 +183,7 @@ export default function LibraryPage() {
   const [activeTab, setActiveTab] = useState<'All' | 'Shared' | 'Private'>('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [folders, setFolders] = useState<string[]>([]);
+  const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
   const [showNewFolderModal, setShowNewFolderModal] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
   const [documents, setDocuments] = useState<DocumentRow[]>([]);
@@ -233,6 +245,7 @@ export default function LibraryPage() {
           type: 'blank',
           content: '',
           is_shared: false,
+          folder_name: selectedFolder || null,
         })
         .select()
         .single();
@@ -277,6 +290,7 @@ export default function LibraryPage() {
           type,
           content,
           is_shared: false,
+          folder_name: selectedFolder || null,
         })
         .select()
         .single();
@@ -306,6 +320,7 @@ export default function LibraryPage() {
           type: template.type,
           content: template.content,
           is_shared: false,
+          folder_name: selectedFolder || null,
         })
         .select()
         .single();
@@ -317,9 +332,29 @@ export default function LibraryPage() {
     }
   };
 
-  const filteredDocuments = documents.filter(doc =>
-    doc.title.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const handleMoveToFolder = async (doc: DocumentRow, folderName: string | null) => {
+    try {
+      const supabase = createClient();
+      const { error } = await supabase
+        .from('documents')
+        .update({ folder_name: folderName })
+        .eq('id', doc.id);
+      if (!error) {
+        setDocuments(prev => prev.map(d => d.id === doc.id ? { ...d, folder_name: folderName } : d));
+      }
+    } catch (err) {
+      console.error('Error moving document to folder:', err);
+    }
+  };
+
+  const folderDocCount = (folderName: string) =>
+    documents.filter(d => d.folder_name === folderName).length;
+
+  const filteredDocuments = documents.filter(doc => {
+    const matchesSearch = doc.title.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesFolder = selectedFolder === null ? true : doc.folder_name === selectedFolder;
+    return matchesSearch && matchesFolder;
+  });
 
   return (
     <div className="h-full overflow-y-auto bg-white">
@@ -397,7 +432,7 @@ export default function LibraryPage() {
           <div className="border-b border-[#e5e5e0] pb-2 flex justify-between items-end">
 
             {/* Filter pills */}
-            <div className="flex gap-2">
+            <div className="flex gap-2 items-center flex-wrap">
               {(['All', 'Shared', 'Private'] as const).map((tab) => (
                 <button
                   key={tab}
@@ -412,6 +447,15 @@ export default function LibraryPage() {
                   {tab}
                 </button>
               ))}
+              {selectedFolder && (
+                <span className="inline-flex items-center gap-1.5 bg-[#059669]/10 border border-[#059669]/20 text-[#059669] px-2.5 py-1 rounded-full text-xs font-semibold">
+                  <FolderIcon className="h-3 w-3" />
+                  {selectedFolder}
+                  <button onClick={() => setSelectedFolder(null)} className="hover:text-[#047857] ml-0.5">
+                    <X className="h-3 w-3" />
+                  </button>
+                </span>
+              )}
             </div>
 
             {/* Right Tools */}
@@ -444,25 +488,40 @@ export default function LibraryPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {folders.map((folder) => (
-                    <tr key={folder} className="hover:bg-[#f4f4f3]/25 transition-colors">
-                      <td className="py-3.5 px-4">
-                        <input type="checkbox" className="rounded border-[#e5e5e0]" />
-                      </td>
-                      <td className="py-3.5 px-3 font-semibold text-[#26251e] flex items-center gap-2">
-                        <FolderIcon className="h-4 w-4 text-[#10b981] fill-[#10b981]/20" />
-                        <span>{folder}</span>
-                      </td>
-                      <td className="py-3.5 px-3 text-[#7a7a76]">
-                        <span className="inline-flex items-center gap-1 bg-[#f4f4f3] px-2 py-0.5 rounded text-[10px] font-semibold text-[#555552]">
-                          <Lock className="h-2.5 w-2.5" />
-                          {t('library.private')}
-                        </span>
-                      </td>
-                      <td className="py-3.5 px-3 text-[#7a7a76]">{t('library.zero_files')}</td>
-                      <td className="py-3.5 px-3 text-right text-[#7a7a76] pr-6">—</td>
-                    </tr>
-                  ))}
+                  {folders.map((folder) => {
+                    const count = folderDocCount(folder);
+                    const isActive = selectedFolder === folder;
+                    return (
+                      <tr
+                        key={folder}
+                        onClick={() => setSelectedFolder(isActive ? null : folder)}
+                        className={cn(
+                          "transition-colors cursor-pointer",
+                          isActive ? "bg-[#059669]/5 border-l-2 border-l-[#059669]" : "hover:bg-[#f4f4f3]/25"
+                        )}
+                      >
+                        <td className="py-3.5 px-4">
+                          <input type="checkbox" className="rounded border-[#e5e5e0]" onClick={e => e.stopPropagation()} />
+                        </td>
+                        <td className="py-3.5 px-3 font-semibold text-[#26251e] flex items-center gap-2">
+                          <FolderIcon className={cn("h-4 w-4 fill-current/20", isActive ? "text-[#059669] fill-[#059669]/20" : "text-[#10b981] fill-[#10b981]/20")} />
+                          <span>{folder}</span>
+                        </td>
+                        <td className="py-3.5 px-3 text-[#7a7a76]">
+                          <span className="inline-flex items-center gap-1 bg-[#f4f4f3] px-2 py-0.5 rounded text-[10px] font-semibold text-[#555552]">
+                            <Lock className="h-2.5 w-2.5" />
+                            {t('library.private')}
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-3 text-[#7a7a76]">
+                          {count > 0
+                            ? <span className="font-semibold text-[#26251e]">{count} {t('library.files_count')}</span>
+                            : t('library.zero_files')}
+                        </td>
+                        <td className="py-3.5 px-3 text-right text-[#7a7a76] pr-6">—</td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -472,7 +531,9 @@ export default function LibraryPage() {
         {/* Recent files Section */}
         <div className="space-y-4">
           <div className="flex justify-between items-center">
-            <h2 className="text-xs font-bold uppercase tracking-wider text-[#7a7a76]">{t('library.recent_files')}</h2>
+            <h2 className="text-xs font-bold uppercase tracking-wider text-[#7a7a76]">
+              {selectedFolder ? selectedFolder : t('library.recent_files')}
+            </h2>
 
             <div className="flex items-center gap-3">
               {/* Search input */}
@@ -492,12 +553,12 @@ export default function LibraryPage() {
           {isLoading ? (
             <div className="flex flex-col items-center justify-center py-16 gap-3">
               <Loader2 className="w-6 h-6 text-[#059669] animate-spin" />
-              <p className="text-xs text-[#7a7a76]">Chargement des documents...</p>
+              <p className="text-xs text-[#7a7a76]">{t('library.loading')}</p>
             </div>
           ) : filteredDocuments.length === 0 ? (
             <div className="border border-dashed border-[#e5e5e0] rounded-lg p-10 flex flex-col items-center justify-center space-y-2">
               <FileText className="h-6 w-6 text-[#7a7a76]" />
-              <p className="text-xs text-[#7a7a76]">Aucun document. Créez-en un avec « {t('library.blank_file')} » ci-dessus.</p>
+              <p className="text-xs text-[#7a7a76]">{t('library.empty_desc')} « {t('library.blank_file')} » {t('library.empty_desc_suffix')}</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5">
@@ -507,35 +568,89 @@ export default function LibraryPage() {
                   ? doc.content.replace(/[#*`_\[\]]/g, '').trim().slice(0, 120)
                   : null;
                 return (
-                  <button
+                  <div
                     key={doc.id}
-                    onClick={() => router.push(`/library/${doc.id}`)}
-                    className="border border-[#e5e5e0] hover:border-[#7a7a76] rounded-lg overflow-hidden bg-white shadow-xs flex flex-col group cursor-pointer transition-all text-left"
+                    className="border border-[#e5e5e0] hover:border-[#7a7a76] rounded-lg overflow-hidden bg-white shadow-xs flex flex-col group cursor-pointer transition-all text-left relative"
                   >
-                    <div className="aspect-[4/3] bg-[#f4f4f3]/40 border-b border-[#e5e5e0] p-3 flex flex-col justify-start overflow-hidden relative">
-                      {previewText ? (
-                        <p className="text-[9px] text-[#7a7a76] leading-relaxed line-clamp-6 whitespace-pre-line select-none">
-                          {previewText}
-                        </p>
-                      ) : (
-                        <div className="flex items-center justify-center h-full">
-                          <Icon className="h-8 w-8 text-[#10b981]" />
-                        </div>
-                      )}
-                    </div>
-                    <div className="p-3 space-y-1 w-full">
-                      <div className="flex items-center justify-between text-[10px] text-[#7a7a76]">
-                        <span>{formatRelativeTime(doc.updated_at)}</span>
-                        {doc.is_shared ? (
-                          <Globe className="h-2.5 w-2.5 text-[#059669]" />
+                    <button
+                      onClick={() => router.push(`/library/${doc.id}`)}
+                      className="flex-1 w-full text-left"
+                    >
+                      <div className="aspect-[4/3] bg-[#f4f4f3]/40 border-b border-[#e5e5e0] p-3 flex flex-col justify-start overflow-hidden relative">
+                        {previewText ? (
+                          <p className="text-[9px] text-[#7a7a76] leading-relaxed line-clamp-6 whitespace-pre-line select-none">
+                            {previewText}
+                          </p>
                         ) : (
-                          <Lock className="h-2.5 w-2.5" />
+                          <div className="flex items-center justify-center h-full">
+                            <Icon className="h-8 w-8 text-[#10b981]" />
+                          </div>
+                        )}
+                        {doc.folder_name && (
+                          <span className="absolute top-2 right-2 inline-flex items-center gap-1 bg-white/90 border border-[#e5e5e0] px-1.5 py-0.5 rounded text-[9px] font-semibold text-[#7a7a76]">
+                            <FolderIcon className="h-2.5 w-2.5" />
+                            {doc.folder_name}
+                          </span>
                         )}
                       </div>
-                      <div className="text-xs font-semibold text-[#26251e] truncate">{doc.title}</div>
-                      <div className="text-[10px] text-[#7a7a76] uppercase">{doc.type}</div>
-                    </div>
-                  </button>
+                      <div className="p-3 space-y-1 w-full">
+                        <div className="flex items-center justify-between text-[10px] text-[#7a7a76]">
+                          <span>{formatRelativeTime(doc.updated_at)}</span>
+                          {doc.is_shared ? (
+                            <Globe className="h-2.5 w-2.5 text-[#059669]" />
+                          ) : (
+                            <Lock className="h-2.5 w-2.5" />
+                          )}
+                        </div>
+                        <div className="text-xs font-semibold text-[#26251e] truncate">{doc.title}</div>
+                        <div className="text-[10px] text-[#7a7a76] uppercase">{doc.type}</div>
+                      </div>
+                    </button>
+
+                    {/* Folder assignment menu */}
+                    {folders.length > 0 && (
+                      <div className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <button
+                              className="h-6 w-6 bg-white/90 border border-[#e5e5e0] rounded flex items-center justify-center hover:bg-[#f4f4f3] text-[#7a7a76]"
+                              onClick={e => e.stopPropagation()}
+                            >
+                              <MoreHorizontal className="h-3 w-3" />
+                            </button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="start" className="w-48 text-xs">
+                            <div className="px-2 py-1 text-[10px] font-bold text-[#7a7a76] uppercase tracking-wider">
+                              {t('library.move_to_folder')}
+                            </div>
+                            <DropdownMenuSeparator />
+                            {folders.map(folder => (
+                              <DropdownMenuItem
+                                key={folder}
+                                onClick={() => handleMoveToFolder(doc, folder)}
+                                className={cn("cursor-pointer gap-2", doc.folder_name === folder && "text-[#059669] font-semibold")}
+                              >
+                                <FolderInput className="h-3.5 w-3.5" />
+                                {folder}
+                              </DropdownMenuItem>
+                            ))}
+                            {doc.folder_name && (
+                              <>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  onClick={() => handleMoveToFolder(doc, null)}
+                                  className="cursor-pointer gap-2 text-muted-foreground"
+                                >
+                                  <X className="h-3.5 w-3.5" />
+                                  {t('library.remove_from_folder')}
+                                </DropdownMenuItem>
+                              </>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    )}
+                  </div>
                 );
               })}
             </div>
