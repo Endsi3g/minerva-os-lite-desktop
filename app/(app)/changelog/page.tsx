@@ -18,6 +18,18 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v2.38.0',
+      date: '2026-06-17',
+      titleKey: 'changelog.v2_38_0_title',
+      descKey: 'changelog.v2_38_0_desc',
+      highlights: [
+        'Analytics avancés : 4 nouvelles sections de breakdown (par niche, ville, propriétaire, campagne).',
+        'Chaque breakdown affiche : total leads, leads contactés, gagnés et taux de conversion.',
+        'Graphiques à barres horizontales avec deux niveaux (activité totale + taux de conversion en vert).',
+        'Top 8 entrées par catégorie, triées par volume décroissant.',
+      ],
+    },
+    {
       version: 'v2.37.0',
       date: '2026-06-17',
       titleKey: 'changelog.v2_37_0_title',

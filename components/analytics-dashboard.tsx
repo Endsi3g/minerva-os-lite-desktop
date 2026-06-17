@@ -28,7 +28,7 @@ import { Lead } from '@/lib/mock-data';
 
 export function AnalyticsDashboard() {
   const { t, locale } = useLanguage();
-  const { leads, tasks, workspacesList } = useReach();
+  const { leads, tasks, workspacesList, campaigns } = useReach();
 
   // Date locale mapping
   const dateLocale = useMemo(() => {
@@ -106,6 +106,62 @@ export function AnalyticsDashboard() {
       color: colors[s],
     })).filter(s => s.count > 0);
   }, [leads]);
+
+  const byNiche = useMemo(() => {
+    const groups: Record<string, { total: number; contacted: number; won: number }> = {};
+    for (const lead of leads) {
+      const key = lead.niche;
+      if (!key) continue;
+      if (!groups[key]) groups[key] = { total: 0, contacted: 0, won: 0 };
+      groups[key].total++;
+      if (lead.status !== 'New') groups[key].contacted++;
+      if (lead.status === 'Won') groups[key].won++;
+    }
+    return Object.entries(groups).sort(([, a], [, b]) => b.total - a.total).slice(0, 8)
+      .map(([key, data]) => ({ key, ...data, convPct: data.total > 0 ? Math.round((data.won / data.total) * 100) : 0 }));
+  }, [leads]);
+
+  const byCity = useMemo(() => {
+    const groups: Record<string, { total: number; contacted: number; won: number }> = {};
+    for (const lead of leads) {
+      const key = lead.city;
+      if (!key) continue;
+      if (!groups[key]) groups[key] = { total: 0, contacted: 0, won: 0 };
+      groups[key].total++;
+      if (lead.status !== 'New') groups[key].contacted++;
+      if (lead.status === 'Won') groups[key].won++;
+    }
+    return Object.entries(groups).sort(([, a], [, b]) => b.total - a.total).slice(0, 8)
+      .map(([key, data]) => ({ key, ...data, convPct: data.total > 0 ? Math.round((data.won / data.total) * 100) : 0 }));
+  }, [leads]);
+
+  const byOwner = useMemo(() => {
+    const groups: Record<string, { total: number; contacted: number; won: number }> = {};
+    for (const lead of leads) {
+      const key = lead.owner;
+      if (!key) continue;
+      if (!groups[key]) groups[key] = { total: 0, contacted: 0, won: 0 };
+      groups[key].total++;
+      if (lead.status !== 'New') groups[key].contacted++;
+      if (lead.status === 'Won') groups[key].won++;
+    }
+    return Object.entries(groups).sort(([, a], [, b]) => b.total - a.total).slice(0, 8)
+      .map(([key, data]) => ({ key, ...data, convPct: data.total > 0 ? Math.round((data.won / data.total) * 100) : 0 }));
+  }, [leads]);
+
+  const byCampaign = useMemo(() => {
+    const groups: Record<string, { total: number; contacted: number; won: number }> = {};
+    for (const lead of leads) {
+      if (!lead.campaignId) continue;
+      const key = campaigns.find(c => c.id === lead.campaignId)?.name ?? lead.campaignId;
+      if (!groups[key]) groups[key] = { total: 0, contacted: 0, won: 0 };
+      groups[key].total++;
+      if (lead.status !== 'New') groups[key].contacted++;
+      if (lead.status === 'Won') groups[key].won++;
+    }
+    return Object.entries(groups).sort(([, a], [, b]) => b.total - a.total).slice(0, 8)
+      .map(([key, data]) => ({ key, ...data, convPct: data.total > 0 ? Math.round((data.won / data.total) * 100) : 0 }));
+  }, [leads, campaigns]);
 
   // Build real aggregations from leads and tasks
   const realDataByDay = useMemo(() => {
@@ -638,6 +694,56 @@ export function AnalyticsDashboard() {
           </CardContent>
         </Card>
 
+      </div>
+
+      {/* Breakdowns grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {([
+          { title: 'Par niche', data: byNiche, emptyMsg: 'Aucun lead avec niche renseignée' },
+          { title: 'Par ville', data: byCity, emptyMsg: 'Aucun lead avec ville renseignée' },
+          { title: 'Par propriétaire', data: byOwner, emptyMsg: 'Aucun lead assigné' },
+          { title: 'Par campagne', data: byCampaign, emptyMsg: 'Aucun lead lié à une campagne' },
+        ] as const).map(({ title, data, emptyMsg }) => {
+          const maxTotal = data.length > 0 ? Math.max(...data.map(d => d.total)) : 1;
+          return (
+            <Card key={title} className="border border-border bg-card">
+              <CardHeader className="p-4 pb-2 border-b border-border/50">
+                <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                  <BarChart3 className="w-3.5 h-3.5 text-primary" />
+                  {title}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-4">
+                {data.length === 0 ? (
+                  <div className="h-32 flex items-center justify-center text-xs text-muted-foreground">{emptyMsg}</div>
+                ) : (
+                  <div className="flex flex-col gap-2.5">
+                    {data.map(({ key, total, contacted, won, convPct }) => (
+                      <div key={key} className="flex items-center gap-2">
+                        <span className="w-[110px] shrink-0 text-[10px] font-semibold text-muted-foreground truncate text-right" title={key}>{key}</span>
+                        <div className="flex-1 flex flex-col gap-0.5">
+                          <div className="h-3 bg-muted/30 rounded-full overflow-hidden">
+                            <div className="h-full bg-primary/60 rounded-full" style={{ width: `${Math.round((total / maxTotal) * 100)}%` }} />
+                          </div>
+                          <div className="h-1.5 bg-muted/20 rounded-full overflow-hidden">
+                            <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${Math.round((won / Math.max(total, 1)) * 100)}%` }} />
+                          </div>
+                        </div>
+                        <div className="w-[64px] shrink-0 text-right">
+                          <span className="text-[10px] font-bold text-foreground">{total}</span>
+                          <span className="text-[9px] text-muted-foreground"> · {contacted}c</span>
+                          {convPct > 0 && (
+                            <span className="ml-1 text-[9px] font-bold text-emerald-600">{convPct}%</span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
 
       {/* Activity heatmap */}
