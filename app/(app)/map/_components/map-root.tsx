@@ -82,6 +82,16 @@ function applyJitter(val: number): number {
   return val + (Math.random() - 0.5) * 0.03;
 }
 
+function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLng = ((lng2 - lng1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
 type TemperatureFilter = 'All' | 'Hot' | 'Warm' | 'Cold';
 
 interface RouteInfo {
@@ -143,6 +153,10 @@ export function MapRoot() {
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
   const [collapsedCities, setCollapsedCities] = useState<Record<string, boolean>>({});
   const leadItemRefs = useRef<Record<string, HTMLDivElement | null>>({});
+
+  // Geolocation state
+  const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
+  const [geoLoading, setGeoLoading] = useState(false);
 
   // Route planning state
   const [routeMode, setRouteMode] = useState(false);
@@ -246,6 +260,19 @@ export function MapRoot() {
     clearRoute();
   };
 
+  const requestGeolocation = useCallback(() => {
+    if (!navigator.geolocation) return;
+    setGeoLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setUserLocation([pos.coords.latitude, pos.coords.longitude]);
+        setGeoLoading(false);
+      },
+      () => setGeoLoading(false),
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  }, []);
+
   const temperatureOptions: { value: TemperatureFilter; label: string }[] = [
     { value: 'All', label: 'Tous' },
     { value: 'Hot', label: 'Chauds' },
@@ -274,6 +301,28 @@ export function MapRoot() {
               {routeMode ? <><X className="h-3 w-3" /> Quitter</> : <><Route className="h-3 w-3" /> Itinéraire</>}
             </Button>
           </div>
+
+          {!routeMode && (
+            <Button
+              size="sm"
+              variant="outline"
+              className={cn(
+                'h-7 text-[10px] font-bold gap-1 px-2 w-full mb-3',
+                userLocation
+                  ? 'border-blue-400 text-blue-600 hover:bg-blue-50'
+                  : 'border-[#e5e5e0] text-[#7a7a76] hover:border-[#26251e]/30'
+              )}
+              onClick={requestGeolocation}
+              disabled={geoLoading}
+            >
+              {geoLoading ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : (
+                <MapPin className="h-3 w-3" />
+              )}
+              {userLocation ? 'Position localisée — Actualiser' : 'Afficher ma position + distances'}
+            </Button>
+          )}
 
           {routeMode ? (
             /* Route planning panel */
@@ -437,7 +486,8 @@ export function MapRoot() {
                             )}
                             <div className="flex-1 min-w-0">
                               <p className="text-xs font-bold text-[#26251e] truncate">{lead.businessName}</p>
-                              <div className="flex items-center gap-1 mt-0.5">
+                              {lead.niche && <p className="text-[9px] text-[#7a7a76] truncate">{lead.niche}</p>}
+                              <div className="flex items-center gap-1 mt-0.5 flex-wrap">
                                 <span className="text-[9px] font-semibold text-[#7a7a76]">{getTemperatureLabel(lead.temperature)}</span>
                                 <span className="text-[9px] text-[#7a7a76]">·</span>
                                 <span
@@ -450,6 +500,14 @@ export function MapRoot() {
                                 >
                                   {lead.status}
                                 </span>
+                                {userLocation && (
+                                  <>
+                                    <span className="text-[9px] text-[#7a7a76]">·</span>
+                                    <span className="text-[9px] font-bold text-blue-500">
+                                      {haversineKm(userLocation[0], userLocation[1], lead._lat, lead._lng).toFixed(1)} km
+                                    </span>
+                                  </>
+                                )}
                               </div>
                             </div>
                           </div>
@@ -486,7 +544,7 @@ export function MapRoot() {
 
       {/* Map */}
       <div className="flex-1 relative">
-        <Map center={[45.5019, -73.5674]} zoom={12} className="h-full w-full">
+        <Map center={userLocation ?? [45.5019, -73.5674]} zoom={userLocation ? 13 : 12} className="h-full w-full">
           <MapControls position="bottom-right" showZoom />
           <RouteLayer routeInfo={routeInfo} />
 
@@ -522,16 +580,22 @@ export function MapRoot() {
                 {!routeMode && (
                   <MarkerPopup closeButton>
                     <div className="min-w-[180px]">
-                      <p className="text-sm font-bold text-[#26251e] mb-1 leading-tight">{lead.businessName}</p>
+                      <p className="text-sm font-bold text-[#26251e] mb-0.5 leading-tight">{lead.businessName}</p>
+                      {lead.niche && <p className="text-[10px] text-[#7a7a76] mb-1">{lead.niche}</p>}
                       <div className="flex items-center gap-1 mb-2">
                         <span className="text-[9px] font-bold rounded px-1.5 py-0.5 text-white" style={{ backgroundColor: color }}>
                           {getTemperatureLabel(lead.temperature)}
                         </span>
                         <span className="text-[10px] text-[#7a7a76]">{lead.status}</span>
                       </div>
-                      <div className="flex items-center gap-1 text-[11px] text-[#7a7a76] mb-2">
+                      <div className="flex items-center gap-1 text-[11px] text-[#7a7a76] mb-2 flex-wrap">
                         <MapPin className="h-3 w-3 shrink-0" />
                         {lead.city}
+                        {userLocation && (
+                          <span className="font-bold text-blue-500">
+                            · {haversineKm(userLocation[0], userLocation[1], lead._lat, lead._lng).toFixed(1)} km
+                          </span>
+                        )}
                       </div>
                       <Link
                         href={`/leads/${lead.id}`}
@@ -546,6 +610,19 @@ export function MapRoot() {
               </MapMarker>
             );
           })}
+
+          {userLocation && (
+            <MapMarker longitude={userLocation[1]} latitude={userLocation[0]}>
+              <MarkerContent>
+                <div
+                  className="h-5 w-5 rounded-full bg-blue-500 border-2 border-white shadow-lg flex items-center justify-center cursor-default"
+                  title="Votre position"
+                >
+                  <div className="h-2 w-2 rounded-full bg-white" />
+                </div>
+              </MarkerContent>
+            </MapMarker>
+          )}
         </Map>
       </div>
     </div>

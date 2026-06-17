@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import Link from 'next/link';
 import { useReach, type Campaign } from '@/lib/reach-context';
-import { Megaphone, Plus, Play, Pause, CheckCircle2, FileEdit, Trash2, Calendar, Users, MapPin, Tag, Loader2 } from 'lucide-react';
+import { Megaphone, Plus, Play, Pause, CheckCircle2, FileEdit, Trash2, Calendar, MapPin, Tag } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const STATUS_LABELS: Record<Campaign['status'], string> = {
@@ -19,74 +19,8 @@ const STATUS_COLORS: Record<Campaign['status'], string> = {
   draft: 'bg-muted/60 text-muted-foreground border-border',
 };
 
-function NewCampaignModal({ onClose, onCreated }: { onClose: () => void; onCreated: (c: Campaign) => void }) {
-  const { addCampaign } = useReach();
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [niches, setNiches] = useState('');
-  const [cities, setCities] = useState('');
-  const [startDate, setStartDate] = useState('');
-  const [saving, setSaving] = useState(false);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!name.trim()) return;
-    setSaving(true);
-    const c = await addCampaign({
-      name: name.trim(),
-      description: description.trim() || undefined,
-      niches: niches.split(',').map(s => s.trim()).filter(Boolean),
-      cities: cities.split(',').map(s => s.trim()).filter(Boolean),
-      startDate: startDate || undefined,
-    });
-    setSaving(false);
-    if (c) { onCreated(c); onClose(); }
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-      <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-xl w-[480px] max-w-[95vw] p-6 space-y-4">
-        <h2 className="text-sm font-bold text-[#26251e]">Nouvelle campagne</h2>
-        <div className="space-y-3">
-          <div className="space-y-1.5">
-            <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Nom *</label>
-            <input required value={name} onChange={e => setName(e.target.value)} placeholder="ex: Restaurants Montréal Juin" className="w-full text-xs p-2.5 border border-[#e6e5e0] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#059669]" />
-          </div>
-          <div className="space-y-1.5">
-            <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Description</label>
-            <textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="Objectif, contexte..." rows={2} className="w-full text-xs p-2.5 border border-[#e6e5e0] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#059669] resize-none" />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Niches (virgule)</label>
-              <input value={niches} onChange={e => setNiches(e.target.value)} placeholder="Restaurant, Coiffeur" className="w-full text-xs p-2.5 border border-[#e6e5e0] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#059669]" />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Villes (virgule)</label>
-              <input value={cities} onChange={e => setCities(e.target.value)} placeholder="Montréal, Laval" className="w-full text-xs p-2.5 border border-[#e6e5e0] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#059669]" />
-            </div>
-          </div>
-          <div className="space-y-1.5">
-            <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Date de début</label>
-            <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="w-full text-xs p-2.5 border border-[#e6e5e0] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#059669]" />
-          </div>
-        </div>
-        <div className="flex justify-end gap-2 pt-2">
-          <button type="button" onClick={onClose} className="px-4 py-2 text-xs font-semibold text-[#555552] border border-[#e5e5e0] rounded-lg hover:bg-[#f4f4f3] transition-colors">Annuler</button>
-          <button type="submit" disabled={saving} className="px-5 py-2 text-xs font-bold text-white bg-[#059669] hover:bg-[#047857] rounded-lg transition-colors disabled:opacity-60 flex items-center gap-1.5">
-            {saving && <Loader2 className="w-3 h-3 animate-spin" />}
-            Créer la campagne
-          </button>
-        </div>
-      </form>
-    </div>
-  );
-}
-
 export function CampaignsRoot() {
   const { campaigns, leads, updateCampaign, deleteCampaign } = useReach();
-  const [showNew, setShowNew] = useState(false);
-  const [created, setCreated] = useState<Campaign | null>(null);
 
   const getCampaignLeads = (campaignId: string) => leads.filter(l => l.campaignId === campaignId);
 
@@ -111,10 +45,13 @@ export function CampaignsRoot() {
             </div>
             <p className="text-xs text-[#7a7a76] mt-0.5">{campaigns.length} campagne{campaigns.length !== 1 ? 's' : ''}</p>
           </div>
-          <button onClick={() => setShowNew(true)} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#059669] hover:bg-[#047857] text-white text-xs font-bold transition-colors">
+          <Link
+            href="/campaigns/new"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#059669] hover:bg-[#047857] text-white text-xs font-bold transition-colors"
+          >
             <Plus className="h-3.5 w-3.5" />
             Nouvelle campagne
-          </button>
+          </Link>
         </div>
 
         {/* Empty state */}
@@ -123,10 +60,13 @@ export function CampaignsRoot() {
             <Megaphone className="h-8 w-8 text-[#7a7a76]/40" />
             <p className="text-sm font-bold text-[#26251e]">Aucune campagne</p>
             <p className="text-xs text-[#7a7a76] max-w-xs">Créez votre première campagne pour regrouper leads, séquences et analytics par objectif.</p>
-            <button onClick={() => setShowNew(true)} className="mt-2 inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#059669] hover:bg-[#047857] text-white text-xs font-bold transition-colors">
+            <Link
+              href="/campaigns/new"
+              className="mt-2 inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#059669] hover:bg-[#047857] text-white text-xs font-bold transition-colors"
+            >
               <Plus className="h-3.5 w-3.5" />
               Créer une campagne
-            </button>
+            </Link>
           </div>
         )}
 
@@ -212,8 +152,6 @@ export function CampaignsRoot() {
           })}
         </div>
       </div>
-
-      {showNew && <NewCampaignModal onClose={() => setShowNew(false)} onCreated={setCreated} />}
     </div>
   );
 }

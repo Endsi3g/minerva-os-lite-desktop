@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import Link from 'next/link';
 import { useReach } from '@/lib/reach-context';
 import { getApiUrl } from '@/lib/api-helper';
 import { cn } from '@/lib/utils';
@@ -200,13 +201,13 @@ export function SequencesRoot() {
               Automatisez vos relances — 2 à 3 emails espacés sur plusieurs jours, envoyés via votre Gmail connecté.
             </p>
           </div>
-          <Button
-            onClick={() => setShowNewModal(true)}
-            className="bg-[#059669] hover:bg-[#047857] text-white text-xs font-bold gap-1.5 h-8 px-3"
+          <Link
+            href="/sequences/new"
+            className="inline-flex items-center gap-1.5 bg-[#059669] hover:bg-[#047857] text-white text-xs font-bold h-8 px-3 rounded-lg transition-colors"
           >
             <Plus className="h-3.5 w-3.5" />
             Nouvelle séquence
-          </Button>
+          </Link>
         </div>
 
         {/* Stats row */}

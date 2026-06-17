@@ -76,10 +76,11 @@ export async function POST(request: NextRequest) {
       .maybeSingle();
 
     if (existing) {
-      return NextResponse.json(
-        { error: `This email is already ${existing.status === 'active' ? 'a member' : 'pending invitation'}` },
-        { status: 409 }
-      );
+      if (existing.status === 'active') {
+        return NextResponse.json({ error: 'This email is already a member' }, { status: 409 });
+      }
+      // Stale pending row — delete it and re-invite cleanly
+      await supabase.from('team_members').delete().eq('id', existing.id);
     }
 
     // 5. Generate Supabase invitation link (Service Role)

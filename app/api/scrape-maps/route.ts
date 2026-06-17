@@ -448,20 +448,61 @@ async function scrapeDirectoryFromDDG(niche: string, city: string, source: 'yelp
 }
 
 // Fallback simulation for completely unknown niche/city combos
-function generateRealisticLeads(niches: string[], city: string): ScrapedLead[] {
+function generateRealisticLeads(niches: string[], city: string, count: number = 20): ScrapedLead[] {
   const niche = niches[0] ?? 'Commerce local';
   const cleanNiche = niche.split(' / ')[0];
   const slugify = (t: string) => t.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
-  const n = slugify(cleanNiche);
-  const c = slugify(city);
 
-  return [
-    { id: crypto.randomUUID(), businessName: `${cleanNiche} du Centre ${city}`, niche: cleanNiche, city, phone: '+1 514-555-0001', email: '', website: '', rating: 3.7, reviewsCount: 14, mapsUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(cleanNiche + ' ' + city)}`, seoAudit: 'Fiche non revendiquée. Aucun site internet. Opportunité directe.', source: 'simulation', ...getCityCoords(city) },
-    { id: crypto.randomUUID(), businessName: `${cleanNiche} Artisanale ${city}`, niche: cleanNiche, city, phone: '+1 514-555-0002', email: `info@${n}-${c}.ca`, website: `https://${n}-${c}.ca`, rating: 4.1, reviewsCount: 7, mapsUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(cleanNiche + ' artisanale ' + city)}`, seoAudit: 'Site présent sans HTTPS. Non responsive. Opportunité de refonte.', source: 'simulation', ...getCityCoords(city) },
-    { id: crypto.randomUUID(), businessName: `${cleanNiche} Express — Chez Lambert`, niche: cleanNiche, city, phone: '+1 514-555-0003', email: '', website: '', rating: 3.4, reviewsCount: 29, mapsUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(cleanNiche + ' express ' + city)}`, seoAudit: 'Note de 3.4/5. Fiche Google Maps sans photos. Proposer un pack d\'optimisation.', source: 'simulation', ...getCityCoords(city) },
-    { id: crypto.randomUUID(), businessName: `${cleanNiche} & Co`, niche: cleanNiche, city, phone: '+1 450-555-0004', email: `bonjour@${n}-co.com`, website: `https://www.${n}-co.com`, rating: 4.6, reviewsCount: 112, mapsUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(cleanNiche + ' co ' + city)}`, seoAudit: 'Bonne visibilité. Pas de réservation en ligne. Opportunité module Minerva.', source: 'simulation', ...getCityCoords(city) },
-    { id: crypto.randomUUID(), businessName: `L'Atelier du ${city}`, niche: cleanNiche, city, phone: '', email: '', website: '', rating: 3.9, reviewsCount: 5, mapsUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent('atelier ' + city)}`, seoAudit: 'Profil Maps presque vide. Pas de site web. Audit SEO local gratuit recommandé.', source: 'simulation', ...getCityCoords(city) },
-  ];
+  const PREFIXES = ['Centre', 'Atelier', 'Boutique', 'Studio', 'Maison', 'Espace', 'Pro', 'Express', 'Prestige', 'Grand', 'Coin', 'Service'];
+  const SUFFIXES = ['du Plateau', 'Artisanal', 'Moderne', '& Co', 'de Quartier', 'Local', 'Expert', 'Premium', 'Tradition', 'Service', 'Plus', 'Innovation'];
+  const FIRST_NAMES = ['Lambert', 'Tremblay', 'Gagné', 'Roy', 'Côté', 'Martin', 'Dubois', 'Morin', 'Lavoie', 'Pelletier', 'Gagnon', 'Fortin'];
+  const AREA_NAMES = ['Nord', 'Sud', 'Est', 'Ouest', 'Centre-Ville', 'Village', 'Parc', 'Marché', 'Plateau', 'Quartier'];
+  const AREA_CODES = ['514', '438', '450', '418', '819', '873', '581'];
+
+  const leads: ScrapedLead[] = [];
+
+  for (let i = 0; i < count; i++) {
+    const pattern = i % 8;
+    let businessName: string;
+    switch (pattern) {
+      case 0: businessName = `${PREFIXES[i % PREFIXES.length]} ${cleanNiche} ${city}`; break;
+      case 1: businessName = `${cleanNiche} ${SUFFIXES[i % SUFFIXES.length]}`; break;
+      case 2: businessName = `Chez ${FIRST_NAMES[i % FIRST_NAMES.length]} — ${cleanNiche}`; break;
+      case 3: businessName = `${cleanNiche} du ${AREA_NAMES[i % AREA_NAMES.length]}`; break;
+      case 4: businessName = `${FIRST_NAMES[(i + 3) % FIRST_NAMES.length]} ${cleanNiche}`; break;
+      case 5: businessName = `${cleanNiche} & Associés`; break;
+      case 6: businessName = `L'${cleanNiche} de ${city}`; break;
+      default: businessName = `${city} ${cleanNiche} Services`; break;
+    }
+
+    const areaCode = AREA_CODES[i % AREA_CODES.length];
+    const phone = `+1 ${areaCode}-${String(500 + i).padStart(3, '0')}-${String(1000 + i * 7).slice(-4)}`;
+    const hasWebsite = i % 3 !== 0;
+    const slugName = slugify(businessName);
+    const rating = parseFloat((3.1 + (i % 20) * 0.09).toFixed(1));
+    const reviewsCount = 3 + (i * 13) % 180;
+    const coords = getCityCoords(city);
+
+    leads.push({
+      id: crypto.randomUUID(),
+      businessName,
+      niche: cleanNiche,
+      city,
+      phone,
+      email: hasWebsite ? `info@${slugName}.ca` : '',
+      website: hasWebsite ? `https://www.${slugName}.ca` : '',
+      address: '',
+      rating,
+      reviewsCount,
+      mapsUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(businessName + ' ' + city)}`,
+      seoAudit: generateSeoAudit(hasWebsite ? `https://www.${slugName}.ca` : '', rating),
+      source: 'simulation',
+      latitude: coords.latitude,
+      longitude: coords.longitude,
+    });
+  }
+
+  return leads;
 }
 
 function dedup(leads: ScrapedLead[]): ScrapedLead[] {
@@ -594,8 +635,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ leads: unique.slice(0, maxResults), source: usedSources.join('+'), total: unique.length });
     }
 
-    // Fallback simulation
-    const fallback = dedup(generateRealisticLeads(niches, cities[0]));
+    // Fallback simulation — generate as many leads as requested
+    const fallback = dedup(generateRealisticLeads(niches, cities[0], maxResults));
     return NextResponse.json({ leads: fallback, source: 'simulation', total: fallback.length });
 
   } catch (err) {

@@ -1,4 +1,6 @@
-import MapRoot from './_components/map-root';
+import dynamic from 'next/dynamic';
+
+const MapRoot = dynamic(() => import('./_components/map-root'), { ssr: false });
 
 export const metadata = {
   title: 'Carte des leads - Minerva Reach',

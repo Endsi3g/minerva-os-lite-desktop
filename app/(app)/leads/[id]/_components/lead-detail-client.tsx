@@ -1744,8 +1744,16 @@ export function LeadDetailClient({ id }: { id: string }) {
                         });
                         if (res.ok) {
                           const { html } = await res.json();
-                          const win = window.open('', '_blank');
-                          if (win) { win.document.write(html); win.document.close(); win.print(); }
+                          const blob = new Blob([html], { type: 'text/html' });
+                          const url = URL.createObjectURL(blob);
+                          const a = document.createElement('a');
+                          a.href = url;
+                          a.target = '_blank';
+                          a.rel = 'noopener noreferrer';
+                          document.body.appendChild(a);
+                          a.click();
+                          document.body.removeChild(a);
+                          setTimeout(() => URL.revokeObjectURL(url), 10000);
                         }
                       } catch (err) {
                         console.error('Proposal generation error:', err);
