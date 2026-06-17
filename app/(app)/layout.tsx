@@ -40,6 +40,7 @@ import {
   Gift,
   MapPin,
   ShieldCheck,
+  Mail,
 } from 'lucide-react';
 import { BottomBlur } from '@/components/ui/edge-blur';
 import { cn } from '@/lib/utils';
@@ -416,6 +417,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
       id: 'data',
       label: 'Données & Fichiers',
       items: [
+        { name: t('nav.sequences'), href: '/sequences', icon: Mail },
         { name: 'Services & Tarifs', href: '/services', icon: Tag },
         { name: t('nav.library'), href: '/library', icon: Folder },
       ],
