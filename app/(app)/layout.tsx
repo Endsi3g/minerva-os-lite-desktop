@@ -36,6 +36,7 @@ import {
   CreditCard,
   HelpCircle,
   Tag,
+  Brain,
 } from 'lucide-react';
 import { BottomBlur } from '@/components/ui/edge-blur';
 import { cn } from '@/lib/utils';
@@ -340,6 +341,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
       else if (segment === 'team') label = t('nav.team');
       else if (segment === 'workspaces') label = t('nav.workspaces');
       else if (segment === 'agents') label = t('nav.agents');
+      else if (segment === 'assistant') label = t('nav.assistant');
       else if (segment === 'download') label = t('nav.download');
       else if (segment === 'billing') label = 'Facturation';
       else if (segment === 'help') label = 'Aide & Docs';
@@ -366,6 +368,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
     { name: 'Services & Tarifs', href: '/services', icon: Tag },
     { name: t('nav.library'), href: '/library', icon: Folder },
     { name: t('nav.agents'), href: '/agents', icon: Sparkles },
+    { name: t('nav.assistant'), href: '/assistant', icon: Brain },
     { name: t('nav.analytics'), href: '/analytics', icon: BarChart3 },
     { name: t('nav.integrations'), href: '/integrations', icon: Plug },
     { name: t('nav.team'), href: '/team', icon: Users },

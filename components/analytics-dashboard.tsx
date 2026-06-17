@@ -60,14 +60,41 @@ export function AnalyticsDashboard() {
     const totalUsers = Math.max(1, distinctOwners);
     const totalWorkflows = tasks.filter((t) => !t.completed).length;
     const totalGroups = Math.max(1, workspacesList.length);
+    // Count custom agents from localStorage (3 builtins + custom)
+    const customAgentCount = (() => {
+      try {
+        const stored = localStorage.getItem('minerva_agents');
+        return stored ? JSON.parse(stored).length : 0;
+      } catch { return 0; }
+    })();
 
     return {
       users: totalUsers,
-      agents: 3,
+      agents: 3 + customAgentCount,
       workflows: totalWorkflows,
       groups: totalGroups,
     };
   }, [leads, tasks, workspacesList]);
+
+  // Build real aggregations from leads and tasks
+  const realDataByDay = useMemo(() => {
+    const byDay: Record<string, { leadsCreated: number; tasksCompleted: number; owners: Set<string> }> = {};
+    for (const lead of leads) {
+      const day = lead.createdAt?.split('T')[0];
+      if (!day) continue;
+      if (!byDay[day]) byDay[day] = { leadsCreated: 0, tasksCompleted: 0, owners: new Set() };
+      byDay[day].leadsCreated++;
+      if (lead.owner) byDay[day].owners.add(lead.owner);
+    }
+    for (const task of tasks) {
+      if (!task.completed) continue;
+      const day = (task as any).updatedAt?.split('T')[0] ?? task.dueDate;
+      if (!day) continue;
+      if (!byDay[day]) byDay[day] = { leadsCreated: 0, tasksCompleted: 0, owners: new Set() };
+      byDay[day].tasksCompleted++;
+    }
+    return byDay;
+  }, [leads, tasks]);
 
   // Generate historical data points within date range
   const chartPoints = useMemo(() => {
@@ -85,20 +112,14 @@ export function AnalyticsDashboard() {
     const start = startOfDay(dateRange.from);
     const end = endOfDay(dateRange.to);
 
-    // Generate daily steps
+    // Generate daily steps using real lead/task data
     const current = new Date(start);
     while (current <= end) {
-      const daySeed = current.getDate() + current.getMonth() * 31;
-      
-      // Calculate dynamic pseudo-random counts based on date seed
-      // to make the graphs look alive and responsive to filters
-      const activeUsersBase = 2 + (daySeed % 3);
-      const activeUsers = current.getDay() === 0 || current.getDay() === 6 
-        ? Math.max(1, activeUsersBase - 2) // lower on weekend
-        : activeUsersBase;
-
-      const chatMessages = activeUsers * (5 + (daySeed % 12));
-      const agentMessages = activeUsers * (3 + (daySeed % 7));
+      const dayKey = format(current, 'yyyy-MM-dd');
+      const dayData = realDataByDay[dayKey];
+      const chatMessages = dayData?.leadsCreated ?? 0;
+      const agentMessages = dayData?.tasksCompleted ?? 0;
+      const activeUsers = dayData ? Math.max(1, dayData.owners.size) : 0;
 
       points.push({
         date: new Date(current),

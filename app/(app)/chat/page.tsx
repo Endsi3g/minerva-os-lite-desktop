@@ -38,6 +38,7 @@ import { useLanguage } from '@/lib/language-context';
 import { cn } from '@/lib/utils';
 import { getApiUrl } from '@/lib/api-helper';
 import { MinervaIcon } from '@/components/icons';
+import { TreeMascot } from '@/components/tree-mascot';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -786,10 +787,13 @@ export default function ChatPage() {
             {(!currentSession || currentSession.messages.length === 0) ? (
               <div className="py-8 space-y-8 animate-in fade-in duration-300 flex flex-col justify-center">
                 
-                {/* Logo Badge */}
-                <div className="flex justify-center items-center gap-1.5 py-1 px-3 bg-white border border-[#e5e5e0] rounded-full text-xs font-semibold text-[#26251e] mx-auto w-fit shadow-3xs select-none">
-                  <MinervaIcon size={14} className="text-[#059669]" />
-                  <span>Minerva Copilot</span>
+                {/* Logo Badge + Mascot */}
+                <div className="flex flex-col items-center gap-3">
+                  <TreeMascot state={isLoading ? 'thinking' : 'idle'} size={72} />
+                  <div className="flex justify-center items-center gap-1.5 py-1 px-3 bg-white border border-[#e5e5e0] rounded-full text-xs font-semibold text-[#26251e] mx-auto w-fit shadow-3xs select-none">
+                    <MinervaIcon size={14} className="text-[#059669]" />
+                    <span>Minerva Copilot</span>
+                  </div>
                 </div>
 
                 {/* Big Centered Greeting */}

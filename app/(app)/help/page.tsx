@@ -2,11 +2,13 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { HelpCircle, ChevronDown, PlayCircle, BookOpen, ExternalLink, Mail } from 'lucide-react';
+import { HelpCircle, ChevronDown, PlayCircle, BookOpen, ExternalLink, Mail, Send, CheckCircle2, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { HELP_GUIDES } from '@/lib/help-guides';
+import { getApiUrl } from '@/lib/api-helper';
+import { createClient } from '@/lib/supabase/client';
 
-type HelpTab = 'faq' | 'tutorials' | 'videos';
+type HelpTab = 'faq' | 'tutorials' | 'videos' | 'contact';
 
 const FAQ_ITEMS = [
   {
@@ -103,10 +105,50 @@ function FaqItem({ item }: { item: typeof FAQ_ITEMS[0] }) {
 export default function HelpPage() {
   const [tab, setTab] = useState<HelpTab>('faq');
 
+  // Contact form state
+  const [contactName, setContactName] = useState('');
+  const [contactEmail, setContactEmail] = useState('');
+  const [contactSubject, setContactSubject] = useState('');
+  const [contactMessage, setContactMessage] = useState('');
+  const [contactSending, setContactSending] = useState(false);
+  const [contactSuccess, setContactSuccess] = useState(false);
+  const [contactError, setContactError] = useState('');
+
+  const handleContactSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setContactSending(true);
+    setContactError('');
+    try {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      const res = await fetch(getApiUrl('/api/support/contact'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: contactName,
+          email: contactEmail || user?.email || '',
+          subject: contactSubject,
+          message: contactMessage,
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || `Erreur ${res.status}`);
+      }
+      setContactSuccess(true);
+      setContactName(''); setContactEmail(''); setContactSubject(''); setContactMessage('');
+    } catch (err: any) {
+      setContactError(err.message || 'Erreur lors de l\'envoi. Réessayez plus tard.');
+    } finally {
+      setContactSending(false);
+    }
+  };
+
   const tabs: { id: HelpTab; label: string }[] = [
     { id: 'faq', label: 'FAQ' },
     { id: 'tutorials', label: 'Tutoriels' },
     { id: 'videos', label: 'Vidéos' },
+    { id: 'contact', label: 'Contact' },
   ];
 
   return (
@@ -124,13 +166,13 @@ export default function HelpPage() {
               Trouvez des réponses et apprenez à tirer le meilleur de Minerva OS Reach Lite.
             </p>
           </div>
-          <a
-            href="mailto:support@minervaos.com"
+          <button
+            onClick={() => setTab('contact')}
             className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-[#e5e5e0] text-xs font-semibold text-[#555552] hover:text-[#26251e] hover:border-[#c5c5c0] transition-colors"
           >
             <Mail className="h-3.5 w-3.5" />
             Contacter le support
-          </a>
+          </button>
         </div>
 
         {/* Quick links banner */}
@@ -139,7 +181,7 @@ export default function HelpPage() {
             { icon: BookOpen, label: 'Démarrage rapide', tab: 'tutorials' as HelpTab },
             { icon: HelpCircle, label: 'Questions fréquentes', tab: 'faq' as HelpTab },
             { icon: PlayCircle, label: 'Tutoriels vidéo', tab: 'videos' as HelpTab },
-            { icon: Mail, label: 'Support email', tab: null },
+            { icon: Mail, label: 'Support email', tab: 'contact' as HelpTab },
           ].map((item) => (
             <button
               key={item.label}
@@ -261,6 +303,92 @@ export default function HelpPage() {
           </div>
         )}
 
+        {/* Contact Form Tab */}
+        {tab === 'contact' && (
+          <div className="rounded-xl border border-[#e5e5e0] bg-white p-6 space-y-5">
+            <div>
+              <h2 className="text-sm font-bold text-[#26251e]">Contacter le support</h2>
+              <p className="text-[11px] text-[#7a7a76] mt-0.5">Notre équipe répond en moins de 24h du lundi au vendredi.</p>
+            </div>
+            {contactSuccess ? (
+              <div className="flex flex-col items-center gap-3 py-8 text-center">
+                <CheckCircle2 className="h-10 w-10 text-[#10b981]" />
+                <p className="text-sm font-bold text-[#26251e]">Message envoyé !</p>
+                <p className="text-xs text-[#7a7a76]">Nous vous répondrons dans les plus brefs délais.</p>
+                <button
+                  onClick={() => setContactSuccess(false)}
+                  className="text-xs text-[#10b981] hover:underline font-semibold"
+                >
+                  Envoyer un autre message
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={handleContactSubmit} className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Nom</label>
+                    <input
+                      type="text"
+                      required
+                      value={contactName}
+                      onChange={(e) => setContactName(e.target.value)}
+                      placeholder="Jean Dupont"
+                      className="w-full text-xs p-2.5 border border-[#e6e5e0] rounded-md focus:outline-none focus:ring-1 focus:ring-[#10b981] bg-white"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Email de réponse</label>
+                    <input
+                      type="email"
+                      value={contactEmail}
+                      onChange={(e) => setContactEmail(e.target.value)}
+                      placeholder="votre@email.com"
+                      className="w-full text-xs p-2.5 border border-[#e6e5e0] rounded-md focus:outline-none focus:ring-1 focus:ring-[#10b981] bg-white"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Sujet</label>
+                  <input
+                    type="text"
+                    required
+                    value={contactSubject}
+                    onChange={(e) => setContactSubject(e.target.value)}
+                    placeholder="Problème avec la synchronisation des leads..."
+                    className="w-full text-xs p-2.5 border border-[#e6e5e0] rounded-md focus:outline-none focus:ring-1 focus:ring-[#10b981] bg-white"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Message</label>
+                  <textarea
+                    required
+                    value={contactMessage}
+                    onChange={(e) => setContactMessage(e.target.value)}
+                    placeholder="Décrivez votre problème ou votre question en détail..."
+                    className="w-full text-xs p-2.5 border border-[#e6e5e0] rounded-md focus:outline-none focus:ring-1 focus:ring-[#10b981] bg-white h-32 resize-none"
+                  />
+                </div>
+                {contactError && (
+                  <p className="text-xs text-red-600 font-semibold">{contactError}</p>
+                )}
+                <div className="flex justify-end">
+                  <button
+                    type="submit"
+                    disabled={contactSending}
+                    className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-lg bg-[#26251e] hover:bg-[#3a3930] text-white text-xs font-bold transition-colors disabled:opacity-60"
+                  >
+                    {contactSending ? (
+                      <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Envoi...</>
+                    ) : (
+                      <><Send className="h-3.5 w-3.5" /> Envoyer le message</>
+                    )}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        )}
+
         {/* Contact footer card */}
         <div className="rounded-xl border border-[#e5e5e0] bg-[#f4f4f3] p-5 flex items-center justify-between gap-4 flex-wrap">
           <div className="space-y-0.5">
@@ -269,13 +397,13 @@ export default function HelpPage() {
               Notre équipe répond généralement en moins de 24h du lundi au vendredi.
             </p>
           </div>
-          <a
-            href="mailto:support@minervaos.com"
+          <button
+            onClick={() => setTab('contact')}
             className="shrink-0 inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#26251e] hover:bg-[#3a3930] text-white text-xs font-bold transition-colors"
           >
             <Mail className="h-3.5 w-3.5" />
             Écrire au support
-          </a>
+          </button>
         </div>
 
       </div>

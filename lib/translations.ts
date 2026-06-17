@@ -302,6 +302,7 @@ export const translations = {
     "lead.collision_warning_viewer": "⚠️ {users} consulte également ce prospect.",
     
     // Download page & Nav
+    "nav.assistant": "Assistante IA",
     "nav.download": "Téléchargement",
     "download.title": "Application Bureau",
     "download.subtitle": "Téléchargez l'application native ou gérez les paramètres système.",
@@ -920,6 +921,7 @@ export const translations = {
     "lead.collision_warning_viewer": "⚠️ {users} is also viewing this lead.",
 
     // Download page & Nav
+    "nav.assistant": "AI Assistant",
     "nav.download": "Download",
     "download.title": "Desktop Application",
     "download.subtitle": "Download the native application or check system parameters.",
@@ -1538,6 +1540,7 @@ export const translations = {
     "lead.collision_warning_viewer": "⚠️ {users} sieht sich diesen Lead ebenfalls an.",
 
     // Download page & Nav
+    "nav.assistant": "KI-Assistent",
     "nav.download": "Herunterladen",
     "download.title": "Desktop-Anwendung",
     "download.subtitle": "Laden Sie die native Anwendung herunter oder verwalten Sie die Systemparameter.",
