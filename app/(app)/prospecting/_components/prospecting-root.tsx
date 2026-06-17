@@ -49,7 +49,7 @@ function getLeadMarkerColor(item: ScrapedLead): string {
 }
 
 export function ProspectingRoot() {
-  const { addLead } = useReach();
+  const { addLead, leads } = useReach();
   
   // Local settings preferences
   const [niches, setNiches] = useState<string[]>([]);
@@ -70,6 +70,9 @@ export function ProspectingRoot() {
   const [importing, setImporting] = useState(false);
   const [importCount, setImportCount] = useState<number | null>(null);
   const [sources, setSources] = useState<string[]>(['google', 'yelp', 'pagesjaunes']);
+  // Filters
+  const [minRating, setMinRating] = useState(0);
+  const [excludeExisting, setExcludeExisting] = useState(true);
 
   const handleToggleSource = (source: string, checked: boolean) => {
     if (checked) {
@@ -146,23 +149,54 @@ export function ProspectingRoot() {
 
     try {
       const nicheQuery = customQuery ? customQuery : `${selectedNiche} ${selectedCity}`;
-      
-      const res = await fetch(getApiUrl('/api/scrape-maps'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          niche: customQuery ? 'Recherche libre' : selectedNiche,
-          city: customQuery ? 'Recherche libre' : selectedCity,
-          query: nicheQuery,
-          sources
-        })
+      const nativeSources = sources.filter(s => s !== 'apify');
+      const useApify = sources.includes('apify');
+
+      // Run native and Apify scrapes in parallel when both selected
+      const fetches: Promise<Response>[] = [];
+      if (nativeSources.length > 0) {
+        fetches.push(fetch(getApiUrl('/api/scrape-maps'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            niche: customQuery ? 'Recherche libre' : selectedNiche,
+            city: customQuery ? 'Recherche libre' : selectedCity,
+            query: nicheQuery,
+            sources: nativeSources,
+          }),
+        }));
+      }
+      if (useApify) {
+        fetches.push(fetch(getApiUrl('/api/scrape-apify'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            niche: customQuery ? 'Recherche libre' : selectedNiche,
+            city: customQuery ? 'Recherche libre' : selectedCity,
+            query: nicheQuery,
+          }),
+        }));
+      }
+
+      const responses = await Promise.all(fetches);
+      const dataArr = await Promise.all(responses.map(r => r.json()));
+      const allLeads: ScrapedLead[] = dataArr.flatMap((d: any) => d.leads ?? []);
+
+      // Apply filters
+      const existingMapsUrls = new Set(
+        excludeExisting ? leads.map(l => l.mapsUrl).filter(Boolean) : []
+      );
+      const filtered = allLeads.filter(l => {
+        if (minRating > 0 && l.rating < minRating) return false;
+        if (excludeExisting && l.mapsUrl && existingMapsUrls.has(l.mapsUrl)) return false;
+        return true;
       });
-      
-      const data = await res.json();
-      
+
+      const data = { leads: filtered };
+
       clearInterval(stepInterval);
       setScrapeProgress(100);
-      
+
       // Delay slightly to let the 100% state display
       setTimeout(() => {
         if (data.leads) {
@@ -376,7 +410,7 @@ export function ProspectingRoot() {
                   <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Sources & Annuaires à scraper</label>
                   <div className="flex flex-wrap gap-5 py-1">
                     <label className="flex items-center gap-2 text-xs font-semibold text-foreground cursor-pointer">
-                      <Checkbox 
+                      <Checkbox
                         checked={sources.includes('google')}
                         onCheckedChange={(checked) => handleToggleSource('google', !!checked)}
                         disabled={scraping}
@@ -384,7 +418,7 @@ export function ProspectingRoot() {
                       <span>Google Maps / OSM</span>
                     </label>
                     <label className="flex items-center gap-2 text-xs font-semibold text-foreground cursor-pointer">
-                      <Checkbox 
+                      <Checkbox
                         checked={sources.includes('yelp')}
                         onCheckedChange={(checked) => handleToggleSource('yelp', !!checked)}
                         disabled={scraping}
@@ -392,13 +426,64 @@ export function ProspectingRoot() {
                       <span>Yelp</span>
                     </label>
                     <label className="flex items-center gap-2 text-xs font-semibold text-foreground cursor-pointer">
-                      <Checkbox 
+                      <Checkbox
                         checked={sources.includes('pagesjaunes')}
                         onCheckedChange={(checked) => handleToggleSource('pagesjaunes', !!checked)}
                         disabled={scraping}
                       />
                       <span>PagesJaunes</span>
                     </label>
+                    <label className="flex items-center gap-2 text-xs font-semibold text-foreground cursor-pointer">
+                      <Checkbox
+                        checked={sources.includes('apify')}
+                        onCheckedChange={(checked) => handleToggleSource('apify', !!checked)}
+                        disabled={scraping}
+                      />
+                      <span className="flex items-center gap-1">
+                        Apify
+                        <span className="text-[9px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded">+riche</span>
+                      </span>
+                    </label>
+                  </div>
+                </div>
+
+                <div className="h-px bg-border/50 my-2" />
+
+                {/* Filters */}
+                <div className="space-y-3">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Filtres de résultats</label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-medium text-muted-foreground flex items-center justify-between">
+                        <span>Note minimum</span>
+                        <span className="font-bold text-foreground">{minRating > 0 ? `${minRating}★` : 'Aucune'}</span>
+                      </label>
+                      <input
+                        type="range"
+                        min={0}
+                        max={5}
+                        step={0.5}
+                        value={minRating}
+                        onChange={(e) => setMinRating(parseFloat(e.target.value))}
+                        disabled={scraping}
+                        className="w-full accent-primary h-1.5 cursor-pointer"
+                      />
+                      <div className="flex justify-between text-[9px] text-muted-foreground">
+                        <span>0</span><span>2.5</span><span>5</span>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-2.5 pt-1">
+                      <Checkbox
+                        id="excludeExisting"
+                        checked={excludeExisting}
+                        onCheckedChange={(c) => setExcludeExisting(!!c)}
+                        disabled={scraping}
+                      />
+                      <label htmlFor="excludeExisting" className="text-xs font-medium text-foreground cursor-pointer leading-snug">
+                        Exclure les leads déjà dans le CRM
+                        <span className="block text-[10px] text-muted-foreground font-normal">Comparaison par URL Google Maps</span>
+                      </label>
+                    </div>
                   </div>
                 </div>
 
