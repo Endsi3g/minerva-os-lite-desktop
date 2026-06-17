@@ -19,13 +19,17 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { 
-  GoogleCalendarIcon, 
-  GoogleDriveIcon, 
-  SharePointIcon, 
-  ZoomIcon, 
-  TeamsIcon, 
-  GoogleMeetIcon
+import {
+  GoogleCalendarIcon,
+  GoogleDriveIcon,
+  SharePointIcon,
+  ZoomIcon,
+  TeamsIcon,
+  GoogleMeetIcon,
+  TodoistIcon,
+  ApifyIcon,
+  NotionIcon,
+  SlackIcon,
 } from '@/components/icons';
 import {
   getConnectedIntegrations,
@@ -63,6 +67,7 @@ interface IntegrationItem {
   description: string;
   descriptionKey?: TranslationKey;
   custom?: boolean;
+  steps?: string[];
 }
 
 const DEFAULT_INTEGRATIONS: IntegrationItem[] = [
@@ -206,19 +211,80 @@ const DEFAULT_INTEGRATIONS: IntegrationItem[] = [
     email: 'alexsmith@minerva-os-lite.com',
     accEmail: 'Todoist Task Connector',
     accEmailKey: 'integrations.todoist.acc_email',
-    icon: () => (
-      <div className="w-7 h-7 rounded-lg bg-[#de4c3a]/10 flex items-center justify-center border border-[#de4c3a]/20 shrink-0">
-        <CheckCircle2 className="w-4 h-4 text-[#de4c3a]" />
-      </div>
-    ),
+    icon: TodoistIcon,
     status: 'Inactive',
     statusKey: 'integrations.status.inactive',
     assets: '—',
     access: 'Private',
     accessKey: 'integrations.access.private',
     description: 'Synchronisez vos tâches et objectifs de la journée avec vos projets Todoist.',
-    descriptionKey: 'integrations.todoist.description'
-  }
+    descriptionKey: 'integrations.todoist.description',
+    steps: [
+      'Ouvrez Todoist → Paramètres → Intégrations → API et copiez votre token.',
+      'Collez le token dans Paramètres Minerva > Intégrations > Todoist et choisissez un projet cible.',
+      'Vos tâches du projet apparaîtront dans le widget "Aujourd\'hui" et seront synchronisées à chaque ouverture.',
+    ],
+  },
+  {
+    id: 'apify',
+    name: 'Apify (Google Places)',
+    category: 'scraping',
+    owner: 'Alex Smith',
+    email: 'alexsmith@minerva-os-lite.com',
+    accEmail: 'Apify Scraper Connector',
+    icon: ApifyIcon,
+    status: 'Inactive',
+    statusKey: 'integrations.status.inactive',
+    assets: '—',
+    access: 'Private',
+    accessKey: 'integrations.access.private',
+    description: 'Scrape enrichi Google Places (photos, emails réels, horaires) via l\'acteur compass~crawler-google-places d\'Apify.',
+    steps: [
+      'Créez un compte sur apify.com et copiez votre clé API dans Paramètres (profil → API tokens).',
+      'Collez la clé dans Paramètres Minerva > Intégrations > Clé Apify (format apify_api_…).',
+      'Dans la page Prospection, cochez la source "Apify" et lancez un scrape multi-niche pour des données enrichies.',
+    ],
+  },
+  {
+    id: 'notion',
+    name: 'Notion',
+    category: 'document',
+    owner: 'Alex Smith',
+    email: 'alexsmith@minerva-os-lite.com',
+    accEmail: 'Notion Workspace Connector',
+    icon: NotionIcon,
+    status: 'Inactive',
+    statusKey: 'integrations.status.inactive',
+    assets: '—',
+    access: 'Private',
+    accessKey: 'integrations.access.private',
+    description: 'Connectez vos bases de données Notion pour importer des prospects, des notes ou des tâches directement dans Minerva.',
+    steps: [
+      'Allez sur notion.so/my-integrations, créez une intégration et copiez le secret.',
+      'Partagez les bases de données Notion cibles avec votre intégration (bouton "Partager" dans Notion).',
+      'Configurez la connexion dans l\'éditeur et choisissez les propriétés à synchroniser avec Minerva.',
+    ],
+  },
+  {
+    id: 'slack',
+    name: 'Slack',
+    category: 'communication',
+    owner: 'Alex Smith',
+    email: 'alexsmith@minerva-os-lite.com',
+    accEmail: 'Slack Workspace Connector',
+    icon: SlackIcon,
+    status: 'Inactive',
+    statusKey: 'integrations.status.inactive',
+    assets: '—',
+    access: 'Private',
+    accessKey: 'integrations.access.private',
+    description: 'Envoyez des notifications Minerva (nouveau lead, lead assigné, rapport hebdomadaire) directement dans vos canaux Slack.',
+    steps: [
+      'Créez une app Slack sur api.slack.com/apps, activez "Incoming Webhooks" et copiez l\'URL du webhook.',
+      'Collez l\'URL dans l\'éditeur de cette intégration sous "Authentification > Webhook URL".',
+      'Choisissez les événements à envoyer (nouveau lead, rapport, rappel) dans l\'onglet "Déclencheurs".',
+    ],
+  },
 ];
 
 export default function IntegrationsPage() {
@@ -469,6 +535,15 @@ export default function IntegrationsPage() {
         const manifest = JSON.parse(jsonManifestInput);
         if (!manifest.name || typeof manifest.name !== 'string') {
           setJsonManifestError('Le champ "name" est requis (string).');
+          return;
+        }
+        const validAuthTypes = ['none', 'key', 'oauth', 'bearer', 'basic'];
+        if (manifest.authType && !validAuthTypes.includes(manifest.authType)) {
+          setJsonManifestError(`"authType" invalide. Valeurs acceptées : ${validAuthTypes.join(', ')}.`);
+          return;
+        }
+        if (manifest.endpoints !== undefined && !Array.isArray(manifest.endpoints)) {
+          setJsonManifestError('"endpoints" doit être un tableau.');
           return;
         }
         resolvedName = manifest.name;
@@ -1241,18 +1316,16 @@ export default function IntegrationsPage() {
             <div className="p-6 space-y-3 text-left">
               <h4 className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Comment utiliser</h4>
               <ol className="space-y-2 text-xs text-[#555552] list-none">
-                <li className="flex items-start gap-2.5">
-                  <span className="w-5 h-5 rounded-full bg-[#059669]/10 text-[#059669] font-bold text-[10px] flex items-center justify-center shrink-0 mt-0.5">1</span>
-                  <span>Connectez votre compte via le bouton « Se connecter » ci-dessous.</span>
-                </li>
-                <li className="flex items-start gap-2.5">
-                  <span className="w-5 h-5 rounded-full bg-[#059669]/10 text-[#059669] font-bold text-[10px] flex items-center justify-center shrink-0 mt-0.5">2</span>
-                  <span>Configurez les permissions et le niveau d'accès dans l'éditeur.</span>
-                </li>
-                <li className="flex items-start gap-2.5">
-                  <span className="w-5 h-5 rounded-full bg-[#059669]/10 text-[#059669] font-bold text-[10px] flex items-center justify-center shrink-0 mt-0.5">3</span>
-                  <span>L'intégration sera disponible dans vos agents et espaces de travail.</span>
-                </li>
+                {(detailIntegration.steps ?? [
+                  'Connectez votre compte via le bouton « Se connecter » ci-dessous.',
+                  'Configurez les permissions et le niveau d\'accès dans l\'éditeur.',
+                  'L\'intégration sera disponible dans vos agents et espaces de travail.',
+                ]).map((step, i) => (
+                  <li key={i} className="flex items-start gap-2.5">
+                    <span className="w-5 h-5 rounded-full bg-[#059669]/10 text-[#059669] font-bold text-[10px] flex items-center justify-center shrink-0 mt-0.5">{i + 1}</span>
+                    <span>{step}</span>
+                  </li>
+                ))}
               </ol>
             </div>
 

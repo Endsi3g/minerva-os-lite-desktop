@@ -296,17 +296,61 @@ export function SanaIcon({ className, size = 24, ...props }: IconProps) {
 
 export function MobbinIcon({ className, size = 24, ...props }: IconProps) {
   return (
-    <svg 
-      viewBox="0 0 250 80" 
-      width={size} 
-      height={Math.round(size * 0.32)} 
-      className={className} 
+    <svg
+      viewBox="0 0 250 80"
+      width={size}
+      height={Math.round(size * 0.32)}
+      className={className}
       {...props}
     >
       <path d="M22 60 V20 H34 L46 44 L58 20 H70 V60 H58 V40 L46 60 H42 L34 40 V60 H22 Z" fill="currentColor"/>
       <circle cx="95" cy="42" r="16" stroke="currentColor" strokeWidth="12" fill="none"/>
       <path d="M125 15 V60 H137 V48 C141 57 149 62 159 62 C175 62 187 49 187 32 C187 15 175 2 159 2 C149 2 141 7 137 16 V15 H125 Z M156 16 C166 16 173 24 173 32 C173 40 166 48 156 48 C146 48 139 40 139 32 C139 24 146 16 156 16 Z" fill="currentColor"/>
       <path d="M197 15 V60 H209 V48 C213 57 221 62 231 62 C247 62 259 49 259 32 C259 15 247 2 231 2 C221 2 213 7 209 16 V15 H197 Z M228 16 C238 16 245 24 245 32 C245 40 238 48 228 48 C218 48 211 40 211 32 C211 24 218 16 228 16 Z" fill="currentColor"/>
+    </svg>
+  );
+}
+
+export function TodoistIcon({ className, size = 24, ...props }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" width={size} height={size} className={className} fill="none" {...props}>
+      <rect width="24" height="24" rx="6" fill="#DB4035"/>
+      <path d="M5 8.5L7.5 11L13 5.5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M5 14.5L7.5 17L13 11.5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" opacity="0.65"/>
+      <line x1="15" y1="8" x2="19" y2="8" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+      <line x1="15" y1="14" x2="19" y2="14" stroke="white" strokeWidth="2" strokeLinecap="round" opacity="0.65"/>
+    </svg>
+  );
+}
+
+export function ApifyIcon({ className, size = 24, ...props }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" width={size} height={size} className={className} fill="none" {...props}>
+      <rect width="24" height="24" rx="6" fill="#1A73E8"/>
+      <path d="M12 4L18 8V16L12 20L6 16V8L12 4Z" stroke="white" strokeWidth="1.5" strokeLinejoin="round" fill="none"/>
+      <circle cx="12" cy="12" r="3" fill="white"/>
+      <line x1="12" y1="4" x2="12" y2="9" stroke="white" strokeWidth="1.5"/>
+      <line x1="12" y1="15" x2="12" y2="20" stroke="white" strokeWidth="1.5"/>
+      <line x1="6" y1="8" x2="10.5" y2="10.5" stroke="white" strokeWidth="1.5"/>
+      <line x1="13.5" y1="13.5" x2="18" y2="16" stroke="white" strokeWidth="1.5"/>
+      <line x1="18" y1="8" x2="13.5" y2="10.5" stroke="white" strokeWidth="1.5"/>
+      <line x1="10.5" y1="13.5" x2="6" y2="16" stroke="white" strokeWidth="1.5"/>
+    </svg>
+  );
+}
+
+export function NotionIcon({ className, size = 24, ...props }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" width={size} height={size} className={className} fill="currentColor" {...props}>
+      <path d="M4.459 4.208c.746.606 1.026.56 2.428.466l13.215-.793c.28 0 .047-.28-.046-.326L17.86 1.968c-.42-.326-.981-.7-2.055-.607L3.01 2.295c-.466.046-.56.28-.374.466zm.793 3.08v13.904c0 .747.373 1.027 1.214.98l14.523-.84c.841-.046.935-.56.935-1.167V6.354c0-.606-.233-.933-.748-.887l-15.177.887c-.56.047-.747.327-.747.933zm14.337.745c.093.42 0 .84-.42.888l-.7.14v10.264c-.608.327-1.168.514-1.635.514-.747 0-.935-.234-1.495-.933l-4.577-7.19v6.952L12.21 19s0 .84-1.168.84l-3.222.186c-.093-.186 0-.653.327-.746l.84-.233V9.854L7.822 9.76c-.094-.42.14-1.026.793-1.073l3.456-.233 4.764 7.284V9.197l-1.215-.14c-.093-.514.28-.887.747-.933zM1.936 1.035l13.31-.98c1.634-.14 2.055-.047 3.082.7l4.249 2.986c.7.513.934.653.934 1.213v16.378c0 1.026-.373 1.634-1.68 1.726l-15.458.934c-.98.047-1.448-.093-1.962-.747l-3.129-4.06c-.56-.747-.793-1.306-.793-1.96V2.667c0-.839.374-1.54 1.447-1.632z"/>
+    </svg>
+  );
+}
+
+export function SlackIcon({ className, size = 24, ...props }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" width={size} height={size} className={className} fill="none" {...props}>
+      <path d="M5.042 15.165a2.528 2.528 0 01-2.52 2.523A2.528 2.528 0 010 15.165a2.527 2.527 0 012.522-2.52h2.52v2.52zm1.271 0a2.527 2.527 0 012.521-2.52 2.527 2.527 0 012.521 2.52v6.313A2.528 2.528 0 018.834 24a2.528 2.528 0 01-2.521-2.522v-6.313zM8.834 5.042a2.528 2.528 0 01-2.521-2.52A2.528 2.528 0 018.834 0a2.527 2.527 0 012.521 2.522v2.52H8.834zm0 1.271a2.527 2.527 0 012.521 2.521 2.527 2.527 0 01-2.521 2.521H2.522A2.528 2.528 0 010 8.834a2.528 2.528 0 012.522-2.521h6.312zm10.122 2.521a2.528 2.528 0 012.522-2.521A2.528 2.528 0 0124 8.834a2.527 2.527 0 01-2.522 2.521h-2.522V8.834zm-1.268 0a2.527 2.527 0 01-2.521 2.521 2.527 2.527 0 01-2.522-2.521V2.522A2.528 2.528 0 0115.167 0a2.528 2.528 0 012.521 2.522v6.312zm-2.521 10.123a2.528 2.528 0 012.521 2.522A2.528 2.528 0 0115.167 24a2.527 2.527 0 01-2.521-2.522v-2.522h2.521zm0-1.268a2.527 2.527 0 01-2.521-2.521 2.527 2.527 0 012.521-2.522h6.313A2.528 2.528 0 0124 15.165a2.528 2.528 0 01-2.522 2.521h-6.313z" fill="#E01E5A"/>
     </svg>
   );
 }
