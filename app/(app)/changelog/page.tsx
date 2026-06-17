@@ -18,6 +18,18 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v2.28.0',
+      date: '2026-06-17',
+      titleKey: 'changelog.v2_28_0_title',
+      descKey: 'changelog.v2_28_0_desc',
+      highlights: [
+        'Icônes SVG dédiées : TodoistIcon (rouge #DB4035), ApifyIcon (bleu hexagone), NotionIcon (monochrome), SlackIcon (#E01E5A).',
+        'Nouvelles intégrations disponibles : Apify scraper Google Places, Notion (bases de données), Slack (notifications canaux).',
+        'Panel de détail : étapes "Comment utiliser" spécifiques par intégration (token, config, usage) au lieu de 3 étapes génériques.',
+        'Import manifeste JSON : validation authType (whitelist none/key/oauth/bearer/basic) et endpoints (doit être un tableau).',
+      ],
+    },
+    {
       version: 'v2.27.0',
       date: '2026-06-17',
       titleKey: 'changelog.v2_27_0_title',
