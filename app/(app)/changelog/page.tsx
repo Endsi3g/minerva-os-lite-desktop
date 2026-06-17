@@ -18,6 +18,19 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v2.35.0',
+      date: '2026-06-17',
+      titleKey: 'changelog.v2_35_0_title',
+      descKey: 'changelog.v2_35_0_desc',
+      highlights: [
+        'Nouvelle page /campaigns : liste des campagnes avec KPIs (total, contactés, gagnés), statut (active/pause/terminée/brouillon).',
+        'Page /campaigns/[id] : onglets Vue d\'ensemble, Leads, Analytics — pipeline par statut + taux de conversion.',
+        'Nouvelle page /activities : timeline chronologique de toutes les interactions (emails, notes, appels, tâches, leads créés).',
+        'Sidebar : nouvelle section "CRM & Prospection" regroupant Campagnes, Pipeline, Activités.',
+        'ReachContext : Campaign interface + addCampaign/updateCampaign/deleteCampaign dual-store (SQLite + Supabase).',
+      ],
+    },
+    {
       version: 'v2.34.0',
       date: '2026-06-17',
       titleKey: 'changelog.v2_34_0_title',

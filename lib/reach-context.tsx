@@ -52,6 +52,21 @@ export interface Project {
   updatedAt: string;
 }
 
+export interface Campaign {
+  id: string;
+  workspaceId: string;
+  userId: string;
+  name: string;
+  description?: string;
+  niches: string[];
+  cities: string[];
+  status: 'active' | 'paused' | 'completed' | 'draft';
+  startDate?: string;
+  endDate?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 interface ReachContextType {
   user: SupabaseUser | null;
   leads: Lead[];
@@ -110,6 +125,10 @@ interface ReachContextType {
   createProject: (name: string, description?: string) => Promise<Project | null>;
   renameProject: (id: string, name: string) => Promise<void>;
   deleteProject: (id: string) => Promise<void>;
+  campaigns: Campaign[];
+  addCampaign: (data: { name: string; description?: string; niches?: string[]; cities?: string[]; startDate?: string; endDate?: string }) => Promise<Campaign | null>;
+  updateCampaign: (id: string, fields: Partial<Campaign>) => Promise<void>;
+  deleteCampaign: (id: string) => Promise<void>;
 }
 
 const ReachContext = createContext<ReachContextType | undefined>(undefined);
@@ -285,6 +304,27 @@ function mapDbMsgToUi(r: any): TeamMessage {
 }
 
 // Mapping database project to UI Project
+function mapDbCampaignToUi(r: any): Campaign {
+  let niches: string[] = [];
+  let cities: string[] = [];
+  try { niches = r.niches ? JSON.parse(r.niches) : []; } catch { niches = []; }
+  try { cities = r.cities ? JSON.parse(r.cities) : []; } catch { cities = []; }
+  return {
+    id: r.id,
+    workspaceId: r.workspace_id || '',
+    userId: r.user_id || '',
+    name: r.name || '',
+    description: r.description || undefined,
+    niches,
+    cities,
+    status: r.status || 'active',
+    startDate: r.start_date || undefined,
+    endDate: r.end_date || undefined,
+    createdAt: r.created_at,
+    updatedAt: r.updated_at,
+  };
+}
+
 function mapDbProjectToUi(r: any): Project {
   return {
     id: r.id,
@@ -338,13 +378,16 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
   // Projects State
   const [projects, setProjects] = useState<Project[]>([]);
 
+  // Campaigns State
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+
   const loadDataLocal = useCallback(async (userId: string, workspaceId: string) => {
     const electronObj = typeof window !== 'undefined' && (window as any).electron;
     if (!electronObj) return;
 
     try {
       // All IPC calls in parallel — no round-trip sequencing overhead
-      const [dbLeads, dbNotes, dbTasks, dbSettings, dbNotifs, dbMsgs, dbProjects] = await Promise.all([
+      const [dbLeads, dbNotes, dbTasks, dbSettings, dbNotifs, dbMsgs, dbProjects, dbCampaigns] = await Promise.all([
         electronObj.dbAll("SELECT * FROM leads WHERE workspace_id = ? ORDER BY created_at DESC", [workspaceId]),
         electronObj.dbAll("SELECT * FROM notes WHERE workspace_id = ? ORDER BY created_at ASC", [workspaceId]),
         electronObj.dbAll("SELECT * FROM tasks WHERE workspace_id = ? ORDER BY created_at DESC", [workspaceId]),
@@ -352,6 +395,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
         electronObj.dbAll("SELECT * FROM notifications WHERE user_id = ? ORDER BY created_at DESC LIMIT 30", [userId]),
         electronObj.dbAll("SELECT * FROM team_messages WHERE workspace_id = ? ORDER BY created_at DESC LIMIT 50", [workspaceId]),
         electronObj.dbAll("SELECT * FROM projects WHERE workspace_id = ? ORDER BY created_at DESC", [workspaceId]),
+        electronObj.dbAll("SELECT * FROM campaigns WHERE workspace_id = ? ORDER BY created_at DESC", [workspaceId]),
       ]);
 
       const uiLeads = (dbLeads || []).map((lead: any) => {
@@ -370,6 +414,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
       setNotifications((dbNotifs || []).map(mapDbNotifToUi));
       setTeamMessages(((dbMsgs || []) as any[]).map(mapDbMsgToUi).reverse());
       setProjects((dbProjects || []).map(mapDbProjectToUi));
+      setCampaigns((dbCampaigns || []).map(mapDbCampaignToUi));
     } catch (err) {
       console.error("Failed to load local SQLite data in ReachProvider:", err);
     }
@@ -455,6 +500,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
         { data: dbNotifs },
         { data: dbMsgs },
         { data: dbProjects },
+        { data: dbCampaigns },
       ] = await Promise.all([
         supabase.from('leads').select('*').eq('workspace_id', activeWs.id).order('created_at', { ascending: false }),
         supabase.from('notes').select('*').eq('workspace_id', activeWs.id).order('created_at', { ascending: true }),
@@ -464,6 +510,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
         supabase.from('notifications').select('*').eq('user_id', currUser.id).order('created_at', { ascending: false }).limit(30),
         supabase.from('team_messages').select('*').eq('workspace_id', activeWs.id).order('created_at', { ascending: false }).limit(50),
         supabase.from('projects').select('*').eq('workspace_id', activeWs.id).order('created_at', { ascending: false }),
+        supabase.from('campaigns').select('*').eq('workspace_id', activeWs.id).order('created_at', { ascending: false }),
       ]);
 
       const uiLeads = (dbLeads || []).map((lead: DbLead) => {
@@ -487,6 +534,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
       if (dbNotifs) setNotifications(dbNotifs.map(mapDbNotifToUi));
       if (dbMsgs) setTeamMessages(dbMsgs.map(mapDbMsgToUi).reverse());
       if (dbProjects) setProjects(dbProjects.map(mapDbProjectToUi));
+      if (dbCampaigns) setCampaigns(dbCampaigns.map(mapDbCampaignToUi));
 
     } catch (e) {
       console.error("Error loading data from Supabase:", e);
@@ -1900,6 +1948,107 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const addCampaign = async (data: { name: string; description?: string; niches?: string[]; cities?: string[]; startDate?: string; endDate?: string }): Promise<Campaign | null> => {
+    if (!user || !activeWorkspace) return null;
+    const electronObj = typeof window !== 'undefined' && (window as any).electron;
+    const newCampaign: Campaign = {
+      id: crypto.randomUUID(),
+      workspaceId: activeWorkspace.id,
+      userId: user.id,
+      name: data.name,
+      description: data.description,
+      niches: data.niches || [],
+      cities: data.cities || [],
+      status: 'active',
+      startDate: data.startDate,
+      endDate: data.endDate,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    if (electronObj) {
+      try {
+        await electronObj.dbRun(
+          `INSERT INTO campaigns (id, workspace_id, user_id, name, description, niches, cities, status, start_date, end_date, created_at, updated_at, sync_status) VALUES (?, ?, ?, ?, ?, ?, ?, 'active', ?, ?, ?, ?, 'pending_insert')`,
+          [newCampaign.id, newCampaign.workspaceId, newCampaign.userId, newCampaign.name, newCampaign.description || null, JSON.stringify(newCampaign.niches), JSON.stringify(newCampaign.cities), newCampaign.startDate || null, newCampaign.endDate || null, newCampaign.createdAt, newCampaign.updatedAt]
+        );
+        setCampaigns(prev => [newCampaign, ...prev]);
+        electronObj.triggerSync();
+      } catch (err) { console.error("Local addCampaign error:", err); }
+      return newCampaign;
+    }
+    const supabase = createClient();
+    try {
+      const { data: row, error } = await supabase.from('campaigns').insert({
+        id: newCampaign.id, workspace_id: newCampaign.workspaceId, user_id: newCampaign.userId,
+        name: newCampaign.name, description: newCampaign.description || null,
+        niches: newCampaign.niches, cities: newCampaign.cities, status: 'active',
+        start_date: newCampaign.startDate || null, end_date: newCampaign.endDate || null,
+        created_at: newCampaign.createdAt, updated_at: newCampaign.updatedAt,
+      }).select().single();
+      if (error) throw error;
+      const mapped = mapDbCampaignToUi(row);
+      setCampaigns(prev => [mapped, ...prev]);
+      return mapped;
+    } catch (err) { console.error("Error in addCampaign:", err); return null; }
+  };
+
+  const updateCampaign = async (id: string, fields: Partial<Campaign>): Promise<void> => {
+    if (!user) return;
+    const electronObj = typeof window !== 'undefined' && (window as any).electron;
+    const dbFields: string[] = [];
+    const params: any[] = [];
+    if (fields.name !== undefined) { dbFields.push("name = ?"); params.push(fields.name); }
+    if (fields.description !== undefined) { dbFields.push("description = ?"); params.push(fields.description || null); }
+    if (fields.niches !== undefined) { dbFields.push("niches = ?"); params.push(JSON.stringify(fields.niches)); }
+    if (fields.cities !== undefined) { dbFields.push("cities = ?"); params.push(JSON.stringify(fields.cities)); }
+    if (fields.status !== undefined) { dbFields.push("status = ?"); params.push(fields.status); }
+    if (fields.startDate !== undefined) { dbFields.push("start_date = ?"); params.push(fields.startDate || null); }
+    if (fields.endDate !== undefined) { dbFields.push("end_date = ?"); params.push(fields.endDate || null); }
+    if (electronObj) {
+      try {
+        if (dbFields.length > 0) {
+          dbFields.push("updated_at = ?"); params.push(new Date().toISOString());
+          dbFields.push("sync_status = 'pending_update'"); params.push(id);
+          await electronObj.dbRun(`UPDATE campaigns SET ${dbFields.join(", ")} WHERE id = ?`, params);
+        }
+        setCampaigns(prev => prev.map(c => c.id === id ? { ...c, ...fields, updatedAt: new Date().toISOString() } : c));
+        electronObj.triggerSync();
+      } catch (err) { console.error("Local updateCampaign error:", err); }
+      return;
+    }
+    const supabase = createClient();
+    const supaFields: Record<string, any> = {};
+    if (fields.name !== undefined) supaFields.name = fields.name;
+    if (fields.description !== undefined) supaFields.description = fields.description || null;
+    if (fields.niches !== undefined) supaFields.niches = fields.niches;
+    if (fields.cities !== undefined) supaFields.cities = fields.cities;
+    if (fields.status !== undefined) supaFields.status = fields.status;
+    if (fields.startDate !== undefined) supaFields.start_date = fields.startDate || null;
+    if (fields.endDate !== undefined) supaFields.end_date = fields.endDate || null;
+    try {
+      await supabase.from('campaigns').update(supaFields).eq('id', id);
+      setCampaigns(prev => prev.map(c => c.id === id ? { ...c, ...fields, updatedAt: new Date().toISOString() } : c));
+    } catch (err) { console.error("Error in updateCampaign:", err); }
+  };
+
+  const deleteCampaign = async (id: string): Promise<void> => {
+    if (!user) return;
+    const electronObj = typeof window !== 'undefined' && (window as any).electron;
+    if (electronObj) {
+      try {
+        await electronObj.dbRun("UPDATE campaigns SET sync_status = 'pending_delete' WHERE id = ?", [id]);
+        setCampaigns(prev => prev.filter(c => c.id !== id));
+        electronObj.triggerSync();
+      } catch (err) { console.error("Local deleteCampaign error:", err); }
+      return;
+    }
+    const supabase = createClient();
+    try {
+      await supabase.from('campaigns').delete().eq('id', id);
+      setCampaigns(prev => prev.filter(c => c.id !== id));
+    } catch (err) { console.error("Error in deleteCampaign:", err); }
+  };
+
   const importDemoData = async () => {
     if (!user || !activeWorkspace) return;
     await populateMockData(user.id, activeWorkspace.id);
@@ -1947,6 +2096,10 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
         createProject,
         renameProject,
         deleteProject,
+        campaigns,
+        addCampaign,
+        updateCampaign,
+        deleteCampaign,
       }}
     >
       {children}

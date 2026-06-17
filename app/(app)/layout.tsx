@@ -41,6 +41,8 @@ import {
   MapPin,
   ShieldCheck,
   Mail,
+  Activity,
+  Kanban,
 } from 'lucide-react';
 import { BottomBlur } from '@/components/ui/edge-blur';
 import { cn } from '@/lib/utils';
@@ -399,6 +401,15 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
 
   // Collapsible nav categories
   const navCategories = [
+    {
+      id: 'crm',
+      label: 'CRM & Prospection',
+      items: [
+        { name: 'Campagnes', href: '/campaigns', icon: Megaphone },
+        { name: 'Pipeline', href: '/pipeline', icon: Kanban },
+        { name: 'Activités', href: '/activities', icon: Activity },
+      ],
+    },
     {
       id: 'ai',
       label: 'Intelligence IA',
