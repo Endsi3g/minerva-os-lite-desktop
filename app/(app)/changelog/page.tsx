@@ -18,6 +18,18 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v2.40.0',
+      date: '2026-06-17',
+      titleKey: 'changelog.v2_40_0_title',
+      descKey: 'changelog.v2_40_0_desc',
+      highlights: [
+        'Historique des scrapes : chaque scrape est enregistré en local (localStorage) avec niches, villes, sources et résultats.',
+        'Section "Historique" dépliable en bas de la page Prospection.',
+        'Statuts visuels : en cours (orange), terminé (vert) ou échoué (rouge).',
+        'Bouton "Effacer l\'historique" pour réinitialiser.',
+      ],
+    },
+    {
       version: 'v2.39.0',
       date: '2026-06-17',
       titleKey: 'changelog.v2_39_0_title',

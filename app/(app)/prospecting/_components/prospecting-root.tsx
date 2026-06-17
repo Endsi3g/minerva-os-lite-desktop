@@ -14,8 +14,22 @@ import { Map, MapMarker, MarkerContent, MarkerPopup, MapPopup } from '@/componen
 import {
   Search, MapPin, Building, Loader2, Sparkles, Check, Globe, Phone, Star,
   Database, Plus, X, ChevronDown, WifiOff, CheckCircle2, Settings2, BarChart3,
-  ExternalLink, Download, ArrowUpDown, SlidersHorizontal,
+  ExternalLink, Download, ArrowUpDown, SlidersHorizontal, History, Clock,
 } from 'lucide-react';
+
+interface ScrapeJobRecord {
+  id: string;
+  niches: string[];
+  cities: string[];
+  sources: string[];
+  status: 'running' | 'completed' | 'failed';
+  resultsCount: number;
+  error?: string;
+  startedAt: string;
+  completedAt?: string;
+}
+
+const HISTORY_KEY = 'minerva_scrape_history';
 
 const MONTREAL_NICHES = [
   'Restaurant / Café', 'Bar / Pub / Lounge', 'Pizzeria / Fast-food', 'Boulangerie / Pâtisserie',
@@ -152,6 +166,17 @@ export function ProspectingRoot() {
   const [scrapedLeads, setScrapedLeads] = useState<ScrapedLead[]>([]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [sortKey, setSortKey] = useState<SortKey>('default');
+
+  // Job history
+  const [jobHistory, setJobHistory] = useState<ScrapeJobRecord[]>([]);
+  const [showHistory, setShowHistory] = useState(false);
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(HISTORY_KEY);
+      if (stored) setJobHistory(JSON.parse(stored));
+    } catch { /* ignore */ }
+  }, []);
   const [importing, setImporting] = useState(false);
   const [importCount, setImportCount] = useState<number | null>(null);
   const [selectedPopupLead, setSelectedPopupLead] = useState<ScrapedLead | null>(null);
@@ -200,6 +225,12 @@ export function ProspectingRoot() {
     },
   ];
 
+  const saveJobHistory = useCallback((jobs: ScrapeJobRecord[]) => {
+    const limited = jobs.slice(0, 20);
+    setJobHistory(limited);
+    try { localStorage.setItem(HISTORY_KEY, JSON.stringify(limited)); } catch { /* ignore */ }
+  }, []);
+
   const handleStartScrape = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     setScrapedLeads([]);
@@ -209,6 +240,22 @@ export function ProspectingRoot() {
     setScraping(true);
     setScrapeStep(0);
     setScrapeProgress(10);
+
+    const jobId = crypto.randomUUID();
+    const job: ScrapeJobRecord = {
+      id: jobId,
+      niches: selectedNiches.length > 0 ? selectedNiches : ['commerce local'],
+      cities: selectedCities.length > 0 ? selectedCities : ['Montréal'],
+      sources: selectedSources,
+      status: 'running',
+      resultsCount: 0,
+      startedAt: new Date().toISOString(),
+    };
+    setJobHistory(prev => {
+      const next = [job, ...prev].slice(0, 20);
+      try { localStorage.setItem(HISTORY_KEY, JSON.stringify(next)); } catch { /* ignore */ }
+      return next;
+    });
 
     const electronObj = typeof window !== 'undefined' && (window as any).electron;
     if (electronObj?.updateScrapingStatus) electronObj.updateScrapingStatus('running', selectedNiches[0] ?? customQuery, selectedCities[0]);
@@ -279,14 +326,26 @@ export function ProspectingRoot() {
         setScraping(false);
         if (electronObj?.updateScrapingStatus) electronObj.updateScrapingStatus('idle');
         if (electronObj?.sendNotification) electronObj.sendNotification('Minerva OS', `${allLeads.length} prospects extraits !`);
+        // Mark job completed
+        setJobHistory(prev => {
+          const next = prev.map(j => j.id === jobId ? { ...j, status: 'completed' as const, resultsCount: allLeads.length, completedAt: new Date().toISOString() } : j);
+          try { localStorage.setItem(HISTORY_KEY, JSON.stringify(next)); } catch { /* ignore */ }
+          return next;
+        });
       }, 500);
     } catch (err) {
       console.error('Scrape failed:', err);
       clearInterval(stepInterval);
       setScraping(false);
       if ((window as any).electron?.updateScrapingStatus) (window as any).electron.updateScrapingStatus('idle');
+      // Mark job failed
+      setJobHistory(prev => {
+        const next = prev.map(j => j.id === jobId ? { ...j, status: 'failed' as const, error: String(err), completedAt: new Date().toISOString() } : j);
+        try { localStorage.setItem(HISTORY_KEY, JSON.stringify(next)); } catch { /* ignore */ }
+        return next;
+      });
     }
-  }, [selectedNiches, selectedCities, selectedSources, customQuery, maxResults, radius, minRating, excludeExisting, onlyNoWebsite, onlyWithPhone, apifyConfigured, leads]);
+  }, [selectedNiches, selectedCities, selectedSources, customQuery, maxResults, radius, minRating, excludeExisting, onlyNoWebsite, onlyWithPhone, apifyConfigured, leads, saveJobHistory]);
 
   const sortedLeads = [...scrapedLeads].sort((a, b) => {
     switch (sortKey) {
@@ -846,6 +905,58 @@ export function ProspectingRoot() {
               <h4 className="text-xs font-bold text-emerald-800 dark:text-emerald-300">{importCount} prospects importés !</h4>
               <p className="text-[10px] text-emerald-700 dark:text-emerald-400 mt-0.5">Ajoutés en statut <strong>Nouveau</strong> dans votre pipeline.</p>
             </div>
+          </Card>
+        )}
+
+        {/* Scrape History */}
+        {jobHistory.length > 0 && (
+          <Card className="border border-border bg-card">
+            <CardHeader className="p-4 pb-2 border-b border-border/50">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                  <History className="h-3.5 w-3.5 text-primary" />
+                  Historique des scrapes ({jobHistory.length})
+                </CardTitle>
+                <button
+                  type="button"
+                  onClick={() => setShowHistory(h => !h)}
+                  className="text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {showHistory ? 'Masquer' : 'Afficher'}
+                </button>
+              </div>
+            </CardHeader>
+            {showHistory && (
+              <CardContent className="p-4">
+                <div className="space-y-2">
+                  {jobHistory.map(job => (
+                    <div key={job.id} className="flex items-center gap-3 text-xs p-2 rounded-md border border-border/60 bg-muted/20">
+                      <span className={`w-2 h-2 rounded-full shrink-0 ${job.status === 'completed' ? 'bg-emerald-500' : job.status === 'failed' ? 'bg-red-500' : 'bg-amber-400 animate-pulse'}`} />
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold truncate text-foreground">{job.niches.slice(0, 2).join(', ')}{job.niches.length > 2 ? ` +${job.niches.length - 2}` : ''}</p>
+                        <p className="text-[10px] text-muted-foreground">{job.cities.join(', ')} · {job.sources.join(', ')}</p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        {job.status === 'completed' && <span className="text-emerald-600 font-bold">{job.resultsCount} résultats</span>}
+                        {job.status === 'failed' && <span className="text-red-500">Échec</span>}
+                        {job.status === 'running' && <span className="text-amber-500">En cours…</span>}
+                        <p className="text-[9px] text-muted-foreground flex items-center gap-0.5 justify-end mt-0.5">
+                          <Clock className="w-2.5 h-2.5" />
+                          {new Date(job.startedAt).toLocaleString('fr-CA', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => { setJobHistory([]); localStorage.removeItem(HISTORY_KEY); }}
+                  className="mt-3 text-[10px] text-muted-foreground hover:text-destructive transition-colors"
+                >
+                  Effacer l'historique
+                </button>
+              </CardContent>
+            )}
           </Card>
         )}
       </div>
