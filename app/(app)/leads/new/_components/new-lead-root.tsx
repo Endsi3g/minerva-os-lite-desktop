@@ -1,16 +1,15 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useReach } from '@/lib/reach-context';
 import { getApiUrl } from '@/lib/api-helper';
 import { Lead } from '@/lib/mock-data';
-import { ChevronLeft } from 'lucide-react';
+import { ChevronLeft, Upload, X, Building2 } from 'lucide-react';
 
 interface TeamMember {
   id: string;
@@ -19,11 +18,35 @@ interface TeamMember {
   role: string;
 }
 
+// Minimal select styled to match the app design
+function AppSelect({
+  value, onChange, children, placeholder,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  children: React.ReactNode;
+  placeholder?: string;
+}) {
+  return (
+    <select
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className="w-full h-9 px-3 text-xs font-medium bg-white border border-[#e5e5e0] rounded-lg text-[#26251e] focus:outline-none focus:ring-1 focus:ring-[#059669] focus:border-[#059669] transition-colors appearance-none cursor-pointer"
+      style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%237a7a76' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E\")", backgroundRepeat: 'no-repeat', backgroundPosition: 'right 10px center', paddingRight: '28px' }}
+    >
+      {placeholder && <option value="" disabled>{placeholder}</option>}
+      {children}
+    </select>
+  );
+}
+
 export default function NewLeadRoot() {
   const router = useRouter();
   const { addLead } = useReach();
+  const logoInputRef = useRef<HTMLInputElement>(null);
 
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [logoBase64, setLogoBase64] = useState('');
 
   useEffect(() => {
     const fetchTeamMembers = async () => {
@@ -31,7 +54,8 @@ export default function NewLeadRoot() {
         const res = await fetch(getApiUrl('/api/team/members'));
         if (res.ok) {
           const data = await res.json();
-          if (Array.isArray(data)) setTeamMembers(data);
+          const members = Array.isArray(data) ? data : (data?.members ?? []);
+          setTeamMembers(members);
         }
       } catch (e) {
         console.error('Error fetching team members:', e);
@@ -44,6 +68,7 @@ export default function NewLeadRoot() {
     businessName: '',
     contactName: '',
     contactEmail: '',
+    phone: '',
     niche: '',
     city: '',
     source: '',
@@ -54,222 +79,287 @@ export default function NewLeadRoot() {
     notes: '',
     website: '',
     mapsUrl: '',
-    assignedTo: '__none__',
+    assignedTo: '',
   });
 
   const handleChange = (field: string, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
+  const handleLogoUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => setLogoBase64(ev.target?.result as string);
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  }, []);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.businessName.trim()) return;
 
-    const { assignedTo, website, mapsUrl, ...rest } = form;
-
+    const { assignedTo, website, mapsUrl, phone, ...rest } = form;
     addLead({
       ...rest,
       ...(website ? { website } : {}),
       ...(mapsUrl ? { mapsUrl } : {}),
-      ...(assignedTo && assignedTo !== '__none__' ? { assignedTo } : {}),
+      ...(phone ? { phone } : {}),
+      ...(assignedTo ? { assignedTo } : {}),
+      ...(logoBase64 ? { imageUrl: logoBase64 } : {}),
     });
-
     router.push('/leads');
   };
 
   return (
-    <div className="h-full overflow-y-auto">
+    <div className="h-full overflow-y-auto bg-[#fafaf8]">
       <div className="max-w-2xl mx-auto p-6 flex flex-col gap-6">
-        {/* Header */}
-        <div className="flex items-center gap-3">
-          <Button asChild variant="ghost" size="sm" className="gap-1.5 -ml-2 text-muted-foreground hover:text-foreground">
-            <Link href="/leads">
-              <ChevronLeft className="h-4 w-4" />
-              Retour aux leads
-            </Link>
-          </Button>
-        </div>
+
+        {/* Back link */}
+        <Button asChild variant="ghost" size="sm" className="gap-1.5 -ml-2 text-[#7a7a76] hover:text-[#26251e] w-fit">
+          <Link href="/leads">
+            <ChevronLeft className="h-4 w-4" />
+            Retour aux leads
+          </Link>
+        </Button>
 
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">Nouveau prospect</h1>
-          <p className="text-xs text-muted-foreground mt-1">Renseigne le profil commercial de ton lead. Il sera visible immédiatement.</p>
+          <h1 className="text-2xl font-bold tracking-tight text-[#26251e]">Nouveau prospect</h1>
+          <p className="text-xs text-[#7a7a76] mt-1">Renseigne le profil commercial de ton lead.</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="bg-card border border-border rounded-lg shadow-sm p-6 space-y-5">
+        <form onSubmit={handleSubmit} className="bg-white border border-[#e5e5e0] rounded-xl shadow-sm p-6 space-y-5">
+
+          {/* Logo / Company image */}
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Logo / Photo de l&apos;entreprise</label>
+            <div className="flex items-center gap-4">
+              <div
+                onClick={() => logoInputRef.current?.click()}
+                className={`w-16 h-16 rounded-xl border-2 border-dashed flex items-center justify-center cursor-pointer transition-colors overflow-hidden shrink-0 ${
+                  logoBase64 ? 'border-[#059669]/30' : 'border-[#e5e5e0] hover:border-[#059669]/40 hover:bg-[#f7fdf8]'
+                }`}
+              >
+                {logoBase64 ? (
+                  <img src={logoBase64} alt="Logo" className="w-full h-full object-cover" />
+                ) : (
+                  <Building2 className="w-6 h-6 text-[#c5c5c0]" />
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => logoInputRef.current?.click()}
+                  className="h-8 px-3 text-xs font-semibold border border-[#e5e5e0] rounded-lg text-[#555552] hover:bg-[#f4f4f3] flex items-center gap-1.5 transition-colors"
+                >
+                  <Upload className="w-3.5 h-3.5" />
+                  {logoBase64 ? 'Changer' : 'Téléverser'}
+                </button>
+                {logoBase64 && (
+                  <button
+                    type="button"
+                    onClick={() => setLogoBase64('')}
+                    className="h-8 px-3 text-xs font-semibold text-red-500 hover:text-red-600 flex items-center gap-1.5 transition-colors"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                    Supprimer
+                  </button>
+                )}
+              </div>
+              <input ref={logoInputRef} type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
+            </div>
+          </div>
+
+          <div className="border-t border-[#e5e5e0]" />
 
           {/* Business name */}
-          <div className="space-y-1">
-            <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Nom du business *</label>
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Nom du business <span className="text-red-400">*</span></label>
             <Input
               placeholder="Boulangerie L'Épi d'Or"
               value={form.businessName}
               onChange={(e) => handleChange('businessName', e.target.value)}
               required
+              className="h-9 text-sm border-[#e5e5e0] focus:ring-[#059669] focus:border-[#059669]"
             />
           </div>
 
           {/* Contact info */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-1">
-              <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Nom du contact</label>
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Nom du contact</label>
               <Input
                 placeholder="Jean Dupont"
                 value={form.contactName}
                 onChange={(e) => handleChange('contactName', e.target.value)}
+                className="h-9 text-sm border-[#e5e5e0] focus:ring-[#059669] focus:border-[#059669]"
               />
             </div>
-            <div className="space-y-1">
-              <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Email</label>
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Email</label>
               <Input
                 type="email"
                 placeholder="jean.dupont@mail.com"
                 value={form.contactEmail}
                 onChange={(e) => handleChange('contactEmail', e.target.value)}
+                className="h-9 text-sm border-[#e5e5e0] focus:ring-[#059669] focus:border-[#059669]"
               />
             </div>
           </div>
 
+          {/* Phone */}
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Téléphone</label>
+            <Input
+              type="tel"
+              placeholder="+1 514 555-1234"
+              value={form.phone}
+              onChange={(e) => handleChange('phone', e.target.value)}
+              className="h-9 text-sm border-[#e5e5e0] focus:ring-[#059669] focus:border-[#059669]"
+            />
+          </div>
+
           {/* Niche + City */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-1">
-              <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Secteur / Niche</label>
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Secteur / Niche</label>
               <Input
                 placeholder="Boulangerie"
                 value={form.niche}
                 onChange={(e) => handleChange('niche', e.target.value)}
+                className="h-9 text-sm border-[#e5e5e0] focus:ring-[#059669] focus:border-[#059669]"
               />
             </div>
-            <div className="space-y-1">
-              <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Ville</label>
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Ville</label>
               <Input
                 placeholder="Montréal"
                 value={form.city}
                 onChange={(e) => handleChange('city', e.target.value)}
+                className="h-9 text-sm border-[#e5e5e0] focus:ring-[#059669] focus:border-[#059669]"
               />
             </div>
           </div>
 
           {/* Temperature + Status */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-1">
-              <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Température</label>
-              <Select value={form.temperature} onValueChange={(val: Lead['temperature']) => handleChange('temperature', val)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Hot">🔥 Chaud (Hot)</SelectItem>
-                  <SelectItem value="Warm">☀️ Tiède (Warm)</SelectItem>
-                  <SelectItem value="Cold">❄️ Froid (Cold)</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Température</label>
+              <AppSelect value={form.temperature} onChange={(v) => handleChange('temperature', v)}>
+                <option value="Hot">🔥 Chaud</option>
+                <option value="Warm">☀️ Tiède</option>
+                <option value="Cold">❄️ Froid</option>
+              </AppSelect>
             </div>
-            <div className="space-y-1">
-              <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Statut du lead</label>
-              <Select value={form.status} onValueChange={(val: Lead['status']) => handleChange('status', val)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="New">Nouveau (New)</SelectItem>
-                  <SelectItem value="Contacted">Contacté (Contacted)</SelectItem>
-                  <SelectItem value="Meeting Booked">RDV Fixé (Meeting Booked)</SelectItem>
-                  <SelectItem value="Won">Gagné (Won)</SelectItem>
-                  <SelectItem value="Lost">Perdu (Lost)</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Statut</label>
+              <AppSelect value={form.status} onChange={(v) => handleChange('status', v)}>
+                <option value="New">Nouveau</option>
+                <option value="Contacted">Contacté</option>
+                <option value="Meeting Booked">RDV Fixé</option>
+                <option value="Won">Gagné ✓</option>
+                <option value="Lost">Perdu ✗</option>
+              </AppSelect>
             </div>
           </div>
 
           {/* Source */}
-          <div className="space-y-1">
-            <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Source</label>
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Source</label>
             <Input
-              placeholder="ex: Google Maps, Prospection physique"
+              placeholder="ex: Google Maps, Prospection physique, LinkedIn"
               value={form.source}
               onChange={(e) => handleChange('source', e.target.value)}
+              className="h-9 text-sm border-[#e5e5e0] focus:ring-[#059669] focus:border-[#059669]"
             />
           </div>
 
-          {/* Next action */}
-          <div className="space-y-1">
-            <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Action suivante</label>
-            <Input
-              placeholder="ex: Rappeler pour fixer un créneau"
-              value={form.nextAction}
-              onChange={(e) => handleChange('nextAction', e.target.value)}
-            />
-          </div>
-
-          {/* Next action date */}
-          <div className="space-y-1">
-            <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Date de l&apos;action</label>
-            <Input
-              type="date"
-              value={form.nextActionDate}
-              onChange={(e) => handleChange('nextActionDate', e.target.value)}
-            />
-          </div>
-
-          {/* Enrichment fields */}
+          {/* Next action + date */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-1">
-              <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Site web</label>
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Action suivante</label>
+              <Input
+                placeholder="ex: Rappeler pour fixer un créneau"
+                value={form.nextAction}
+                onChange={(e) => handleChange('nextAction', e.target.value)}
+                className="h-9 text-sm border-[#e5e5e0] focus:ring-[#059669] focus:border-[#059669]"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Date de l&apos;action</label>
+              <Input
+                type="date"
+                value={form.nextActionDate}
+                onChange={(e) => handleChange('nextActionDate', e.target.value)}
+                className="h-9 text-sm border-[#e5e5e0] focus:ring-[#059669] focus:border-[#059669]"
+              />
+            </div>
+          </div>
+
+          {/* Website + Maps */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Site web</label>
               <Input
                 type="url"
                 placeholder="https://example.com"
                 value={form.website}
                 onChange={(e) => handleChange('website', e.target.value)}
+                className="h-9 text-sm border-[#e5e5e0] focus:ring-[#059669] focus:border-[#059669]"
               />
             </div>
-            <div className="space-y-1">
-              <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Lien Google Maps</label>
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Lien Google Maps</label>
               <Input
                 type="url"
                 placeholder="https://maps.google.com/..."
                 value={form.mapsUrl}
                 onChange={(e) => handleChange('mapsUrl', e.target.value)}
+                className="h-9 text-sm border-[#e5e5e0] focus:ring-[#059669] focus:border-[#059669]"
               />
             </div>
           </div>
 
-          {/* Assigner à */}
-          <div className="space-y-1">
-            <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Assigner à</label>
-            <Select value={form.assignedTo} onValueChange={(val) => handleChange('assignedTo', val)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Non assigné" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="__none__" className="text-muted-foreground">Non assigné</SelectItem>
+          {/* Assign to */}
+          {teamMembers.length > 0 && (
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Assigner à</label>
+              <AppSelect value={form.assignedTo} onChange={(v) => handleChange('assignedTo', v)} placeholder="— Non assigné —">
+                <option value="">— Non assigné —</option>
                 {teamMembers.map((m) => (
-                  <SelectItem key={m.id} value={m.id}>
-                    {m.full_name || m.email}
-                  </SelectItem>
+                  <option key={m.id} value={m.id}>{m.full_name || m.email}</option>
                 ))}
-              </SelectContent>
-            </Select>
-          </div>
+              </AppSelect>
+            </div>
+          )}
 
           {/* Notes */}
-          <div className="space-y-1">
-            <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Notes de terrain / Contexte</label>
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Notes de terrain / Contexte</label>
             <Textarea
               placeholder="ex: Pas de site mobile, gérant ouvert mais manque de temps."
               value={form.notes}
               onChange={(e) => handleChange('notes', e.target.value)}
               rows={3}
+              className="text-sm border-[#e5e5e0] focus:ring-[#059669] focus:border-[#059669] resize-none"
             />
           </div>
 
           {/* Actions */}
-          <div className="flex items-center justify-end gap-3 pt-2 border-t border-border">
-            <Button type="button" variant="outline" onClick={() => router.push('/leads')}>
+          <div className="flex items-center justify-end gap-3 pt-2 border-t border-[#e5e5e0]">
+            <button
+              type="button"
+              onClick={() => router.push('/leads')}
+              className="px-4 py-2 text-xs font-semibold text-[#7a7a76] hover:text-[#26251e] transition-colors"
+            >
               Annuler
-            </Button>
-            <Button type="submit" className="bg-primary hover:bg-primary/90">
+            </button>
+            <button
+              type="submit"
+              className="px-5 py-2 text-xs font-bold bg-[#059669] hover:bg-[#047857] text-white rounded-lg transition-colors"
+            >
               Enregistrer le prospect
-            </Button>
+            </button>
           </div>
         </form>
       </div>

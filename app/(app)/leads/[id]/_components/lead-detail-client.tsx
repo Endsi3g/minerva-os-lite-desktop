@@ -148,6 +148,8 @@ export function LeadDetailClient({ id }: { id: string }) {
   const [isEditing, setIsEditing] = useState(false);
   const [onlineUsers, setOnlineUsers] = useState<any[]>([]);
   const presenceChannelRef = useRef<ReturnType<ReturnType<typeof createClient>['channel']> | null>(null);
+  // Unique per-mount suffix prevents "already subscribed" errors on React double-invoke
+  const presenceChannelSuffix = useRef(`_${Math.random().toString(36).slice(2, 8)}`);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -173,7 +175,7 @@ export function LeadDetailClient({ id }: { id: string }) {
     if (!activeWorkspace || !currentUser || !userProfile) return;
 
     const supabase = createClient();
-    const channelId = `workspace_presence_${activeWorkspace.id}`;
+    const channelId = `workspace_presence_${activeWorkspace.id}${presenceChannelSuffix.current}`;
 
     const colors = [
       'bg-indigo-500 text-white',
