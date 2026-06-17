@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useReach } from '@/lib/reach-context';
 import { PipelineHeader } from './pipeline-header';
+import { PipelineRevenueBar } from './pipeline-revenue-bar';
 import { PipelineViewToggle } from './pipeline-view-toggle';
 import { PipelineKanbanView } from './pipeline-kanban-view';
 import { PipelineTableView } from './pipeline-table-view';
@@ -29,6 +30,9 @@ export function PipelineRoot() {
         selectedOwner={owner}
         onOwnerChange={setOwner}
       />
+
+      {/* Revenue KPIs (hidden when no deals exist) */}
+      <PipelineRevenueBar leads={filteredLeads} />
 
       {/* Switcher segmented control */}
       <PipelineViewToggle view={view} onChange={setView} />

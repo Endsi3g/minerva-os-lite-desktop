@@ -46,6 +46,7 @@ import {
   RefreshCw,
   Inbox,
   ListChecks,
+  Target,
 } from 'lucide-react';
 import { BottomBlur } from '@/components/ui/edge-blur';
 import { cn } from '@/lib/utils';
@@ -401,6 +402,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
       else if (segment === 'help') label = 'Aide & Docs';
       else if (segment === 'inbox') label = 'Boîte de réception';
       else if (segment === 'setup') label = 'Configuration';
+      else if (segment === 'personas') label = 'Profils cibles';
 
       if (segments[index - 1] === 'leads' && segment !== 'leads') {
         label = 'Details';
@@ -434,6 +436,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
         { name: 'Campagnes', href: '/campaigns', icon: Megaphone },
         { name: 'Boîte de réception', href: '/inbox', icon: Inbox },
         { name: 'Pipeline', href: '/pipeline', icon: Kanban },
+        { name: 'Profils cibles (ICP)', href: '/personas', icon: Target },
         { name: 'Activités', href: '/activities', icon: Activity },
       ],
     },

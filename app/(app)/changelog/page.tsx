@@ -18,6 +18,33 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v2.54.0',
+      date: '2026-06-17',
+      titleKey: 'changelog.v2_54_0_title',
+      descKey: 'changelog.v2_54_0_desc',
+      highlights: [
+        'Nouvelle page /personas : création et gestion des profils cibles (ICP — Ideal Customer Profile).',
+        'Chaque profil définit des niches cibles, des villes cibles et des critères de scoring personnalisés (6 sliders 0–40 pts).',
+        'Critères configurables : aucun site web, note < 3.5★, < 10 avis, température Chaud, niche correspondante, ville correspondante.',
+        'Carte de profil : comptage des leads correspondants en temps réel + score moyen de compatibilité.',
+        'Hook usePersonas() : localStorage pour Electron, Supabase pour web — aucune donnée perdue.',
+        'scoreLeadByPersona() exporté depuis lib/lead-scoring.ts pour usage dans leads/pipeline.',
+        'Sidebar CRM : nouvelle entrée "Profils cibles (ICP)" avec icône Target.',
+      ],
+    },
+    {
+      version: 'v2.51.0',
+      date: '2026-06-17',
+      titleKey: 'changelog.v2_51_0_title',
+      descKey: 'changelog.v2_51_0_desc',
+      highlights: [
+        'Barre KPI revenue en haut du Pipeline : pipeline brut $, forecast pondéré (montant × probabilité %), deals gagnés et compteur de deals actifs.',
+        'Barre de progression empilée par statut : Contacté (bleu), RDV fixé (ambre), Gagné (vert) — proportions visuelles du pipeline.',
+        'La barre revenue est masquée automatiquement si aucun lead n\'a de deal renseigné.',
+        'Compatibilité complète avec les filtres niche/propriétaire existants (barre calculée sur les leads filtrés).',
+      ],
+    },
+    {
       version: 'v2.56.1',
       date: '2026-06-17',
       titleKey: 'changelog.v2_56_1_title',
