@@ -18,7 +18,7 @@ export type SettingsSection =
   // User Management
   | 'members' | 'groups' | 'roles'
   // Tools / existing
-  | 'prospecting' | 'ai' | 'api_keys' | 'integrations' | 'analytics';
+  | 'prospecting' | 'ai' | 'api_keys' | 'integrations' | 'analytics' | 'goals';
 
 interface NavGroup {
   label: string;
@@ -72,6 +72,7 @@ export function SettingsNav({ section, onSectionChange }: SettingsNavProps) {
         { id: 'api_keys', name: 'Clés API', icon: KeyRound },
         { id: 'integrations', name: t('settings.tab_integrations'), icon: Link2 },
         { id: 'analytics', name: t('nav.analytics'), icon: BarChart3 },
+        { id: 'goals', name: 'Objectifs', icon: Target },
       ],
     },
   ];

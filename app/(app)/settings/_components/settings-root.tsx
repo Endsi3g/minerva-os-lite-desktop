@@ -21,6 +21,7 @@ import { SettingsWorkspaceApiSection } from './settings-workspace-api-section';
 import { SettingsMembersSection } from './settings-members-section';
 import { SettingsGroupsSection } from './settings-groups-section';
 import { SettingsRolesSection } from './settings-roles-section';
+import { SettingsGoalsSection } from './settings-goals-section';
 import { Locale } from '@/lib/translations';
 import { createClient } from '@/lib/supabase/client';
 import { getApiUrl } from '@/lib/api-helper';
@@ -527,6 +528,8 @@ export function SettingsRoot() {
           {section === 'integrations' && <SettingsIntegrationsSection />}
 
           {section === 'analytics' && <AnalyticsDashboard />}
+
+          {section === 'goals' && <SettingsGoalsSection />}
         </div>
       </div>
     </div>

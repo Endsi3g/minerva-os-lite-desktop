@@ -67,6 +67,17 @@ export interface Campaign {
   updatedAt: string;
 }
 
+export interface Goal {
+  id: string;
+  workspaceId: string;
+  userId: string;
+  metric: 'leads_created' | 'leads_contacted' | 'leads_won' | 'emails_sent';
+  target: number;
+  period: 'week' | 'month';
+  createdAt: string;
+  updatedAt: string;
+}
+
 interface ReachContextType {
   user: SupabaseUser | null;
   leads: Lead[];
@@ -129,6 +140,10 @@ interface ReachContextType {
   addCampaign: (data: { name: string; description?: string; niches?: string[]; cities?: string[]; startDate?: string; endDate?: string }) => Promise<Campaign | null>;
   updateCampaign: (id: string, fields: Partial<Campaign>) => Promise<void>;
   deleteCampaign: (id: string) => Promise<void>;
+  goals: Goal[];
+  addGoal: (data: { metric: Goal['metric']; target: number; period: Goal['period'] }) => Promise<Goal | null>;
+  updateGoal: (id: string, fields: Partial<Pick<Goal, 'target' | 'period'>>) => Promise<void>;
+  deleteGoal: (id: string) => Promise<void>;
 }
 
 const ReachContext = createContext<ReachContextType | undefined>(undefined);
@@ -337,6 +352,19 @@ function mapDbProjectToUi(r: any): Project {
   };
 }
 
+function mapDbGoalToUi(r: any): Goal {
+  return {
+    id: r.id,
+    workspaceId: r.workspace_id || '',
+    userId: r.user_id || '',
+    metric: r.metric || 'leads_created',
+    target: r.target || 0,
+    period: r.period || 'month',
+    createdAt: r.created_at,
+    updatedAt: r.updated_at,
+  };
+}
+
 // Mapping database suggestion to UI AiSuggestion
 function mapDbSuggestionToUi(s: DbSuggestion, leads: Lead[]): AiSuggestion {
   const lead = leads.find(l => l.id === s.lead_id);
@@ -380,6 +408,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
 
   // Campaigns State
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [goals, setGoals] = useState<Goal[]>([]);
 
   const loadDataLocal = useCallback(async (userId: string, workspaceId: string) => {
     const electronObj = typeof window !== 'undefined' && (window as any).electron;
@@ -387,7 +416,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
 
     try {
       // All IPC calls in parallel — no round-trip sequencing overhead
-      const [dbLeads, dbNotes, dbTasks, dbSettings, dbNotifs, dbMsgs, dbProjects, dbCampaigns] = await Promise.all([
+      const [dbLeads, dbNotes, dbTasks, dbSettings, dbNotifs, dbMsgs, dbProjects, dbCampaigns, dbGoals] = await Promise.all([
         electronObj.dbAll("SELECT * FROM leads WHERE workspace_id = ? ORDER BY created_at DESC", [workspaceId]),
         electronObj.dbAll("SELECT * FROM notes WHERE workspace_id = ? ORDER BY created_at ASC", [workspaceId]),
         electronObj.dbAll("SELECT * FROM tasks WHERE workspace_id = ? ORDER BY created_at DESC", [workspaceId]),
@@ -396,6 +425,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
         electronObj.dbAll("SELECT * FROM team_messages WHERE workspace_id = ? ORDER BY created_at DESC LIMIT 50", [workspaceId]),
         electronObj.dbAll("SELECT * FROM projects WHERE workspace_id = ? ORDER BY created_at DESC", [workspaceId]),
         electronObj.dbAll("SELECT * FROM campaigns WHERE workspace_id = ? ORDER BY created_at DESC", [workspaceId]),
+        electronObj.dbAll("SELECT * FROM goals WHERE user_id = ? ORDER BY created_at DESC", [userId]),
       ]);
 
       const uiLeads = (dbLeads || []).map((lead: any) => {
@@ -415,6 +445,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
       setTeamMessages(((dbMsgs || []) as any[]).map(mapDbMsgToUi).reverse());
       setProjects((dbProjects || []).map(mapDbProjectToUi));
       setCampaigns((dbCampaigns || []).map(mapDbCampaignToUi));
+      setGoals((dbGoals || []).map(mapDbGoalToUi));
     } catch (err) {
       console.error("Failed to load local SQLite data in ReachProvider:", err);
     }
@@ -501,6 +532,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
         { data: dbMsgs },
         { data: dbProjects },
         { data: dbCampaigns },
+        { data: dbGoals },
       ] = await Promise.all([
         supabase.from('leads').select('*').eq('workspace_id', activeWs.id).order('created_at', { ascending: false }),
         supabase.from('notes').select('*').eq('workspace_id', activeWs.id).order('created_at', { ascending: true }),
@@ -511,6 +543,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
         supabase.from('team_messages').select('*').eq('workspace_id', activeWs.id).order('created_at', { ascending: false }).limit(50),
         supabase.from('projects').select('*').eq('workspace_id', activeWs.id).order('created_at', { ascending: false }),
         supabase.from('campaigns').select('*').eq('workspace_id', activeWs.id).order('created_at', { ascending: false }),
+        supabase.from('goals').select('*').eq('user_id', currUser.id).order('created_at', { ascending: false }),
       ]);
 
       const uiLeads = (dbLeads || []).map((lead: DbLead) => {
@@ -535,6 +568,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
       if (dbMsgs) setTeamMessages(dbMsgs.map(mapDbMsgToUi).reverse());
       if (dbProjects) setProjects(dbProjects.map(mapDbProjectToUi));
       if (dbCampaigns) setCampaigns(dbCampaigns.map(mapDbCampaignToUi));
+      if (dbGoals) setGoals(dbGoals.map(mapDbGoalToUi));
 
     } catch (e) {
       console.error("Error loading data from Supabase:", e);
@@ -2049,6 +2083,90 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
     } catch (err) { console.error("Error in deleteCampaign:", err); }
   };
 
+  const addGoal = async (data: { metric: Goal['metric']; target: number; period: Goal['period'] }): Promise<Goal | null> => {
+    if (!user || !activeWorkspace) return null;
+    const electronObj = typeof window !== 'undefined' && (window as any).electron;
+    const now = new Date().toISOString();
+    const newGoal: Goal = {
+      id: crypto.randomUUID(),
+      workspaceId: activeWorkspace.id,
+      userId: user.id,
+      metric: data.metric,
+      target: data.target,
+      period: data.period,
+      createdAt: now,
+      updatedAt: now,
+    };
+    if (electronObj) {
+      try {
+        await electronObj.dbRun(
+          `INSERT INTO goals (id, workspace_id, user_id, metric, target, period, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          [newGoal.id, newGoal.workspaceId, newGoal.userId, newGoal.metric, newGoal.target, newGoal.period, now, now]
+        );
+        setGoals(prev => [newGoal, ...prev]);
+        electronObj.triggerSync();
+      } catch (err) { console.error("Local addGoal error:", err); }
+      return newGoal;
+    }
+    const supabase = createClient();
+    try {
+      const { data: row, error } = await supabase.from('goals').insert({
+        id: newGoal.id, workspace_id: newGoal.workspaceId, user_id: newGoal.userId,
+        metric: newGoal.metric, target: newGoal.target, period: newGoal.period,
+        created_at: now, updated_at: now,
+      }).select().single();
+      if (error) throw error;
+      const mapped = mapDbGoalToUi(row);
+      setGoals(prev => [mapped, ...prev]);
+      return mapped;
+    } catch (err) { console.error("Error in addGoal:", err); return null; }
+  };
+
+  const updateGoal = async (id: string, fields: Partial<Pick<Goal, 'target' | 'period'>>): Promise<void> => {
+    if (!user) return;
+    const electronObj = typeof window !== 'undefined' && (window as any).electron;
+    const now = new Date().toISOString();
+    if (electronObj) {
+      try {
+        const dbFields: string[] = ['updated_at = ?'];
+        const params: any[] = [now];
+        if (fields.target !== undefined) { dbFields.push("target = ?"); params.push(fields.target); }
+        if (fields.period !== undefined) { dbFields.push("period = ?"); params.push(fields.period); }
+        params.push(id);
+        await electronObj.dbRun(`UPDATE goals SET ${dbFields.join(", ")} WHERE id = ?`, params);
+        setGoals(prev => prev.map(g => g.id === id ? { ...g, ...fields, updatedAt: now } : g));
+        electronObj.triggerSync();
+      } catch (err) { console.error("Local updateGoal error:", err); }
+      return;
+    }
+    const supabase = createClient();
+    try {
+      const supaFields: Record<string, any> = { updated_at: now };
+      if (fields.target !== undefined) supaFields.target = fields.target;
+      if (fields.period !== undefined) supaFields.period = fields.period;
+      await supabase.from('goals').update(supaFields).eq('id', id);
+      setGoals(prev => prev.map(g => g.id === id ? { ...g, ...fields, updatedAt: now } : g));
+    } catch (err) { console.error("Error in updateGoal:", err); }
+  };
+
+  const deleteGoal = async (id: string): Promise<void> => {
+    if (!user) return;
+    const electronObj = typeof window !== 'undefined' && (window as any).electron;
+    if (electronObj) {
+      try {
+        await electronObj.dbRun("DELETE FROM goals WHERE id = ?", [id]);
+        setGoals(prev => prev.filter(g => g.id !== id));
+        electronObj.triggerSync();
+      } catch (err) { console.error("Local deleteGoal error:", err); }
+      return;
+    }
+    const supabase = createClient();
+    try {
+      await supabase.from('goals').delete().eq('id', id);
+      setGoals(prev => prev.filter(g => g.id !== id));
+    } catch (err) { console.error("Error in deleteGoal:", err); }
+  };
+
   const importDemoData = async () => {
     if (!user || !activeWorkspace) return;
     await populateMockData(user.id, activeWorkspace.id);
@@ -2100,6 +2218,10 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
         addCampaign,
         updateCampaign,
         deleteCampaign,
+        goals,
+        addGoal,
+        updateGoal,
+        deleteGoal,
       }}
     >
       {children}

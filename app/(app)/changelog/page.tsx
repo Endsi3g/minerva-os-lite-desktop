@@ -18,6 +18,18 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v2.39.0',
+      date: '2026-06-17',
+      titleKey: 'changelog.v2_39_0_title',
+      descKey: 'changelog.v2_39_0_desc',
+      highlights: [
+        'Objectifs & Quotas : nouvelle section dans Paramètres → Outils → Objectifs.',
+        '4 métriques disponibles : leads créés, contactés, gagnés, e-mails envoyés.',
+        'Périodicité semaine ou mois. Barre de progression avec indicateur "Objectif atteint".',
+        'Données dual-store (SQLite Electron + Supabase web).',
+      ],
+    },
+    {
       version: 'v2.38.0',
       date: '2026-06-17',
       titleKey: 'changelog.v2_38_0_title',
