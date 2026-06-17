@@ -2,16 +2,16 @@
 
 import React, { useEffect, useState } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { BarChart3, TrendingUp, Mail, CheckCircle2, RefreshCw } from 'lucide-react';
+import { BarChart3, TrendingUp, Mail, CheckCircle2 } from 'lucide-react';
 import { useReach } from '@/lib/reach-context';
 import { createClient } from '@/lib/supabase/client';
 
 export function TodayStatsCard() {
   const { leads, tasks } = useReach();
-  
-  // Local states for Todoist status
+
   const [todoistConnected, setTodoistConnected] = useState(false);
   const [todoistTaskCount, setTodoistTaskCount] = useState({ completed: 0, total: 0 });
+  const [seqStats, setSeqStats] = useState({ sent: 0, total: 0 });
 
   // Funnel calculations based on real leads
   const totalLeads = leads.length;
@@ -26,7 +26,7 @@ export function TodayStatsCard() {
   const completedTasks = tasks.filter(t => t.completed).length;
 
   useEffect(() => {
-    const checkTodoist = async () => {
+    const fetchStats = async () => {
       try {
         const supabase = createClient();
         const { data: { user } } = await supabase.auth.getUser();
@@ -38,31 +38,37 @@ export function TodayStatsCard() {
             "SELECT todoist_token, todoist_project_id FROM settings WHERE user_id = ? LIMIT 1",
             [user.id]
           );
-          if (dbSettings && dbSettings.todoist_token) {
+          if (dbSettings?.todoist_token) {
             setTodoistConnected(true);
-            
-            // Fetch tasks from Todoist to count progress
-            const res = await fetch(`https://api.todoist.com/rest/v2/tasks?project_id=${dbSettings.todoist_project_id}`, {
-              headers: {
-                'Authorization': `Bearer ${dbSettings.todoist_token}`
-              }
-            });
+            const url = dbSettings.todoist_project_id
+              ? `https://api.todoist.com/rest/v2/tasks?project_id=${dbSettings.todoist_project_id}`
+              : 'https://api.todoist.com/rest/v2/tasks';
+            const res = await fetch(url, { headers: { Authorization: `Bearer ${dbSettings.todoist_token}` } });
             if (res.ok) {
-              const activeTasks = await res.json();
-              // Since Todoist REST API only returns active tasks, we also check if they completed some.
-              // We can combine this with local completed counts or just show active count.
-              setTodoistTaskCount({
-                completed: 0, // REST API v2 doesn't return completed tasks without sync API, so we show remaining
-                total: activeTasks.length
-              });
+              const active = await res.json();
+              setTodoistTaskCount({ completed: 0, total: active.length });
             }
           }
+        } else {
+          // Web: check Todoist token from Supabase settings
+          const { data: settings } = await supabase.from('settings').select('todoist_token, todoist_project_id').eq('user_id', user.id).single();
+          if ((settings as any)?.todoist_token) setTodoistConnected(true);
+        }
+
+        // Real email sequence stats
+        const { data: steps } = await supabase
+          .from('email_sequence_steps')
+          .select('status, sequence_id, email_sequences!inner(user_id)')
+          .eq('email_sequences.user_id', user.id);
+
+        if (steps) {
+          setSeqStats({ sent: steps.filter((s: any) => s.status === 'sent').length, total: steps.length });
         }
       } catch (err) {
-        console.error("Error checking Todoist on stats widget:", err);
+        console.error("Stats widget error:", err);
       }
     };
-    checkTodoist();
+    fetchStats();
   }, [tasks]);
 
   return (
@@ -145,30 +151,34 @@ export function TodayStatsCard() {
           )}
         </div>
 
-        {/* Email Engagement Rates */}
+        {/* Email Sequences Stats */}
         <div className="border-t border-[#e5e5e0]/60 pt-3 text-left space-y-2">
           <span className="flex items-center gap-1.5 text-xs font-semibold text-[#26251e]">
             <Mail className="w-3.5 h-3.5 text-primary" />
-            <span>Engagement des Campagnes (Moy.)</span>
+            <span>Séquences email</span>
           </span>
-          
-          <div className="grid grid-cols-2 gap-4">
-            <div className="bg-[#fafaf8] border border-[#e5e5e0] rounded-xl p-2.5 flex flex-col justify-between">
-              <span className="text-[9px] font-bold uppercase tracking-wider text-[#7a7a76]">Taux d'ouverture</span>
-              <span className="text-lg font-bold text-[#26251e] tracking-tight font-sans mt-1">68.4%</span>
-              <div className="w-full bg-neutral-200 h-1 rounded-full overflow-hidden mt-1.5">
-                <div style={{ width: '68.4%' }} className="bg-primary h-full rounded-full" />
+          {seqStats.total === 0 ? (
+            <p className="text-[10px] text-muted-foreground leading-normal">
+              Aucune séquence active. Créez votre première depuis <a href="/sequences" className="underline text-primary">Séquences email</a>.
+            </p>
+          ) : (
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-[#fafaf8] border border-[#e5e5e0] rounded-xl p-2.5 flex flex-col justify-between">
+                <span className="text-[9px] font-bold uppercase tracking-wider text-[#7a7a76]">Emails envoyés</span>
+                <span className="text-lg font-bold text-[#26251e] tracking-tight font-sans mt-1">{seqStats.sent}</span>
+                <div className="w-full bg-neutral-200 h-1 rounded-full overflow-hidden mt-1.5">
+                  <div style={{ width: `${seqStats.total > 0 ? (seqStats.sent / seqStats.total) * 100 : 0}%` }} className="bg-primary h-full rounded-full" />
+                </div>
+              </div>
+              <div className="bg-[#fafaf8] border border-[#e5e5e0] rounded-xl p-2.5 flex flex-col justify-between">
+                <span className="text-[9px] font-bold uppercase tracking-wider text-[#7a7a76]">En attente</span>
+                <span className="text-lg font-bold text-[#26251e] tracking-tight font-sans mt-1">{seqStats.total - seqStats.sent}</span>
+                <div className="w-full bg-neutral-200 h-1 rounded-full overflow-hidden mt-1.5">
+                  <div style={{ width: `${seqStats.total > 0 ? ((seqStats.total - seqStats.sent) / seqStats.total) * 100 : 0}%` }} className="bg-amber-400 h-full rounded-full" />
+                </div>
               </div>
             </div>
-
-            <div className="bg-[#fafaf8] border border-[#e5e5e0] rounded-xl p-2.5 flex flex-col justify-between">
-              <span className="text-[9px] font-bold uppercase tracking-wider text-[#7a7a76]">Taux de réponse</span>
-              <span className="text-lg font-bold text-[#26251e] tracking-tight font-sans mt-1">24.1%</span>
-              <div className="w-full bg-neutral-200 h-1 rounded-full overflow-hidden mt-1.5">
-                <div style={{ width: '24.1%' }} className="bg-primary h-full rounded-full" />
-              </div>
-            </div>
-          </div>
+          )}
         </div>
 
       </CardContent>

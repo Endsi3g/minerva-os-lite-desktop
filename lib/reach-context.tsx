@@ -89,6 +89,7 @@ interface ReachContextType {
   toggleTask: (id: string) => void;
   addTask: (title: string, category: Task['category']) => void;
   deleteTask: (id: string) => void;
+  updateTask: (id: string, fields: { title?: string; dueDate?: string; category?: Task['category'] }) => void;
   saveQuickNote: (note: string) => void;
   updateFocus: (title: string, items: string[]) => void;
   updateLead: (leadId: string, fields: Partial<Lead>) => void;
@@ -1245,6 +1246,44 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const updateTask = async (id: string, fields: { title?: string; dueDate?: string; category?: Task['category'] }) => {
+    if (!user) return;
+    const electronObj = typeof window !== 'undefined' && (window as any).electron;
+
+    if (electronObj) {
+      try {
+        const dbFields: string[] = [];
+        const params: any[] = [];
+        if (fields.title !== undefined) { dbFields.push("title = ?"); params.push(fields.title); }
+        if (fields.dueDate !== undefined) { dbFields.push("due_date = ?"); params.push(fields.dueDate); }
+        if (fields.category !== undefined) { dbFields.push("category = ?"); params.push(fields.category); }
+        if (dbFields.length > 0) {
+          dbFields.push("updated_at = ?"); params.push(new Date().toISOString());
+          dbFields.push("sync_status = 'pending_update'"); params.push(id);
+          await electronObj.dbRun(`UPDATE tasks SET ${dbFields.join(", ")} WHERE id = ?`, params);
+        }
+        setTasks(prev => prev.map(t => t.id === id ? { ...t, ...fields } : t));
+        electronObj.triggerSync();
+      } catch (err) {
+        console.error("Local updateTask error:", err);
+      }
+      return;
+    }
+
+    const supabase = createClient();
+    const dbFields: Record<string, string> = {};
+    if (fields.title !== undefined) dbFields.title = fields.title;
+    if (fields.dueDate !== undefined) dbFields.due_date = fields.dueDate;
+    if (fields.category !== undefined) dbFields.category = fields.category;
+    try {
+      const { error } = await supabase.from('tasks').update(dbFields).eq('id', id);
+      if (error) throw error;
+      setTasks(prev => prev.map(t => t.id === id ? { ...t, ...fields } : t));
+    } catch (err) {
+      console.error("Error in updateTask:", err);
+    }
+  };
+
   const saveQuickNote = async (note: string) => {
     setQuickNote(note);
     if (!user || !activeWorkspace) return;
@@ -1890,6 +1929,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
         toggleTask,
         addTask,
         deleteTask,
+        updateTask,
         saveQuickNote,
         updateFocus,
         updateLead,

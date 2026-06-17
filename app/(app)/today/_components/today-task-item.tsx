@@ -9,6 +9,7 @@ import { MoreHorizontal, Calendar, Trash2, AlertCircle } from 'lucide-react';
 import { Task } from '@/lib/mock-data';
 import { useReach } from '@/lib/reach-context';
 import { cn } from '@/lib/utils';
+import { useLanguage } from '@/lib/language-context';
 
 interface TodayTaskItemProps {
   task: Task;
@@ -17,7 +18,8 @@ interface TodayTaskItemProps {
 }
 
 export function TodayTaskItem({ task, onToggle, onDelete }: TodayTaskItemProps) {
-  const { toggleTask, deleteTask, addTask } = useReach();
+  const { toggleTask, deleteTask, updateTask } = useReach();
+  const { t } = useLanguage();
 
   const getCategoryColor = (cat: Task['category']) => {
     switch (cat) {
@@ -49,12 +51,13 @@ export function TodayTaskItem({ task, onToggle, onDelete }: TodayTaskItemProps) 
   };
 
   const handleMoveToTomorrow = () => {
-    handleDelete();
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    updateTask(task.id, { dueDate: tomorrow.toISOString().split('T')[0] });
   };
 
   const handleMakeUrgent = () => {
-    handleDelete();
-    addTask(`🔥 [URGENT] ${task.title.replace('🔥 [URGENT] ', '')}`, task.category);
+    updateTask(task.id, { title: `🔥 [URGENT] ${task.title.replace('🔥 [URGENT] ', '')}` });
   };
 
   return (
