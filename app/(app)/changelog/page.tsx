@@ -18,6 +18,18 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v2.44.0',
+      date: '2026-06-17',
+      titleKey: 'changelog.v2_44_0_title',
+      descKey: 'changelog.v2_44_0_desc',
+      highlights: [
+        'Quota d\'envoi quotidien configurable dans Paramètres > Prospection (défaut : 50 e-mails/jour).',
+        'Le cron de séquences vérifie le quota par utilisateur avant chaque envoi — les étapes excédentaires sont reportées.',
+        'Presets rapides : 20 / 50 / 100 / 200 e-mails par jour.',
+        'Les étapes de canal non-Email (Appel, LinkedIn, SMS) sont automatiquement ignorées par le cron d\'envoi.',
+      ],
+    },
+    {
       version: 'v2.43.0',
       date: '2026-06-17',
       titleKey: 'changelog.v2_43_0_title',

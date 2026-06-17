@@ -159,6 +159,7 @@ function initDb() {
     db.run(`ALTER TABLE settings ADD COLUMN user_role TEXT DEFAULT NULL`, () => {});
     db.run(`ALTER TABLE settings ADD COLUMN bio TEXT DEFAULT NULL`, () => {});
     db.run(`ALTER TABLE settings ADD COLUMN email_signature TEXT DEFAULT NULL`, () => {});
+    db.run(`ALTER TABLE settings ADD COLUMN daily_email_limit INTEGER DEFAULT 50`, () => {});
 
     // v2.12.0 notification migrations (safe re-run)
     db.run(`ALTER TABLE notifications ADD COLUMN workspace_id TEXT`, () => {});

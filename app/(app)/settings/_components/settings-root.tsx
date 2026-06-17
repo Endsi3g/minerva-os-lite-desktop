@@ -48,6 +48,7 @@ interface ProspectingData {
     acquisition: boolean;
   };
   language: string;
+  dailyEmailLimit: number;
 }
 
 interface AiData {
@@ -109,6 +110,7 @@ const DEFAULT_SETTINGS: AppSettings = {
     cities: ['Montréal', 'Laval'],
     services: { website: true, seoAudit: true, acquisition: false },
     language: 'both',
+    dailyEmailLimit: 50,
   },
   ai: {
     tone: 'casual',
@@ -196,6 +198,7 @@ export function SettingsRoot() {
                 cities: dbSettings.cities || [],
                 services: { website: true, seoAudit: true, acquisition: false },
                 language: 'both',
+                dailyEmailLimit: dbSettings.daily_email_limit ?? 50,
               },
               ai: {
                 tone: dbSettings.ai_tone === 'Direct & Closer' ? 'professional' : dbSettings.ai_tone === 'Storytelling' ? 'storytelling' : 'casual',
@@ -320,6 +323,7 @@ export function SettingsRoot() {
               avatar_base64: nextSettings.profile.avatarBase64,
               niches: nextSettings.prospecting.niches,
               cities: nextSettings.prospecting.cities,
+              daily_email_limit: nextSettings.prospecting.dailyEmailLimit,
               ai_tone: nextSettings.ai.tone === 'casual' ? 'Calme & Conseil' : nextSettings.ai.tone === 'professional' ? 'Direct & Closer' : 'Storytelling',
               ai_density: nextSettings.ai.customization === 'low' ? 'Standard' : nextSettings.ai.customization === 'medium' ? 'Personnalisé' : 'Profond',
               ai_provider: nextSettings.ai.aiProvider,

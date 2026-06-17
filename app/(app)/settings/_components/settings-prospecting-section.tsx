@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SettingsSectionWrapper } from './settings-section-wrapper';
-import { Plus, X, Tag } from 'lucide-react';
+import { Plus, X, Tag, Mail } from 'lucide-react';
 
 interface ProspectingData {
   niches: string[];
@@ -19,6 +19,7 @@ interface ProspectingData {
     acquisition: boolean;
   };
   language: string;
+  dailyEmailLimit: number;
 }
 
 interface SettingsProspectingSectionProps {
@@ -237,6 +238,46 @@ export function SettingsProspectingSection({ data, onChange, isSaving }: Setting
                 </SelectContent>
               </Select>
             </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Daily email send cap */}
+      <Card className="border border-border bg-card">
+        <CardContent className="p-5 space-y-4">
+          <h3 className="text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-1.5">
+            <Mail className="h-3.5 w-3.5 text-primary" />
+            <span>Quota d&apos;envoi quotidien</span>
+          </h3>
+          <p className="text-[11px] text-muted-foreground leading-normal">
+            Nombre maximum d&apos;e-mails de séquence envoyés par jour, toutes séquences actives confondues. Les étapes excédentaires sont reportées au lendemain.
+          </p>
+          <div className="flex items-center gap-3">
+            <Input
+              type="number"
+              min={1}
+              max={500}
+              value={data.dailyEmailLimit}
+              onChange={(e) => onChange({ dailyEmailLimit: Math.max(1, Math.min(500, Number(e.target.value) || 50)) })}
+              className="w-24 text-xs h-8"
+            />
+            <span className="text-xs text-muted-foreground">e-mails / jour</span>
+          </div>
+          <div className="flex flex-wrap gap-2 pt-1">
+            {[20, 50, 100, 200].map((preset) => (
+              <button
+                key={preset}
+                type="button"
+                onClick={() => onChange({ dailyEmailLimit: preset })}
+                className={`text-[10px] font-bold px-2.5 py-1 rounded border transition-colors ${
+                  data.dailyEmailLimit === preset
+                    ? 'bg-primary/10 text-primary border-primary/30'
+                    : 'border-border text-muted-foreground hover:border-primary/30 hover:text-primary'
+                }`}
+              >
+                {preset}/jour
+              </button>
+            ))}
           </div>
         </CardContent>
       </Card>

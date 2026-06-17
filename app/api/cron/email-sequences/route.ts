@@ -74,26 +74,73 @@ export async function GET(req: NextRequest) {
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
 
-  const now = new Date().toISOString();
+  const now = new Date();
+  const todayStart = new Date(now);
+  todayStart.setHours(0, 0, 0, 0);
 
   // Find all pending steps due now, joined with sequence info
   const { data: dueSteps, error } = await supabase
     .from('email_sequence_steps')
     .select('*, email_sequences(id, user_id, lead_email, lead_name, status)')
     .eq('status', 'pending')
-    .lte('scheduled_at', now)
+    .lte('scheduled_at', now.toISOString())
     .order('scheduled_at', { ascending: true })
-    .limit(50);
+    .limit(200);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   if (!dueSteps || dueSteps.length === 0) return NextResponse.json({ ok: true, sent: 0 });
 
+  // Collect distinct user IDs from due steps
+  const userIds = [...new Set(
+    dueSteps
+      .map((s) => (s.email_sequences as { user_id: string } | null)?.user_id)
+      .filter((id): id is string => !!id)
+  )];
+
+  // Per-user: load daily cap from settings + count already sent today
+  const userQuota: Record<string, { cap: number; sentToday: number }> = {};
+  for (const uid of userIds) {
+    const { data: settingsRow } = await supabase
+      .from('settings')
+      .select('daily_email_limit')
+      .eq('user_id', uid)
+      .maybeSingle();
+    const cap: number = (settingsRow as { daily_email_limit?: number | null } | null)?.daily_email_limit ?? 50;
+
+    const { count: sentToday } = await supabase
+      .from('email_sequence_steps')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'sent')
+      .gte('sent_at', todayStart.toISOString())
+      .in('sequence_id',
+        (await supabase
+          .from('email_sequences')
+          .select('id')
+          .eq('user_id', uid)
+        ).data?.map((r: { id: string }) => r.id) ?? []
+      );
+
+    userQuota[uid] = { cap, sentToday: sentToday ?? 0 };
+  }
+
   let sent = 0;
   let failed = 0;
+  let skippedCap = 0;
 
   for (const step of dueSteps) {
     const seq = step.email_sequences as { id: string; user_id: string; lead_email: string; lead_name: string; status: string } | null;
     if (!seq || seq.status !== 'active') continue;
+
+    // Enforce daily cap
+    const quota = userQuota[seq.user_id];
+    if (quota && quota.sentToday >= quota.cap) {
+      skippedCap++;
+      continue;
+    }
+
+    // Skip non-email steps (Call, LinkedIn, SMS) — they are manual reminders
+    const channel = (step as { channel?: string }).channel;
+    if (channel && channel !== 'Email') continue;
 
     try {
       const accessToken = await getValidAccessToken(supabase, seq.user_id);
@@ -116,6 +163,7 @@ export async function GET(req: NextRequest) {
           sent_at: new Date().toISOString(),
         }).eq('id', step.id);
         sent++;
+        if (quota) quota.sentToday++;
       } else {
         await supabase.from('email_sequence_steps').update({ status: 'failed' }).eq('id', step.id);
         failed++;
@@ -140,5 +188,5 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  return NextResponse.json({ ok: true, sent, failed });
+  return NextResponse.json({ ok: true, sent, failed, skippedCap });
 }
