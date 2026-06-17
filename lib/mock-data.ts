@@ -32,6 +32,8 @@ export interface Lead {
   photos?: string[];
   socialLinks?: Record<string, string>;
   assignedTo?: string;
+  latitude?: number;
+  longitude?: number;
 }
 
 export interface Task {

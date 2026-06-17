@@ -7,6 +7,7 @@ import { useLanguage } from '@/lib/language-context';
 import { takePhoto } from '@/lib/native-bridge';
 import { getApiUrl } from '@/lib/api-helper';
 import { Lead, Note } from '@/lib/mock-data';
+import { computeLeadScore } from '@/lib/lead-score';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -1130,9 +1131,33 @@ export function LeadDetailClient({ id }: { id: string }) {
 
           {/* Right Sidebar (Notion Properties Panel) */}
           <div className="border-t lg:border-t-0 lg:border-l border-border pt-6 lg:pt-0 lg:pl-6 space-y-6">
+            {/* Opportunity Score */}
+            {(() => {
+              const oppScore = computeLeadScore(lead);
+              const scoreColor =
+                oppScore >= 70 ? '#059669' : oppScore >= 40 ? '#f54e00' : '#7a7a76';
+              const scoreLabel =
+                oppScore >= 70 ? 'Forte opportunité' : oppScore >= 40 ? 'Opportunité moyenne' : 'Opportunité faible';
+              return (
+                <div className="flex items-center gap-3 p-3 rounded-lg border border-[#e5e5e0] bg-[#fafaf8]">
+                  <div
+                    className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border-2 text-lg font-black"
+                    style={{ borderColor: scoreColor, color: scoreColor }}
+                  >
+                    {oppScore}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Score Opportunité</p>
+                    <p className="text-xs font-semibold mt-0.5" style={{ color: scoreColor }}>{scoreLabel}</p>
+                    <p className="text-[10px] text-[#7a7a76] mt-0.5">Basé sur site web, note, avis</p>
+                  </div>
+                </div>
+              );
+            })()}
+
             <div>
               <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-4">{t('lead.properties_title')}</h4>
-              
+
               <div className="space-y-4">
                 {/* Status selector */}
                 <div className="grid grid-cols-[100px_1fr] items-center gap-1.5">

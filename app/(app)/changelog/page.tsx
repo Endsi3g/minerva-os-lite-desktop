@@ -18,6 +18,19 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v2.23.0',
+      date: '2026-06-17',
+      titleKey: 'changelog.v2_23_0_title',
+      descKey: 'changelog.v2_23_0_desc',
+      highlights: [
+        'Audit SEO technique réel : nouvelle page /audit avec analyse complète du site web d\'un lead (HTTPS, balise viewport, title + description + longueurs, temps de chargement, Google Analytics, Facebook Pixel). Score 0-100 coloré par niveau.',
+        'Mode batch : "Auditer mon portefeuille" lance automatiquement l\'audit pour tous les leads ayant un site web, avec tableau de résultats et concurrence limitée à 3 requêtes simultanées.',
+        'Carte interactive des leads /map : tous les leads du CRM sont visualisés sur une carte du Québec, avec marqueurs colorés par température (rouge/orange/bleu/gris sans-site), filtres sidebar, recherche et popup de détail.',
+        'Score d\'opportunité : colonne "Opportunité" dans le tableau des leads et indicateur dans le panneau de détail. Algorithme pur basé sur l\'absence de site (+30), la note (<3.5 → +20), le nombre d\'avis (<10 → +15) et la température Hot (+5).',
+        'Intelligence — synthèses IA réelles : le panneau de synthèse est maintenant câblé sur /api/chat en streaming réel (SSE). Plus de templates statiques — l\'IA génère une analyse stratégique à partir de ton portefeuille réel.',
+      ],
+    },
+    {
       version: 'v2.22.2',
       date: '2026-06-17',
       titleKey: 'changelog.v2_22_2_title',

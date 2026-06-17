@@ -5,12 +5,13 @@ import { ColumnDef } from '@tanstack/react-table';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Lead } from '@/lib/mock-data';
-import { ArrowUpDown, ArrowUpRight, Mail, MapPin, TrendingUp } from 'lucide-react';
+import { ArrowUpDown, ArrowUpRight, Mail, MapPin, TrendingUp, Zap } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { getTemperatureStyle, getTemperatureLabel } from '@/lib/lead-badges';
+import { computeLeadScore } from '@/lib/lead-score';
 
 // Helper for status badge styling
 const getStatusStyle = (status: Lead['status']) => {
@@ -211,6 +212,47 @@ export const columns: ColumnDef<Lead>[] = [
         </div>
       );
     },
+  },
+  // Opportunity Score (computed, not from DB)
+  {
+    id: 'opportunityScore',
+    header: ({ column }) => (
+      <button
+        onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+        className="flex items-center gap-1 hover:text-foreground font-semibold"
+      >
+        <Zap className="h-3 w-3" />
+        Opportunité
+        <ArrowUpDown className="h-3 w-3" />
+      </button>
+    ),
+    accessorFn: (row) => computeLeadScore(row),
+    cell: ({ row }) => {
+      const oppScore = computeLeadScore(row.original);
+      const colorStyle =
+        oppScore >= 70
+          ? { bg: '#059669' + '1a', text: '#059669', border: '#059669' + '33' }
+          : oppScore >= 40
+          ? { bg: '#f54e00' + '1a', text: '#f54e00', border: '#f54e00' + '33' }
+          : { bg: '#7a7a76' + '1a', text: '#7a7a76', border: '#7a7a76' + '33' };
+      if (oppScore === 0) return <span className="text-[10px] text-muted-foreground/40">—</span>;
+      return (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div
+              className="inline-flex items-center justify-center w-10 h-6 rounded border text-[10px] font-black cursor-help"
+              style={{ backgroundColor: colorStyle.bg, color: colorStyle.text, borderColor: colorStyle.border }}
+            >
+              {oppScore}
+            </div>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p className="text-xs">Score d'opportunité: {oppScore}/100<br />Plus le score est élevé, plus ce lead est une opportunité de service.</p>
+          </TooltipContent>
+        </Tooltip>
+      );
+    },
+    enableSorting: true,
   },
   // Actions
   {

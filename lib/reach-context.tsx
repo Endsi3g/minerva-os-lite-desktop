@@ -137,6 +137,8 @@ interface DbLead {
   photos?: string | null;     // JSON string in SQLite, jsonb in Supabase
   social_links?: string | null; // JSON string in SQLite, jsonb in Supabase
   assigned_to?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
 }
 
 interface DbNote {
@@ -195,6 +197,8 @@ function mapDbLeadToUi(dbLead: DbLead, dbNotes: DbNote[] = []): Lead {
     photos,
     socialLinks,
     assignedTo: dbLead.assigned_to || undefined,
+    latitude: dbLead.latitude ?? undefined,
+    longitude: dbLead.longitude ?? undefined,
     notes: dbNotes
       .filter(n => n.lead_id === dbLead.id)
       .map(n => ({

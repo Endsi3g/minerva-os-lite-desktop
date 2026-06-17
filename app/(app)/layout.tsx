@@ -38,6 +38,8 @@ import {
   Tag,
   Brain,
   Gift,
+  MapPin,
+  ShieldCheck,
 } from 'lucide-react';
 import { BottomBlur } from '@/components/ui/edge-blur';
 import { cn } from '@/lib/utils';
@@ -352,6 +354,8 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
       else if (segment === 'assistant') label = t('nav.assistant');
       else if (segment === 'download') label = t('nav.download');
       else if (segment === 'welcome') label = t('nav.get_started');
+      else if (segment === 'audit') label = t('nav.audit');
+      else if (segment === 'map') label = t('nav.map');
       else if (segment === 'billing') label = 'Facturation';
       else if (segment === 'help') label = 'Aide & Docs';
 
@@ -387,6 +391,8 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
         { name: t('nav.assistant'), href: '/assistant', icon: Brain },
         { name: t('nav.agents'), href: '/agents', icon: Sparkles },
         { name: t('nav.analytics'), href: '/analytics', icon: BarChart3 },
+        { name: t('nav.audit'), href: '/audit', icon: ShieldCheck },
+        { name: t('nav.map'), href: '/map', icon: MapPin },
       ],
     },
     {
