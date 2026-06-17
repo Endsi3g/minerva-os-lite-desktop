@@ -18,6 +18,18 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v2.42.0',
+      date: '2026-06-17',
+      titleKey: 'changelog.v2_42_0_title',
+      descKey: 'changelog.v2_42_0_desc',
+      highlights: [
+        'Personnalisation des e-mails : section "Variables" dépliable dans le compositeur IA.',
+        '4 presets rapides : {{probleme_principal}}, {{concurrent_exemple}}, {{offre_principale}}, {{objectif_client}}.',
+        'Variables injectées automatiquement dans le prompt IA lors de la génération du brouillon.',
+        'Substitution client-side des variables dans les instructions avant envoi à l\'API.',
+      ],
+    },
+    {
       version: 'v2.41.0',
       date: '2026-06-17',
       titleKey: 'changelog.v2_41_0_title',

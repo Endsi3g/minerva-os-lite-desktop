@@ -463,6 +463,12 @@ export function LeadDetailClient({ id }: { id: string }) {
   const [generatedContent, setGeneratedContent] = useState('');
   const [copied, setCopied] = useState(false);
 
+  // Personalization variables
+  const [customVars, setCustomVars] = useState<Record<string, string>>({});
+  const [showVars, setShowVars] = useState(false);
+  const [newVarKey, setNewVarKey] = useState('');
+  const [newVarValue, setNewVarValue] = useState('');
+
   // Team members for "Assigner à"
   interface TeamMember { id: string; email: string; full_name: string; role: string }
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
@@ -719,6 +725,20 @@ export function LeadDetailClient({ id }: { id: string }) {
   const handleGenerateDraft = async () => {
     setGenerating(true);
     try {
+      // Substitute custom variables into instructions
+      let enrichedInstructions = draftInstructions;
+      const varEntries = Object.entries(customVars).filter(([k, v]) => k && v);
+      if (varEntries.length > 0) {
+        const varContext = '\n\nVariables personnalisées à utiliser dans le message :\n' +
+          varEntries.map(([k, v]) => `{{${k}}} = "${v}"`).join('\n');
+        // Also do literal replacement in instructions
+        let substituted = draftInstructions;
+        for (const [k, v] of varEntries) {
+          substituted = substituted.replaceAll(`{{${k}}}`, v);
+        }
+        enrichedInstructions = substituted + varContext;
+      }
+
       const res = await fetch(getApiUrl('/api/generate-draft'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -726,7 +746,7 @@ export function LeadDetailClient({ id }: { id: string }) {
           leadId: id,
           channel: draftChannel,
           tone: draftTone,
-          instructions: draftInstructions
+          instructions: enrichedInstructions
         })
       });
       const data = await res.json();
@@ -1036,7 +1056,7 @@ export function LeadDetailClient({ id }: { id: string }) {
                     {/* Specific instructions */}
                     <div className="space-y-1.5">
                       <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{t('lead.custom_instructions')}</label>
-                      <Textarea 
+                      <Textarea
                         placeholder={t('lead.custom_instructions_placeholder')}
                         value={draftInstructions}
                         onChange={(e) => setDraftInstructions(e.target.value)}
@@ -1045,6 +1065,92 @@ export function LeadDetailClient({ id }: { id: string }) {
                         onFocus={() => setIsEditing(true)}
                         onBlur={() => setIsEditing(false)}
                       />
+                    </div>
+
+                    {/* Personalization variables */}
+                    <div className="space-y-2">
+                      <button
+                        type="button"
+                        onClick={() => setShowVars(v => !v)}
+                        className="flex items-center gap-1.5 text-[10px] font-semibold text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        <span>{showVars ? '▾' : '▸'}</span>
+                        Variables de personnalisation
+                        {Object.keys(customVars).filter(k => customVars[k]).length > 0 && (
+                          <span className="bg-primary/10 text-primary px-1.5 py-0.5 rounded text-[9px]">
+                            {Object.keys(customVars).filter(k => customVars[k]).length} active{Object.keys(customVars).filter(k => customVars[k]).length > 1 ? 's' : ''}
+                          </span>
+                        )}
+                      </button>
+                      {showVars && (
+                        <div className="border border-border/60 rounded-md p-3 space-y-2 bg-muted/20">
+                          <p className="text-[9px] text-muted-foreground">Définissez des variables <code className="bg-muted px-1 rounded text-[9px]">{'{{clé}}'}</code> à injecter dans le message généré.</p>
+                          {/* Existing vars */}
+                          {Object.entries(customVars).map(([k, v]) => (
+                            <div key={k} className="flex items-center gap-1.5">
+                              <span className="text-[10px] font-mono bg-primary/10 text-primary px-1.5 py-0.5 rounded shrink-0">{`{{${k}}}`}</span>
+                              <input
+                                type="text"
+                                value={v}
+                                onChange={e => setCustomVars(prev => ({ ...prev, [k]: e.target.value }))}
+                                placeholder="valeur…"
+                                className="flex-1 text-[10px] border border-border rounded px-2 py-1 bg-background focus:outline-none focus:ring-1 focus:ring-primary"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => setCustomVars(prev => { const n = {...prev}; delete n[k]; return n; })}
+                                className="text-muted-foreground hover:text-destructive transition-colors text-[10px]"
+                              >✕</button>
+                            </div>
+                          ))}
+                          {/* Add new var */}
+                          <div className="flex items-center gap-1.5">
+                            <input
+                              type="text"
+                              value={newVarKey}
+                              onChange={e => setNewVarKey(e.target.value.replace(/[^a-z0-9_]/gi, '_').toLowerCase())}
+                              placeholder="nom_variable"
+                              className="w-28 text-[10px] border border-border rounded px-2 py-1 bg-background focus:outline-none focus:ring-1 focus:ring-primary font-mono"
+                            />
+                            <input
+                              type="text"
+                              value={newVarValue}
+                              onChange={e => setNewVarValue(e.target.value)}
+                              placeholder="valeur par défaut…"
+                              className="flex-1 text-[10px] border border-border rounded px-2 py-1 bg-background focus:outline-none focus:ring-1 focus:ring-primary"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (!newVarKey) return;
+                                setCustomVars(prev => ({ ...prev, [newVarKey]: newVarValue }));
+                                setNewVarKey(''); setNewVarValue('');
+                              }}
+                              className="text-[10px] font-bold text-primary hover:text-primary/80 transition-colors px-2 py-1 border border-primary/30 rounded"
+                            >+ Ajouter</button>
+                          </div>
+                          {/* Quick presets */}
+                          <div className="flex flex-wrap gap-1 pt-1">
+                            {[
+                              ['probleme_principal', ''],
+                              ['concurrent_exemple', ''],
+                              ['offre_principale', ''],
+                              ['objectif_client', ''],
+                            ].map(([k]) => (
+                              !customVars[k] && (
+                                <button
+                                  key={k}
+                                  type="button"
+                                  onClick={() => setCustomVars(prev => ({ ...prev, [k]: '' }))}
+                                  className="text-[9px] px-1.5 py-0.5 rounded border border-border text-muted-foreground hover:border-primary hover:text-primary transition-colors"
+                                >
+                                  + {`{{${k}}}`}
+                                </button>
+                              )
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     {generating && (
