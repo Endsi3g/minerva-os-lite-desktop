@@ -37,6 +37,7 @@ import {
   HelpCircle,
   Tag,
   Brain,
+  Gift,
 } from 'lucide-react';
 import { BottomBlur } from '@/components/ui/edge-blur';
 import { cn } from '@/lib/utils';
@@ -343,6 +344,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
       else if (segment === 'agents') label = t('nav.agents');
       else if (segment === 'assistant') label = t('nav.assistant');
       else if (segment === 'download') label = t('nav.download');
+      else if (segment === 'welcome') label = t('nav.get_started');
       else if (segment === 'billing') label = 'Facturation';
       else if (segment === 'help') label = 'Aide & Docs';
 
@@ -362,6 +364,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
 
   // Minerva OS Lite navigation items
   const navItems = [
+    { name: t('nav.get_started'), href: '/welcome', icon: Gift },
     { name: t('nav.today'), href: '/today', icon: LayoutDashboard },
     { name: t('nav.prospect'), href: '/prospecting', icon: PenSquare },
     { name: t('nav.search'), href: '/leads', icon: Users },
