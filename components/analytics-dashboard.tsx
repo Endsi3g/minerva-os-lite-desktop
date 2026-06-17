@@ -24,6 +24,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { useLanguage } from '@/lib/language-context';
 import { cn } from '@/lib/utils';
 import { useReach } from '@/lib/reach-context';
+import { Lead } from '@/lib/mock-data';
 
 export function AnalyticsDashboard() {
   const { t, locale } = useLanguage();
@@ -61,21 +62,50 @@ export function AnalyticsDashboard() {
     const totalUsers = Math.max(1, distinctOwners);
     const totalWorkflows = tasks.filter((t) => !t.completed).length;
     const totalGroups = Math.max(1, workspacesList.length);
-    // Count custom agents from localStorage (3 builtins + custom)
     const customAgentCount = (() => {
       try {
         const stored = localStorage.getItem('minerva_agents');
         return stored ? JSON.parse(stored).length : 0;
       } catch { return 0; }
     })();
+    const wonLeads = leads.filter(l => l.status === 'Won').length;
 
     return {
       users: totalUsers,
       agents: 3 + customAgentCount,
       workflows: totalWorkflows,
       groups: totalGroups,
+      totalLeads: leads.length,
+      wonLeads,
     };
   }, [leads, tasks, workspacesList]);
+
+  // Leads-by-status breakdown for pipeline chart
+  const pipelineBreakdown = useMemo(() => {
+    const statuses: Lead['status'][] = ['New', 'Contacted', 'Meeting Booked', 'Won', 'Lost'];
+    const labels: Record<Lead['status'], string> = {
+      'New': 'Nouveau',
+      'Contacted': 'Contacté',
+      'Meeting Booked': 'RDV',
+      'Won': 'Gagné',
+      'Lost': 'Perdu',
+    };
+    const colors: Record<Lead['status'], string> = {
+      'New': '#a1a1aa',
+      'Contacted': '#60a5fa',
+      'Meeting Booked': '#f59e0b',
+      'Won': '#059669',
+      'Lost': '#ef4444',
+    };
+    const total = leads.length || 1;
+    return statuses.map(s => ({
+      status: s,
+      label: labels[s],
+      count: leads.filter(l => l.status === s).length,
+      pct: Math.round((leads.filter(l => l.status === s).length / total) * 100),
+      color: colors[s],
+    })).filter(s => s.count > 0);
+  }, [leads]);
 
   // Build real aggregations from leads and tasks
   const realDataByDay = useMemo(() => {
@@ -246,10 +276,7 @@ export function AnalyticsDashboard() {
     return vals.length > 0 ? Math.max(...vals, 10) : 10;
   }, [chartPoints]);
 
-  const maxUsersVal = useMemo(() => {
-    const vals = chartPoints.map(p => p.activeUsers);
-    return vals.length > 0 ? Math.max(...vals, 4) : 4;
-  }, [chartPoints]);
+  // unused after pipeline chart replaced active-users chart
 
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
@@ -359,7 +386,7 @@ export function AnalyticsDashboard() {
       </div>
 
       {/* KPI Cards Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
         {/* User Card */}
         <Card className="border border-border bg-card shadow-xs">
           <CardContent className="p-4 flex items-center gap-3">
@@ -427,29 +454,63 @@ export function AnalyticsDashboard() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Total Leads Card */}
+        <Card className="border border-border bg-card shadow-xs">
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="p-2.5 rounded-lg bg-primary/10 text-primary">
+              <TrendingUp className="w-4 h-4" />
+            </div>
+            <div className="min-w-0">
+              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">
+                Leads CRM
+              </span>
+              <span className="text-xl font-bold text-foreground block tracking-tight leading-none mt-1">
+                {kpiData.totalLeads}
+              </span>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Won Leads Card */}
+        <Card className="border border-border bg-card shadow-xs">
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="p-2.5 rounded-lg bg-emerald-500/10 text-emerald-600">
+              <BarChart3 className="w-4 h-4" />
+            </div>
+            <div className="min-w-0">
+              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">
+                Clients gagnés
+              </span>
+              <span className="text-xl font-bold text-emerald-600 block tracking-tight leading-none mt-1">
+                {kpiData.wonLeads}
+              </span>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Visual Graphs Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
-        {/* Messages Chart: Chat vs Agent Stacked Column */}
+        {/* Activity Chart: Leads créés + Tâches complétées */}
         <Card className="border border-border bg-card">
           <CardHeader className="p-4 pb-2 border-b border-border/50 flex flex-row items-center justify-between">
             <div>
               <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
                 <BarChart3 className="w-3.5 h-3.5 text-primary" />
-                <span>{t('analytics.messages')}</span>
+                <span>Activité</span>
               </CardTitle>
               <CardDescription className="text-[10px] text-muted-foreground mt-0.5">
-                Volume d&apos;activité cumulé du canal
+                Leads créés + tâches complétées par période
               </CardDescription>
             </div>
             <div className="flex items-center gap-3 text-[10px] font-bold text-muted-foreground">
               <span className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded bg-primary" /> Chat
+                <span className="w-2 h-2 rounded bg-primary" /> Leads
               </span>
               <span className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded bg-[#e5e5e2]" /> Agent
+                <span className="w-2 h-2 rounded bg-[#e5e5e2]" /> Tâches
               </span>
             </div>
           </CardHeader>
@@ -481,8 +542,8 @@ export function AnalyticsDashboard() {
                           {/* Hover stats tooltip */}
                           <div className="absolute bottom-full mb-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150 bg-[#26251e] text-white text-[9px] font-semibold rounded-md py-1 px-2 pointer-events-none shadow-md z-30 whitespace-nowrap text-center">
                             <p className="font-bold text-[8px] uppercase tracking-wider text-[#e5e5e0] mb-0.5">{pt.label}</p>
-                            <p>Chat: {pt.chatMessages}</p>
-                            <p>Agent: {pt.agentMessages}</p>
+                            <p>Leads: {pt.chatMessages}</p>
+                            <p>Tâches: {pt.agentMessages}</p>
                             <p className="border-t border-neutral-700 mt-0.5 pt-0.5 font-bold">Total: {pt.totalMessages}</p>
                           </div>
 
@@ -526,78 +587,52 @@ export function AnalyticsDashboard() {
           </CardContent>
         </Card>
 
-        {/* Active Users: Simple Column Chart */}
+        {/* Pipeline breakdown: leads by status */}
         <Card className="border border-border bg-card">
           <CardHeader className="p-4 pb-2 border-b border-border/50 flex flex-row items-center justify-between">
             <div>
               <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-                <Users className="w-3.5 h-3.5 text-emerald-500" />
-                <span>{t('analytics.active_users')}</span>
+                <TrendingUp className="w-3.5 h-3.5 text-emerald-500" />
+                <span>Pipeline par statut</span>
               </CardTitle>
               <CardDescription className="text-[10px] text-muted-foreground mt-0.5">
-                Utilisateurs uniques sur la plateforme
+                Répartition réelle de vos leads
               </CardDescription>
             </div>
             <span className="text-[10px] font-semibold text-emerald-600 bg-emerald-500/10 px-1.5 py-0.5 rounded flex items-center gap-1">
-              <TrendingUp className="w-3 h-3" /> Max: {summaryMetrics.maxActive}
+              <Users className="w-3 h-3" /> {leads.length} leads total
             </span>
           </CardHeader>
           <CardContent className="p-4">
-            {chartPoints.length === 0 ? (
+            {pipelineBreakdown.length === 0 ? (
               <div className="h-60 flex items-center justify-center text-xs text-muted-foreground">
-                Sélectionnez un intervalle valide
+                Aucun lead dans cet espace de travail
               </div>
             ) : (
-              <div className="w-full">
-                {/* SVG Column Chart */}
-                <div className="relative h-60 w-full flex items-end gap-1.5 border-b border-border/80 pb-1">
-                  {/* Grid Lines */}
-                  <div className="absolute inset-0 flex flex-col justify-between pointer-events-none text-[8px] text-muted-foreground/60 select-none pb-1">
-                    <div className="border-b border-dashed border-border w-full text-right pr-1">{Math.round(maxUsersVal)}</div>
-                    <div className="border-b border-dashed border-border w-full text-right pr-1">{Math.round(maxUsersVal * 0.66)}</div>
-                    <div className="border-b border-dashed border-border w-full text-right pr-1">{Math.round(maxUsersVal * 0.33)}</div>
-                    <div className="w-full text-right pr-1">0</div>
+              <div className="flex flex-col gap-3 py-2">
+                {pipelineBreakdown.map(({ status, label, count, pct, color }) => (
+                  <div key={status} className="flex items-center gap-3">
+                    <span className="w-[90px] shrink-0 text-[11px] font-semibold text-muted-foreground text-right">{label}</span>
+                    <div className="flex-1 h-5 bg-muted/30 rounded-full overflow-hidden">
+                      <div
+                        className="h-full rounded-full transition-all duration-500"
+                        style={{ width: `${Math.max(pct, 2)}%`, backgroundColor: color }}
+                      />
+                    </div>
+                    <span className="w-[52px] shrink-0 text-[11px] font-bold text-foreground text-right">
+                      {count} <span className="font-normal text-muted-foreground">({pct}%)</span>
+                    </span>
                   </div>
-
-                  {/* Columns */}
-                  <div className="flex-1 h-full flex items-end justify-around relative z-10 pt-4 px-3">
-                    {chartPoints.map((pt, idx) => {
-                      const userPercent = (pt.activeUsers / maxUsersVal) * 100;
-
-                      return (
-                        <div key={idx} className="flex-1 flex flex-col items-center group relative max-w-[24px]">
-                          {/* Hover stats tooltip */}
-                          <div className="absolute bottom-full mb-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150 bg-[#26251e] text-white text-[9px] font-semibold rounded-md py-1 px-2 pointer-events-none shadow-md z-30 whitespace-nowrap text-center">
-                            <p className="font-bold text-[8px] uppercase tracking-wider text-[#e5e5e0] mb-0.5">{pt.label}</p>
-                            <p>Actifs: {pt.activeUsers}</p>
-                          </div>
-
-                          {/* Pillar */}
-                          <div className="w-full h-full">
-                            <svg viewBox="0 0 24 100" preserveAspectRatio="none" className="w-full h-full">
-                              {userPercent > 0 && (
-                                <rect
-                                  y={100 - userPercent}
-                                  height={userPercent}
-                                  width="24"
-                                  className="fill-emerald-500 hover:fill-emerald-600 transition-all"
-                                  rx="1"
-                                />
-                              )}
-                            </svg>
-                          </div>
-                        </div>
-                      );
-                    })}
+                ))}
+                {/* Conversion rate */}
+                {leads.length > 0 && (
+                  <div className="mt-2 pt-3 border-t border-border/60 flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground font-medium">Taux de conversion</span>
+                    <span className="font-bold text-emerald-600">
+                      {Math.round((leads.filter(l => l.status === 'Won').length / leads.length) * 100)}% gagnés
+                    </span>
                   </div>
-                </div>
-
-                {/* X Axis Labels */}
-                <div className="flex justify-between items-center text-[8px] font-bold text-muted-foreground uppercase tracking-wider pt-2 px-6">
-                  <span>{chartPoints[0].label}</span>
-                  <span>{chartPoints[Math.floor(chartPoints.length / 2)]?.label}</span>
-                  <span>{chartPoints[chartPoints.length - 1].label}</span>
-                </div>
+                )}
               </div>
             )}
           </CardContent>

@@ -18,6 +18,18 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v2.31.0',
+      date: '2026-06-17',
+      titleKey: 'changelog.v2_31_0_title',
+      descKey: 'changelog.v2_31_0_desc',
+      highlights: [
+        'Analytics : 2 nouveaux KPIs réels — "Leads CRM" (total) et "Clients gagnés" (statut Won). 6 KPI cards au total.',
+        'Graphique "Pipeline par statut" : barres horizontales colorées par statut (New/Contacted/RDV/Gagné/Perdu) + taux de conversion en bas.',
+        'Graphique d\'activité renommé (Leads créés + Tâches complétées au lieu de "Chat/Agent Messages"). Labels précis dans les tooltips.',
+        'Import Lead: `Lead` importé depuis mock-data dans analytics-dashboard pour le typage des statuts.',
+      ],
+    },
+    {
       version: 'v2.30.0',
       date: '2026-06-17',
       titleKey: 'changelog.v2_30_0_title',
