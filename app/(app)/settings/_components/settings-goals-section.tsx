@@ -5,37 +5,7 @@ import { Plus, Trash2, Target } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useReach, Goal } from '@/lib/reach-context';
 import { cn } from '@/lib/utils';
-import { startOfWeek, startOfMonth, isAfter } from 'date-fns';
-
-const METRIC_LABELS: Record<Goal['metric'], string> = {
-  leads_created: 'Leads créés',
-  leads_contacted: 'Leads contactés',
-  leads_won: 'Leads gagnés',
-  emails_sent: 'E-mails envoyés',
-};
-
-const PERIOD_LABELS: Record<Goal['period'], string> = {
-  week: 'Cette semaine',
-  month: 'Ce mois',
-};
-
-function computeProgress(metric: Goal['metric'], period: Goal['period'], leads: ReturnType<typeof useReach>['leads'], tasks: ReturnType<typeof useReach>['tasks']): number {
-  const now = new Date();
-  const start = period === 'week' ? startOfWeek(now, { weekStartsOn: 1 }) : startOfMonth(now);
-
-  switch (metric) {
-    case 'leads_created':
-      return leads.filter(l => l.createdAt && isAfter(new Date(l.createdAt), start)).length;
-    case 'leads_contacted':
-      return leads.filter(l => l.createdAt && isAfter(new Date(l.createdAt), start) && l.status !== 'New').length;
-    case 'leads_won':
-      return leads.filter(l => l.createdAt && isAfter(new Date(l.createdAt), start) && l.status === 'Won').length;
-    case 'emails_sent':
-      return leads.filter(l => l.createdAt && isAfter(new Date(l.createdAt), start) && l.status !== 'New').length;
-    default:
-      return 0;
-  }
-}
+import { METRIC_LABELS, PERIOD_LABELS, computeProgress } from '@/lib/goal-utils';
 
 export function SettingsGoalsSection() {
   const { goals, leads, tasks, addGoal, updateGoal, deleteGoal } = useReach();
