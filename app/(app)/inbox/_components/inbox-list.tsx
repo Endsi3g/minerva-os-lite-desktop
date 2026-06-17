@@ -1,9 +1,10 @@
 'use client';
 
-import { AlertCircle, Mail } from 'lucide-react';
+import { AlertCircle, Filter, Mail } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import type { InboxThread } from '@/app/api/inbox/threads/route';
+import type { Campaign } from '@/lib/reach-context';
 
 type Filter = 'all' | 'positive' | 'followup' | 'negative';
 
@@ -31,6 +32,9 @@ interface InboxListProps {
   onSelectThread: (thread: InboxThread) => void;
   needsReauth: boolean;
   loading: boolean;
+  campaigns: Campaign[];
+  campaignFilter: string | null;
+  onCampaignFilterChange: (id: string | null) => void;
 }
 
 export function InboxList({
@@ -41,11 +45,20 @@ export function InboxList({
   onSelectThread,
   needsReauth,
   loading,
+  campaigns,
+  campaignFilter,
+  onCampaignFilterChange,
 }: InboxListProps) {
   const filtered = threads.filter(t => {
-    if (filter === 'all') return true;
-    return t.replyStatus === filter;
+    if (filter !== 'all' && t.replyStatus !== filter) return false;
+    if (campaignFilter && t.campaignId !== campaignFilter) return false;
+    return true;
   });
+
+  // Only show campaigns that have at least one threaded lead
+  const relevantCampaigns = campaigns.filter(c =>
+    threads.some(t => t.campaignId === c.id)
+  );
 
   return (
     <div className="flex h-full w-[340px] shrink-0 flex-col border-r border-[#e5e5e0]">
@@ -69,7 +82,42 @@ export function InboxList({
         </div>
       )}
 
-      {/* Filters */}
+      {/* Campaign filter */}
+      {relevantCampaigns.length > 0 && (
+        <div className="px-3 pt-2 pb-1 border-b border-[#e5e5e0]">
+          <div className="flex items-center gap-1 mb-1.5">
+            <Filter className="h-3 w-3 text-[#a8a29e]" />
+            <span className="text-[10px] font-semibold text-[#a8a29e] uppercase tracking-wider">Campagne</span>
+          </div>
+          <div className="flex flex-wrap gap-1">
+            <button
+              onClick={() => onCampaignFilterChange(null)}
+              className={`rounded-full px-2 py-0.5 text-[10px] border transition-colors ${
+                !campaignFilter
+                  ? 'bg-[#26251e] text-white border-[#26251e]'
+                  : 'border-[#e5e5e0] text-[#78716c] hover:border-[#26251e]/30'
+              }`}
+            >
+              Toutes
+            </button>
+            {relevantCampaigns.map(c => (
+              <button
+                key={c.id}
+                onClick={() => onCampaignFilterChange(c.id)}
+                className={`rounded-full px-2 py-0.5 text-[10px] border transition-colors truncate max-w-[120px] ${
+                  campaignFilter === c.id
+                    ? 'bg-[#f54e00] text-white border-[#f54e00]'
+                    : 'border-[#e5e5e0] text-[#78716c] hover:border-[#f54e00]/40'
+                }`}
+              >
+                {c.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Reply-status filter tabs */}
       <div className="px-3 py-2 border-b border-[#e5e5e0]">
         <Tabs value={filter} onValueChange={v => onFilterChange(v as Filter)}>
           <TabsList className="h-7 w-full bg-[#f4f4f3]">

@@ -7,15 +7,17 @@ import { InboxList } from './inbox-list';
 import { InboxDetail } from './inbox-detail';
 import type { InboxThread } from '@/app/api/inbox/threads/route';
 import type { ThreadMessage } from '@/app/api/inbox/thread/[threadId]/route';
+import type { Lead } from '@/lib/mock-data';
 
 type Filter = 'all' | 'positive' | 'followup' | 'negative';
 type ReplyStatus = 'positive' | 'followup' | 'negative' | null;
 
 export function InboxRoot() {
-  const { activeWorkspace, updateLead } = useReach();
+  const { activeWorkspace, updateLead, addTask, campaigns } = useReach();
 
   const [threads, setThreads] = useState<InboxThread[]>([]);
   const [filter, setFilter] = useState<Filter>('all');
+  const [campaignFilter, setCampaignFilter] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [needsReauth, setNeedsReauth] = useState(false);
 
@@ -38,7 +40,7 @@ export function InboxRoot() {
       setThreads(data.threads || []);
       setNeedsReauth(!!data.needsReauth);
     } catch {
-      // silently fail — inbox unavailable
+      // silently fail — inbox unavailable without Gmail
     } finally {
       setLoading(false);
     }
@@ -94,7 +96,6 @@ export function InboxRoot() {
     if (!selectedThread || !replyText.trim() || sending) return;
     setSending(true);
     try {
-      // Derive subject from first message (Re: original subject)
       const originalSubject = detailMessages[0]?.subject || '';
       const subject = originalSubject.startsWith('Re:') ? originalSubject : `Re: ${originalSubject}`;
 
@@ -110,9 +111,7 @@ export function InboxRoot() {
 
       if (res.ok) {
         setReplyText('');
-        // Refresh thread list after sending
         await fetchThreads();
-        // Re-open same thread to show the sent message
         handleSelectThread(selectedThread);
       }
     } finally {
@@ -123,7 +122,6 @@ export function InboxRoot() {
   const handleReplyStatusChange = async (status: ReplyStatus) => {
     if (!selectedThread) return;
     await updateLead(selectedThread.leadId, { replyStatus: status });
-    // Update local thread list optimistically
     setThreads(prev =>
       prev.map(t =>
         t.gmailThreadId === selectedThread.gmailThreadId
@@ -132,6 +130,32 @@ export function InboxRoot() {
       )
     );
     setSelectedThread(prev => prev ? { ...prev, replyStatus: status } : prev);
+  };
+
+  const handleLeadStatusChange = async (status: Lead['status']) => {
+    if (!selectedThread) return;
+    await updateLead(selectedThread.leadId, { status });
+    setThreads(prev =>
+      prev.map(t =>
+        t.gmailThreadId === selectedThread.gmailThreadId
+          ? { ...t, leadStatus: status }
+          : t
+      )
+    );
+    setSelectedThread(prev => prev ? { ...prev, leadStatus: status } : prev);
+  };
+
+  const handleCreateDeal = async (amount: number, probability: number, closingDate: string) => {
+    if (!selectedThread) return;
+    await updateLead(selectedThread.leadId, {
+      dealAmount: amount,
+      dealProbability: probability,
+      dealClosingDate: closingDate,
+    });
+  };
+
+  const handleCreateTask = async (title: string, dueDate: string) => {
+    await addTask(title, 'Follow-up', dueDate);
   };
 
   return (
@@ -144,6 +168,9 @@ export function InboxRoot() {
         onSelectThread={handleSelectThread}
         needsReauth={needsReauth}
         loading={loading}
+        campaigns={campaigns}
+        campaignFilter={campaignFilter}
+        onCampaignFilterChange={setCampaignFilter}
       />
       <InboxDetail
         thread={selectedThread}
@@ -156,6 +183,9 @@ export function InboxRoot() {
         onReplyTextChange={setReplyText}
         onSendReply={handleSendReply}
         onReplyStatusChange={handleReplyStatusChange}
+        onLeadStatusChange={handleLeadStatusChange}
+        onCreateDeal={handleCreateDeal}
+        onCreateTask={handleCreateTask}
         onLoadSuggestions={handleLoadSuggestions}
       />
     </div>

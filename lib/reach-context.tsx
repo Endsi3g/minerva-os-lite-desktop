@@ -114,7 +114,7 @@ interface ReachContextType {
     assignedTo?: string;
   }) => void;
   toggleTask: (id: string) => void;
-  addTask: (title: string, category: Task['category']) => void;
+  addTask: (title: string, category: Task['category'], dueDate?: string) => void;
   deleteTask: (id: string) => void;
   updateTask: (id: string, fields: { title?: string; dueDate?: string; category?: Task['category'] }) => void;
   saveQuickNote: (note: string) => void;
@@ -1204,7 +1204,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const addTask = async (title: string, category: Task['category']) => {
+  const addTask = async (title: string, category: Task['category'], dueDate?: string) => {
     if (!user || !activeWorkspace) return;
     const electronObj = typeof window !== 'undefined' && (window as any).electron;
 
@@ -1212,12 +1212,12 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
       try {
         const taskId = crypto.randomUUID();
         const nowStr = new Date().toISOString();
-        const dueDate = nowStr.split('T')[0];
+        const resolvedDueDate = dueDate ?? nowStr.split('T')[0];
 
         await electronObj.dbRun(
           `INSERT INTO tasks (id, user_id, title, completed, category, due_date, workspace_id, created_at, updated_at, sync_status)
            VALUES (?, ?, ?, 0, ?, ?, ?, ?, ?, 'pending_insert')`,
-          [taskId, user.id, title, category, dueDate, activeWorkspace.id, nowStr, nowStr]
+          [taskId, user.id, title, category, resolvedDueDate, activeWorkspace.id, nowStr, nowStr]
         );
 
         const newUiTask: Task = {
@@ -1225,7 +1225,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
           title,
           completed: false,
           category,
-          dueDate
+          dueDate: resolvedDueDate
         };
 
         setTasks(prev => [newUiTask, ...prev]);
@@ -1245,7 +1245,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
           workspace_id: activeWorkspace.id,
           title,
           category,
-          due_date: new Date().toISOString().split('T')[0]
+          due_date: dueDate ?? new Date().toISOString().split('T')[0]
         })
         .select()
         .single();

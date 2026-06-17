@@ -29,6 +29,8 @@ export interface InboxThread {
   gmailThreadId: string;
   replyStatus: string | null;
   replyDetectedAt: string | null;
+  leadStatus: string;
+  campaignId: string | null;
   snippet: string;
   lastMessageDate: string;
   messageCount: number;
@@ -67,7 +69,7 @@ export async function GET(req: NextRequest) {
 
     const { data: leads } = await supabase
       .from('leads')
-      .select('id, business_name, contact_email, gmail_thread_id, reply_status, reply_detected_at')
+      .select('id, business_name, contact_email, gmail_thread_id, reply_status, reply_detected_at, status, campaign_id')
       .eq('workspace_id', workspaceId)
       .not('gmail_thread_id', 'is', null)
       .order('updated_at', { ascending: false })
@@ -103,6 +105,8 @@ export async function GET(req: NextRequest) {
           gmailThreadId: lead.gmail_thread_id,
           replyStatus: lead.reply_status || null,
           replyDetectedAt: lead.reply_detected_at || null,
+          leadStatus: lead.status || 'New',
+          campaignId: lead.campaign_id || null,
           snippet: thread.snippet || '',
           lastMessageDate: lastMsg?.internalDate
             ? new Date(Number(lastMsg.internalDate)).toISOString()
