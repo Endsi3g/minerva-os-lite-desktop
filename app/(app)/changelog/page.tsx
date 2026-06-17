@@ -18,6 +18,18 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v2.41.0',
+      date: '2026-06-17',
+      titleKey: 'changelog.v2_41_0_title',
+      descKey: 'changelog.v2_41_0_desc',
+      highlights: [
+        'Badge de sync en temps réel dans la topbar (Electron uniquement).',
+        'Indique le nombre de modifications en attente de synchronisation avec le cloud.',
+        'Icône de rechargement animée (spinner), tooltip explicatif, couleur ambre pour attirer l\'attention.',
+        'Polling SQLite toutes les 5 secondes — disparaît automatiquement quand tout est synchronisé.',
+      ],
+    },
+    {
       version: 'v2.40.0',
       date: '2026-06-17',
       titleKey: 'changelog.v2_40_0_title',

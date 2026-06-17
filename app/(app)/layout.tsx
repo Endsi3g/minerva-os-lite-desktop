@@ -43,6 +43,7 @@ import {
   Mail,
   Activity,
   Kanban,
+  RefreshCw,
 } from 'lucide-react';
 import { BottomBlur } from '@/components/ui/edge-blur';
 import { cn } from '@/lib/utils';
@@ -109,6 +110,27 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
   // Spotlight search states
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Sync UX badge — Electron only
+  const [syncPending, setSyncPending] = useState(0);
+  useEffect(() => {
+    const electronObj = typeof window !== 'undefined' && (window as any).electron;
+    if (!electronObj) return;
+    const poll = async () => {
+      try {
+        const tables = ['leads', 'tasks', 'campaigns', 'goals', 'notifications', 'projects'];
+        let total = 0;
+        for (const t of tables) {
+          const row = await electronObj.dbGet(`SELECT COUNT(*) as cnt FROM ${t} WHERE sync_status LIKE 'pending%'`, []);
+          total += row?.cnt ?? 0;
+        }
+        setSyncPending(total);
+      } catch { /* ignore — table may not exist yet */ }
+    };
+    poll();
+    const interval = setInterval(poll, 5000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Relative time helper for notification timestamps
   function relativeTime(iso: string): string {
@@ -1064,6 +1086,21 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                   );
                 })}
               </div>
+            )}
+
+            {/* Sync UX badge — Electron only */}
+            {syncPending > 0 && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center gap-1 px-2 py-1 rounded-md bg-amber-50 border border-amber-200 dark:bg-amber-950/30 dark:border-amber-800/40 text-amber-600 dark:text-amber-400 cursor-default select-none">
+                    <RefreshCw className="h-3 w-3 animate-spin" />
+                    <span className="text-[10px] font-bold">{syncPending}</span>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent className="text-xs bg-[#26251e] text-white p-2 rounded-lg font-sans border border-neutral-800 shadow-lg">
+                  {syncPending} modification{syncPending > 1 ? 's' : ''} en attente de synchronisation
+                </TooltipContent>
+              </Tooltip>
             )}
 
             <Popover>
