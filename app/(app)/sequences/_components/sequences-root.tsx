@@ -9,13 +9,23 @@ import { Input } from '@/components/ui/input';
 import {
   Plus, Mail, CheckCircle2, Clock, XCircle, Pause,
   Play, Trash2, ChevronDown, ChevronRight, Loader2,
-  Send, Calendar, MailCheck,
+  Send, Calendar, MailCheck, Phone, Link2, MessageSquare,
 } from 'lucide-react';
+
+type StepChannel = 'Email' | 'Call' | 'LinkedIn' | 'SMS';
+
+const CHANNEL_CONFIG: Record<StepChannel, { icon: React.ReactNode; label: string; color: string; bodyLabel: string }> = {
+  Email:    { icon: <Mail className="h-3 w-3" />, label: 'Email', color: 'text-blue-600 bg-blue-50 border-blue-200', bodyLabel: 'Corps de l\'email' },
+  Call:     { icon: <Phone className="h-3 w-3" />, label: 'Appel', color: 'text-emerald-600 bg-emerald-50 border-emerald-200', bodyLabel: 'Script d\'appel' },
+  LinkedIn: { icon: <Link2 className="h-3 w-3" />, label: 'LinkedIn DM', color: 'text-[#0077b5]/80 bg-[#0077b5]/10 border-[#0077b5]/20', bodyLabel: 'Message LinkedIn' },
+  SMS:      { icon: <MessageSquare className="h-3 w-3" />, label: 'SMS', color: 'text-purple-600 bg-purple-50 border-purple-200', bodyLabel: 'Texte SMS' },
+};
 
 interface SequenceStep {
   id: string;
   step_number: number;
   delay_days: number;
+  channel?: StepChannel;
   subject: string;
   body: string;
   status: 'pending' | 'sent' | 'failed';
@@ -37,6 +47,7 @@ interface Sequence {
 interface NewStep {
   stepNumber: number;
   delayDays: number;
+  channel: StepChannel;
   subject: string;
   body: string;
 }
@@ -54,9 +65,9 @@ const STEP_STATUS_ICON = {
 };
 
 const DEFAULT_STEPS: NewStep[] = [
-  { stepNumber: 1, delayDays: 0, subject: '', body: '' },
-  { stepNumber: 2, delayDays: 3, subject: '', body: '' },
-  { stepNumber: 3, delayDays: 7, subject: '', body: '' },
+  { stepNumber: 1, delayDays: 0, channel: 'Email', subject: '', body: '' },
+  { stepNumber: 2, delayDays: 3, channel: 'Call', subject: 'Appel de suivi', body: '' },
+  { stepNumber: 3, delayDays: 7, channel: 'Email', subject: '', body: '' },
 ];
 
 export function SequencesRoot() {
@@ -126,8 +137,8 @@ export function SequencesRoot() {
 
   const handleCreate = async () => {
     if (!selectedLead) return;
-    if (newSteps.some((s) => !s.subject.trim() || !s.body.trim())) {
-      setSaveError('Remplissez le sujet et le corps de chaque étape.');
+    if (newSteps.some((s) => s.channel === 'Email' && (!s.subject.trim() || !s.body.trim()))) {
+      setSaveError('Remplissez le sujet et le corps de chaque étape Email.');
       return;
     }
     setSaving(true);
@@ -302,9 +313,21 @@ export function SequencesRoot() {
                               </div>
                             </div>
                             <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-0.5">
+                              <div className="flex items-center gap-2 mb-0.5 flex-wrap">
                                 {STEP_STATUS_ICON[step.status]}
-                                <span className="text-xs font-bold text-[#26251e] truncate">{step.subject}</span>
+                                {step.channel && step.channel !== 'Email' && (() => {
+                                  const cfg = CHANNEL_CONFIG[step.channel];
+                                  return (
+                                    <span className={`text-[9px] font-semibold flex items-center gap-0.5 px-1.5 py-0.5 rounded border ${cfg.color}`}>
+                                      {cfg.icon}{cfg.label}
+                                    </span>
+                                  );
+                                })()}
+                                <span className="text-xs font-bold text-[#26251e] truncate">
+                                  {step.channel && step.channel !== 'Email'
+                                    ? (CHANNEL_CONFIG[step.channel]?.bodyLabel ?? step.subject)
+                                    : step.subject}
+                                </span>
                               </div>
                               <div className="flex items-center gap-3 text-[10px] text-[#7a7a76]">
                                 <span className="flex items-center gap-1">
@@ -372,55 +395,80 @@ export function SequencesRoot() {
 
               {/* Steps */}
               <div className="space-y-4">
-                {newSteps.map((step, i) => (
-                  <div key={step.stepNumber} className="border border-[#e5e5e0] rounded-xl p-4 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className="h-6 w-6 rounded-full bg-[#059669] text-white text-[10px] font-bold flex items-center justify-center">
-                          {step.stepNumber}
+                {newSteps.map((step, i) => {
+                  const cfg = CHANNEL_CONFIG[step.channel];
+                  return (
+                    <div key={step.stepNumber} className="border border-[#e5e5e0] rounded-xl p-4 space-y-3">
+                      <div className="flex items-center justify-between flex-wrap gap-2">
+                        <div className="flex items-center gap-2">
+                          <div className="h-6 w-6 rounded-full bg-[#059669] text-white text-[10px] font-bold flex items-center justify-center">
+                            {step.stepNumber}
+                          </div>
+                          <span className="text-xs font-bold text-[#26251e]">
+                            {step.delayDays === 0 ? 'Étape immédiate' : `Étape J+${step.delayDays}`}
+                          </span>
+                          <span className={`text-[10px] font-semibold flex items-center gap-1 px-1.5 py-0.5 rounded border ${cfg.color}`}>
+                            {cfg.icon}{cfg.label}
+                          </span>
                         </div>
-                        <span className="text-xs font-bold text-[#26251e]">
-                          {step.delayDays === 0 ? 'Email immédiat' : `Relance J+${step.delayDays}`}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          {/* Channel selector */}
+                          <select
+                            value={step.channel}
+                            onChange={(e) => setNewSteps((prev) => prev.map((s, idx) => idx === i ? { ...s, channel: e.target.value as StepChannel } : s))}
+                            className="text-[10px] border border-[#e5e5e0] rounded px-1.5 py-1 focus:outline-none focus:ring-1 focus:ring-[#059669] bg-white"
+                          >
+                            {(Object.keys(CHANNEL_CONFIG) as StepChannel[]).map(c => (
+                              <option key={c} value={c}>{CHANNEL_CONFIG[c].label}</option>
+                            ))}
+                          </select>
+                          <label className="text-[10px] text-[#7a7a76]">J+</label>
+                          <input
+                            type="number"
+                            min={0}
+                            value={step.delayDays}
+                            onChange={(e) => setNewSteps((prev) => prev.map((s, idx) => idx === i ? { ...s, delayDays: Number(e.target.value) } : s))}
+                            className="w-12 text-xs border border-[#e5e5e0] rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-[#059669]"
+                            disabled={i === 0}
+                          />
+                          {step.channel === 'Email' && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => generateDraftForStep(i)}
+                              disabled={!selectedLead || generatingStep === i}
+                              className="h-7 text-[10px] gap-1 border-[#e5e5e0] text-[#7a7a76]"
+                            >
+                              {generatingStep === i ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
+                              IA
+                            </Button>
+                          )}
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <label className="text-[10px] text-[#7a7a76]">Délai (jours)</label>
-                        <input
-                          type="number"
-                          min={0}
-                          value={step.delayDays}
-                          onChange={(e) => setNewSteps((prev) => prev.map((s, idx) => idx === i ? { ...s, delayDays: Number(e.target.value) } : s))}
-                          className="w-14 text-xs border border-[#e5e5e0] rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-[#059669]"
-                          disabled={i === 0}
-                        />
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => generateDraftForStep(i)}
-                          disabled={!selectedLead || generatingStep === i}
-                          className="h-7 text-[10px] gap-1 border-[#e5e5e0] text-[#7a7a76]"
-                        >
-                          {generatingStep === i ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
-                          IA
-                        </Button>
-                      </div>
-                    </div>
 
-                    <Input
-                      placeholder="Sujet de l'email *"
-                      value={step.subject}
-                      onChange={(e) => setNewSteps((prev) => prev.map((s, idx) => idx === i ? { ...s, subject: e.target.value } : s))}
-                      className="text-xs h-8"
-                    />
-                    <textarea
-                      placeholder="Corps de l'email *"
-                      value={step.body}
-                      onChange={(e) => setNewSteps((prev) => prev.map((s, idx) => idx === i ? { ...s, body: e.target.value } : s))}
-                      rows={4}
-                      className="w-full text-xs border border-[#e5e5e0] rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-[#059669] resize-none"
-                    />
-                  </div>
-                ))}
+                      {step.channel === 'Email' && (
+                        <Input
+                          placeholder="Sujet de l'email *"
+                          value={step.subject}
+                          onChange={(e) => setNewSteps((prev) => prev.map((s, idx) => idx === i ? { ...s, subject: e.target.value } : s))}
+                          className="text-xs h-8"
+                        />
+                      )}
+                      <textarea
+                        placeholder={step.channel !== 'Email' ? `${cfg.bodyLabel} (action manuelle — rappel)` : 'Corps de l\'email *'}
+                        value={step.body}
+                        onChange={(e) => setNewSteps((prev) => prev.map((s, idx) => idx === i ? { ...s, body: e.target.value } : s))}
+                        rows={step.channel === 'Call' ? 5 : 4}
+                        className="w-full text-xs border border-[#e5e5e0] rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-[#059669] resize-none"
+                      />
+                      {step.channel !== 'Email' && (
+                        <p className="text-[9px] text-amber-600 flex items-center gap-1">
+                          ⚠ Cette étape est manuelle — un rappel de tâche sera créé automatiquement à J+{step.delayDays}.
+                        </p>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
 
               {/* Send step 1 now toggle */}

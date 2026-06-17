@@ -18,6 +18,18 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v2.43.0',
+      date: '2026-06-17',
+      titleKey: 'changelog.v2_43_0_title',
+      descKey: 'changelog.v2_43_0_desc',
+      highlights: [
+        'Séquences multi-canal : chaque étape peut être un Email, un Appel téléphonique, un message LinkedIn DM ou un SMS.',
+        'Sélecteur de canal par étape dans le modal de création — badge coloré distinct par canal.',
+        'Pour les étapes non-Email (Appel, LinkedIn, SMS) : champ de corps adapté + rappel automatique de tâche manuelle à J+délai.',
+        'Affichage du canal dans la liste des étapes d\'une séquence existante (badge + libellé spécifique).',
+      ],
+    },
+    {
       version: 'v2.42.0',
       date: '2026-06-17',
       titleKey: 'changelog.v2_42_0_title',
