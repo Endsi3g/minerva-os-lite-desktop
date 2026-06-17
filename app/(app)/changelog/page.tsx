@@ -18,6 +18,36 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v2.17.0',
+      date: '2026-06-17',
+      titleKey: 'changelog.v2_17_0_title',
+      descKey: 'changelog.v2_17_0_desc',
+      highlights: [
+        'Chat page: dot pattern background, always-visible input bar at the bottom, backdrop-blur header/footer.',
+        'Settings: prominent "Sauvegarder" button in the Profile section header.',
+        'Settings: new dedicated API Keys section to manage OpenRouter, Groq, and Together AI keys with masked display and one-click delete.',
+        'Agent detail page: custom banner image upload (stored locally) and inline description editing via hover pencil icon.',
+        'Library: 4 entrepreneur templates (Business plan, GMB Audit, Prospecting email, Weekly report) in the create grid.',
+        'Library document cards now show a content text preview instead of a plain icon.',
+        'Library editor: PDF export button (browser print dialog) added alongside the existing Markdown export.'
+      ]
+    },
+    {
+      version: 'v2.16.0',
+      date: '2026-06-17',
+      titleKey: 'changelog.v2_16_0_title',
+      descKey: 'changelog.v2_16_0_desc',
+      highlights: [
+        'Welcome page moved into the (app) layout — inherits the real sidebar and topbar; 10% promo incentive (MINERVA10) unlocked on 100% task completion.',
+        'Today page simplified: 6 essential cards (Agenda, Tasks, Follow-ups, Focus, Projects, Stats) with Cult UI dot pattern background.',
+        'Sidebar restructured: 5 permanently pinned items + 3 collapsible categories (Intelligence IA, Données & Fichiers, Plateforme).',
+        'Prospecting — 25 Montreal niches with multi-select picker and search; result limiter slider (5–100); no-website filter.',
+        '4 scraping sources with live availability indicators: Google Maps/OSM, Yelp, PagesJaunes, Apify (requires API key).',
+        'Map markers enriched: color-coded by status (red = no website, orange = low rating, green = ok), popup shows address + phone.',
+        'Fixed Supabase presence error on lead detail page by calling removeChannel() in the useEffect cleanup.'
+      ]
+    },
+    {
       version: 'v2.15.0',
       date: '2026-06-16',
       titleKey: 'changelog.v2_15_0_title',
