@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Map, MapMarker, MarkerContent, MarkerPopup } from '@/components/ui/map';
+import { Map, MapMarker, MarkerContent, MarkerPopup, MapPopup } from '@/components/ui/map';
 import {
   Search,
   MapPin,
@@ -21,7 +21,6 @@ import {
   Globe,
   Phone,
   Star,
-  AlertCircle,
   Database,
   Plus,
   X,
@@ -29,6 +28,8 @@ import {
   WifiOff,
   CheckCircle2,
   Settings2,
+  BarChart3,
+  ExternalLink,
 } from 'lucide-react';
 
 // ── Montreal popular niches ──────────────────────────────────────────────────
@@ -121,9 +122,12 @@ export function ProspectingRoot() {
 
   // Filters
   const [minRating, setMinRating] = useState(0);
-  const [maxResults, setMaxResults] = useState(25);
+  const [maxResults, setMaxResults] = useState(50);
   const [excludeExisting, setExcludeExisting] = useState(true);
   const [onlyNoWebsite, setOnlyNoWebsite] = useState(false);
+
+  // Standalone map popup
+  const [selectedPopupLead, setSelectedPopupLead] = useState<ScrapedLead | null>(null);
 
   const scrapeSteps = [
     "Initialisation de l'agent de recherche Minerva...",
@@ -556,12 +560,12 @@ export function ProspectingRoot() {
                         <span className="font-bold text-foreground">{maxResults}</span>
                       </label>
                       <input
-                        type="range" min={5} max={100} step={5} value={maxResults}
+                        type="range" min={5} max={200} step={5} value={maxResults}
                         onChange={e => setMaxResults(parseInt(e.target.value))}
                         disabled={scraping}
                         className="w-full accent-primary h-1.5 cursor-pointer"
                       />
-                      <div className="flex justify-between text-[9px] text-muted-foreground"><span>5</span><span>50</span><span>100</span></div>
+                      <div className="flex justify-between text-[9px] text-muted-foreground"><span>5</span><span>100</span><span>200</span></div>
                     </div>
                   </div>
 
@@ -734,6 +738,95 @@ export function ProspectingRoot() {
           </Card>
         )}
 
+        {/* Breakdown stats card */}
+        {!scraping && scrapedLeads.length > 0 && (() => {
+          const noWeb = scrapedLeads.filter(l => !l.website).length;
+          const lowRating = scrapedLeads.filter(l => l.website && l.rating < 4.0).length;
+          const good = scrapedLeads.filter(l => l.website && l.rating >= 4.0).length;
+          const cityMap: Record<string, number> = {};
+          scrapedLeads.forEach(l => { const c = l.city || 'Inconnue'; cityMap[c] = (cityMap[c] ?? 0) + 1; });
+          const topCities = Object.entries(cityMap).sort((a, b) => b[1] - a[1]).slice(0, 5);
+          const withPhone = scrapedLeads.filter(l => l.phone).length;
+          const withEmail = scrapedLeads.filter(l => l.email).length;
+
+          return (
+            <Card className="border border-border bg-card">
+              <CardHeader className="pb-3 border-b border-border/50">
+                <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                  <BarChart3 className="h-4 w-4 text-primary" />
+                  Analyse des résultats
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-5">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                  {/* Opportunity breakdown */}
+                  <div className="col-span-2 space-y-2">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Opportunités</p>
+                    <div className="space-y-1.5">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-red-500 shrink-0" />
+                        <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                          <div className="h-full bg-red-500 rounded-full transition-all" style={{ width: `${(noWeb / scrapedLeads.length) * 100}%` }} />
+                        </div>
+                        <span className="text-[10px] font-mono text-foreground w-16 text-right">{noWeb} sans site</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-amber-400 shrink-0" />
+                        <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                          <div className="h-full bg-amber-400 rounded-full transition-all" style={{ width: `${(lowRating / scrapedLeads.length) * 100}%` }} />
+                        </div>
+                        <span className="text-[10px] font-mono text-foreground w-16 text-right">{lowRating} SEO faible</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                        <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                          <div className="h-full bg-emerald-500 rounded-full transition-all" style={{ width: `${(good / scrapedLeads.length) * 100}%` }} />
+                        </div>
+                        <span className="text-[10px] font-mono text-foreground w-16 text-right">{good} correct</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* City distribution */}
+                  <div className="space-y-2">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Par ville</p>
+                    <div className="space-y-1">
+                      {topCities.map(([city, count]) => (
+                        <div key={city} className="flex items-center justify-between text-[10px]">
+                          <span className="text-muted-foreground truncate max-w-[80px]">{city}</span>
+                          <span className="font-mono font-bold text-foreground">{count}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Contact stats */}
+                  <div className="space-y-2">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Contacts</p>
+                    <div className="space-y-1.5">
+                      <div className="flex items-center gap-1.5 text-[10px]">
+                        <Phone className="w-3 h-3 text-muted-foreground shrink-0" />
+                        <span className="text-muted-foreground">Téléphone</span>
+                        <span className="ml-auto font-mono font-bold text-foreground">{withPhone}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-[10px]">
+                        <Globe className="w-3 h-3 text-muted-foreground shrink-0" />
+                        <span className="text-muted-foreground">Site web</span>
+                        <span className="ml-auto font-mono font-bold text-foreground">{scrapedLeads.filter(l => l.website).length}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-[10px]">
+                        <Database className="w-3 h-3 text-muted-foreground shrink-0" />
+                        <span className="text-muted-foreground">Email</span>
+                        <span className="ml-auto font-mono font-bold text-foreground">{withEmail}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })()}
+
         {/* Map */}
         {!scraping && (
           <Card className="border border-border bg-card">
@@ -741,11 +834,20 @@ export function ProspectingRoot() {
               <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
                 <MapPin className="h-4 w-4 text-primary" />
                 Carte des résultats
+                {selectedPopupLead && (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedPopupLead(null)}
+                    className="ml-auto text-[10px] text-muted-foreground hover:text-foreground flex items-center gap-1"
+                  >
+                    <X className="w-3 h-3" /> Fermer popup
+                  </button>
+                )}
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
               {scrapedLeads.length > 0 ? (
-                <div className="rounded-b-2xl overflow-hidden" style={{ height: 420 }}>
+                <div className="rounded-b-2xl overflow-hidden" style={{ height: 460 }}>
                   <Map
                     center={[-73.5674, 45.5019]}
                     zoom={scrapedLeads.some(l => l.latitude) ? 11 : 10}
@@ -758,8 +860,10 @@ export function ProspectingRoot() {
                         latitude={item.latitude ?? 45.5019 + (Math.random() - 0.5) * 0.1}
                       >
                         <MarkerContent>
-                          <div
-                            className="flex items-center justify-center rounded-full border-2 border-white shadow-md text-white font-bold"
+                          <button
+                            type="button"
+                            onClick={() => setSelectedPopupLead(item)}
+                            className="flex items-center justify-center rounded-full border-2 border-white shadow-md text-white font-bold hover:scale-125 transition-transform"
                             style={{
                               width: 22, height: 22,
                               backgroundColor: getLeadMarkerColor(item),
@@ -767,23 +871,78 @@ export function ProspectingRoot() {
                             }}
                           >
                             {!item.website ? '!' : item.rating < 4 ? '~' : '✓'}
-                          </div>
+                          </button>
                         </MarkerContent>
                         <MarkerPopup>
-                          <div className="text-xs p-1.5 space-y-1 min-w-[160px]">
+                          <div className="text-xs p-1.5 space-y-0.5 min-w-[140px]">
                             <p className="font-bold text-foreground leading-snug">{item.businessName}</p>
                             <p className="text-muted-foreground text-[10px]">{item.niche}</p>
-                            {item.address && <p className="text-muted-foreground text-[10px] flex items-center gap-1"><MapPin className="w-2.5 h-2.5 shrink-0" />{item.address}</p>}
-                            {item.phone && <p className="text-muted-foreground text-[10px] flex items-center gap-1"><Phone className="w-2.5 h-2.5 shrink-0" />{item.phone}</p>}
-                            <div className="flex items-center gap-1 text-[10px]">
-                              <Star className="w-2.5 h-2.5 text-amber-500 fill-amber-500" />
-                              <span>{item.rating}★ ({item.reviewsCount} avis)</span>
-                            </div>
-                            {!item.website && <span className="text-rose-500 text-[9px] font-bold">Aucun site web</span>}
                           </div>
                         </MarkerPopup>
                       </MapMarker>
                     ))}
+
+                    {/* Standalone popup for selected lead */}
+                    {selectedPopupLead && selectedPopupLead.longitude && selectedPopupLead.latitude && (
+                      <MapPopup
+                        longitude={selectedPopupLead.longitude}
+                        latitude={selectedPopupLead.latitude}
+                        onClose={() => setSelectedPopupLead(null)}
+                        closeButton
+                      >
+                        <div className="text-xs p-2 space-y-2 min-w-[220px] max-w-[260px]">
+                          <div className="flex items-start justify-between gap-2">
+                            <p className="font-bold text-foreground leading-snug">{selectedPopupLead.businessName}</p>
+                            <span
+                              className="shrink-0 w-2 h-2 mt-1 rounded-full"
+                              style={{ backgroundColor: getLeadMarkerColor(selectedPopupLead) }}
+                            />
+                          </div>
+                          <p className="text-[10px] text-muted-foreground">{selectedPopupLead.niche} — {selectedPopupLead.city}</p>
+                          {selectedPopupLead.address && (
+                            <p className="text-[10px] text-muted-foreground flex items-start gap-1">
+                              <MapPin className="w-2.5 h-2.5 shrink-0 mt-0.5" />
+                              {selectedPopupLead.address}
+                            </p>
+                          )}
+                          {selectedPopupLead.phone && (
+                            <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+                              <Phone className="w-2.5 h-2.5 shrink-0" />
+                              {selectedPopupLead.phone}
+                            </p>
+                          )}
+                          <div className="flex items-center gap-1 text-[10px]">
+                            <Star className="w-2.5 h-2.5 text-amber-500 fill-amber-500" />
+                            <span>{selectedPopupLead.rating}★ ({selectedPopupLead.reviewsCount} avis)</span>
+                          </div>
+                          {selectedPopupLead.website ? (
+                            <a
+                              href={selectedPopupLead.website}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-[10px] text-primary hover:underline flex items-center gap-1 truncate"
+                            >
+                              <Globe className="w-2.5 h-2.5 shrink-0" />
+                              {selectedPopupLead.website.replace(/https?:\/\/(www\.)?/, '')}
+                              <ExternalLink className="w-2.5 h-2.5 shrink-0" />
+                            </a>
+                          ) : (
+                            <span className="text-[10px] text-rose-500 font-semibold">Aucun site web</span>
+                          )}
+                          <p className="text-[9px] text-muted-foreground italic leading-snug border-t pt-1.5 border-border">
+                            {selectedPopupLead.seoAudit}
+                          </p>
+                          <a
+                            href={selectedPopupLead.mapsUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-[9px] text-primary hover:underline font-semibold"
+                          >
+                            Voir sur Google Maps →
+                          </a>
+                        </div>
+                      </MapPopup>
+                    )}
                   </Map>
                 </div>
               ) : (

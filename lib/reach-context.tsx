@@ -1032,36 +1032,52 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
 
     const supabase = createClient();
 
+    const corePayload = {
+      user_id: user.id,
+      workspace_id: activeWorkspace.id,
+      business_name: leadData.businessName,
+      contact_name: leadData.contactName,
+      contact_email: leadData.contactEmail,
+      niche: leadData.niche,
+      city: leadData.city,
+      source: leadData.source,
+      status: leadData.status,
+      temperature: leadData.temperature,
+      next_action: leadData.nextAction,
+      next_action_date: leadData.nextActionDate || null,
+      image_url: leadData.imageUrl || null,
+      owner: 'Moi',
+    };
+
+    const enrichedPayload = {
+      ...corePayload,
+      website: leadData.website || null,
+      rating: leadData.rating ?? null,
+      reviews_count: leadData.reviewsCount ?? null,
+      maps_url: leadData.mapsUrl || null,
+      photos: leadData.photos || null,
+      social_links: leadData.socialLinks || null,
+      assigned_to: leadData.assignedTo || null,
+    };
+
     try {
-      const { data: newDbLead, error: leadError } = await supabase
+      // First attempt: full payload (requires enriched columns in schema)
+      let { data: newDbLead, error: leadError } = await supabase
         .from('leads')
-        .insert({
-          user_id: user.id,
-          workspace_id: activeWorkspace.id,
-          business_name: leadData.businessName,
-          contact_name: leadData.contactName,
-          contact_email: leadData.contactEmail,
-          niche: leadData.niche,
-          city: leadData.city,
-          source: leadData.source,
-          status: leadData.status,
-          temperature: leadData.temperature,
-          next_action: leadData.nextAction,
-          next_action_date: leadData.nextActionDate || null,
-          image_url: leadData.imageUrl || null,
-          owner: 'Moi',
-          website: leadData.website || null,
-          rating: leadData.rating ?? null,
-          reviews_count: leadData.reviewsCount ?? null,
-          maps_url: leadData.mapsUrl || null,
-          photos: leadData.photos || null,
-          social_links: leadData.socialLinks || null,
-          assigned_to: leadData.assignedTo || null
-        })
+        .insert(enrichedPayload)
         .select()
         .single();
 
-      if (leadError) throw leadError;
+      if (leadError) {
+        // Enriched columns might not exist in the live schema — retry with core only
+        console.warn('addLead enriched insert failed, retrying with core payload:', leadError.message ?? JSON.stringify(leadError));
+        const fallback = await supabase.from('leads').insert(corePayload).select().single();
+        if (fallback.error) {
+          console.error('addLead core insert also failed:', fallback.error.message ?? JSON.stringify(fallback.error));
+          return;
+        }
+        newDbLead = fallback.data;
+      }
 
       const insertedNotes: DbNote[] = [];
       if (leadData.notes && newDbLead) {
@@ -1077,9 +1093,9 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
           .select()
           .single();
 
-        if (noteError) throw noteError;
-
-        if (newDbNote) {
+        if (noteError) {
+          console.warn('addLead note insert failed:', noteError.message ?? JSON.stringify(noteError));
+        } else if (newDbNote) {
           insertedNotes.push(newDbNote as DbNote);
         }
       }
@@ -1088,8 +1104,8 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
         const newUiLead = mapDbLeadToUi(newDbLead, insertedNotes);
         setLeads(prev => [newUiLead, ...prev]);
       }
-    } catch (err) {
-      console.error("Error in addLead:", err);
+    } catch (err: any) {
+      console.error('addLead unexpected error:', err?.message ?? JSON.stringify(err));
     }
   };
 
