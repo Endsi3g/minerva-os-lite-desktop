@@ -1,3 +1,6 @@
+# Temp folder created by electron:build / cap:sync (api routes moved here during static export)
+app-api-temp/
+
 # Electron build output
 dist/
 
