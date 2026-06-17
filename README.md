@@ -95,8 +95,16 @@ Minerva OS Reach Lite est conçu pour aider les agences et les professionnels du
 - **Synchronisation iOS et Android** via `pnpm cap:sync`, avec workflows CI/CD Fastlane pour l'automatisation des builds Android.
 
 ### Prospection Avancée & Intelligence (Nouveau)
+- **Scraping multi-source combiné** : OSM/Overpass, Yelp, PagesJaunes, 411.ca et Apify (Google Places enrichi) en parallèle, fusionnés et dédupliqués automatiquement.
+- **Multi-niche & Multi-ville** : sélection simultanée de plusieurs niches et plusieurs villes cibles — une requête Overpass par niche×ville, toutes tournant en parallèle.
+- **65+ villes du Québec** dans la base de coordonnées OSM (Montréal + arrondissements, banlieues couronne Nord/Sud, régions Saguenay, Québec, Outaouais, Laurentides, Abitibi, Côte-Nord…).
+- **40+ filtres OSM** mappés : restaurant, bar, pharmacie, dentiste, salon de coiffure, tatoueur, ostéopathe, couvreur, notaire, architecte, hôtel, bijouterie, école, taxi, informatique, etc.
+- **Rayon configurable** 2–50 km autour du centroïde de chaque ville, limite jusqu'à 500 résultats par scrape.
+- **Tri & export CSV** : classement par opportunité (sans site / note faible en tête), par note ou par avis ; export CSV UTF-8 BOM pour Excel en un clic.
+- **Analyse par source** : répartition des résultats par source de données (osm/yelp/pagesjaunes/411/apify), par ville et par niveau d'opportunité.
+- **Carte interactive MapLibre** avec marqueurs colorés (rouge = sans site, orange = note <4★, vert = correct) et popup de détail.
+- **Séquences email automatisées** (`/sequences`) : création de séquences multi-étapes avec déclenchement Vercel Cron quotidien (09h00) via Gmail OAuth.
 - **Carte interactive du Québec** : visualisation géolocalisée des leads pour cibler les zones de prospection.
-- **Tableau de bord de prospection** dédié, avec score de leads persisté en base de données.
 - **Page Intelligence** : synthèses et recommandations générées par IA à partir du portefeuille de leads actif.
 - **Marketplace d'agents IA personnalisés** (`/agents`) : création et configuration d'agents IA dédiés à des tâches spécifiques.
 - **Bibliothèque de contenus** (`/library`) avec éditeur de texte enrichi basé sur TipTap.

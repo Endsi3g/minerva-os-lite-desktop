@@ -18,6 +18,32 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v2.27.0',
+      date: '2026-06-17',
+      titleKey: 'changelog.v2_27_0_title',
+      descKey: 'changelog.v2_27_0_desc',
+      highlights: [
+        'Scraping multi-source combiné : OSM/Overpass, Yelp, PagesJaunes, 411.ca et Apify tournent en parallèle et leurs résultats sont fusionnés + dédupliqués.',
+        'Multi-niche & Multi-ville : sélectionnez plusieurs niches et plusieurs villes — une requête Overpass par niche×ville (Promise.allSettled).',
+        '65+ villes du Québec dans la base de coordonnées OSM, 40+ filtres OSM mappés (tatoueur, ostéo, couvreur, notaire, architecte, hôtel, bijouterie, école, etc.).',
+        'Rayon configurable 2–50 km, limite 500 résultats, nouvelle source 411.ca, dédup renforcée nom+ville+téléphone.',
+        'UI : tri par opportunité/note/avis, export CSV UTF-8 BOM, badge source par ligne, analyse par source/ville, carte MapLibre avec popup.',
+      ],
+    },
+    {
+      version: 'v2.26.0',
+      date: '2026-06-17',
+      titleKey: 'changelog.v2_26_0_title',
+      descKey: 'changelog.v2_26_0_desc',
+      highlights: [
+        'Séquences email : page /sequences avec création/gestion de séquences multi-étapes, table email_sequences + email_sequence_steps Supabase.',
+        'Cron Vercel : déclenchement quotidien 09h00 des étapes de séquences via /api/cron/email-sequences avec rafraîchissement automatique du token Gmail.',
+        'Aujourd\'hui : bouton "Reporter à demain" fonctionnel (updateTask dual-store), "Marquer urgent" préfixe [URGENT], statistiques séquences réelles (envoyés/en attente).',
+        'Navigation : entrée "Séquences email" câblée dans la sidebar (icône Mail), traductions FR/EN/DE.',
+        'Fix : export map-root — default export ajouté, erreur TypeScript Supabase corrigée dans le cron.',
+      ],
+    },
+    {
       version: 'v2.25.0',
       date: '2026-06-17',
       titleKey: 'changelog.v2_25_0_title',
