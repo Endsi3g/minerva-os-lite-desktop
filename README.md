@@ -9,16 +9,17 @@
 </p>
 
 <p align="center">
-  Une application de bureau légère basée sur Next.js, tailwindcss, Supabase et Google APIs pour automatiser la découverte, l'audit technique SEO et l'engagement des commerces locaux.
+  Une application de bureau/web basée sur Next.js, Tailwind CSS, Supabase et Google APIs pour automatiser la découverte, l'audit SEO, la gestion des leads et l'engagement des commerces locaux.
 </p>
 
 <div align="center">
-  
-  [![Node.js Version](https://img.shields.io/badge/node-%3E%3D20.0.0-blue.svg?style=flat-square)](https://nodejs.org/)
-  [![pnpm Package Manager](https://img.shields.io/badge/pnpm-%3E%3D9.0.0-orange.svg?style=flat-square)](https://pnpm.io/)
-  [![Framework Next.js](https://img.shields.io/badge/next.js-16.2.6-black.svg?style=flat-square)](https://nextjs.org/)
-  [![Database Supabase](https://img.shields.io/badge/database-supabase-emerald.svg?style=flat-square)](https://supabase.com/)
-  
+
+[![Node.js Version](https://img.shields.io/badge/node-%3E%3D20.0.0-blue.svg?style=flat-square)](https://nodejs.org/)
+[![pnpm Package Manager](https://img.shields.io/badge/pnpm-%3E%3D9.0.0-orange.svg?style=flat-square)](https://pnpm.io/)
+[![Framework Next.js](https://img.shields.io/badge/next.js-16.2.6-black.svg?style=flat-square)](https://nextjs.org/)
+[![Database Supabase](https://img.shields.io/badge/database-supabase-emerald.svg?style=flat-square)](https://supabase.com/)
+[![Version](https://img.shields.io/badge/version-2.45.0-f54e00.svg?style=flat-square)](#changelog)
+
 </div>
 
 ---
@@ -32,6 +33,7 @@
 - [Prérequis et configuration](#prérequis-et-configuration)
 - [Développement local](#développement-local)
 - [Validation et déploiement](#validation-et-déploiement)
+- [Changelog](#changelog)
 
 ---
 
@@ -39,175 +41,355 @@
 
 Minerva OS Reach Lite est conçu pour aider les agences et les professionnels du web à identifier et cibler les entreprises locales présentant des lacunes de présence en ligne. Le système extrait automatiquement les profils d'établissements physiques, analyse leurs forces et faiblesses SEO, génère des messages de prospection personnalisés par intelligence artificielle et permet un envoi direct par e-mail via l'API Gmail.
 
+L'application fonctionne dans trois contextes distincts partageant le même code Next.js : navigateur web (Supabase), bureau Electron (SQLite hors-ligne + sync bidirectionnel), et mobile Capacitor (iOS/Android).
+
 ---
 
 ## Fonctionnalités principales
 
-### Moteur de recherche et de scraping multicritère
-- Recherche géolocalisée par secteur d'activité et par ville.
-- Extraction multi-source intégrant Google Maps (via OpenStreetMap Nominatim), Yelp et PagesJaunes.
-- Dé-duplication automatique des résultats et fusion des fiches de prospection.
+### Prospection & Scraping multi-source
+- Recherche géolocalisée par secteur d'activité et par ville avec **65+ villes du Québec** dans la base de coordonnées (Montréal + arrondissements, banlieues, régions Saguenay, Québec, Outaouais, Laurentides, Abitibi, Côte-Nord).
+- **5 sources de données** en parallèle : OpenStreetMap/Overpass, Yelp, PagesJaunes, 411.ca et **Apify** (Google Places enrichi).
+- **40+ filtres OSM** : restaurant, bar, pharmacie, dentiste, coiffeur, tatoueur, ostéopathe, couvreur, notaire, architecte, hôtel, bijouterie, école, taxi, informatique, etc.
+- Multi-niche & multi-ville simultanés — une requête Overpass par niche×ville, toutes en parallèle.
+- Rayon configurable 2–50 km, limite jusqu'à 500 résultats par scrape, dé-duplication automatique.
+- Fallback intelligent générant des leads variés (8 gabarits de nommage) quand toutes les sources externes retournent vide.
+- Tri & export CSV UTF-8 BOM (Excel) ; analyse par source, par ville et par niveau d'opportunité.
 
-### Audit SEO technique automatisé en temps réel
-- Analyse en direct du protocole de sécurité (HTTPS).
-- Vérification de la compatibilité mobile (balise viewport).
-- Validation de la présence et de la pertinence des balises meta title et description.
-- Mesure des performances de chargement serveur.
-- Détection des scripts de suivi de trafic (Google Analytics, Facebook Pixel).
+### Carte interactive des leads
+- **Carte MapLibre** pleine page avec marqueurs colorés par température (chaud/tiède/froid/sans site).
+- **Géolocalisation de l'utilisateur** : bouton « Afficher ma position » → point bleu sur la carte, centrage automatique, **distances Haversine** affichées par lead dans la liste latérale et les popups.
+- Niche affichée en sous-titre dans chaque carte de lead et popup cartographique.
+- **Planification d'itinéraire** : sélection de waypoints → calcul d'un itinéraire routier via OSRM (distance km + durée).
+- Filtres par température et recherche textuelle ; groupement par ville pliable/dépliable.
 
-### Rédacteur IA et engagement direct
-- Génération intelligente de brouillons de courriels de prospection (canaux Email, DM, Script).
-- Choix de tonalité (Calme et Conseil, Direct et Closer, Storytelling) via OpenRouter ou Anthropic.
-- Envoi sécurisé en un clic via l'API REST de Gmail grâce à une connexion Google OAuth native.
-- Export direct des audits et des scripts dans le Google Drive de l'utilisateur.
+### Audit SEO technique
+- Analyse HTTPS, viewport mobile, balises title/description, Google Analytics, Facebook Pixel.
+- Mesure du temps de chargement serveur et comptage des balises H1.
+- Score global 0–100 avec liste de problèmes classés par gravité (error / warning / info).
+- Export PDF de l'audit via une page dédiée (`/api/audit-seo/export-pdf`).
 
-### Authentification & Sécurité Avancée (Nouveau)
-- **Connexion Passwordless OTP** : Authentification rapide par code unique envoyé par email.
-- **Réinitialisation de mot de passe** : Flux sécurisé avec redirection PKCE (`/api/auth/confirm-reset`).
-- **Gestion des mots de passe** : Page dédiée `/update-password` avec indicateur de force visuel et contrôles de visibilité.
-- **Formulaire de Connexion premium** : Layout moderne à 3 onglets (Connexion standard, Code OTP, Inscription).
+### Gestion des leads
+- Liste complète avec vue tableau (TanStack Table) et vue Kanban pipeline.
+- Détail de lead enrichi : site web, note, nombre d'avis, URL Maps, galerie photos, réseaux sociaux, statut BANT, scores fit/intent.
+- **Génération de proposition PDF** : création d'un document HTML complet envoyé au navigateur via Blob URL (sans popup bloqué).
+- Assignation à un membre d'équipe, gestion des deals (montant, probabilité, date de clôture).
+- Notes, brouillons et activités par lead ; fil d'activités global (`/activities`).
+- Page de création dédiée `/leads/new`.
 
-### Gestion d'Équipe & Invitations (Nouveau)
-- **Système d'invitation sécurisé** : Invitation directe par email via l'API Admin de Supabase (utilisation de la clé de rôle de service `SUPABASE_SERVICE_ROLE_KEY` côté serveur).
-- **Rôles et Permissions** : Rôles configurables (Administrateur, Éditeur, Lecteur) avec politiques RLS (Row Level Security) strictes sur la base de données.
-- **Tableau de bord de l'équipe (`/team`)** : Interface premium de gestion des membres, affichage du propriétaire avec badge Couronne, modification de rôles en temps réel et suppression sécurisée des membres avec confirmation double-clic.
+### Séquences email automatisées
+- Création de séquences multi-étapes via **wizard dédié `/sequences/new`** (3 étapes : sélection du lead, construction des étapes, révision + envoi).
+- **4 canaux par étape** : Email, Appel téléphonique, LinkedIn DM, SMS — avec badge coloré et libellé adapté.
+- **Quota d'envoi quotidien** configurable par utilisateur (défaut 50/jour), appliqué dans le cron Vercel.
+- Déclenchement automatique quotidien à 09h00 via Vercel Cron (`/api/cron/email-sequences`).
+- Bouton IA de génération de brouillon par étape ; aperçu complet avant envoi.
 
-### Onboarding Interactif Premium (Nouveau)
-- **Parcours d'onboarding inspiré de Sana AI** : Assistant multi-étapes avec animations fluides de glissement directionnel (gauche/droite) et indicateur visuel de progression circulaire.
-- **Configuration intégrée** : Étapes intégrées pour le choix des forfaits (Gratuit vs Équipe) et le consentement analytique.
+### Campagnes
+- Création via **wizard dédié `/campaigns/new`** (4 étapes : type, audience cible, objectif, révision).
+- Types de campagne : Email, Appel, LinkedIn — avec sélecteur visuel par cartes.
+- Audience par niches et villes avec `TagInput` (Enter ou virgule pour ajouter).
+- Objectif configurable (métrique, cible, période, date de départ) avec aperçu en direct.
+- Tableau de bord des campagnes actives/archivées avec filtres et menu d'actions.
 
-### Système de Workspaces & Commutation Dynamique (Nouveau)
-- **Sélecteur de style Langdock** : Menu déroulant interactif dans la sidebar avec sous-menu volant (flyout menu) de commutation instantanée des workspaces.
-- **Partitionnement étanche des données** : Les leads, tâches, notes et suggestions d&apos;IA sont filtrés de manière transparente en fonction du workspace actif.
-- **Sécurité et RLS strictes** : Accès contrôlé via Supabase RLS autorisant uniquement les propriétaires et les membres invités actifs d&apos;un workspace à lire/écrire ses données.
-- **Gestion dédiée (`/workspaces`)** : Page d&apos;administration complète permettant de créer de nouveaux workspaces, renommer ou supprimer ceux que l&apos;on possède (avec garde-fou interdisant la suppression du dernier espace).
+### Rédacteur IA & engagement
+- Génération de brouillons de prospection (Email, DM, Script téléphonique) par IA.
+- Tonalités configurables : Calme & Conseil, Direct & Closer, Storytelling.
+- Envoi sécurisé via Gmail OAuth ou **SMTP personnalisé** (Resend, Gmail SMTP, etc.).
+- Export des audits et scripts vers Google Drive.
+- **Interface de chat IA** (`/chat`) et page **Assistant IA** (`/assistant`) avec modèles configurables.
+- Cascade de fournisseurs : Groq → Together.ai → OpenRouter → Anthropic.
 
-### Fonctionnalités Natives & Support Hors-ligne Electron (Nouveau)
-- **Stockage SQLite hors-ligne complet** : Base de données locale pour persister et modifier les prospects, les notes et les tâches sans connexion Internet.
-- **Synchronisation bidirectionnelle automatique** : Moteur de synchronisation asynchrone utilisant la politique **Last-Write-Wins** basée sur les dates `updated_at` pour résoudre les conflits avec Supabase.
-- **Planificateur de prospection persistant** : Déclenchement automatique et persistant du scraping de leads toutes les 6 heures avec notifications natives sur le système d'exploitation.
-- **Spotlight Search global** : Barre de recherche rapide de type Spotlight accessible par-dessus toutes les applications via `Option + Espace` (macOS) ou `Alt + Espace` (Windows/Linux).
-- **Popover de la barre système (`/tray`)** : Widget compact accessible depuis l'icône de la barre système, avec vérification rapide des tâches du jour et déclenchement manuel d'un scraping.
-- **Exportation PDF native enrichie** : Impression PDF native des rapports d'audits SEO sous forme hautement stylisée sans dépendance lourde tierce.
+### Gestion d'équipe
+- **Invitation par email** via l'API Admin Supabase (clé service-role) avec envoi Resend intégré.
+- Rôles : Administrateur, Éditeur, Lecteur — modifiables en temps réel.
+- **Re-invitation** automatique si une invitation précédente est en statut `pending` (les doublons fantômes sont nettoyés).
+- Suppression sécurisée avec confirmation double-clic ; tableau de bord premium (`/team`).
+- Badge Couronne pour le propriétaire du workspace.
 
-### Application Mobile Capacitor (Nouveau)
-- **Pont natif unifié** (`lib/native-bridge.ts`) : accès à la caméra, aux notifications push et au stockage de préférences natif, avec repli automatique sur les API web en environnement navigateur.
-- **Synchronisation iOS et Android** via `pnpm cap:sync`, avec workflows CI/CD Fastlane pour l'automatisation des builds Android.
+### Workspaces
+- **Sélecteur de style Langdock** dans la sidebar avec sous-menu volant de commutation instantanée.
+- Partitionnement étanche des données (leads, tâches, notes, suggestions IA) par workspace actif.
+- Page d'administration `/workspaces` : création, renommage, suppression (garde-fou dernier workspace).
+- Champ description visible sous le nom du workspace dans le sélecteur.
 
-### Prospection Avancée & Intelligence (Nouveau)
-- **Scraping multi-source combiné** : OSM/Overpass, Yelp, PagesJaunes, 411.ca et Apify (Google Places enrichi) en parallèle, fusionnés et dédupliqués automatiquement.
-- **Multi-niche & Multi-ville** : sélection simultanée de plusieurs niches et plusieurs villes cibles — une requête Overpass par niche×ville, toutes tournant en parallèle.
-- **65+ villes du Québec** dans la base de coordonnées OSM (Montréal + arrondissements, banlieues couronne Nord/Sud, régions Saguenay, Québec, Outaouais, Laurentides, Abitibi, Côte-Nord…).
-- **40+ filtres OSM** mappés : restaurant, bar, pharmacie, dentiste, salon de coiffure, tatoueur, ostéopathe, couvreur, notaire, architecte, hôtel, bijouterie, école, taxi, informatique, etc.
-- **Rayon configurable** 2–50 km autour du centroïde de chaque ville, limite jusqu'à 500 résultats par scrape.
-- **Tri & export CSV** : classement par opportunité (sans site / note faible en tête), par note ou par avis ; export CSV UTF-8 BOM pour Excel en un clic.
-- **Analyse par source** : répartition des résultats par source de données (osm/yelp/pagesjaunes/411/apify), par ville et par niveau d'opportunité.
-- **Carte interactive MapLibre** avec marqueurs colorés (rouge = sans site, orange = note <4★, vert = correct) et popup de détail.
-- **Séquences email automatisées** (`/sequences`) : création de séquences multi-étapes avec déclenchement Vercel Cron quotidien (09h00) via Gmail OAuth.
-- **Carte interactive du Québec** : visualisation géolocalisée des leads pour cibler les zones de prospection.
-- **Page Intelligence** : synthèses et recommandations générées par IA à partir du portefeuille de leads actif.
-- **Marketplace d'agents IA personnalisés** (`/agents`) : création et configuration d'agents IA dédiés à des tâches spécifiques.
-- **Bibliothèque de contenus** (`/library`) avec éditeur de texte enrichi basé sur TipTap.
-- **Interface de chat IA** (`/chat`) pour interagir directement avec les modèles configurés.
-- **Tableau de bord analytique** (`/analytics`) et page de facturation dédiée (`/billing`).
-- **Centre d'aide** (`/help`) avec guides pas-à-pas dédiés pour chaque fonctionnalité clé du produit.
-- **Support multi-fournisseurs IA** : OpenRouter, Anthropic, Groq et Together.ai, ainsi qu'une configuration SMTP générique pour l'envoi d'emails au-delà de Gmail.
+### Authentification & Onboarding
+- Connexion passwordless OTP, mot de passe standard et inscription en un seul formulaire à 3 onglets.
+- Réinitialisation sécurisée via flux PKCE (`/api/auth/confirm-reset`).
+- **Onboarding plein écran** multi-étapes avec animations directionnelles et progression circulaire.
+- Redirection automatique vers `/onboarding` si le profil est incomplet (middleware).
+
+### Agents IA personnalisés
+- **Marketplace d'agents** (`/agents`) : agents intégrés + création d'agents custom.
+- Pages de détail par agent (`/agents/[id]`) avec description, bannière, créateur et avis utilisateurs.
+- Profil public créateur (`/agents/creator/[userId]`).
+- Système d'avis : note 1–5 + commentaire par agent, affiché dans la page de détail.
+
+### Intégrations
+- **Todoist** : connexion par clé API, sauvegarde du token et du projet cible (Electron + web), déconnexion propre.
+- **Resend** : envoi SMTP transactionnel pour les invitations d'équipe et les emails de support.
+- **Gmail** et **Google Drive** via OAuth 2.0.
+- **Apify** : enrichissement via Google Places (clé API configurée dans les paramètres).
+- OpenRouter, Groq, Together.ai, Anthropic : cascades IA configurables par utilisateur.
+
+### Notifications & Rappels
+- Sonnette de notification dans la topbar avec compteur non-lus.
+- Rappels en retard (`/api/cron/overdue-check`) et digest quotidien (`/api/cron/daily-digest`) via Vercel Cron.
+- Rapport hebdomadaire (`/api/cron/weekly-report`).
+- Détection automatique des réponses Gmail (`/api/cron/gmail-check-replies`).
+
+### Analytics
+- Tableau de bord analytique avec tendances réelles sur 30 jours (leads, tâches, activités).
+- Remplace les données `Math.random()` par une vraie agrégation côté client à partir de `ReachContext`.
+
+### Support
+- Formulaire de contact `/help` → route `POST /api/support/contact` avec transport SMTP nodemailer.
+- Fonctionne avec Resend SMTP (`smtp.resend.com:465`) ou tout autre fournisseur SMTP.
+- Fallback console si aucune configuration SMTP détectée.
+
+### Fonctionnalités Electron (bureau)
+- **SQLite hors-ligne** avec sync bidirectionnel Last-Write-Wins sur `updated_at`.
+- Synchronisation automatique toutes les 5 minutes et à chaque mutation.
+- **Spotlight Search** global (`Option+Espace` / `Alt+Espace`) par-dessus toutes les applis.
+- **Tray popover** compact (`/tray`) depuis l'icône de la barre système.
+- Export PDF natif via BrowserWindow invisible.
+- Scraping automatique toutes les 6 heures si `last_scrape_at` > 6h.
+
+### Mobile Capacitor
+- Pont natif unifié (`lib/native-bridge.ts`) : Caméra, Push Notifications, Préférences.
+- Repli automatique sur les API web en environnement navigateur.
+- Sync via `pnpm cap:sync`; ouverture Xcode/Android Studio via `pnpm cap:open:ios/android`.
+
+### Autres pages
+- **Bibliothèque** (`/library`) : éditeur TipTap, assignation à des projets, galerie de documents.
+- **Projets** (`/projects/[id]`) : vue unifiée documents + conversations par projet.
+- **Services/Catalogue d'offres** (`/services`) : CRUD des offres présentables aux leads.
+- **Pipeline Kanban** (`/pipeline`) : vue Kanban + vue tableau des leads par statut.
+- **Intelligence** (`/intelligence`) : synthèses IA du portefeuille de leads.
+- **Téléchargement** (`/download`) : liens Electron avec badges iOS/Android « Bientôt disponible ».
+- **Centre d'aide** (`/help`) avec guides pas-à-pas ; page 404 personnalisée.
+- **Facturation** (`/billing`) et **Changelog** (`/changelog`).
+- **i18n** : français, anglais, allemand via `useLanguage().t(key)` — toutes les chaînes UI sont traduites.
 
 ---
 
 ## Sécurité
 
-- **Masquage des clés API** : les clés des fournisseurs IA (OpenRouter, Groq, Together.ai) saisies par l'utilisateur ne sont jamais renvoyées en clair au client. Elles sont gérées exclusivement côté serveur via `app/api/settings/ai-keys`, qui ne renvoie qu'une version masquée (`sk-••••1234`) ; aucune valeur brute n'est mise en cache dans `localStorage`.
-- **Row Level Security (RLS) Supabase** : chaque table (`leads`, `tasks`, `notes`, `settings`, `workspaces`, membres d'équipe) est protégée par des politiques RLS strictes garantissant qu'un utilisateur ne peut lire ou écrire que les données des workspaces qu'il possède ou dont il est membre actif.
-- **Routes d'administration d'équipe durcies** : `app/api/team/members` et `app/api/team/invite` valident explicitement l'appartenance au workspace (propriétaire ou rôle admin) avant toute lecture ou mutation, en plus des politiques RLS.
-- **Clé de rôle de service isolée** : `SUPABASE_SERVICE_ROLE_KEY` n'est utilisée que dans les route handlers serveur (jamais exposée au bundle client) pour les opérations d'administration (invitations, gestion des rôles).
-- **Authentification** : connexion par mot de passe ou par code OTP passwordless, réinitialisation de mot de passe via un flux PKCE sécurisé.
-- **IPC SQLite (Electron)** : le canal IPC `dbRun`/`dbAll`/`dbGet` accepte des requêtes SQL paramétrées envoyées depuis le renderer. Le risque est circonscrit à la machine locale de l'utilisateur (pas d'exposition réseau) ; aucune donnée sensible distante n'est accessible par ce canal.
+- **Masquage des clés API** : les clés IA ne sont jamais renvoyées en clair au client ; `app/api/settings/ai-keys` retourne uniquement une version masquée (`sk-••••1234`).
+- **Row Level Security Supabase** : toutes les tables (`leads`, `tasks`, `notes`, `settings`, `workspaces`, `team_members`, etc.) sont protégées par des politiques RLS strictes.
+- **Routes d'administration durcies** : `app/api/team/*` valident l'appartenance au workspace (propriétaire ou rôle admin) avant toute mutation.
+- **Clé service-role isolée** : `SUPABASE_SERVICE_ROLE_KEY` n'est utilisée que côté serveur, jamais exposée au bundle client.
+- **IPC SQLite (Electron)** : requêtes SQL paramétrées uniquement, confinées à la machine locale.
+- **SMTP support** : les identifiants SMTP sont en variables d'environnement serveur, jamais exposés au client.
 
 ---
 
 ## Architecture du projet
 
-Le projet est structuré comme suit :
+```
+app/
+  layout.tsx                  # Root layout (ThemeProvider, LanguageProvider)
+  (app)/                      # Shell authentifié avec sidebar
+    layout.tsx                # Sidebar + topbar + ReachProvider
+    today/                    # Tableau de bord quotidien
+    leads/                    # Liste + [id] détail + new/
+    prospecting/              # UI de scraping
+    pipeline/                 # Kanban + tableau
+    map/                      # Carte MapLibre (SSR désactivé via map-loader.tsx)
+    sequences/                # Séquences email + new/
+    campaigns/                # Campagnes + new/
+    intelligence/             # Insights IA
+    settings/                 # Paramètres sectionnés
+    team/                     # Gestion d'équipe
+    workspaces/               # CRUD workspaces + [id]/
+    agents/                   # Agent store + [id]/ + creator/[userId]/
+    analytics/                # Dashboard analytique
+    chat/                     # Chat IA
+    assistant/                # Assistant IA général
+    integrations/             # Connecteurs tiers
+    library/                  # Bibliothèque + [id]/
+    services/                 # Catalogue d'offres
+    projects/                 # Projets + [id]/
+    activities/               # Fil d'activités global
+    audit/                    # Audit SEO
+    billing/                  # Facturation
+    download/                 # Téléchargement app
+    changelog/                # Notes de version
+    help/                     # Centre d'aide + guides/[slug]/
+  api/
+    auth/                     # Google OAuth, PKCE reset
+    chat/                     # Streaming IA (Anthropic SDK)
+    generate-draft/           # Brouillon email IA
+    generate-proposal/        # Proposition PDF HTML
+    scrape-maps/              # OSM + DDG + Apify
+    scrape-apify/             # Apify dédié
+    audit-seo/                # Analyse SEO + export-pdf/
+    send-email/               # Envoi Gmail
+    export-drive/             # Export Google Drive
+    email-sequences/          # CRUD séquences
+    enrich-contact/           # Enrichissement lead
+    support/contact/          # Formulaire de support SMTP
+    team/                     # invite/ members/ role/
+    workspaces/               # CRUD workspaces
+    agents/                   # CRUD agents IA
+    settings/ai-keys/         # Masquage des clés IA
+    cron/                     # email-sequences/ overdue-check/ daily-digest/ weekly-report/ gmail-check-replies/
 
-- `/Minerva OS Lite/minerva-os-lite-desktop` : Répertoire principal de l'application Next.js.
-  - `/app` : Routage applicatif Next.js (pages de pipeline, prospection, réglages, équipe et routes API).
-  - `/components` : Composants graphiques réutilisables de l'interface utilisateur.
-  - `/lib` : Bibliothèques utilitaires, contextes React et clients de base de données.
-    - `/lib/supabase` : Helpers d'initialisation des clients Supabase (client, serveur et middleware).
-  - `/public` : Actifs statiques et images.
-  - `deploy-test.ps1` : Script de validation et de test de compilation.
-  - `supabase_schema.sql` : Schéma relationnel de la base de données.
+electron/
+  main.cjs                   # Main process, 4 fenêtres, IPC handlers
+  preload.js                 # contextBridge → window.electron
+  database.cjs               # SQLite + migrations (ALTER TABLE safe re-run)
+  sync.cjs                   # Sync bidirectionnel Last-Write-Wins
+
+lib/
+  reach-context.tsx          # État global, dual-store SQLite/Supabase
+  translations.ts            # Clés i18n fr/en/de
+  language-context.tsx       # useLanguage() hook
+  api-helper.ts              # getApiUrl() pour Electron/Capacitor
+  native-bridge.ts           # Capacitor avec fallback web
+  mock-data.ts               # Interfaces TypeScript + données de démo
+
+components/
+  ui/                        # shadcn/ui (Radix UI)
+  analytics-dashboard.tsx    # Tendances 30 jours réelles
+  realtime-sync-listener.tsx # Abonnements Supabase Realtime
+  notification-bell.tsx      # Sonnette de notification
+  tree-mascot.tsx            # Mascotte arbre animée SVG
+```
+
+### Pattern dual-store (à respecter dans tout nouveau code)
+```typescript
+if (window.electron) {
+  // SQLite via IPC: window.electron.dbRun/dbAll/dbGet
+  // + sync_status: 'pending_insert' | 'pending_update' | 'pending_delete'
+  // + window.electron.triggerSync()
+} else {
+  // Supabase directement via createClient() de lib/supabase/client.ts
+}
+```
 
 ---
 
 ## Prérequis et configuration
 
 ### Prérequis système
-- Node.js (version 20.0.0 ou supérieure)
-- pnpm (version 9.0.0 ou supérieure)
-- Base de données Supabase active
+- Node.js ≥ 20.0.0
+- pnpm ≥ 9.0.0
+- Compte Supabase actif
 
 ### Variables d'environnement
-Créez un fichier `.env.local` dans le dossier `Minerva OS Lite/minerva-os-lite-desktop` avec les variables suivantes :
+
+Créez un fichier `.env.local` à la racine du projet :
 
 ```env
 # Supabase
 NEXT_PUBLIC_SUPABASE_URL=https://votre-projet.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=votre-cle-anon
-NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=votre-cle-anon
-
-# Clé Secrète Admin Supabase (Serveur uniquement - NE JAMAIS exposer côté client)
-SUPABASE_SERVICE_ROLE_KEY=votre-cle-service-role
+SUPABASE_SERVICE_ROLE_KEY=votre-cle-service-role   # Serveur uniquement
 
 # Google APIs (OAuth Gmail / Drive)
 GOOGLE_CLIENT_ID=votre-client-id.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=votre-client-secret
 
-# Intelligence Artificielle & Fournisseurs (clé serveur par défaut ; les utilisateurs
-# peuvent aussi configurer leurs propres clés OpenRouter, Groq et Together.ai
-# depuis /settings, stockées et masquées côté serveur — voir section Sécurité)
+# IA (clé serveur par défaut ; les utilisateurs peuvent configurer les leurs dans /settings)
 ANTHROPIC_API_KEY=votre-cle-anthropic
 
-# URL publique de l'application, utilisée par Electron et Capacitor pour router
-# les appels vers les routes API (sans objet en mode web classique)
+# URL publique (utilisée par Electron/Capacitor pour router les appels API)
 NEXT_PUBLIC_APP_URL=https://votre-domaine.com
+
+# Resend (invitations d'équipe et support)
+RESEND_API_KEY=re_xxxxxxxxxxxx
+
+# Support SMTP (optionnel — Resend ou autre fournisseur)
+SUPPORT_SMTP_HOST=smtp.resend.com
+SUPPORT_SMTP_PORT=465
+SUPPORT_SMTP_USER=resend
+SUPPORT_SMTP_PASS=re_xxxxxxxxxxxx
+SUPPORT_SMTP_FROM=onboarding@resend.dev
+SUPPORT_EMAIL=support@minervaos.com
+
+# Apify (enrichissement Google Places — optionnel)
+APIFY_API_TOKEN=apify_api_xxxxxxxxxxxx
 ```
 
 ---
 
 ## Développement local
 
-Pour installer et démarrer l'application en mode de développement :
-
 ```bash
-# Aller dans le répertoire de l'application
-cd "Minerva OS Lite/minerva-os-lite-desktop"
-
 # Installer les dépendances
 pnpm install
 
-# Lancer le serveur de développement
-pnpm run dev
-```
+# Serveur de développement Next.js
+pnpm dev                  # http://localhost:3000
 
-L'application est disponible à l'adresse : `http://localhost:3000`
+# Electron (nécessite pnpm dev en parallèle)
+pnpm electron:dev
+
+# Vérifications
+pnpm typecheck            # TypeScript sans émission
+pnpm lint                 # ESLint
+pnpm format               # Prettier
+```
 
 ---
 
 ## Validation et déploiement
 
-Avant chaque soumission, exécutez le script de validation PowerShell pour tester la compilation et la qualité du code :
+```bash
+# Build de production (Vercel / web)
+pnpm build                # next build
 
-```powershell
-# Exécuter le script de test à la racine ou dans le sous-dossier
-./deploy-test.ps1
+# Build Electron (macOS .dmg / Windows .exe)
+pnpm electron:build       # exporte Next.js en statique → electron-builder
+
+# Build Capacitor (iOS / Android)
+pnpm cap:sync             # exporte Next.js en statique → cap sync
+pnpm cap:open:ios         # ouvre dans Xcode
+pnpm cap:open:android     # ouvre dans Android Studio
 ```
 
-Ce script effectue automatiquement les étapes suivantes :
-1. Vérification de la disponibilité du port 3000.
-2. Nettoyage du cache de build.
-3. Validation des types TypeScript.
-4. Validation de la qualité de code via le linter.
-5. Compilation de production de l'application.
-6. Démarrage temporaire du serveur de production local et vérification de l'accès réseau.
+> **Note export statique** : `electron:build` et `cap:sync` renomment temporairement `app/api/` en `app-api-temp/` avant `next build` (les routes API sont incompatibles avec l'export statique), puis restaurent le dossier. Ne jamais supprimer ni déplacer `app/api/` manuellement.
+
+---
+
+## Changelog
+
+### v2.45.0
+- **fix**: carte MapLibre ne crashait plus en SSR — `dynamic({ ssr: false })` déplacé dans un Client Component dédié (`map-loader.tsx`) pour compatibilité Next.js 16 / Turbopack
+- **feat**: géolocalisation dans la carte — bouton « Afficher ma position », point bleu sur la carte, distances Haversine affichées par lead
+- **feat**: niche affichée en sous-titre dans les cartes de lead et les popups cartographiques
+- **fix**: génération de proposition PDF via Blob URL (l'ancienne approche `window.open()` était bloquée par les bloqueurs de popups)
+- **fix**: invitation d'équipe — les invitations en statut `pending` périmé sont supprimées et renvoyées au lieu de retourner une fausse erreur « already a member »
+- **fix**: scraping — le fallback génère désormais `maxResults` leads variés (8 gabarits de nommage) au lieu de 5 leads codés en dur
+- **feat**: `/campaigns/new` — wizard de création de campagne en 4 étapes (type, audience, objectif, révision)
+- **feat**: `/sequences/new` — wizard de création de séquence en 3 étapes (sélection du lead, construction des étapes, révision + envoi)
+- **fix**: `tsconfig.json` + `.vercelignore` — exclut `app-api-temp/` pour éviter les erreurs TypeScript dans le cache de build Vercel
+
+### v2.44.0
+- **feat**: quota d'envoi quotidien configurable par utilisateur (`daily_email_limit`, défaut 50/jour)
+- **feat**: paramètre « Quota d'envoi » dans Settings > Prospection avec préréglages rapides
+- Quota appliqué dans le cron Vercel : skip avec compteur `skippedCap` si le seuil est atteint
+- Migration SQLite : `ALTER TABLE settings ADD COLUMN daily_email_limit INTEGER DEFAULT 50`
+
+### v2.43.0
+- **feat**: séquences multi-canal — 4 canaux par étape (Email, Appel, LinkedIn, SMS) avec badge coloré
+- Champ `channel` par étape ; bouton IA et champ sujet affichés uniquement pour les étapes Email
+- Rappel de tâche manuelle affiché pour les étapes non-Email
+- `DEFAULT_STEPS` : étape 2 défaut sur `Call`
+
+### v2.42.0 et antérieur
+- Personnalisation avancée des e-mails (variables IA dans le compositeur)
+- Todoist : connexion par clé API, sauvegarde/chargement/déconnexion (Electron + web)
+- Resend SMTP pour le support contact et les invitations d'équipe
+- Formulaire de contact support (`/help` → `/api/support/contact`)
+- Agents IA : page de détail, profil créateur, système d'avis
+- Analytics : tendances 30 jours réelles (pas de `Math.random()`)
+- i18n : clés welcome/today/library en fr/en/de
+- Assignation de documents à des projets (dossier)
+- Onboarding plein écran avec animations directionnelles
+- Synchronisation avatar et profil utilisateur
+- Vercel Analytics et Google OAuth intégrés
+
+---
+
+*Minerva OS Reach Lite — v2.45.0*
