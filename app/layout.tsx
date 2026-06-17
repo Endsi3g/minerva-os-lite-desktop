@@ -5,6 +5,7 @@ import { LanguageProvider } from "@/lib/language-context"
 import { PageTransition } from "@/components/page-transition"
 import { cn } from "@/lib/utils"
 import type { Metadata, Viewport } from "next"
+import { Analytics } from '@vercel/analytics/next'
 
 const inter = Inter({
   subsets: ["sans-serif", "latin"] as any, // prevent type differences in different versions
@@ -69,6 +70,7 @@ export default function RootLayout({
             </PageTransition>
           </LanguageProvider>
         </ThemeProvider>
+        <Analytics />
       </body>
     </html>
   )
