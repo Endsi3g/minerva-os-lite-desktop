@@ -371,28 +371,39 @@ export default function IntegrationsPage() {
   const saveTodoistSettings = async () => {
     if (!contextUser) return;
     const electronObj = typeof window !== 'undefined' && (window as any).electron;
-    if (electronObj) {
-      try {
+
+    const applyConnected = () => {
+      setConnectedIds(prev => Array.from(new Set([...prev, 'todoist'])));
+      setIntegrationsList(prev => prev.map(item =>
+        item.id === 'todoist'
+          ? { ...item, status: 'Active', statusKey: 'integrations.status.active' as TranslationKey, accEmail: 'Compte connecté', accEmailKey: 'integrations.todoist.acc_email_connected' as TranslationKey }
+          : item
+      ));
+    };
+
+    try {
+      if (electronObj) {
         const nowStr = new Date().toISOString();
         await electronObj.dbRun(
           "UPDATE settings SET todoist_token = ?, todoist_project_id = ?, updated_at = ?, sync_status = 'pending_update' WHERE user_id = ?",
           [todoistToken, todoistProjectId, nowStr, contextUser.id]
         );
-        
-        setConnectedIds(prev => Array.from(new Set([...prev, 'todoist'])));
-        setIntegrationsList(prev => prev.map(item => {
-          if (item.id === 'todoist') {
-            return { ...item, status: 'Active', statusKey: 'integrations.status.active', accEmail: 'Compte connecté', accEmailKey: 'integrations.todoist.acc_email_connected' };
-          }
-          return item;
-        }));
-
-        alert(t('integrations.todoist.saved_success'));
-        setActiveIntegrationEditId(null);
-      } catch (err) {
-        console.error(err);
-        alert(t('integrations.todoist.error_save'));
+      } else {
+        const supabase = createClient();
+        const { error } = await supabase.from('settings').upsert({
+          user_id: contextUser.id,
+          todoist_token: todoistToken,
+          todoist_project_id: todoistProjectId,
+          updated_at: new Date().toISOString(),
+        });
+        if (error) throw new Error(error.message);
       }
+      applyConnected();
+      alert(t('integrations.todoist.saved_success'));
+      setActiveIntegrationEditId(null);
+    } catch (err) {
+      console.error(err);
+      alert(t('integrations.todoist.error_save'));
     }
   };
 
@@ -487,31 +498,44 @@ export default function IntegrationsPage() {
             }
             return item;
           }));
-          // Fetch Todoist local configurations
+          // Fetch Todoist configurations (Electron → SQLite, web → Supabase)
           const electronObj = typeof window !== 'undefined' && (window as any).electron;
+          const applyTodoistToken = (token: string, projectId: string) => {
+            setTodoistToken(token);
+            setTodoistProjectId(projectId);
+            setConnectedIds(prev => Array.from(new Set([...prev, 'todoist'])));
+            fetchTodoistProjects(token);
+            setIntegrationsList(prev => prev.map(item =>
+              item.id === 'todoist'
+                ? { ...item, status: 'Active', statusKey: 'integrations.status.active' as TranslationKey, accEmail: 'Compte connecté', accEmailKey: 'integrations.todoist.acc_email_connected' as TranslationKey }
+                : item
+            ));
+          };
           if (electronObj) {
             try {
               const dbSettings = await electronObj.dbGet(
                 "SELECT todoist_token, todoist_project_id FROM settings WHERE user_id = ? LIMIT 1",
                 [user.id]
               );
-              if (dbSettings && dbSettings.todoist_token) {
-                setConnectedIds(prev => Array.from(new Set([...prev, 'todoist'])));
-                setTodoistToken(dbSettings.todoist_token);
-                setTodoistProjectId(dbSettings.todoist_project_id || '');
-                
-                // Pre-load projects if token exists
-                fetchTodoistProjects(dbSettings.todoist_token);
-
-                setIntegrationsList(prev => prev.map(item => {
-                  if (item.id === 'todoist') {
-                    return { ...item, status: 'Active', statusKey: 'integrations.status.active' as TranslationKey, accEmail: 'Compte connecté', accEmailKey: 'integrations.todoist.acc_email_connected' as TranslationKey };
-                  }
-                  return item;
-                }));
+              if (dbSettings?.todoist_token) {
+                applyTodoistToken(dbSettings.todoist_token, dbSettings.todoist_project_id || '');
               }
             } catch (dbErr) {
               console.error("Error loading Todoist local settings on mount:", dbErr);
+            }
+          } else {
+            try {
+              const supabase = createClient();
+              const { data: dbSettings } = await supabase
+                .from('settings')
+                .select('todoist_token, todoist_project_id')
+                .eq('user_id', user.id)
+                .maybeSingle();
+              if (dbSettings?.todoist_token) {
+                applyTodoistToken(dbSettings.todoist_token, dbSettings.todoist_project_id || '');
+              }
+            } catch (dbErr) {
+              console.error("Error loading Todoist Supabase settings on mount:", dbErr);
             }
           }
         }
@@ -808,20 +832,26 @@ export default function IntegrationsPage() {
                                 onClick={async () => {
                                   if (!contextUser) return;
                                   const electronObj = typeof window !== 'undefined' && (window as any).electron;
-                                  if (electronObj) {
-                                    await electronObj.dbRun("UPDATE settings SET todoist_token = NULL, todoist_project_id = NULL WHERE user_id = ?", [contextUser.id]);
+                                  try {
+                                    if (electronObj) {
+                                      await electronObj.dbRun("UPDATE settings SET todoist_token = NULL, todoist_project_id = NULL WHERE user_id = ?", [contextUser.id]);
+                                    } else {
+                                      const supabase = createClient();
+                                      await supabase.from('settings').upsert({ user_id: contextUser.id, todoist_token: null, todoist_project_id: null, updated_at: new Date().toISOString() });
+                                    }
                                     setConnectedIds(prev => prev.filter(id => id !== 'todoist'));
                                     setTodoistToken('');
                                     setTodoistProjectId('');
                                     setTodoistProjects([]);
-                                    setIntegrationsList(prev => prev.map(item => {
-                                      if (item.id === 'todoist') {
-                                        return { ...item, status: 'Inactive', statusKey: 'integrations.status.inactive', accEmail: 'Todoist Task Connector', accEmailKey: 'integrations.todoist.acc_email' };
-                                      }
-                                      return item;
-                                    }));
+                                    setIntegrationsList(prev => prev.map(item =>
+                                      item.id === 'todoist'
+                                        ? { ...item, status: 'Inactive', statusKey: 'integrations.status.inactive' as TranslationKey, accEmail: 'Todoist Task Connector', accEmailKey: 'integrations.todoist.acc_email' as TranslationKey }
+                                        : item
+                                    ));
                                     alert(t('integrations.todoist.disconnected_success'));
                                     setActiveIntegrationEditId(null);
+                                  } catch (err) {
+                                    console.error(err);
                                   }
                                 }}
                                 className="h-8 border border-red-200 text-red-600 bg-red-50 hover:bg-red-100 font-bold text-xs rounded-lg px-4"

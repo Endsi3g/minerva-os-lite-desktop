@@ -10,9 +10,10 @@ export async function POST(req: NextRequest) {
     }
 
     const smtpHost = process.env.SUPPORT_SMTP_HOST;
-    const smtpPort = parseInt(process.env.SUPPORT_SMTP_PORT || '587');
+    const smtpPort = parseInt(process.env.SUPPORT_SMTP_PORT || '465');
     const smtpUser = process.env.SUPPORT_SMTP_USER;
     const smtpPass = process.env.SUPPORT_SMTP_PASS;
+    const fromEmail = process.env.SUPPORT_SMTP_FROM || 'onboarding@resend.dev';
     const toEmail = process.env.SUPPORT_EMAIL || 'support@minervaos.com';
 
     if (!smtpHost || !smtpUser || !smtpPass) {
@@ -29,8 +30,8 @@ export async function POST(req: NextRequest) {
     });
 
     await transporter.sendMail({
-      from: `"Minerva OS Support Form" <${smtpUser}>`,
-      replyTo: email ? `${name} <${email}>` : smtpUser,
+      from: `"Minerva OS Support" <${fromEmail}>`,
+      replyTo: email ? `${name} <${email}>` : fromEmail,
       to: toEmail,
       subject: `[Support] ${subject}`,
       text: `De : ${name}\nEmail : ${email || 'non fourni'}\n\n${message}`,
