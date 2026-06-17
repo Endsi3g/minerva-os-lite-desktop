@@ -18,6 +18,87 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v2.15.0',
+      date: '2026-06-16',
+      titleKey: 'changelog.v2_15_0_title',
+      descKey: 'changelog.v2_15_0_desc',
+      highlights: [
+        'New /assistant page: full AI assistant chat with stats dashboard (active leads, pending tasks, projects, weekly leads).',
+        'Animated TreeMascot SVG component — idle / thinking / writing / searching states — integrated in /chat and /assistant.',
+        'Analytics dashboard now aggregates real lead and task data instead of seeded random mock values.',
+        'Contact support form at /help with a dedicated /api/support/contact SMTP route (nodemailer, graceful no-SMTP fallback).'
+      ]
+    },
+    {
+      version: 'v2.14.0',
+      date: '2026-06-16',
+      titleKey: 'changelog.v2_14_0_title',
+      descKey: 'changelog.v2_14_0_desc',
+      highlights: [
+        'Integrations detail panel: intermediate view with description and "How to use" steps before opening the full editor.',
+        'JSON manifest import for custom integrations — validates name, description, authType, endpoints.',
+        'Agent store detail pages (/agents/[id]) with star ratings, written reviews, and creator info.',
+        'Creator profile pages (/agents/creator/[userId]) showing bio, role, company, and published agents.'
+      ]
+    },
+    {
+      version: 'v2.13.0',
+      date: '2026-06-16',
+      titleKey: 'changelog.v2_13_0_title',
+      descKey: 'changelog.v2_13_0_desc',
+      highlights: [
+        'Unified today agenda card merging tasks due today and leads with nextActionDate = today (done/snooze actions).',
+        'Projects card on the Today dashboard showing active projects with direct links.',
+        'Apify Google Maps Scraper added as a fourth prospecting source with min-rating and "exclude existing CRM leads" filters.',
+        'Agent auto-launch via ?launch=id URL param — navigates directly into the agent workspace.'
+      ]
+    },
+    {
+      version: 'v2.12.3',
+      date: '2026-06-16',
+      titleKey: 'changelog.v2_12_3_title',
+      descKey: 'changelog.v2_12_3_desc',
+      highlights: [
+        'Sidebar project items are now clickable links routing to /projects/[id].',
+        'Dedicated project detail page listing associated library files and chat threads.'
+      ]
+    },
+    {
+      version: 'v2.12.2',
+      date: '2026-06-16',
+      titleKey: 'changelog.v2_12_2_title',
+      descKey: 'changelog.v2_12_2_desc',
+      highlights: [
+        'Real-time team chat powered by Supabase Realtime — messages delivered instantly across sessions.',
+        'New messaging tab in /team with per-workspace message history and dual-store SQLite/Supabase persistence.'
+      ]
+    },
+    {
+      version: 'v2.12.1',
+      date: '2026-06-16',
+      titleKey: 'changelog.v2_12_1_title',
+      descKey: 'changelog.v2_12_1_desc',
+      highlights: [
+        'Fully functional notification system with a bell icon in the topbar and unread count badge.',
+        'Vercel Cron routes for overdue task/lead reminders, daily digest, and weekly performance report.',
+        'Notifications delivered in real time via Supabase Realtime subscription filtered by user and workspace.'
+      ]
+    },
+    {
+      version: 'v2.12.0',
+      date: '2026-06-16',
+      titleKey: 'changelog.v2_12_0_title',
+      descKey: 'changelog.v2_12_0_desc',
+      highlights: [
+        'System dark theme enabled (enableSystem: true) and full dark-mode token sweep across all pages.',
+        'Complete i18n coverage for /integrations and /agents — all visible strings use t() keys in fr/en/de.',
+        'User avatar (base64 upload) and bio field in profile settings, stored in SQLite and Supabase.',
+        'Leads enriched with website, Google Maps rating, review count, photos, social links, and team member assignment.',
+        'Dedicated /leads/new creation page replacing the previous modal sheet.',
+        'New /services page: CRUD catalog of offered services/audits, linked from the lead detail view.'
+      ]
+    },
+    {
       version: 'v2.11.1',
       date: '2026-06-16',
       titleKey: 'changelog.v2_11_1_title',
