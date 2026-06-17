@@ -1,6 +1,4 @@
-import dynamic from 'next/dynamic';
-
-const MapRoot = dynamic(() => import('./_components/map-root'), { ssr: false });
+import { MapLoader } from './_components/map-loader';
 
 export const metadata = {
   title: 'Carte des leads - Minerva Reach',
@@ -8,5 +6,5 @@ export const metadata = {
 };
 
 export default function MapPage() {
-  return <MapRoot />;
+  return <MapLoader />;
 }
