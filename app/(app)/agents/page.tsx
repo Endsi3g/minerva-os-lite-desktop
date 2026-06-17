@@ -25,7 +25,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { MinervaIcon } from '@/components/icons';
-import { getAgents, addAgent, deleteAgent, Agent } from '@/lib/onboarding-store';
+import { getAgents, deleteAgent, Agent } from '@/lib/onboarding-store';
 import { useReach } from '@/lib/reach-context';
 import { createClient } from '@/lib/supabase/client';
 import { useLanguage } from '@/lib/language-context';
@@ -92,12 +92,6 @@ export default function AgentsPage() {
   const [userAgents, setUserAgents] = useState<Agent[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'popular' | 'newest'>('popular');
-  const [showCreateModal, setShowCreateModal] = useState(false);
-
-  // Create agent form states
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [iconType, setIconType] = useState<'minerva' | 'gradient' | 'black'>('minerva');
 
   // Interactive Workspace states
   const [activeAgentId, setActiveAgentId] = useState<string | null>(null);
@@ -159,22 +153,6 @@ export default function AgentsPage() {
       router.replace('/agents');
     }
   }, [searchParams, router]);
-
-  const handleCreateAgent = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!name.trim()) return;
-
-    addAgent({
-      name: name.trim(),
-      description: description.trim(),
-      iconType
-    }, userName);
-
-    setName('');
-    setDescription('');
-    setIconType('minerva');
-    setShowCreateModal(false);
-  };
 
   type ListedAgent = {
     id: string;
@@ -793,14 +771,15 @@ export default function AgentsPage() {
                 <span>{t('agents.store_btn')}</span>
               </Button>
             </Link>
-            <Button
-              onClick={() => setShowCreateModal(true)}
-              size="sm"
-              className="h-8.5 text-xs font-bold bg-[#059669] hover:bg-[#047857] text-white flex items-center gap-1.5 rounded-md px-3.5"
-            >
-              <Plus className="h-3.5 w-3.5" />
-              <span>{t('agents.create_btn')}</span>
-            </Button>
+            <Link href="/agents/new">
+              <Button
+                size="sm"
+                className="h-8.5 text-xs font-bold bg-[#059669] hover:bg-[#047857] text-white flex items-center gap-1.5 rounded-md px-3.5"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                <span>{t('agents.create_btn')}</span>
+              </Button>
+            </Link>
           </div>
         </div>
 
@@ -965,98 +944,6 @@ export default function AgentsPage() {
         </div>
 
       </div>
-
-      {/* Create Agent Modal Overlay */}
-      {showCreateModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-xs">
-          <form onSubmit={handleCreateAgent} className="w-full max-w-sm bg-white border border-[#e6e5e0] rounded-xl p-5 space-y-4 shadow-xl animate-in fade-in zoom-in-95 duration-150">
-            <div className="space-y-1">
-              <h3 className="text-sm font-bold text-[#26251e] text-left">{t('agents.modal.title')}</h3>
-              <p className="text-xs text-[#7a7a76] text-left">{t('agents.modal.subtitle')}</p>
-            </div>
-
-            <div className="space-y-1 text-left">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">{t('agents.modal.name_label')}</label>
-              <input
-                type="text"
-                required
-                placeholder={t('agents.modal.name_placeholder')}
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="w-full text-xs p-2.5 bg-white border border-[#e6e5e0] rounded-md focus:outline-none focus:ring-1 focus:ring-[#059669]"
-              />
-            </div>
-
-            <div className="space-y-1 text-left">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">{t('agents.modal.desc_label')}</label>
-              <textarea
-                placeholder={t('agents.modal.desc_placeholder')}
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                className="w-full text-xs p-2.5 bg-white border border-[#e6e5e0] rounded-md focus:outline-none focus:ring-1 focus:ring-[#059669] h-20 resize-none"
-              />
-            </div>
-
-            <div className="space-y-1 text-left">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76] block mb-1.5">{t('agents.modal.icon_style_label')}</label>
-              <div className="flex gap-4">
-                <label className="flex items-center gap-1.5 cursor-pointer text-xs">
-                  <input
-                    type="radio"
-                    name="iconType"
-                    checked={iconType === 'minerva'}
-                    onChange={() => setIconType('minerva')}
-                    className="text-[#059669] focus:ring-[#059669]"
-                  />
-                  <span>{t('agents.modal.icon_minerva')}</span>
-                </label>
-                <label className="flex items-center gap-1.5 cursor-pointer text-xs">
-                  <input
-                    type="radio"
-                    name="iconType"
-                    checked={iconType === 'gradient'}
-                    onChange={() => setIconType('gradient')}
-                    className="text-[#059669] focus:ring-[#059669]"
-                  />
-                  <span>{t('agents.modal.icon_gradient')}</span>
-                </label>
-                <label className="flex items-center gap-1.5 cursor-pointer text-xs">
-                  <input
-                    type="radio"
-                    name="iconType"
-                    checked={iconType === 'black'}
-                    onChange={() => setIconType('black')}
-                    className="text-[#059669] focus:ring-[#059669]"
-                  />
-                  <span>{t('agents.modal.icon_black')}</span>
-                </label>
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-2 text-xs pt-2 border-t border-[#e5e5e0]/60">
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => {
-                  setName('');
-                  setDescription('');
-                  setIconType('minerva');
-                  setShowCreateModal(false);
-                }}
-                className="h-8 text-[#555552]"
-              >
-                {t('agents.modal.cancel_btn')}
-              </Button>
-              <Button
-                type="submit"
-                className="h-8 bg-[#059669] hover:bg-[#047857] text-white font-bold"
-              >
-                {t('agents.modal.create_btn')}
-              </Button>
-            </div>
-          </form>
-        </div>
-      )}
 
     </div>
   );

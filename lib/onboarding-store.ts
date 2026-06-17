@@ -153,6 +153,15 @@ export const addImportedIntegration = (integration: ImportedIntegration) => {
 };
 
 // Agents store
+export interface AgentInputField {
+  id: string;
+  name: string;
+  type: 'text' | 'multiline' | 'number' | 'select' | 'file';
+  placeholder?: string;
+  options?: string[];
+  required?: boolean;
+}
+
 export interface Agent {
   id: string;
   name: string;
@@ -161,6 +170,17 @@ export interface Agent {
   owner: string;
   chatsCount: string;
   lastUsed: string;
+  instructions?: string;
+  inputType?: 'prompt' | 'form';
+  inputFields?: AgentInputField[];
+  conversationStarters?: string[];
+  knowledgeFiles?: { name: string; size: number; type: string }[];
+  actions?: { id: string; enabled: boolean }[];
+  model?: string;
+  creativity?: number;
+  labels?: string[];
+  avatarEmoji?: string;
+  avatarBase64?: string;
 }
 
 export const getAgents = (): Agent[] => {
@@ -219,4 +239,13 @@ export const deleteAgent = (id: string) => {
   const agents = getAgents();
   const filtered = agents.filter(a => a.id !== id);
   setStorageItem('minerva_agents', JSON.stringify(filtered));
+};
+
+export const updateAgent = (id: string, updates: Partial<Agent>) => {
+  const agents = getAgents();
+  const idx = agents.findIndex(a => a.id === id);
+  if (idx !== -1) {
+    agents[idx] = { ...agents[idx], ...updates };
+    setStorageItem('minerva_agents', JSON.stringify(agents));
+  }
 };
