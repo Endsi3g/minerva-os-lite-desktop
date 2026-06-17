@@ -34,6 +34,26 @@ export interface Lead {
   assignedTo?: string;
   latitude?: number;
   longitude?: number;
+  // Qualification & enrichissement (v2.34.0)
+  fitScore?: number;
+  intentScore?: number;
+  bantBudget?: boolean;
+  bantAuthority?: boolean;
+  bantNeed?: boolean;
+  bantTiming?: boolean;
+  suggestedEmails?: string[];
+  decisionMakerName?: string;
+  decisionMakerRole?: string;
+  // Deal (v2.36.0)
+  dealAmount?: number;
+  dealProbability?: number;
+  dealClosingDate?: string;
+  // Campaign link (v2.35.0)
+  campaignId?: string;
+  // Activity tracking
+  lastActivityAt?: string;
+  replyDetectedAt?: string;
+  gmailThreadId?: string;
 }
 
 export interface Task {

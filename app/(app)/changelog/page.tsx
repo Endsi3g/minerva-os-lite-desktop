@@ -18,6 +18,19 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v2.34.0',
+      date: '2026-06-17',
+      titleKey: 'changelog.v2_34_0_title',
+      descKey: 'changelog.v2_34_0_desc',
+      highlights: [
+        'Panneau "Qualification" sur chaque fiche lead : Fit score (maturité digitale) + Intent score (signal d\'intérêt), barre de progression colorée.',
+        'Checkboxes BANT (Budget / Authority / Need / Timing) sauvegardées en temps réel.',
+        'Champ "Décideur" (nom + rôle) avec suggestion IA via Claude Haiku.',
+        'Emails suggérés heuristiques (info@, contact@, prénom.nom@) cliquables pour définir l\'email principal.',
+        'API /api/enrich-contact + extension schéma DB (campagnes, activités, goals, scrape_jobs anticipés).',
+      ],
+    },
+    {
       version: 'v2.33.0',
       date: '2026-06-17',
       titleKey: 'changelog.v2_33_0_title',

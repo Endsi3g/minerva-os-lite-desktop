@@ -216,6 +216,97 @@ function initDb() {
     )`);
     db.run(`CREATE INDEX IF NOT EXISTS idx_agent_reviews_agent_id ON agent_reviews(agent_id)`);
 
+    // v2.34.0 — qualification, enrichissement, deal, campaign migrations
+    db.run(`ALTER TABLE leads ADD COLUMN fit_score INTEGER DEFAULT NULL`, () => {});
+    db.run(`ALTER TABLE leads ADD COLUMN intent_score INTEGER DEFAULT NULL`, () => {});
+    db.run(`ALTER TABLE leads ADD COLUMN bant_budget INTEGER DEFAULT 0`, () => {});
+    db.run(`ALTER TABLE leads ADD COLUMN bant_authority INTEGER DEFAULT 0`, () => {});
+    db.run(`ALTER TABLE leads ADD COLUMN bant_need INTEGER DEFAULT 0`, () => {});
+    db.run(`ALTER TABLE leads ADD COLUMN bant_timing INTEGER DEFAULT 0`, () => {});
+    db.run(`ALTER TABLE leads ADD COLUMN suggested_emails TEXT DEFAULT NULL`, () => {});
+    db.run(`ALTER TABLE leads ADD COLUMN decision_maker_name TEXT DEFAULT NULL`, () => {});
+    db.run(`ALTER TABLE leads ADD COLUMN decision_maker_role TEXT DEFAULT NULL`, () => {});
+    db.run(`ALTER TABLE leads ADD COLUMN deal_amount REAL DEFAULT NULL`, () => {});
+    db.run(`ALTER TABLE leads ADD COLUMN deal_probability INTEGER DEFAULT NULL`, () => {});
+    db.run(`ALTER TABLE leads ADD COLUMN deal_closing_date TEXT DEFAULT NULL`, () => {});
+    db.run(`ALTER TABLE leads ADD COLUMN campaign_id TEXT DEFAULT NULL`, () => {});
+    db.run(`ALTER TABLE leads ADD COLUMN last_activity_at TEXT DEFAULT NULL`, () => {});
+    db.run(`ALTER TABLE leads ADD COLUMN reply_detected_at TEXT DEFAULT NULL`, () => {});
+    db.run(`ALTER TABLE leads ADD COLUMN gmail_thread_id TEXT DEFAULT NULL`, () => {});
+    db.run(`ALTER TABLE leads ADD COLUMN latitude REAL DEFAULT NULL`, () => {});
+    db.run(`ALTER TABLE leads ADD COLUMN longitude REAL DEFAULT NULL`, () => {});
+
+    // v2.35.0 — campaigns table
+    db.run(`CREATE TABLE IF NOT EXISTS campaigns (
+      id TEXT PRIMARY KEY,
+      workspace_id TEXT,
+      user_id TEXT,
+      name TEXT,
+      description TEXT,
+      niches TEXT,
+      cities TEXT,
+      status TEXT DEFAULT 'active',
+      start_date TEXT,
+      end_date TEXT,
+      created_at TEXT,
+      updated_at TEXT,
+      sync_status TEXT DEFAULT 'synced'
+    )`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_campaigns_workspace_id ON campaigns(workspace_id)`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_campaigns_status ON campaigns(status)`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_leads_campaign_id ON leads(campaign_id)`);
+
+    // v2.37.0 — activities table
+    db.run(`CREATE TABLE IF NOT EXISTS activities (
+      id TEXT PRIMARY KEY,
+      workspace_id TEXT,
+      user_id TEXT,
+      lead_id TEXT,
+      campaign_id TEXT,
+      type TEXT,
+      title TEXT,
+      body TEXT,
+      metadata TEXT,
+      created_at TEXT
+    )`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_activities_workspace_id ON activities(workspace_id)`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_activities_lead_id ON activities(lead_id)`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_activities_campaign_id ON activities(campaign_id)`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_activities_created_at ON activities(created_at)`);
+
+    // v2.40.0 — goals table
+    db.run(`CREATE TABLE IF NOT EXISTS goals (
+      id TEXT PRIMARY KEY,
+      workspace_id TEXT,
+      user_id TEXT,
+      metric TEXT,
+      target INTEGER,
+      period TEXT DEFAULT 'month',
+      created_at TEXT,
+      updated_at TEXT
+    )`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_goals_user_id ON goals(user_id)`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_goals_workspace_id ON goals(workspace_id)`);
+
+    // v2.41.0 — scrape_jobs table
+    db.run(`CREATE TABLE IF NOT EXISTS scrape_jobs (
+      id TEXT PRIMARY KEY,
+      workspace_id TEXT,
+      user_id TEXT,
+      campaign_id TEXT,
+      niches TEXT,
+      cities TEXT,
+      radius INTEGER DEFAULT 10,
+      sources TEXT,
+      status TEXT DEFAULT 'pending',
+      results_count INTEGER DEFAULT 0,
+      error TEXT,
+      created_at TEXT,
+      completed_at TEXT
+    )`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_scrape_jobs_workspace_id ON scrape_jobs(workspace_id)`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_scrape_jobs_status ON scrape_jobs(status)`);
+
     // Indexes to avoid full table scans during sync
     db.run(`CREATE INDEX IF NOT EXISTS idx_leads_user_id ON leads(user_id)`);
     db.run(`CREATE INDEX IF NOT EXISTS idx_leads_sync_status ON leads(sync_status)`);

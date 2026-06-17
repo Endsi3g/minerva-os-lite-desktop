@@ -41,6 +41,10 @@ import {
   FileSignature,
   X,
   FileOutput,
+  Zap,
+  Target,
+  DollarSign,
+  TrendingUp,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
@@ -132,6 +136,167 @@ function InlineTextEdit({ value, onSave, placeholder = 'Non spécifié', classNa
 function getExportFileName(businessName: string): string {
   const cleanName = businessName.replace(/[^a-zA-Z0-9]/g, '_');
   return `Audit_${cleanName}_${Date.now()}.txt`;
+}
+
+function ScoreBar({ value, color, label }: { value: number; color: string; label: string }) {
+  return (
+    <div className="space-y-1">
+      <div className="flex items-center justify-between">
+        <span className="text-[10px] text-muted-foreground">{label}</span>
+        <span className="text-[10px] font-bold" style={{ color }}>{value}/100</span>
+      </div>
+      <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+        <div className="h-full rounded-full transition-all" style={{ width: `${value}%`, backgroundColor: color }} />
+      </div>
+    </div>
+  );
+}
+
+function BantCheckbox({ label, checked, onChange }: { label: string; checked: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <button
+      onClick={() => onChange(!checked)}
+      className={cn(
+        'flex items-center gap-1.5 px-2 py-1 rounded-md text-[10px] font-bold border transition-all',
+        checked
+          ? 'bg-[#059669]/10 border-[#059669]/30 text-[#059669]'
+          : 'bg-muted/30 border-border text-muted-foreground'
+      )}
+    >
+      <span className={cn('w-3 h-3 rounded-sm border flex items-center justify-center shrink-0', checked ? 'bg-[#059669] border-[#059669]' : 'border-muted-foreground/40')}>
+        {checked && <Check className="w-2 h-2 text-white" />}
+      </span>
+      {label}
+    </button>
+  );
+}
+
+function QualificationPanel({ lead, onSave }: { lead: Lead; onSave: (fields: Partial<Lead>) => void }) {
+  const [loading, setLoading] = useState(false);
+  const [dmName, setDmName] = useState(lead.decisionMakerName || '');
+  const [dmRole, setDmRole] = useState(lead.decisionMakerRole || '');
+
+  useEffect(() => { setDmName(lead.decisionMakerName || ''); }, [lead.decisionMakerName]);
+  useEffect(() => { setDmRole(lead.decisionMakerRole || ''); }, [lead.decisionMakerRole]);
+
+  const handleEnrich = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/enrich-contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          website: lead.website,
+          businessName: lead.businessName,
+          contactName: lead.contactName,
+          city: lead.city,
+          niche: lead.niche,
+          rating: lead.rating,
+          reviewsCount: lead.reviewsCount,
+          socialLinks: lead.socialLinks,
+          photos: lead.photos,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const fields: Partial<Lead> = {
+          fitScore: data.fitScore,
+          intentScore: data.intentScore,
+        };
+        if (data.suggestedEmails?.length) fields.suggestedEmails = data.suggestedEmails;
+        if (data.decisionMakerName) { fields.decisionMakerName = data.decisionMakerName; setDmName(data.decisionMakerName); }
+        if (data.decisionMakerRole) { fields.decisionMakerRole = data.decisionMakerRole; setDmRole(data.decisionMakerRole); }
+        onSave(fields);
+      }
+    } catch {}
+    setLoading(false);
+  };
+
+  const hasData = lead.fitScore !== undefined || lead.intentScore !== undefined || lead.suggestedEmails?.length || lead.decisionMakerName;
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Qualification</h4>
+        <button
+          onClick={handleEnrich}
+          disabled={loading}
+          className="flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold border border-[#059669]/30 text-[#059669] bg-[#059669]/5 hover:bg-[#059669]/10 transition-colors disabled:opacity-50"
+        >
+          {loading ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : <Zap className="w-2.5 h-2.5" />}
+          Enrichir
+        </button>
+      </div>
+
+      {/* Scores */}
+      {(lead.fitScore !== undefined || lead.intentScore !== undefined) && (
+        <div className="space-y-2">
+          {lead.fitScore !== undefined && <ScoreBar value={lead.fitScore} color="#059669" label="Fit digital" />}
+          {lead.intentScore !== undefined && <ScoreBar value={lead.intentScore} color="#3b82f6" label="Signal d'intérêt" />}
+        </div>
+      )}
+
+      {/* BANT */}
+      <div>
+        <p className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground/60 mb-1.5">BANT</p>
+        <div className="flex flex-wrap gap-1.5">
+          <BantCheckbox label="Budget" checked={!!lead.bantBudget} onChange={(v) => onSave({ bantBudget: v })} />
+          <BantCheckbox label="Authority" checked={!!lead.bantAuthority} onChange={(v) => onSave({ bantAuthority: v })} />
+          <BantCheckbox label="Need" checked={!!lead.bantNeed} onChange={(v) => onSave({ bantNeed: v })} />
+          <BantCheckbox label="Timing" checked={!!lead.bantTiming} onChange={(v) => onSave({ bantTiming: v })} />
+        </div>
+      </div>
+
+      {/* Decision maker */}
+      <div className="space-y-1.5">
+        <p className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground/60">Décideur</p>
+        <div className="flex gap-1.5">
+          <input
+            value={dmName}
+            onChange={(e) => setDmName(e.target.value)}
+            onBlur={() => { if (dmName !== lead.decisionMakerName) onSave({ decisionMakerName: dmName }); }}
+            placeholder="Prénom Nom"
+            className="flex-1 h-6 text-[10px] px-2 border border-border rounded bg-background focus:outline-none focus:ring-1 focus:ring-[#059669]/40"
+          />
+          <input
+            value={dmRole}
+            onChange={(e) => setDmRole(e.target.value)}
+            onBlur={() => { if (dmRole !== lead.decisionMakerRole) onSave({ decisionMakerRole: dmRole }); }}
+            placeholder="Propriétaire"
+            className="w-24 h-6 text-[10px] px-2 border border-border rounded bg-background focus:outline-none focus:ring-1 focus:ring-[#059669]/40"
+          />
+        </div>
+      </div>
+
+      {/* Suggested emails */}
+      {lead.suggestedEmails && lead.suggestedEmails.length > 0 && (
+        <div className="space-y-1.5">
+          <p className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground/60">Emails suggérés</p>
+          <div className="flex flex-wrap gap-1">
+            {lead.suggestedEmails.map((email) => (
+              <button
+                key={email}
+                onClick={() => onSave({ contactEmail: email })}
+                title="Définir comme email principal"
+                className={cn(
+                  'text-[9px] px-1.5 py-0.5 rounded border font-mono transition-all',
+                  lead.contactEmail === email
+                    ? 'bg-[#059669]/10 border-[#059669]/30 text-[#059669]'
+                    : 'bg-muted/30 border-border text-muted-foreground hover:border-[#059669]/30 hover:text-foreground'
+                )}
+              >
+                {email}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {!hasData && (
+        <p className="text-[10px] text-muted-foreground italic">Cliquez sur "Enrichir" pour calculer les scores et suggérer des emails.</p>
+      )}
+    </div>
+  );
 }
 
 export function LeadDetailClient({ id }: { id: string }) {
@@ -1158,6 +1323,9 @@ export function LeadDetailClient({ id }: { id: string }) {
                 </div>
               );
             })()}
+
+            {/* Qualification & Enrichissement */}
+            <QualificationPanel lead={lead} onSave={(fields) => updateLead(lead.id, fields)} />
 
             <div>
               <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-4">{t('lead.properties_title')}</h4>

@@ -141,6 +141,22 @@ interface DbLead {
   assigned_to?: string | null;
   latitude?: number | null;
   longitude?: number | null;
+  fit_score?: number | null;
+  intent_score?: number | null;
+  bant_budget?: number | null;
+  bant_authority?: number | null;
+  bant_need?: number | null;
+  bant_timing?: number | null;
+  suggested_emails?: string | null;
+  decision_maker_name?: string | null;
+  decision_maker_role?: string | null;
+  deal_amount?: number | null;
+  deal_probability?: number | null;
+  deal_closing_date?: string | null;
+  campaign_id?: string | null;
+  last_activity_at?: string | null;
+  reply_detected_at?: string | null;
+  gmail_thread_id?: string | null;
 }
 
 interface DbNote {
@@ -201,6 +217,22 @@ function mapDbLeadToUi(dbLead: DbLead, dbNotes: DbNote[] = []): Lead {
     assignedTo: dbLead.assigned_to || undefined,
     latitude: dbLead.latitude ?? undefined,
     longitude: dbLead.longitude ?? undefined,
+    fitScore: dbLead.fit_score ?? undefined,
+    intentScore: dbLead.intent_score ?? undefined,
+    bantBudget: Boolean(dbLead.bant_budget),
+    bantAuthority: Boolean(dbLead.bant_authority),
+    bantNeed: Boolean(dbLead.bant_need),
+    bantTiming: Boolean(dbLead.bant_timing),
+    suggestedEmails: (() => { try { return dbLead.suggested_emails ? JSON.parse(dbLead.suggested_emails as string) : undefined; } catch { return undefined; } })(),
+    decisionMakerName: dbLead.decision_maker_name || undefined,
+    decisionMakerRole: dbLead.decision_maker_role || undefined,
+    dealAmount: dbLead.deal_amount ?? undefined,
+    dealProbability: dbLead.deal_probability ?? undefined,
+    dealClosingDate: dbLead.deal_closing_date || undefined,
+    campaignId: dbLead.campaign_id || undefined,
+    lastActivityAt: dbLead.last_activity_at || undefined,
+    replyDetectedAt: dbLead.reply_detected_at || undefined,
+    gmailThreadId: dbLead.gmail_thread_id || undefined,
     notes: dbNotes
       .filter(n => n.lead_id === dbLead.id)
       .map(n => ({
@@ -1322,6 +1354,22 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
         if (fields.photos !== undefined) { dbFields.push("photos = ?"); params.push(fields.photos ? JSON.stringify(fields.photos) : null); }
         if (fields.socialLinks !== undefined) { dbFields.push("social_links = ?"); params.push(fields.socialLinks ? JSON.stringify(fields.socialLinks) : null); }
         if (fields.assignedTo !== undefined) { dbFields.push("assigned_to = ?"); params.push(fields.assignedTo || null); }
+        if (fields.fitScore !== undefined) { dbFields.push("fit_score = ?"); params.push(fields.fitScore ?? null); }
+        if (fields.intentScore !== undefined) { dbFields.push("intent_score = ?"); params.push(fields.intentScore ?? null); }
+        if (fields.bantBudget !== undefined) { dbFields.push("bant_budget = ?"); params.push(fields.bantBudget ? 1 : 0); }
+        if (fields.bantAuthority !== undefined) { dbFields.push("bant_authority = ?"); params.push(fields.bantAuthority ? 1 : 0); }
+        if (fields.bantNeed !== undefined) { dbFields.push("bant_need = ?"); params.push(fields.bantNeed ? 1 : 0); }
+        if (fields.bantTiming !== undefined) { dbFields.push("bant_timing = ?"); params.push(fields.bantTiming ? 1 : 0); }
+        if (fields.suggestedEmails !== undefined) { dbFields.push("suggested_emails = ?"); params.push(fields.suggestedEmails ? JSON.stringify(fields.suggestedEmails) : null); }
+        if (fields.decisionMakerName !== undefined) { dbFields.push("decision_maker_name = ?"); params.push(fields.decisionMakerName || null); }
+        if (fields.decisionMakerRole !== undefined) { dbFields.push("decision_maker_role = ?"); params.push(fields.decisionMakerRole || null); }
+        if (fields.dealAmount !== undefined) { dbFields.push("deal_amount = ?"); params.push(fields.dealAmount ?? null); }
+        if (fields.dealProbability !== undefined) { dbFields.push("deal_probability = ?"); params.push(fields.dealProbability ?? null); }
+        if (fields.dealClosingDate !== undefined) { dbFields.push("deal_closing_date = ?"); params.push(fields.dealClosingDate || null); }
+        if (fields.campaignId !== undefined) { dbFields.push("campaign_id = ?"); params.push(fields.campaignId || null); }
+        if (fields.lastActivityAt !== undefined) { dbFields.push("last_activity_at = ?"); params.push(fields.lastActivityAt || null); }
+        if (fields.replyDetectedAt !== undefined) { dbFields.push("reply_detected_at = ?"); params.push(fields.replyDetectedAt || null); }
+        if (fields.gmailThreadId !== undefined) { dbFields.push("gmail_thread_id = ?"); params.push(fields.gmailThreadId || null); }
 
         if (dbFields.length > 0) {
           dbFields.push("updated_at = ?");
@@ -1362,6 +1410,22 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
     if (fields.photos !== undefined) dbFields.photos = (fields.photos ?? null) as any;
     if (fields.socialLinks !== undefined) dbFields.social_links = (fields.socialLinks ?? null) as any;
     if (fields.assignedTo !== undefined) dbFields.assigned_to = fields.assignedTo || null;
+    if (fields.fitScore !== undefined) dbFields.fit_score = fields.fitScore ?? null;
+    if (fields.intentScore !== undefined) dbFields.intent_score = fields.intentScore ?? null;
+    if (fields.bantBudget !== undefined) dbFields.bant_budget = fields.bantBudget;
+    if (fields.bantAuthority !== undefined) dbFields.bant_authority = fields.bantAuthority;
+    if (fields.bantNeed !== undefined) dbFields.bant_need = fields.bantNeed;
+    if (fields.bantTiming !== undefined) dbFields.bant_timing = fields.bantTiming;
+    if (fields.suggestedEmails !== undefined) dbFields.suggested_emails = (fields.suggestedEmails ?? null) as any;
+    if (fields.decisionMakerName !== undefined) dbFields.decision_maker_name = fields.decisionMakerName || null;
+    if (fields.decisionMakerRole !== undefined) dbFields.decision_maker_role = fields.decisionMakerRole || null;
+    if (fields.dealAmount !== undefined) dbFields.deal_amount = fields.dealAmount ?? null;
+    if (fields.dealProbability !== undefined) dbFields.deal_probability = fields.dealProbability ?? null;
+    if (fields.dealClosingDate !== undefined) dbFields.deal_closing_date = fields.dealClosingDate || null;
+    if (fields.campaignId !== undefined) dbFields.campaign_id = fields.campaignId || null;
+    if (fields.lastActivityAt !== undefined) dbFields.last_activity_at = fields.lastActivityAt || null;
+    if (fields.replyDetectedAt !== undefined) dbFields.reply_detected_at = fields.replyDetectedAt || null;
+    if (fields.gmailThreadId !== undefined) dbFields.gmail_thread_id = fields.gmailThreadId || null;
 
     try {
       const { error } = await supabase
