@@ -7,8 +7,8 @@ const projectRoot = path.resolve(__dirname, '..');
 const gitHooksDir = path.join(projectRoot, '.git', 'hooks');
 
 if (!fs.existsSync(gitHooksDir)) {
-  console.error("❌ Dossier .git/hooks introuvable. Êtes-vous dans un dépôt git ?");
-  process.exit(1);
+  console.log("ℹ️  Dossier .git/hooks introuvable (CI/CD ou non-git). Hooks ignorés.");
+  process.exit(0);
 }
 
 // Ensure the helper shell script is executable
