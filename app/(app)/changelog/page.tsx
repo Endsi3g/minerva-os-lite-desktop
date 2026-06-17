@@ -18,6 +18,18 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v2.32.0',
+      date: '2026-06-17',
+      titleKey: 'changelog.v2_32_0_title',
+      descKey: 'changelog.v2_32_0_desc',
+      highlights: [
+        'Assistant IA : persistance localStorage des messages (rechargement de page conserve l\'historique).',
+        'Bouton "Effacer" (Trash2) affiché dans le header quand une conversation est en cours.',
+        'Quick prompts contextuels en français (relance, pipeline, email, analyse hebdo).',
+        'TreeMascot : états idle/thinking/writing/searching pilotés par le streaming IA.',
+      ],
+    },
+    {
       version: 'v2.31.0',
       date: '2026-06-17',
       titleKey: 'changelog.v2_31_0_title',

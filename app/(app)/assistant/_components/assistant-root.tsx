@@ -12,9 +12,9 @@ import {
   Target,
   CheckSquare,
   FolderOpen,
-  MessageSquare,
   TrendingUp,
   Sparkles,
+  Trash2,
 } from 'lucide-react';
 
 interface Message {
@@ -41,7 +41,15 @@ function StatCard({ icon: Icon, label, value, color }: { icon: React.ElementType
 export function AssistantRoot() {
   const { leads, tasks, projects } = useReach();
 
-  const [messages, setMessages] = useState<Message[]>([]);
+  const STORAGE_KEY = 'minerva_assistant_messages';
+
+  const [messages, setMessages] = useState<Message[]>(() => {
+    if (typeof window === 'undefined') return [];
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      return stored ? JSON.parse(stored) : [];
+    } catch { return []; }
+  });
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [mascotState, setMascotState] = useState<MascotState>('idle');
@@ -71,11 +79,21 @@ export function AssistantRoot() {
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (typeof window !== 'undefined') {
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(messages)); } catch {}
+    }
   }, [messages]);
 
   useEffect(() => {
     setMascotState(isLoading ? 'thinking' : 'idle');
   }, [isLoading]);
+
+  const handleClearChat = () => {
+    setMessages([]);
+    if (typeof window !== 'undefined') {
+      try { localStorage.removeItem(STORAGE_KEY); } catch {}
+    }
+  };
 
   const handleSend = async () => {
     const trimmed = input.trim();
@@ -146,17 +164,30 @@ export function AssistantRoot() {
         <div className="max-w-4xl mx-auto p-6 space-y-8">
 
           {/* Header */}
-          <div className="flex items-center gap-4">
-            <TreeMascot state={mascotState} size={64} />
-            <div>
-              <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-                <Brain className="w-6 h-6 text-primary" />
-                Assistante Minerva
-              </h1>
-              <p className="text-sm text-muted-foreground mt-0.5">
-                Votre copilote IA pour la prospection et la relation client.
-              </p>
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <TreeMascot state={mascotState} size={64} />
+              <div>
+                <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
+                  <Brain className="w-6 h-6 text-primary" />
+                  Assistante Minerva
+                </h1>
+                <p className="text-sm text-muted-foreground mt-0.5">
+                  Votre copilote IA pour la prospection et la relation client.
+                </p>
+              </div>
             </div>
+            {messages.length > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleClearChat}
+                className="text-xs text-muted-foreground hover:text-destructive gap-1.5 shrink-0"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                Effacer
+              </Button>
+            )}
           </div>
 
           {/* Stats grid */}
