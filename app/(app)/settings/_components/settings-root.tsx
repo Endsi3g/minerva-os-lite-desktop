@@ -10,6 +10,17 @@ import { SettingsAppearanceSection } from './settings-appearance-section';
 import { SettingsIntegrationsSection } from './settings-integrations-section';
 import { SettingsPreferencesSection, PreferencesData } from './settings-preferences-section';
 import { SettingsApiKeysSection } from './settings-api-keys-section';
+import { SettingsCustomInstructionsSection, CustomInstructionsData } from './settings-custom-instructions-section';
+import { SettingsSecuritySection } from './settings-security-section';
+import { SettingsWorkspaceOverviewSection } from './settings-workspace-overview-section';
+import { SettingsWorkspaceGeneralSection } from './settings-workspace-general-section';
+import { SettingsBillingSection } from './settings-billing-section';
+import { SettingsModelsSection, ModelsData } from './settings-models-section';
+import { SettingsCustomizationsSection, CustomizationsData } from './settings-customizations-section';
+import { SettingsWorkspaceApiSection } from './settings-workspace-api-section';
+import { SettingsMembersSection } from './settings-members-section';
+import { SettingsGroupsSection } from './settings-groups-section';
+import { SettingsRolesSection } from './settings-roles-section';
 import { Locale } from '@/lib/translations';
 import { createClient } from '@/lib/supabase/client';
 import { getApiUrl } from '@/lib/api-helper';
@@ -44,7 +55,6 @@ interface AiData {
   autoInsights: boolean;
   autoFollowUps: boolean;
   aiProvider: 'anthropic' | 'openrouter' | 'groq' | 'together';
-  // Never the raw key — only a masked display value fetched from /api/settings/ai-keys.
   openrouterKeyMasked: string | null;
   groqKeyMasked: string | null;
   togetherKeyMasked: string | null;
@@ -63,6 +73,12 @@ interface AppearanceData {
   theme: 'system' | 'light' | 'dark';
 }
 
+interface WorkspaceGeneralData {
+  workspaceName: string;
+  companyDescription: string;
+  workspaceIconBase64: string;
+}
+
 interface AppSettings {
   profile: ProfileData;
   prospecting: ProspectingData;
@@ -70,56 +86,78 @@ interface AppSettings {
   notifications: NotificationsData;
   appearance: AppearanceData;
   preferences: PreferencesData;
+  customInstructions: CustomInstructionsData;
+  models: ModelsData;
+  customizations: CustomizationsData;
+  workspaceGeneral: WorkspaceGeneralData;
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
   profile: {
-    firstName: "Uprising",
-    lastName: "Studio",
-    email: "contact@uprising.studio",
-    phone: "+1 (514) 123-4567",
-    language: "fr",
-    timezone: "America/Montreal",
-    bio: "",
-    avatarBase64: ""
+    firstName: 'Uprising',
+    lastName: 'Studio',
+    email: 'contact@uprising.studio',
+    phone: '+1 (514) 123-4567',
+    language: 'fr',
+    timezone: 'America/Montreal',
+    bio: '',
+    avatarBase64: '',
   },
   prospecting: {
-    niches: ["Boulangerie / Artisanat", "Automobile", "Restauration", "Coiffure & Beauté"],
-    cities: ["Montréal", "Laval"],
-    services: {
-      website: true,
-      seoAudit: true,
-      acquisition: false
-    },
-    language: "both"
+    niches: ['Boulangerie / Artisanat', 'Automobile', 'Restauration', 'Coiffure & Beauté'],
+    cities: ['Montréal', 'Laval'],
+    services: { website: true, seoAudit: true, acquisition: false },
+    language: 'both',
   },
   ai: {
-    tone: "casual",
-    customization: "medium",
+    tone: 'casual',
+    customization: 'medium',
     autoInsights: true,
     autoFollowUps: false,
-    aiProvider: "anthropic",
+    aiProvider: 'anthropic',
     openrouterKeyMasked: null,
     groqKeyMasked: null,
     togetherKeyMasked: null,
-    aiModel: "meta-llama/llama-3-8b-instruct:free"
+    aiModel: 'meta-llama/llama-3-8b-instruct:free',
   },
   notifications: {
     reminderOverdue: true,
     dailyDigest: true,
     weeklyReport: false,
-    digestTime: "20:00"
+    digestTime: '20:00',
   },
   appearance: {
-    density: "comfortable",
-    theme: "system"
+    density: 'comfortable',
+    theme: 'system',
   },
   preferences: {
-    defaultModel: "None",
-    defaultImageModel: "None",
-    chatCapabilities: ["web_search", "image_generation", "data_analyst", "canvas"],
-    language: "fr"
-  }
+    defaultModel: 'None',
+    defaultImageModel: 'None',
+    chatCapabilities: ['web_search', 'image_generation', 'data_analyst', 'canvas'],
+    language: 'fr',
+  },
+  customInstructions: {
+    active: true,
+    aboutYou: '',
+    modelInstructions: '',
+  },
+  models: {
+    defaultChatModel: '',
+    defaultImageModel: '',
+  },
+  customizations: {
+    customColor: '#f54e00',
+    backgroundImageBase64: '',
+    showWorkspaceLogo: true,
+    hideModelLogo: false,
+    chatDisclaimer: '',
+    infoBoxes: [],
+  },
+  workspaceGeneral: {
+    workspaceName: '',
+    companyDescription: '',
+    workspaceIconBase64: '',
+  },
 };
 
 export function SettingsRoot() {
@@ -127,7 +165,6 @@ export function SettingsRoot() {
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
   const [savingSection, setSavingSection] = useState<Record<string, boolean>>({});
 
-  // Load settings on mount
   useEffect(() => {
     const fetchDbSettings = async () => {
       try {
@@ -141,7 +178,8 @@ export function SettingsRoot() {
             .maybeSingle();
 
           if (dbSettings) {
-            setSettings({
+            setSettings((prev) => ({
+              ...prev,
               profile: {
                 firstName: dbSettings.full_name || '',
                 lastName: dbSettings.last_name || '',
@@ -150,13 +188,13 @@ export function SettingsRoot() {
                 language: dbSettings.language || 'fr',
                 timezone: dbSettings.timezone || 'Europe/Paris',
                 bio: dbSettings.bio || '',
-                avatarBase64: dbSettings.avatar_base64 || ''
+                avatarBase64: dbSettings.avatar_base64 || '',
               },
               prospecting: {
                 niches: dbSettings.niches || [],
                 cities: dbSettings.cities || [],
                 services: { website: true, seoAudit: true, acquisition: false },
-                language: 'both'
+                language: 'both',
               },
               ai: {
                 tone: dbSettings.ai_tone === 'Direct & Closer' ? 'professional' : dbSettings.ai_tone === 'Storytelling' ? 'storytelling' : 'casual',
@@ -167,25 +205,35 @@ export function SettingsRoot() {
                 openrouterKeyMasked: null,
                 groqKeyMasked: null,
                 togetherKeyMasked: null,
-                aiModel: dbSettings.ai_model || 'meta-llama/llama-3-8b-instruct:free'
+                aiModel: dbSettings.ai_model || 'meta-llama/llama-3-8b-instruct:free',
               },
               notifications: {
                 reminderOverdue: true,
                 dailyDigest: true,
                 weeklyReport: false,
-                digestTime: '20:00'
+                digestTime: '20:00',
               },
               appearance: {
                 density: 'comfortable',
-                theme: ((typeof window !== 'undefined' && localStorage.getItem('theme')) as AppearanceData['theme']) || 'system'
+                theme: ((typeof window !== 'undefined' && localStorage.getItem('theme')) as AppearanceData['theme']) || 'system',
               },
               preferences: {
                 defaultModel: dbSettings.default_model || 'None',
                 defaultImageModel: dbSettings.default_image_model || 'None',
                 chatCapabilities: dbSettings.chat_capabilities || ['web_search', 'image_generation', 'data_analyst', 'canvas'],
-                language: (dbSettings.language as Locale) || 'fr'
-              }
-            });
+                language: (dbSettings.language as Locale) || 'fr',
+              },
+              customInstructions: {
+                active: dbSettings.custom_instructions_enabled ?? true,
+                aboutYou: dbSettings.custom_instructions_about || '',
+                modelInstructions: dbSettings.custom_instructions_model || '',
+              },
+              workspaceGeneral: {
+                workspaceName: dbSettings.workspace_name || dbSettings.company_name || '',
+                companyDescription: dbSettings.company_description || '',
+                workspaceIconBase64: dbSettings.workspace_icon_base64 || '',
+              },
+            }));
             return;
           }
         }
@@ -193,19 +241,16 @@ export function SettingsRoot() {
         console.error('Failed to fetch settings from Supabase', e);
       }
 
-      // LocalStorage fallback
       const stored = localStorage.getItem('minerva_reach_settings');
       if (stored) {
         try {
           const parsed = JSON.parse(stored);
-          // Scrub raw key values that may have been cached by older app versions —
-          // this cache must never carry secrets, only masked display strings.
           if (parsed?.ai) {
             delete parsed.ai.openrouterKey;
             delete parsed.ai.groqKey;
             delete parsed.ai.togetherKey;
           }
-          setSettings(parsed);
+          setSettings((prev) => ({ ...prev, ...parsed }));
           localStorage.setItem('minerva_reach_settings', JSON.stringify(parsed));
         } catch (e) {
           console.error('Failed to parse settings', e);
@@ -239,7 +284,6 @@ export function SettingsRoot() {
     return () => clearTimeout(timer);
   }, []);
 
-  // Generic updater function that triggers save indicators
   const updateSettingsSection = <K extends keyof AppSettings>(
     secKey: K,
     updates: Partial<AppSettings[K]>
@@ -248,21 +292,17 @@ export function SettingsRoot() {
       const newSectionData = { ...prev[secKey], ...updates } as AppSettings[K];
       const nextSettings = { ...prev, [secKey]: newSectionData };
       localStorage.setItem('minerva_reach_settings', JSON.stringify(nextSettings));
-      
-      // Upsert changes to Supabase in background
+
       const saveToDb = async () => {
         try {
           const supabase = createClient();
           const { data: { user } } = await supabase.auth.getUser();
           if (user) {
-            // Standard settings columns save
             const { error: baseError } = await supabase.from('settings').upsert({
               user_id: user.id,
               full_name: nextSettings.profile.firstName,
               last_name: nextSettings.profile.lastName,
               phone: nextSettings.profile.phone,
-              // The live 'settings' table has no 'email' column yet (only company_name
-              // exists), so email is persisted there until that column is migrated.
               company_name: nextSettings.profile.email,
               timezone: nextSettings.profile.timezone,
               bio: nextSettings.profile.bio,
@@ -274,9 +314,8 @@ export function SettingsRoot() {
               ai_provider: nextSettings.ai.aiProvider,
               ai_model: nextSettings.ai.aiModel,
             });
-            if (baseError) console.error("Error saving base settings:", baseError.message);
+            if (baseError) console.error('Error saving base settings:', baseError.message);
 
-            // Attempt preferences columns save (handle DDL missing column errors gracefully)
             if (secKey === 'preferences') {
               const pref = nextSettings.preferences;
               const { error: prefError } = await supabase.from('settings').upsert({
@@ -284,31 +323,48 @@ export function SettingsRoot() {
                 language: pref.language,
                 default_model: pref.defaultModel,
                 default_image_model: pref.defaultImageModel,
-                chat_capabilities: pref.chatCapabilities
+                chat_capabilities: pref.chatCapabilities,
               });
-              if (prefError) {
-                console.warn("Could not save preferences to settings table (columns might be missing):", prefError.message);
-              }
+              if (prefError) console.warn('Could not save preferences:', prefError.message);
+            }
+
+            if (secKey === 'customInstructions') {
+              const ci = nextSettings.customInstructions;
+              const { error: ciError } = await supabase.from('settings').upsert({
+                user_id: user.id,
+                custom_instructions_enabled: ci.active,
+                custom_instructions_about: ci.aboutYou,
+                custom_instructions_model: ci.modelInstructions,
+              });
+              if (ciError) console.warn('Could not save custom instructions:', ciError.message);
+            }
+
+            if (secKey === 'workspaceGeneral') {
+              const wg = nextSettings.workspaceGeneral;
+              const { error: wgError } = await supabase.from('settings').upsert({
+                user_id: user.id,
+                workspace_name: wg.workspaceName,
+                company_description: wg.companyDescription,
+                workspace_icon_base64: wg.workspaceIconBase64,
+              });
+              if (wgError) console.warn('Could not save workspace general:', wgError.message);
             }
           }
         } catch (err) {
-          console.error("Error upserting settings to Supabase:", err);
+          console.error('Error upserting settings to Supabase:', err);
         }
       };
       saveToDb();
-      
+
       return nextSettings;
     });
 
-    // Trigger visual saving indicator for this section
     setSavingSection((prev) => ({ ...prev, [secKey]: true }));
     setTimeout(() => {
       setSavingSection((prev) => ({ ...prev, [secKey]: false }));
     }, 800);
   };
 
-  // AI provider keys never flow through updateSettingsSection — they're written
-  // via a dedicated server route that returns only a masked value, never the raw key.
   const FIELD_BY_PROVIDER = {
     openrouter: 'openrouter_key',
     groq: 'groq_api_key',
@@ -341,14 +397,12 @@ export function SettingsRoot() {
 
   return (
     <div className="flex h-full min-h-0 bg-background overflow-hidden">
-      {/* Sidebar nav selector */}
       <SettingsNav section={section} onSectionChange={setSection} />
 
-      {/* Main configuration settings layout panel */}
       <div className="flex-1 overflow-y-auto min-h-0 scrollbar-thin">
         <div className={cn(
-          "mx-auto flex flex-col gap-6 p-6",
-          section === 'analytics' ? "max-w-5xl" : "max-w-2xl"
+          'mx-auto flex flex-col gap-6 p-6',
+          section === 'analytics' ? 'max-w-5xl' : 'max-w-2xl'
         )}>
           {section === 'profile' && (
             <SettingsProfileSection
@@ -359,21 +413,19 @@ export function SettingsRoot() {
             />
           )}
 
-          {section === 'prospecting' && (
-            <SettingsProspectingSection
-              data={settings.prospecting}
-              onChange={(updates) => updateSettingsSection('prospecting', updates)}
-              isSaving={!!savingSection.prospecting}
+          {section === 'preferences' && (
+            <SettingsPreferencesSection
+              data={settings.preferences}
+              onChange={(updates) => updateSettingsSection('preferences', updates)}
+              isSaving={!!savingSection.preferences}
             />
           )}
 
-          {section === 'ai' && (
-            <SettingsAiSection
-              data={settings.ai}
-              onChange={(updates) => updateSettingsSection('ai', updates)}
-              onSaveKey={saveAiKey}
-              onDeleteKey={deleteAiKey}
-              isSaving={!!savingSection.ai}
+          {section === 'custom_instructions' && (
+            <SettingsCustomInstructionsSection
+              data={settings.customInstructions}
+              onChange={(updates) => updateSettingsSection('customInstructions', updates)}
+              isSaving={!!savingSection.customInstructions}
             />
           )}
 
@@ -393,11 +445,59 @@ export function SettingsRoot() {
             />
           )}
 
-          {section === 'preferences' && (
-            <SettingsPreferencesSection
-              data={settings.preferences}
-              onChange={(updates) => updateSettingsSection('preferences', updates)}
-              isSaving={!!savingSection.preferences}
+          {section === 'security' && <SettingsSecuritySection />}
+
+          {section === 'workspace_overview' && <SettingsWorkspaceOverviewSection />}
+
+          {section === 'workspace_general' && (
+            <SettingsWorkspaceGeneralSection
+              data={settings.workspaceGeneral}
+              onChange={(updates) => updateSettingsSection('workspaceGeneral', updates)}
+              isSaving={!!savingSection.workspaceGeneral}
+            />
+          )}
+
+          {section === 'billing' && <SettingsBillingSection />}
+
+          {section === 'models' && (
+            <SettingsModelsSection
+              data={settings.models}
+              onChange={(updates) => updateSettingsSection('models', updates)}
+              isSaving={!!savingSection.models}
+            />
+          )}
+
+          {section === 'customizations' && (
+            <SettingsCustomizationsSection
+              data={settings.customizations}
+              onChange={(updates) => updateSettingsSection('customizations', updates)}
+              isSaving={!!savingSection.customizations}
+            />
+          )}
+
+          {section === 'workspace_api' && <SettingsWorkspaceApiSection />}
+
+          {section === 'members' && <SettingsMembersSection />}
+
+          {section === 'groups' && <SettingsGroupsSection />}
+
+          {section === 'roles' && <SettingsRolesSection />}
+
+          {section === 'prospecting' && (
+            <SettingsProspectingSection
+              data={settings.prospecting}
+              onChange={(updates) => updateSettingsSection('prospecting', updates)}
+              isSaving={!!savingSection.prospecting}
+            />
+          )}
+
+          {section === 'ai' && (
+            <SettingsAiSection
+              data={settings.ai}
+              onChange={(updates) => updateSettingsSection('ai', updates)}
+              onSaveKey={saveAiKey}
+              onDeleteKey={deleteAiKey}
+              isSaving={!!savingSection.ai}
             />
           )}
 
@@ -414,13 +514,9 @@ export function SettingsRoot() {
             />
           )}
 
-          {section === 'integrations' && (
-            <SettingsIntegrationsSection />
-          )}
+          {section === 'integrations' && <SettingsIntegrationsSection />}
 
-          {section === 'analytics' && (
-            <AnalyticsDashboard />
-          )}
+          {section === 'analytics' && <AnalyticsDashboard />}
         </div>
       </div>
     </div>

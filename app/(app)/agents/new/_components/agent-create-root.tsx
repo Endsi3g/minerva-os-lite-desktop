@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import {
   Plus, X, Sparkles, Globe, Camera, BarChart3, MapPin, Star,
   MessageSquare, GripVertical, Upload, FileText, Check, Loader2,
-  Share2, Mic, Smile, AlignLeft, Wand2, File
+  Share2, Mic, Smile, AlignLeft, Wand2, File, ChevronDown
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { MinervaIcon } from '@/components/icons';
@@ -44,6 +44,20 @@ const FIELD_TYPE_LABELS: Record<AgentInputField['type'], string> = {
   number: 'NOMBRE',
   select: 'SÉLECTION',
   file: 'FICHIER',
+  email: 'EMAIL',
+  checkbox: 'CHECKBOX',
+  date: 'DATE',
+};
+
+const FIELD_TYPE_COLORS: Record<AgentInputField['type'], string> = {
+  text: 'bg-[#f7f7f4] text-[#555552] border-[#e5e5e0]',
+  multiline: 'bg-blue-50 text-blue-600 border-blue-200',
+  number: 'bg-orange-50 text-orange-600 border-orange-200',
+  select: 'bg-purple-50 text-purple-600 border-purple-200',
+  file: 'bg-emerald-50 text-emerald-600 border-emerald-200',
+  email: 'bg-teal-50 text-teal-600 border-teal-200',
+  checkbox: 'bg-yellow-50 text-yellow-700 border-yellow-200',
+  date: 'bg-red-50 text-red-500 border-red-200',
 };
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -77,6 +91,12 @@ export function AgentCreateRoot() {
   const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const [ownerName, setOwnerName] = useState('Moi');
+
+  // Add field modal state
+  const [addFieldModalOpen, setAddFieldModalOpen] = useState(false);
+  const [newFieldDraft, setNewFieldDraft] = useState<{
+    name: string; type: AgentInputField['type']; description: string; required: boolean;
+  }>({ name: '', type: 'text', description: '', required: true });
 
   useEffect(() => {
     const load = async () => {
@@ -125,12 +145,21 @@ export function AgentCreateRoot() {
   }, [newStarter]);
 
   const handleAddField = useCallback(() => {
+    setNewFieldDraft({ name: '', type: 'text', description: '', required: true });
+    setAddFieldModalOpen(true);
+  }, []);
+
+  const handleConfirmAddField = useCallback(() => {
+    if (!newFieldDraft.name.trim()) return;
     setInputFields(prev => [...prev, {
       id: 'field-' + Date.now(),
-      name: '',
-      type: 'text',
+      name: newFieldDraft.name.trim(),
+      type: newFieldDraft.type,
+      description: newFieldDraft.description.trim() || undefined,
+      required: newFieldDraft.required,
     }]);
-  }, []);
+    setAddFieldModalOpen(false);
+  }, [newFieldDraft]);
 
   const handleUpdateField = useCallback((id: string, key: keyof AgentInputField, value: string) => {
     setInputFields(prev => prev.map(f => f.id === id ? { ...f, [key]: value } : f));
@@ -460,22 +489,16 @@ export function AgentCreateRoot() {
                     {inputFields.map((field) => (
                       <div key={field.id} className="flex items-center gap-2.5 group border border-[#e5e5e0] rounded-lg px-3 py-2.5 bg-white hover:border-[#059669]/30 transition-colors">
                         <GripVertical className="w-4 h-4 text-[#d0cfc9] shrink-0 cursor-grab" />
-                        <input
-                          type="text"
-                          placeholder="Nom du champ"
-                          value={field.name}
-                          onChange={(e) => handleUpdateField(field.id, 'name', e.target.value)}
-                          className="flex-1 text-xs bg-transparent focus:outline-none text-[#26251e] placeholder:text-[#c5c5c0]"
-                        />
-                        <select
-                          value={field.type}
-                          onChange={(e) => handleUpdateField(field.id, 'type', e.target.value as AgentInputField['type'])}
-                          className="text-[9px] font-bold uppercase tracking-wide bg-[#f7f7f4] border border-[#e5e5e0] rounded-md px-2 py-1 text-[#26251e] focus:outline-none focus:ring-1 focus:ring-[#059669] cursor-pointer shrink-0"
-                        >
-                          {Object.entries(FIELD_TYPE_LABELS).map(([val, label]) => (
-                            <option key={val} value={val}>{label}</option>
-                          ))}
-                        </select>
+                        <div className="flex-1 min-w-0">
+                          <span className="text-xs font-semibold text-[#26251e]">{field.name}</span>
+                          {field.description && (
+                            <p className="text-[10px] text-[#7a7a76] truncate">{field.description}</p>
+                          )}
+                        </div>
+                        <span className={`text-[9px] font-bold uppercase tracking-wide px-2 py-0.5 rounded border shrink-0 ${FIELD_TYPE_COLORS[field.type]}`}>
+                          {FIELD_TYPE_LABELS[field.type]}
+                        </span>
+                        {field.required && <span className="text-[10px] text-[#059669] font-bold shrink-0">*</span>}
                         <button
                           onClick={() => handleRemoveField(field.id)}
                           className="p-1 text-[#c5c5c0] hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all shrink-0"
@@ -759,12 +782,23 @@ export function AgentCreateRoot() {
                             {field.type === 'multiline' ? (
                               <div className="h-10 border border-[#e5e5e0] rounded-md bg-[#f7f7f4]/40" />
                             ) : field.type === 'file' ? (
-                              <div className="h-7 border border-dashed border-[#e5e5e0] rounded-md flex items-center justify-center">
-                                <span className="text-[9px] text-[#7a7a76]">Choisir un fichier</span>
+                              <div className="h-7 border border-dashed border-[#e5e5e0] rounded-md flex items-center justify-center gap-1">
+                                <Upload className="w-3 h-3 text-[#7a7a76]" />
+                                <span className="text-[9px] text-[#7a7a76]">Joindre</span>
                               </div>
                             ) : field.type === 'select' ? (
-                              <div className="h-7 border border-[#e5e5e0] rounded-md bg-[#f7f7f4]/40 flex items-center justify-end px-2">
-                                <Sparkles className="w-3 h-3 text-[#c5c5c0]" />
+                              <div className="h-7 border border-[#e5e5e0] rounded-md bg-[#f7f7f4]/40 flex items-center justify-between px-2">
+                                <span className="text-[9px] text-[#c5c5c0]">Sélectionner...</span>
+                                <ChevronDown className="w-3 h-3 text-[#c5c5c0]" />
+                              </div>
+                            ) : field.type === 'checkbox' ? (
+                              <div className="flex items-center gap-2 h-7">
+                                <div className="w-4 h-4 border border-[#e5e5e0] rounded bg-[#f7f7f4]/40" />
+                                <span className="text-[9px] text-[#c5c5c0]">Cocher si applicable</span>
+                              </div>
+                            ) : field.type === 'date' ? (
+                              <div className="h-7 border border-[#e5e5e0] rounded-md bg-[#f7f7f4]/40 flex items-center px-2">
+                                <span className="text-[9px] text-[#c5c5c0]">jj/mm/aaaa</span>
                               </div>
                             ) : (
                               <div className="h-7 border border-[#e5e5e0] rounded-md bg-[#f7f7f4]/40" />
@@ -832,6 +866,102 @@ export function AgentCreateRoot() {
         </div>
 
       </div>
+
+      {/* ── Add Input Field Modal ── */}
+      {addFieldModalOpen && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 backdrop-blur-xs">
+          <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl border border-[#e5e5e0] p-6 space-y-5 animate-in fade-in zoom-in-95 duration-150 mx-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-base font-bold text-[#26251e]">Ajouter un champ</h3>
+              <button
+                onClick={() => setAddFieldModalOpen(false)}
+                className="p-1.5 rounded-lg hover:bg-[#f7f7f4] text-[#7a7a76] transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Name */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-[#26251e]">Nom</label>
+              <input
+                type="text"
+                autoFocus
+                placeholder="Ex : Identifiant client, Notes d'entretien..."
+                value={newFieldDraft.name}
+                onChange={(e) => setNewFieldDraft(p => ({ ...p, name: e.target.value }))}
+                onKeyDown={(e) => e.key === 'Enter' && handleConfirmAddField()}
+                className="w-full text-sm px-3.5 py-2.5 border border-[#e5e5e0] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#059669] focus:border-[#059669] text-[#26251e] placeholder:text-[#c5c5c0] transition-colors"
+              />
+            </div>
+
+            {/* Type */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-[#26251e]">Type</label>
+              <div className="relative">
+                <select
+                  value={newFieldDraft.type}
+                  onChange={(e) => setNewFieldDraft(p => ({ ...p, type: e.target.value as AgentInputField['type'] }))}
+                  className="w-full text-sm px-3.5 py-2.5 border border-[#e5e5e0] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#059669] focus:border-[#059669] bg-white appearance-none pr-10 cursor-pointer text-[#26251e]"
+                >
+                  <option value="text">Texte</option>
+                  <option value="multiline">Texte long</option>
+                  <option value="select">Sélection</option>
+                  <option value="number">Nombre</option>
+                  <option value="email">Email</option>
+                  <option value="checkbox">Case à cocher</option>
+                  <option value="date">Date</option>
+                  <option value="file">Fichier</option>
+                </select>
+                <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#7a7a76] pointer-events-none" />
+              </div>
+            </div>
+
+            {/* Description */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-[#26251e]">
+                Description <span className="text-[#7a7a76] font-normal">(optionnel)</span>
+              </label>
+              <input
+                type="text"
+                placeholder="Expliquez à quoi sert ce champ ou comment il doit être rempli."
+                value={newFieldDraft.description}
+                onChange={(e) => setNewFieldDraft(p => ({ ...p, description: e.target.value }))}
+                className="w-full text-sm px-3.5 py-2.5 border border-[#e5e5e0] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#059669] focus:border-[#059669] text-[#26251e] placeholder:text-[#c5c5c0] transition-colors"
+              />
+            </div>
+
+            {/* Required */}
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={newFieldDraft.required}
+                onChange={(e) => setNewFieldDraft(p => ({ ...p, required: e.target.checked }))}
+                className="w-4 h-4 accent-[#059669] rounded"
+              />
+              <span className="text-sm text-[#26251e] font-medium">Obligatoire</span>
+            </label>
+
+            {/* Actions */}
+            <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-[#e5e5e0]">
+              <button
+                onClick={() => setAddFieldModalOpen(false)}
+                className="px-4 py-2 text-sm text-[#7a7a76] hover:text-[#26251e] transition-colors font-medium"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={handleConfirmAddField}
+                disabled={!newFieldDraft.name.trim()}
+                className="px-4 py-2 text-sm font-bold bg-[#059669] text-white rounded-lg hover:bg-[#047857] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                Ajouter le champ
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

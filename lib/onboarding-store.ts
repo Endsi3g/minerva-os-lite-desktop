@@ -156,7 +156,8 @@ export const addImportedIntegration = (integration: ImportedIntegration) => {
 export interface AgentInputField {
   id: string;
   name: string;
-  type: 'text' | 'multiline' | 'number' | 'select' | 'file';
+  type: 'text' | 'multiline' | 'number' | 'select' | 'file' | 'email' | 'checkbox' | 'date';
+  description?: string;
   placeholder?: string;
   options?: string[];
   required?: boolean;

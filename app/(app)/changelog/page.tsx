@@ -18,6 +18,21 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v2.20.0',
+      date: '2026-06-17',
+      titleKey: 'changelog.v2_20_0_title',
+      descKey: 'changelog.v2_20_0_desc',
+      highlights: [
+        'Agent creation flow: "Add input field" now opens a full Langdock-style modal with 8 field types (Text, Multi-line, Number, Select, Email, Checkbox, Date, File), optional description, and required toggle.',
+        'Field type badges are color-coded per type (gray/blue/orange/purple/emerald/teal/yellow/red) in the agent creation UI.',
+        'Live preview panel updated for all 8 field types including checkbox, date picker (jj/mm/aaaa), select dropdown, and file attach button.',
+        'Settings: grouped navigation (Compte / Espace de travail / Gestion des utilisateurs / Outils) matching Langdock architecture.',
+        'New settings sections: Instructions personnalisées, Sécurité (active sessions), Vue d\'ensemble workspace, Général workspace (icon upload, danger zone), Facturation (3-plan comparison).',
+        'New settings sections: Modèles IA (default chat + image model, providers list), Personnalisations (brand color, bg image, workspace logo toggle, chat disclaimer, info boxes).',
+        'New settings sections: API workspace (cost/budget, monthly limit, workspace ID, API key management), Membres (invite + manage members table), Groupes (create/search/delete groups), Rôles (permission matrix for Member/Editor/Admin).',
+      ],
+    },
+    {
       version: 'v2.17.0',
       date: '2026-06-17',
       titleKey: 'changelog.v2_17_0_title',
