@@ -15,9 +15,10 @@ export function FollowUpListCard() {
   // Filter leads with nextActionDate <= today AND status is not Won/Lost
   const todayStr = new Date().toISOString().split('T')[0];
   const followUpLeads = leads.filter(
-    (lead) => 
-      lead.nextActionDate <= todayStr && 
-      lead.status !== 'Won' && 
+    (lead) =>
+      !!lead.nextActionDate &&
+      lead.nextActionDate <= todayStr &&
+      lead.status !== 'Won' &&
       lead.status !== 'Lost' &&
       lead.nextAction
   );

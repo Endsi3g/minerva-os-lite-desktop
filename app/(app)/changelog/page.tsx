@@ -18,6 +18,18 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v2.29.0',
+      date: '2026-06-17',
+      titleKey: 'changelog.v2_29_0_title',
+      descKey: 'changelog.v2_29_0_desc',
+      highlights: [
+        'Optimisation Supabase : 7 requêtes séquentielles → Promise.all (1 batch parallèle), 6 appels IPC Electron → Promise.all. Temps de chargement divisé par ~4.',
+        'Exposition de `user` dans ReachContext : les composants ne font plus de `auth.getUser()` individuellement — TodayTasksCard, TodayStatsCard, Integrations, Layout utilisent `useReach().user`.',
+        'Aujourd\'hui — bouton "Relance rapide" dans le tableau des prospects : génère un brouillon via /api/generate-draft et l\'affiche dans un Sheet éditable avec copie en un clic.',
+        'Fix filtre follow-up : les leads sans `nextActionDate` ne remontaient plus dans le tableau des relances (bug chaîne vide <= date).',
+      ],
+    },
+    {
       version: 'v2.28.0',
       date: '2026-06-17',
       titleKey: 'changelog.v2_28_0_title',
