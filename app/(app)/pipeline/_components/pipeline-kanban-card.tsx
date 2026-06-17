@@ -7,7 +7,7 @@ import { useReach } from '@/lib/reach-context';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight, MapPin, Calendar, X, ArrowUpRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, MapPin, Calendar, X, ArrowUpRight, DollarSign } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { getTemperatureStyle, getTemperatureLabel } from '@/lib/lead-badges';
@@ -102,6 +102,19 @@ export function PipelineKanbanCard({ lead }: PipelineKanbanCardProps) {
             </span>
           </div>
         </div>
+
+        {/* Deal info */}
+        {lead.dealAmount !== undefined && (
+          <div className="flex items-center gap-2 px-2 py-1.5 rounded border border-[#059669]/20 bg-[#059669]/5">
+            <DollarSign className="h-3 w-3 text-[#059669] shrink-0" />
+            <span className="text-[10px] font-bold text-[#059669]">
+              {lead.dealAmount.toLocaleString('fr-CA', { style: 'currency', currency: 'CAD', maximumFractionDigits: 0 })}
+            </span>
+            {lead.dealProbability !== undefined && (
+              <span className="text-[9px] text-[#7a7a76] ml-auto">{lead.dealProbability}%</span>
+            )}
+          </div>
+        )}
 
         {/* Next Action Box */}
         {lead.nextAction && (

@@ -300,7 +300,7 @@ function QualificationPanel({ lead, onSave }: { lead: Lead; onSave: (fields: Par
 }
 
 export function LeadDetailClient({ id }: { id: string }) {
-  const { leads, updateLead, addNoteToLead } = useReach();
+  const { leads, updateLead, addNoteToLead, campaigns } = useReach();
   const { t } = useLanguage();
 
   // Look up lead
@@ -1513,6 +1513,69 @@ export function LeadDetailClient({ id }: { id: string }) {
                   <p className="text-[10px] text-muted-foreground">
                     Assigné à : <span className="font-semibold text-foreground">{teamMembers.find(m => m.id === lead.assignedTo)?.full_name || teamMembers.find(m => m.id === lead.assignedTo)?.email || 'Membre'}</span>
                   </p>
+                )}
+              </div>
+
+              {/* Deal */}
+              <div className="pt-4 border-t border-border mt-4 space-y-3">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                  <DollarSign className="h-3 w-3" />
+                  Deal
+                </span>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <label className="text-[9px] uppercase tracking-wider text-muted-foreground font-bold">Montant</label>
+                    <Input
+                      type="number"
+                      value={lead.dealAmount ?? ''}
+                      onChange={(e) => updateLead(lead.id, { dealAmount: e.target.value ? Number(e.target.value) : undefined })}
+                      placeholder="0"
+                      className="h-7 text-xs bg-background"
+                      disabled={isLocked}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[9px] uppercase tracking-wider text-muted-foreground font-bold">Proba. %</label>
+                    <Input
+                      type="number"
+                      min={0}
+                      max={100}
+                      value={lead.dealProbability ?? ''}
+                      onChange={(e) => updateLead(lead.id, { dealProbability: e.target.value ? Number(e.target.value) : undefined })}
+                      placeholder="0"
+                      className="h-7 text-xs bg-background"
+                      disabled={isLocked}
+                    />
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[9px] uppercase tracking-wider text-muted-foreground font-bold">Date de closing</label>
+                  <Input
+                    type="date"
+                    value={lead.dealClosingDate || ''}
+                    onChange={(e) => updateLead(lead.id, { dealClosingDate: e.target.value || undefined })}
+                    className="h-7 text-xs bg-background"
+                    disabled={isLocked}
+                  />
+                </div>
+                {/* Campagne */}
+                {campaigns.length > 0 && (
+                  <div className="space-y-1">
+                    <label className="text-[9px] uppercase tracking-wider text-muted-foreground font-bold">Campagne</label>
+                    <Select
+                      value={lead.campaignId || '__none__'}
+                      onValueChange={(v) => updateLead(lead.id, { campaignId: v === '__none__' ? undefined : v })}
+                      disabled={isLocked}
+                    >
+                      <SelectTrigger className="h-7 w-full text-xs bg-background">
+                        <SelectValue placeholder="Aucune" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__none__" className="text-xs text-muted-foreground">Aucune campagne</SelectItem>
+                        {campaigns.map(c => <SelectItem key={c.id} value={c.id} className="text-xs">{c.name}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 )}
               </div>
 

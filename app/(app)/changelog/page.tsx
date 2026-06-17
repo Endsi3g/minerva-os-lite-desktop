@@ -18,6 +18,18 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v2.36.0',
+      date: '2026-06-17',
+      titleKey: 'changelog.v2_36_0_title',
+      descKey: 'changelog.v2_36_0_desc',
+      highlights: [
+        'Pipeline Kanban : champ deal (montant + probabilité %) affiché sur chaque carte si renseigné.',
+        'Colonne Kanban : total pipeline deal en bas de colonne si au moins un deal.',
+        'Fiche lead — section "Deal" : montant, probabilité %, date de closing éditable inline.',
+        'Fiche lead — sélecteur "Campagne" : assigne un lead à une campagne directement depuis la fiche.',
+      ],
+    },
+    {
       version: 'v2.35.0',
       date: '2026-06-17',
       titleKey: 'changelog.v2_35_0_title',

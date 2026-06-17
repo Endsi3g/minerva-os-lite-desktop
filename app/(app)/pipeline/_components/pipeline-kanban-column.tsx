@@ -69,7 +69,7 @@ export function PipelineKanbanColumn({ column, leads }: PipelineKanbanColumnProp
       </div>
 
       {/* Cards Scroll Area */}
-      <div className="flex-1 p-2.5 overflow-y-auto space-y-2.5 min-h-[400px] max-h-[calc(100vh-270px)] scrollbar-thin">
+      <div className="flex-1 p-2.5 overflow-y-auto space-y-2.5 min-h-[400px] max-h-[calc(100vh-310px)] scrollbar-thin">
         {leads.length > 0 ? (
           leads.map((lead) => (
             <PipelineKanbanCard key={lead.id} lead={lead} />
@@ -80,6 +80,18 @@ export function PipelineKanbanColumn({ column, leads }: PipelineKanbanColumnProp
           </div>
         )}
       </div>
+
+      {/* Column footer — deal total */}
+      {(() => {
+        const totalDeal = leads.reduce((sum, l) => sum + (l.dealAmount ?? 0), 0);
+        if (totalDeal === 0) return null;
+        return (
+          <div className="border-t border-border/40 px-3 py-2 bg-card/60 text-[10px] font-bold text-muted-foreground flex items-center justify-between">
+            <span>Pipeline</span>
+            <span className="text-foreground">{totalDeal.toLocaleString('fr-CA', { style: 'currency', currency: 'CAD', maximumFractionDigits: 0 })}</span>
+          </div>
+        );
+      })()}
     </div>
   );
 }
