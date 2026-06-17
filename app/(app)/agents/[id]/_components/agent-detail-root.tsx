@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { MinervaIcon } from '@/components/icons';
 import { createClient } from '@/lib/supabase/client';
+import { useReach } from '@/lib/reach-context';
 import { ArrowLeft, Play, Star, MessageSquare, User, Camera, Pencil, Check, X } from 'lucide-react';
 
 interface AgentMeta {
@@ -58,10 +59,11 @@ const BUILTIN_META: Record<string, Omit<AgentMeta, 'id'>> = {
 
 export function AgentDetailRoot({ agentId }: { agentId: string }) {
   const router = useRouter();
+  const { user } = useReach();
   const [reviews, setReviews] = useState<AgentReview[]>([]);
   const [newRating, setNewRating] = useState(5);
   const [newComment, setNewComment] = useState('');
-  const [userName, setUserName] = useState('Utilisateur');
+  const [submitting, setSubmitting] = useState(false);
   const [creatorName, setCreatorName] = useState('Minerva OS');
   const [creatorCompany, setCreatorCompany] = useState('Minerva OS Reach Lite');
   const [creatorUserId, setCreatorUserId] = useState<string | null>(null);
@@ -84,45 +86,83 @@ export function AgentDetailRoot({ agentId }: { agentId: string }) {
         isBuiltin: false,
       };
 
-  useEffect(() => {
-    // Load reviews from localStorage
+  // Load reviews from DB or localStorage
+  const loadReviews = async () => {
+    const electronObj = typeof window !== 'undefined' && (window as any).electron;
+    try {
+      if (electronObj) {
+        const rows = await electronObj.dbAll(
+          'SELECT * FROM agent_reviews WHERE agent_id = ? ORDER BY created_at DESC',
+          [agentId]
+        ) as any[];
+        if (rows && rows.length > 0) {
+          setReviews(rows.map((r: any) => ({
+            id: r.id,
+            userName: r.user_name || 'Utilisateur',
+            rating: r.rating,
+            comment: r.comment,
+            createdAt: r.created_at,
+          })));
+          return;
+        }
+      } else {
+        const supabase = createClient();
+        const { data } = await supabase
+          .from('agent_reviews')
+          .select('*')
+          .eq('agent_id', agentId)
+          .order('created_at', { ascending: false });
+        if (data && data.length > 0) {
+          setReviews(data.map((r: any) => ({
+            id: r.id,
+            userName: r.user_name || 'Utilisateur',
+            rating: r.rating,
+            comment: r.comment,
+            createdAt: r.created_at,
+          })));
+          return;
+        }
+      }
+    } catch {}
+    // Fallback: localStorage
     const stored = localStorage.getItem(`minerva_agent_reviews_${agentId}`);
     if (stored) {
       try { setReviews(JSON.parse(stored)); } catch {}
     }
+  };
 
-    // Load banner and custom description
+  useEffect(() => {
+    loadReviews();
+
+    // Load banner and custom description from localStorage
     const storedBanner = localStorage.getItem(`minerva_agent_banner_${agentId}`);
     if (storedBanner) setBannerBase64(storedBanner);
     const storedDesc = localStorage.getItem(`minerva_agent_desc_${agentId}`);
     if (storedDesc) setCustomDescription(storedDesc);
+  }, [agentId]);
 
-    // Load user + creator info
-    const loadUser = async () => {
+  // Load creator info whenever user becomes available
+  useEffect(() => {
+    if (!user) return;
+    setCreatorUserId(user.id);
+    const loadCreatorInfo = async () => {
       try {
         const supabase = createClient();
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          setCreatorUserId(user.id);
-          const { data } = await supabase
-            .from('settings')
-            .select('full_name, company_name')
-            .eq('user_id', user.id)
-            .maybeSingle();
-          if (data?.full_name) {
-            setUserName(data.full_name);
-            if (meta.isBuiltin) {
-              setCreatorName('Minerva OS');
-            } else {
-              setCreatorName(data.full_name);
-              if (data.company_name) setCreatorCompany(data.company_name);
-            }
+        const { data } = await supabase
+          .from('settings')
+          .select('full_name, company_name')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        if (data?.full_name) {
+          if (!meta.isBuiltin) {
+            setCreatorName(data.full_name);
+            if (data.company_name) setCreatorCompany(data.company_name);
           }
         }
       } catch {}
     };
-    loadUser();
-  }, [agentId]);
+    loadCreatorInfo();
+  }, [user, agentId]);
 
   const avgRating = reviews.length > 0
     ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
@@ -153,21 +193,52 @@ export function AgentDetailRoot({ agentId }: { agentId: string }) {
     setEditingDescription(false);
   };
 
-  const handleSubmitReview = (e: React.FormEvent) => {
+  const handleSubmitReview = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newComment.trim()) return;
+    setSubmitting(true);
+
+    const userName = user?.email?.split('@')[0] || 'Utilisateur';
+    const reviewId = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    const createdAt = new Date().toISOString();
+
     const review: AgentReview = {
-      id: Date.now().toString(),
+      id: reviewId,
       userName,
       rating: newRating,
       comment: newComment.trim(),
-      createdAt: new Date().toISOString(),
+      createdAt,
     };
+
+    try {
+      const electronObj = typeof window !== 'undefined' && (window as any).electron;
+      if (electronObj) {
+        await electronObj.dbRun(
+          'INSERT INTO agent_reviews (id, agent_id, user_id, user_name, rating, comment, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
+          [reviewId, agentId, user?.id || '', userName, newRating, newComment.trim(), createdAt]
+        );
+      } else {
+        const supabase = createClient();
+        await supabase.from('agent_reviews').insert({
+          id: reviewId,
+          agent_id: agentId,
+          user_id: user?.id,
+          user_name: userName,
+          rating: newRating,
+          comment: newComment.trim(),
+          created_at: createdAt,
+        });
+      }
+    } catch {
+      // Persist to localStorage as fallback
+    }
+
     const updated = [review, ...reviews];
     setReviews(updated);
     localStorage.setItem(`minerva_agent_reviews_${agentId}`, JSON.stringify(updated));
     setNewComment('');
     setNewRating(5);
+    setSubmitting(false);
   };
 
   return (
@@ -268,7 +339,7 @@ export function AgentDetailRoot({ agentId }: { agentId: string }) {
         <Link href={`/agents?launch=${agentId}`}>
           <Button className="w-full h-11 text-sm font-bold gap-2 bg-[#059669] hover:bg-[#047857] text-white">
             <Play className="w-4 h-4 fill-white" />
-            Lancer l'agent
+            Lancer l&apos;agent
           </Button>
         </Link>
 
@@ -329,15 +400,15 @@ export function AgentDetailRoot({ agentId }: { agentId: string }) {
               className="w-full text-xs p-2.5 border border-[#e6e5e0] rounded-md focus:outline-none focus:ring-1 focus:ring-[#059669] h-20 resize-none bg-[#fafaf8]"
             />
             <div className="flex justify-end">
-              <Button type="submit" size="sm" className="h-8 text-xs bg-[#059669] hover:bg-[#047857] text-white font-bold">
-                Publier
+              <Button type="submit" size="sm" disabled={submitting} className="h-8 text-xs bg-[#059669] hover:bg-[#047857] text-white font-bold">
+                {submitting ? 'Publication…' : 'Publier'}
               </Button>
             </div>
           </form>
 
           {/* Review list */}
           {reviews.length === 0 ? (
-            <p className="text-xs text-[#7a7a76] text-center py-4">Aucun avis pour l'instant. Soyez le premier !</p>
+            <p className="text-xs text-[#7a7a76] text-center py-4">Aucun avis pour l&apos;instant. Soyez le premier !</p>
           ) : (
             <div className="space-y-3">
               {reviews.map(review => (

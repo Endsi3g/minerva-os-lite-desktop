@@ -18,6 +18,18 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v2.30.0',
+      date: '2026-06-17',
+      titleKey: 'changelog.v2_30_0_title',
+      descKey: 'changelog.v2_30_0_desc',
+      highlights: [
+        'Table `agent_reviews` ajoutée à SQLite (Electron) — les avis persistent localement et sont écrits dans Supabase en mode web.',
+        'agent-detail-root : utilise `useReach().user` au lieu de `auth.getUser()` ; bouton "Publier" avec état de chargement.',
+        'creator-profile-root : utilise `useReach().user` au lieu de `auth.getUser()`.',
+        'Avis écrits dans Supabase `agent_reviews` (web) ou SQLite `agent_reviews` (Electron) avec fallback localStorage.',
+      ],
+    },
+    {
       version: 'v2.29.0',
       date: '2026-06-17',
       titleKey: 'changelog.v2_29_0_title',

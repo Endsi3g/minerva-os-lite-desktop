@@ -204,6 +204,18 @@ function initDb() {
     // v2.12.0 project migrations (safe re-run)
     db.run(`ALTER TABLE projects ADD COLUMN description TEXT`, () => {});
 
+    // v2.30.0 — Agent reviews table
+    db.run(`CREATE TABLE IF NOT EXISTS agent_reviews (
+      id TEXT PRIMARY KEY,
+      agent_id TEXT NOT NULL,
+      user_id TEXT,
+      user_name TEXT,
+      rating INTEGER NOT NULL,
+      comment TEXT NOT NULL,
+      created_at TEXT
+    )`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_agent_reviews_agent_id ON agent_reviews(agent_id)`);
+
     // Indexes to avoid full table scans during sync
     db.run(`CREATE INDEX IF NOT EXISTS idx_leads_user_id ON leads(user_id)`);
     db.run(`CREATE INDEX IF NOT EXISTS idx_leads_sync_status ON leads(sync_status)`);

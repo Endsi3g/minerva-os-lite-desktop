@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { MinervaIcon } from '@/components/icons';
 import { createClient } from '@/lib/supabase/client';
 import { getAgents } from '@/lib/onboarding-store';
+import { useReach } from '@/lib/reach-context';
 import { ArrowLeft, User } from 'lucide-react';
 
 interface CreatorData {
@@ -19,6 +20,7 @@ interface CreatorData {
 
 export function CreatorProfileRoot({ userId }: { userId: string }) {
   const router = useRouter();
+  const { user } = useReach();
   const [creator, setCreator] = useState<CreatorData | null>(null);
   const [userAgents, setUserAgents] = useState<{ id: string; name: string; description: string }[]>([]);
   const [isSelf, setIsSelf] = useState(false);
@@ -27,7 +29,6 @@ export function CreatorProfileRoot({ userId }: { userId: string }) {
     const load = async () => {
       try {
         const supabase = createClient();
-        const { data: { user } } = await supabase.auth.getUser();
 
         // Check if viewing own profile
         if (user?.id === userId) setIsSelf(true);
@@ -49,7 +50,7 @@ export function CreatorProfileRoot({ userId }: { userId: string }) {
         }
 
         // Get agents created by this user from local store (for own profile)
-        if (user?.id === userId) {
+        if (user?.id === userId || isSelf) {
           const agents = getAgents().map(a => ({
             id: a.id,
             name: a.name,
@@ -62,7 +63,7 @@ export function CreatorProfileRoot({ userId }: { userId: string }) {
       }
     };
     load();
-  }, [userId]);
+  }, [userId, user]);
 
   if (!creator) {
     return (
