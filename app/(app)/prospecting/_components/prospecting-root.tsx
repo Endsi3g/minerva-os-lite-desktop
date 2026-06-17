@@ -145,13 +145,14 @@ export function ProspectingRoot() {
         if (user) {
           const { data } = await supabase
             .from('settings')
-            .select('niches, cities, apify_api_key')
+            .select('niches, cities, apify_token')
             .eq('user_id', user.id)
             .maybeSingle();
           if (data) {
             setCities(data.cities || []);
             if (data.cities?.length > 0) setSelectedCity(data.cities[0]);
-            setApifyConfigured(!!data.apify_api_key);
+            const token = data.apify_token;
+            setApifyConfigured(!!(token && token !== 'native' && token.startsWith('apify_api_')));
           } else {
             setApifyConfigured(false);
           }

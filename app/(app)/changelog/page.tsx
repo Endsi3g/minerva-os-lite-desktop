@@ -18,6 +18,27 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v2.22.2',
+      date: '2026-06-17',
+      titleKey: 'changelog.v2_22_2_title',
+      descKey: 'changelog.v2_22_2_desc',
+      highlights: [
+        'Chat IA : OpenRouter est désormais utilisé automatiquement dès que la clé est configurée dans Paramètres — plus besoin que le flag ai_provider soit explicitement positionné sur "openrouter".',
+        'Prospection : la source Apify s\'active correctement quand la clé apify_api_... est sauvegardée dans Paramètres > Intégrations (corrige une mauvaise lecture de colonne : apify_api_key → apify_token).',
+      ],
+    },
+    {
+      version: 'v2.22.1',
+      date: '2026-06-17',
+      titleKey: 'changelog.v2_22_1_title',
+      descKey: 'changelog.v2_22_1_desc',
+      highlights: [
+        'Fix canal de présence Supabase Realtime sur la page de détail d\'un lead — erreur "cannot add presence callbacks after subscribe()" corrigée via un suffixe aléatoire par mount (React Strict Mode).',
+        'Import CSV remplacé par un vrai glisser-déposer : zone de dépôt, prévisualisation tabulaire des lignes détectées, import en lot avec barre de progression.',
+        'Page Nouveau lead : upload de logo de l\'entreprise (base64), champ téléphone, sélecteurs natifs stylisés (température, statut, membre assigné) cohérents avec le design system.',
+      ],
+    },
+    {
       version: 'v2.22.0',
       date: '2026-06-17',
       titleKey: 'changelog.v2_22_0_title',

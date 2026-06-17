@@ -5,22 +5,20 @@
 <h1 align="center">Minerva OS Reach Lite</h1>
 
 <p align="center">
-  <strong>Plateforme de prospection IA, CRM et gestion d'équipe pour agences locales</strong>
+  <strong>Système de Prospection et de Qualification de Leads Locaux de Haute Performance</strong>
 </p>
 
 <p align="center">
-  Application de bureau et web basée sur Next.js 15, Supabase, Electron et Capacitor. Prospection géolocalisée, CRM leads, chat d'équipe temps réel, agents IA, bibliothèque de contenu et analytics — déployable à 100% gratuitement.
+  Une application de bureau légère basée sur Next.js, tailwindcss, Supabase et Google APIs pour automatiser la découverte, l'audit technique SEO et l'engagement des commerces locaux.
 </p>
 
 <div align="center">
-
-[![Version](https://img.shields.io/badge/version-2.21.0-blue.svg?style=flat-square)](https://github.com/Ensieg/minerva-os-lite-desktop/releases)
-[![Node.js](https://img.shields.io/badge/node-%3E%3D20.0.0-green.svg?style=flat-square)](https://nodejs.org/)
-[![pnpm](https://img.shields.io/badge/pnpm-%3E%3D9.0.0-orange.svg?style=flat-square)](https://pnpm.io/)
-[![Next.js](https://img.shields.io/badge/next.js-15-black.svg?style=flat-square)](https://nextjs.org/)
-[![Supabase](https://img.shields.io/badge/database-supabase-3ecf8e.svg?style=flat-square)](https://supabase.com/)
-[![Electron](https://img.shields.io/badge/desktop-electron-47848f.svg?style=flat-square)](https://www.electronjs.org/)
-
+  
+  [![Node.js Version](https://img.shields.io/badge/node-%3E%3D20.0.0-blue.svg?style=flat-square)](https://nodejs.org/)
+  [![pnpm Package Manager](https://img.shields.io/badge/pnpm-%3E%3D9.0.0-orange.svg?style=flat-square)](https://pnpm.io/)
+  [![Framework Next.js](https://img.shields.io/badge/next.js-16.2.6-black.svg?style=flat-square)](https://nextjs.org/)
+  [![Database Supabase](https://img.shields.io/badge/database-supabase-emerald.svg?style=flat-square)](https://supabase.com/)
+  
 </div>
 
 ---
@@ -28,239 +26,180 @@
 ## Table des matières
 
 - [Présentation](#présentation)
-- [Fonctionnalités v2.21.0](#fonctionnalités-v2210)
+- [Fonctionnalités principales](#fonctionnalités-principales)
 - [Sécurité](#sécurité)
-- [Architecture](#architecture)
+- [Architecture du projet](#architecture-du-projet)
 - [Prérequis et configuration](#prérequis-et-configuration)
 - [Développement local](#développement-local)
-- [Déploiement](#déploiement)
-- [Feuille de route](#feuille-de-route)
+- [Validation et déploiement](#validation-et-déploiement)
 
 ---
 
 ## Présentation
 
-Minerva OS Reach Lite aide les agences et professionnels du web à identifier des commerces locaux avec des lacunes en ligne, les contacter par IA, suivre les deals dans un CRM et collaborer en équipe — tout ça depuis une seule interface.
-
-Trois modes d'exécution, même codebase :
-- **Web** — déployé sur Vercel, API routes côté serveur
-- **Desktop Electron** — export statique Next.js, base SQLite locale avec sync bidirectionnelle vers Supabase
-- **Mobile Capacitor** — iOS et Android (prochainement disponible en App Store / Play Store)
+Minerva OS Reach Lite est conçu pour aider les agences et les professionnels du web à identifier et cibler les entreprises locales présentant des lacunes de présence en ligne. Le système extrait automatiquement les profils d'établissements physiques, analyse leurs forces et faiblesses SEO, génère des messages de prospection personnalisés par intelligence artificielle et permet un envoi direct par e-mail via l'API Gmail.
 
 ---
 
-## Fonctionnalités v2.21.0
+## Fonctionnalités principales
 
-### Prospection & Leads
-- Recherche géolocalisée multicritère (Google Maps via OSM Nominatim, Yelp, PagesJaunes)
-- Carte interactive des leads par zone
-- Score de lead persisté en base de données
-- CRM complet : statut, priorité, notes, date de prochaine action, assignation à un membre d'équipe
-- Page de détail dédiée par lead (site, note Google, photos, réseaux sociaux)
-- Enrichissement automatique optionnel via Apify
-- Audit SEO instantané (HTTPS, mobile, meta tags, vitesse, tracking)
-- Pipeline Kanban + vue tableau (TanStack Table)
+### Moteur de recherche et de scraping multicritère
+- Recherche géolocalisée par secteur d'activité et par ville.
+- Extraction multi-source intégrant Google Maps (via OpenStreetMap Nominatim), Yelp et PagesJaunes.
+- Dé-duplication automatique des résultats et fusion des fiches de prospection.
 
-### IA & Chat
-- Chat IA avec streaming (cascade de fournisseurs : Groq → Together.ai → OpenRouter → Anthropic)
-- Génération de brouillons d'emails de prospection personnalisés par lead
-- Marketplace d'agents IA personnalisés avec espace de travail dédié
-- Page Intelligence : synthèses et recommandations IA sur le portefeuille de leads
+### Audit SEO technique automatisé en temps réel
+- Analyse en direct du protocole de sécurité (HTTPS).
+- Vérification de la compatibilité mobile (balise viewport).
+- Validation de la présence et de la pertinence des balises meta title et description.
+- Mesure des performances de chargement serveur.
+- Détection des scripts de suivi de trafic (Google Analytics, Facebook Pixel).
 
-### Équipe & Collaboration
-- Chat d'équipe temps réel (Supabase Realtime)
-- Avatars de profil dans les bulles de chat
-- Mentions @membre avec autocomplete
-- Invitations par email (API Admin Supabase côté serveur)
-- Rôles configurables : Administrateur, Éditeur, Lecteur
-- Système de notifications temps réel (cloche + Realtime)
-- Cron Vercel pour rappels de tâches en retard et digest quotidien
+### Rédacteur IA et engagement direct
+- Génération intelligente de brouillons de courriels de prospection (canaux Email, DM, Script).
+- Choix de tonalité (Calme et Conseil, Direct et Closer, Storytelling) via OpenRouter ou Anthropic.
+- Envoi sécurisé en un clic via l'API REST de Gmail grâce à une connexion Google OAuth native.
+- Export direct des audits et des scripts dans le Google Drive de l'utilisateur.
 
-### Bibliothèque & Contenu
-- Éditeur de texte enrichi TipTap (gras, italique, titres, listes, code)
-- Partage de documents avec lien copiable
-- Assignation de documents à des projets (sidebar)
+### Authentification & Sécurité Avancée (Nouveau)
+- **Connexion Passwordless OTP** : Authentification rapide par code unique envoyé par email.
+- **Réinitialisation de mot de passe** : Flux sécurisé avec redirection PKCE (`/api/auth/confirm-reset`).
+- **Gestion des mots de passe** : Page dédiée `/update-password` avec indicateur de force visuel et contrôles de visibilité.
+- **Formulaire de Connexion premium** : Layout moderne à 3 onglets (Connexion standard, Code OTP, Inscription).
 
-### Analytics
-- Métriques réelles (leads créés, tâches complétées, messages envoyés)
-- Heatmap d'activité quotidienne style GitHub (8starlabs, 12 mois)
-- Graphiques de tendances sur 30 jours
+### Gestion d'Équipe & Invitations (Nouveau)
+- **Système d'invitation sécurisé** : Invitation directe par email via l'API Admin de Supabase (utilisation de la clé de rôle de service `SUPABASE_SERVICE_ROLE_KEY` côté serveur).
+- **Rôles et Permissions** : Rôles configurables (Administrateur, Éditeur, Lecteur) avec politiques RLS (Row Level Security) strictes sur la base de données.
+- **Tableau de bord de l'équipe (`/team`)** : Interface premium de gestion des membres, affichage du propriétaire avec badge Couronne, modification de rôles en temps réel et suppression sécurisée des membres avec confirmation double-clic.
 
-### Paramètres & Personnalisation
-- Navigation par sections groupées style Langdock (Compte / Espace de travail / Utilisateurs / Outils)
-- Profil avec avatar (base64), bio, rôle
-- Clés API IA (OpenRouter, Groq, Together.ai) — masquées end-to-end, jamais exposées au client
-- Configuration SMTP pour envoi email sans Gmail
-- Thème clair / sombre / système
-- i18n : Français, English, Deutsch
-- Densité d'affichage : confortable / compact
+### Onboarding Interactif Premium (Nouveau)
+- **Parcours d'onboarding inspiré de Sana AI** : Assistant multi-étapes avec animations fluides de glissement directionnel (gauche/droite) et indicateur visuel de progression circulaire.
+- **Configuration intégrée** : Étapes intégrées pour le choix des forfaits (Gratuit vs Équipe) et le consentement analytique.
 
-### Get Started (Onboarding)
-- 8 tâches en français avec navigation automatique vers la bonne page au clic
-- Barre de progression temps réel
-- Système de points gamifié (XP par tâche complétée)
+### Système de Workspaces & Commutation Dynamique (Nouveau)
+- **Sélecteur de style Langdock** : Menu déroulant interactif dans la sidebar avec sous-menu volant (flyout menu) de commutation instantanée des workspaces.
+- **Partitionnement étanche des données** : Les leads, tâches, notes et suggestions d&apos;IA sont filtrés de manière transparente en fonction du workspace actif.
+- **Sécurité et RLS strictes** : Accès contrôlé via Supabase RLS autorisant uniquement les propriétaires et les membres invités actifs d&apos;un workspace à lire/écrire ses données.
+- **Gestion dédiée (`/workspaces`)** : Page d&apos;administration complète permettant de créer de nouveaux workspaces, renommer ou supprimer ceux que l&apos;on possède (avec garde-fou interdisant la suppression du dernier espace).
 
-### Desktop Electron
-- Base SQLite locale avec sync bidirectionnelle Last-Write-Wins (toutes les 5 min + on-demand)
-- Spotlight Search global (`Option+Space` / `Alt+Space`)
-- Popover barre système (tray) avec vue tâches du jour
-- Scraping de fond automatique toutes les 6 heures
-- Export PDF natif
+### Fonctionnalités Natives & Support Hors-ligne Electron (Nouveau)
+- **Stockage SQLite hors-ligne complet** : Base de données locale pour persister et modifier les prospects, les notes et les tâches sans connexion Internet.
+- **Synchronisation bidirectionnelle automatique** : Moteur de synchronisation asynchrone utilisant la politique **Last-Write-Wins** basée sur les dates `updated_at` pour résoudre les conflits avec Supabase.
+- **Planificateur de prospection persistant** : Déclenchement automatique et persistant du scraping de leads toutes les 6 heures avec notifications natives sur le système d'exploitation.
+- **Spotlight Search global** : Barre de recherche rapide de type Spotlight accessible par-dessus toutes les applications via `Option + Espace` (macOS) ou `Alt + Espace` (Windows/Linux).
+- **Popover de la barre système (`/tray`)** : Widget compact accessible depuis l'icône de la barre système, avec vérification rapide des tâches du jour et déclenchement manuel d'un scraping.
+- **Exportation PDF native enrichie** : Impression PDF native des rapports d'audits SEO sous forme hautement stylisée sans dépendance lourde tierce.
+
+### Application Mobile Capacitor (Nouveau)
+- **Pont natif unifié** (`lib/native-bridge.ts`) : accès à la caméra, aux notifications push et au stockage de préférences natif, avec repli automatique sur les API web en environnement navigateur.
+- **Synchronisation iOS et Android** via `pnpm cap:sync`, avec workflows CI/CD Fastlane pour l'automatisation des builds Android.
+
+### Prospection Avancée & Intelligence (Nouveau)
+- **Carte interactive du Québec** : visualisation géolocalisée des leads pour cibler les zones de prospection.
+- **Tableau de bord de prospection** dédié, avec score de leads persisté en base de données.
+- **Page Intelligence** : synthèses et recommandations générées par IA à partir du portefeuille de leads actif.
+- **Marketplace d'agents IA personnalisés** (`/agents`) : création et configuration d'agents IA dédiés à des tâches spécifiques.
+- **Bibliothèque de contenus** (`/library`) avec éditeur de texte enrichi basé sur TipTap.
+- **Interface de chat IA** (`/chat`) pour interagir directement avec les modèles configurés.
+- **Tableau de bord analytique** (`/analytics`) et page de facturation dédiée (`/billing`).
+- **Centre d'aide** (`/help`) avec guides pas-à-pas dédiés pour chaque fonctionnalité clé du produit.
+- **Support multi-fournisseurs IA** : OpenRouter, Anthropic, Groq et Together.ai, ainsi qu'une configuration SMTP générique pour l'envoi d'emails au-delà de Gmail.
 
 ---
 
 ## Sécurité
 
-- **Clés API IA masquées end-to-end** : les clés OpenRouter, Groq, Together.ai saisies par l'utilisateur ne sont jamais retournées en clair au navigateur ni mises en cache dans `localStorage`. Elles sont stockées chiffrées côté Supabase et gérées exclusivement via des route handlers serveur.
-- **`SUPABASE_SERVICE_ROLE_KEY` serveur uniquement** : jamais exposée au bundle client. Utilisée uniquement dans les route handlers (invitations, gestion des rôles).
-- **RLS Supabase** : toutes les tables (`leads`, `tasks`, `notes`, `settings`, `workspaces`, `team_messages`, `notifications`) protégées par Row Level Security. Un utilisateur ne peut lire/écrire que les données des workspaces dont il est membre.
-- **Routes d'administration durcies** : `app/api/team/*` valide l'appartenance au workspace avant toute mutation, en plus du RLS.
-- **Auth** : connexion par mot de passe ou OTP passwordless, réinitialisation via flux PKCE sécurisé.
-- **IPC Electron** : canal `dbRun/dbAll/dbGet` paramétré (pas de concaténation SQL), confiné à la machine locale.
+- **Masquage des clés API** : les clés des fournisseurs IA (OpenRouter, Groq, Together.ai) saisies par l'utilisateur ne sont jamais renvoyées en clair au client. Elles sont gérées exclusivement côté serveur via `app/api/settings/ai-keys`, qui ne renvoie qu'une version masquée (`sk-••••1234`) ; aucune valeur brute n'est mise en cache dans `localStorage`.
+- **Row Level Security (RLS) Supabase** : chaque table (`leads`, `tasks`, `notes`, `settings`, `workspaces`, membres d'équipe) est protégée par des politiques RLS strictes garantissant qu'un utilisateur ne peut lire ou écrire que les données des workspaces qu'il possède ou dont il est membre actif.
+- **Routes d'administration d'équipe durcies** : `app/api/team/members` et `app/api/team/invite` valident explicitement l'appartenance au workspace (propriétaire ou rôle admin) avant toute lecture ou mutation, en plus des politiques RLS.
+- **Clé de rôle de service isolée** : `SUPABASE_SERVICE_ROLE_KEY` n'est utilisée que dans les route handlers serveur (jamais exposée au bundle client) pour les opérations d'administration (invitations, gestion des rôles).
+- **Authentification** : connexion par mot de passe ou par code OTP passwordless, réinitialisation de mot de passe via un flux PKCE sécurisé.
+- **IPC SQLite (Electron)** : le canal IPC `dbRun`/`dbAll`/`dbGet` accepte des requêtes SQL paramétrées envoyées depuis le renderer. Le risque est circonscrit à la machine locale de l'utilisateur (pas d'exposition réseau) ; aucune donnée sensible distante n'est accessible par ce canal.
 
 ---
 
-## Architecture
+## Architecture du projet
 
-### Contextes d'exécution
+Le projet est structuré comme suit :
 
-```
-Web (Vercel)          → API routes Next.js côté serveur
-Electron (Desktop)    → Export statique out/, SQLite local, IPC, sync vers Supabase
-Capacitor (Mobile)    → Même export statique, APIs natives (caméra, push, prefs)
-```
-
-### Dual-Store Pattern
-
-Toutes les mutations dans `ReachContext` suivent ce pattern :
-
-```typescript
-if (window.electron) {
-  // SQLite via IPC → sync_status: 'pending_insert' → triggerSync()
-} else {
-  // Supabase createClient() directement
-}
-```
-
-### Structure des routes
-
-```
-app/
-  (app)/           ← Shell authentifié (sidebar + topbar + ReachProvider)
-    today/         ← Dashboard du jour
-    leads/         ← CRM + [id] détail + pipeline Kanban
-    prospecting/   ← Scraping géolocalisé + carte
-    chat/          ← Chat IA streaming
-    agents/        ← Marketplace agents IA
-    intelligence/  ← Synthèses IA
-    analytics/     ← Dashboard + heatmap
-    team/          ← Membres + chat temps réel
-    library/       ← Bibliothèque + éditeur TipTap
-    settings/      ← Paramètres groupés style Langdock
-    workspaces/    ← CRUD workspaces
-    integrations/  ← Connecteurs tiers
-  api/
-    chat/          ← Streaming IA (cascade Groq→Together→OpenRouter→Anthropic)
-    generate-draft/← Génération email prospection
-    scrape-maps/   ← Scraping Google Maps / OSM
-    send-email/    ← Envoi Gmail OAuth
-    export-drive/  ← Export Google Drive
-    team/          ← Invitations + membres + rôles (service_role)
-    cron/          ← Rappels tâches en retard (Vercel Cron)
-  login/           ← Auth OTP + mot de passe + inscription
-  onboarding/      ← Multi-étapes avec animations
-```
-
-### État global : ReachContext
-
-`lib/reach-context.tsx` — provider central wrappant tout le shell `(app)`. Contient : `leads`, `tasks`, `aiSuggestions`, `quickNote`, `focusItems`, `workspacesList`, `activeWorkspace`.
-
-Partitionnement par workspace : toutes les queries incluent `workspace_id = activeWorkspace.id`.
+- `/Minerva OS Lite/minerva-os-lite-desktop` : Répertoire principal de l'application Next.js.
+  - `/app` : Routage applicatif Next.js (pages de pipeline, prospection, réglages, équipe et routes API).
+  - `/components` : Composants graphiques réutilisables de l'interface utilisateur.
+  - `/lib` : Bibliothèques utilitaires, contextes React et clients de base de données.
+    - `/lib/supabase` : Helpers d'initialisation des clients Supabase (client, serveur et middleware).
+  - `/public` : Actifs statiques et images.
+  - `deploy-test.ps1` : Script de validation et de test de compilation.
+  - `supabase_schema.sql` : Schéma relationnel de la base de données.
 
 ---
 
 ## Prérequis et configuration
 
 ### Prérequis système
-- Node.js ≥ 20
-- pnpm ≥ 9
+- Node.js (version 20.0.0 ou supérieure)
+- pnpm (version 9.0.0 ou supérieure)
+- Base de données Supabase active
 
 ### Variables d'environnement
-
-Créez `.env.local` à la racine du projet :
+Créez un fichier `.env.local` dans le dossier `Minerva OS Lite/minerva-os-lite-desktop` avec les variables suivantes :
 
 ```env
+# Supabase
 NEXT_PUBLIC_SUPABASE_URL=https://votre-projet.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=votre-cle-anon
-SUPABASE_SERVICE_ROLE_KEY=votre-cle-service-role   # serveur uniquement
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=votre-cle-anon
 
+# Clé Secrète Admin Supabase (Serveur uniquement - NE JAMAIS exposer côté client)
+SUPABASE_SERVICE_ROLE_KEY=votre-cle-service-role
+
+# Google APIs (OAuth Gmail / Drive)
 GOOGLE_CLIENT_ID=votre-client-id.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=votre-client-secret
 
+# Intelligence Artificielle & Fournisseurs (clé serveur par défaut ; les utilisateurs
+# peuvent aussi configurer leurs propres clés OpenRouter, Groq et Together.ai
+# depuis /settings, stockées et masquées côté serveur — voir section Sécurité)
 ANTHROPIC_API_KEY=votre-cle-anthropic
 
-NEXT_PUBLIC_APP_URL=https://votre-domaine.com   # utilisé par Electron/Capacitor
+# URL publique de l'application, utilisée par Electron et Capacitor pour router
+# les appels vers les routes API (sans objet en mode web classique)
+NEXT_PUBLIC_APP_URL=https://votre-domaine.com
 ```
 
 ---
 
 ## Développement local
 
+Pour installer et démarrer l'application en mode de développement :
+
 ```bash
+# Aller dans le répertoire de l'application
+cd "Minerva OS Lite/minerva-os-lite-desktop"
+
 # Installer les dépendances
 pnpm install
 
-# Serveur web Next.js
-pnpm dev                  # http://localhost:3000
-
-# Electron (après pnpm dev)
-pnpm electron:dev
-
-# Vérifications
-pnpm typecheck            # TypeScript (zero erreurs requis)
-pnpm lint                 # ESLint
-pnpm format               # Prettier
+# Lancer le serveur de développement
+pnpm run dev
 ```
 
----
-
-## Déploiement
-
-Voir **[DEPLOYMENT.md](./DEPLOYMENT.md)** pour le guide complet (Supabase schema, Vercel, Google OAuth, domaine Cloudflare, Electron build, cron jobs) — **100% gratuit** pour une petite équipe.
-
-Résumé rapide :
-1. Créer un projet Supabase → exécuter le schema SQL → activer Realtime sur `team_messages` et `notifications`
-2. Importer le repo sur Vercel → configurer les variables d'environnement → déployer
-3. Mettre à jour les URLs dans Supabase Auth → Site URL + Redirect URLs
+L'application est disponible à l'adresse : `http://localhost:3000`
 
 ---
 
-## Feuille de route
+## Validation et déploiement
 
-### Planifié (non implémenté, voir planning interne)
+Avant chaque soumission, exécutez le script de validation PowerShell pour tester la compilation et la qualité du code :
 
-- **Leaderboard d'équipe** — classement gamifié basé sur le score de leads et les tâches complétées (système de points XP déjà en place, agrégation inter-membres manquante)
-- **Planification d'itinéraires** — optimisation de tournées de prospection sur la carte (Google Maps Directions API ou OSRM open-source)
-- **Scraping Apify avancé** — source d'enrichissement Apify Google Maps Scraper avec polling asynchrone du dataset
-- **Filtres prospection avancés** — rayon, note minimum, "ouvert maintenant", niveau de prix, exclusion leads déjà en CRM
-- **Persistance du chat IA en base** — remplacement du stockage localStorage actuel par des tables `chat_threads` / `chat_messages` (Supabase + SQLite)
-- **Mascotte arbre animée** — SVG animé dans le chat selon l'état (idle / réflexion / écriture / recherche web)
-- **Services / catalogue d'offres** — table `services` avec CRUD, utilisable depuis la page de détail d'un lead ("Présenter une offre")
-- **Rich text images dans l'éditeur** — TipTap Image extension pour insertion d'images dans les documents de bibliothèque
-- **iOS / Android** — publication App Store et Play Store (Capacitor build prêt, comptes développeur requis)
+```powershell
+# Exécuter le script de test à la racine ou dans le sous-dossier
+./deploy-test.ps1
+```
 
----
-
-## Fichiers clés de référence
-
-| Fichier | Rôle |
-|---|---|
-| `lib/reach-context.tsx` | État global, dual-store, mappers DB→UI |
-| `electron/database.cjs` | Schéma SQLite, `initDb()` |
-| `electron/sync.cjs` | Moteur de sync Last-Write-Wins |
-| `electron/main.cjs` | Windows Electron, IPC handlers |
-| `lib/translations.ts` | Toutes les clés i18n (fr/en/de) |
-| `app/(app)/layout.tsx` | Shell, sidebar, topbar |
-| `middleware.ts` | Auth guard + redirect onboarding |
-| `DESIGN.md` | Système de design complet |
-| `DEPLOYMENT.md` | Guide de déploiement gratuit |
+Ce script effectue automatiquement les étapes suivantes :
+1. Vérification de la disponibilité du port 3000.
+2. Nettoyage du cache de build.
+3. Validation des types TypeScript.
+4. Validation de la qualité de code via le linter.
+5. Compilation de production de l'application.
+6. Démarrage temporaire du serveur de production local et vérification de l'accès réseau.

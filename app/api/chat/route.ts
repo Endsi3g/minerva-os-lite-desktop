@@ -41,12 +41,23 @@ export async function POST(req: NextRequest) {
       .eq('user_id', user.id)
       .maybeSingle();
 
-    const provider = dbSettings?.ai_provider || 'anthropic';
     const openrouterKey = dbSettings?.openrouter_key || process.env.OPENROUTER_API_KEY || '';
     const groqKey = dbSettings?.groq_api_key || process.env.GROQ_API_KEY || '';
     const togetherKey = dbSettings?.together_api_key || process.env.TOGETHER_API_KEY || '';
     const anthropicKey = process.env.ANTHROPIC_API_KEY || '';
     const selectedModel = model || dbSettings?.ai_model || 'meta-llama/llama-3-8b-instruct:free';
+
+    // Cascade: respect explicit provider selection; fall back to any configured key
+    const explicitProvider = dbSettings?.ai_provider;
+    const provider = (() => {
+      if (explicitProvider === 'groq' && groqKey) return 'groq';
+      if (explicitProvider === 'together' && togetherKey) return 'together';
+      if (explicitProvider === 'openrouter' && openrouterKey) return 'openrouter';
+      if (openrouterKey) return 'openrouter';
+      if (groqKey) return 'groq';
+      if (togetherKey) return 'together';
+      return 'anthropic';
+    })();
 
     const lastMessage = messages[messages.length - 1]?.content || '';
     const lastMessageLower = lastMessage.toLowerCase();
