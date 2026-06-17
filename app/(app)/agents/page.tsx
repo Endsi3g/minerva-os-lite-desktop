@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Plus,
   Search,
@@ -86,6 +87,8 @@ interface AgentResult {
 
 export default function AgentsPage() {
   const { t } = useLanguage();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [userAgents, setUserAgents] = useState<Agent[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'popular' | 'newest'>('popular');
@@ -147,6 +150,15 @@ export default function AgentsPage() {
     };
     fetchSettings();
   }, []);
+
+  // Auto-launch workspace when coming from detail page with ?launch=id
+  useEffect(() => {
+    const launchId = searchParams.get('launch');
+    if (launchId) {
+      setActiveAgentId(launchId);
+      router.replace('/agents');
+    }
+  }, [searchParams, router]);
 
   const handleCreateAgent = (e: React.FormEvent) => {
     e.preventDefault();
@@ -856,10 +868,10 @@ export default function AgentsPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-5">
             {sortedAgents.map((agent) => (
-              <div
+              <Link
                 key={'all-' + agent.id}
-                onClick={() => setActiveAgentId(agent.id)}
-                className="p-5 border border-[#e5e5e0] hover:border-[#7a7a76] bg-white rounded-xl flex flex-col justify-between min-h-[160px] h-auto pb-4 shadow-2xs transition-all relative overflow-hidden group cursor-pointer"
+                href={`/agents/${agent.id}`}
+                className="p-5 border border-[#e5e5e0] hover:border-[#7a7a76] bg-white rounded-xl flex flex-col justify-between min-h-[160px] h-auto pb-4 shadow-2xs transition-all relative overflow-hidden group cursor-pointer block no-underline"
               >
                 <div className="space-y-2 text-left">
                   <div className="flex items-start justify-between">
@@ -871,6 +883,7 @@ export default function AgentsPage() {
                     ) : (
                       <button
                         onClick={(e) => {
+                          e.preventDefault();
                           e.stopPropagation();
                           deleteAgent(agent.id);
                         }}
@@ -898,7 +911,7 @@ export default function AgentsPage() {
                     <span>{agent.chatsCount}</span>
                   </div>
                 </div>
-              </div>
+              </Link>
             ))}
 
             {/* Lucifee Easter Egg Card */}

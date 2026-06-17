@@ -245,7 +245,12 @@ export default function IntegrationsPage() {
   const [showAddScratchModal, setShowAddScratchModal] = useState(false);
   const [customName, setCustomName] = useState('');
   const [customDescription, setCustomDescription] = useState('');
-  const [customType, setCustomType] = useState<'scratch' | 'mcp' | 'a2a'>('scratch');
+  const [customType, setCustomType] = useState<'scratch' | 'mcp' | 'a2a' | 'json'>('scratch');
+  const [jsonManifestInput, setJsonManifestInput] = useState('');
+  const [jsonManifestError, setJsonManifestError] = useState('');
+
+  // Detail panel (intermediate view before full editor or connect)
+  const [detailIntegration, setDetailIntegration] = useState<IntegrationItem | null>(null);
   const [integrationsList, setIntegrationsList] = useState<IntegrationItem[]>(DEFAULT_INTEGRATIONS);
 
   // Edit Workspace states
@@ -454,12 +459,32 @@ export default function IntegrationsPage() {
 
   const handleCreateCustomIntegration = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!customName.trim()) return;
+    setJsonManifestError('');
+
+    let resolvedName = customName.trim();
+    let resolvedDescription = customDescription.trim();
+
+    if (customType === 'json') {
+      try {
+        const manifest = JSON.parse(jsonManifestInput);
+        if (!manifest.name || typeof manifest.name !== 'string') {
+          setJsonManifestError('Le champ "name" est requis (string).');
+          return;
+        }
+        resolvedName = manifest.name;
+        resolvedDescription = manifest.description ?? '';
+      } catch {
+        setJsonManifestError('JSON invalide — vérifiez la syntaxe.');
+        return;
+      }
+    }
+
+    if (!resolvedName) return;
 
     const newId = 'custom-' + Date.now();
     const newIntegration: IntegrationItem = {
       id: newId,
-      name: customName.trim(),
+      name: resolvedName,
       category: 'custom',
       owner: userName,
       email: userEmail || `${userName.toLowerCase().replace(/\s/g, '')}@minerva-os-lite.com`,
@@ -475,8 +500,8 @@ export default function IntegrationsPage() {
       assets: '—',
       access: 'Private',
       accessKey: 'integrations.access.private',
-      description: customDescription.trim() || 'Custom created integration connector.',
-      descriptionKey: customDescription.trim() ? undefined : 'integrations.custom.default_description',
+      description: resolvedDescription || 'Custom created integration connector.',
+      descriptionKey: resolvedDescription ? undefined : 'integrations.custom.default_description',
       custom: true
     };
 
@@ -487,6 +512,7 @@ export default function IntegrationsPage() {
     setCustomName('');
     setCustomDescription('');
     setCustomType('scratch');
+    setJsonManifestInput('');
     setShowAddScratchModal(false);
 
     // Open full screen editor workspace for this newly created integration
@@ -1096,7 +1122,7 @@ export default function IntegrationsPage() {
                               </td>
                               <td className="py-3 px-4 text-right">
                                 <Button
-                                  onClick={() => setActiveIntegrationEditId(item.id)}
+                                  onClick={() => setDetailIntegration(item)}
                                   variant="ghost"
                                   size="sm"
                                   className="h-7 text-xs font-semibold px-2 text-[#7a7a76] hover:text-[#059669] hover:bg-emerald-50/50"
@@ -1148,10 +1174,7 @@ export default function IntegrationsPage() {
                       return (
                         <div
                           key={item.id}
-                          onClick={() => {
-                            setSelectedIntegration(item);
-                            setShowConnectModal(true);
-                          }}
+                          onClick={() => setDetailIntegration(item)}
                           className="p-5 border border-[#e5e5e0] hover:border-[#7a7a76] bg-[#f4f4f3]/10 hover:bg-[#f4f4f3]/20 transition-all rounded-xl flex flex-col justify-between h-[160px] shadow-2xs group cursor-pointer"
                         >
                           <div className="space-y-2">
@@ -1182,6 +1205,92 @@ export default function IntegrationsPage() {
           </div>
         )}
 
+
+      {/* Integration Detail Panel */}
+      {detailIntegration && (
+        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/40 backdrop-blur-xs">
+          <div className="w-full max-w-lg bg-white border border-[#e6e5e0] rounded-2xl shadow-2xl animate-in fade-in zoom-in-95 duration-150 overflow-hidden">
+            {/* Header */}
+            <div className="flex items-start gap-4 p-6 border-b border-[#e5e5e0]">
+              <div className="w-14 h-14 rounded-2xl bg-[#059669]/10 border border-[#059669]/20 flex items-center justify-center text-[#059669] shrink-0">
+                {typeof detailIntegration.icon === 'function' ? (
+                  <detailIntegration.icon size={28} />
+                ) : (
+                  <Plug className="w-6 h-6" />
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-base font-bold text-[#26251e]">{resolveItemName(detailIntegration)}</h3>
+                <p className="text-xs text-[#7a7a76] mt-0.5 leading-relaxed">{resolveItemDescription(detailIntegration)}</p>
+                <div className="flex items-center gap-2 mt-2">
+                  <span className={`inline-flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded-full ${detailIntegration.status === 'Active' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-slate-100 text-slate-600 border border-slate-200'}`}>
+                    {resolveItemStatus(detailIntegration)}
+                  </span>
+                  <span className="text-[9px] text-[#7a7a76]">{resolveItemAccess(detailIntegration)}</span>
+                </div>
+              </div>
+              <button
+                onClick={() => setDetailIntegration(null)}
+                className="text-[#7a7a76] hover:text-[#26251e] p-1 rounded-md hover:bg-slate-100 shrink-0"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* How to use */}
+            <div className="p-6 space-y-3 text-left">
+              <h4 className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Comment utiliser</h4>
+              <ol className="space-y-2 text-xs text-[#555552] list-none">
+                <li className="flex items-start gap-2.5">
+                  <span className="w-5 h-5 rounded-full bg-[#059669]/10 text-[#059669] font-bold text-[10px] flex items-center justify-center shrink-0 mt-0.5">1</span>
+                  <span>Connectez votre compte via le bouton « Se connecter » ci-dessous.</span>
+                </li>
+                <li className="flex items-start gap-2.5">
+                  <span className="w-5 h-5 rounded-full bg-[#059669]/10 text-[#059669] font-bold text-[10px] flex items-center justify-center shrink-0 mt-0.5">2</span>
+                  <span>Configurez les permissions et le niveau d'accès dans l'éditeur.</span>
+                </li>
+                <li className="flex items-start gap-2.5">
+                  <span className="w-5 h-5 rounded-full bg-[#059669]/10 text-[#059669] font-bold text-[10px] flex items-center justify-center shrink-0 mt-0.5">3</span>
+                  <span>L'intégration sera disponible dans vos agents et espaces de travail.</span>
+                </li>
+              </ol>
+            </div>
+
+            {/* Actions */}
+            <div className="flex justify-end gap-2 px-6 py-4 bg-[#fafaf8] border-t border-[#e5e5e0]">
+              <Button
+                variant="ghost"
+                onClick={() => setDetailIntegration(null)}
+                className="h-8 text-xs text-[#555552]"
+              >
+                Fermer
+              </Button>
+              {connectedIds.includes(detailIntegration.id) ? (
+                <Button
+                  onClick={() => {
+                    setDetailIntegration(null);
+                    setActiveIntegrationEditId(detailIntegration.id);
+                  }}
+                  className="h-8 text-xs bg-[#059669] hover:bg-[#047857] text-white font-bold"
+                >
+                  Ouvrir l'éditeur
+                </Button>
+              ) : (
+                <Button
+                  onClick={() => {
+                    setSelectedIntegration(detailIntegration);
+                    setDetailIntegration(null);
+                    setShowConnectModal(true);
+                  }}
+                  className="h-8 text-xs bg-[#059669] hover:bg-[#047857] text-white font-bold"
+                >
+                  Se connecter
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Connect Integration Modal Overlay */}
       {showConnectModal && selectedIntegration && (
@@ -1241,7 +1350,7 @@ export default function IntegrationsPage() {
             {/* Type selector */}
             <div className="space-y-2">
               <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">{t('integrations.add_modal.type_label')}</label>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-4 gap-3">
                 {/* Scratch Card */}
                 <div
                   onClick={() => setCustomType('scratch')}
@@ -1298,35 +1407,75 @@ export default function IntegrationsPage() {
                     className="text-[#059669] focus:ring-[#059669] mt-2"
                   />
                 </div>
+
+                {/* JSON Manifest Card */}
+                <div
+                  onClick={() => setCustomType('json')}
+                  className={`p-4 border rounded-xl flex flex-col items-center justify-center text-center cursor-pointer transition-all ${customType === 'json' ? 'border-[#059669] bg-[#059669]/5 shadow-xs' : 'border-[#e5e5e0] hover:border-[#7a7a76] bg-white'}`}
+                >
+                  <div className="w-10 h-10 rounded-lg bg-emerald-500/10 text-[#059669] flex items-center justify-center font-bold text-[10px] mb-3">
+                    JSON
+                  </div>
+                  <h4 className="font-bold text-[11px] text-[#26251e] mb-1">Manifeste</h4>
+                  <input
+                    type="radio"
+                    title="Import JSON"
+                    aria-label="Import JSON"
+                    checked={customType === 'json'}
+                    onChange={() => setCustomType('json')}
+                    className="text-[#059669] focus:ring-[#059669] mt-2"
+                  />
+                </div>
               </div>
             </div>
 
-            {/* Inputs */}
-            <div className="space-y-1.5">
-              <label htmlFor="custom-integration-name" className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">{t('integrations.add_modal.name_label')}</label>
-              <input
-                id="custom-integration-name"
-                title={t('integrations.add_modal.name_field_title')}
-                type="text"
-                required
-                placeholder={t('integrations.add_modal.name_placeholder')}
-                value={customName}
-                onChange={(e) => setCustomName(e.target.value)}
-                className="w-full text-xs p-2.5 bg-white border border-[#e6e5e0] rounded-md focus:outline-none focus:ring-1 focus:ring-[#059669]"
-              />
-            </div>
+            {/* JSON Manifest input */}
+            {customType === 'json' ? (
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">
+                  Manifeste JSON
+                  <span className="ml-2 normal-case font-normal text-[#7a7a76]">Champs requis : name, description, authType, endpoints</span>
+                </label>
+                <textarea
+                  placeholder={'{\n  "name": "Mon Intégration",\n  "description": "...",\n  "authType": "key",\n  "endpoints": []\n}'}
+                  value={jsonManifestInput}
+                  onChange={(e) => { setJsonManifestInput(e.target.value); setJsonManifestError(''); }}
+                  className="w-full text-xs font-mono p-2.5 bg-[#f9f9f8] border border-[#e6e5e0] rounded-md focus:outline-none focus:ring-1 focus:ring-[#059669] h-32 resize-none"
+                />
+                {jsonManifestError && (
+                  <p className="text-[10px] text-red-600 font-semibold">{jsonManifestError}</p>
+                )}
+              </div>
+            ) : (
+              <>
+                {/* Inputs */}
+                <div className="space-y-1.5">
+                  <label htmlFor="custom-integration-name" className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">{t('integrations.add_modal.name_label')}</label>
+                  <input
+                    id="custom-integration-name"
+                    title={t('integrations.add_modal.name_field_title')}
+                    type="text"
+                    required
+                    placeholder={t('integrations.add_modal.name_placeholder')}
+                    value={customName}
+                    onChange={(e) => setCustomName(e.target.value)}
+                    className="w-full text-xs p-2.5 bg-white border border-[#e6e5e0] rounded-md focus:outline-none focus:ring-1 focus:ring-[#059669]"
+                  />
+                </div>
 
-            <div className="space-y-1.5">
-              <label htmlFor="custom-integration-description" className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">{t('integrations.add_modal.description_label')}</label>
-              <textarea
-                id="custom-integration-description"
-                title={t('integrations.add_modal.description_field_title')}
-                placeholder={t('integrations.add_modal.description_placeholder')}
-                value={customDescription}
-                onChange={(e) => setCustomDescription(e.target.value)}
-                className="w-full text-xs p-2.5 bg-white border border-[#e6e5e0] rounded-md focus:outline-none focus:ring-1 focus:ring-[#059669] h-20 resize-none"
-              />
-            </div>
+                <div className="space-y-1.5">
+                  <label htmlFor="custom-integration-description" className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">{t('integrations.add_modal.description_label')}</label>
+                  <textarea
+                    id="custom-integration-description"
+                    title={t('integrations.add_modal.description_field_title')}
+                    placeholder={t('integrations.add_modal.description_placeholder')}
+                    value={customDescription}
+                    onChange={(e) => setCustomDescription(e.target.value)}
+                    className="w-full text-xs p-2.5 bg-white border border-[#e6e5e0] rounded-md focus:outline-none focus:ring-1 focus:ring-[#059669] h-20 resize-none"
+                  />
+                </div>
+              </>
+            )}
 
             <div className="flex justify-end gap-2 text-xs pt-2 border-t border-[#e5e5e0]/60">
               <Button
