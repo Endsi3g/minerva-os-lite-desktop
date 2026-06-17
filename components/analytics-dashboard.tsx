@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
+import Heatmap from '@/components/8starlabs-ui/heatmap';
 import { 
   Calendar as CalendarIcon, 
   Download, 
@@ -95,6 +96,13 @@ export function AnalyticsDashboard() {
     }
     return byDay;
   }, [leads, tasks]);
+
+  // Heatmap data: count days with at least 1 prospection OR 1 task completed
+  const heatmapData = useMemo(() => {
+    return Object.entries(realDataByDay)
+      .filter(([, d]) => d.leadsCreated > 0 || d.tasksCompleted > 0)
+      .map(([date, d]) => ({ date, value: d.leadsCreated + d.tasksCompleted }));
+  }, [realDataByDay]);
 
   // Generate historical data points within date range
   const chartPoints = useMemo(() => {
@@ -596,6 +604,29 @@ export function AnalyticsDashboard() {
         </Card>
 
       </div>
+
+      {/* Activity heatmap */}
+      <Card className="border border-border shadow-sm">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm font-bold text-foreground">Activité quotidienne</CardTitle>
+          <CardDescription className="text-xs">
+            Jours où vous avez prospecté ou complété au moins une tâche (12 derniers mois).
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="overflow-x-auto">
+          <Heatmap
+            data={heatmapData}
+            startDate={subDays(new Date(), 364)}
+            endDate={new Date()}
+            colorMode="interpolate"
+            maxColor="#059669"
+            minColor="#d1fae5"
+            daysOfTheWeek="MWF"
+            dateDisplayFunction={(date) => date.toLocaleDateString(locale === 'fr' ? 'fr-CA' : locale === 'de' ? 'de-DE' : 'en-CA')}
+            valueDisplayFunction={(v) => `${v} action(s)`}
+          />
+        </CardContent>
+      </Card>
     </div>
   );
 }

@@ -18,19 +18,20 @@ export interface OnboardingTask {
   name: string;
   pts: number;
   category: 'chat' | 'workspace';
+  href: string;
 }
 
 export const onboardingTasks: OnboardingTask[] = [
-  { id: 'send_first_msg', name: 'Send your first message', pts: 10, category: 'chat' },
-  { id: 'upload_doc', name: 'Upload a document and chat with it', pts: 15, category: 'chat' },
-  { id: 'different_model', name: 'Try out a different model in chat', pts: 10, category: 'chat' },
-  { id: 'web_search', name: 'Run a web search', pts: 15, category: 'chat' },
-  { id: 'data_analysis', name: 'Run data analysis', pts: 20, category: 'chat' },
-  
+  { id: 'send_first_msg', name: 'Envoyer votre premier message IA', pts: 10, category: 'chat', href: '/chat' },
+  { id: 'upload_doc', name: 'Téléverser un document dans la bibliothèque', pts: 15, category: 'chat', href: '/library' },
+  { id: 'web_search', name: 'Effectuer une recherche web avec l\'IA', pts: 15, category: 'chat', href: '/chat' },
+  { id: 'first_prospect', name: 'Prospecter 5 commerces locaux', pts: 20, category: 'chat', href: '/prospecting' },
+
   // Set-up workspace tasks
-  { id: 'setup_profile', name: 'Set-up profile', pts: 10, category: 'workspace' },
-  { id: 'setup_integrations', name: 'Connect a data source', pts: 15, category: 'workspace' },
-  { id: 'setup_keys', name: 'Configure API keys', pts: 20, category: 'workspace' },
+  { id: 'setup_profile', name: 'Configurer votre profil', pts: 10, category: 'workspace', href: '/settings' },
+  { id: 'setup_integrations', name: 'Connecter une intégration', pts: 15, category: 'workspace', href: '/integrations' },
+  { id: 'setup_keys', name: 'Configurer vos clés API', pts: 20, category: 'workspace', href: '/settings' },
+  { id: 'invite_member', name: 'Inviter un membre d\'équipe', pts: 25, category: 'workspace', href: '/team/invite' },
 ];
 
 export const getOnboardingState = (): string[] => {

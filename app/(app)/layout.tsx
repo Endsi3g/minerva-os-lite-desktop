@@ -413,12 +413,9 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
     ...navCategories.flatMap(c => c.items),
   ];
 
-  const recentFiles = [
-    { name: 'Onboarding rating report', href: '/leads' },
-    { name: 'UX case study charts', href: '/leads' },
-    { name: 'Design review doc', href: '/leads' },
-    { name: 'Product presentation notes', href: '/leads' },
-  ];
+  const recentLeads = leads
+    .slice(0, 4)
+    .map(l => ({ name: l.businessName, href: `/leads/${l.id}` }));
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-white text-[#26251e] font-sans selection:bg-[#10b981]/10">
@@ -759,16 +756,16 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                 <ChevronDown className={cn("h-3 w-3 smooth-toggle", todayCollapsed && "-rotate-90")} />
               </button>
               
-              {!todayCollapsed && (
+              {!todayCollapsed && recentLeads.length > 0 && (
                 <div className="space-y-[2px] mt-1">
-                  {recentFiles.map((file) => (
-                    <Link 
-                      key={file.name}
-                      href={file.href}
+                  {recentLeads.map((lead) => (
+                    <Link
+                      key={lead.href}
+                      href={lead.href}
                       className="flex items-center gap-2.5 px-2.5 py-1 text-xs text-[#555552] hover:bg-[#e5e5e2]/60 hover:text-[#26251e] rounded-md transition-colors truncate"
                     >
                       <FileText className="h-3.5 w-3.5 text-[#7a7a76] shrink-0" />
-                      <span className="truncate">{file.name}</span>
+                      <span className="truncate">{lead.name}</span>
                     </Link>
                   ))}
                 </div>

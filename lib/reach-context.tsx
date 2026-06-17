@@ -1045,7 +1045,6 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
       temperature: leadData.temperature,
       next_action: leadData.nextAction,
       next_action_date: leadData.nextActionDate || null,
-      image_url: leadData.imageUrl || null,
       owner: 'Moi',
     };
 

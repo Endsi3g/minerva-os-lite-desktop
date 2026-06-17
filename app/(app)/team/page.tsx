@@ -39,11 +39,14 @@ export default function TeamPage() {
   // Data State
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
-  const [currentUser, setCurrentUser] = useState<{ id: string; email: string; name: string } | null>(null);
+  const [currentUser, setCurrentUser] = useState<{ id: string; email: string; name: string; avatar?: string } | null>(null);
   const [activeTab, setActiveTab] = useState<'members' | 'chat'>('members');
   const [chatMessage, setChatMessage] = useState('');
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const chatInputRef = useRef<HTMLInputElement>(null);
   const { teamMessages, sendTeamMessage, activeWorkspace } = useReach();
+  const [mentionQuery, setMentionQuery] = useState('');
+  const [showMentions, setShowMentions] = useState(false);
 
   // Search and Filter States
   const [searchQuery, setSearchQuery] = useState('');
@@ -121,13 +124,14 @@ export default function TeamPage() {
       if (user) {
         const { data: settings } = await supabase
           .from('settings')
-          .select('full_name')
+          .select('full_name, avatar_base64')
           .eq('user_id', user.id)
           .maybeSingle();
         setCurrentUser({
           id: user.id,
           email: user.email || '',
           name: settings?.full_name || user.email?.split('@')[0] || 'User',
+          avatar: settings?.avatar_base64 || undefined,
         });
       }
       await fetchMembers();
@@ -392,13 +396,25 @@ export default function TeamPage() {
               ) : (
                 teamMessages.map(msg => {
                   const isMe = msg.senderId === currentUser?.id;
+                  const avatarSrc = isMe ? currentUser?.avatar : undefined;
+                  const renderContent = (text: string) => {
+                    const parts = text.split(/(@\w+)/g);
+                    return parts.map((part, i) =>
+                      part.startsWith('@')
+                        ? <span key={i} className={cn("font-bold", isMe ? "text-white/90 bg-white/20" : "text-[#059669] bg-[#059669]/10", "rounded px-0.5")}>{part}</span>
+                        : <span key={i}>{part}</span>
+                    );
+                  };
                   return (
                     <div key={msg.id} className={cn("flex gap-2.5 items-end", isMe && "flex-row-reverse")}>
                       <div className={cn(
-                        "w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0",
+                        "w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 overflow-hidden",
                         isMe ? "bg-[#10b981] text-white" : "bg-[#e5e5e0] text-[#26251e]"
                       )}>
-                        {msg.senderName.charAt(0).toUpperCase()}
+                        {avatarSrc
+                          ? <img src={avatarSrc} alt="" className="w-full h-full object-cover" />
+                          : msg.senderName.charAt(0).toUpperCase()
+                        }
                       </div>
                       <div className={cn("max-w-[70%] space-y-0.5", isMe && "items-end flex flex-col")}>
                         <span className="text-[10px] font-semibold text-[#807d72]">
@@ -410,7 +426,7 @@ export default function TeamPage() {
                             ? "bg-[#10b981] text-white rounded-br-sm"
                             : "bg-[#f4f4f3] text-[#26251e] rounded-bl-sm"
                         )}>
-                          {msg.content}
+                          {renderContent(msg.content)}
                         </div>
                         <span className="text-[9px] text-[#a3a39c]">
                           {new Date(msg.createdAt).toLocaleTimeString('fr-CA', { hour: '2-digit', minute: '2-digit' })}
@@ -423,21 +439,70 @@ export default function TeamPage() {
               <div ref={chatEndRef} />
             </div>
 
+            {/* @mention autocomplete */}
+            {showMentions && (
+              <div className="absolute bottom-[60px] left-3 right-3 bg-white border border-[#e5e5e0] rounded-xl shadow-lg z-10 overflow-hidden max-h-40 overflow-y-auto">
+                {members
+                  .filter(m => (m.profile?.full_name || m.email).toLowerCase().includes(mentionQuery.toLowerCase()))
+                  .slice(0, 5)
+                  .map(m => {
+                    const displayName = m.profile?.full_name || m.email.split('@')[0];
+                    return (
+                      <button
+                        key={m.id}
+                        type="button"
+                        className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-left hover:bg-[#f4f4f3] transition-colors"
+                        onMouseDown={e => {
+                          e.preventDefault();
+                          const atIdx = chatMessage.lastIndexOf('@');
+                          const newMsg = chatMessage.slice(0, atIdx) + `@${displayName} `;
+                          setChatMessage(newMsg);
+                          setShowMentions(false);
+                          chatInputRef.current?.focus();
+                        }}
+                      >
+                        <div className="w-6 h-6 rounded-full bg-[#e5e5e0] flex items-center justify-center text-[9px] font-bold shrink-0">
+                          {displayName.charAt(0).toUpperCase()}
+                        </div>
+                        <span className="font-semibold text-[#26251e]">{displayName}</span>
+                        <span className="text-[#7a7a76]">{m.email}</span>
+                      </button>
+                    );
+                  })}
+                {members.filter(m => (m.profile?.full_name || m.email).toLowerCase().includes(mentionQuery.toLowerCase())).length === 0 && (
+                  <div className="px-3 py-3 text-xs text-[#7a7a76]">Aucun membre trouvé</div>
+                )}
+              </div>
+            )}
             {/* Input bar */}
-            <div className="border-t border-[#e5e5e0] p-3 flex gap-2 items-center bg-white shrink-0">
+            <div className="border-t border-[#e5e5e0] p-3 flex gap-2 items-center bg-white shrink-0 relative">
               <input
+                ref={chatInputRef}
                 type="text"
                 value={chatMessage}
-                onChange={e => setChatMessage(e.target.value)}
+                onChange={e => {
+                  const val = e.target.value;
+                  setChatMessage(val);
+                  const atIdx = val.lastIndexOf('@');
+                  if (atIdx !== -1 && (atIdx === 0 || val[atIdx - 1] === ' ')) {
+                    setMentionQuery(val.slice(atIdx + 1));
+                    setShowMentions(true);
+                  } else {
+                    setShowMentions(false);
+                  }
+                }}
                 onKeyDown={async e => {
+                  if (e.key === 'Escape') { setShowMentions(false); return; }
                   if (e.key === 'Enter' && !e.shiftKey && chatMessage.trim()) {
                     e.preventDefault();
                     const msg = chatMessage.trim();
                     setChatMessage('');
+                    setShowMentions(false);
                     await sendTeamMessage(msg);
                   }
                 }}
-                placeholder="Message à l'équipe... (Entrée pour envoyer)"
+                onBlur={() => setTimeout(() => setShowMentions(false), 150)}
+                placeholder="Message à l'équipe... Tapez @ pour mentionner"
                 className="flex-1 text-xs bg-[#f4f4f3] border border-[#e5e5e0] rounded-xl px-3 py-2 focus:outline-none focus:ring-1 focus:ring-[#10b981]"
               />
               <button
@@ -445,6 +510,7 @@ export default function TeamPage() {
                   if (!chatMessage.trim()) return;
                   const msg = chatMessage.trim();
                   setChatMessage('');
+                  setShowMentions(false);
                   await sendTeamMessage(msg);
                 }}
                 disabled={!chatMessage.trim()}

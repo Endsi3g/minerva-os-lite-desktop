@@ -52,6 +52,7 @@
     --radius-2xl: calc(var(--radius) * 1.8);
     --radius-3xl: calc(var(--radius) * 2.2);
     --radius-4xl: calc(var(--radius) * 2.6);
+    --color-heatmap-zero: var(--heatmap-zero);
 }
 
 /* Base Theme variables - Cursor Inspired Warm Cream */
@@ -105,6 +106,7 @@
     --timeline-read: #9fbbe0;
     --timeline-edit: #c0a8dd;
     --timeline-done: #c08532;
+    --heatmap-zero: rgb(221, 221, 221);
 }
 
 /* Dark variant - same warm/emerald identity, inverted onto a warm-charcoal canvas */
@@ -155,6 +157,7 @@
     --timeline-read: #9fbbe0;
     --timeline-edit: #c0a8dd;
     --timeline-done: #c08532;
+    --heatmap-zero: rgb(51, 51, 51);
 }
 
 @layer base {

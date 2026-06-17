@@ -29,6 +29,9 @@ import {
   AlignCenter,
   AlignRight,
   FileText,
+  Share2,
+  Copy,
+  X,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -84,6 +87,16 @@ export default function LibraryEditorClient({ id }: { id: string }) {
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [isShared, setIsShared] = useState(false);
   const [notFound, setNotFound] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
+
+  const shareUrl = typeof window !== 'undefined' ? `${window.location.origin}/library/${id}` : `/library/${id}`;
+
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText(shareUrl).catch(() => {});
+    setLinkCopied(true);
+    setTimeout(() => setLinkCopied(false), 2000);
+  };
 
   const editor = useEditor({
     immediatelyRender: false,
@@ -252,6 +265,14 @@ ${html}
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <button
+            onClick={() => { if (!isShared) setIsShared(true); setShowShareModal(true); }}
+            className="h-7 px-2.5 rounded-md text-[10px] font-semibold flex items-center gap-1 border bg-[#f4f4f3] text-[#555552] border-[#e5e5e0] hover:bg-[#e5e5e0] transition-colors"
+            title="Partager ce document"
+          >
+            <Share2 className="w-3 h-3" />
+            <span>Partager</span>
+          </button>
+          <button
             onClick={() => setIsShared(v => !v)}
             className={cn(
               "h-7 px-2.5 rounded-md text-[10px] font-semibold flex items-center gap-1 border transition-colors",
@@ -383,6 +404,42 @@ ${html}
               </p>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Share Modal */}
+      {showShareModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-xl w-[420px] max-w-[95vw] p-6 space-y-4 animate-in zoom-in-95 duration-150">
+            <div className="flex items-start justify-between">
+              <div>
+                <h3 className="text-sm font-bold text-[#26251e]">Partager le document</h3>
+                <p className="text-xs text-[#7a7a76] mt-0.5">
+                  Seuls les utilisateurs avec un compte Minerva OS Lite peuvent accéder à ce lien.
+                </p>
+              </div>
+              <button onClick={() => setShowShareModal(false)} className="p-1.5 rounded-lg hover:bg-[#f4f4f3] text-[#7a7a76]">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="flex items-center gap-2 p-3 bg-[#f4f4f3] rounded-xl border border-[#e5e5e0]">
+              <Globe className="w-4 h-4 text-[#059669] shrink-0" />
+              <span className="text-xs text-[#26251e] font-mono flex-1 truncate">{shareUrl}</span>
+              <button
+                onClick={handleCopyLink}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-[#059669] text-white text-xs font-bold rounded-lg hover:bg-[#047857] transition-colors shrink-0"
+              >
+                {linkCopied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                {linkCopied ? 'Copié !' : 'Copier'}
+              </button>
+            </div>
+            {!isShared && (
+              <div className="flex items-center gap-2 p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-700">
+                <Globe className="w-3.5 h-3.5 shrink-0" />
+                Le document est actuellement <strong>privé</strong>. Il sera automatiquement rendu partageable.
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>

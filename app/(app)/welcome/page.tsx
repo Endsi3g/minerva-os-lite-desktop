@@ -14,6 +14,7 @@ import {
   Check,
   Copy,
   ExternalLink,
+  ArrowRight,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -41,16 +42,14 @@ export default function WelcomePage() {
   const [chatExpanded, setChatExpanded] = useState(true);
   const [showSetupPanel, setShowSetupPanel] = useState(true);
   const [codeCopied, setCodeCopied] = useState(false);
+  const progressBarRef = React.useRef<HTMLDivElement>(null);
 
-  const progressCallback = React.useCallback(
-    (node: HTMLDivElement | null) => {
-      if (node !== null) {
-        node.style.width = `${onboarding.percent}%`;
-        node.style.transition = 'width 0.5s ease-in-out';
-      }
-    },
-    [onboarding.percent]
-  );
+  useEffect(() => {
+    if (progressBarRef.current) {
+      progressBarRef.current.style.width = `${onboarding.percent}%`;
+      progressBarRef.current.style.transition = 'width 0.5s ease-in-out';
+    }
+  }, [onboarding.percent]);
 
   useEffect(() => {
     const syncStore = () => {
@@ -171,7 +170,7 @@ export default function WelcomePage() {
               </p>
               <div className="mt-2 w-full bg-muted h-1.5 rounded-full overflow-hidden">
                 <div
-                  ref={progressCallback}
+                  ref={progressBarRef}
                   className="bg-[#10b981] h-full rounded-full"
                 />
               </div>
@@ -238,7 +237,7 @@ export default function WelcomePage() {
                   return (
                     <div
                       key={task.id}
-                      onClick={() => toggleOnboardingTask(task.id)}
+                      onClick={() => { toggleOnboardingTask(task.id); if (!isCompleted) router.push(task.href); }}
                       className="py-2.5 px-6 flex items-center justify-between text-xs text-muted-foreground hover:bg-muted/20 cursor-pointer transition-colors"
                     >
                       <div className="flex items-center gap-3">
@@ -251,7 +250,10 @@ export default function WelcomePage() {
                         </div>
                         <span className={cn("font-medium text-left text-foreground", isCompleted && "line-through text-muted-foreground")}>{task.name}</span>
                       </div>
-                      <span className="text-[#059669] font-mono text-[9px] font-bold bg-[#059669]/10 px-1.5 py-0.5 rounded">+{task.pts} pts</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[#059669] font-mono text-[9px] font-bold bg-[#059669]/10 px-1.5 py-0.5 rounded">+{task.pts} pts</span>
+                        {!isCompleted && <ArrowRight className="h-3 w-3 text-muted-foreground" />}
+                      </div>
                     </div>
                   );
                 })}
@@ -308,7 +310,7 @@ export default function WelcomePage() {
                           </p>
                           <div className="flex items-center gap-4 pt-1">
                             <Button
-                              onClick={() => router.push('/leads')}
+                              onClick={() => router.push(task.href)}
                               size="sm"
                               className="h-8 bg-[#059669] hover:bg-[#047857] text-white rounded text-xs font-bold px-3"
                             >
@@ -323,7 +325,7 @@ export default function WelcomePage() {
                   return (
                     <div
                       key={task.id}
-                      onClick={() => toggleOnboardingTask(task.id)}
+                      onClick={() => { toggleOnboardingTask(task.id); if (!isCompleted) router.push(task.href); }}
                       className="px-4 py-2.5 flex items-center justify-between text-xs text-muted-foreground hover:bg-muted/20 cursor-pointer transition-colors"
                     >
                       <div className="flex items-center gap-3">
@@ -336,9 +338,9 @@ export default function WelcomePage() {
                         </div>
                         <span className={cn("font-medium text-left text-foreground", isCompleted && "line-through text-muted-foreground")}>{task.name}</span>
                       </div>
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2">
                         <span className="text-[#059669] font-mono text-[9px] font-bold bg-[#059669]/10 px-1.5 py-0.5 rounded">+{task.pts} pts</span>
-                        <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+                        {!isCompleted && <ArrowRight className="h-3 w-3 text-muted-foreground" />}
                       </div>
                     </div>
                   );

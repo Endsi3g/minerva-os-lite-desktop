@@ -18,6 +18,24 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v2.21.0',
+      date: '2026-06-17',
+      titleKey: 'changelog.v2_21_0_title',
+      descKey: 'changelog.v2_21_0_desc',
+      highlights: [
+        'Critical fix: removed non-existent image_url column from Supabase leads insert — adding leads no longer crashes.',
+        'Get Started: all 8 onboarding tasks translated to French with direct navigation to the relevant page on click.',
+        'Welcome page: progress bar now updates in real time using useRef + useEffect instead of a callback ref that only fired on mount.',
+        'Sidebar Today section: replaced hardcoded mock files with real leads from ReachContext; shows nothing if no leads exist.',
+        'Team chat: profile avatars now displayed in message bubbles; @mention autocomplete with member list filter.',
+        'Analytics: GitHub-style activity heatmap (8starlabs component) tracking days with at least one lead created or task completed over the last 12 months.',
+        'Library editor: "Partager" button opens a share modal with a copyable link; automatically sets is_shared=true on the document.',
+        'DESIGN.md: full design system documentation (colors, typography, spacing, component patterns, animation, i18n rules).',
+        'DEPLOYMENT.md: step-by-step deployment guide for a 100% free production stack (Supabase + Vercel + Cloudflare).',
+        'README: full rewrite reflecting v2.21.0 feature set, architecture, security model, and roadmap.',
+      ],
+    },
+    {
       version: 'v2.20.0',
       date: '2026-06-17',
       titleKey: 'changelog.v2_20_0_title',
