@@ -18,6 +18,18 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v2.37.0',
+      date: '2026-06-17',
+      titleKey: 'changelog.v2_37_0_title',
+      descKey: 'changelog.v2_37_0_desc',
+      highlights: [
+        'Tracking Gmail : l\'envoi via Gmail API sauvegarde maintenant le threadId sur le lead.',
+        'Cron toutes les 30 min : détecte automatiquement les réponses à vos e-mails de prospection.',
+        'Détection de réponse : si le prospect répond, le statut passe à "Meeting Booked" + notification créée.',
+        'Notification en temps réel : "Réponse détectée — [Prospect] a répondu à votre e-mail."',
+      ],
+    },
+    {
       version: 'v2.36.0',
       date: '2026-06-17',
       titleKey: 'changelog.v2_36_0_title',

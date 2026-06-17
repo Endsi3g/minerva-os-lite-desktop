@@ -138,7 +138,15 @@ export async function POST(req: NextRequest) {
           const gmailErr = await gmailResponse.json();
           throw new Error(gmailErr.error?.message || "Erreur de l'API Gmail");
         }
-        
+
+        const gmailData = await gmailResponse.json();
+        if (gmailData.threadId) {
+          await supabase
+            .from('leads')
+            .update({ gmail_thread_id: gmailData.threadId, updated_at: new Date().toISOString() })
+            .eq('id', leadId);
+        }
+
         refreshSuccess = true;
       } catch (err) {
         console.warn("Gmail API call failed, falling back to simulated mode for local sandbox:", err);
