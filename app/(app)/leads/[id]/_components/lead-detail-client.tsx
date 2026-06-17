@@ -37,7 +37,10 @@ import {
   Camera,
   HardDrive,
   Tag,
-  ExternalLink
+  ExternalLink,
+  FileSignature,
+  X,
+  FileOutput,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
@@ -304,7 +307,8 @@ export function LeadDetailClient({ id }: { id: string }) {
         const res = await fetch(getApiUrl('/api/team/members'));
         if (res.ok) {
           const data = await res.json();
-          if (Array.isArray(data)) setTeamMembers(data);
+          const members = Array.isArray(data) ? data : (data?.members ?? []);
+          setTeamMembers(members);
         }
       } catch (e) {
         console.error('Error fetching team members:', e);
@@ -1135,7 +1139,7 @@ export function LeadDetailClient({ id }: { id: string }) {
             {(() => {
               const oppScore = computeLeadScore(lead);
               const scoreColor =
-                oppScore >= 70 ? '#059669' : oppScore >= 40 ? '#f54e00' : '#7a7a76';
+                oppScore >= 70 ? '#059669' : oppScore >= 40 ? '#f59e0b' : '#7a7a76';
               const scoreLabel =
                 oppScore >= 70 ? 'Forte opportunité' : oppScore >= 40 ? 'Opportunité moyenne' : 'Opportunité faible';
               return (
@@ -1372,6 +1376,47 @@ export function LeadDetailClient({ id }: { id: string }) {
                     <Tag className="h-3.5 w-3.5 text-emerald-600" />
                     Présenter une offre
                     <ExternalLink className="h-3 w-3 ml-auto text-muted-foreground" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 text-xs gap-1.5 justify-start bg-[#f0fdf4] border-[#059669]/30 hover:bg-[#dcfce7]"
+                    onClick={async () => {
+                      try {
+                        const supabase = createClient();
+                        const { data: { user } } = await supabase.auth.getUser();
+                        const [svcRes, settRes] = await Promise.all([
+                          supabase.from('services').select('*').eq('user_id', user?.id ?? ''),
+                          supabase.from('settings').select('full_name, company_name, phone').eq('user_id', user?.id ?? '').maybeSingle(),
+                        ]);
+                        const services = svcRes.data ?? [];
+                        const settings = settRes.data;
+                        const res = await fetch(getApiUrl('/api/generate-proposal'), {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            lead,
+                            services,
+                            userInfo: {
+                              name: settings?.full_name ?? '',
+                              company: settings?.company_name ?? 'Minerva OS',
+                              email: user?.email ?? '',
+                              phone: settings?.phone ?? '',
+                            },
+                          }),
+                        });
+                        if (res.ok) {
+                          const { html } = await res.json();
+                          const win = window.open('', '_blank');
+                          if (win) { win.document.write(html); win.document.close(); win.print(); }
+                        }
+                      } catch (err) {
+                        console.error('Proposal generation error:', err);
+                      }
+                    }}
+                  >
+                    <FileOutput className="h-3.5 w-3.5 text-[#059669]" />
+                    Générer une proposition PDF
                   </Button>
                 </div>
               </div>

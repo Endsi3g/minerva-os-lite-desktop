@@ -305,16 +305,33 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
       if (!settings || !settings.full_name || !settings.company_name) {
         router.push('/onboarding');
       } else {
+        // Prefer localStorage-cached avatar for instant display after save
+        const cachedAvatar = localStorage.getItem('minerva_avatar');
         setUserProfile({
           fullName: settings.full_name,
           companyName: settings.company_name || 'Uprising Studio',
-          avatarBase64: settings.avatar_base64 ?? null,
+          avatarBase64: cachedAvatar ?? settings.avatar_base64 ?? null,
         });
+        // Keep localStorage in sync with DB value
+        if (settings.avatar_base64 && !cachedAvatar) {
+          localStorage.setItem('minerva_avatar', settings.avatar_base64);
+        }
         setCheckingWelcome(false);
       }
     };
     checkUserAndSettings();
   }, [router]);
+
+  // Listen for avatar updates broadcasted from settings save
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'minerva_avatar' && e.newValue !== null) {
+        setUserProfile((prev) => prev ? { ...prev, avatarBase64: e.newValue } : prev);
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
 
   if (checkingWelcome) {
     return (

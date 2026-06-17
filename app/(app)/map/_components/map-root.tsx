@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useReach } from '@/lib/reach-context';
 import { Lead } from '@/lib/mock-data';
 import {
@@ -13,7 +13,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
-import { Search, MapPin } from 'lucide-react';
+import { Search, MapPin, ChevronDown, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 
 // Known Quebec city coords — same as scrape-maps/route.ts
@@ -77,6 +77,9 @@ export function MapRoot() {
   const { leads } = useReach();
   const [temperatureFilter, setTemperatureFilter] = useState<TemperatureFilter>('All');
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
+  const [collapsedCities, setCollapsedCities] = useState<Record<string, boolean>>({});
+  const leadItemRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   // Compute coords for each lead
   const leadsWithCoords = useMemo<LeadWithCoords[]>(() => {
@@ -109,15 +112,27 @@ export function MapRoot() {
     });
   }, [leadsWithCoords, temperatureFilter, searchQuery]);
 
-  // Count by city for sidebar
-  const cityCounts = useMemo(() => {
-    const map: Record<string, number> = {};
+  // Group by city
+  const leadsByCity = useMemo(() => {
+    const map: Record<string, LeadWithCoords[]> = {};
     filteredLeads.forEach((l) => {
       const city = l.city || 'Inconnue';
-      map[city] = (map[city] || 0) + 1;
+      if (!map[city]) map[city] = [];
+      map[city].push(l);
     });
-    return Object.entries(map).sort((a, b) => b[1] - a[1]);
+    return Object.entries(map).sort((a, b) => b[1].length - a[1].length);
   }, [filteredLeads]);
+
+  const toggleCity = (city: string) => {
+    setCollapsedCities((prev) => ({ ...prev, [city]: !prev[city] }));
+  };
+
+  // Scroll sidebar to selected lead
+  useEffect(() => {
+    if (selectedLeadId && leadItemRefs.current[selectedLeadId]) {
+      leadItemRefs.current[selectedLeadId]?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }, [selectedLeadId]);
 
   const temperatureOptions: { value: TemperatureFilter; label: string; color: string }[] = [
     { value: 'All', label: 'Tous', color: '#26251e' },
@@ -128,9 +143,9 @@ export function MapRoot() {
 
   return (
     <div className="flex h-full overflow-hidden">
-      {/* Left Sidebar */}
-      <div className="w-[300px] flex flex-col border-r border-[#e5e5e0] bg-[#fafaf8] shrink-0 overflow-y-auto">
-        <div className="p-4 border-b border-[#e5e5e0]">
+      {/* Left Sidebar — Lead List */}
+      <div className="w-[300px] flex flex-col border-r border-[#e5e5e0] bg-[#fafaf8] shrink-0 overflow-hidden">
+        <div className="p-4 border-b border-[#e5e5e0] shrink-0">
           <h2 className="text-sm font-black text-[#26251e] mb-3">Carte des leads</h2>
 
           {/* Search */}
@@ -164,44 +179,93 @@ export function MapRoot() {
         </div>
 
         {/* Stats */}
-        <div className="p-3 border-b border-[#e5e5e0] bg-white">
-          <p className="text-[10px] font-bold text-[#7a7a76] uppercase tracking-wider mb-2">
+        <div className="p-3 border-b border-[#e5e5e0] bg-white shrink-0">
+          <p className="text-[10px] font-bold text-[#7a7a76] uppercase tracking-wider">
             {filteredLeads.length} lead{filteredLeads.length !== 1 ? 's' : ''} affichés
           </p>
         </div>
 
-        {/* City counts */}
-        <div className="flex-1 p-3">
-          <p className="text-[10px] font-bold text-[#7a7a76] uppercase tracking-wider mb-2">
-            Par ville
-          </p>
-          <div className="space-y-1">
-            {cityCounts.length === 0 ? (
-              <p className="text-[11px] text-[#7a7a76] italic">Aucun résultat</p>
-            ) : (
-              cityCounts.map(([city, count]) => (
-                <div
-                  key={city}
-                  className="flex items-center justify-between py-1 px-2 rounded hover:bg-[#e5e5e0]/40 transition-colors"
-                >
-                  <span className="text-xs text-[#26251e] flex items-center gap-1.5">
-                    <MapPin className="h-3 w-3 text-[#7a7a76]" />
-                    {city}
-                  </span>
-                  <Badge
-                    variant="outline"
-                    className="text-[10px] font-bold h-4 px-1.5 border-[#e5e5e0] text-[#7a7a76]"
+        {/* Lead list grouped by city */}
+        <div className="flex-1 overflow-y-auto p-2">
+          {leadsByCity.length === 0 ? (
+            <p className="text-[11px] text-[#7a7a76] italic p-3">Aucun résultat</p>
+          ) : (
+            leadsByCity.map(([city, cityLeads]) => {
+              const isCityCollapsed = collapsedCities[city] ?? false;
+              return (
+                <div key={city} className="mb-1">
+                  {/* City header */}
+                  <button
+                    onClick={() => toggleCity(city)}
+                    className="w-full flex items-center justify-between px-2 py-1.5 text-[10px] font-bold text-[#7a7a76] uppercase tracking-wider hover:text-[#26251e] transition-colors"
                   >
-                    {count}
-                  </Badge>
+                    <span className="flex items-center gap-1.5">
+                      <MapPin className="h-3 w-3" />
+                      {city}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Badge variant="outline" className="text-[9px] font-bold h-4 px-1.5 border-[#e5e5e0] text-[#7a7a76]">
+                        {cityLeads.length}
+                      </Badge>
+                      {isCityCollapsed ? (
+                        <ChevronRight className="h-3 w-3" />
+                      ) : (
+                        <ChevronDown className="h-3 w-3" />
+                      )}
+                    </span>
+                  </button>
+                  {!isCityCollapsed && (
+                    <div className="space-y-0.5">
+                      {cityLeads.map((lead) => {
+                        const color = getMarkerColor(lead);
+                        const isSelected = selectedLeadId === lead.id;
+                        return (
+                          <div
+                            key={lead.id}
+                            ref={(el) => { leadItemRefs.current[lead.id] = el; }}
+                            onClick={() => setSelectedLeadId(lead.id === selectedLeadId ? null : lead.id)}
+                            className={cn(
+                              'flex items-center gap-2 px-2 py-2 rounded cursor-pointer transition-all text-left',
+                              isSelected
+                                ? 'bg-[#059669]/10 border border-[#059669]/20'
+                                : 'hover:bg-[#e5e5e0]/40 border border-transparent'
+                            )}
+                          >
+                            {/* Temperature dot */}
+                            <div
+                              className="h-2 w-2 rounded-full shrink-0"
+                              style={{ backgroundColor: color }}
+                            />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-bold text-[#26251e] truncate">{lead.businessName}</p>
+                              <div className="flex items-center gap-1 mt-0.5">
+                                <span className="text-[9px] font-semibold text-[#7a7a76]">{getTemperatureLabel(lead.temperature)}</span>
+                                <span className="text-[9px] text-[#7a7a76]">·</span>
+                                <span
+                                  className="text-[9px] font-bold px-1 py-0.5 rounded border"
+                                  style={{
+                                    color: lead.status === 'Won' ? '#059669' : lead.status === 'New' ? '#3b82f6' : '#7a7a76',
+                                    borderColor: lead.status === 'Won' ? '#059669' + '40' : lead.status === 'New' ? '#3b82f6' + '40' : '#e5e5e0',
+                                    backgroundColor: lead.status === 'Won' ? '#059669' + '10' : lead.status === 'New' ? '#3b82f6' + '10' : 'transparent',
+                                  }}
+                                >
+                                  {lead.status}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
-              ))
-            )}
-          </div>
+              );
+            })
+          )}
         </div>
 
         {/* Legend */}
-        <div className="p-4 border-t border-[#e5e5e0]">
+        <div className="p-4 border-t border-[#e5e5e0] shrink-0">
           <p className="text-[10px] font-bold text-[#7a7a76] uppercase tracking-wider mb-2">
             Légende
           </p>
@@ -227,14 +291,15 @@ export function MapRoot() {
       {/* Map fills remaining space */}
       <div className="flex-1 relative">
         <Map
-          center={[-73.5, 46.0]}
-          zoom={7}
+          center={[45.5019, -73.5674]}
+          zoom={12}
           className="h-full w-full"
         >
           <MapControls position="bottom-right" showZoom />
 
           {filteredLeads.map((lead) => {
             const color = getMarkerColor(lead);
+            const isSelected = selectedLeadId === lead.id;
 
             return (
               <MapMarker
@@ -244,9 +309,13 @@ export function MapRoot() {
               >
                 <MarkerContent>
                   <div
-                    className="h-4 w-4 rounded-full border-2 border-white shadow-lg cursor-pointer transition-transform hover:scale-125"
+                    className={cn(
+                      "rounded-full border-2 border-white shadow-lg cursor-pointer transition-transform hover:scale-125",
+                      isSelected ? "h-6 w-6 scale-125" : "h-4 w-4"
+                    )}
                     style={{ backgroundColor: color }}
                     title={lead.businessName}
+                    onClick={() => setSelectedLeadId(lead.id === selectedLeadId ? null : lead.id)}
                   />
                 </MarkerContent>
 
@@ -270,7 +339,8 @@ export function MapRoot() {
                     </div>
                     <Link
                       href={`/leads/${lead.id}`}
-                      className="inline-flex items-center text-[10px] font-bold text-[#f54e00] hover:underline"
+                      className="inline-flex items-center text-[10px] font-bold text-[#059669] hover:underline"
+                      onClick={() => setSelectedLeadId(lead.id)}
                     >
                       Voir le lead →
                     </Link>

@@ -4,6 +4,8 @@ import { ThemeProvider } from "@/components/theme-provider"
 import { LanguageProvider } from "@/lib/language-context"
 import { PageTransition } from "@/components/page-transition"
 import { cn } from "@/lib/utils"
+import { Analytics } from "@vercel/analytics/next"
+import { SpeedInsights } from "@vercel/speed-insights/next"
 import type { Metadata, Viewport } from "next"
 
 const inter = Inter({
@@ -69,6 +71,8 @@ export default function RootLayout({
             </PageTransition>
           </LanguageProvider>
         </ThemeProvider>
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   )

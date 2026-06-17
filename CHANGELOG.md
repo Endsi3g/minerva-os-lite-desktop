@@ -5,10 +5,27 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
-## [2.11.1] - 2026-06-16
+## [2.23.2] - 2026-06-17
+
+### Ajouté
+- Optimisation du portefeuille : scores de leads calculés en direct, vues Kanban et cartographiques, synthèse IA et nouvelle étape de profil dans l'onboarding.
 
 ### Corrigé
-- Correction des 8 erreurs TypeScript `TS7006` (paramètres implicitement typés `any`) restées en suspens depuis l'audit v2.11.0, dans `app/(app)/layout.tsx`, `app/(app)/leads/[id]/_components/lead-detail-client.tsx`, `components/realtime-sync-listener.tsx` et `lib/reach-context.tsx`. `pnpm typecheck` est désormais à 0 erreur.
+- Erreurs TypeScript `TS7006` corrigées.
+
+### Modifié
+- Performance : index SQLite, refonte du chemin critique de synchronisation et ajustement des plafonds mémoire.
+- UX : page d'accueil `/welcome` et design minimaliste.
+
+## [2.22.0] - 2026-06-15
+
+### Ajouté
+- Page d'accueil `/welcome`.
+- Intégrations tierces (Gmail, Drive, Outlook) avec configuration.
+- Authentification d'équipe et intégration LDAP via SSO.
+
+### Corrigé
+- Gestion des logs d'audit et authentification du back-office.
 
 ## [2.11.0] - 2026-06-16
 

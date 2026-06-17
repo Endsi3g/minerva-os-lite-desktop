@@ -21,6 +21,7 @@ import {
   Info,
   Building,
   ExternalLink,
+  Download,
 } from 'lucide-react';
 import Link from 'next/link';
 import type { SeoAuditResult, SeoAuditError } from '@/app/api/audit-seo/route';
@@ -34,7 +35,7 @@ function isError(r: AuditResponse): r is SeoAuditError {
 // Score circle colored by value
 function ScoreCircle({ score }: { score: number }) {
   const color =
-    score >= 70 ? '#059669' : score >= 40 ? '#f54e00' : '#ef4444';
+    score >= 70 ? '#059669' : score >= 40 ? '#f59e0b' : '#ef4444';
   const label =
     score >= 70 ? 'Bon' : score >= 40 ? 'Moyen' : 'Faible';
 
@@ -263,6 +264,7 @@ export function AuditRoot() {
   const [singleLoading, setSingleLoading] = useState(false);
   const [singleResult, setSingleResult] = useState<SeoAuditResult | null>(null);
   const [singleError, setSingleError] = useState<string | null>(null);
+  const [pdfExporting, setPdfExporting] = useState(false);
 
   // Batch mode
   const [batchResults, setBatchResults] = useState<BatchResult[]>([]);
@@ -345,6 +347,34 @@ export function AuditRoot() {
     setSingleError(null);
   };
 
+  const handleExportPdf = async () => {
+    if (!singleResult) return;
+    setPdfExporting(true);
+    try {
+      const res = await fetch(getApiUrl('/api/audit-seo/export-pdf'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          auditResult: singleResult,
+          businessName: selectedBatchLead?.businessName || singleUrl,
+        }),
+      });
+      const data = await res.json();
+      if (data.html) {
+        const win = window.open('', '_blank');
+        if (win) {
+          win.document.write(data.html);
+          win.document.close();
+          win.print();
+        }
+      }
+    } catch (err) {
+      console.error('Error exporting PDF:', err);
+    } finally {
+      setPdfExporting(false);
+    }
+  };
+
   const leadsWithWebsite = leads.filter((l) => l.website);
 
   return (
@@ -363,7 +393,7 @@ export function AuditRoot() {
         <Card className="border border-[#e5e5e0]">
           <CardHeader className="pb-3 border-b border-[#e5e5e0]">
             <CardTitle className="text-sm font-bold flex items-center gap-2">
-              <Globe className="h-4 w-4 text-[#f54e00]" />
+              <Globe className="h-4 w-4 text-[#059669]" />
               Audit URL unique
             </CardTitle>
           </CardHeader>
@@ -381,7 +411,7 @@ export function AuditRoot() {
               <Button
                 onClick={() => runSingleAudit()}
                 disabled={singleLoading || !singleUrl.trim()}
-                className="bg-[#f54e00] hover:bg-[#f54e00]/90 text-white shrink-0"
+                className="bg-[#059669] hover:bg-[#047857] text-white shrink-0"
               >
                 {singleLoading ? (
                   <>
@@ -396,7 +426,7 @@ export function AuditRoot() {
 
             {singleLoading && (
               <div className="flex items-center gap-2 text-sm text-[#7a7a76]">
-                <Loader2 className="h-4 w-4 animate-spin text-[#f54e00]" />
+                <Loader2 className="h-4 w-4 animate-spin text-[#059669]" />
                 Analyse en cours... Chargement et analyse du site.
               </div>
             )}
@@ -416,7 +446,25 @@ export function AuditRoot() {
             )}
 
             {singleResult && !singleLoading && (
-              <AuditResultCard result={singleResult} />
+              <>
+                <AuditResultCard result={singleResult} />
+                <div className="flex justify-end pt-1">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-xs gap-1.5 border-[#e5e5e0] text-[#26251e] hover:bg-[#fafaf8]"
+                    onClick={handleExportPdf}
+                    disabled={pdfExporting}
+                  >
+                    {pdfExporting ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Download className="h-3.5 w-3.5" />
+                    )}
+                    Exporter en PDF
+                  </Button>
+                </div>
+              </>
             )}
           </CardContent>
         </Card>
@@ -426,7 +474,7 @@ export function AuditRoot() {
           <CardHeader className="pb-3 border-b border-[#e5e5e0]">
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm font-bold flex items-center gap-2">
-                <BarChart3 className="h-4 w-4 text-[#f54e00]" />
+                <BarChart3 className="h-4 w-4 text-[#059669]" />
                 Audit du portefeuille
                 <Badge variant="outline" className="text-[10px] font-bold ml-1">
                   {leadsWithWebsite.length} site{leadsWithWebsite.length !== 1 ? 's' : ''}
@@ -502,19 +550,19 @@ export function AuditRoot() {
                                     res.score >= 70
                                       ? '#059669' + '1a'
                                       : res.score >= 40
-                                      ? '#f54e00' + '1a'
+                                      ? '#f59e0b' + '1a'
                                       : '#ef4444' + '1a',
                                   color:
                                     res.score >= 70
                                       ? '#059669'
                                       : res.score >= 40
-                                      ? '#f54e00'
+                                      ? '#f59e0b'
                                       : '#ef4444',
                                   borderColor:
                                     res.score >= 70
                                       ? '#059669' + '33'
                                       : res.score >= 40
-                                      ? '#f54e00' + '33'
+                                      ? '#f59e0b' + '33'
                                       : '#ef4444' + '33',
                                 }}
                               >
@@ -579,7 +627,7 @@ export function AuditRoot() {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                className="text-[10px] h-6 px-2 text-[#f54e00] hover:bg-[#f54e00]/10"
+                                className="text-[10px] h-6 px-2 text-[#059669] hover:bg-[#059669]/10"
                                 onClick={() => handleViewDetail(item.lead, res)}
                               >
                                 Voir détail

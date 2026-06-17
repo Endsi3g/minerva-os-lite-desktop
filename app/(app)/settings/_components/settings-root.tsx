@@ -293,6 +293,16 @@ export function SettingsRoot() {
       const nextSettings = { ...prev, [secKey]: newSectionData };
       localStorage.setItem('minerva_reach_settings', JSON.stringify(nextSettings));
 
+      // Broadcast avatar update so the topbar reflects it immediately
+      if (secKey === 'profile' && nextSettings.profile.avatarBase64) {
+        localStorage.setItem('minerva_avatar', nextSettings.profile.avatarBase64);
+        window.dispatchEvent(new StorageEvent('storage', {
+          key: 'minerva_avatar',
+          newValue: nextSettings.profile.avatarBase64,
+          storageArea: localStorage,
+        }));
+      }
+
       const saveToDb = async () => {
         try {
           const supabase = createClient();

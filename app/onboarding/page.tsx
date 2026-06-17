@@ -47,49 +47,6 @@ const PRESET_CITIES = [
   'Montréal', 'Québec', 'Laval', 'Gatineau', 'Sherbrooke', 'Toronto', 'Vancouver',
 ];
 
-// ─── Right Panel Content per Step ─────────────────────────────────────────────
-const RIGHT_PANEL_CONTENT: Record<string, { headline: string; sub: string; badge?: string }> = {
-  login: {
-    headline: 'Bienvenue sur Minerva',
-    sub: 'L\'IA de prospection locale la plus avancée pour les agences canadiennes.',
-    badge: 'Gratuit pour commencer',
-  },
-  otp: {
-    headline: 'Vérification sécurisée',
-    sub: 'Votre compte est protégé par une authentification en deux étapes.',
-    badge: 'Email vérifié',
-  },
-  selection: {
-    headline: 'Configurez vos agents',
-    sub: 'Choisissez vos niches et villes cibles pour que l\'IA commence à travailler pour vous.',
-    badge: 'Ciblage IA activé',
-  },
-  workspace: {
-    headline: 'Votre espace de travail',
-    sub: 'Centralisez vos prospects, campagnes et insights dans un tableau de bord unifié.',
-    badge: 'Dashboard personnel',
-  },
-  pricing: {
-    headline: 'Choisissez votre plan',
-    sub: 'Commencez gratuitement, montez en puissance quand vous en avez besoin.',
-    badge: 'Sans engagement',
-  },
-  analytics: {
-    headline: 'Aidez-nous à progresser',
-    sub: 'Partagez anonymement vos données d\'usage pour améliorer Minerva pour tous.',
-    badge: 'Données anonymisées',
-  },
-  profile: {
-    headline: 'Votre identité dans Minerva',
-    sub: 'Votre photo et rôle apparaîtront dans l\'en-tête, sur la page équipe et dans les emails générés par l\'IA.',
-    badge: 'Profil personnel',
-  },
-  finalizing: {
-    headline: 'Configuration en cours',
-    sub: 'Vos filtres et niches d\'IA sont en cours de configuration dans votre espace.',
-    badge: 'Minerva OS Lite',
-  },
-};
 
 // ─── Dot Progress Indicator ────────────────────────────────────────────────────
 function DotProgress({ currentStep }: { currentStep: Step }) {
@@ -157,7 +114,8 @@ export default function OnboardingPage() {
   const [step, setStep] = useState<Step>('selection');
   const [direction, setDirection] = useState<Direction>('forward');
   const [slidePhase, setSlidePhase] = useState<'idle' | 'exit' | 'enter'>('idle');
-  const [rightFade, setRightFade] = useState(true);
+  // rightFade was used by the removed right panel — kept as no-op to avoid refactoring goToStep
+  const [_rightFade, setRightFade] = useState(true);
 
   // Form states
   const [email, setEmail] = useState('');
@@ -435,16 +393,16 @@ export default function OnboardingPage() {
 
   const isEmailValid = email.includes('@') && email.includes('.');
   const isOtpComplete = otpCode.every((d) => d !== '');
-  const panelContent = RIGHT_PANEL_CONTENT[step] || RIGHT_PANEL_CONTENT['selection'];
+  // panelContent was used by the removed right panel — no longer needed
 
   return (
     <div className="min-h-screen w-screen bg-white text-[#26251e] font-sans selection:bg-[#10b981]/10 flex flex-col justify-between overflow-x-hidden relative">
 
-      {/* ── SPLIT ONBOARDING LAYOUT ── */}
-      <div className="flex-grow flex flex-col lg:flex-row h-screen min-h-screen overflow-hidden">
+      {/* ── CENTERED ONBOARDING LAYOUT ── */}
+      <div className="flex-grow flex flex-col h-screen min-h-screen overflow-hidden">
 
-        {/* ── LEFT COLUMN ── */}
-        <div className="w-full lg:w-1/2 flex flex-col justify-between py-10 px-6 sm:px-12 bg-white relative z-10 overflow-y-auto">
+        {/* ── FULL-WIDTH CENTERED COLUMN ── */}
+        <div className="w-full max-w-xl mx-auto flex flex-col justify-between py-10 px-6 sm:px-8 bg-white relative z-10 overflow-y-auto h-full">
 
           {/* Top bar */}
           <div className="flex items-center justify-between">
@@ -1165,143 +1123,6 @@ export default function OnboardingPage() {
           <div className="flex items-center gap-1.5 justify-start text-[10px] text-[#807d72] font-semibold mt-6">
             <MinervaIcon size={14} className="text-[#10b981]" />
             <span>Minerva OS Reach Lite</span>
-          </div>
-        </div>
-
-        {/* ── RIGHT COLUMN (Dynamic) ── */}
-        <div className="hidden lg:flex w-1/2 bg-[#0c0c0b] flex-col items-center justify-center relative p-8 border-l border-neutral-800">
-
-          {/* Background glows */}
-          <div className="absolute top-[10%] right-[10%] w-[350px] h-[350px] bg-[#10b981]/5 rounded-full blur-[140px] pointer-events-none" />
-          <div className="absolute bottom-[10%] left-[10%] w-[350px] h-[350px] bg-neutral-800/10 rounded-full blur-[140px] pointer-events-none" />
-
-          {/* Dynamic headline (fades with step) */}
-          <div
-            className={cn(
-              'absolute top-12 left-10 right-10 transition-all duration-300',
-              rightFade ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2',
-            )}
-          >
-            {panelContent.badge && (
-              <span className="inline-flex items-center gap-1.5 text-[10px] font-bold text-[#10b981] bg-[#10b981]/10 border border-[#10b981]/20 rounded-full px-3 py-1 mb-3">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#10b981]" />
-                {panelContent.badge}
-              </span>
-            )}
-            <h3
-              className="text-2xl font-light text-white font-serif leading-snug mb-2 font-georgia"
-            >
-              {panelContent.headline}
-            </h3>
-            <p className="text-xs text-neutral-400 font-semibold leading-relaxed max-w-xs">
-              {panelContent.sub}
-            </p>
-          </div>
-
-          {/* 3D Laptop Mockup */}
-          <div
-            className="relative w-full max-w-[560px] aspect-[16/11] select-none transition-transform duration-700 ease-out laptop-mockup-3d"
-          >
-            {/* Laptop lid */}
-            <div
-              className="relative bg-[#1f1f1e] rounded-xl p-[10px] border border-neutral-700/30 shadow-none laptop-lid-3d"
-            >
-              {/* Webcam dot */}
-              <div className="absolute top-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-black rounded-full border border-neutral-800 flex items-center justify-center">
-                <div className="w-0.5 h-0.5 bg-blue-500 rounded-full opacity-60" />
-              </div>
-
-              {/* Screen */}
-              <div className="relative bg-[#0c0c0b] aspect-[16/10] rounded-lg overflow-hidden border border-neutral-800/80 flex text-[10px] leading-tight text-white select-none">
-
-                {/* Sidebar */}
-                <div className="w-[110px] bg-[#161615] border-r border-neutral-800 flex flex-col justify-between p-2 shrink-0">
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-1.5 px-1 font-bold text-white tracking-tight text-[9px] pt-1">
-                      <MinervaIcon size={12} className="text-[#10b981]" />
-                      <span>Minerva OS</span>
-                    </div>
-                    <div className="space-y-1">
-                      {[
-                        { name: 'Prospecter', active: true },
-                        { name: 'Search', active: false },
-                        { name: 'Library', active: false },
-                        { name: 'Agents', active: false },
-                        { name: 'Integrations', active: false },
-                      ].map((item, i) => (
-                        <div
-                          key={i}
-                          className={cn(
-                            'flex items-center gap-1.5 px-1.5 py-1 rounded transition-colors text-[8px] font-semibold',
-                            item.active ? 'bg-[#1f1f1e] text-[#10b981] border border-neutral-800' : 'text-neutral-400',
-                          )}
-                        >
-                          <div className={cn('w-1.5 h-1.5 rounded-full', item.active ? 'bg-[#10b981]' : 'bg-neutral-600')} />
-                          <span>{item.name}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1.5 px-1 text-[8px] text-neutral-400 font-semibold border-t border-neutral-800/50 pt-2">
-                    <div className="w-4 h-4 rounded-full bg-neutral-800 flex items-center justify-center font-bold text-[7px] text-white">M</div>
-                    <span className="truncate text-left">{email ? email.split('@')[0] : 'workspace'}</span>
-                  </div>
-                </div>
-
-                {/* Main area */}
-                <div className="flex-1 bg-[#0c0c0b] flex flex-col justify-between p-3.5 relative">
-                  <div className="flex justify-between items-center pb-2 border-b border-neutral-800/40">
-                    <div className="flex gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-red-500/80" />
-                      <span className="w-1.5 h-1.5 rounded-full bg-yellow-500/80" />
-                      <span className="w-1.5 h-1.5 rounded-full bg-green-500/80" />
-                    </div>
-                    <div className="text-[7px] text-neutral-500 font-mono">https://minerva.os/dashboard</div>
-                  </div>
-
-                  <div className="flex-1 flex flex-col justify-center space-y-2.5 max-w-[240px] mx-auto py-2">
-                    <div
-                      className="bg-[#10b981]/10 border border-[#10b981]/30 rounded-lg p-3 text-left space-y-1.5 shadow-none animate-float-4s"
-                    >
-                      <div className="flex items-center justify-between text-[7px] font-bold text-[#10b981] uppercase tracking-wider">
-                        <span>Suggested Task</span>
-                        <span className="px-1.5 py-0.5 rounded-full bg-[#10b981]/20 text-[6px]">Active</span>
-                      </div>
-                      <h4 className="text-[10px] font-bold text-white tracking-tight font-serif leading-snug">Update local leads database & qualification pipeline</h4>
-                      <div className="flex items-center gap-1 pt-0.5">
-                        <div className="w-3 h-3 rounded-full bg-neutral-800 border border-neutral-700 flex items-center justify-center text-[5px]">👤</div>
-                        <span className="text-[7px] text-neutral-300 font-semibold">Sales AI Agent</span>
-                      </div>
-                    </div>
-
-                    <div
-                      className="bg-[#161615] border border-neutral-800 rounded-lg p-3 text-left space-y-1.5 shadow-none animate-float-5-5s"
-                    >
-                      <div className="flex items-center justify-between text-[7px] font-bold text-neutral-500 uppercase tracking-wider">
-                        <span>Recent Meeting</span>
-                      </div>
-                      <h4 className="text-[10px] font-bold text-neutral-200 tracking-tight font-serif leading-snug">Feedback my local pitch with Kindred bakery owner</h4>
-                      <div className="h-1 bg-neutral-800 rounded-full w-full overflow-hidden">
-                        <div className="bg-[#10b981] h-full rounded-full w-3/4" />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="border border-neutral-800/80 rounded-full bg-[#161615] px-3.5 py-2 flex items-center justify-between">
-                    <span className="text-[7.5px] text-neutral-400 font-semibold font-serif">Ask Sales Assistant anything...</span>
-                    <button className="w-4 h-4 bg-[#10b981] text-black font-bold rounded-full flex items-center justify-center text-[9px]">→</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Keyboard base */}
-            <div
-              className="absolute top-[96%] left-[3%] w-[94%] h-[15px] bg-[#2a2a29] rounded-b-xl border-t border-neutral-600/30 shadow-none keyboard-base-3d"
-            >
-              <div className="absolute top-0.5 left-1/2 -translate-x-1/2 w-[120px] h-[10px] bg-[#1a1a1a] rounded-b border-x border-b border-neutral-700/40" />
-              <div className="absolute top-[2px] left-[10px] right-[10px] h-0.5 bg-neutral-800 opacity-80" />
-            </div>
           </div>
         </div>
 
