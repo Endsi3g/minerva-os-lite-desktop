@@ -18,7 +18,7 @@
 [![pnpm Package Manager](https://img.shields.io/badge/pnpm-%3E%3D9.0.0-orange.svg?style=flat-square)](https://pnpm.io/)
 [![Framework Next.js](https://img.shields.io/badge/next.js-16.2.6-black.svg?style=flat-square)](https://nextjs.org/)
 [![Database Supabase](https://img.shields.io/badge/database-supabase-emerald.svg?style=flat-square)](https://supabase.com/)
-[![Version](https://img.shields.io/badge/version-2.50.0-f54e00.svg?style=flat-square)](#changelog)
+[![Version](https://img.shields.io/badge/version-2.59.0-f54e00.svg?style=flat-square)](#changelog)
 
 </div>
 
@@ -365,6 +365,45 @@ pnpm cap:open:android     # ouvre dans Android Studio
 
 ## Changelog
 
+### v2.59.0
+- **feat**: interface responsive mobile & tablette — pages leads, inbox, agents et settings adaptées aux petits écrans (breakpoints sm/md, grilles fluides, panneau détail plein écran sur mobile)
+- **style**: navigation mobile avec bottom bar sur les écrans < md ; sidebar masquée et accessible via menu hamburger
+
+### v2.58.0
+- **feat**: agents intégrés câblés à de vraies API IA — chaque agent envoie désormais ses instructions au modèle configuré (Anthropic, Groq, OpenRouter) au lieu de retourner des réponses simulées
+- **feat**: sélecteur de fournisseur par agent (Anthropic / Groq / OpenRouter) persisté dans les settings
+- **fix**: suppression de tous les `mock` et `Math.random()` restants dans le flux agent
+
+### v2.57.0
+- **feat**: scraper fiabilisé — fallback OSM garanti avec génération de leads variés si toutes les sources externes échouent
+- **feat**: page **Personas ICP** (`/personas`) — fiches persona générées depuis DESIGN.md avec avatars et critères de ciblage
+- **fix**: erreurs TypeScript dues aux imports croisés app/api éliminées (`SeoAuditResult`, `SeoAuditError`, types inbox déplacés vers `lib/`)
+
+### v2.56.1
+- **fix**: suppression de toute simulation dans le scraper — données réelles uniquement, aucun lead fictif injecté
+
+### v2.56.0
+- **feat**: page **Setup Checklist** (`/setup`) — liste de contrôle interactive guidant la configuration initiale (Supabase, Gmail, IA, Scraping)
+- **feat**: banner « Commencer la configuration » sur la page Today si le setup n'est pas complété
+
+### v2.55.0
+- **feat**: Inbox++ — quick actions dans la liste : marquer comme positif/négatif/à relancer en un clic
+- **feat**: création de deal directement depuis le panneau inbox (montant, probabilité, date de clôture)
+- **feat**: création de tâche depuis l'inbox avec assignation au lead courant
+- **feat**: filtre de campagne dans l'inbox (afficher uniquement les fils appartenant à une campagne)
+
+### v2.54.0
+- **feat**: **Personas ICP** configurables — page dédiée avec critères de scoring (fit score, intent score) par persona
+- **feat**: scoring de leads pondéré par persona actif, affiché dans la liste et le détail du lead
+
+### v2.53.0
+- **feat**: **Today cockpit** enrichi — section objectifs de la semaine, emails planifiés du jour, fil d'activité récente
+- **feat**: compteur d'emails planifiés dans le tableau de bord Today (tiré des séquences actives)
+
+### v2.51.0
+- **feat**: **KPIs revenus pipeline** — MRR estimé, ARR, valeur moyenne des deals, win rate affichés en en-tête de `/pipeline`
+- **feat**: calcul temps réel depuis les deals du contexte (montant × probabilité)
+
 ### v2.50.0
 - **feat**: page `/inbox` — boîte de réception prospection Gmail avec liste de tous les fils liés aux leads
 - **feat**: filtres Tous / Positif / À relancer / Négatif avec persistance `reply_status` sur le lead (dual-store SQLite + Supabase)
@@ -414,4 +453,4 @@ pnpm cap:open:android     # ouvre dans Android Studio
 
 ---
 
-*Minerva OS Reach Lite — v2.50.0*
+*Minerva OS Reach Lite — v2.59.0*
