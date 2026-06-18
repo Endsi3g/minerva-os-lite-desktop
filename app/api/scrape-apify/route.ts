@@ -86,12 +86,30 @@ export async function POST(req: NextRequest) {
       }
     );
 
+    const rawText = await apifyRes.text();
+
     if (!apifyRes.ok) {
-      const errText = await apifyRes.text();
-      return NextResponse.json({ error: `Apify API error ${apifyRes.status}: ${errText}` }, { status: 502 });
+      return NextResponse.json({ error: `Apify API error ${apifyRes.status}: ${rawText.slice(0, 300)}` }, { status: 502 });
     }
 
-    const places: ApifyPlace[] = await apifyRes.json();
+    if (rawText.trimStart().startsWith('<')) {
+      console.error('[scrape-apify] Apify returned HTML instead of JSON:', rawText.slice(0, 300));
+      return NextResponse.json(
+        { error: 'Apify a retourné une page HTML au lieu de JSON. La clé API est peut-être invalide ou expirée — vérifiez-la dans Paramètres → Intégrations.' },
+        { status: 502 }
+      );
+    }
+
+    let places: ApifyPlace[];
+    try {
+      places = JSON.parse(rawText);
+    } catch {
+      console.error('[scrape-apify] Apify JSON parse error. Body start:', rawText.slice(0, 300));
+      return NextResponse.json(
+        { error: 'Apify a retourné une réponse non-JSON inattendue. Vérifiez votre clé API dans Paramètres → Intégrations.' },
+        { status: 502 }
+      );
+    }
 
     // Deduplicate by name+city
     const seen = new Set<string>();

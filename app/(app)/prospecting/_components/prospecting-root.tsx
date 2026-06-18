@@ -307,8 +307,12 @@ export function ProspectingRoot() {
 
       // Detect Apify failure to show informational banner
       if (useApify && (apifyResult.errorMsg || apifyResult.leads.length === 0)) {
-        const reason = apifyResult.errorMsg ?? 'aucun résultat retourné';
-        setApifyFallbackMsg(`Apify n'a pas retourné de résultats (${reason}). Leads obtenus via OpenStreetMap / Overpass.`);
+        const raw = apifyResult.errorMsg ?? 'aucun résultat retourné';
+        // Translate technical JSON/HTML errors into a user-friendly hint
+        const reason = raw.includes('SyntaxError') || raw.includes('DOCTYPE') || raw.includes('non-JSON') || raw.includes('HTML')
+          ? 'La clé API Apify est peut-être invalide ou expirée — vérifiez-la dans Paramètres → Intégrations.'
+          : raw;
+        setApifyFallbackMsg(`Apify indisponible : ${reason} Leads obtenus via OpenStreetMap / Overpass.`);
       }
 
       let allLeads: ScrapedLead[] = [...osmResult.leads, ...apifyResult.leads];
