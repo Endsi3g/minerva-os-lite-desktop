@@ -106,7 +106,7 @@ const QUEBEC_CITY_COORDS: Record<string, [number, number]> = {
   'sept-îles': [50.2141, -66.3765],
   'rouyn-noranda': [48.2329, -79.0168],
   'val-dor': [48.0966, -77.7980],
-  'val-d\'or': [48.0966, -77.7980],
+  "val-d'or": [48.0966, -77.7980],
   'amos': [48.5675, -78.1196],
   'mont-tremblant': [46.1179, -74.5963],
   'saint-sauveur': [45.9007, -74.1680],
@@ -138,15 +138,15 @@ function getNicheOsmFilters(niche: string): string[] {
     return ['"shop"="bakery"', '"shop"="pastry"'];
   if (n.includes('bar') || n.includes('lounge') || n.includes('pub') || n.includes('taverne'))
     return ['"amenity"="bar"', '"amenity"="pub"', '"amenity"="nightclub"'];
-  if (n.includes('coiffure') || n.includes('coiffeur') || n.includes('salon') || n.includes('barber') || n.includes('barbier'))
+  if (n.includes('coiffure') || n.includes('coiffeur') || n.includes('barber') || n.includes('barbier'))
     return ['"shop"="hairdresser"', '"shop"="barber"'];
   if (n.includes('esthe') || n.includes('spa') || n.includes('beaute') || n.includes('soins') || n.includes('ongles') || n.includes('massage'))
     return ['"shop"="beauty"', '"leisure"="spa"', '"shop"="massage"'];
-  if (n.includes('tatou') || n.includes('perceur') || n.includes('tattoo') || n.includes('piercing'))
+  if (n.includes('tatou') || n.includes('tattoo') || n.includes('piercing'))
     return ['"shop"="tattoo"'];
   if (n.includes('dentaire') || n.includes('dentiste') || n.includes('dental'))
     return ['"amenity"="dentist"'];
-  if (n.includes('pharmacie') || n.includes('pharmacy') || n.includes('druggist'))
+  if (n.includes('pharmacie') || n.includes('pharmacy'))
     return ['"amenity"="pharmacy"'];
   if (n.includes('medecin') || n.includes('clinique') || n.includes('sante') || n.includes('hopital') || n.includes('medical'))
     return ['"amenity"="clinic"', '"amenity"="doctors"', '"healthcare"="clinic"', '"amenity"="hospital"'];
@@ -159,9 +159,9 @@ function getNicheOsmFilters(niche: string): string[] {
   if (n.includes('veterinaire') || n.includes('veto') || n.includes('animal') || n.includes('pet'))
     return ['"amenity"="veterinary"', '"shop"="pet"'];
   if (n.includes('plombier') || n.includes('plomberie'))
-    return ['"craft"="plumber"'];
+    return ['"craft"="plumber"', '"shop"="plumber"'];
   if (n.includes('electricien') || n.includes('electricite') || n.includes('electrique'))
-    return ['"craft"="electrician"'];
+    return ['"craft"="electrician"', '"shop"="electrician"'];
   if (n.includes('peintre') || n.includes('peinture'))
     return ['"craft"="painter"'];
   if (n.includes('menuisier') || n.includes('menuiserie') || n.includes('charpente'))
@@ -194,11 +194,9 @@ function getNicheOsmFilters(niche: string): string[] {
     return ['"shop"="cleaning"', '"craft"="cleaning"'];
   if (n.includes('photo') || n.includes('photographie'))
     return ['"shop"="photographer"'];
-  if (n.includes('videaste') || n.includes('video') || n.includes('filmeur'))
-    return ['"office"="videographer"'];
   if (n.includes('fleur') || n.includes('florist') || n.includes('fleuri'))
     return ['"shop"="florist"'];
-  if (n.includes('demenag') || n.includes('transport') || n.includes('moving'))
+  if (n.includes('demenag') || n.includes('moving'))
     return ['"shop"="mover"', '"office"="moving_company"'];
   if (n.includes('conduite') || n.includes('auto-ecole') || n.includes('driving') || n.includes('permis'))
     return ['"amenity"="driving_school"'];
@@ -206,7 +204,7 @@ function getNicheOsmFilters(niche: string): string[] {
     return ['"amenity"="kindergarten"', '"amenity"="childcare"'];
   if (n.includes('serrurier') || n.includes('locksmith'))
     return ['"craft"="locksmith"', '"shop"="locksmith"'];
-  if (n.includes('traiteur') || n.includes('evenement') || n.includes('catering') || n.includes('banquet'))
+  if (n.includes('traiteur') || n.includes('evenement') || n.includes('catering'))
     return ['"amenity"="restaurant"', '"shop"="deli"', '"amenity"="events_venue"'];
   if (n.includes('boucher') || n.includes('boucherie') || n.includes('charcuterie'))
     return ['"shop"="butcher"', '"shop"="deli"'];
@@ -224,29 +222,83 @@ function getNicheOsmFilters(niche: string): string[] {
     return ['"shop"="books"'];
   if (n.includes('bijoux') || n.includes('bijouterie') || n.includes('jewel'))
     return ['"shop"="jewelry"'];
-  if (n.includes('lunetterie') || n.includes('optique') || n.includes('optical'))
-    return ['"shop"="optician"'];
   if (n.includes('teinturerie') || n.includes('laverie') || n.includes('laundry') || n.includes('pressing'))
     return ['"shop"="laundry"', '"shop"="dry_cleaning"'];
   if (n.includes('ecole') || n.includes('cours') || n.includes('tuteur') || n.includes('formation'))
     return ['"amenity"="school"', '"amenity"="college"', '"office"="tutoring"'];
   if (n.includes('piscine') || n.includes('natation') || n.includes('swimming'))
     return ['"leisure"="swimming_pool"', '"leisure"="water_park"'];
-  if (n.includes('salle') || n.includes('evenement') || n.includes('venue'))
-    return ['"amenity"="events_venue"', '"leisure"="banquet_hall"'];
   if (n.includes('taxi') || n.includes('transport') || n.includes('limousine'))
     return ['"amenity"="taxi"'];
 
-  return ['"amenity"~"restaurant|cafe|bar|shop|office|clinic|pharmacy|school"'];
+  // Generic fallback: restaurants, shops, offices, services
+  return ['"amenity"="restaurant"', '"amenity"="cafe"', '"amenity"="bar"', '"shop"~"."', '"office"~"."', '"amenity"="clinic"'];
 }
 
-function buildOverpassQuery(filters: string[], lat: number, lon: number, radius: number, limit: number): string {
+/**
+ * Extract a short keyword from a niche label to use in OSM name-based search.
+ * This catches service businesses that aren't tagged in OSM with craft/shop tags
+ * but do have the niche keyword in their business name.
+ * Returns null for niches that are well-covered by OSM tags.
+ */
+function extractNicheKeyword(niche: string): string | null {
+  const n = niche.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+  // Niches well-covered by OSM tags — skip name search
+  if (n.includes('restaurant') || n.includes('cafe') || n.includes('pharmacie') || n.includes('dentiste') ||
+      n.includes('medecin') || n.includes('clinique') || n.includes('hopital') || n.includes('hotel') ||
+      n.includes('gym') || n.includes('ecole') || n.includes('veterinaire') || n.includes('bar') ||
+      n.includes('boulangerie') || n.includes('epicerie') || n.includes('fleur')) {
+    return null;
+  }
+  // Service / craft niches: use keyword in name search
+  if (n.includes('plomb')) return 'plomb';
+  if (n.includes('electr')) return 'electr';
+  if (n.includes('peint')) return 'peint';
+  if (n.includes('menuis') || n.includes('charpent') || n.includes('boisser')) return 'menuis';
+  if (n.includes('toitur') || n.includes('couvr')) return 'toitur';
+  if (n.includes('serrur') || n.includes('locksmith')) return 'serrur';
+  if (n.includes('nettoy') || n.includes('menag')) return 'nettoy';
+  if (n.includes('demenag') || n.includes('moving')) return 'demenag';
+  if (n.includes('paysag') || n.includes('gazon') || n.includes('landscape')) return 'paysag';
+  if (n.includes('informat') || n.includes('ordinat')) return 'informat';
+  if (n.includes('compt') || n.includes('fiscal') || n.includes('cpa')) return 'compt';
+  if (n.includes('assur')) return 'assur';
+  if (n.includes('immobil') || n.includes('courtier')) return 'immob';
+  if (n.includes('photo')) return 'photo';
+  if (n.includes('coiff') || n.includes('barber') || n.includes('barbier')) return 'coiff';
+  if (n.includes('esthe') || n.includes('ongles') || n.includes('spa')) return 'esthe';
+  if (n.includes('avocat') || n.includes('notaire')) return 'avocat';
+  if (n.includes('traiteur') || n.includes('catering')) return 'traiteur';
+  if (n.includes('pneu') || n.includes('tire')) return 'pneu';
+  if (n.includes('mecano') || n.includes('carrosserie') || n.includes('mecanique')) return 'mecani';
+  if (n.includes('marketing') || n.includes('agence web') || n.includes('site web')) return 'market';
+  if (n.includes('imprimerie') || n.includes('print')) return 'imprim';
+  if (n.includes('transport') || n.includes('livraison')) return 'transp';
+  // Generic: use first meaningful word
+  const words = n.split(/\s+/).filter(w => w.length >= 4);
+  return words[0]?.slice(0, 6) ?? null;
+}
+
+function buildOverpassQuery(
+  filters: string[],
+  lat: number,
+  lon: number,
+  radius: number,
+  limit: number,
+  nameKeyword?: string
+): string {
   const parts: string[] = [];
   for (const f of filters) {
     parts.push(`node[${f}](around:${radius},${lat},${lon});`);
     parts.push(`way[${f}](around:${radius},${lat},${lon});`);
   }
-  return `[out:json][timeout:30];(${parts.join('')});out center tags ${limit};`;
+  // Name-based fallback: catches service businesses not tagged with craft/shop keys
+  if (nameKeyword) {
+    const nr = Math.min(radius, 12000);
+    parts.push(`node["name"~"${nameKeyword}",i](around:${nr},${lat},${lon});`);
+    parts.push(`way["name"~"${nameKeyword}",i](around:${nr},${lat},${lon});`);
+  }
+  return `[out:json][timeout:22];(${parts.join('')});out center tags ${limit};`;
 }
 
 function cleanPhone(raw: string): string {
@@ -267,31 +319,7 @@ function generateSeoAudit(website: string, rating: number): string {
   return `Site HTTPS actif et excellente note (${rating}/5). Idéal pour un contrat d'onboarding récurrent.`;
 }
 
-// Run a single Overpass query and return parsed leads
-async function runOverpassQuery(filters: string[], lat: number, lon: number, radius: number, limit: number, niche: string, cityFallback: string): Promise<ScrapedLead[]> {
-  const query = buildOverpassQuery(filters, lat, lon, radius, limit);
-  const mirrors = [
-    'https://overpass-api.de/api/interpreter',
-    'https://overpass.kumi.systems/api/interpreter',
-    'https://overpass.openstreetmap.fr/api/interpreter',
-  ];
-
-  let elements: any[] = [];
-  for (const url of mirrors) {
-    try {
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: `data=${encodeURIComponent(query)}`,
-        signal: AbortSignal.timeout(30000),
-      });
-      if (!res.ok) continue;
-      const json = await res.json();
-      elements = json.elements ?? [];
-      if (elements.length > 0) break;
-    } catch { continue; }
-  }
-
+function processOsmElements(elements: any[], niche: string, cityFallback: string): ScrapedLead[] {
   const cleanNiche = niche.split(' / ')[0].trim();
   const leads: ScrapedLead[] = [];
 
@@ -311,28 +339,21 @@ async function runOverpassQuery(filters: string[], lat: number, lon: number, rad
     const street = tags['addr:street'] ?? '';
     const cityTag = tags['addr:city'] ?? tags['addr:place'] ?? '';
     const address = [houseNum, street, cityTag || cityFallback].filter(Boolean).join(' ');
-    const openingHours = tags['opening_hours'] ?? '';
-
-    const hasWebsite = !!website;
-    const rating = 0;
-    const reviewsCount = 0;
-
     const cuisine = tags.cuisine ? ` (${tags.cuisine.split(';')[0].trim()})` : '';
-    const businessName = `${name}${cuisine}`;
 
     leads.push({
       id: crypto.randomUUID(),
-      businessName,
+      businessName: `${name}${cuisine}`,
       niche: cleanNiche,
       city: cityTag || cityFallback,
       phone,
       email,
       website,
       address,
-      rating,
-      reviewsCount,
+      rating: 0,
+      reviewsCount: 0,
       mapsUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name + ' ' + address)}`,
-      seoAudit: generateSeoAudit(website, rating),
+      seoAudit: generateSeoAudit(website, 0),
       source: 'osm',
       latitude: elLat,
       longitude: elLon,
@@ -342,10 +363,53 @@ async function runOverpassQuery(filters: string[], lat: number, lon: number, rad
   return leads;
 }
 
-// Multi-niche, multi-city Overpass scraper
-async function runOverpassScraper(niches: string[], cities: string[], maxResults: number, radius: number): Promise<ScrapedLead[]> {
-  const allLeads: ScrapedLead[] = [];
+/**
+ * Run a single Overpass query, trying all mirrors in parallel and using the first success.
+ */
+async function runOverpassQuery(
+  filters: string[],
+  lat: number,
+  lon: number,
+  radius: number,
+  limit: number,
+  niche: string,
+  cityFallback: string,
+  nameKeyword?: string
+): Promise<ScrapedLead[]> {
+  const query = buildOverpassQuery(filters, lat, lon, radius, limit, nameKeyword);
+  const mirrors = [
+    'https://overpass-api.de/api/interpreter',
+    'https://overpass.kumi.systems/api/interpreter',
+    'https://overpass.openstreetmap.fr/api/interpreter',
+  ];
 
+  const fetchMirror = (url: string): Promise<any[]> =>
+    fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: `data=${encodeURIComponent(query)}`,
+      signal: AbortSignal.timeout(25000),
+    })
+      .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
+      .then(json => {
+        const elements = json.elements ?? [];
+        if (elements.length === 0) throw new Error('empty');
+        return elements;
+      });
+
+  // Try all mirrors in parallel, take the first to succeed
+  const elements = await Promise.any(mirrors.map(fetchMirror)).catch(() => [] as any[]);
+  return processOsmElements(elements, niche, cityFallback);
+}
+
+// Multi-niche, multi-city Overpass scraper
+async function runOverpassScraper(
+  niches: string[],
+  cities: string[],
+  maxResults: number,
+  radius: number
+): Promise<ScrapedLead[]> {
+  const allLeads: ScrapedLead[] = [];
   const perNichePerCity = Math.max(Math.floor(maxResults / (niches.length * cities.length)), 10);
 
   const tasks: Promise<ScrapedLead[]>[] = [];
@@ -356,8 +420,9 @@ async function runOverpassScraper(niches: string[], cities: string[], maxResults
 
     for (const niche of niches) {
       const filters = getNicheOsmFilters(niche);
+      const keyword = extractNicheKeyword(niche);
       const fetchLimit = Math.min(perNichePerCity * 4, 400);
-      tasks.push(runOverpassQuery(filters, lat, lon, r, fetchLimit, niche, city));
+      tasks.push(runOverpassQuery(filters, lat, lon, r, fetchLimit, niche, city, keyword ?? undefined));
     }
   }
 
@@ -368,83 +433,6 @@ async function runOverpassScraper(niches: string[], cities: string[], maxResults
 
   return allLeads;
 }
-
-// DDG-based directory scraper (Yelp, PagesJaunes, 411)
-async function scrapeDirectoryFromDDG(niche: string, city: string, source: 'yelp' | 'pagesjaunes' | '411'): Promise<ScrapedLead[]> {
-  let query: string;
-  if (source === 'yelp') {
-    query = `site:yelp.ca/biz/ "${niche}" "${city}"`;
-  } else if (source === 'pagesjaunes') {
-    query = `site:pagesjaunes.ca OR site:yellowpages.ca "${niche}" "${city}"`;
-  } else {
-    query = `site:411.ca "${niche}" "${city}"`;
-  }
-
-  const searchUrl = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`;
-
-  try {
-    const res = await fetch(searchUrl, {
-      headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' },
-      signal: AbortSignal.timeout(12000),
-    });
-    if (!res.ok) return [];
-
-    const html = await res.text();
-    const blocks = html.split('<div class="result__body">');
-    if (blocks.length <= 1) return [];
-
-    const leads: ScrapedLead[] = [];
-    const cleanNiche = niche.split(' / ')[0];
-
-    for (let j = 1; j < Math.min(blocks.length, 8); j++) {
-      const block = blocks[j].split('</div>')[0];
-      const uddgMatch = block.match(/uddg=([^"&'\s>]+)/);
-      if (!uddgMatch) continue;
-      const url = decodeURIComponent(uddgMatch[1]);
-
-      const titleMatch = block.match(/class="result__a"[^>]*>([\s\S]*?)<\/a>/);
-      if (!titleMatch) continue;
-      let businessName = titleMatch[1].replace(/<[^>]*>/g, '').trim();
-
-      if (source === 'yelp') businessName = businessName.split(' - ')[0].split(' | ')[0].trim();
-      else businessName = businessName.split(',')[0].split(' - ')[0].split(' | ')[0].trim();
-      businessName = businessName.replace(/\s*(?:Yelp|PagesJaunes|Pages Jaunes|YellowPages|411\.ca)\s*$/gi, '').trim();
-      if (!businessName || businessName.length < 2) continue;
-
-      const snippetMatch = block.match(/class="result__snippet"[^>]*>([\s\S]*?)<\/(?:a|div)>/);
-      const snippet = snippetMatch ? snippetMatch[1].replace(/<[^>]*>/g, '').trim() : '';
-
-      const phoneRegex = /(?:\+?1[-. ]?)?\(?([2-9][0-8][0-9])\)?[-. ]?([2-9][0-9]{2})[-. ]?([0-9]{4})/;
-      const phoneMatch = snippet.match(phoneRegex);
-      const phone = phoneMatch ? cleanPhone(phoneMatch[0]) : '';
-
-      const ratingMatch = snippet.match(/([0-9][.,][0-9])\s*(?:\/5|étoiles?|stars?|★)/i);
-      const rating = ratingMatch ? parseFloat(ratingMatch[1].replace(',', '.')) : 0;
-
-      const reviewsMatch = snippet.match(/([0-9]+)\s*(?:avis|commentaires|reviews)/i);
-      const reviewsCount = reviewsMatch ? parseInt(reviewsMatch[1]) : 0;
-
-      leads.push({
-        id: crypto.randomUUID(),
-        businessName,
-        niche: cleanNiche,
-        city,
-        phone,
-        email: '',
-        website: '',
-        rating,
-        reviewsCount,
-        mapsUrl: url,
-        seoAudit: `Fiche ${source === 'yelp' ? 'Yelp' : source === 'pagesjaunes' ? 'PagesJaunes' : '411.ca'} active. Aucun site internet direct référencé.`,
-        source,
-        ...getCityCoords(city),
-      });
-    }
-
-    return leads;
-  } catch { return []; }
-}
-
 
 function dedup(leads: ScrapedLead[]): ScrapedLead[] {
   const seenNames = new Set<string>();
@@ -468,69 +456,42 @@ export async function POST(req: NextRequest) {
     if (!user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
 
     const body = await req.json();
-    // Support both legacy `niche` (string) and new `niches` (string[])
     const niches: string[] = Array.isArray(body.niches) && body.niches.length > 0
       ? body.niches
       : body.niche ? [body.niche] : ['commerce local'];
     const cities: string[] = Array.isArray(body.cities) && body.cities.length > 0
       ? body.cities
       : body.city ? [body.city] : ['Montréal'];
-    const sources: string[] = Array.isArray(body.sources) && body.sources.length > 0 ? body.sources : ['google'];
+    const sources: string[] = Array.isArray(body.sources) && body.sources.length > 0
+      ? body.sources : ['google'];
     const maxResults = Math.min(Math.max(Number(body.maxResults) || 50, 5), 500);
     const radius = Math.min(Math.max(Number(body.radius) || 10000, 2000), 50000);
 
     const allLeads: ScrapedLead[] = [];
     const usedSources: string[] = [];
 
-    // ── OSM / Overpass — always uses open data, never Apify ──
+    // OSM / Overpass — open data, tag-based + name-keyword combined query
     if (sources.includes('google')) {
       const osmLeads = await runOverpassScraper(niches, cities, maxResults, radius);
       allLeads.push(...osmLeads);
       usedSources.push('osm');
     }
 
-    // ── Yelp ──
-    if (sources.includes('yelp')) {
-      const tasks = cities.flatMap(city => niches.map(niche => scrapeDirectoryFromDDG(niche, city, 'yelp')));
-      const results = await Promise.allSettled(tasks);
-      for (const r of results) {
-        if (r.status === 'fulfilled') allLeads.push(...r.value);
-      }
-      usedSources.push('yelp');
-    }
-
-    // ── PagesJaunes ──
-    if (sources.includes('pagesjaunes')) {
-      const tasks = cities.flatMap(city => niches.map(niche => scrapeDirectoryFromDDG(niche, city, 'pagesjaunes')));
-      const results = await Promise.allSettled(tasks);
-      for (const r of results) {
-        if (r.status === 'fulfilled') allLeads.push(...r.value);
-      }
-      usedSources.push('pagesjaunes');
-    }
-
-    // ── 411.ca ──
-    if (sources.includes('411')) {
-      const tasks = cities.flatMap(city => niches.map(niche => scrapeDirectoryFromDDG(niche, city, '411')));
-      const results = await Promise.allSettled(tasks);
-      for (const r of results) {
-        if (r.status === 'fulfilled') allLeads.push(...r.value);
-      }
-      usedSources.push('411');
-    }
-
     const unique = dedup(allLeads);
 
     if (unique.length > 0) {
-      return NextResponse.json({ leads: unique.slice(0, maxResults), source: usedSources.join('+'), total: unique.length });
+      return NextResponse.json({
+        leads: unique.slice(0, maxResults),
+        source: usedSources.join('+'),
+        total: unique.length,
+      });
     }
 
-    // No real results found — return empty, never simulate
     return NextResponse.json({
       leads: [],
       source: usedSources.join('+') || 'none',
       total: 0,
-      message: 'Aucun résultat trouvé pour cette combinaison niche/ville. Essayez une autre niche, une autre ville ou activez Apify pour des résultats Google Maps.',
+      message: 'Aucun résultat OSM pour cette combinaison niche/ville. Activez Apify (Google Maps) dans Paramètres → Intégrations pour des résultats garantis.',
     });
 
   } catch (err) {

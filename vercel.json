@@ -1,4 +1,8 @@
 {
+  "functions": {
+    "app/api/scrape-maps/route.ts": { "maxDuration": 60 },
+    "app/api/scrape-apify/route.ts": { "maxDuration": 90 }
+  },
   "crons": [
     { "path": "/api/cron/overdue-check", "schedule": "0 8 * * *" },
     { "path": "/api/cron/daily-digest", "schedule": "0 20 * * *" },

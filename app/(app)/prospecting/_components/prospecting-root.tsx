@@ -182,6 +182,7 @@ export function ProspectingRoot() {
   const [selectedPopupLead, setSelectedPopupLead] = useState<ScrapedLead | null>(null);
   const [sourceSummary, setSourceSummary] = useState('');
   const [apifyFallbackMsg, setApifyFallbackMsg] = useState<string | null>(null);
+  const [osmWarningMsg, setOsmWarningMsg] = useState<string | null>(null);
 
   useEffect(() => {
     const init = async () => {
@@ -216,9 +217,9 @@ export function ProspectingRoot() {
 
   const sources = [
     { id: 'google', label: 'Google Maps / OSM', description: 'Données ouvertes — toujours disponible', available: true },
-    { id: 'yelp', label: 'Yelp', description: 'Annuaire nord-américain', available: true },
-    { id: 'pagesjaunes', label: 'PagesJaunes / YellowPages', description: 'Annuaire Québec / Canada', available: true },
-    { id: '411', label: '411.ca', description: 'Annuaire téléphonique canadien', available: true },
+    { id: 'yelp', label: 'Yelp', description: 'Intégration directe prochainement', available: false },
+    { id: 'pagesjaunes', label: 'PagesJaunes / YellowPages', description: 'Intégration directe prochainement', available: false },
+    { id: '411', label: '411.ca', description: 'Intégration directe prochainement', available: false },
     {
       id: 'apify', label: 'Apify (Google Places)',
       description: apifyConfigured === true ? 'Clé configurée — données enrichies (photos, email)' : apifyConfigured === false ? 'Clé manquante → Paramètres > Intégrations' : 'Vérification...',
@@ -239,6 +240,7 @@ export function ProspectingRoot() {
     setImportCount(null);
     setSourceSummary('');
     setApifyFallbackMsg(null);
+    setOsmWarningMsg(null);
     setScraping(true);
     setScrapeStep(0);
     setScrapeProgress(10);
@@ -304,6 +306,15 @@ export function ProspectingRoot() {
         : Promise.resolve({ leads: [], source: 'apify' });
 
       const [osmResult, apifyResult] = await Promise.all([osmPromise, apifyPromise]);
+
+      // Detect OSM empty result
+      if (osmResult.leads.length === 0 && effectiveNativeSources.includes('google')) {
+        if (osmResult.errorMsg) {
+          setOsmWarningMsg(`OSM indisponible (${osmResult.errorMsg.slice(0, 80)}). Activez Apify pour des résultats Google Maps garantis.`);
+        } else {
+          setOsmWarningMsg('Aucun résultat OSM pour cette niche — les métiers de service (plombier, électricien…) sont peu référencés dans OpenStreetMap. Activez Apify pour accéder aux données Google Maps.');
+        }
+      }
 
       // Detect Apify failure to show informational banner
       if (useApify && (apifyResult.errorMsg || apifyResult.leads.length === 0)) {
@@ -430,7 +441,7 @@ export function ProspectingRoot() {
             Prospection locale
           </h1>
           <p className="text-xs text-muted-foreground">
-            Combinez plusieurs sources (OSM, Yelp, PagesJaunes, 411, Apify) en un seul scrape. Filtrez, triez et importez en un clic.
+            Scraping OSM (données ouvertes) + Apify Google Maps (clé requise). Filtrez, triez et importez en un clic.
           </p>
         </div>
 
@@ -659,6 +670,21 @@ export function ProspectingRoot() {
             </CardContent>
           </Card>
         </div>
+
+        {/* OSM empty-result banner */}
+        {osmWarningMsg && !scraping && (
+          <div className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-800 px-4 py-3 animate-in fade-in duration-200">
+            <WifiOff className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+            <p className="text-[11px] text-amber-800 dark:text-amber-300 leading-relaxed">
+              <span className="font-semibold">OSM — 0 résultats.</span>{' '}
+              {osmWarningMsg}
+              {' '}<a href="/settings" className="text-[#f54e00] underline font-semibold">Configurer Apify →</a>
+            </p>
+            <button onClick={() => setOsmWarningMsg(null)} className="ml-auto shrink-0 hover:opacity-70 text-amber-600 dark:text-amber-400 transition-opacity">
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        )}
 
         {/* Apify fallback info banner */}
         {apifyFallbackMsg && !scraping && (
