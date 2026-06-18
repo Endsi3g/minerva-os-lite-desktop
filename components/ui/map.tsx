@@ -233,9 +233,6 @@ const Map = forwardRef<MapRef, MapProps>(function Map(
 
     const styleDataHandler = () => {
       clearStyleTimeout();
-      // Delay to ensure style is fully processed before allowing layer operations
-      // This is a workaround to avoid race conditions with the style loading
-      // else we have to force update every layer on setStyle change
       styleTimeoutRef.current = setTimeout(() => {
         setIsStyleLoaded(true);
         if (projection) {
@@ -243,7 +240,15 @@ const Map = forwardRef<MapRef, MapProps>(function Map(
         }
       }, 100);
     };
-    const loadHandler = () => setIsLoaded(true);
+    const loadHandler = () => {
+      map.resize();
+      setIsLoaded(true);
+    };
+
+    // Resize the canvas whenever the container's dimensions change (handles
+    // cases where the CSS height is 0 at init time — flex/h-full chains).
+    const resizeObserver = new ResizeObserver(() => { map.resize(); });
+    resizeObserver.observe(containerRef.current);
 
     // Viewport change handler - skip if triggered by internal update
     const handleMove = () => {
@@ -258,6 +263,7 @@ const Map = forwardRef<MapRef, MapProps>(function Map(
 
     return () => {
       clearStyleTimeout();
+      resizeObserver.disconnect();
       map.off("load", loadHandler);
       map.off("styledata", styleDataHandler);
       map.off("move", handleMove);

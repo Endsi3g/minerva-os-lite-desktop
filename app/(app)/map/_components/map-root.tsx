@@ -281,7 +281,7 @@ export function MapRoot() {
   ];
 
   return (
-    <div className="flex h-full overflow-hidden">
+    <div className="flex h-full w-full overflow-hidden absolute inset-0">
       {/* Left Sidebar */}
       <div className="w-[300px] flex flex-col border-r border-[#e5e5e0] bg-[#fafaf8] shrink-0 overflow-hidden">
         <div className="p-4 border-b border-[#e5e5e0] shrink-0">
@@ -542,9 +542,13 @@ export function MapRoot() {
         )}
       </div>
 
-      {/* Map */}
-      <div className="flex-1 relative">
-        <Map center={userLocation ?? [45.5019, -73.5674]} zoom={userLocation ? 13 : 12} className="h-full w-full">
+      {/* Map — center uses [lng, lat] as MapLibre expects */}
+      <div className="flex-1 relative min-h-0">
+        <Map
+          center={userLocation ? [userLocation[1], userLocation[0]] : [-73.5674, 45.5019]}
+          zoom={userLocation ? 13 : 12}
+          className="absolute inset-0 w-full h-full"
+        >
           <MapControls position="bottom-right" showZoom />
           <RouteLayer routeInfo={routeInfo} />
 

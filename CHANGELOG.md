@@ -5,6 +5,17 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [2.60.0] - 2026-06-18
+
+### Corrigé
+- **Carte interactive** (`/map`) — carte invisible sur tous les navigateurs résolue :
+  - Coordonnées `center` inversées (`[lat,lng]` → `[lng,lat]` conforme à l'API MapLibre) ; la carte s'affichait en Antarctique au lieu de Montréal.
+  - `ResizeObserver` ajouté au composant `Map` (`components/ui/map.tsx`) : `map.resize()` est appelé automatiquement quand le conteneur obtient ses dimensions CSS, évitant un canvas de hauteur 0.
+  - Conteneur de carte en `absolute inset-0` + `relative` ajouté à l'élément `<main>` du layout.
+  - `map.resize()` appelé dans le handler `load` pour garantir les bonnes dimensions dès le premier rendu.
+- **Déploiement Vercel** — `ERR_PNPM_OUTDATED_LOCKFILE` résolu : `pnpm-lock.yaml` commité (résolution des peer deps avec `@playwright/test` n'avait pas été commité).
+- **Apify** — `SyntaxError: Unexpected token '<'...` éliminé : la réponse est lue en texte avant `.json()`, la détection HTML retourne un message d'erreur lisible, les erreurs techniques dans le banner sont traduites en indication "Vérifiez votre clé API".
+
 ## [2.23.2] - 2026-06-17
 
 ### Ajouté

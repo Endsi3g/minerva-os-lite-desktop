@@ -1199,7 +1199,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
         </header>
 
         {/* Page Content Slot */}
-        <main className="flex-1 overflow-hidden bg-white mobile-main-content">
+        <main className="flex-1 overflow-hidden bg-white mobile-main-content relative">
           {children}
           <RealtimeSyncListener />
         </main>
