@@ -5,6 +5,19 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [2.64.0] - 2026-06-18
+
+### Ajouté — Pages produit
+- **`/playbooks`** — 10 playbooks de prospection prêts à l'emploi (Dentistes, Restos <4★, Plombiers, Salons, Ostéopathes, Immobilier, CPA, Gyms, Urgences, Avocats). Chaque playbook contient : persona ICP, preset scraping, séquence type, script d'appel, modèle de proposition. CTA « Déployer » crée une campagne réelle dans le CRM.
+- **`/integrations/forms`** — Gestion des webhooks inbound (Typeform, Tally, Webflow, Framer, Générique). Chaque soumission de formulaire crée automatiquement un lead taggé `source=inbound_form`. URL de webhook unique par connecteur.
+- **`/client-reports/[id]`** — Vue portail client par workspace : KPIs réels (leads générés, contactés, RDV, deals gagnés, MRR/ARR estimé, taux de conversion, meilleure niche). Basé sur les données réelles de la base.
+- **`/webhooks`** — Gestion des webhooks sortants avec sélection d'événements (`lead.created`, `deal.won`, `lead.contacted`, `lead.reply_positive`, `campaign.started`). Bouton « Tester » qui envoie un vrai event HTTP.
+
+### Infra
+- Tables Supabase + SQLite : `inbound_webhooks`, `outbound_webhooks`
+- Routes API : `/api/webhooks/inbound`, `/api/webhooks/inbound/[token]`, `/api/webhooks/outbound`, `/api/webhooks/outbound/[id]/test`
+- Sidebar : Playbooks (après Campagnes), Rapports clients (après Pipeline), Webhooks (dans Plateforme)
+
 ## [2.63.0] - 2026-06-18
 
 ### Ajouté — Nouvelles sources de prospection

@@ -18,6 +18,19 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v2.64.0',
+      date: '2026-06-18',
+      titleKey: 'changelog.v2_59_0_title' as TranslationKey,
+      descKey: 'changelog.v2_57_0_desc' as TranslationKey,
+      highlights: [
+        "/playbooks : 10 templates de prospection complets (persona ICP, preset de scraping, séquence email, script d'appel, modèle de proposition). Déployer un playbook crée une vraie campagne dans le CRM.",
+        '/integrations/forms : Webhooks inbound Typeform, Tally, Webflow, Framer — chaque soumission crée automatiquement un lead taggé source=inbound_form avec URL webhook unique.',
+        '/client-reports/[id] : Portail client avec KPIs réels par workspace (leads, RDV, deals gagnés, MRR/ARR estimé, taux de conversion) — basé sur les données Supabase.',
+        '/webhooks : Webhooks sortants avec 5 types d\'événements, bouton Tester, gestion active/inactif. Tables inbound_webhooks et outbound_webhooks ajoutées en base.',
+        'Sidebar : Playbooks et Rapports clients dans CRM & Prospection, Webhooks dans Plateforme.',
+      ],
+    },
+    {
       version: 'v2.63.0',
       date: '2026-06-18',
       titleKey: 'changelog.v2_59_0_title' as TranslationKey,

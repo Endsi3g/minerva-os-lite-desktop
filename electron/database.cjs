@@ -317,6 +317,35 @@ function initDb() {
     db.run(`CREATE INDEX IF NOT EXISTS idx_scrape_jobs_workspace_id ON scrape_jobs(workspace_id)`);
     db.run(`CREATE INDEX IF NOT EXISTS idx_scrape_jobs_status ON scrape_jobs(status)`);
 
+    // v2.64.0 — inbound/outbound webhooks
+    db.run(`CREATE TABLE IF NOT EXISTS inbound_webhooks (
+      id TEXT PRIMARY KEY,
+      user_id TEXT,
+      workspace_id TEXT,
+      platform TEXT DEFAULT 'other',
+      name TEXT,
+      token TEXT UNIQUE,
+      active INTEGER DEFAULT 1,
+      last_event_at TEXT,
+      last_event_data TEXT,
+      leads_created INTEGER DEFAULT 0,
+      created_at TEXT
+    )`);
+    db.run(`CREATE TABLE IF NOT EXISTS outbound_webhooks (
+      id TEXT PRIMARY KEY,
+      user_id TEXT,
+      workspace_id TEXT,
+      name TEXT,
+      url TEXT,
+      events TEXT DEFAULT '[]',
+      active INTEGER DEFAULT 1,
+      secret TEXT,
+      last_triggered_at TEXT,
+      last_status INTEGER,
+      last_error TEXT,
+      created_at TEXT
+    )`);
+
     // Indexes to avoid full table scans during sync
     db.run(`CREATE INDEX IF NOT EXISTS idx_leads_user_id ON leads(user_id)`);
     db.run(`CREATE INDEX IF NOT EXISTS idx_leads_sync_status ON leads(sync_status)`);

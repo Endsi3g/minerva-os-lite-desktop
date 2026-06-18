@@ -47,6 +47,9 @@ import {
   Inbox,
   ListChecks,
   Target,
+  BookOpen,
+  BarChart2,
+  Zap,
 } from 'lucide-react';
 import { BottomBlur } from '@/components/ui/edge-blur';
 import { cn } from '@/lib/utils';
@@ -435,7 +438,9 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
       items: [
         { name: 'Boîte de réception', href: '/inbox', icon: Inbox },
         { name: 'Campagnes', href: '/campaigns', icon: Megaphone },
+        { name: 'Playbooks', href: '/playbooks', icon: BookOpen },
         { name: 'Pipeline', href: '/pipeline', icon: Kanban },
+        { name: 'Rapports clients', href: '/client-reports', icon: BarChart2 },
         { name: 'Profils cibles (ICP)', href: '/personas', icon: Target },
         { name: 'Activités', href: '/activities', icon: Activity },
       ],
@@ -466,6 +471,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
       items: [
         { name: 'Configuration', href: '/setup', icon: ListChecks },
         { name: t('nav.integrations'), href: '/integrations', icon: Plug },
+        { name: 'Webhooks', href: '/webhooks', icon: Zap },
         { name: t('nav.download'), href: '/download', icon: Download },
       ],
     },

@@ -608,3 +608,40 @@ select 'Lucifee 💜',
        'lucifee', 'Autre', null, 'Minerva', true
 where not exists (select 1 from public.agents where name = 'Lucifee 💜' and author_id is null);
 
+
+-- v2.64.0 — Inbound Webhooks
+create table if not exists public.inbound_webhooks (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references auth.users(id) on delete cascade not null,
+  workspace_id uuid references public.workspaces(id) on delete set null,
+  platform text not null default 'other',
+  name text not null,
+  token text not null unique default encode(gen_random_bytes(24), 'hex'),
+  active boolean default true,
+  last_event_at timestamp with time zone,
+  last_event_data jsonb,
+  leads_created integer default 0,
+  created_at timestamp with time zone default now() not null
+);
+alter table public.inbound_webhooks enable row level security;
+create policy "Users manage own inbound_webhooks" on public.inbound_webhooks
+  for all using (user_id = auth.uid()) with check (user_id = auth.uid());
+
+-- v2.64.0 — Outbound Webhooks
+create table if not exists public.outbound_webhooks (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references auth.users(id) on delete cascade not null,
+  workspace_id uuid references public.workspaces(id) on delete set null,
+  name text not null,
+  url text not null,
+  events text[] not null default '{}',
+  active boolean default true,
+  secret text,
+  last_triggered_at timestamp with time zone,
+  last_status integer,
+  last_error text,
+  created_at timestamp with time zone default now() not null
+);
+alter table public.outbound_webhooks enable row level security;
+create policy "Users manage own outbound_webhooks" on public.outbound_webhooks
+  for all using (user_id = auth.uid()) with check (user_id = auth.uid());
