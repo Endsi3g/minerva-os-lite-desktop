@@ -18,6 +18,20 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v2.58.0',
+      date: '2026-06-17',
+      titleKey: 'changelog.v2_58_0_title',
+      descKey: 'changelog.v2_58_0_desc',
+      highlights: [
+        'Agents IA GMB Audit et Radar Réputation : remplacent Math.random() par de vraies réponses Anthropic/Groq/Together/OpenRouter.',
+        'Nouvelle route API /api/agents/run : exécute les agents built-in et personnalisés via le provider IA configuré dans les Paramètres.',
+        'Le score GMB est désormais extrait directement du rapport AI (regex sur **Score GMB :** N/100).',
+        'Agents personnalisés utilisés maintenant le champ instructions comme system prompt pour appels IA réels.',
+        'Log d\'exécution en temps réel pendant l\'appel IA (steps animés en parallèle).',
+        'Fallback gracieux : message d\'erreur dans le résultat si le provider IA est inaccessible.',
+      ],
+    },
+    {
       version: 'v2.57.0',
       date: '2026-06-17',
       titleKey: 'changelog.v2_57_0_title',

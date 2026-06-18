@@ -30,6 +30,7 @@ import { useReach } from '@/lib/reach-context';
 import { createClient } from '@/lib/supabase/client';
 import { useLanguage } from '@/lib/language-context';
 import { TranslationKey } from '@/lib/translations';
+import { getApiUrl } from '@/lib/api-helper';
 
 // Static builtin agents — always visible, defined here rather than in the local store.
 const BUILTIN_AGENTS = [
@@ -214,60 +215,46 @@ export default function AgentsPage() {
     const lead = leads.find(l => l.id === selectedLeadId);
     if (!lead) return;
 
-    if (activeAgentId === 'audit-gmb') {
-      const steps = [
+    // ── Build log steps based on agent type ──
+    const logSteps: string[] = (() => {
+      if (activeAgentId === 'audit-gmb') return [
         `Connexion à la fiche Google My Business de ${lead.businessName}...`,
         `Vérification de la fiche (${auditMode === 'deep' ? 'analyse complète' : 'scan rapide'})...`,
         `Analyse des photos, heures d'ouverture et description...`,
-        `Évaluation des avis clients récents et du taux de réponse...`,
-        `Génération du rapport GMB final...`
+        `Évaluation des avis clients récents...`,
+        `Génération du rapport GMB via IA...`,
       ];
-
-      for (let i = 0; i < steps.length; i++) {
-        setLogs(prev => [...prev, `[${i + 1}/${steps.length}] ${steps[i]}`]);
-        await new Promise(r => setTimeout(r, 600));
-      }
-
-      const score = Math.floor(Math.random() * 30) + 50; // 50-80
-      const mockReport = `# Audit GMB — ${lead.businessName}
-**Score GMB :** ${score}/100
-**Mode :** ${auditMode === 'deep' ? 'Analyse complète' : 'Scan rapide'}
-**Date :** ${new Date().toLocaleDateString('fr-CA')}
-**Ville :** ${lead.city || 'Montréal'}
-
-## État de la fiche
-- ⚠️ Photos : ${Math.floor(Math.random() * 5) + 1} photo(s) — Recommandé : 10+
-- ❌ Description : ${Math.random() > 0.5 ? 'Absente ou trop courte (< 250 caractères)' : 'Présente mais sans mots-clés locaux'}
-- ⚠️ Heures d'ouverture : Pas à jour pour les jours fériés québécois
-- ✅ Numéro de téléphone : Vérifié
-
-## Avis clients
-- Note moyenne estimée : ${(Math.random() * 1.5 + 3.0).toFixed(1)}/5
-- Taux de réponse aux avis : ${Math.floor(Math.random() * 40)}%
-- Dernière réponse publique : il y a ${Math.floor(Math.random() * 30) + 5} jours
-
-## Recommandations prioritaires
-1. Ajouter ${Math.floor(Math.random() * 8) + 5} photos de qualité (intérieur, équipe, produits)
-2. Rédiger une description incluant « ${lead.niche || 'votre secteur'} » et « Montréal »
-3. Mettre à jour les heures pour les congés du Québec (Saint-Jean-Baptiste, Action de grâces)
-4. Répondre aux avis négatifs dans les 48h`;
-
-      setResultData({ score, report: mockReport });
-      setIsRunning(false);
-
-    } else if (activeAgentId === 'pitcheur-qc') {
-      const steps = [
+      if (activeAgentId === 'pitcheur-qc') return [
         `Analyse du profil de ${lead.businessName} (${lead.niche || 'secteur'})...`,
-        `Adaptation du ton « ${pitchTone} » au marché montréalais...`,
-        `Rédaction du pitch en québécois authentique (canal : ${pitchChannel})...`,
-        `Finalisation du message avec accroche locale...`
+        `Adaptation du ton « ${pitchTone} » au marché québécois...`,
+        `Rédaction du pitch (canal : ${pitchChannel})...`,
+        `Finalisation avec accroche locale...`,
       ];
+      if (activeAgentId === 'radar-reputation') return [
+        `Scan de la réputation de ${lead.businessName}...`,
+        `Extraction des avis récents et analyse des sentiments...`,
+        `Identification des points critiques...`,
+        `Génération des templates de réponse via IA...`,
+      ];
+      return [
+        `Initialisation de l'agent personnalisé...`,
+        `Analyse du profil de ${lead.businessName}...`,
+        `Génération du résultat via IA...`,
+      ];
+    })();
 
-      for (let i = 0; i < steps.length; i++) {
-        setLogs(prev => [...prev, `[${i + 1}/${steps.length}] ${steps[i]}`]);
-        await new Promise(r => setTimeout(r, 600));
+    // Show log steps while the API call runs in parallel
+    const logPromise = (async () => {
+      for (let i = 0; i < logSteps.length - 1; i++) {
+        setLogs(prev => [...prev, `[${i + 1}/${logSteps.length}] ${logSteps[i]}`]);
+        await new Promise(r => setTimeout(r, 700));
       }
+    })();
 
+    if (activeAgentId === 'pitcheur-qc') {
+      // Pitcheur QC uses the existing generate-draft API (no random data needed)
+      await logPromise;
+      setLogs(prev => [...prev, `[${logSteps.length}/${logSteps.length}] ${logSteps[logSteps.length - 1]}`]);
       let content = '';
       if (pitchChannel === 'Email') {
         content = `Objet : Vos clients de ${lead.city || 'Montréal'} vous cherchent en ligne\n\nAllô ${lead.contactName || 'là'},\n\nJ'ai checké votre fiche Google pour ${lead.businessName} pis j'ai vu qu'y'a quelques affaires qui pourraient vous aider à pogner plus de clients dans le coin.\n\nTsé, les gens de ${lead.city || 'Montréal'} cherchent des ${lead.niche || 'commerces locaux'} en ligne avant de se déplacer. Si votre fiche est pas au boutte, c'est vos compétiteurs qui prennent vos clients.\n\nJ'aimerais ça vous montrer ça en 10 minutes — un petit appel pour vous expliquer concrètement. Êtes-vous disponible jeudi ou vendredi matin ?\n\nBonne journée,\n${userName}\n${companyName}`;
@@ -276,60 +263,47 @@ export default function AgentsPage() {
       } else {
         content = `[SCRIPT D'APPEL — Ton : ${pitchTone}]\n\n« Allô, c'est-tu ${lead.contactName || 'le gérant'} de ${lead.businessName} ? Parfait !\n\nMoi c'est ${userName} de ${companyName}. Je vous appelle parce que j'ai checké votre présence sur Google à ${lead.city || 'Montréal'} pis j'ai remarqué des affaires qui pourraient vous aider à avoir plus de clients.\n\nÊtes-vous ouvert à ce qu'on jase 5-10 minutes pour que je vous montre ce que j'ai trouvé ? C'est pas un argumentaire de vente plate, promis — juste vous montrer ce que vos compétiteurs font pis ce qu'on pourrait faire pour vous. »`;
       }
-
       setResultData({ content });
       setIsRunning(false);
 
-    } else if (activeAgentId === 'radar-reputation') {
-      const sourceLabel = reviewSource === 'google' ? 'Google Maps' : reviewSource === 'yelp' ? 'Yelp' : 'Facebook';
-      const steps = [
-        `Scan de la réputation de ${lead.businessName} sur ${sourceLabel}...`,
-        `Extraction des avis récents et analyse des sentiments...`,
-        `Identification des points critiques et tendances...`,
-        `Génération des templates de réponse professionnels...`
-      ];
-
-      for (let i = 0; i < steps.length; i++) {
-        setLogs(prev => [...prev, `[${i + 1}/${steps.length}] ${steps[i]}`]);
-        await new Promise(r => setTimeout(r, 600));
-      }
-
-      const rating = (Math.random() * 1.5 + 3.0).toFixed(1);
-      const totalReviews = Math.floor(Math.random() * 20) + 8;
-      const mockReport = `# Radar Réputation — ${lead.businessName}
-**Source :** ${sourceLabel}
-**Note estimée :** ${rating}/5 étoiles (${totalReviews} avis)
-**Sentiment :** ${parseFloat(rating) >= 4.0 ? '😊 Majoritairement positif' : '😐 Mitigé — attention requise'}
-
-## Points critiques identifiés
-- ${Math.random() > 0.5 ? "⚠️ Plusieurs avis négatifs sans réponse dans les 30 derniers jours" : "✅ Bonne gestion des avis récents"}
-- Délai moyen de réponse : ${Math.floor(Math.random() * 10) + 2} jours (recommandé : < 48h)
-- Mots-clés négatifs fréquents : « ${Math.random() > 0.5 ? 'attente, service lent' : 'prix, stationnement'} »
-
-## 💬 Template réponse avis positif (5 ⭐)
-« Merci beaucoup pour votre commentaire ! On est super contents que votre visite chez ${lead.businessName} ait été à la hauteur. On vous attend avec plaisir la prochaine fois ! »
-
-## ⚠️ Template réponse avis négatif (1-2 ⭐)
-« Bonjour, on est vraiment désolés que votre expérience n'ait pas été à la hauteur. Chez ${lead.businessName}, la satisfaction de nos clients est notre priorité. Pouvez-vous nous contacter directement pour qu'on puisse arranger la situation ? »
-
-## 🤝 Template réponse avis mitigé (3 ⭐)
-« Merci pour votre retour honnête ! On prend bonne note de vos commentaires et on travaille continuellement à améliorer notre service. N'hésitez pas à revenir nous voir ! »`;
-
-      setResultData({ rating, totalReviews, report: mockReport });
-      setIsRunning(false);
-
     } else {
+      // audit-gmb, radar-reputation, and user-created agents → real AI via /api/agents/run
       const userAgent = userAgents.find(a => a.id === activeAgentId);
-      const steps = [
-        `Initialisation de l'agent « ${userAgent?.name || 'personnalisé'} »...`,
-        `Analyse du profil de ${lead.businessName}...`,
-        `Génération du résultat...`
-      ];
-      for (let i = 0; i < steps.length; i++) {
-        setLogs(prev => [...prev, `[${i + 1}/${steps.length}] ${steps[i]}`]);
-        await new Promise(r => setTimeout(r, 600));
+      const params: Record<string, string> = {
+        auditMode,
+        reviewSource,
+        pitchTone,
+        pitchChannel,
+        ...(userAgent ? { agentName: userAgent.name, agentPrompt: userAgent.instructions || '' } : {}),
+      };
+
+      const [apiResult] = await Promise.all([
+        fetch(getApiUrl('/api/agents/run'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            agentId: activeAgentId,
+            lead: {
+              businessName: lead.businessName,
+              contactName: lead.contactName,
+              city: lead.city,
+              niche: lead.niche,
+              website: lead.website,
+            },
+            params,
+          }),
+        }).then(r => r.json()),
+        logPromise,
+      ]);
+
+      setLogs(prev => [...prev, `[${logSteps.length}/${logSteps.length}] ${logSteps[logSteps.length - 1]}`]);
+
+      if (apiResult.error) {
+        setLogs(prev => [...prev, `⚠️ Erreur IA : ${apiResult.error}`]);
+        setResultData({ report: `Erreur lors de la génération : ${apiResult.error}` });
+      } else {
+        setResultData({ report: apiResult.report, score: apiResult.score ?? null });
       }
-      setResultData({ report: `Résultat généré par « ${userAgent?.name || 'cet agent'} » pour ${lead.businessName}.` });
       setIsRunning(false);
     }
   };
