@@ -478,66 +478,15 @@ export async function POST(req: NextRequest) {
     const sources: string[] = Array.isArray(body.sources) && body.sources.length > 0 ? body.sources : ['google'];
     const maxResults = Math.min(Math.max(Number(body.maxResults) || 50, 5), 500);
     const radius = Math.min(Math.max(Number(body.radius) || 10000, 2000), 50000);
-    const query: string | undefined = body.query;
-
-    // Load Apify token
-    const { data: settings } = await supabase.from('settings').select('apify_token, apify_api_key').eq('user_id', user.id).maybeSingle();
-    const apifyToken: string | null = (settings as any)?.apify_token ?? (settings as any)?.apify_api_key ?? process.env.APIFY_API_TOKEN ?? null;
-    const hasApify = !!(apifyToken && apifyToken.startsWith('apify_api_') && !apifyToken.includes('placeholder'));
 
     const allLeads: ScrapedLead[] = [];
     const usedSources: string[] = [];
 
-    // ── OSM / Overpass ──
+    // ── OSM / Overpass — always uses open data, never Apify ──
     if (sources.includes('google')) {
-      let osmLeads: ScrapedLead[] = [];
-      let usedApify = false;
-
-      if (hasApify) {
-        try {
-          const searchTerms = cities.flatMap(city => niches.map(niche => query || `${niche} ${city}`));
-          const apifyRes = await fetch(
-            `https://api.apify.com/v2/acts/compass~crawler-google-places/run-sync-get-dataset-items?token=${apifyToken}&timeout=60&memory=512`,
-            {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ searchTerms: searchTerms.slice(0, 10), maxCrawledPlacesPerSearch: Math.ceil(maxResults / Math.min(searchTerms.length, 10)), language: 'fr', countryCode: 'ca' }),
-              signal: AbortSignal.timeout(65000),
-            }
-          );
-          if (apifyRes.ok) {
-            const items = await apifyRes.json() as any[];
-            osmLeads = items.filter((p: any) => p.title).map((p: any) => ({
-              id: crypto.randomUUID(),
-              businessName: p.title,
-              niche: p.categoryName ?? niches[0] ?? 'Commerce local',
-              city: p.city ?? cities[0],
-              phone: p.phone ?? '',
-              email: p.email ?? '',
-              website: p.website ?? '',
-              address: p.address ?? '',
-              rating: p.totalScore ?? 0,
-              reviewsCount: p.reviewsCount ?? 0,
-              mapsUrl: p.url ?? '',
-              seoAudit: generateSeoAudit(p.website ?? '', p.totalScore ?? 0),
-              source: 'apify',
-              latitude: p.location?.lat,
-              longitude: p.location?.lng,
-            }));
-            usedApify = true;
-            usedSources.push('apify');
-          }
-        } catch (err) {
-          console.warn('[scrape-maps] Apify fallback to Overpass:', err);
-        }
-      }
-
-      if (!usedApify) {
-        osmLeads = await runOverpassScraper(niches, cities, maxResults, radius);
-        usedSources.push('osm');
-      }
-
+      const osmLeads = await runOverpassScraper(niches, cities, maxResults, radius);
       allLeads.push(...osmLeads);
+      usedSources.push('osm');
     }
 
     // ── Yelp ──

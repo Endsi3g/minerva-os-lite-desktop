@@ -18,6 +18,20 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v2.57.0',
+      date: '2026-06-17',
+      titleKey: 'changelog.v2_57_0_title',
+      descKey: 'changelog.v2_57_0_desc',
+      highlights: [
+        'OSM/Overpass tourne TOUJOURS en parallèle, même quand Apify est sélectionné — garantit des leads même en cas d\'échec Apify.',
+        'Logique Apify-interne supprimée de scrape-maps : la source "Google Maps / OSM" est désormais exclusivement Overpass, sans confusion.',
+        'Gestion d\'erreur par source (per-fetch .catch()) : un échec Apify n\'empêche plus d\'obtenir les résultats OSM.',
+        'Bannière informative si Apify échoue : raison + lien "Vérifier la clé →".',
+        'Page Personas conforme DESIGN.md : bg-background, bg-card border-border, aucune shadow sur cards, hovers #e5e5e2, CTA vert CRM.',
+        'Correction build Vercel : types API (SeoAuditResult, InboxThread, ThreadMessage) extraits vers lib/ pour respecter la server boundary Next.js.',
+      ],
+    },
+    {
       version: 'v2.54.0',
       date: '2026-06-17',
       titleKey: 'changelog.v2_54_0_title',

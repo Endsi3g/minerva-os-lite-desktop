@@ -181,6 +181,7 @@ export function ProspectingRoot() {
   const [importCount, setImportCount] = useState<number | null>(null);
   const [selectedPopupLead, setSelectedPopupLead] = useState<ScrapedLead | null>(null);
   const [sourceSummary, setSourceSummary] = useState('');
+  const [apifyFallbackMsg, setApifyFallbackMsg] = useState<string | null>(null);
 
   useEffect(() => {
     const init = async () => {
@@ -237,6 +238,7 @@ export function ProspectingRoot() {
     setSelectedIds([]);
     setImportCount(null);
     setSourceSummary('');
+    setApifyFallbackMsg(null);
     setScraping(true);
     setScrapeStep(0);
     setScrapeProgress(10);
@@ -271,27 +273,45 @@ export function ProspectingRoot() {
       const nativeSources = selectedSources.filter(s => s !== 'apify');
       const useApify = selectedSources.includes('apify') && apifyConfigured === true;
 
-      const fetches: Promise<Response>[] = [];
+      // Always include OSM ('google') as fallback — even when only Apify is selected.
+      // This guarantees leads are returned if Apify times out or returns empty results.
+      const effectiveNativeSources = nativeSources.length > 0 ? nativeSources : (useApify ? ['google'] : []);
 
-      if (nativeSources.length > 0) {
-        fetches.push(fetch(getApiUrl('/api/scrape-maps'), {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ niches, cities, query: customQuery || undefined, sources: nativeSources, maxResults, radius }),
-        }));
+      type FetchResult = { leads: ScrapedLead[]; source: string; errorMsg?: string };
+
+      const osmPromise: Promise<FetchResult> = effectiveNativeSources.length > 0
+        ? fetch(getApiUrl('/api/scrape-maps'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ niches, cities, query: customQuery || undefined, sources: effectiveNativeSources, maxResults, radius }),
+          })
+            .then(r => r.json())
+            .then((d: any) => ({ leads: d.leads ?? [], source: 'osm' }))
+            .catch((err) => { console.warn('[prospecting] OSM fetch error:', err); return { leads: [], source: 'osm', errorMsg: String(err) }; })
+        : Promise.resolve({ leads: [], source: 'osm' });
+
+      const apifyPromise: Promise<FetchResult> = useApify
+        ? fetch(getApiUrl('/api/scrape-apify'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ niches, cities, query: customQuery || undefined, maxResults }),
+          })
+            .then(r => r.json())
+            .then((d: any) => d.error
+              ? { leads: [], source: 'apify', errorMsg: d.error }
+              : { leads: d.leads ?? [], source: 'apify' })
+            .catch((err) => { console.warn('[prospecting] Apify fetch error:', err); return { leads: [], source: 'apify', errorMsg: String(err) }; })
+        : Promise.resolve({ leads: [], source: 'apify' });
+
+      const [osmResult, apifyResult] = await Promise.all([osmPromise, apifyPromise]);
+
+      // Detect Apify failure to show informational banner
+      if (useApify && (apifyResult.errorMsg || apifyResult.leads.length === 0)) {
+        const reason = apifyResult.errorMsg ?? 'aucun résultat retourné';
+        setApifyFallbackMsg(`Apify n'a pas retourné de résultats (${reason}). Leads obtenus via OpenStreetMap / Overpass.`);
       }
 
-      if (useApify) {
-        fetches.push(fetch(getApiUrl('/api/scrape-apify'), {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ niches, cities, query: customQuery || undefined, maxResults }),
-        }));
-      }
-
-      const responses = await Promise.all(fetches);
-      const dataArr = await Promise.all(responses.map(r => r.json()));
-      let allLeads: ScrapedLead[] = dataArr.flatMap((d: any) => d.leads ?? []);
+      let allLeads: ScrapedLead[] = [...osmResult.leads, ...apifyResult.leads];
 
       // Client-side dedup by name+city
       const seen = new Set<string>();
@@ -635,6 +655,21 @@ export function ProspectingRoot() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Apify fallback info banner */}
+        {apifyFallbackMsg && !scraping && (
+          <div className="flex items-start gap-3 rounded-lg border border-border bg-card px-4 py-3 animate-in fade-in duration-200">
+            <WifiOff className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5" />
+            <p className="text-[11px] text-muted-foreground leading-relaxed">
+              <span className="font-semibold text-foreground">Apify indisponible</span>{' '}
+              {apifyFallbackMsg}
+              {' '}<a href="/settings" className="text-[#059669] underline font-semibold">Vérifier la clé →</a>
+            </p>
+            <button onClick={() => setApifyFallbackMsg(null)} className="ml-auto shrink-0 hover:text-foreground text-muted-foreground transition-colors">
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        )}
 
         {/* Progress */}
         {scraping && (
