@@ -24,7 +24,7 @@ import {
   Download,
 } from 'lucide-react';
 import Link from 'next/link';
-import type { SeoAuditResult, SeoAuditError } from '@/app/api/audit-seo/route';
+import type { SeoAuditResult, SeoAuditError } from '@/app/api/audit-seo/types';
 
 type AuditResponse = SeoAuditResult | SeoAuditError;
 
