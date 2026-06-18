@@ -136,6 +136,7 @@ export function ProspectingRoot() {
   const [apifyConfigured, setApifyConfigured] = useState<boolean | 'checking'>('checking');
   const [hereConfigured, setHereConfigured] = useState<boolean | 'checking'>('checking');
   const [yelpConfigured, setYelpConfigured] = useState<boolean | 'checking'>('checking');
+  const [firecrawlConfigured, setFirecrawlConfigured] = useState<boolean | 'checking'>('checking');
   const [userCities, setUserCities] = useState<string[]>([]);
 
   // Niche selector
@@ -192,7 +193,7 @@ export function ProspectingRoot() {
         const supabase = createClient();
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-          const { data } = await supabase.from('settings').select('niches, cities, apify_token, here_api_key, yelp_api_key').eq('user_id', user.id).maybeSingle();
+          const { data } = await supabase.from('settings').select('niches, cities, apify_token, here_api_key, yelp_api_key, firecrawl_api_key').eq('user_id', user.id).maybeSingle();
           if (data) {
             setUserCities((data as any).cities || []);
             if ((data as any).cities?.length > 0) setSelectedCities([(data as any).cities[0]]);
@@ -202,16 +203,20 @@ export function ProspectingRoot() {
             setHereConfigured(!!(hereKey && hereKey.length > 5));
             const yelpKey = (data as any)?.yelp_api_key;
             setYelpConfigured(!!(yelpKey && yelpKey.length > 10));
+            const firecrawlKey = (data as any)?.firecrawl_api_key;
+            setFirecrawlConfigured(!!(firecrawlKey && firecrawlKey.length > 5));
           } else {
             setApifyConfigured(false);
             setHereConfigured(false);
             setYelpConfigured(false);
+            setFirecrawlConfigured(false);
           }
         }
       } catch {
         setApifyConfigured(false);
         setHereConfigured(false);
         setYelpConfigured(false);
+        setFirecrawlConfigured(false);
       }
       setLoadingPrefs(false);
     };
@@ -229,8 +234,8 @@ export function ProspectingRoot() {
     { id: 'google', label: 'Google Maps / OSM', description: 'Données ouvertes — toujours disponible', available: true },
     { id: 'here', label: 'HERE Places', description: hereConfigured === true ? 'Clé configurée — 250k req/mois gratuits' : hereConfigured === false ? 'Clé manquante → Paramètres > Intégrations' : 'Vérification...', available: hereConfigured, needsKey: true },
     { id: 'yelp', label: 'Yelp Fusion', description: yelpConfigured === true ? 'Clé configurée — 500 req/jour gratuits' : yelpConfigured === false ? 'Clé manquante → Paramètres > Intégrations' : 'Vérification...', available: yelpConfigured, needsKey: true },
-    { id: 'pagesjaunes', label: 'PagesJaunes / YellowPages', description: 'Intégration directe prochainement', available: false },
-    { id: '411', label: '411.ca', description: 'Intégration directe prochainement', available: false },
+    { id: 'pagesjaunes', label: 'PagesJaunes / YellowPages', description: firecrawlConfigured === true ? 'Clé Firecrawl configurée — YellowPages.ca' : firecrawlConfigured === false ? 'Clé Firecrawl manquante → Paramètres > Intégrations' : 'Vérification...', available: firecrawlConfigured, needsKey: true },
+    { id: '411', label: '411.ca', description: 'Scraping direct gratuit — données variables', available: true },
     {
       id: 'apify', label: 'Apify (Google Places)',
       description: apifyConfigured === true ? 'Clé configurée — données enrichies (photos, email)' : apifyConfigured === false ? 'Clé manquante → Paramètres > Intégrations' : 'Vérification...',

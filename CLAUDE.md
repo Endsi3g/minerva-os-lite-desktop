@@ -145,6 +145,7 @@ SUPABASE_SERVICE_ROLE_KEY=        # Server-only — never expose to client
 GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
 ANTHROPIC_API_KEY=
+FIRECRAWL_API_KEY=               # Optional — server-only, enables PagesJaunes scraping via Firecrawl
 NEXT_PUBLIC_APP_URL=              # Used by Electron/Capacitor for API calls (e.g. https://minerva-os-lite.com)
 
 # Support contact form (app/api/support/contact) — if unset, messages are logged to console only

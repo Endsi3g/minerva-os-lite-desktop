@@ -433,8 +433,8 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
       id: 'crm',
       label: 'CRM & Prospection',
       items: [
-        { name: 'Campagnes', href: '/campaigns', icon: Megaphone },
         { name: 'Boîte de réception', href: '/inbox', icon: Inbox },
+        { name: 'Campagnes', href: '/campaigns', icon: Megaphone },
         { name: 'Pipeline', href: '/pipeline', icon: Kanban },
         { name: 'Profils cibles (ICP)', href: '/personas', icon: Target },
         { name: 'Activités', href: '/activities', icon: Activity },

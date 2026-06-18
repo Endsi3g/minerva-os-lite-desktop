@@ -18,6 +18,19 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v2.63.0',
+      date: '2026-06-18',
+      titleKey: 'changelog.v2_59_0_title' as TranslationKey,
+      descKey: 'changelog.v2_57_0_desc' as TranslationKey,
+      highlights: [
+        'Firecrawl + PagesJaunes/YellowPages.ca : extraction IA structurée des fiches d\'entreprises (500 req/mois gratuits sur firecrawl.dev, clé configurable dans Paramètres → Intégrations).',
+        '411.ca : scraping direct HTML sans clé — best-effort, données variables selon disponibilité du rendu HTML.',
+        'Boîte de réception déplacée au-dessus de Campagnes dans la sidebar (priorité inbox-first).',
+        'Schéma Supabase + SQLite : colonne firecrawl_api_key ajoutée à la table settings.',
+        '@mendable/firecrawl-js 4.28.0 installé et câblé au scraper multi-sources.',
+      ],
+    },
+    {
       version: 'v2.62.0',
       date: '2026-06-18',
       titleKey: 'changelog.v2_59_0_title' as TranslationKey,

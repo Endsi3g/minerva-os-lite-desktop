@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import Firecrawl from '@mendable/firecrawl-js';
 
 interface ScrapedLead {
   id: string;
@@ -386,6 +387,143 @@ async function scrapeYelp(
   } catch (err) { console.error('[yelp]', err); return []; }
 }
 
+// PagesJaunes (yellowpages.ca) via Firecrawl structured extraction
+async function scrapeYellowPagesFirecrawl(
+  niche: string, city: string, limit: number, apiKey: string
+): Promise<ScrapedLead[]> {
+  try {
+    const fc = new Firecrawl({ apiKey });
+    const searchTerm = niche.split(' / ')[0].trim();
+    const url = `https://www.yellowpages.ca/search/si/1/${encodeURIComponent(searchTerm)}/${encodeURIComponent(city + ' QC')}`;
+
+    const result = await fc.scrape(url, {
+      formats: [{
+        type: 'json' as const,
+        prompt: 'Extract ALL business listings from this Yellow Pages Canada search results page. For each business, extract: name (business name), phone (phone number as shown), address (full street address including city), website (URL if visible in the listing), and category (type of business).',
+        schema: {
+          type: 'object',
+          properties: {
+            businesses: {
+              type: 'array',
+              description: 'All business listings on the page',
+              items: {
+                type: 'object',
+                properties: {
+                  name: { type: 'string', description: 'Business name' },
+                  phone: { type: 'string', description: 'Phone number' },
+                  address: { type: 'string', description: 'Full address' },
+                  website: { type: 'string', description: 'Website URL' },
+                  category: { type: 'string', description: 'Business category' },
+                },
+                required: ['name'],
+              },
+            },
+          },
+          required: ['businesses'],
+        },
+      }],
+      timeout: 25000,
+    });
+
+    const businesses: any[] = (result as any).json?.businesses ?? [];
+    if (businesses.length === 0) return [];
+
+    const cleanNiche = niche.split(' / ')[0].trim();
+    return businesses.slice(0, limit).map((b: any) => {
+      const ws = (b.website ?? '').trim();
+      const cleanSite = ws.startsWith('http') ? ws : (ws ? `https://${ws}` : '');
+      return {
+        id: `yp-${crypto.randomUUID()}`,
+        businessName: b.name ?? 'Inconnu',
+        niche: cleanNiche,
+        city,
+        phone: cleanPhone(b.phone ?? ''),
+        email: '',
+        website: cleanSite,
+        address: b.address ?? '',
+        rating: 0,
+        reviewsCount: 0,
+        mapsUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent((b.name ?? '') + ' ' + city)}`,
+        seoAudit: generateSeoAudit(cleanSite, 0),
+        source: 'pagesjaunes',
+      } as ScrapedLead;
+    });
+  } catch (err) {
+    console.error('[yp-firecrawl]', err);
+    return [];
+  }
+}
+
+// 411.ca — direct HTML scraping, no key needed (best-effort, may return 0 if bot-blocked)
+async function scrape411Direct(
+  niche: string, city: string, limit: number
+): Promise<ScrapedLead[]> {
+  try {
+    const searchTerm = niche.split(' / ')[0].trim();
+    const url = `https://www.411.ca/search/?q=${encodeURIComponent(searchTerm)}&city=${encodeURIComponent(city)}&prov=QC&lang=fr`;
+
+    const res = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'fr-CA,fr;q=0.9,en-CA;q=0.8',
+        'Cache-Control': 'no-cache',
+      },
+      signal: AbortSignal.timeout(15000),
+    });
+
+    if (!res.ok) return [];
+    const html = await res.text();
+
+    // Attempt 1: extract __NEXT_DATA__ JSON embedded in the page
+    const nextMatch = html.match(/<script id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/);
+    if (nextMatch) {
+      try {
+        const nextData = JSON.parse(nextMatch[1]);
+        const pp = nextData?.props?.pageProps;
+        const raw: any[] = pp?.searchResults?.results
+          ?? pp?.searchResults?.listings
+          ?? pp?.results
+          ?? pp?.listings
+          ?? [];
+
+        if (raw.length > 0) {
+          const cleanNiche = niche.split(' / ')[0].trim();
+          return raw.slice(0, limit).map((b: any) => {
+            const name = b.name ?? b.businessName ?? b.heading ?? 'Inconnu';
+            const phone = b.phone ?? b.phoneNumber ?? b.telephone ?? '';
+            const addr = b.address ?? b.streetAddress ?? '';
+            const cityVal = b.city ?? city;
+            const address = addr ? `${addr}, ${cityVal}` : cityVal;
+            const ws = b.website ?? b.websiteUrl ?? b.url ?? '';
+            const cleanSite = ws.startsWith('http') ? ws : '';
+            return {
+              id: `411-${crypto.randomUUID()}`,
+              businessName: name,
+              niche: cleanNiche,
+              city: cityVal,
+              phone: cleanPhone(phone),
+              email: b.email ?? '',
+              website: cleanSite,
+              address,
+              rating: b.rating ?? 0,
+              reviewsCount: 0,
+              mapsUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name + ' ' + city)}`,
+              seoAudit: generateSeoAudit(cleanSite, b.rating ?? 0),
+              source: '411',
+            } as ScrapedLead;
+          });
+        }
+      } catch { /* JSON parse failed — page structure differs */ }
+    }
+
+    return [];
+  } catch (err) {
+    console.error('[411direct]', err);
+    return [];
+  }
+}
+
 function generateSeoAudit(website: string, rating: number): string {
   if (!website) return 'Aucun site web détecté. Opportunité directe de création / refonte.';
   if (!website.startsWith('https')) return `Site présent (${website}) sans HTTPS. Opportunité SEO + sécurité.`;
@@ -534,11 +672,12 @@ export async function POST(req: NextRequest) {
 
     const { data: apiKeys } = await supabase
       .from('settings')
-      .select('here_api_key, yelp_api_key')
+      .select('here_api_key, yelp_api_key, firecrawl_api_key')
       .eq('user_id', user.id)
       .maybeSingle();
     const hereApiKey: string | null = (apiKeys as any)?.here_api_key ?? null;
     const yelpApiKey: string | null = (apiKeys as any)?.yelp_api_key ?? null;
+    const firecrawlApiKey: string = (apiKeys as any)?.firecrawl_api_key || process.env.FIRECRAWL_API_KEY || '';
 
     const body = await req.json();
     const niches: string[] = Array.isArray(body.niches) && body.niches.length > 0
@@ -582,6 +721,26 @@ export async function POST(req: NextRequest) {
       const yelpResults = await Promise.allSettled(yelpTasks);
       for (const r of yelpResults) { if (r.status === 'fulfilled') allLeads.push(...r.value); }
       usedSources.push('yelp');
+    }
+
+    // PagesJaunes (YellowPages Canada) via Firecrawl
+    if (sources.includes('pagesjaunes') && firecrawlApiKey) {
+      const ypTasks = cities.flatMap(city =>
+        niches.map(niche => scrapeYellowPagesFirecrawl(niche, city, Math.ceil(maxResults / niches.length), firecrawlApiKey))
+      );
+      const ypResults = await Promise.allSettled(ypTasks);
+      for (const r of ypResults) { if (r.status === 'fulfilled') allLeads.push(...r.value); }
+      usedSources.push('pagesjaunes');
+    }
+
+    // 411.ca — direct scraping, no API key required
+    if (sources.includes('411')) {
+      const tasks411 = cities.flatMap(city =>
+        niches.map(niche => scrape411Direct(niche, city, Math.ceil(maxResults / niches.length)))
+      );
+      const results411 = await Promise.allSettled(tasks411);
+      for (const r of results411) { if (r.status === 'fulfilled') allLeads.push(...r.value); }
+      usedSources.push('411');
     }
 
     const unique = dedup(allLeads);

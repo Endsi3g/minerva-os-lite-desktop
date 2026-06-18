@@ -168,6 +168,9 @@ function initDb() {
     db.run(`ALTER TABLE settings ADD COLUMN here_api_key TEXT DEFAULT NULL`, () => {});
     db.run(`ALTER TABLE settings ADD COLUMN yelp_api_key TEXT DEFAULT NULL`, () => {});
 
+    // v2.63.0 Firecrawl API key migration
+    db.run(`ALTER TABLE settings ADD COLUMN firecrawl_api_key TEXT DEFAULT NULL`, () => {});
+
     // v2.12.0 lead enrichment migrations
     db.run(`ALTER TABLE leads ADD COLUMN website TEXT DEFAULT NULL`, () => {});
     db.run(`ALTER TABLE leads ADD COLUMN rating REAL DEFAULT NULL`, () => {});

@@ -5,6 +5,19 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [2.63.0] - 2026-06-18
+
+### Ajouté — Nouvelles sources de prospection
+- **Firecrawl + PagesJaunes/YellowPages.ca** — extraction structurée par IA des fiches PagesJaunes Canada (`/api/scrape-maps`). Nécessite une clé Firecrawl gratuite (500 req/mois sur firecrawl.dev). Configurable dans Paramètres → Intégrations → Firecrawl.
+- **411.ca direct** — scraping HTML sans clé de 411.ca. Best-effort ; retourne les fiches disponibles dans `__NEXT_DATA__`.
+- **Boîte de réception déplacée** — "Boîte de réception" maintenant au-dessus de "Campagnes" dans la sidebar (section CRM & Prospection).
+- `@mendable/firecrawl-js` 4.28.0 installé et intégré.
+
+### Modifié
+- Sidebar : Boîte de réception avant Campagnes dans la section CRM & Prospection.
+- Settings Intégrations : nouvelle carte Firecrawl avec champ de clé API masqué.
+- Prospection : PagesJaunes et 411.ca ré-activés avec indication de statut (clé configurée / manquante).
+
 ## [2.61.0] - 2026-06-18
 
 ### Corrigé — Prospection (critique)

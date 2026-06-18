@@ -26,6 +26,8 @@ export function SettingsIntegrationsSection() {
   const [savingHere, setSavingHere] = useState(false);
   const [yelpApiKey, setYelpApiKey] = useState('');
   const [savingYelp, setSavingYelp] = useState(false);
+  const [firecrawlApiKey, setFirecrawlApiKey] = useState('');
+  const [savingFirecrawl, setSavingFirecrawl] = useState(false);
 
   // Real integration states
   const [gmailConnected, setGmailConnected] = useState(false);
@@ -47,7 +49,7 @@ export function SettingsIntegrationsSection() {
         if (user) {
           const { data } = await supabase
             .from('settings')
-            .select('google_refresh_token, google_email, apify_token, smtp_config, here_api_key, yelp_api_key')
+            .select('google_refresh_token, google_email, apify_token, smtp_config, here_api_key, yelp_api_key, firecrawl_api_key')
             .eq('user_id', user.id)
             .maybeSingle();
 
@@ -76,6 +78,7 @@ export function SettingsIntegrationsSection() {
             }
             if ((data as any).here_api_key) setHereApiKey((data as any).here_api_key);
             if ((data as any).yelp_api_key) setYelpApiKey((data as any).yelp_api_key);
+            if ((data as any).firecrawl_api_key) setFirecrawlApiKey((data as any).firecrawl_api_key);
           }
         }
       } catch (e) {
@@ -183,6 +186,19 @@ export function SettingsIntegrationsSection() {
       }
     } catch (e) { console.error(e); alert('Erreur sauvegarde Yelp'); }
     setSavingYelp(false);
+  };
+
+  const handleSaveFirecrawl = async () => {
+    setSavingFirecrawl(true);
+    try {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase.from('settings').update({ firecrawl_api_key: firecrawlApiKey.trim() || null, updated_at: new Date().toISOString() }).eq('user_id', user.id);
+        alert('Clé Firecrawl enregistrée !');
+      }
+    } catch (e) { console.error(e); alert('Erreur sauvegarde Firecrawl'); }
+    setSavingFirecrawl(false);
   };
 
   const handleSaveSmtp = async () => {
@@ -625,6 +641,56 @@ export function SettingsIntegrationsSection() {
                   </Button>
                 </div>
               </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Firecrawl Card */}
+        <Card className="border border-border bg-card">
+          <CardContent className="p-5">
+            <div className="flex gap-4 min-w-0 mb-4">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary shrink-0">
+                <Globe className="h-5 w-5" />
+              </div>
+              <div className="space-y-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-xs font-bold text-foreground">Firecrawl (PagesJaunes)</span>
+                  {!!firecrawlApiKey ? (
+                    <Badge variant="outline" className="text-[9px] font-bold rounded px-1.5 py-0 bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-900/30">
+                      Configuré
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className="text-[9px] font-bold rounded px-1.5 py-0 bg-slate-50 text-slate-500 border-slate-200 dark:bg-slate-900 dark:text-slate-400 dark:border-slate-800">
+                      Non configuré
+                    </Badge>
+                  )}
+                </div>
+                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                  Scraping structuré de PagesJaunes / YellowPages Canada (500 req/mois gratuits).{' '}
+                  <a href="https://firecrawl.dev" target="_blank" rel="noopener noreferrer" className="underline text-primary">
+                    Obtenir une clé gratuite →
+                  </a>
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Input
+                type="password"
+                placeholder={firecrawlApiKey ? 'fc-****' : 'Clé API Firecrawl (fc-...)'}
+                value={firecrawlApiKey}
+                onChange={e => setFirecrawlApiKey(e.target.value)}
+                className="h-8 text-xs flex-1"
+                autoComplete="off"
+              />
+              <Button
+                type="button"
+                size="sm"
+                onClick={handleSaveFirecrawl}
+                disabled={savingFirecrawl}
+                className="h-8 text-xs font-semibold px-4 bg-primary hover:bg-primary/95 text-primary-foreground shrink-0"
+              >
+                {savingFirecrawl ? 'Sauvegarde...' : 'Enregistrer'}
+              </Button>
             </div>
           </CardContent>
         </Card>
