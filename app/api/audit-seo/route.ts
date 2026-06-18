@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import type { SeoAuditResult, SeoAuditError } from './types';
+import type { SeoAuditResult, SeoAuditError } from '@/lib/audit-types';
 
-export type { SeoAuditResult, SeoAuditError } from './types';
+export type { SeoAuditResult, SeoAuditError } from '@/lib/audit-types';
 
 function extractTitle(html: string): string | null {
   const match = html.match(/<title[^>]*>([^<]*)<\/title>/i);
