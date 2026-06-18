@@ -3,7 +3,7 @@
 import { AlertCircle, Filter, Mail } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import type { InboxThread } from '@/app/api/inbox/threads/route';
+import type { InboxThread } from '@/lib/inbox-types';
 import type { Campaign } from '@/lib/reach-context';
 
 type Filter = 'all' | 'positive' | 'followup' | 'negative';

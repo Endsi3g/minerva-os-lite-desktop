@@ -26,8 +26,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
-import type { ThreadMessage } from '@/app/api/inbox/thread/[threadId]/route';
-import type { InboxThread } from '@/app/api/inbox/threads/route';
+import type { ThreadMessage, InboxThread } from '@/lib/inbox-types';
 import type { Lead } from '@/lib/mock-data';
 
 type ReplyStatus = 'positive' | 'followup' | 'negative' | null;

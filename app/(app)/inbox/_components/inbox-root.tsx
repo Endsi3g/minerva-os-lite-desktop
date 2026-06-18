@@ -5,8 +5,7 @@ import { useReach } from '@/lib/reach-context';
 import { getApiUrl } from '@/lib/api-helper';
 import { InboxList } from './inbox-list';
 import { InboxDetail } from './inbox-detail';
-import type { InboxThread } from '@/app/api/inbox/threads/route';
-import type { ThreadMessage } from '@/app/api/inbox/thread/[threadId]/route';
+import type { InboxThread, ThreadMessage } from '@/lib/inbox-types';
 import type { Lead } from '@/lib/mock-data';
 
 type Filter = 'all' | 'positive' | 'followup' | 'negative';

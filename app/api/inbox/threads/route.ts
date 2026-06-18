@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+export type { InboxThread } from '@/lib/inbox-types';
+import type { InboxThread } from '@/lib/inbox-types';
 
 async function refreshAccessToken(refreshToken: string): Promise<{ accessToken: string; expiresAt: string }> {
   const clientId = process.env.GOOGLE_CLIENT_ID;
@@ -20,21 +22,6 @@ async function refreshAccessToken(refreshToken: string): Promise<{ accessToken: 
   if (!res.ok) throw new Error(data.error_description || 'Failed to refresh token');
   const expiresAt = new Date(Date.now() + data.expires_in * 1000).toISOString();
   return { accessToken: data.access_token, expiresAt };
-}
-
-export interface InboxThread {
-  leadId: string;
-  leadName: string;
-  contactEmail: string;
-  gmailThreadId: string;
-  replyStatus: string | null;
-  replyDetectedAt: string | null;
-  leadStatus: string;
-  campaignId: string | null;
-  snippet: string;
-  lastMessageDate: string;
-  messageCount: number;
-  hasUnread: boolean;
 }
 
 export async function GET(req: NextRequest) {

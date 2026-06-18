@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+export type { ThreadMessage } from '@/lib/inbox-types';
+import type { ThreadMessage } from '@/lib/inbox-types';
 
 async function refreshAccessToken(refreshToken: string): Promise<{ accessToken: string; expiresAt: string }> {
   const clientId = process.env.GOOGLE_CLIENT_ID;
@@ -59,16 +61,6 @@ function extractBody(payload: any): string {
   }
 
   return '';
-}
-
-export interface ThreadMessage {
-  id: string;
-  from: string;
-  to: string;
-  subject: string;
-  date: string;
-  body: string;
-  isFromUser: boolean;
 }
 
 export async function GET(
