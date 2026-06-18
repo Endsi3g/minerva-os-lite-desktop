@@ -61,7 +61,7 @@ export function InboxList({
   );
 
   return (
-    <div className="flex h-full w-[340px] shrink-0 flex-col border-r border-[#e5e5e0]">
+    <div className="flex h-full w-full md:w-[340px] md:shrink-0 flex-col border-r border-[#e5e5e0]">
       {/* Header */}
       <div className="border-b border-[#e5e5e0] px-4 py-3">
         <h2 className="text-sm font-semibold text-[#26251e]">Boîte de réception</h2>

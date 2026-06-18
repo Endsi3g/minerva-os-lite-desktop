@@ -18,6 +18,20 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v2.59.0',
+      date: '2026-06-17',
+      titleKey: 'changelog.v2_59_0_title',
+      descKey: 'changelog.v2_59_0_desc',
+      highlights: [
+        'Leads table : overflow-x-auto — défilement horizontal sur mobile au lieu de colonnes tronquées.',
+        'Agents workspace : le panneau de paramètres passe de fixe w-96 à pleine largeur sur mobile, empilé verticalement (max-h-[40vh]).',
+        'Inbox : navigation mobile complète — liste seule → sélection → panneau de détail seul, avec bouton retour ← dans l\'en-tête.',
+        'InboxList : largeur fixe w-[340px] remplacée par w-full sur mobile, md:w-[340px] sur tablette+.',
+        'Settings : nav latérale `hidden md:block` remplacée par un `<select>` avec groupes d\'options sur mobile — toutes les sections accessibles.',
+        'Settings root : flex-col sur mobile, flex-row sur md+ pour s\'adapter à la nav dropdown.',
+      ],
+    },
+    {
       version: 'v2.58.0',
       date: '2026-06-17',
       titleKey: 'changelog.v2_58_0_title',

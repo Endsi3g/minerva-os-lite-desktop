@@ -72,6 +72,7 @@ interface InboxDetailProps {
   onCreateDeal: (amount: number, probability: number, closingDate: string) => void;
   onCreateTask: (title: string, dueDate: string) => void;
   onLoadSuggestions: () => void;
+  onBack?: () => void;
 }
 
 export function InboxDetail({
@@ -89,6 +90,7 @@ export function InboxDetail({
   onCreateDeal,
   onCreateTask,
   onLoadSuggestions,
+  onBack,
 }: InboxDetailProps) {
   // Deal dialog state
   const [dealOpen, setDealOpen] = useState(false);
@@ -145,6 +147,11 @@ export function InboxDetail({
     <div className="flex flex-1 flex-col overflow-hidden">
       {/* ── Top bar ── */}
       <div className="flex items-center gap-3 border-b border-[#e5e5e0] px-5 py-3">
+        {onBack && (
+          <button onClick={onBack} className="md:hidden p-1 -ml-1 rounded-md hover:bg-[#e5e5e2] text-[#7a7a76] transition-colors shrink-0">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+          </button>
+        )}
         <div className="flex-1 min-w-0">
           <p className="font-semibold text-sm text-[#26251e] truncate">{thread.leadName}</p>
           <p className="text-xs text-[#78716c] truncate">{thread.contactEmail}</p>

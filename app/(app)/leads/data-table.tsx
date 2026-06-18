@@ -31,7 +31,7 @@ export function DataTable<TData>({
   return (
     <div className="space-y-4">
       {/* Table Card Grid */}
-      <div className="rounded-md border border-border bg-card overflow-hidden">
+      <div className="rounded-md border border-border bg-card overflow-x-auto">
         <Table>
           <TableHeader className="bg-muted/40">
             {table.getHeaderGroups().map((headerGroup) => (

@@ -376,10 +376,10 @@ export default function AgentsPage() {
         </div>
 
         {/* Workspace Layout Split */}
-        <div className="flex-1 flex overflow-hidden min-h-0">
+        <div className="flex-1 flex flex-col md:flex-row overflow-hidden min-h-0">
 
           {/* Left Side: Parameters Form */}
-          <div className="w-96 border-r border-[#e5e5e0] bg-[#fdfdfc]/50 p-6 flex flex-col justify-between overflow-y-auto shrink-0 text-left">
+          <div className="w-full md:w-96 border-b md:border-b-0 md:border-r border-[#e5e5e0] bg-[#fdfdfc]/50 p-6 flex flex-col justify-between overflow-y-auto md:shrink-0 text-left max-h-[40vh] md:max-h-none">
             <div className="space-y-6">
               <div>
                 <h3 className="text-xs font-bold text-[#7a7a76] uppercase tracking-wider mb-2">{t('agents.workspace.step1_configure_lead')}</h3>

@@ -49,7 +49,8 @@ export function InboxRoot() {
     fetchThreads();
   }, [fetchThreads]);
 
-  const handleSelectThread = async (thread: InboxThread) => {
+  const handleSelectThread = async (thread: InboxThread | null) => {
+    if (!thread) { setSelectedThread(null); return; }
     setSelectedThread(thread);
     setDetailMessages([]);
     setDetailLoading(true);
@@ -159,34 +160,41 @@ export function InboxRoot() {
 
   return (
     <div className="flex h-full overflow-hidden bg-white">
-      <InboxList
-        threads={threads}
-        filter={filter}
-        onFilterChange={setFilter}
-        selectedThreadId={selectedThread?.gmailThreadId || null}
-        onSelectThread={handleSelectThread}
-        needsReauth={needsReauth}
-        loading={loading}
-        campaigns={campaigns}
-        campaignFilter={campaignFilter}
-        onCampaignFilterChange={setCampaignFilter}
-      />
-      <InboxDetail
-        thread={selectedThread}
-        messages={detailMessages}
-        loading={detailLoading}
-        suggestions={suggestions}
-        suggestionsLoading={suggestionsLoading}
-        replyText={replyText}
-        sending={sending}
-        onReplyTextChange={setReplyText}
-        onSendReply={handleSendReply}
-        onReplyStatusChange={handleReplyStatusChange}
-        onLeadStatusChange={handleLeadStatusChange}
-        onCreateDeal={handleCreateDeal}
-        onCreateTask={handleCreateTask}
-        onLoadSuggestions={handleLoadSuggestions}
-      />
+      {/* List panel — full width on mobile when no thread selected, hidden otherwise; always visible md+ */}
+      <div className={selectedThread ? 'hidden md:flex md:flex-col' : 'flex flex-col w-full md:w-auto'}>
+        <InboxList
+          threads={threads}
+          filter={filter}
+          onFilterChange={setFilter}
+          selectedThreadId={selectedThread?.gmailThreadId || null}
+          onSelectThread={handleSelectThread}
+          needsReauth={needsReauth}
+          loading={loading}
+          campaigns={campaigns}
+          campaignFilter={campaignFilter}
+          onCampaignFilterChange={setCampaignFilter}
+        />
+      </div>
+      {/* Detail panel — full width on mobile when thread selected, hidden otherwise; always visible md+ */}
+      <div className={selectedThread ? 'flex flex-col flex-1 min-w-0' : 'hidden md:flex md:flex-col md:flex-1 md:min-w-0'}>
+        <InboxDetail
+          thread={selectedThread}
+          messages={detailMessages}
+          loading={detailLoading}
+          suggestions={suggestions}
+          suggestionsLoading={suggestionsLoading}
+          replyText={replyText}
+          sending={sending}
+          onReplyTextChange={setReplyText}
+          onSendReply={handleSendReply}
+          onReplyStatusChange={handleReplyStatusChange}
+          onLeadStatusChange={handleLeadStatusChange}
+          onCreateDeal={handleCreateDeal}
+          onCreateTask={handleCreateTask}
+          onLoadSuggestions={handleLoadSuggestions}
+          onBack={() => handleSelectThread(null)}
+        />
+      </div>
     </div>
   );
 }
