@@ -5,6 +5,18 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [2.61.0] - 2026-06-18
+
+### Corrigé — Prospection (critique)
+- **DuckDuckGo cassé** — DDG renvoyait une page challenge/bot pour toutes les requêtes server-side (0 résultat depuis des semaines pour Yelp, PagesJaunes, 411). Code DDG supprimé entièrement ; ces trois sources marquées comme "bientôt" dans l'UI.
+- **Métiers de service sans données OSM** — `craft=plumber`, `craft=electrician` etc. quasi-absents d'OpenStreetMap Québec. Ajout de `extractNicheKeyword()` : requête Overpass combinée tags + nom de business (ex. "plomb", "electr", "peint") pour capturer les entreprises qui mentionnent le métier dans leur nom.
+- **Miroirs Overpass en parallèle** (`Promise.any`) — Les 3 miroirs partent simultanément ; premier à répondre gagne. Élimine les 90s d'attente séquentielle qui causaient des timeouts.
+- **`maxDuration` Vercel** — `scrape-maps: 60s`, `scrape-apify: 90s` ajoutés dans `vercel.json`. Sans ça, le plan Hobby coupait les fonctions à 10s avant qu'Overpass puisse répondre.
+- **Banner OSM 0 résultats** — Quand OSM ne trouve rien, un banner ambre s'affiche avec l'explication et un lien direct vers la config Apify.
+
+### Modifié
+- Description de la page Prospection mise à jour pour refléter les sources réellement fonctionnelles.
+
 ## [2.60.0] - 2026-06-18
 
 ### Corrigé
