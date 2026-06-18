@@ -134,6 +134,8 @@ export function ProspectingRoot() {
 
   const [loadingPrefs, setLoadingPrefs] = useState(true);
   const [apifyConfigured, setApifyConfigured] = useState<boolean | 'checking'>('checking');
+  const [hereConfigured, setHereConfigured] = useState<boolean | 'checking'>('checking');
+  const [yelpConfigured, setYelpConfigured] = useState<boolean | 'checking'>('checking');
   const [userCities, setUserCities] = useState<string[]>([]);
 
   // Niche selector
@@ -190,18 +192,26 @@ export function ProspectingRoot() {
         const supabase = createClient();
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-          const { data } = await supabase.from('settings').select('niches, cities, apify_token').eq('user_id', user.id).maybeSingle();
+          const { data } = await supabase.from('settings').select('niches, cities, apify_token, here_api_key, yelp_api_key').eq('user_id', user.id).maybeSingle();
           if (data) {
             setUserCities((data as any).cities || []);
             if ((data as any).cities?.length > 0) setSelectedCities([(data as any).cities[0]]);
             const token = (data as any).apify_token;
             setApifyConfigured(!!(token && token !== 'native' && token.startsWith('apify_api_')));
+            const hereKey = (data as any)?.here_api_key;
+            setHereConfigured(!!(hereKey && hereKey.length > 5));
+            const yelpKey = (data as any)?.yelp_api_key;
+            setYelpConfigured(!!(yelpKey && yelpKey.length > 10));
           } else {
             setApifyConfigured(false);
+            setHereConfigured(false);
+            setYelpConfigured(false);
           }
         }
       } catch {
         setApifyConfigured(false);
+        setHereConfigured(false);
+        setYelpConfigured(false);
       }
       setLoadingPrefs(false);
     };
@@ -217,7 +227,8 @@ export function ProspectingRoot() {
 
   const sources = [
     { id: 'google', label: 'Google Maps / OSM', description: 'Données ouvertes — toujours disponible', available: true },
-    { id: 'yelp', label: 'Yelp', description: 'Intégration directe prochainement', available: false },
+    { id: 'here', label: 'HERE Places', description: hereConfigured === true ? 'Clé configurée — 250k req/mois gratuits' : hereConfigured === false ? 'Clé manquante → Paramètres > Intégrations' : 'Vérification...', available: hereConfigured, needsKey: true },
+    { id: 'yelp', label: 'Yelp Fusion', description: yelpConfigured === true ? 'Clé configurée — 500 req/jour gratuits' : yelpConfigured === false ? 'Clé manquante → Paramètres > Intégrations' : 'Vérification...', available: yelpConfigured, needsKey: true },
     { id: 'pagesjaunes', label: 'PagesJaunes / YellowPages', description: 'Intégration directe prochainement', available: false },
     { id: '411', label: '411.ca', description: 'Intégration directe prochainement', available: false },
     {

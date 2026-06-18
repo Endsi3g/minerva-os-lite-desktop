@@ -28,6 +28,8 @@ create table if not exists public.settings (
     google_token_expires_at timestamp with time zone,
     google_email text,
     apify_token text,
+    here_api_key text,
+    yelp_api_key text,
     ai_provider text default 'anthropic',
     openrouter_key text,
     ai_model text default 'meta-llama/llama-3-8b-instruct:free',
@@ -258,6 +260,8 @@ create policy "Owner can delete team members" on public.team_members
 -- ALTER TABLE public.settings ADD COLUMN IF NOT EXISTS google_token_expires_at timestamp with time zone;
 -- ALTER TABLE public.settings ADD COLUMN IF NOT EXISTS google_email text;
 -- ALTER TABLE public.settings ADD COLUMN IF NOT EXISTS apify_token text;
+-- ALTER TABLE public.settings ADD COLUMN IF NOT EXISTS here_api_key text;
+-- ALTER TABLE public.settings ADD COLUMN IF NOT EXISTS yelp_api_key text;
 -- ALTER TABLE public.settings ADD COLUMN IF NOT EXISTS ai_provider text DEFAULT 'anthropic';
 -- ALTER TABLE public.settings ADD COLUMN IF NOT EXISTS openrouter_key text;
 -- ALTER TABLE public.settings ADD COLUMN IF NOT EXISTS ai_model text DEFAULT 'meta-llama/llama-3-8b-instruct:free';

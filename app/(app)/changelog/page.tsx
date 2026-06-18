@@ -18,6 +18,44 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v2.62.0',
+      date: '2026-06-18',
+      titleKey: 'changelog.v2_59_0_title' as TranslationKey,
+      descKey: 'changelog.v2_57_0_desc' as TranslationKey,
+      highlights: [
+        'Yelp Fusion API : nouvelle source de prospection — 500 req/jour gratuites, clé configurable dans Paramètres → Intégrations → Yelp Fusion API.',
+        'HERE Places API : source la plus complète — 250 000 req/mois gratuites, fonctionne pour TOUS les types de business (services, commerces, artisans).',
+        'Les deux sources retournent des données réelles : nom, adresse, téléphone, note, coordonnées GPS.',
+        'Sources Yelp et HERE s\'activent automatiquement dans Prospection dès que la clé est configurée.',
+        'Interface prospection : badge "Clé configurée" ou "Clé manquante → Paramètres" selon l\'état de configuration.',
+      ],
+    },
+    {
+      version: 'v2.61.0',
+      date: '2026-06-18',
+      titleKey: 'changelog.v2_59_0_title' as TranslationKey,
+      descKey: 'changelog.v2_57_0_desc' as TranslationKey,
+      highlights: [
+        'DuckDuckGo cassé — DDG retournait une page bot-challenge côté serveur (0 résultats depuis des semaines). Code supprimé.',
+        'Métiers de service (plombier, électricien, peintre…) : ajout d\'une recherche par nom de métier dans Overpass pour compléter les tags OSM absents.',
+        'Miroirs Overpass en parallèle (Promise.any) — 3x plus rapide, élimine les timeouts séquentiels de 90s.',
+        'maxDuration Vercel : scrape-maps=60s, scrape-apify=90s — résout les coupures à 10s sur plan Hobby.',
+        'Banner ambre quand OSM retourne 0 résultats avec lien direct vers la config des clés API.',
+      ],
+    },
+    {
+      version: 'v2.60.0',
+      date: '2026-06-18',
+      titleKey: 'changelog.v2_59_0_title' as TranslationKey,
+      descKey: 'changelog.v2_57_0_desc' as TranslationKey,
+      highlights: [
+        'Page /map : carte invisible résolue — coordonnées center inversées corrigées ([lat,lng] → [lng,lat] conforme MapLibre).',
+        'ResizeObserver ajouté au composant Map — map.resize() automatique quand la CSS height arrive après l\'init du canvas.',
+        'Déploiement Vercel : ERR_PNPM_OUTDATED_LOCKFILE résolu — pnpm-lock.yaml commité.',
+        'Apify : réponses HTML (page d\'erreur auth) détectées avant JSON.parse — message d\'erreur actionnable affiché.',
+      ],
+    },
+    {
       version: 'v2.59.0',
       date: '2026-06-17',
       titleKey: 'changelog.v2_59_0_title',

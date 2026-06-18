@@ -309,6 +309,83 @@ function cleanPhone(raw: string): string {
   return raw.trim();
 }
 
+async function scrapeHerePlaces(
+  niche: string, city: string, lat: number, lon: number,
+  radius: number, limit: number, apiKey: string
+): Promise<ScrapedLead[]> {
+  const url = `https://discover.search.hereapi.com/v1/discover?q=${encodeURIComponent(niche)}&in=circle:${lat},${lon};r=${Math.min(radius,50000)}&limit=${Math.min(limit,100)}&lang=fr&apiKey=${apiKey}`;
+  try {
+    const res = await fetch(url, { signal: AbortSignal.timeout(15000) });
+    if (!res.ok) { console.error(`[here] ${res.status}`); return []; }
+    const data = await res.json();
+    const cleanNiche = niche.split(' / ')[0].trim();
+    return (data.items ?? []).map((item: any) => {
+      const addr = item.address ?? {};
+      const contacts = item.contacts ?? [];
+      const phone = contacts.flatMap((c: any) => c.phone ?? []).map((p: any) => p.value ?? '').find(Boolean) ?? '';
+      const website = contacts.flatMap((c: any) => c.www ?? []).map((w: any) => w.value ?? '').find(Boolean) ?? '';
+      const address = [addr.houseNumber, addr.street, addr.city || city].filter(Boolean).join(' ');
+      return {
+        id: `here-${item.id ?? crypto.randomUUID()}`,
+        businessName: item.title ?? 'Inconnu',
+        niche: cleanNiche,
+        city: addr.city || city,
+        phone: cleanPhone(phone),
+        email: '',
+        website: website.startsWith('http') ? website : '',
+        address,
+        rating: 0,
+        reviewsCount: 0,
+        mapsUrl: `https://maps.google.com/?q=${encodeURIComponent((item.title ?? '') + ' ' + address)}`,
+        seoAudit: generateSeoAudit(website.startsWith('http') ? website : '', 0),
+        source: 'here',
+        latitude: item.position?.lat,
+        longitude: item.position?.lng,
+      } as ScrapedLead;
+    });
+  } catch (err) { console.error('[here]', err); return []; }
+}
+
+async function scrapeYelp(
+  niche: string, city: string, _lat: number, _lon: number,
+  radius: number, limit: number, apiKey: string
+): Promise<ScrapedLead[]> {
+  const location = `${city}, QC, Canada`;
+  const r = Math.min(radius, 40000);
+  const url = `https://api.yelp.com/v3/businesses/search?term=${encodeURIComponent(niche)}&location=${encodeURIComponent(location)}&limit=${Math.min(limit, 50)}&locale=fr_CA&sort_by=rating&radius=${r}`;
+  try {
+    const res = await fetch(url, {
+      headers: { 'Authorization': `Bearer ${apiKey}` },
+      signal: AbortSignal.timeout(15000),
+    });
+    if (!res.ok) { console.error(`[yelp] ${res.status}`); return []; }
+    const data = await res.json();
+    const cleanNiche = niche.split(' / ')[0].trim();
+    return (data.businesses ?? []).map((b: any) => {
+      const loc = b.location ?? {};
+      const address = [loc.address1, loc.city || city].filter(Boolean).join(', ');
+      const website = b.url ?? '';
+      return {
+        id: `yelp-${b.id ?? crypto.randomUUID()}`,
+        businessName: b.name ?? 'Inconnu',
+        niche: cleanNiche,
+        city: loc.city || city,
+        phone: cleanPhone(b.phone ?? ''),
+        email: '',
+        website,
+        address,
+        rating: b.rating ?? 0,
+        reviewsCount: b.review_count ?? 0,
+        mapsUrl: website,
+        seoAudit: generateSeoAudit(website, b.rating ?? 0),
+        source: 'yelp',
+        latitude: b.coordinates?.latitude,
+        longitude: b.coordinates?.longitude,
+      } as ScrapedLead;
+    });
+  } catch (err) { console.error('[yelp]', err); return []; }
+}
+
 function generateSeoAudit(website: string, rating: number): string {
   if (!website) return 'Aucun site web détecté. Opportunité directe de création / refonte.';
   if (!website.startsWith('https')) return `Site présent (${website}) sans HTTPS. Opportunité SEO + sécurité.`;
@@ -455,6 +532,14 @@ export async function POST(req: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
 
+    const { data: apiKeys } = await supabase
+      .from('settings')
+      .select('here_api_key, yelp_api_key')
+      .eq('user_id', user.id)
+      .maybeSingle();
+    const hereApiKey: string | null = (apiKeys as any)?.here_api_key ?? null;
+    const yelpApiKey: string | null = (apiKeys as any)?.yelp_api_key ?? null;
+
     const body = await req.json();
     const niches: string[] = Array.isArray(body.niches) && body.niches.length > 0
       ? body.niches
@@ -475,6 +560,28 @@ export async function POST(req: NextRequest) {
       const osmLeads = await runOverpassScraper(niches, cities, maxResults, radius);
       allLeads.push(...osmLeads);
       usedSources.push('osm');
+    }
+
+    // HERE Places
+    if (sources.includes('here') && hereApiKey) {
+      const hereTasks = cities.flatMap(city => {
+        const key = city.toLowerCase().trim().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, '-');
+        const [lat, lon] = QUEBEC_CITY_COORDS[key] ?? QUEBEC_CITY_COORDS[city.toLowerCase().trim()] ?? DEFAULT_COORDS;
+        return niches.map(niche => scrapeHerePlaces(niche, city, lat, lon, radius, Math.ceil(maxResults / niches.length), hereApiKey!));
+      });
+      const hereResults = await Promise.allSettled(hereTasks);
+      for (const r of hereResults) { if (r.status === 'fulfilled') allLeads.push(...r.value); }
+      usedSources.push('here');
+    }
+
+    // Yelp
+    if (sources.includes('yelp') && yelpApiKey) {
+      const yelpTasks = cities.flatMap(city =>
+        niches.map(niche => scrapeYelp(niche, city, 0, 0, radius, Math.ceil(maxResults / niches.length), yelpApiKey!))
+      );
+      const yelpResults = await Promise.allSettled(yelpTasks);
+      for (const r of yelpResults) { if (r.status === 'fulfilled') allLeads.push(...r.value); }
+      usedSources.push('yelp');
     }
 
     const unique = dedup(allLeads);

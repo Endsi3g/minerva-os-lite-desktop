@@ -22,6 +22,10 @@ export function SettingsIntegrationsSection() {
   const [savingApify, setSavingApify] = useState(false);
   const [apifyInput, setApifyInput] = useState('');
   const [scraperEngine, setScraperEngine] = useState<'native' | 'apify'>('native');
+  const [hereApiKey, setHereApiKey] = useState('');
+  const [savingHere, setSavingHere] = useState(false);
+  const [yelpApiKey, setYelpApiKey] = useState('');
+  const [savingYelp, setSavingYelp] = useState(false);
 
   // Real integration states
   const [gmailConnected, setGmailConnected] = useState(false);
@@ -43,7 +47,7 @@ export function SettingsIntegrationsSection() {
         if (user) {
           const { data } = await supabase
             .from('settings')
-            .select('google_refresh_token, google_email, apify_token, smtp_config')
+            .select('google_refresh_token, google_email, apify_token, smtp_config, here_api_key, yelp_api_key')
             .eq('user_id', user.id)
             .maybeSingle();
 
@@ -70,6 +74,8 @@ export function SettingsIntegrationsSection() {
             } else {
               setScraperEngine('native');
             }
+            if ((data as any).here_api_key) setHereApiKey((data as any).here_api_key);
+            if ((data as any).yelp_api_key) setYelpApiKey((data as any).yelp_api_key);
           }
         }
       } catch (e) {
@@ -151,6 +157,32 @@ export function SettingsIntegrationsSection() {
       alert("Erreur lors de la sauvegarde de la configuration de prospection");
     }
     setSavingApify(false);
+  };
+
+  const handleSaveHere = async () => {
+    setSavingHere(true);
+    try {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase.from('settings').update({ here_api_key: hereApiKey.trim() || null, updated_at: new Date().toISOString() }).eq('user_id', user.id);
+        alert('Clé HERE enregistrée !');
+      }
+    } catch (e) { console.error(e); alert('Erreur sauvegarde HERE'); }
+    setSavingHere(false);
+  };
+
+  const handleSaveYelp = async () => {
+    setSavingYelp(true);
+    try {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase.from('settings').update({ yelp_api_key: yelpApiKey.trim() || null, updated_at: new Date().toISOString() }).eq('user_id', user.id);
+        alert('Clé Yelp enregistrée !');
+      }
+    } catch (e) { console.error(e); alert('Erreur sauvegarde Yelp'); }
+    setSavingYelp(false);
   };
 
   const handleSaveSmtp = async () => {
@@ -492,6 +524,108 @@ export function SettingsIntegrationsSection() {
                 </Button>
               </form>
             )}
+          </CardContent>
+        </Card>
+
+        {/* HERE Places API Card */}
+        <Card className="border border-border bg-card">
+          <CardContent className="p-5 flex flex-col sm:flex-row items-start justify-between gap-4">
+            <div className="flex gap-4 min-w-0 flex-1">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary shrink-0">
+                <Globe className="h-5 w-5" />
+              </div>
+              <div className="space-y-2 min-w-0 flex-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-xs font-bold text-foreground truncate">HERE Places API</span>
+                  {!!hereApiKey ? (
+                    <Badge variant="outline" className="text-[9px] font-bold rounded px-1.5 py-0 bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-900/30">
+                      Configuré
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className="text-[9px] font-bold rounded px-1.5 py-0 bg-slate-50 text-slate-500 border-slate-200 dark:bg-slate-900 dark:text-slate-400 dark:border-slate-800">
+                      Non configuré
+                    </Badge>
+                  )}
+                </div>
+                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                  Données locales complètes (250 000 req/mois gratuits). Obtenez votre clé gratuite sur{' '}
+                  <a href="https://developer.here.com/" target="_blank" rel="noopener noreferrer" className="text-primary underline">Obtenir une clé gratuite →</a>
+                </p>
+                <div className="flex gap-2 items-center pt-1">
+                  <div className="relative flex-1 max-w-xs">
+                    <Key className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+                    <Input
+                      type="password"
+                      placeholder={hereApiKey ? 'here_api_****' : 'Clé HERE Places API'}
+                      value={hereApiKey}
+                      onChange={(e) => setHereApiKey(e.target.value)}
+                      className="pl-8 text-xs bg-card h-8"
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={handleSaveHere}
+                    disabled={savingHere}
+                    className="h-8 text-xs font-bold gap-1 px-3 bg-primary hover:bg-primary/95 text-primary-foreground shrink-0"
+                  >
+                    {savingHere ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+                    Enregistrer
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Yelp Fusion API Card */}
+        <Card className="border border-border bg-card">
+          <CardContent className="p-5 flex flex-col sm:flex-row items-start justify-between gap-4">
+            <div className="flex gap-4 min-w-0 flex-1">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary shrink-0">
+                <Search className="h-5 w-5" />
+              </div>
+              <div className="space-y-2 min-w-0 flex-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-xs font-bold text-foreground truncate">Yelp Fusion API</span>
+                  {!!yelpApiKey ? (
+                    <Badge variant="outline" className="text-[9px] font-bold rounded px-1.5 py-0 bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-900/30">
+                      Configuré
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className="text-[9px] font-bold rounded px-1.5 py-0 bg-slate-50 text-slate-500 border-slate-200 dark:bg-slate-900 dark:text-slate-400 dark:border-slate-800">
+                      Non configuré
+                    </Badge>
+                  )}
+                </div>
+                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                  Avis, notes et coordonnées des commerces (500 req/jour gratuits). Créez votre app sur{' '}
+                  <a href="https://www.yelp.com/developers" target="_blank" rel="noopener noreferrer" className="text-primary underline">Obtenir une clé gratuite →</a>
+                </p>
+                <div className="flex gap-2 items-center pt-1">
+                  <div className="relative flex-1 max-w-xs">
+                    <Key className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+                    <Input
+                      type="password"
+                      placeholder={yelpApiKey ? 'yelp_****' : 'Clé Yelp Fusion API'}
+                      value={yelpApiKey}
+                      onChange={(e) => setYelpApiKey(e.target.value)}
+                      className="pl-8 text-xs bg-card h-8"
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={handleSaveYelp}
+                    disabled={savingYelp}
+                    className="h-8 text-xs font-bold gap-1 px-3 bg-primary hover:bg-primary/95 text-primary-foreground shrink-0"
+                  >
+                    {savingYelp ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+                    Enregistrer
+                  </Button>
+                </div>
+              </div>
+            </div>
           </CardContent>
         </Card>
 

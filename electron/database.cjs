@@ -164,6 +164,10 @@ function initDb() {
     // v2.12.0 notification migrations (safe re-run)
     db.run(`ALTER TABLE notifications ADD COLUMN workspace_id TEXT`, () => {});
 
+    // v2.62.0 HERE & Yelp API key migrations
+    db.run(`ALTER TABLE settings ADD COLUMN here_api_key TEXT DEFAULT NULL`, () => {});
+    db.run(`ALTER TABLE settings ADD COLUMN yelp_api_key TEXT DEFAULT NULL`, () => {});
+
     // v2.12.0 lead enrichment migrations
     db.run(`ALTER TABLE leads ADD COLUMN website TEXT DEFAULT NULL`, () => {});
     db.run(`ALTER TABLE leads ADD COLUMN rating REAL DEFAULT NULL`, () => {});
