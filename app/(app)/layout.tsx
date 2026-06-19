@@ -81,21 +81,23 @@ import {
   BreadcrumbSeparator 
 } from '@/components/ui/breadcrumb';
 
+const CURRENT_VERSION = '2.77.0';
+
 function UpdateBanner() {
   const [visible, setVisible] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const dismissed = localStorage.getItem('minerva_dismiss_update_v2_73_0') === 'true';
-      if (!dismissed) {
+      const dismissedVersion = localStorage.getItem('minerva_dismissed_version');
+      if (dismissedVersion !== CURRENT_VERSION) {
         setVisible(true);
       }
     }
   }, []);
 
   const handleDismiss = () => {
-    localStorage.setItem('minerva_dismiss_update_v2_73_0', 'true');
+    localStorage.setItem('minerva_dismissed_version', CURRENT_VERSION);
     setVisible(false);
   };
 
@@ -106,7 +108,7 @@ function UpdateBanner() {
       <div className="flex items-center gap-2">
         <Sparkles className="h-4 w-4 animate-pulse shrink-0" />
         <span>
-          Une nouvelle mise à jour (v2.73.0) est disponible ! Veuillez recharger la page et consulter le{' '}
+          Une nouvelle mise à jour (v{CURRENT_VERSION}) est disponible ! Veuillez recharger la page et consulter le{' '}
           <Link href="/changelog" onClick={handleDismiss} className="underline font-bold hover:text-emerald-100">
             Changelog
           </Link>{' '}
