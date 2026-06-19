@@ -1,152 +1,109 @@
-'use client';
+"use client";
 
-import React, { useEffect, useState } from 'react';
-import Link from 'next/link';
-import { Activity, Mail, FileText, Phone, MessageSquare, Bell, User, ArrowRight } from 'lucide-react';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { useReach } from '@/lib/reach-context';
-import { createClient } from '@/lib/supabase/client';
-
-interface FeedItem {
-  id: string;
-  icon: React.ReactNode;
-  title: string;
-  subtitle: string;
-  time: string;
-  link?: string;
-}
-
-const ACTIVITY_ICON: Record<string, React.ReactNode> = {
-  email: <Mail className="h-3 w-3 text-blue-500" />,
-  call: <Phone className="h-3 w-3 text-green-500" />,
-  note: <FileText className="h-3 w-3 text-[#78716c]" />,
-  general: <FileText className="h-3 w-3 text-[#78716c]" />,
-  visit: <User className="h-3 w-3 text-purple-500" />,
-  reply_detected: <Mail className="h-3 w-3 text-[#f54e00]" />,
-  lead_assigned: <User className="h-3 w-3 text-blue-500" />,
-  default: <Activity className="h-3 w-3 text-[#a8a29e]" />,
-};
-
-function relativeTime(isoDate: string): string {
-  const diff = Date.now() - new Date(isoDate).getTime();
-  const minutes = Math.floor(diff / 60_000);
-  if (minutes < 1) return "à l'instant";
-  if (minutes < 60) return `il y a ${minutes}m`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `il y a ${hours}h`;
-  return `il y a ${Math.floor(hours / 24)}j`;
-}
+import React, { useMemo } from "react";
+import { Activity } from "lucide-react";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { useReach } from "@/lib/reach-context";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from "recharts";
 
 export function TodayActivityFeedCard() {
-  const { user, activeWorkspace, notifications } = useReach();
-  const [items, setItems] = useState<FeedItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { leads } = useReach();
 
-  useEffect(() => {
-    if (!user || !activeWorkspace) return;
+  // Compute stats for the last 7 days
+  const chartData = useMemo(() => {
+    const daysOfWeek = ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"];
+    const result = [];
 
-    const fetchActivity = async () => {
-      setLoading(true);
-      try {
-        const supabase = createClient();
-        const { data: activities } = await supabase
-          .from('activities')
-          .select('id, type, title, body, lead_id, created_at')
-          .eq('workspace_id', activeWorkspace.id)
-          .order('created_at', { ascending: false })
-          .limit(8);
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const dayName = daysOfWeek[d.getDay()];
 
-        const activityItems: FeedItem[] = (activities || []).map((a: any) => ({
-          id: `act-${a.id}`,
-          icon: ACTIVITY_ICON[a.type] ?? ACTIVITY_ICON.default,
-          title: a.title || a.type,
-          subtitle: a.body || '',
-          time: relativeTime(a.created_at),
-          link: a.lead_id ? `/leads/${a.lead_id}` : undefined,
-        }));
+      // Get YYYY-MM-DD local format prefix
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      const datePrefix = `${year}-${month}-${day}`;
 
-        // Merge with recent notifications (last 24h, unread)
-        const cutoff = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
-        const notifItems: FeedItem[] = notifications
-          .filter(n => n.createdAt > cutoff && ['reply_detected', 'lead_assigned'].includes(n.type))
-          .slice(0, 4)
-          .map(n => ({
-            id: `notif-${n.id}`,
-            icon: ACTIVITY_ICON[n.type] ?? <Bell className="h-3 w-3 text-[#a8a29e]" />,
-            title: n.title,
-            subtitle: n.body,
-            time: relativeTime(n.createdAt),
-            link: n.link,
-          }));
+      // Count leads created on this day
+      const created = leads.filter((l) => l.createdAt && l.createdAt.startsWith(datePrefix)).length;
 
-        // Merge, deduplicate by id, sort by time (most recent first)
-        const merged = [...activityItems, ...notifItems]
-          .sort((a, b) => {
-            // Items with relative times are already sorted; keep order
-            return 0;
-          })
-          .slice(0, 10);
+      // Count leads won on this day
+      const won = leads.filter(
+        (l) => l.status === "Won" && l.updatedAt && l.updatedAt.startsWith(datePrefix)
+      ).length;
 
-        setItems(merged);
-      } catch {
-        // silently fail
-      } finally {
-        setLoading(false);
-      }
-    };
+      result.push({
+        name: dayName,
+        created,
+        won,
+      });
+    }
 
-    fetchActivity();
-  }, [user, activeWorkspace, notifications]);
+    return result;
+  }, [leads]);
 
   return (
-    <Card className="border border-border bg-card shadow-sm">
-      <CardHeader className="flex flex-row items-center justify-between pb-3">
+    <Card className="border border-[#e5e5e0] bg-white shadow-sm overflow-hidden">
+      <CardHeader className="flex flex-row items-center justify-between pb-2">
         <div className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-[#f54e00]/10 text-[#f54e00]">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#10b981]/10 text-[#059669]">
             <Activity className="h-4 w-4" />
           </div>
           <div>
-            <CardTitle className="text-base font-semibold font-sans">Activité récente</CardTitle>
-            <CardDescription className="text-xs">Notes, emails et réponses de vos leads</CardDescription>
+            <CardTitle className="text-base font-semibold font-sans">Activité hebdomadaire</CardTitle>
+            <CardDescription className="text-xs">Leads créés vs leads gagnés par jour</CardDescription>
           </div>
         </div>
       </CardHeader>
 
-      <CardContent className="px-6 pb-4">
-        {loading ? (
-          <p className="text-xs text-[#78716c] py-2">Chargement…</p>
-        ) : items.length === 0 ? (
-          <div className="flex flex-col items-center gap-2 py-4 text-center">
-            <MessageSquare className="h-7 w-7 text-[#a8a29e] opacity-50" />
-            <p className="text-xs text-[#78716c]">Aucune activité récente.</p>
-            <Link href="/leads" className="text-[10px] font-semibold text-[#f54e00] hover:underline flex items-center gap-0.5">
-              Voir les leads <ArrowRight className="h-3 w-3" />
-            </Link>
-          </div>
-        ) : (
-          <div className="space-y-1">
-            {items.map(item => (
-              <div key={item.id} className="group flex items-start gap-2.5 rounded-md px-2 py-1.5 hover:bg-[#f4f4f3] transition-colors">
-                <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#f4f4f3] group-hover:bg-white">
-                  {item.icon}
-                </div>
-                <div className="flex-1 min-w-0">
-                  {item.link ? (
-                    <Link href={item.link} className="truncate text-xs font-medium text-[#26251e] hover:text-[#f54e00] transition-colors block">
-                      {item.title}
-                    </Link>
-                  ) : (
-                    <p className="truncate text-xs font-medium text-[#26251e]">{item.title}</p>
-                  )}
-                  {item.subtitle && (
-                    <p className="truncate text-[10px] text-[#78716c]">{item.subtitle}</p>
-                  )}
-                </div>
-                <span className="shrink-0 text-[10px] text-[#a8a29e] tabular-nums">{item.time}</span>
-              </div>
-            ))}
-          </div>
-        )}
+      <CardContent className="px-6 pb-6">
+        <div className="w-full h-[220px] mt-3">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={chartData} margin={{ top: 10, right: 5, left: -25, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e5e5e0" vertical={false} />
+              <XAxis
+                dataKey="name"
+                tick={{ fontSize: 10, fill: "#807d72", fontWeight: 500 }}
+                axisLine={false}
+                tickLine={false}
+              />
+              <YAxis
+                tick={{ fontSize: 10, fill: "#807d72", fontWeight: 500 }}
+                axisLine={false}
+                tickLine={false}
+                allowDecimals={false}
+              />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: "#ffffff",
+                  borderColor: "#e5e5e0",
+                  borderRadius: "10px",
+                  fontSize: "11px",
+                  color: "#26251e",
+                  boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+                }}
+                labelStyle={{ fontWeight: "bold", color: "#26251e" }}
+              />
+              <Legend
+                iconSize={8}
+                iconType="circle"
+                wrapperStyle={{ fontSize: "10px", paddingTop: "12px", color: "#807d72" }}
+              />
+              <Bar dataKey="created" name="Leads créés" fill="#10b981" radius={[3, 3, 0, 0]} barSize={14} />
+              <Bar dataKey="won" name="Leads gagnés" fill="#059669" radius={[3, 3, 0, 0]} barSize={14} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
       </CardContent>
     </Card>
   );

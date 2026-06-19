@@ -26,7 +26,7 @@ export function TodayGoalsCard() {
           </div>
           <Link
             href="/settings"
-            className="ml-4 flex shrink-0 items-center gap-1 text-[10px] font-semibold text-[#f54e00] hover:underline"
+            className="ml-4 flex shrink-0 items-center gap-1 text-[10px] font-semibold text-[#059669] hover:underline cursor-pointer"
           >
             <Settings className="h-3 w-3" />
             Configurer
@@ -41,10 +41,10 @@ export function TodayGoalsCard() {
       <CardContent className="px-4 py-3">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-1.5 text-xs font-semibold text-[#26251e]">
-            <Target className="h-3.5 w-3.5 text-[#f54e00]" />
+            <Target className="h-3.5 w-3.5 text-[#10b981]" />
             Objectifs du mois
           </div>
-          <Link href="/settings" className="text-[10px] text-[#78716c] hover:text-[#f54e00] transition-colors">
+          <Link href="/settings" className="text-[10px] text-[#78716c] hover:text-[#059669] transition-colors">
             Modifier
           </Link>
         </div>
@@ -65,7 +65,7 @@ export function TodayGoalsCard() {
                 </div>
                 <div className="h-1.5 w-full overflow-hidden rounded-full bg-[#f4f4f3]">
                   <div
-                    className={cn('h-full rounded-full transition-all duration-500', done ? 'bg-[#059669]' : 'bg-[#f54e00]')}
+                    className={cn('h-full rounded-full transition-all duration-500', done ? 'bg-[#059669]' : 'bg-[#10b981]')}
                     style={{ width: `${pct}%` }}
                   />
                 </div>

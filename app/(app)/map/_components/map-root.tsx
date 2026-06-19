@@ -161,6 +161,7 @@ export function MapRoot() {
   // Geolocation state
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
   const [geoLoading, setGeoLoading] = useState(false);
+  const mapRef = useRef<any>(null);
 
   // Route planning state
   const [routeMode, setRouteMode] = useState(false);
@@ -314,8 +315,17 @@ export function MapRoot() {
     setGeoLoading(true);
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        setUserLocation([pos.coords.latitude, pos.coords.longitude]);
+        const { latitude, longitude } = pos.coords;
+        setUserLocation([latitude, longitude]);
         setGeoLoading(false);
+        if (mapRef.current) {
+          mapRef.current.flyTo({
+            center: [longitude, latitude],
+            zoom: 13,
+            speed: 1.2,
+            essential: true
+          });
+        }
       },
       () => setGeoLoading(false),
       { enableHighAccuracy: true, timeout: 10000 }
@@ -603,6 +613,7 @@ export function MapRoot() {
       {/* Map — center uses [lng, lat] as MapLibre expects */}
       <div className="flex-1 relative min-h-0">
         <Map
+          ref={mapRef}
           center={userLocation ? [userLocation[1], userLocation[0]] : [-73.5674, 45.5019]}
           zoom={userLocation ? 13 : 12}
           className="absolute inset-0 w-full h-full"

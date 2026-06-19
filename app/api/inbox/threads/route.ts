@@ -40,7 +40,7 @@ export async function GET(req: NextRequest) {
       .single();
 
     if (!settings?.google_refresh_token) {
-      return NextResponse.json({ threads: [], needsReauth: false });
+      return NextResponse.json({ threads: [], needsReauth: false, isConnected: false });
     }
 
     // Refresh token if expiring within 5 minutes
@@ -109,7 +109,7 @@ export async function GET(req: NextRequest) {
       .map(r => r.value as InboxThread)
       .sort((a, b) => new Date(b.lastMessageDate).getTime() - new Date(a.lastMessageDate).getTime());
 
-    return NextResponse.json({ threads, needsReauth });
+    return NextResponse.json({ threads, needsReauth, isConnected: true });
   } catch (err) {
     console.error('GET /api/inbox/threads error:', err);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });

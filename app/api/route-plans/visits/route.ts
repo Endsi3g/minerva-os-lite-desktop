@@ -43,16 +43,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: visitErr.message }, { status: 500 });
     }
 
-    // Log the visit activity
-    await supabase.from('activities').insert({
-      workspace_id: workspace_id || null,
-      user_id: user.id,
-      lead_id: lead_id,
-      type: 'visit',
-      title: 'Visite terrain enregistrée',
-      body: `Résultat: ${outcome === 'meeting_booked' ? 'RDV pris' : outcome === 'visited' ? 'Visité' : outcome === 'absent' ? 'Absent' : 'Non intéressé'}. Notes: ${notes || 'Aucune'}`
-    });
-
     // 2. Fetch the lead info for details
     const { data: lead } = await supabase
       .from('leads')

@@ -7,6 +7,8 @@ import { InboxList } from './inbox-list';
 import { InboxDetail } from './inbox-detail';
 import type { InboxThread, ThreadMessage } from '@/lib/inbox-types';
 import type { Lead } from '@/lib/mock-data';
+import { createClient } from '@/lib/supabase/client';
+import { Mail } from 'lucide-react';
 
 type Filter = 'all' | 'positive' | 'followup' | 'negative';
 type ReplyStatus = 'positive' | 'followup' | 'negative' | null;
@@ -19,6 +21,7 @@ export function InboxRoot() {
   const [campaignFilter, setCampaignFilter] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [needsReauth, setNeedsReauth] = useState(false);
+  const [isConnected, setIsConnected] = useState(true);
 
   const [selectedThread, setSelectedThread] = useState<InboxThread | null>(null);
   const [detailMessages, setDetailMessages] = useState<ThreadMessage[]>([]);
@@ -38,6 +41,7 @@ export function InboxRoot() {
       const data = await res.json();
       setThreads(data.threads || []);
       setNeedsReauth(!!data.needsReauth);
+      setIsConnected(data.isConnected !== false);
     } catch {
       // silently fail — inbox unavailable without Gmail
     } finally {
@@ -157,6 +161,58 @@ export function InboxRoot() {
   const handleCreateTask = async (title: string, dueDate: string) => {
     await addTask(title, 'Follow-up', dueDate);
   };
+
+  if (!isConnected) {
+    return (
+      <div className="h-full flex items-center justify-center bg-white p-6 w-full">
+        <div className="max-w-md w-full text-center space-y-6 animate-in fade-in duration-300">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#10b981]/15 text-[#10b981]">
+            <Mail className="h-7 w-7" />
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-xl font-bold text-[#26251e] font-sans">Connectez votre boîte de réception</h2>
+            <p className="text-xs text-[#7a7a76] leading-relaxed">
+              Suivez toutes les interactions avec vos prospects directement depuis Minerva Reach. 
+              Planifiez des séquences d&apos;emails personnalisées et répondez en un clic via votre propre adresse.
+            </p>
+          </div>
+          <div className="bg-[#fafaf7] border border-[#e6e5e0] rounded-xl p-4 text-left space-y-2.5">
+            <div className="flex items-center gap-2.5 text-xs text-[#26251e]">
+              <span className="h-4.5 w-4.5 rounded-full bg-[#10b981]/15 text-[#10b981] flex items-center justify-center text-[10px] font-bold">✓</span>
+              <span>Synchronisation automatique des échanges</span>
+            </div>
+            <div className="flex items-center gap-2.5 text-xs text-[#26251e]">
+              <span className="h-4.5 w-4.5 rounded-full bg-[#10b981]/15 text-[#10b981] flex items-center justify-center text-[10px] font-bold">✓</span>
+              <span>Détection intelligente des réponses (Positif, À relancer, Négatif)</span>
+            </div>
+            <div className="flex items-center gap-2.5 text-xs text-[#26251e]">
+              <span className="h-4.5 w-4.5 rounded-full bg-[#10b981]/15 text-[#10b981] flex items-center justify-center text-[10px] font-bold">✓</span>
+              <span>Rédaction assistée par IA pour vos réponses</span>
+            </div>
+          </div>
+          <button
+            onClick={async () => {
+              const supabase = createClient();
+              await supabase.auth.signInWithOAuth({
+                provider: 'google',
+                options: {
+                  scopes: 'https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/userinfo.email',
+                  redirectTo: window.location.origin + '/inbox',
+                  queryParams: {
+                    access_type: 'offline',
+                    prompt: 'consent'
+                  }
+                }
+              });
+            }}
+            className="w-full py-2.5 px-4 bg-[#10b981] hover:bg-[#059669] text-white font-bold rounded-lg text-xs transition-colors flex items-center justify-center gap-2 shadow-xs cursor-pointer border-0"
+          >
+            <span>Connecter mon compte Gmail</span>
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-full overflow-hidden bg-white">

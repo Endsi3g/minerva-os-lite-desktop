@@ -5,19 +5,26 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [2.71.0] - 2026-06-19
+
+### Ajouté — Gamification, Partage de Bibliothèque & Expérience Premium
+- **Classement de Performance Gamifié** — Implémentation d'un classement de performance d'équipe et global avec divisions automatiques (Bronze, Argent, Or, Platine), calcul du chiffre d'affaires, taux de conversion, et une fiche profil interactive (compétences, trophées, projets actifs).
+- **Invitations d'Équipe Robustes** — Création d'une page client-side d'acceptation d'invitation avec OTP validation (`/invite/[token]`) pour contrer les faux clics générés par les robots des messageries e-mail.
+- **Partage Public de Dossiers & Documents** — Ajout d'options de partage public pour les répertoires et fichiers de la bibliothèque, et génération de pages de prévisualisation publiques en lecture seule (`/share/folder/[name]` et `/share/document/[id]`).
+- **Outils de Sélection & Déplacement en Masse** — Ajout de checkboxes sur les cartes de fichiers de la bibliothèque et d'une barre flottante bulk-action pour déplacer ou modifier la visibilité de plusieurs fichiers en une fois.
+- **Centrage Géolocalisé Map** — Câblage de l'instance de la carte pour centrer et zoomer de manière fluide (`.flyTo`) sur la localisation GPS de l'utilisateur.
+- **Graphique d'Activité Hebdomadaire Recharts** — Remplacement de la liste textuelle des activités récentes sur l'écran d'accueil par un graphique Recharts double-barres (leads créés vs leads gagnés sur les 7 derniers jours).
+- **Harmonisation de la Marque** — Remplacement de tous les accents et contours orange restants par du vert émeraude (`#10b981` / `#059669`) dans l'ensemble de l'application (Today, Personas, Customizations).
+- **ICP en Pleine Page** — Migration de la création et modification des profils cibles (ICP) de boîtes de dialogue vers des routes Next.js dédiées (`/personas/new` et `/personas/[id]/edit`).
+
 ## [2.70.0] - 2026-06-18
 
-### Ajouté — Mode Terrain, Invitations temporaires, Présence en temps réel & Activités
+### Ajouté — Mode Terrain sans Modales & Automations
 - **Expérience Outcome Dédiée** — Remplacement complet du modal de résultat de passage par des pages de saisie dédiées (`/field/[planId]/outcome/[leadId]`), offrant une interface plein écran premium et mobile-first.
 - **Conversion Automatique des RDV en Deals** — Marquer un lead comme "RDV pris" (`meeting_booked`) met à jour son statut à `'Won'` (Deal) et planifie automatiquement une tâche `'Appel de closing'` pour le lendemain.
 - **Séquence de Relance Automatique pour Absence** — Marquer un lead comme "Absent" (`absent`) génère automatiquement une séquence e-mail de relance `'Passé vous voir'` (e-mail immédiat à J+0 et rappel d'appel à J+3) si une adresse e-mail est disponible, ainsi qu'une tâche de rappel locale à J+2.
 - **Synchronisation Bidirectionnelle des Tournées** — Câblage de `sync.cjs` pour synchroniser les itinéraires (`route_plans`) et les fiches de visite (`field_visits`) entre SQLite (Electron) et Supabase (Web).
 - **Nouvel Endpoint API** — Endpoint `/api/route-plans/visits` gérant les résultats de passage et leurs automatisations associées pour les sessions connectées.
-- **Clés de Prospection & Sync Settings** — Résolution du vidage des clés API de scraping (Apify, Yelp, Firecrawl, HERE) en mode Electron. Les clés sont désormais écrites en SQLite local et synchronisées de manière bidirectionnelle avec Supabase.
-- **Invitations par Token Temporaire (Bypass Onboarding)** — Invitation sécurisée par lien à durée de validité configurable (1, 3 ou 7 jours). Flow d'inscription dédié évitant le formulaire d'onboarding pour rejoindre directement le workspace invité.
-- **Journal d'Activités Offline-First** — Enregistrement local des actions cruciales (création de prospects, complétion de tâches, ajout de notes, visites terrain) synchronisé en tâche de fond dans une table globale `activities`.
-- **Fiches Profils Membres Dédiées** — Suppression définitive des modaux de membres au profit de pages dédiées `/team/[id]`, présentant la biographie du collaborateur, son rôle, ses statistiques clés et son journal d'activités quotidiennes.
-- **Présence Collaborative en Temps Réel** — Intégration de Supabase Presence pour synchroniser et afficher instantanément les pages actives des utilisateurs. Présence signalée par des badges animés (pulsés avec initiales) sur la liste des leads et les cartes Kanban.
 
 ## [2.64.0] - 2026-06-18
 

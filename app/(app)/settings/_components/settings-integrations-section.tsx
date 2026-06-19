@@ -44,50 +44,42 @@ export function SettingsIntegrationsSection() {
   useEffect(() => {
     const fetchConnections = async () => {
       try {
-        const electronObj = typeof window !== 'undefined' && (window as any).electron;
-        let data: any = null;
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data } = await supabase
+            .from('settings')
+            .select('google_refresh_token, google_email, apify_token, smtp_config, here_api_key, yelp_api_key, firecrawl_api_key')
+            .eq('user_id', user.id)
+            .maybeSingle();
 
-        if (electronObj) {
-          data = await electronObj.dbGet("SELECT google_refresh_token, google_email, apify_token, smtp_config, here_api_key, yelp_api_key, firecrawl_api_key FROM settings LIMIT 1");
-        } else {
-          const supabase = createClient();
-          const { data: { user } } = await supabase.auth.getUser();
-          if (user) {
-            const res = await supabase
-              .from('settings')
-              .select('google_refresh_token, google_email, apify_token, smtp_config, here_api_key, yelp_api_key, firecrawl_api_key')
-              .eq('user_id', user.id)
-              .maybeSingle();
-            data = res.data;
-          }
-        }
-
-        if (data) {
-          if (data.google_refresh_token) {
-            setGmailConnected(true);
-            setGmailEmail(data.google_email || 'Connecté');
-          }
-          if (data.smtp_config) {
-            try {
-              const parsed = JSON.parse(data.smtp_config);
-              setSmtpConfig(parsed);
-              setSmtpSaved(true);
-            } catch {}
-          }
-          if (data.apify_token) {
-            if (data.apify_token === 'native' || !data.apify_token.startsWith('apify_api_')) {
-              setScraperEngine('native');
-              setApifyInput(data.apify_token === 'native' ? '' : data.apify_token);
-            } else {
-              setScraperEngine('apify');
-              setApifyInput(data.apify_token);
+          if (data) {
+            if (data.google_refresh_token) {
+              setGmailConnected(true);
+              setGmailEmail(data.google_email || 'Connecté');
             }
-          } else {
-            setScraperEngine('native');
+            if (data.smtp_config) {
+              try {
+                const parsed = JSON.parse(data.smtp_config);
+                setSmtpConfig(parsed);
+                setSmtpSaved(true);
+              } catch {}
+            }
+            if (data.apify_token) {
+              if (data.apify_token === 'native' || !data.apify_token.startsWith('apify_api_')) {
+                setScraperEngine('native');
+                setApifyInput(data.apify_token === 'native' ? '' : data.apify_token);
+              } else {
+                setScraperEngine('apify');
+                setApifyInput(data.apify_token);
+              }
+            } else {
+              setScraperEngine('native');
+            }
+            if ((data as any).here_api_key) setHereApiKey((data as any).here_api_key);
+            if ((data as any).yelp_api_key) setYelpApiKey((data as any).yelp_api_key);
+            if ((data as any).firecrawl_api_key) setFirecrawlApiKey((data as any).firecrawl_api_key);
           }
-          if (data.here_api_key) setHereApiKey(data.here_api_key);
-          if (data.yelp_api_key) setYelpApiKey(data.yelp_api_key);
-          if (data.firecrawl_api_key) setFirecrawlApiKey(data.firecrawl_api_key);
         }
       } catch (e) {
         console.error("Failed to load integrations status:", e);
@@ -149,32 +141,20 @@ export function SettingsIntegrationsSection() {
     if (e) e.preventDefault();
     setSavingApify(true);
     try {
-      const token = scraperEngine === 'native' ? 'native' : apifyInput.trim();
-      const electronObj = typeof window !== 'undefined' && (window as any).electron;
-
-      if (electronObj) {
-        const settings = await electronObj.dbGet("SELECT user_id FROM settings LIMIT 1");
-        if (settings) {
-          await electronObj.dbRun(
-            "UPDATE settings SET apify_token = ?, updated_at = ?, sync_status = 'pending_update' WHERE user_id = ?",
-            [token || null, new Date().toISOString(), settings.user_id]
-          );
-          if (electronObj.triggerSync) electronObj.triggerSync();
-        }
-      } else {
-        const supabase = createClient();
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          await supabase
-            .from('settings')
-            .update({
-              apify_token: token || null,
-              updated_at: new Date().toISOString()
-            })
-            .eq('user_id', user.id);
-        }
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const token = scraperEngine === 'native' ? 'native' : apifyInput.trim();
+        await supabase
+          .from('settings')
+          .update({
+            apify_token: token || null,
+            updated_at: new Date().toISOString()
+          })
+          .eq('user_id', user.id);
+        
+        alert(scraperEngine === 'native' ? "Moteur de recherche natif Minerva activé avec succès !" : "Token Apify enregistré avec succès !");
       }
-      alert(scraperEngine === 'native' ? "Moteur de recherche natif Minerva activé avec succès !" : "Token Apify enregistré avec succès !");
     } catch (e) {
       console.error(e);
       alert("Erreur lors de la sauvegarde de la configuration de prospection");
@@ -185,26 +165,12 @@ export function SettingsIntegrationsSection() {
   const handleSaveHere = async () => {
     setSavingHere(true);
     try {
-      const value = hereApiKey.trim() || null;
-      const electronObj = typeof window !== 'undefined' && (window as any).electron;
-
-      if (electronObj) {
-        const settings = await electronObj.dbGet("SELECT user_id FROM settings LIMIT 1");
-        if (settings) {
-          await electronObj.dbRun(
-            "UPDATE settings SET here_api_key = ?, updated_at = ?, sync_status = 'pending_update' WHERE user_id = ?",
-            [value, new Date().toISOString(), settings.user_id]
-          );
-          if (electronObj.triggerSync) electronObj.triggerSync();
-        }
-      } else {
-        const supabase = createClient();
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          await supabase.from('settings').update({ here_api_key: value, updated_at: new Date().toISOString() }).eq('user_id', user.id);
-        }
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase.from('settings').update({ here_api_key: hereApiKey.trim() || null, updated_at: new Date().toISOString() }).eq('user_id', user.id);
+        alert('Clé HERE enregistrée !');
       }
-      alert('Clé HERE enregistrée !');
     } catch (e) { console.error(e); alert('Erreur sauvegarde HERE'); }
     setSavingHere(false);
   };
@@ -212,26 +178,12 @@ export function SettingsIntegrationsSection() {
   const handleSaveYelp = async () => {
     setSavingYelp(true);
     try {
-      const value = yelpApiKey.trim() || null;
-      const electronObj = typeof window !== 'undefined' && (window as any).electron;
-
-      if (electronObj) {
-        const settings = await electronObj.dbGet("SELECT user_id FROM settings LIMIT 1");
-        if (settings) {
-          await electronObj.dbRun(
-            "UPDATE settings SET yelp_api_key = ?, updated_at = ?, sync_status = 'pending_update' WHERE user_id = ?",
-            [value, new Date().toISOString(), settings.user_id]
-          );
-          if (electronObj.triggerSync) electronObj.triggerSync();
-        }
-      } else {
-        const supabase = createClient();
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          await supabase.from('settings').update({ yelp_api_key: value, updated_at: new Date().toISOString() }).eq('user_id', user.id);
-        }
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase.from('settings').update({ yelp_api_key: yelpApiKey.trim() || null, updated_at: new Date().toISOString() }).eq('user_id', user.id);
+        alert('Clé Yelp enregistrée !');
       }
-      alert('Clé Yelp enregistrée !');
     } catch (e) { console.error(e); alert('Erreur sauvegarde Yelp'); }
     setSavingYelp(false);
   };
@@ -239,26 +191,12 @@ export function SettingsIntegrationsSection() {
   const handleSaveFirecrawl = async () => {
     setSavingFirecrawl(true);
     try {
-      const value = firecrawlApiKey.trim() || null;
-      const electronObj = typeof window !== 'undefined' && (window as any).electron;
-
-      if (electronObj) {
-        const settings = await electronObj.dbGet("SELECT user_id FROM settings LIMIT 1");
-        if (settings) {
-          await electronObj.dbRun(
-            "UPDATE settings SET firecrawl_api_key = ?, updated_at = ?, sync_status = 'pending_update' WHERE user_id = ?",
-            [value, new Date().toISOString(), settings.user_id]
-          );
-          if (electronObj.triggerSync) electronObj.triggerSync();
-        }
-      } else {
-        const supabase = createClient();
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          await supabase.from('settings').update({ firecrawl_api_key: value, updated_at: new Date().toISOString() }).eq('user_id', user.id);
-        }
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase.from('settings').update({ firecrawl_api_key: firecrawlApiKey.trim() || null, updated_at: new Date().toISOString() }).eq('user_id', user.id);
+        alert('Clé Firecrawl enregistrée !');
       }
-      alert('Clé Firecrawl enregistrée !');
     } catch (e) { console.error(e); alert('Erreur sauvegarde Firecrawl'); }
     setSavingFirecrawl(false);
   };

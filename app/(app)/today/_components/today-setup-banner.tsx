@@ -76,11 +76,11 @@ export function TodaySetupBanner() {
   const pct = Math.round((completedCount / total) * 100);
 
   return (
-    <div className="flex items-center gap-3 rounded-lg border border-[#f54e00]/20 bg-[#f54e00]/5 px-4 py-2.5">
-      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-[#f54e00]/10 text-[#f54e00]">
+    <div className="flex items-center gap-3 rounded-lg border border-[#10b981]/20 bg-[#10b981]/5 px-4 py-2.5">
+      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-[#10b981]/10 text-[#059669]">
         <Layers className="h-3.5 w-3.5" />
       </div>
-
+ 
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-1">
           <span className="text-xs font-semibold text-[#26251e]">
@@ -90,14 +90,14 @@ export function TodaySetupBanner() {
         </div>
         <div className="h-1 w-full max-w-[200px] overflow-hidden rounded-full bg-[#e5e5e0]">
           <div
-            className="h-full rounded-full bg-[#f54e00] transition-all duration-500"
+            className="h-full rounded-full bg-[#10b981] transition-all duration-500"
             style={{ width: `${pct}%` }}
           />
         </div>
       </div>
-
+ 
       <Link href="/setup" className="shrink-0">
-        <button className="flex items-center gap-1 text-xs font-semibold text-[#f54e00] hover:underline">
+        <button className="flex items-center gap-1 text-xs font-semibold text-[#059669] hover:underline cursor-pointer">
           Continuer
           <ArrowRight className="h-3 w-3" />
         </button>

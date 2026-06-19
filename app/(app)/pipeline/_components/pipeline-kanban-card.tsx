@@ -17,7 +17,7 @@ interface PipelineKanbanCardProps {
 }
 
 export function PipelineKanbanCard({ lead }: PipelineKanbanCardProps) {
-  const { updateLeadStatus, onlineUsers, user } = useReach();
+  const { updateLeadStatus } = useReach();
 
   const statusOrder: Lead['status'][] = ['New', 'Contacted', 'Meeting Booked', 'Won'];
   const currentIndex = statusOrder.indexOf(lead.status);
@@ -48,69 +48,17 @@ export function PipelineKanbanCard({ lead }: PipelineKanbanCardProps) {
 
   const isOverdue = lead.nextActionDate && lead.nextActionDate <= new Date().toISOString().split('T')[0];
 
-  const viewers = (onlineUsers || []).filter(u => u.user_id !== user?.id && u.pathname === `/leads/${lead.id}`);
-
   return (
     <Card className="border border-border bg-card shadow-xs hover:shadow-sm hover:border-border/80 transition-all group/card overflow-hidden">
       <CardContent className="p-3.5 space-y-3">
         {/* Title & Detail Link */}
         <div className="flex items-start justify-between gap-2">
-          <div className="flex-1 min-w-0 flex flex-col gap-1">
-            <Link 
-              href={`/leads/${lead.id}`}
-              className="text-xs font-bold text-foreground hover:text-primary transition-colors leading-tight line-clamp-2 pr-1"
-            >
-              {lead.businessName}
-            </Link>
-            
-            {/* Viewers presence indicators */}
-            {viewers.length > 0 && (
-              <div className="flex items-center gap-1 mt-1">
-                <div className="flex -space-x-1 select-none animate-pulse">
-                  {viewers.map(v => {
-                    const viewerInitials = (v.full_name || '')
-                      .split(' ')
-                      .map((n: string) => n[0])
-                      .join('')
-                      .substring(0, 2)
-                      .toUpperCase();
-                    
-                    const colors = [
-                      'bg-indigo-500 text-white',
-                      'bg-emerald-500 text-white',
-                      'bg-sky-500 text-white',
-                      'bg-rose-500 text-white',
-                      'bg-amber-500 text-white',
-                      'bg-violet-500 text-white'
-                    ];
-                    const hash = (v.full_name || '').split('').reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0);
-                    const myColor = colors[hash % colors.length];
-
-                    return (
-                      <Tooltip key={v.user_id}>
-                        <TooltipTrigger asChild>
-                          <div className={cn(
-                            "w-4.5 h-4.5 rounded-full border border-white flex items-center justify-center text-[6px] font-extrabold shrink-0 shadow-xs cursor-default select-none overflow-hidden",
-                            myColor
-                          )}>
-                            {v.avatar_base64 ? (
-                              <img src={v.avatar_base64} alt="" className="w-full h-full object-cover" />
-                            ) : (
-                              <span>{viewerInitials}</span>
-                            )}
-                          </div>
-                        </TooltipTrigger>
-                        <TooltipContent className="text-[9px] bg-[#26251e] text-white p-1 rounded font-sans border border-neutral-800 shadow-md">
-                          {v.full_name} est ici
-                        </TooltipContent>
-                      </Tooltip>
-                    );
-                  })}
-                </div>
-                <span className="text-[9px] text-muted-foreground italic font-medium">Consulte...</span>
-              </div>
-            )}
-          </div>
+          <Link 
+            href={`/leads/${lead.id}`}
+            className="text-xs font-bold text-foreground hover:text-primary transition-colors leading-tight line-clamp-2 pr-1"
+          >
+            {lead.businessName}
+          </Link>
           <Button asChild variant="ghost" size="icon" className="h-5 w-5 text-muted-foreground hover:text-primary hover:bg-secondary opacity-0 group-hover/card:opacity-100 transition-opacity">
             <Link href={`/leads/${lead.id}`}>
               <ArrowUpRight className="h-3 w-3" />

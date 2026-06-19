@@ -12,7 +12,6 @@ import { createClient } from '@/lib/supabase/client';
 import { useLanguage } from '@/lib/language-context';
 import { getApiUrl } from '@/lib/api-helper';
 import { useReach } from '@/lib/reach-context';
-import { useRouter } from 'next/navigation';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 type Role = 'admin' | 'editor' | 'viewer';
@@ -36,7 +35,6 @@ interface TeamMember {
 
 export default function TeamPage() {
   const { t, locale } = useLanguage();
-  const router = useRouter();
   
   // Data State
   const [members, setMembers] = useState<TeamMember[]>([]);
@@ -689,12 +687,16 @@ export default function TeamPage() {
                 <span>{t('team.btn_export')}</span>
               </button>
 
-              <Link
-                href="/team/invite"
+              <button
+                onClick={() => {
+                  setShowInviteModal(true);
+                  setInviteError('');
+                  setInviteEmail('');
+                }}
                 className="h-8 bg-[#059669] hover:bg-[#047857] text-white text-xs font-semibold rounded-md px-4 shadow-2xs flex items-center gap-1.5 transition-colors"
               >
                 <span>{t('team.btn_invite')}</span>
-              </Link>
+              </button>
             </div>
           </div>
 
@@ -734,14 +736,7 @@ export default function TeamPage() {
                     currentUser.email.toLowerCase().includes(searchQuery.toLowerCase())) && (
                     <tr className="hover:bg-neutral-50/40 transition-colors group">
                       {/* Name/Email */}
-                      <td 
-                        className="py-3.5 px-4 cursor-pointer hover:bg-neutral-50"
-                        onClick={() => {
-                          if (currentUser?.id) {
-                            router.push(`/team/${currentUser.id}`);
-                          }
-                        }}
-                      >
+                      <td className="py-3.5 px-4">
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-8 rounded-full bg-black text-white font-extrabold text-xs flex items-center justify-center shrink-0">
                             {currentUser.name.slice(0, 2).toUpperCase()}
@@ -879,14 +874,7 @@ export default function TeamPage() {
                         <tr key={member.id} className="hover:bg-neutral-50/40 transition-colors group">
                           
                           {/* Name/Email */}
-                          <td 
-                            className={cn("py-3.5 px-4", !isInvited && "cursor-pointer hover:bg-neutral-50")}
-                            onClick={() => {
-                              if (!isInvited && member.member_user_id) {
-                                router.push(`/team/${member.member_user_id}`);
-                              }
-                            }}
-                          >
+                          <td className="py-3.5 px-4">
                             <div className="flex items-center gap-3">
                               {isInvited ? (
                                 <div className="w-8 h-8 rounded-full bg-neutral-50 border border-neutral-200/80 flex items-center justify-center shrink-0">
@@ -1062,6 +1050,116 @@ export default function TeamPage() {
 
         </>}
       </div>
+
+      {/* ── Invite User Modal Overlay ── */}
+      {showInviteModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-xs animate-fade-in">
+          <div className="w-full max-w-sm bg-white border border-neutral-200 rounded-xl p-5 space-y-4 shadow-xl animate-in fade-in zoom-in-95 duration-150 text-left">
+            <div className="flex items-start justify-between">
+              <div className="space-y-1">
+                <h3 className="text-sm font-bold text-neutral-900">
+                  {t('team.btn_invite')}
+                </h3>
+                <p className="text-[11px] text-neutral-400 font-medium">
+                  Renseignez l&apos;e-mail pour envoyer une invitation au workspace.
+                </p>
+              </div>
+              <button 
+                type="button" 
+                onClick={() => setShowInviteModal(false)}
+                className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-neutral-100 transition-colors text-neutral-400"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleInviteSubmit} className="space-y-4">
+              {/* Email Input */}
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">Adresse e-mail</label>
+                <input
+                  type="email"
+                  required
+                  placeholder="collaborateur@entreprise.com"
+                  value={inviteEmail}
+                  onChange={(e) => setInviteEmail(e.target.value)}
+                  className="w-full h-8 text-xs px-3 border border-neutral-200 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-600 bg-white placeholder:text-neutral-400"
+                />
+              </div>
+
+              {/* Role Select */}
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">Rôle</label>
+                <div className="flex gap-2">
+                  {(['admin', 'editor', 'viewer'] as Role[]).map((r) => (
+                    <button
+                      key={r}
+                      type="button"
+                      onClick={() => setInviteRole(r)}
+                      className={cn(
+                        "flex-1 py-1.5 text-[10px] font-bold rounded-md border capitalize transition-all",
+                        inviteRole === r
+                          ? "bg-neutral-900 text-white border-neutral-900"
+                          : "bg-white text-neutral-600 border-neutral-200 hover:bg-neutral-50"
+                      )}
+                    >
+                      {r}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Plan Select */}
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">Forfait</label>
+                <div className="flex gap-2">
+                  {(['Business', 'Pro', 'Free'] as Plan[]).map((p) => (
+                    <button
+                      key={p}
+                      type="button"
+                      onClick={() => setInvitePlan(p)}
+                      className={cn(
+                        "flex-1 py-1.5 text-[10px] font-bold rounded-md border transition-all",
+                        invitePlan === p
+                          ? "bg-neutral-900 text-white border-neutral-900"
+                          : "bg-white text-neutral-600 border-neutral-200 hover:bg-neutral-50"
+                      )}
+                    >
+                      {p}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Error Message */}
+              {inviteError && (
+                <p className="text-[10px] font-semibold text-red-600 bg-red-50 border border-red-100 rounded-md p-2">
+                  {inviteError}
+                </p>
+              )}
+
+              {/* Actions */}
+              <div className="flex justify-end gap-2 text-xs pt-1">
+                <button
+                  type="button"
+                  onClick={() => setShowInviteModal(false)}
+                  className="h-8 rounded-md border border-neutral-200 bg-white hover:bg-neutral-50 px-4 text-xs font-semibold text-neutral-600 transition-colors"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSending || !inviteEmail}
+                  className="h-8 bg-blue-600 hover:bg-blue-700 disabled:bg-neutral-100 disabled:text-neutral-400 text-white text-xs font-semibold rounded-md px-4 flex items-center justify-center gap-1.5 transition-colors"
+                >
+                  {isSending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                  <span>Envoyer l&apos;invitation</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
     </div>
   );

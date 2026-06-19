@@ -39,9 +39,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // 2. Parse request body
-    const body = await request.json().catch(() => ({}));
-    const { email, role, workspaceOwnerId, expiresInDays = 3 } = body;
+    // 2. Parse request body — needed before authorization since the target
+    // workspace (ownerId) determines who is allowed to invite into it.
+    const { email, role, workspaceOwnerId } = await request.json();
 
     if (!email || !role || !['admin', 'editor', 'viewer'].includes(role)) {
       return NextResponse.json({ error: 'Invalid parameters' }, { status: 400 });
@@ -50,6 +50,8 @@ export async function POST(request: NextRequest) {
     const ownerId = workspaceOwnerId || user.id;
 
     // 3. Verify the caller is the owner of THIS workspace, or an admin member of it.
+    // (Previously this checked a self-referential row that never exists, which made
+    // the check pass for nearly any authenticated user regardless of `ownerId`.)
     let isAuthorized = ownerId === user.id;
     if (!isAuthorized) {
       const { data: callerMembership } = await supabase
@@ -65,89 +67,86 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
     }
 
-    // 4. Retrieve the workspace ID
-    const { data: workspaces } = await supabase
-      .from('workspaces')
-      .select('id')
-      .eq('owner_id', ownerId)
-      .limit(1);
-    const workspaceId = workspaces?.[0]?.id;
-    if (!workspaceId) {
-      return NextResponse.json({ error: 'Workspace not found' }, { status: 404 });
-    }
-
-    // 5. Generate secure invite token and set expiration
-    const adminClient = createServiceClient();
-    const token = crypto.randomUUID();
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + (Number(expiresInDays) || 3));
-
-    // Save to team_invites
-    const { error: inviteErr } = await adminClient
-      .from('team_invites')
-      .insert({
-        workspace_id: workspaceId,
-        inviter_id: user.id,
-        email: email.toLowerCase(),
-        role,
-        token,
-        expires_at: expiresAt.toISOString()
-      });
-
-    if (inviteErr) {
-      console.error('Error creating team invite:', inviteErr);
-      return NextResponse.json({ error: 'Failed to create team invitation' }, { status: 500 });
-    }
-
-    // 6. Look up existing auth user to pre-fill member_user_id if they already exist
-    let existingUserId: string | null = null;
-    try {
-      const { data: listData } = await adminClient.auth.admin.listUsers({ page: 1, perPage: 1000 });
-      const found = (listData?.users ?? []).find((u: any) => u.email?.toLowerCase() === email.toLowerCase());
-      if (found?.id) existingUserId = found.id;
-    } catch (lookupErr) {
-      console.warn('Could not look up existing user ID:', lookupErr);
-    }
-
-    // 7. Insert/update team_members as pending (always pending until accepted!)
-    const { data: existingMember } = await adminClient
+    // 4. Check if already invited
+    const { data: existing } = await supabase
       .from('team_members')
       .select('id, status')
-      .eq('workspace_id', workspaceId)
+      .eq('workspace_owner_id', ownerId)
       .eq('email', email.toLowerCase())
       .maybeSingle();
 
-    if (existingMember) {
-      if (existingMember.status === 'active') {
+    if (existing) {
+      if (existing.status === 'active') {
         return NextResponse.json({ error: 'This email is already a member' }, { status: 409 });
       }
-      await adminClient
-        .from('team_members')
-        .update({
-          role,
-          member_user_id: existingUserId,
-          invited_by: user.id,
-          invited_at: new Date().toISOString()
-        })
-        .eq('id', existingMember.id);
-    } else {
-      await adminClient
-        .from('team_members')
-        .insert({
-          workspace_owner_id: ownerId,
-          member_user_id: existingUserId,
-          email: email.toLowerCase(),
-          role,
-          status: 'pending',
-          invited_by: user.id,
-          workspace_id: workspaceId,
-          plan: 'Business',
-          usage_count: 0
-        });
+      // Stale pending row — delete it and re-invite cleanly
+      await supabase.from('team_members').delete().eq('id', existing.id);
     }
 
+    // 5. Generate Supabase invitation link (Service Role)
+    const adminClient = createServiceClient();
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-    const inviteLink = `${baseUrl}/invite/${token}`;
+    let actionLink = `${baseUrl}/login`;
+    let inviteData: any = null;
+    let inviteError: any = null;
+    let existingUserId: string | null = null;
+
+    try {
+      const genResult = await adminClient.auth.admin.generateLink({
+        type: 'invite',
+        email: email.toLowerCase(),
+        options: {
+          redirectTo: `${baseUrl}/onboarding`,
+          data: {
+            invited_by: user.id,
+            workspace_owner_id: ownerId,
+            role,
+          },
+        }
+      });
+      inviteData = genResult.data;
+      inviteError = genResult.error;
+    } catch (e: any) {
+      inviteError = e;
+    }
+
+    if (inviteError) {
+      console.error('Supabase generateLink error:', inviteError);
+      const alreadyRegistered =
+        inviteError?.message?.includes('already been registered') ||
+        inviteError?.message?.includes('already registered') ||
+        inviteError?.code === 'email_exists';
+
+      if (!alreadyRegistered) {
+        return NextResponse.json({ error: inviteError.message }, { status: 500 });
+      }
+
+      // User already exists in Supabase Auth — look up their ID so we can
+      // immediately activate the membership instead of leaving member_user_id null.
+      try {
+        const { data: listData } = await adminClient.auth.admin.listUsers({ page: 1, perPage: 1000 });
+        const found = (listData?.users ?? []).find((u: any) => u.email?.toLowerCase() === email.toLowerCase());
+        if (found?.id) existingUserId = found.id;
+      } catch (lookupErr) {
+        console.warn('Could not look up existing user ID:', lookupErr);
+      }
+
+      actionLink = `${baseUrl}/login`;
+    } else if (inviteData?.properties?.action_link) {
+      const rawLink = inviteData.properties.action_link;
+      try {
+        const urlObj = new URL(rawLink);
+        const token = urlObj.searchParams.get('token');
+        if (token) {
+          actionLink = `${baseUrl}/invite/${token}?email=${encodeURIComponent(email.toLowerCase())}`;
+        } else {
+          actionLink = rawLink;
+        }
+      } catch (err) {
+        console.error('Error parsing action link:', err);
+        actionLink = rawLink;
+      }
+    }
 
     // Send invitation email via Resend
     const resendApiKey = process.env.RESEND_API_KEY;
@@ -159,13 +158,13 @@ export async function POST(request: NextRequest) {
             Vous avez été invité(e) par <strong>${user.email}</strong> à rejoindre son espace de travail sur <strong>Minerva OS Lite</strong> en tant que <strong>${role}</strong>.
           </p>
           <div style="margin: 28px 0; text-align: left;">
-            <a href="${inviteLink}" style="background-color: #10b981; color: #ffffff; padding: 10px 20px; text-decoration: none; font-weight: 600; border-radius: 6px; font-size: 13px; display: inline-block; transition: background-color 0.2s;">
+            <a href="${actionLink}" style="background-color: #10b981; color: #ffffff; padding: 10px 20px; text-decoration: none; font-weight: 600; border-radius: 6px; font-size: 13px; display: inline-block; transition: background-color 0.2s;">
               Accepter l'invitation
             </a>
           </div>
           <p style="color: #807d72; font-size: 11px; line-height: 1.5; border-top: 1px solid #e6e5e0; padding-top: 16px; margin-top: 24px;">
             Si le bouton ci-dessus ne fonctionne pas, vous pouvez copier et coller ce lien dans votre navigateur :<br/>
-            <span style="color: #10b981; word-break: break-all;">${inviteLink}</span>
+            <span style="color: #10b981; word-break: break-all;">${actionLink}</span>
           </p>
         </div>
       `;
@@ -198,7 +197,31 @@ export async function POST(request: NextRequest) {
       console.warn('RESEND_API_KEY is not set. Email dispatch skipped.');
     }
 
-    return NextResponse.json({ success: true, inviteLink }, { status: 201 });
+    // 6. Insert team member record
+    const resolvedMemberId = existingUserId ?? inviteData?.user?.id ?? null;
+    const resolvedStatus = resolvedMemberId ? 'active' : 'pending';
+
+    const { data: member, error: insertError } = await supabase
+      .from('team_members')
+      .insert({
+        workspace_owner_id: ownerId,
+        member_user_id: resolvedMemberId,
+        email: email.toLowerCase(),
+        role,
+        status: resolvedStatus,
+        invited_by: user.id,
+        plan: 'Business',
+        usage_count: 0
+      })
+      .select()
+      .single();
+
+    if (insertError) {
+      console.error('DB insert error:', insertError);
+      return NextResponse.json({ error: 'Failed to save invitation' }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true, member }, { status: 201 });
   } catch (err) {
     console.error('Invite route error:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

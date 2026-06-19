@@ -60,18 +60,18 @@ export function SettingsCustomizationsSection({ data, onChange, isSaving }: Prop
           <div className="flex items-center gap-2 shrink-0">
             <div
               className="w-8 h-8 rounded-lg border border-border cursor-pointer"
-              style={{ backgroundColor: data.customColor || '#f54e00' }}
+              style={{ backgroundColor: data.customColor || '#10b981' }}
               onClick={() => document.getElementById('color-picker-input')?.click()}
             />
             <input
               id="color-picker-input"
               type="color"
-              value={data.customColor || '#f54e00'}
+              value={data.customColor || '#10b981'}
               onChange={(e) => onChange({ customColor: e.target.value })}
               className="sr-only"
             />
             <span className="text-xs font-mono text-foreground border border-border rounded-lg px-3 py-1.5 bg-muted">
-              {(data.customColor || '#f54e00').toUpperCase()}
+              {(data.customColor || '#10b981').toUpperCase()}
             </span>
           </div>
         </div>

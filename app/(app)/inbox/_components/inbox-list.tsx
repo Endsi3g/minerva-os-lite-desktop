@@ -106,8 +106,8 @@ export function InboxList({
                 onClick={() => onCampaignFilterChange(c.id)}
                 className={`rounded-full px-2 py-0.5 text-[10px] border transition-colors truncate max-w-[120px] ${
                   campaignFilter === c.id
-                    ? 'bg-[#f54e00] text-white border-[#f54e00]'
-                    : 'border-[#e5e5e0] text-[#78716c] hover:border-[#f54e00]/40'
+                    ? 'bg-[#10b981] text-white border-[#10b981]'
+                    : 'border-[#e5e5e0] text-[#78716c] hover:border-[#10b981]/40'
                 }`}
               >
                 {c.name}
@@ -156,7 +156,7 @@ export function InboxList({
               >
                 <div className="flex items-start gap-2.5">
                   {/* Avatar */}
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#f54e00]/10 text-[#f54e00] text-xs font-semibold">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#10b981]/10 text-[#10b981] text-xs font-semibold">
                     {initials}
                   </div>
 

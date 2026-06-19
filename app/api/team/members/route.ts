@@ -47,7 +47,7 @@ export async function GET() {
       if (m.member_user_id) {
         const { data: profile } = await supabase
           .from('settings')
-          .select('full_name, company_name, avatar_base64, user_role, bio')
+          .select('full_name, company_name')
           .eq('user_id', m.member_user_id)
           .maybeSingle();
         enrichedMember.profile = profile;

@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, UserPlus, Mail, Check, X, Loader2, AlertCircle, Copy } from 'lucide-react';
+import { ArrowLeft, UserPlus, Mail, Check, X, Loader2, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { getApiUrl } from '@/lib/api-helper';
 import { useLanguage } from '@/lib/language-context';
@@ -14,7 +14,6 @@ interface InviteStatus {
   email: string;
   status: 'idle' | 'sending' | 'success' | 'error';
   message?: string;
-  inviteLink?: string;
 }
 
 export default function InvitePage() {
@@ -22,7 +21,6 @@ export default function InvitePage() {
   const router = useRouter();
   const [rawEmails, setRawEmails] = useState('');
   const [role, setRole] = useState<Role>('editor');
-  const [expiresInDays, setExpiresInDays] = useState<1 | 3 | 7>(3);
   const [inviteStatuses, setInviteStatuses] = useState<InviteStatus[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -69,8 +67,7 @@ export default function InvitePage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             email: current.email,
-            role: role,
-            expiresInDays: expiresInDays
+            role: role
           }),
         });
 
@@ -78,7 +75,7 @@ export default function InvitePage() {
         
         if (res.ok) {
           setInviteStatuses(prev => prev.map((item, idx) => 
-            idx === i ? { ...item, status: 'success', inviteLink: data.inviteLink } : item
+            idx === i ? { ...item, status: 'success' } : item
           ));
         } else {
           setInviteStatuses(prev => prev.map((item, idx) => 
@@ -170,32 +167,6 @@ export default function InvitePage() {
                 </p>
               </div>
 
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76] block">
-                  Durée de validité du lien
-                </label>
-                <div className="grid grid-cols-3 gap-2">
-                  {([1, 3, 7] as const).map(days => (
-                    <button
-                      key={days}
-                      type="button"
-                      onClick={() => setExpiresInDays(days)}
-                      disabled={isProcessing}
-                      className={`py-2 px-3 text-xs font-semibold rounded-lg border text-center transition-all ${
-                        expiresInDays === days
-                          ? 'bg-[#26251e] border-[#26251e] text-white shadow-sm'
-                          : 'bg-white border-[#e5e5e0] text-[#555552] hover:bg-[#fafaf8]'
-                      }`}
-                    >
-                      {days} {days === 1 ? 'jour' : 'jours'}
-                    </button>
-                  ))}
-                </div>
-                <p className="text-[10px] text-[#7a7a76] leading-normal pt-1">
-                  Le lien d'invitation expirera automatiquement après cette durée.
-                </p>
-              </div>
-
               <div className="pt-2 border-t border-[#e5e5e0]/60 flex items-center justify-between">
                 <Link href="/team">
                   <Button variant="ghost" type="button" className="text-[#555552] text-xs h-9">
@@ -238,61 +209,37 @@ export default function InvitePage() {
               ) : (
                 <div className="space-y-3.5 max-h-80 overflow-y-auto pr-1">
                   {inviteStatuses.map((item, idx) => (
-                    <div key={idx} className="flex flex-col gap-1 text-xs border-b border-[#fafaf8] pb-2.5 last:border-0 last:pb-0">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0 flex-1">
-                          <p className="font-semibold text-[#26251e] truncate">{item.email}</p>
-                          {item.message && (
-                            <p className="text-[10px] text-red-600 font-medium leading-tight mt-0.5">{item.message}</p>
-                          )}
-                        </div>
-                        
-                        <div className="shrink-0">
-                          {item.status === 'idle' && (
-                            <span className="text-[10px] text-[#7a7a76] font-semibold bg-neutral-100 px-2 py-0.5 rounded-md">En attente</span>
-                          )}
-                          {item.status === 'sending' && (
-                            <span className="text-[10px] text-[#10b981] font-semibold bg-[#10b981]/10 px-2 py-0.5 rounded-md flex items-center gap-1">
-                              <Loader2 className="w-2.5 h-2.5 animate-spin" />
-                              Envoi
-                            </span>
-                          )}
-                          {item.status === 'success' && (
-                            <span className="text-[10px] text-emerald-700 font-semibold bg-emerald-100 px-2 py-0.5 rounded-md flex items-center gap-0.5">
-                              <Check className="w-3 h-3" />
-                              Réussi
-                            </span>
-                          )}
-                          {item.status === 'error' && (
-                            <span className="text-[10px] text-red-700 font-semibold bg-red-100 px-2 py-0.5 rounded-md flex items-center gap-0.5">
-                              <X className="w-3 h-3" />
-                              Échoué
-                            </span>
-                          )}
-                        </div>
+                    <div key={idx} className="flex items-start justify-between gap-3 text-xs border-b border-[#fafaf8] pb-2 last:border-0 last:pb-0">
+                      <div className="min-w-0 flex-1">
+                        <p className="font-semibold text-[#26251e] truncate">{item.email}</p>
+                        {item.message && (
+                          <p className="text-[10px] text-red-600 font-medium leading-tight mt-0.5">{item.message}</p>
+                        )}
                       </div>
-
-                      {item.inviteLink && (
-                        <div className="flex items-center gap-1.5 mt-1 bg-[#f4f4f3] rounded-lg p-1.5 border border-[#e5e5e0]/60">
-                          <input
-                            type="text"
-                            readOnly
-                            value={item.inviteLink}
-                            className="text-[9px] bg-transparent text-[#555552] select-all flex-1 focus:outline-none truncate font-mono"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => {
-                              navigator.clipboard.writeText(item.inviteLink!);
-                              alert('Lien d\'invitation copié !');
-                            }}
-                            className="text-[9px] font-bold text-emerald-700 bg-white hover:bg-emerald-50 border border-emerald-200 rounded px-1.5 py-0.5 shrink-0 flex items-center gap-1 cursor-pointer transition-colors"
-                          >
-                            <Copy className="w-2.5 h-2.5" />
-                            Copier
-                          </button>
-                        </div>
-                      )}
+                      
+                      <div className="shrink-0">
+                        {item.status === 'idle' && (
+                          <span className="text-[10px] text-[#7a7a76] font-semibold bg-neutral-100 px-2 py-0.5 rounded-md">En attente</span>
+                        )}
+                        {item.status === 'sending' && (
+                          <span className="text-[10px] text-[#10b981] font-semibold bg-[#10b981]/10 px-2 py-0.5 rounded-md flex items-center gap-1">
+                            <Loader2 className="w-2.5 h-2.5 animate-spin" />
+                            Envoi
+                          </span>
+                        )}
+                        {item.status === 'success' && (
+                          <span className="text-[10px] text-emerald-700 font-semibold bg-emerald-100 px-2 py-0.5 rounded-md flex items-center gap-0.5">
+                            <Check className="w-3 h-3" />
+                            Réussi
+                          </span>
+                        )}
+                        {item.status === 'error' && (
+                          <span className="text-[10px] text-red-700 font-semibold bg-red-100 px-2 py-0.5 rounded-md flex items-center gap-0.5">
+                            <X className="w-3 h-3" />
+                            Échoué
+                          </span>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>

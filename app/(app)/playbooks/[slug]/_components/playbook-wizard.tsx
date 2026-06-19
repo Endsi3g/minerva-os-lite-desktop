@@ -221,9 +221,8 @@ export function PlaybookWizard({ slug }: { slug: string }) {
         description: pb.description,
         niches: state.niches,
         cities: state.cities,
-        // @ts-expect-error extended fields not yet in type
-        persona_id: pb.id,
-        sequence_config: state.useDefaultSequence ? JSON.stringify(pb.sequence) : null,
+        personaId: pb.id,
+        sequenceConfig: state.useDefaultSequence ? JSON.stringify(pb.sequence) : undefined,
         goals: JSON.stringify({ metric: state.goalMetric, target: state.goalTarget }),
       });
 

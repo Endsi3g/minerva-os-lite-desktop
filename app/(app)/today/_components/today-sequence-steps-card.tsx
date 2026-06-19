@@ -116,7 +116,7 @@ export function TodaySequenceStepsCard() {
           <div className="flex flex-col items-center gap-2 py-4 text-center">
             <Clock className="h-7 w-7 text-[#a8a29e] opacity-50" />
             <p className="text-xs text-[#78716c]">Aucun envoi prévu aujourd'hui.</p>
-            <Link href="/sequences" className="text-[10px] font-semibold text-[#f54e00] hover:underline flex items-center gap-0.5">
+            <Link href="/sequences" className="text-[10px] font-semibold text-[#059669] hover:underline flex items-center gap-0.5 cursor-pointer">
               Voir les séquences <ArrowRight className="h-3 w-3" />
             </Link>
           </div>
