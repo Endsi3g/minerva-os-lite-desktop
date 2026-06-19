@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { TodayHeader } from './today-header';
 import { TodayGoalsCard } from './today-goals-card';
 import { TodayAgendaCard } from './today-agenda-card';
@@ -12,8 +12,11 @@ import { TodayActivityFeedCard } from './today-activity-feed-card';
 import { TodayProjectsCard } from './today-projects-card';
 import { TodayStatsCard } from './today-stats-card';
 import { TodaySetupBanner } from './today-setup-banner';
+import { TodayAestheticCanvas } from './today-aesthetic-canvas';
 
 export function TodayRoot() {
+  const [showAestheticMode, setShowAestheticMode] = useState(false);
+
   return (
     <div className="h-full overflow-y-auto relative">
       {/* dot pattern background */}
@@ -31,7 +34,7 @@ export function TodayRoot() {
         <TodaySetupBanner />
 
         {/* Greeting + add actions */}
-        <TodayHeader />
+        <TodayHeader onAestheticToggle={() => setShowAestheticMode(true)} />
 
         {/* Objectifs mensuels — barre compacte pleine largeur */}
         <TodayGoalsCard />
@@ -70,6 +73,10 @@ export function TodayRoot() {
           </div>
         </div>
       </div>
+
+      {showAestheticMode && (
+        <TodayAestheticCanvas onClose={() => setShowAestheticMode(false)} />
+      )}
     </div>
   );
 }

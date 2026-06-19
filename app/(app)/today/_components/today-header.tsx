@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useReach } from '@/lib/reach-context';
 import { useLanguage } from '@/lib/language-context';
-import { Plus, CheckSquare } from 'lucide-react';
+import { Plus, CheckSquare, Sparkles } from 'lucide-react';
 import {
   Sheet,
   SheetContent,
@@ -28,7 +28,11 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Lead, Task } from '@/lib/mock-data';
 
-export function TodayHeader() {
+interface TodayHeaderProps {
+  onAestheticToggle?: () => void;
+}
+
+export function TodayHeader({ onAestheticToggle }: TodayHeaderProps) {
   const { addLead, addTask } = useReach();
   const { t } = useLanguage();
   
@@ -98,6 +102,17 @@ export function TodayHeader() {
 
       {/* Action buttons */}
       <div className="flex flex-wrap items-center gap-2">
+        {onAestheticToggle && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onAestheticToggle}
+            className="gap-2 border-[#10b981]/30 hover:bg-[#10b981]/5 hover:text-[#047857] text-[#047857] dark:text-[#10b981] dark:hover:bg-[#10b981]/10 shrink-0"
+          >
+            <Sparkles className="h-4 w-4 text-[#10b981]" />
+            <span>Mode Esthétique</span>
+          </Button>
+        )}
         {/* New Task Dialog */}
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>

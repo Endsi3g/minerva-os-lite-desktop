@@ -20,6 +20,11 @@ export async function GET(req: NextRequest) {
       }, { status: 500 });
     }
 
+    const { searchParams } = new URL(req.url);
+    const redirectParam = searchParams.get('redirect') || '/settings';
+    
+    const state = `${user.id}:${redirectParam}`;
+
     const redirectUri = `${new URL(req.url).origin}/api/auth/google/callback`;
     const scopes = [
       'https://www.googleapis.com/auth/gmail.send',
@@ -35,7 +40,7 @@ export async function GET(req: NextRequest) {
       `&scope=${encodeURIComponent(scopes)}` +
       `&access_type=offline` +
       `&prompt=consent` +
-      `&state=${user.id}`;
+      `&state=${encodeURIComponent(state)}`;
 
     return NextResponse.redirect(oauthUrl);
   } catch (err) {

@@ -4,10 +4,21 @@ import { createClient } from '@/lib/supabase/server';
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const code = searchParams.get('code');
-  const userId = searchParams.get('state');
+  const state = searchParams.get('state') || '';
   const error = searchParams.get('error');
 
-  const redirectTarget = `${new URL(req.url).origin}/settings?success=`;
+  // Parse state: "userId:redirectPath"
+  let userId = '';
+  let redirectPath = '/settings';
+  if (state.includes(':')) {
+    const parts = state.split(':');
+    userId = parts[0];
+    redirectPath = parts[1] || '/settings';
+  } else {
+    userId = state;
+  }
+
+  const redirectTarget = `${new URL(req.url).origin}${redirectPath}${redirectPath.includes('?') ? '&' : '?'}success=`;
 
   if (error) {
     console.error("Google OAuth error callback:", error);

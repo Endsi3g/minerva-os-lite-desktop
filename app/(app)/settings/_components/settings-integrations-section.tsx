@@ -90,23 +90,8 @@ export function SettingsIntegrationsSection() {
   }, []);
 
   const handleConnectGmail = async () => {
-    try {
-      const supabase = createClient();
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          scopes: 'https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/userinfo.email',
-          redirectTo: typeof window !== 'undefined' ? `${window.location.origin}/settings?tab=integrations` : '',
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent'
-          }
-        }
-      });
-      if (error) throw error;
-    } catch (e: any) {
-      console.error(e);
-      alert("Erreur lors de l'authentification Google : " + e.message);
+    if (typeof window !== 'undefined') {
+      window.location.href = `/api/auth/google/login?redirect=${encodeURIComponent('/settings?tab=integrations')}`;
     }
   };
 

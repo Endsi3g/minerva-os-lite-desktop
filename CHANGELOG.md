@@ -5,6 +5,14 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [2.72.0] - 2026-06-19
+
+### Ajouté — Mode Esthétique (LARP), Nouveau Favicon & Bypass Google OAuth
+- **Contournement Google OAuth & Gmail** — Suppression du flux `signInWithOAuth` Supabase au profit de notre route d'API personnalisée `/api/auth/google/login`. Utilise directement le secret client Google Cloud de l'utilisateur (configuré en local et en production sur Vercel) et insère les jetons de connexion directement dans la table de base de données `settings`.
+- **Support de Redirection Dynamique** — Amélioration de la route `/api/auth/google/callback` pour décoder et extraire l'état dynamique (`userId:redirectPath`) afin de rediriger l'utilisateur vers son point d'origine (comme `/inbox` ou `/settings`).
+- **Nouveau Favicon de Marque** — Remplacement du favicon et de toutes ses déclinaisons par le nouveau visuel vert et blanc fourni par l'utilisateur, avec mise à jour associée de `app/layout.tsx` et `public/manifest.json`.
+- **Mode Esthétique (LARP) de la page Aujourd'hui** — Ajout d'une option d'affichage premium plein écran avec des thèmes de couleurs stylisés (Crème Élégant, Émeraude Minimaliste, Charbon Sombre) et des formats (1:1, 16:9, 9:16) pour créer et capturer de magnifiques aperçus de performance avec des données réelles ou de fausses statistiques modifiables.
+
 ## [2.71.0] - 2026-06-19
 
 ### Ajouté — Gamification, Partage de Bibliothèque & Expérience Premium

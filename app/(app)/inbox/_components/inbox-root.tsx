@@ -191,19 +191,10 @@ export function InboxRoot() {
             </div>
           </div>
           <button
-            onClick={async () => {
-              const supabase = createClient();
-              await supabase.auth.signInWithOAuth({
-                provider: 'google',
-                options: {
-                  scopes: 'https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/userinfo.email',
-                  redirectTo: window.location.origin + '/inbox',
-                  queryParams: {
-                    access_type: 'offline',
-                    prompt: 'consent'
-                  }
-                }
-              });
+            onClick={() => {
+              if (typeof window !== 'undefined') {
+                window.location.href = `/api/auth/google/login?redirect=${encodeURIComponent('/inbox')}`;
+              }
             }}
             className="w-full py-2.5 px-4 bg-[#10b981] hover:bg-[#059669] text-white font-bold rounded-lg text-xs transition-colors flex items-center justify-center gap-2 shadow-xs cursor-pointer border-0"
           >
