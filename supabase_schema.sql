@@ -645,3 +645,121 @@ create table if not exists public.outbound_webhooks (
 alter table public.outbound_webhooks enable row level security;
 create policy "Users manage own outbound_webhooks" on public.outbound_webhooks
   for all using (user_id = auth.uid()) with check (user_id = auth.uid());
+
+-- ========================================================
+-- v3.0.0 — Playbooks + Playbook Runs
+
+create table if not exists public.playbooks (
+  id text primary key,
+  name text not null,
+  slug text unique not null,
+  persona_id text,
+  default_cities jsonb default '[]'::jsonb,
+  default_niches jsonb default '[]'::jsonb,
+  default_radius_km integer default 15,
+  default_sequence_config jsonb default '{}'::jsonb,
+  default_goals jsonb default '{}'::jsonb,
+  category text,
+  description text,
+  emoji text,
+  created_at timestamp with time zone default now(),
+  updated_at timestamp with time zone default now()
+);
+
+alter table public.playbooks enable row level security;
+-- Playbooks are read-only catalog data — all auth users can read
+create policy "Authenticated users can read playbooks" on public.playbooks
+  for select using (auth.uid() is not null);
+
+create table if not exists public.playbook_runs (
+  id uuid default gen_random_uuid() primary key,
+  playbook_id text references public.playbooks(id) on delete set null,
+  workspace_id uuid references public.workspaces(id) on delete cascade,
+  campaign_id uuid,
+  status text not null default 'running' check (status in ('running', 'done', 'error')),
+  leads_scraped integer default 0,
+  emails_sent integer default 0,
+  created_at timestamp with time zone default now() not null,
+  completed_at timestamp with time zone,
+  updated_at timestamp with time zone default now()
+);
+
+alter table public.playbook_runs enable row level security;
+create policy "Users manage own playbook_runs" on public.playbook_runs
+  for all using (
+    exists (
+      select 1 from public.workspaces w
+      where w.id = public.playbook_runs.workspace_id
+        and (w.owner_id = auth.uid() or exists (
+          select 1 from public.team_members tm
+          where tm.workspace_id = w.id and tm.member_user_id = auth.uid() and tm.status = 'active'
+        ))
+    )
+  );
+
+create index if not exists idx_playbook_runs_workspace_id on public.playbook_runs(workspace_id);
+create index if not exists idx_playbook_runs_campaign_id on public.playbook_runs(campaign_id);
+create index if not exists idx_playbook_runs_playbook_id on public.playbook_runs(playbook_id);
+
+-- campaigns enrichment columns (runs idempotent)
+alter table public.campaigns add column if not exists persona_id text;
+alter table public.campaigns add column if not exists sequence_config jsonb;
+alter table public.campaigns add column if not exists goals jsonb;
+alter table public.campaigns add column if not exists playbook_run_id uuid references public.playbook_runs(id) on delete set null;
+
+-- ========================================================
+-- v3.0.0 — Route Plans + Field Visits (Mode Terrain)
+
+create table if not exists public.route_plans (
+  id uuid default gen_random_uuid() primary key,
+  workspace_id uuid references public.workspaces(id) on delete cascade,
+  user_id uuid references auth.users(id) on delete cascade not null,
+  campaign_id uuid,
+  lead_ids jsonb not null default '[]'::jsonb,
+  distance_km numeric(8,2),
+  duration_min integer,
+  status text not null default 'planned' check (status in ('planned', 'active', 'completed', 'cancelled')),
+  created_at timestamp with time zone default now() not null,
+  updated_at timestamp with time zone default now()
+);
+
+alter table public.route_plans enable row level security;
+create policy "Users manage own route_plans" on public.route_plans
+  for all using (user_id = auth.uid()) with check (user_id = auth.uid());
+
+create index if not exists idx_route_plans_workspace_id on public.route_plans(workspace_id);
+create index if not exists idx_route_plans_campaign_id on public.route_plans(campaign_id);
+
+create table if not exists public.field_visits (
+  id uuid default gen_random_uuid() primary key,
+  route_plan_id uuid references public.route_plans(id) on delete cascade,
+  lead_id uuid references public.leads(id) on delete cascade,
+  workspace_id uuid references public.workspaces(id) on delete cascade,
+  outcome text not null check (outcome in ('visited', 'absent', 'meeting_booked', 'not_interested')),
+  notes text,
+  visited_at timestamp with time zone default now() not null,
+  meeting_datetime timestamp with time zone,
+  follow_up_added boolean default false,
+  deal_created boolean default false,
+  created_at timestamp with time zone default now() not null,
+  updated_at timestamp with time zone default now()
+);
+
+alter table public.field_visits enable row level security;
+create policy "Users manage own field_visits" on public.field_visits
+  for all using (
+    exists (
+      select 1 from public.route_plans rp
+      where rp.id = public.field_visits.route_plan_id
+        and rp.user_id = auth.uid()
+    )
+  );
+
+create index if not exists idx_field_visits_route_plan_id on public.field_visits(route_plan_id);
+create index if not exists idx_field_visits_lead_id on public.field_visits(lead_id);
+
+create trigger update_route_plans_updated_at before update on public.route_plans
+  for each row execute function public.update_updated_at_column();
+
+create trigger update_field_visits_updated_at before update on public.field_visits
+  for each row execute function public.update_updated_at_column();

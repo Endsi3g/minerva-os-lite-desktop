@@ -335,7 +335,208 @@ async function syncPush() {
       await db.run("UPDATE settings SET sync_status = 'synced' WHERE user_id = ?", [user_id]);
     }
   }
+
+  // 6. Route Plans Push
+  const pendingRoutePlans = await db.all("SELECT * FROM route_plans WHERE sync_status != 'synced'");
+  for (const plan of pendingRoutePlans) {
+    if (plan.sync_status === 'pending_insert') {
+      const { id, workspace_id, user_id, campaign_id, lead_ids, distance_km, duration_min, status, created_at } = plan;
+      const { error } = await supabase.from('route_plans').upsert({
+        id,
+        workspace_id: workspace_id || null,
+        user_id: user_id || currentUserId,
+        campaign_id: campaign_id || null,
+        lead_ids: (() => { try { return JSON.parse(lead_ids || '[]'); } catch { return []; } })(),
+        distance_km,
+        duration_min,
+        status,
+        created_at
+      });
+      if (!error) {
+        await db.run("UPDATE route_plans SET sync_status = 'synced' WHERE id = ?", [id]);
+      } else {
+        console.error("Error pushing insert for route_plan", id, error);
+      }
+    } else if (plan.sync_status === 'pending_update') {
+      const { id, distance_km, duration_min, status } = plan;
+      const { error } = await supabase.from('route_plans').update({
+        distance_km,
+        duration_min,
+        status
+      }).eq('id', id);
+      if (!error) {
+        await db.run("UPDATE route_plans SET sync_status = 'synced' WHERE id = ?", [id]);
+      } else {
+        console.error("Error pushing update for route_plan", id, error);
+      }
+    } else if (plan.sync_status === 'pending_delete') {
+      const { error } = await supabase.from('route_plans').delete().eq('id', plan.id);
+      if (!error) {
+        await db.run("DELETE FROM route_plans WHERE id = ?", [plan.id]);
+      } else {
+        console.error("Error pushing delete for route_plan", plan.id, error);
+      }
+    }
+  }
+
+  // 7. Field Visits Push
+  const pendingVisits = await db.all("SELECT * FROM field_visits WHERE sync_status != 'synced'");
+  for (const visit of pendingVisits) {
+    if (visit.sync_status === 'pending_insert' || visit.sync_status === 'pending_update') {
+      const { id, route_plan_id, lead_id, workspace_id, outcome, notes, visited_at, meeting_datetime, follow_up_added, deal_created, created_at } = visit;
+      
+      const { error } = await supabase.from('field_visits').upsert({
+        id,
+        route_plan_id,
+        lead_id,
+        workspace_id: workspace_id || null,
+        outcome,
+        notes: notes || null,
+        visited_at: visited_at || new Date().toISOString(),
+        meeting_datetime: meeting_datetime || null,
+        follow_up_added: follow_up_added === 1,
+        deal_created: deal_created === 1,
+        created_at
+      });
+
+      if (!error) {
+        await db.run("UPDATE field_visits SET sync_status = 'synced' WHERE id = ?", [id]);
+        
+        // --- POST-SYNC AUTOMATION LOGIC ---
+        // Retrieve lead details first
+        const lead = await db.get("SELECT * FROM leads WHERE id = ?", [lead_id]);
+        if (lead) {
+          // A. if outcome is 'meeting_booked' and deal has not been created yet
+          if (outcome === 'meeting_booked' && !deal_created) {
+            console.log(`[sync] Auto-creating deal for lead: ${lead.business_name}`);
+            
+            // 1. Update lead status to 'Won' locally
+            await db.run(
+              "UPDATE leads SET status = 'Won', updated_at = ?, sync_status = 'pending_update' WHERE id = ?",
+              [new Date().toISOString(), lead_id]
+            );
+
+            // 2. Create task 'Appel de closing' locally
+            const taskId = require('crypto').randomUUID();
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            const due_date = tomorrow.toISOString().split('T')[0];
+            const nowIso = new Date().toISOString();
+
+            await db.run(
+              `INSERT INTO tasks (id, user_id, title, completed, category, due_date, workspace_id, created_at, updated_at, sync_status)
+               VALUES (?, ?, ?, 0, 'Meeting', ?, ?, ?, ?, 'pending_insert')`,
+              [taskId, currentUserId, `Appel de closing — ${lead.business_name}`, due_date, workspace_id || null, nowIso, nowIso]
+            );
+
+            // 3. Mark deal_created = 1 in local field_visits
+            await db.run(
+              "UPDATE field_visits SET deal_created = 1, updated_at = ?, sync_status = 'pending_update' WHERE id = ?",
+              [new Date().toISOString(), id]
+            );
+          }
+
+          // B. if outcome is 'absent' and follow-up sequence has not been added yet
+          if (outcome === 'absent' && !follow_up_added) {
+            console.log(`[sync] Auto-creating sequence 'Passé vous voir' for lead: ${lead.business_name}`);
+
+            // Fetch user's settings to customize signature
+            const settings = await db.get("SELECT full_name FROM settings WHERE user_id = ?", [currentUserId]);
+            const userName = settings?.full_name || 'L\'équipe';
+
+            // Check if lead has email
+            if (lead.contact_email) {
+              // 1. Create a sequence in Supabase
+              const seqId = require('crypto').randomUUID();
+              const { error: seqErr } = await supabase.from('email_sequences').insert({
+                id: seqId,
+                user_id: currentUserId,
+                workspace_id: workspace_id || null,
+                lead_id: lead.id,
+                lead_name: lead.business_name,
+                lead_email: lead.contact_email,
+                name: `Séquence — Passé vous voir — ${lead.business_name}`,
+                status: 'active'
+              });
+
+              if (!seqErr) {
+                // 2. Create steps in Supabase
+                const now = new Date();
+                const step1Scheduled = now.toISOString();
+                
+                const step2Scheduled = new Date(now);
+                step2Scheduled.setDate(step2Scheduled.getDate() + 3);
+                
+                const steps = [
+                  {
+                    id: require('crypto').randomUUID(),
+                    sequence_id: seqId,
+                    step_number: 1,
+                    delay_days: 0,
+                    subject: `Suite à mon passage chez ${lead.business_name}`,
+                    body: `Bonjour,\n\nJe suis passé dans vos locaux aujourd'hui pour vous rencontrer, mais vous n'étiez pas disponible.\n\nJe souhaitais échanger brièvement avec vous sur l'optimisation de votre visibilité locale et la génération de leads.\n\nQuand seriez-vous disponible pour un court appel de 5 minutes cette semaine ?\n\nBien cordialement,\n${userName}`,
+                    status: 'pending',
+                    scheduled_at: step1Scheduled,
+                    channel: 'Email'
+                  },
+                  {
+                    id: require('crypto').randomUUID(),
+                    sequence_id: seqId,
+                    step_number: 2,
+                    delay_days: 3,
+                    subject: 'Relance appel',
+                    body: 'Appeler le prospect pour faire suite à l\'email envoyé J+0 suite au passage physique.',
+                    status: 'pending',
+                    scheduled_at: step2Scheduled.toISOString(),
+                    channel: 'Call'
+                  }
+                ];
+
+                const { error: stepsErr } = await supabase.from('email_sequence_steps').insert(steps);
+                if (stepsErr) {
+                  console.error("Error creating sequence steps on Supabase:", stepsErr);
+                }
+              } else {
+                console.error("Error creating email sequence on Supabase:", seqErr);
+              }
+            } else {
+              console.log(`[sync] Skip email sequence creation: Lead has no contact email`);
+            }
+
+            // 2. Create task 'Rappel dans 2 jours' locally
+            const taskId = require('crypto').randomUUID();
+            const in2Days = new Date();
+            in2Days.setDate(in2Days.getDate() + 2);
+            const due_date = in2Days.toISOString().split('T')[0];
+            const nowIso = new Date().toISOString();
+
+            await db.run(
+              `INSERT INTO tasks (id, user_id, title, completed, category, due_date, workspace_id, created_at, updated_at, sync_status)
+               VALUES (?, ?, ?, 0, 'Follow-up', ?, ?, ?, ?, 'pending_insert')`,
+              [taskId, currentUserId, `Rappel dans 2 jours — ${lead.business_name}`, due_date, workspace_id || null, nowIso, nowIso]
+            );
+
+            // 3. Mark follow_up_added = 1 in local field_visits
+            await db.run(
+              "UPDATE field_visits SET follow_up_added = 1, updated_at = ?, sync_status = 'pending_update' WHERE id = ?",
+              [new Date().toISOString(), id]
+            );
+          }
+        }
+      } else {
+        console.error("Error pushing field_visit", id, error);
+      }
+    } else if (visit.sync_status === 'pending_delete') {
+      const { error } = await supabase.from('field_visits').delete().eq('id', visit.id);
+      if (!error) {
+        await db.run("DELETE FROM field_visits WHERE id = ?", [visit.id]);
+      } else {
+        console.error("Error pushing delete for field_visit", visit.id, error);
+      }
+    }
+  }
 }
+
 
 async function syncPull() {
   // 1. Settings Pull (Last-Write-Wins)
@@ -517,9 +718,79 @@ async function syncPull() {
       }
     }
   }
+
+  // 7. Route Plans Pull
+  const { data: remoteRoutePlans, error: routePlansError } = await supabase
+    .from('route_plans')
+    .select('*')
+    .eq('user_id', currentUserId);
+
+  if (!routePlansError && remoteRoutePlans) {
+    const localPlansRows = await db.all("SELECT id, sync_status, updated_at FROM route_plans WHERE user_id = ?", [currentUserId]);
+    const localPlansMap = new Map(localPlansRows.map(p => [p.id, p]));
+
+    for (const plan of remoteRoutePlans) {
+      const { id, workspace_id, user_id, campaign_id, lead_ids, distance_km, duration_min, status, created_at, updated_at } = plan;
+      const localPlan = localPlansMap.get(id);
+
+      if (!localPlan) {
+        await db.run(`INSERT INTO route_plans (id, workspace_id, user_id, campaign_id, lead_ids, distance_km, duration_min, status, created_at, updated_at, sync_status)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced')`,
+          [id, workspace_id, user_id, campaign_id, JSON.stringify(lead_ids || []), distance_km, duration_min, status, created_at, updated_at]
+        );
+      } else {
+        const isRemoteNewer = new Date(updated_at) > new Date(localPlan.updated_at || 0);
+        const canOverwrite = localPlan.sync_status === 'synced' || isRemoteNewer;
+        if (canOverwrite) {
+          await db.run(`UPDATE route_plans SET
+            workspace_id = ?, campaign_id = ?, lead_ids = ?, distance_km = ?, duration_min = ?, status = ?, updated_at = ?, sync_status = 'synced'
+            WHERE id = ?`,
+            [workspace_id, campaign_id, JSON.stringify(lead_ids || []), distance_km, duration_min, status, updated_at, id]
+          );
+        }
+      }
+    }
+  }
+
+  // 8. Field Visits Pull
+  const { data: remoteFieldVisits, error: fieldVisitsError } = await supabase
+    .from('field_visits')
+    .select('*, route_plans!inner(user_id)')
+    .eq('route_plans.user_id', currentUserId);
+
+  if (!fieldVisitsError && remoteFieldVisits) {
+    const localVisitsRows = await db.all("SELECT id, sync_status, updated_at FROM field_visits");
+    const localVisitsMap = new Map(localVisitsRows.map(v => [v.id, v]));
+
+    for (const visit of remoteFieldVisits) {
+      const { id, route_plan_id, lead_id, workspace_id, outcome, notes, visited_at, meeting_datetime, follow_up_added, deal_created, created_at, updated_at } = visit;
+      const localVisit = localVisitsMap.get(id);
+
+      const followUpAddedInt = follow_up_added ? 1 : 0;
+      const dealCreatedInt = deal_created ? 1 : 0;
+
+      if (!localVisit) {
+        await db.run(`INSERT INTO field_visits (id, route_plan_id, lead_id, workspace_id, outcome, notes, visited_at, meeting_datetime, follow_up_added, deal_created, created_at, updated_at, sync_status)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced')`,
+          [id, route_plan_id, lead_id, workspace_id, outcome, notes, visited_at, meeting_datetime, followUpAddedInt, dealCreatedInt, created_at, updated_at]
+        );
+      } else {
+        const isRemoteNewer = new Date(updated_at) > new Date(localVisit.updated_at || 0);
+        const canOverwrite = localVisit.sync_status === 'synced' || isRemoteNewer;
+        if (canOverwrite) {
+          await db.run(`UPDATE field_visits SET
+            route_plan_id = ?, lead_id = ?, workspace_id = ?, outcome = ?, notes = ?, visited_at = ?, meeting_datetime = ?, follow_up_added = ?, deal_created = ?, updated_at = ?, sync_status = 'synced'
+            WHERE id = ?`,
+            [route_plan_id, lead_id, workspace_id, outcome, notes, visited_at, meeting_datetime, followUpAddedInt, dealCreatedInt, updated_at, id]
+          );
+        }
+      }
+    }
+  }
 }
 
 module.exports = {
   setSession,
   triggerSync
 };
+

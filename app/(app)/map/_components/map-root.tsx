@@ -1,8 +1,10 @@
 'use client';
 
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { useReach } from '@/lib/reach-context';
 import { Lead } from '@/lib/mock-data';
+import { getApiUrl } from '@/lib/api-helper';
 import {
   Map,
   MapMarker,
@@ -26,6 +28,7 @@ import {
   Clock,
   RotateCcw,
   Loader2,
+  Footprints,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -147,7 +150,8 @@ function RouteLayer({ routeInfo }: { routeInfo: RouteInfo | null }) {
 }
 
 export function MapRoot() {
-  const { leads } = useReach();
+  const router = useRouter();
+  const { leads, activeWorkspace } = useReach();
   const [temperatureFilter, setTemperatureFilter] = useState<TemperatureFilter>('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
@@ -164,6 +168,7 @@ export function MapRoot() {
   const [routeInfo, setRouteInfo] = useState<RouteInfo | null>(null);
   const [routeLoading, setRouteLoading] = useState(false);
   const [routeError, setRouteError] = useState<string | null>(null);
+  const [terrainSaving, setTerrainSaving] = useState(false);
 
   const leadsWithCoords = useMemo<LeadWithCoords[]>(() => {
     return leads.map((lead) => {
@@ -259,6 +264,50 @@ export function MapRoot() {
     setRouteMode(false);
     clearRoute();
   };
+
+  // Save route plan + launch field mode
+  const handleLaunchTerrain = useCallback(async () => {
+    if (!routeInfo || waypoints.length === 0) return;
+    setTerrainSaving(true);
+    try {
+      const isElectron = typeof window !== 'undefined' && !!(window as unknown as Record<string, unknown>).electron;
+      let planId: string;
+
+      if (isElectron) {
+        const electron = (window as unknown as Record<string, unknown>).electron as {
+          dbRun: (sql: string, params: unknown[]) => Promise<void>;
+          triggerSync: () => void;
+        };
+        planId = crypto.randomUUID();
+        const now = new Date().toISOString();
+        await electron.dbRun(
+          `INSERT INTO route_plans (id, workspace_id, user_id, campaign_id, lead_ids, distance_km, duration_min, status, created_at, updated_at, sync_status)
+           VALUES (?, ?, ?, ?, ?, ?, ?, 'planned', ?, ?, 'pending_insert')`,
+          [planId, activeWorkspace?.id ?? '', '', null, JSON.stringify(waypoints.map((w) => w.id)), routeInfo.distanceKm, routeInfo.durationMin, now, now]
+        );
+        electron.triggerSync();
+      } else {
+        const res = await fetch(getApiUrl('/api/route-plans'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            workspace_id: activeWorkspace?.id,
+            lead_ids: waypoints.map((w) => w.id),
+            distance_km: routeInfo.distanceKm,
+            duration_min: routeInfo.durationMin,
+          }),
+        });
+        const data = await res.json();
+        planId = data.id;
+      }
+
+      router.push(`/field?plan=${planId}`);
+    } catch (err) {
+      console.error('[handleLaunchTerrain]', err);
+    } finally {
+      setTerrainSaving(false);
+    }
+  }, [routeInfo, waypoints, activeWorkspace, router]);
 
   const requestGeolocation = useCallback(() => {
     if (!navigator.geolocation) return;
@@ -380,6 +429,15 @@ export function MapRoot() {
                       : `${Math.floor(routeInfo.durationMin / 60)}h${(routeInfo.durationMin % 60).toString().padStart(2, '0')}`}
                   </div>
                   <p className="text-[9px] text-[#7a7a76]">{waypoints.length} arrêts</p>
+                  <Button
+                    size="sm"
+                    onClick={handleLaunchTerrain}
+                    disabled={terrainSaving}
+                    className="w-full h-7 text-[10px] font-bold bg-[#26251e] hover:bg-[#3a3930] text-white gap-1 mt-1"
+                  >
+                    {terrainSaving ? <Loader2 className="h-3 w-3 animate-spin" /> : <Footprints className="h-3 w-3" />}
+                    {terrainSaving ? 'Enregistrement…' : 'Mode Terrain →'}
+                  </Button>
                 </div>
               )}
             </div>

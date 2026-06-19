@@ -317,6 +317,85 @@ function initDb() {
     db.run(`CREATE INDEX IF NOT EXISTS idx_scrape_jobs_workspace_id ON scrape_jobs(workspace_id)`);
     db.run(`CREATE INDEX IF NOT EXISTS idx_scrape_jobs_status ON scrape_jobs(status)`);
 
+    // v3.0.0 — playbooks + playbook_runs
+    db.run(`CREATE TABLE IF NOT EXISTS playbooks (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      slug TEXT UNIQUE NOT NULL,
+      persona_id TEXT,
+      default_cities TEXT DEFAULT '[]',
+      default_niches TEXT DEFAULT '[]',
+      default_radius_km INTEGER DEFAULT 15,
+      default_sequence_config TEXT DEFAULT '{}',
+      default_goals TEXT DEFAULT '{}',
+      category TEXT,
+      description TEXT,
+      emoji TEXT,
+      created_at TEXT,
+      updated_at TEXT,
+      sync_status TEXT DEFAULT 'synced'
+    )`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_playbooks_slug ON playbooks(slug)`);
+
+    db.run(`CREATE TABLE IF NOT EXISTS playbook_runs (
+      id TEXT PRIMARY KEY,
+      playbook_id TEXT REFERENCES playbooks(id),
+      workspace_id TEXT,
+      campaign_id TEXT,
+      status TEXT DEFAULT 'running',
+      leads_scraped INTEGER DEFAULT 0,
+      emails_sent INTEGER DEFAULT 0,
+      created_at TEXT,
+      completed_at TEXT,
+      updated_at TEXT,
+      sync_status TEXT DEFAULT 'pending_insert'
+    )`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_playbook_runs_workspace_id ON playbook_runs(workspace_id)`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_playbook_runs_campaign_id ON playbook_runs(campaign_id)`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_playbook_runs_playbook_id ON playbook_runs(playbook_id)`);
+
+    // v3.0.0 — route_plans + field_visits (Mode Terrain)
+    db.run(`CREATE TABLE IF NOT EXISTS route_plans (
+      id TEXT PRIMARY KEY,
+      workspace_id TEXT,
+      user_id TEXT,
+      campaign_id TEXT,
+      lead_ids TEXT NOT NULL DEFAULT '[]',
+      distance_km REAL,
+      duration_min INTEGER,
+      status TEXT DEFAULT 'planned',
+      created_at TEXT,
+      updated_at TEXT,
+      sync_status TEXT DEFAULT 'pending_insert'
+    )`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_route_plans_workspace_id ON route_plans(workspace_id)`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_route_plans_campaign_id ON route_plans(campaign_id)`);
+
+    db.run(`CREATE TABLE IF NOT EXISTS field_visits (
+      id TEXT PRIMARY KEY,
+      route_plan_id TEXT,
+      lead_id TEXT,
+      workspace_id TEXT,
+      outcome TEXT,
+      notes TEXT,
+      visited_at TEXT,
+      meeting_datetime TEXT,
+      follow_up_added INTEGER DEFAULT 0,
+      deal_created INTEGER DEFAULT 0,
+      created_at TEXT,
+      updated_at TEXT,
+      sync_status TEXT DEFAULT 'pending_insert'
+    )`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_field_visits_route_plan_id ON field_visits(route_plan_id)`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_field_visits_lead_id ON field_visits(lead_id)`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_field_visits_sync_status ON field_visits(sync_status)`);
+
+    // v3.0.0 — campaigns enrichment (persona, sequence_config, goals, playbook_run_id)
+    db.run(`ALTER TABLE campaigns ADD COLUMN persona_id TEXT DEFAULT NULL`, () => {});
+    db.run(`ALTER TABLE campaigns ADD COLUMN sequence_config TEXT DEFAULT NULL`, () => {});
+    db.run(`ALTER TABLE campaigns ADD COLUMN goals TEXT DEFAULT NULL`, () => {});
+    db.run(`ALTER TABLE campaigns ADD COLUMN playbook_run_id TEXT DEFAULT NULL`, () => {});
+
     // v2.64.0 — inbound/outbound webhooks
     db.run(`CREATE TABLE IF NOT EXISTS inbound_webhooks (
       id TEXT PRIMARY KEY,

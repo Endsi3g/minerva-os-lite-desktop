@@ -1,9 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useReach } from '@/lib/reach-context';
-import { BookOpen, ChevronRight, X, CheckCircle2, Loader2, Phone, Mail, FileText, User } from 'lucide-react';
+import { getApiUrl } from '@/lib/api-helper';
+import { BookOpen, ChevronRight, X, CheckCircle2, Loader2, Phone, Mail, FileText, User, Play, BarChart2, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface PlaybookSequenceStep {
@@ -250,11 +252,12 @@ const CHANNEL_ICONS: Record<string, React.ReactNode> = {
 };
 
 export function PlaybooksRoot() {
-  const { addCampaign } = useReach();
+  const router = useRouter();
+  const { activeWorkspace } = useReach();
   const [selectedPlaybook, setSelectedPlaybook] = useState<Playbook | null>(null);
   const [activeCategory, setActiveCategory] = useState<string>('Tous');
-  const [deployingId, setDeployingId] = useState<string | null>(null);
-  const [deployedId, setDeployedId] = useState<string | null>(null);
+  const [runs, setRuns] = useState<Array<{ id: string; playbook_id: string; status: string; created_at: string; campaign_id: string }>>([]);
+  const [runsLoading, setRunsLoading] = useState(false);
 
   const categories = ['Tous', ...Array.from(new Set(PLAYBOOKS.map((p) => p.category)))];
 
@@ -263,18 +266,31 @@ export function PlaybooksRoot() {
       ? PLAYBOOKS
       : PLAYBOOKS.filter((p) => p.category === activeCategory);
 
-  const handleDeploy = async (playbook: Playbook) => {
-    setDeployingId(playbook.id);
-    await addCampaign({
-      name: playbook.title,
-      description: playbook.description,
-      niches: playbook.scraping.niches,
-      cities: playbook.scraping.cities,
-    });
-    setDeployingId(null);
-    setDeployedId(playbook.id);
-    setTimeout(() => setDeployedId(null), 3000);
+  const fetchRuns = useCallback(async () => {
+    if (!activeWorkspace?.id) return;
+    setRunsLoading(true);
+    try {
+      const res = await fetch(getApiUrl(`/api/playbook-runs?workspace_id=${activeWorkspace.id}`));
+      if (res.ok) setRuns(await res.json());
+    } catch {
+      // silent
+    } finally {
+      setRunsLoading(false);
+    }
+  }, [activeWorkspace?.id]);
+
+  useEffect(() => { fetchRuns(); }, [fetchRuns]);
+
+  const handleDeploy = (playbook: Playbook) => {
+    router.push(`/playbooks/${playbook.id}`);
   };
+
+  // Count runs per playbook
+  const runCountMap: Record<string, number> = {};
+  runs.forEach((r) => {
+    runCountMap[r.playbook_id] = (runCountMap[r.playbook_id] || 0) + 1;
+  });
+  const recentRuns = [...runs].sort((a, b) => b.created_at.localeCompare(a.created_at)).slice(0, 5);
 
   return (
     <div className="h-full overflow-y-auto">
@@ -286,9 +302,45 @@ export function PlaybooksRoot() {
             <h1 className="text-base font-bold text-[#26251e]">Playbooks</h1>
           </div>
           <p className="text-xs text-[#7a7a76] mt-0.5">
-            10 stratégies de prospection prêtes à l'emploi
+            {PLAYBOOKS.length} stratégies de prospection prêtes à l&apos;emploi — cliquez pour lancer un wizard guidé.
           </p>
         </div>
+
+        {/* Recent runs */}
+        {recentRuns.length > 0 && (
+          <div className="border border-[#e5e5e0] rounded-xl p-4 space-y-2">
+            <div className="flex items-center gap-2 mb-3">
+              <BarChart2 className="h-3.5 w-3.5 text-[#7a7a76]" />
+              <span className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Dernières exécutions</span>
+            </div>
+            <div className="space-y-1.5">
+              {recentRuns.map((run) => {
+                const pb = PLAYBOOKS.find((p) => p.id === run.playbook_id);
+                return (
+                  <div key={run.id} className="flex items-center gap-3 text-xs">
+                    <span className="text-base shrink-0">{pb?.emoji ?? '📋'}</span>
+                    <span className="flex-1 font-medium text-[#26251e] truncate">{pb?.title ?? run.playbook_id}</span>
+                    <span className={cn(
+                      'text-[9px] font-bold px-1.5 py-0.5 rounded-full border',
+                      run.status === 'done' ? 'text-[#059669] bg-[#059669]/10 border-[#059669]/20' :
+                      run.status === 'running' ? 'text-amber-600 bg-amber-50 border-amber-200' :
+                      'text-red-600 bg-red-50 border-red-200'
+                    )}>
+                      {run.status === 'done' ? 'Terminé' : run.status === 'running' ? 'En cours' : 'Erreur'}
+                    </span>
+                    <span className="text-[10px] text-[#7a7a76] shrink-0 flex items-center gap-1">
+                      <Clock className="h-3 w-3" />
+                      {new Date(run.created_at).toLocaleDateString('fr-CA')}
+                    </span>
+                    {run.campaign_id && (
+                      <Link href={`/campaigns`} className="text-[10px] text-[#059669] underline shrink-0">Campagne</Link>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Category filter */}
         <div className="flex gap-2 flex-wrap">
@@ -320,14 +372,22 @@ export function PlaybooksRoot() {
                   <span className="text-2xl shrink-0 mt-0.5">{pb.emoji}</span>
                   <div className="min-w-0">
                     <p className="text-sm font-bold text-[#26251e] leading-snug">{pb.title}</p>
-                    <span
-                      className={cn(
-                        'inline-block mt-1 text-[10px] font-semibold px-2 py-0.5 rounded-full border',
-                        CATEGORY_COLORS[pb.category] ?? 'bg-neutral-100 text-neutral-600 border-neutral-200'
+                    <div className="flex items-center gap-2 mt-1 flex-wrap">
+                      <span
+                        className={cn(
+                          'inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full border',
+                          CATEGORY_COLORS[pb.category] ?? 'bg-neutral-100 text-neutral-600 border-neutral-200'
+                        )}
+                      >
+                        {pb.category}
+                      </span>
+                      {runCountMap[pb.id] > 0 && (
+                        <span className="text-[10px] text-[#7a7a76] flex items-center gap-0.5">
+                          <Play className="h-2.5 w-2.5" />
+                          {runCountMap[pb.id]} run{runCountMap[pb.id] > 1 ? 's' : ''}
+                        </span>
                       )}
-                    >
-                      {pb.category}
-                    </span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -349,31 +409,12 @@ export function PlaybooksRoot() {
                 </button>
                 <button
                   onClick={() => handleDeploy(pb)}
-                  disabled={!!deployingId || deployedId === pb.id}
-                  className={cn(
-                    'flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-colors',
-                    deployedId === pb.id
-                      ? 'bg-[#059669]/10 text-[#059669] border border-[#059669]/20'
-                      : 'bg-[#059669] hover:bg-[#047857] text-white disabled:opacity-60'
-                  )}
+                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-[#059669] hover:bg-[#047857] text-white text-xs font-bold transition-colors"
                 >
-                  {deployingId === pb.id ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : deployedId === pb.id ? (
-                    <CheckCircle2 className="h-3.5 w-3.5" />
-                  ) : null}
-                  {deployedId === pb.id ? 'Campagne créée !' : 'Déployer'}
+                  <Play className="h-3.5 w-3.5" />
+                  Lancer le wizard
                 </button>
               </div>
-
-              {deployedId === pb.id && (
-                <p className="text-[10px] text-[#059669] text-center">
-                  Campagne créée →{' '}
-                  <Link href="/campaigns" className="underline font-semibold">
-                    Voir mes campagnes
-                  </Link>
-                </p>
-              )}
             </div>
           ))}
         </div>
@@ -526,16 +567,13 @@ export function PlaybooksRoot() {
               </button>
               <button
                 onClick={() => {
-                  handleDeploy(selectedPlaybook);
                   setSelectedPlaybook(null);
+                  handleDeploy(selectedPlaybook);
                 }}
-                disabled={!!deployingId}
-                className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg bg-[#059669] hover:bg-[#047857] text-white text-xs font-bold transition-colors disabled:opacity-60"
+                className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg bg-[#059669] hover:bg-[#047857] text-white text-xs font-bold transition-colors"
               >
-                {deployingId === selectedPlaybook.id ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : null}
-                Déployer ce playbook
+                <Play className="h-3.5 w-3.5" />
+                Lancer le wizard
               </button>
             </div>
           </div>

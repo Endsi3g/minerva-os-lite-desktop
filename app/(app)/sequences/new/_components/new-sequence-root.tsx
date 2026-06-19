@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
   ChevronLeft, ChevronRight, Mail, CheckCircle2, Loader2, Plus, Trash2,
-  Phone, Link2, MessageSquare, Send, Calendar,
+  Phone, Link2, MessageSquare, Send, Calendar, Sparkles, ChevronDown, ChevronUp,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -268,6 +268,162 @@ function StepBuilder({
   );
 }
 
+// ─── AI Assisted Mode Panel ───────────────────────────────────────────────────
+
+type CampaignType = 'cold' | 'relance' | 'upsell';
+type Intensity = 'light' | 'standard' | 'aggressive';
+
+const CAMPAIGN_TYPES: { id: CampaignType; label: string; description: string }[] = [
+  { id: 'cold', label: 'Prospection froide', description: 'Premier contact, aucune relation existante' },
+  { id: 'relance', label: 'Relance', description: 'Prospect qui n\'a pas répondu à une première approche' },
+  { id: 'upsell', label: 'Upsell', description: 'Client existant ou semi-qualifié' },
+];
+
+const INTENSITIES: { id: Intensity; label: string; steps: number }[] = [
+  { id: 'light', label: 'Light', steps: 3 },
+  { id: 'standard', label: 'Standard', steps: 5 },
+  { id: 'aggressive', label: 'Aggressive', steps: 8 },
+];
+
+function AIAssistedPanel({ onGenerate }: { onGenerate: (steps: NewStep[]) => void }) {
+  const [open, setOpen] = useState(false);
+  const [personaDesc, setPersonaDesc] = useState('');
+  const [campaignType, setCampaignType] = useState<CampaignType>('cold');
+  const [durationDays, setDurationDays] = useState(21);
+  const [intensity, setIntensity] = useState<Intensity>('standard');
+  const [generating, setGenerating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleGenerate = async () => {
+    setGenerating(true);
+    setError(null);
+    try {
+      const res = await fetch(getApiUrl('/api/generate-sequence'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          persona_description: personaDesc || 'PME locale au Québec cherchant à améliorer sa présence web',
+          campaign_type: campaignType,
+          duration_days: durationDays,
+          intensity,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Erreur IA');
+
+      const generatedSteps: NewStep[] = data.steps.map((s: {
+        day: number; channel: string; subject_hint?: string; body_hint?: string; objective?: string; angle?: string;
+      }, i: number) => ({
+        stepNumber: i + 1,
+        delayDays: s.day,
+        channel: (['Email', 'Call', 'LinkedIn', 'SMS'].includes(s.channel) ? s.channel : 'Email') as NewStep['channel'],
+        subject: s.subject_hint || '',
+        body: [s.objective && `Objectif : ${s.objective}`, s.angle && `Angle : ${s.angle}`, s.body_hint && `\n${s.body_hint}`].filter(Boolean).join('\n'),
+      }));
+
+      onGenerate(generatedSteps);
+      setOpen(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erreur inconnue');
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  return (
+    <div className="border border-[#059669]/20 rounded-xl overflow-hidden">
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className="w-full flex items-center justify-between px-4 py-3 bg-[#059669]/5 hover:bg-[#059669]/10 transition-colors"
+      >
+        <div className="flex items-center gap-2">
+          <Sparkles className="h-3.5 w-3.5 text-[#059669]" />
+          <span className="text-xs font-bold text-[#059669]">Mode assisté IA</span>
+          <span className="text-[10px] text-[#059669]/70 bg-[#059669]/10 px-1.5 py-0.5 rounded-full">Nouveau</span>
+        </div>
+        {open ? <ChevronUp className="h-3.5 w-3.5 text-[#059669]" /> : <ChevronDown className="h-3.5 w-3.5 text-[#059669]" />}
+      </button>
+
+      {open && (
+        <div className="p-4 space-y-4 bg-white">
+          <p className="text-[10px] text-[#7a7a76]">Décrivez votre persona cible et l&apos;IA génère automatiquement une cadence optimisée.</p>
+
+          <div>
+            <label className="text-xs font-bold text-[#26251e] block mb-1.5">Persona cible</label>
+            <textarea
+              value={personaDesc}
+              onChange={(e) => setPersonaDesc(e.target.value)}
+              rows={2}
+              placeholder="ex. Dentiste indépendant à Montréal, site web daté, peu présent sur Google Maps…"
+              className="w-full text-xs border border-[#e5e5e0] rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-[#059669] resize-none"
+            />
+          </div>
+
+          <div>
+            <label className="text-xs font-bold text-[#26251e] block mb-1.5">Type de campagne</label>
+            <div className="grid grid-cols-3 gap-2">
+              {CAMPAIGN_TYPES.map((ct) => (
+                <button
+                  key={ct.id}
+                  onClick={() => setCampaignType(ct.id)}
+                  className={cn(
+                    'p-2 rounded-lg border text-left transition-all',
+                    campaignType === ct.id
+                      ? 'border-[#059669] bg-[#059669]/5'
+                      : 'border-[#e5e5e0] hover:border-[#059669]/30'
+                  )}
+                >
+                  <p className="text-[10px] font-bold text-[#26251e]">{ct.label}</p>
+                  <p className="text-[9px] text-[#7a7a76] mt-0.5 leading-snug">{ct.description}</p>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex gap-4">
+            <div className="flex-1">
+              <label className="text-xs font-bold text-[#26251e] block mb-1.5">Durée — <span className="text-[#059669]">{durationDays} jours</span></label>
+              <input type="range" min={7} max={60} step={1} value={durationDays} onChange={(e) => setDurationDays(Number(e.target.value))} className="w-full accent-[#059669]" />
+              <div className="flex justify-between text-[9px] text-[#7a7a76] mt-0.5"><span>7j</span><span>60j</span></div>
+            </div>
+            <div className="flex-1">
+              <label className="text-xs font-bold text-[#26251e] block mb-1.5">Intensité</label>
+              <div className="flex gap-1">
+                {INTENSITIES.map((int) => (
+                  <button
+                    key={int.id}
+                    onClick={() => setIntensity(int.id)}
+                    className={cn(
+                      'flex-1 py-1.5 rounded-lg border text-[10px] font-bold transition-all',
+                      intensity === int.id
+                        ? 'border-[#059669] bg-[#059669] text-white'
+                        : 'border-[#e5e5e0] text-[#555552] hover:border-[#059669]/30'
+                    )}
+                  >
+                    {int.label}
+                    <span className="block text-[9px] font-normal opacity-70">{int.steps} steps</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {error && <p className="text-[10px] text-red-500 bg-red-50 border border-red-100 rounded px-2 py-1.5">{error}</p>}
+
+          <button
+            onClick={handleGenerate}
+            disabled={generating}
+            className="w-full flex items-center justify-center gap-2 py-2 rounded-lg bg-[#059669] hover:bg-[#047857] text-white text-xs font-bold transition-colors disabled:opacity-60"
+          >
+            {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+            {generating ? 'Génération en cours…' : 'Générer la cadence'}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Review row ───────────────────────────────────────────────────────────────
 
 function ReviewRow({ label, value }: { label: string; value: React.ReactNode }) {
@@ -437,6 +593,8 @@ export function NewSequenceRoot() {
                 </div>
               </div>
             </div>
+
+            <AIAssistedPanel onGenerate={(generated) => setSteps(generated)} />
 
             <StepBuilder
               steps={steps}
