@@ -18,7 +18,7 @@
 [![pnpm Package Manager](https://img.shields.io/badge/pnpm-%3E%3D9.0.0-orange.svg?style=flat-square)](https://pnpm.io/)
 [![Framework Next.js](https://img.shields.io/badge/next.js-16.2.6-black.svg?style=flat-square)](https://nextjs.org/)
 [![Database Supabase](https://img.shields.io/badge/database-supabase-emerald.svg?style=flat-square)](https://supabase.com/)
-[![Version](https://img.shields.io/badge/version-2.59.0-f54e00.svg?style=flat-square)](#changelog)
+[![Version](https://img.shields.io/badge/version-2.76.0-f54e00.svg?style=flat-square)](#changelog)
 
 </div>
 
@@ -98,6 +98,12 @@ L'application fonctionne dans trois contextes distincts partageant le même code
 - Export des audits et scripts vers Google Drive.
 - **Interface de chat IA** (`/chat`) et page **Assistant IA** (`/assistant`) avec modèles configurables.
 - Cascade de fournisseurs : Groq → Together.ai → OpenRouter → Anthropic.
+
+### Couche Agent Autonome (Hermes Agent)
+- **Modèle Hermes Agent ⚡** (`nousresearch/hermes-3-llama-3-8b`) intégré au panneau de discussion de l'Assistant IA pour le support d'actions autonomes.
+- **Pont d'API Agent (`/api/agent/*`)** : points d'accès contrôlés pour l'exécution d'actions CRM sûres (recherche de leads, résumés de campagnes, génération de briefs terrain, suggestions de réponses inbox).
+- **Sécurisation par Token** : authentification par jeton interne `HERMES_SERVICE_TOKEN` interdisant tout accès DB direct non autorisé.
+- **Support des Webhooks** : envoi automatique de signaux d'événements clés (`lead.created`, `lead.reply_positive`, `campaign.started`) vers l'agent Hermes externe.
 
 ### Gestion d'équipe
 - **Invitation par email** via l'API Admin Supabase (clé service-role) avec envoi Resend intégré.
@@ -453,4 +459,4 @@ pnpm cap:open:android     # ouvre dans Android Studio
 
 ---
 
-*Minerva OS Reach Lite — v2.59.0*
+*Minerva OS Reach Lite — v2.76.0*

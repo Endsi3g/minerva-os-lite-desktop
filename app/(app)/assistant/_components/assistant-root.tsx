@@ -47,12 +47,13 @@ interface CanvasDocument {
 
 const AI_MODELS = [
   { id: 'meta-llama/llama-3-8b-instruct:free', name: 'Minerva AI (Llama 3.1)', provider: 'openrouter' },
+  { id: 'nousresearch/hermes-3-llama-3-8b', name: 'Hermes Agent ⚡', provider: 'openrouter' },
   { id: 'claude-3-5-sonnet-20241022', name: 'Claude 3.5 Sonnet', provider: 'anthropic' },
   { id: 'gpt-4o', name: 'GPT-4o', provider: 'openai' }
 ];
 
 export function AssistantRoot() {
-  const { user } = useReach();
+  const { user, leads, activeWorkspace } = useReach();
   const STORAGE_KEY = 'minerva_assistant_messages';
   const CANVAS_STORAGE_KEY = 'minerva_assistant_canvas';
 
@@ -335,6 +336,31 @@ export function AssistantRoot() {
     { label: 'Visualize data', value: 'Analyse les taux de conversion récents sous forme de tableau.' }
   ];
 
+  const handleQuickPromptClick = (chip: { label: string; value: string }) => {
+    let finalPrompt = chip.value;
+    if (chip.label === 'Company knowledge') {
+      const wsName = activeWorkspace?.name || 'mon espace de travail';
+      finalPrompt = `Rédige une note stratégique basée sur notre base de connaissances pour l'espace de travail "${wsName}".`;
+    } else if (chip.label === 'Visualize data') {
+      const totalLeads = leads?.length || 0;
+      const statusCounts = (leads || []).reduce((acc: Record<string, number>, lead) => {
+        acc[lead.status] = (acc[lead.status] || 0) + 1;
+        return acc;
+      }, {});
+      const breakdown = Object.entries(statusCounts)
+        .map(([status, count]) => `${status}: ${count}`)
+        .join(', ');
+      finalPrompt = `Analyse les statistiques de nos prospects récents. Nous avons actuellement ${totalLeads} prospects dans le CRM. Répartition : ${breakdown || 'aucune donnée'}.`;
+    } else if (chip.label === 'Deep research') {
+      const niches = (leads || []).map(l => l.niche).filter(Boolean);
+      const cities = (leads || []).map(l => l.city).filter(Boolean);
+      const topNiche = niches.sort((a,b) => niches.filter(v => v===a).length - niches.filter(v => v===b).length).pop() || 'boulangerie';
+      const topCity = cities.sort((a,b) => cities.filter(v => v===a).length - cities.filter(v => v===b).length).pop() || 'Montréal';
+      finalPrompt = `Fais une analyse approfondie et identifie les opportunités pour les prospects dans le secteur "${topNiche}" à "${topCity}".`;
+    }
+    handleSend(finalPrompt);
+  };
+
   // File Upload Handlers
   const triggerFileUpload = () => {
     fileInputRef.current?.click();
@@ -433,6 +459,41 @@ export function AssistantRoot() {
 
   return (
     <div className="h-full w-full flex overflow-hidden bg-[#f7f7f4] relative select-none">
+      <style>{`
+        @keyframes fadeInUp {
+          from {
+            opacity: 0;
+            transform: translateY(12px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes scaleUp {
+          from {
+            opacity: 0;
+            transform: scale(0.96);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+        .animate-fade-in-up {
+          animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        .animate-fade-in {
+          animation: fadeIn 0.3s ease-out forwards;
+        }
+        .animate-scale-up {
+          animation: scaleUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+      `}</style>
       
       {/* ── LEFT PANEL: CHAT INTERFACE ── */}
       <div className={`flex flex-col h-full bg-white transition-all duration-300 relative ${
@@ -467,7 +528,7 @@ export function AssistantRoot() {
         <div className="flex-1 overflow-y-auto min-h-0 bg-white">
           {messages.length === 0 ? (
             /* Splash Centered Screen */
-            <div className="flex flex-col items-center justify-center min-h-full py-16 px-6 max-w-xl mx-auto space-y-8">
+            <div className="flex flex-col items-center justify-center min-h-full py-16 px-6 max-w-xl mx-auto space-y-8 animate-scale-up">
               
               <div className="flex flex-col items-center text-center space-y-3">
                 <div className="h-10 w-10 rounded-xl bg-white border border-[#e6e5e0] text-[#10b981] flex items-center justify-center shadow-sm">
@@ -479,7 +540,7 @@ export function AssistantRoot() {
               </div>
 
               {/* Central Text Area Card */}
-              <div className="w-full border border-[#e6e5e0] rounded-2xl bg-white shadow-sm flex flex-col p-3 space-y-3 focus-within:border-[#10b981] transition-colors relative z-20">
+              <div className="w-full border border-[#e6e5e0] rounded-2xl bg-white shadow-sm flex flex-col p-3 space-y-3 focus-within:border-[#10b981] transition-colors relative z-20 animate-fade-in-up">
                 {attachedFile && (
                   <div className="flex items-center justify-between bg-neutral-50 border border-neutral-100 px-3 py-2 rounded-xl text-xs">
                     <div className="flex items-center gap-2 min-w-0">
@@ -589,7 +650,7 @@ export function AssistantRoot() {
                     <button
                       onClick={() => handleSend()}
                       disabled={isLoading}
-                      className="h-7 w-7 rounded-full bg-[#3b82f6] hover:bg-[#2563eb] text-white flex items-center justify-center cursor-pointer transition-all shadow-sm active:scale-95 disabled:opacity-50"
+                      className="h-7 w-7 rounded-full bg-[#10b981] hover:bg-[#059669] text-white flex items-center justify-center cursor-pointer transition-all shadow-sm active:scale-95 disabled:opacity-50"
                       title="Envoyer"
                     >
                       <ArrowUp className="h-4 w-4" />
@@ -599,29 +660,16 @@ export function AssistantRoot() {
               </div>
 
               {/* Prompt Bubbles Grid */}
-              <div className="w-full space-y-2">
-                <div className="flex flex-wrap items-center justify-center gap-1.5">
-                  {QUICK_PROMPTS.slice(0, 4).map((chip) => (
-                    <button
-                      key={chip.label}
-                      onClick={() => handleSend(chip.value)}
-                      className="bg-white border border-[#e6e5e0] hover:bg-[#f7f7f4] hover:border-neutral-300 text-[10.5px] font-bold text-[#555552] px-3.5 py-1.5 rounded-full cursor-pointer transition-all active:scale-95 shadow-none"
-                    >
-                      {chip.label}
-                    </button>
-                  ))}
-                </div>
-                <div className="flex flex-wrap items-center justify-center gap-1.5">
-                  {QUICK_PROMPTS.slice(4).map((chip) => (
-                    <button
-                      key={chip.label}
-                      onClick={() => handleSend(chip.value)}
-                      className="bg-white border border-[#e6e5e0] hover:bg-[#f7f7f4] hover:border-neutral-300 text-[10.5px] font-bold text-[#555552] px-3.5 py-1.5 rounded-full cursor-pointer transition-all active:scale-95 shadow-none"
-                    >
-                      {chip.label}
-                    </button>
-                  ))}
-                </div>
+              <div className="w-full px-4 flex flex-wrap items-center justify-center gap-2 max-w-lg mx-auto animate-fade-in-up">
+                {QUICK_PROMPTS.map((chip) => (
+                  <button
+                    key={chip.label}
+                    onClick={() => handleQuickPromptClick(chip)}
+                    className="bg-white border border-[#e6e5e0] hover:bg-[#f7f7f4] hover:border-[#10b981]/30 hover:text-[#10b981] text-[10.5px] font-bold text-[#555552] px-3.5 py-1.5 rounded-full cursor-pointer transition-all duration-200 active:scale-95 shadow-none"
+                  >
+                    {chip.label}
+                  </button>
+                ))}
               </div>
 
             </div>
@@ -631,7 +679,7 @@ export function AssistantRoot() {
               {messages.map((msg, i) => (
                 <div 
                   key={i} 
-                  className={`flex gap-3 max-w-[85%] ${
+                  className={`flex gap-3 max-w-[85%] animate-fade-in-up ${
                     msg.role === 'user' ? 'ml-auto flex-row-reverse' : 'mr-auto'
                   }`}
                 >
@@ -779,7 +827,7 @@ export function AssistantRoot() {
                   <button
                     onClick={() => handleSend()}
                     disabled={isLoading}
-                    className="h-6 w-6 rounded-full bg-[#3b82f6] hover:bg-[#2563eb] text-white flex items-center justify-center cursor-pointer transition-all shadow-sm disabled:opacity-50"
+                    className="h-6 w-6 rounded-full bg-[#10b981] hover:bg-[#059669] text-white flex items-center justify-center cursor-pointer transition-all shadow-sm disabled:opacity-50"
                   >
                     <ArrowUp className="h-3.5 w-3.5" />
                   </button>
@@ -792,7 +840,7 @@ export function AssistantRoot() {
 
       {/* ── RIGHT PANEL: CANVAS DOCUMENT EDITOR (SPLIT VIEW) ── */}
       {isCanvasOpen && (
-        <div className={`h-full bg-white flex flex-col z-50 transition-all duration-300 ${
+        <div className={`h-full bg-white flex flex-col z-50 transition-all duration-300 animate-scale-up ${
           /* Responsive sizing: full screen on mobile/tablet, flex-1 on desktop */
           'fixed inset-0 md:relative md:flex-grow md:flex md:w-[60%] border-t border-[#e6e5e0] md:border-t-0'
         }`}>

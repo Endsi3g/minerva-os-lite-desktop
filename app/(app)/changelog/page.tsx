@@ -18,6 +18,66 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v2.75.0',
+      date: '2026-06-19',
+      titleKey: 'changelog.v2_75_0_title' as TranslationKey,
+      descKey: 'changelog.v2_75_0_desc' as TranslationKey,
+      highlights: [
+        "Filtrage intelligent des réponses (Inbox & Cron) : analyse automatique du sujet, de l'expéditeur et des en-têtes (ex. Auto-Submitted) pour éliminer les messages non professionnels.",
+        "Exclusion des bounces et messages d'absence (Out of Office) : évite le déclenchement d'automations inappropriées ou la modification automatique des statuts de leads.",
+        "Stabilité du CRM : seules les réponses réelles de prospects humains modifient le statut et notifient l'équipe."
+      ],
+    },
+    {
+      version: 'v2.74.0',
+      date: '2026-06-19',
+      titleKey: 'changelog.v2_74_0_title' as TranslationKey,
+      descKey: 'changelog.v2_74_0_desc' as TranslationKey,
+      highlights: [
+        "Refonte de l'Assistant IA : interface moderne avec bulles de conversation soignées, sélecteur de modèle dynamique et support pour Hermes Agent ⚡.",
+        "Éditeur de documents Canvas : panneau d'édition latéral fluide pour modifier, formater et exporter des documents générés par l'IA (Markdown, HTML, Texte).",
+        "Page Conditions d'utilisation : conformité d'accès public intégrée à l'application (/terms).",
+        "Icônes transparentes de la marque : icône de marque icon-192.png nettoyée sans arrière-plan."
+      ],
+    },
+    {
+      version: 'v2.73.0',
+      date: '2026-06-19',
+      titleKey: 'changelog.v2_73_0_title' as TranslationKey,
+      descKey: 'changelog.v2_73_0_desc' as TranslationKey,
+      highlights: [
+        "Option d'authentification Google : bouton de connexion rapide lié à Supabase Auth.",
+        "Téléchargement d'image & Partage réseaux sociaux : export des graphiques du Mode Esthétique en PNG/JPEG via html-to-image et intégration Web Share.",
+        "Bannière globale de mise à jour : notification esthétique informant l'utilisateur des nouveautés.",
+        "Gestion unverified app warning : aides et guides pour la synchronisation Gmail."
+      ],
+    },
+    {
+      version: 'v2.72.0',
+      date: '2026-06-19',
+      titleKey: 'changelog.v2_72_0_title' as TranslationKey,
+      descKey: 'changelog.v2_72_0_desc' as TranslationKey,
+      highlights: [
+        "Bypass Supabase Google OAuth : route d'API personnalisée stockant les jetons localement dans les paramètres de base de données.",
+        "Redirection dynamique : prise en charge du paramètre state pour renvoyer l'utilisateur vers son point d'origine.",
+        "Nouveau favicon vert de marque.",
+        "Mode Esthétique (LARP) : cockpit Today personnalisable avec thèmes de style (Crème, Émeraude, Charbon) et ratios de capture (1:1, 16:9, 9:16)."
+      ],
+    },
+    {
+      version: 'v2.71.0',
+      date: '2026-06-19',
+      titleKey: 'changelog.v2_71_0_title' as TranslationKey,
+      descKey: 'changelog.v2_71_0_desc' as TranslationKey,
+      highlights: [
+        "Leaderboard gamifié : classement de performance avec divisions de ligue (Bronze, Argent, Or, Platine).",
+        "OTP anti-bot d'invitations : page d'acceptation sécurisée.",
+        "Partage public bibliothèque : accès public en lecture seule aux documents et répertoires.",
+        "Outils bulk-actions dans la bibliothèque.",
+        "Graphique d'activité hebdomadaire Recharts sur l'accueil."
+      ],
+    },
+    {
       version: 'v2.70.0',
       date: '2026-06-18',
       titleKey: 'changelog.v2_70_0_title' as TranslationKey,

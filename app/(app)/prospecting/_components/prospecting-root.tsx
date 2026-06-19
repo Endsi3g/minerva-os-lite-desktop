@@ -297,13 +297,22 @@ export function ProspectingRoot() {
 
       type FetchResult = { leads: ScrapedLead[]; source: string; errorMsg?: string };
 
+      const checkResponseJson = async (r: Response) => {
+        const contentType = r.headers.get('content-type');
+        if (!r.ok || !contentType || !contentType.includes('application/json')) {
+          const text = await r.text();
+          throw new Error(text.slice(0, 80) || `HTTP error ${r.status}`);
+        }
+        return r.json();
+      };
+
       const osmPromise: Promise<FetchResult> = effectiveNativeSources.length > 0
         ? fetch(getApiUrl('/api/scrape-maps'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ niches, cities, query: customQuery || undefined, sources: effectiveNativeSources, maxResults, radius }),
           })
-            .then(r => r.json())
+            .then(checkResponseJson)
             .then((d: any) => ({ leads: d.leads ?? [], source: 'osm' }))
             .catch((err) => { console.warn('[prospecting] OSM fetch error:', err); return { leads: [], source: 'osm', errorMsg: String(err) }; })
         : Promise.resolve({ leads: [], source: 'osm' });
@@ -314,7 +323,7 @@ export function ProspectingRoot() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ niches, cities, query: customQuery || undefined, maxResults }),
           })
-            .then(r => r.json())
+            .then(checkResponseJson)
             .then((d: any) => d.error
               ? { leads: [], source: 'apify', errorMsg: d.error }
               : { leads: d.leads ?? [], source: 'apify' })

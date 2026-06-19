@@ -694,7 +694,7 @@ async function executeScrape(setting) {
     scrapingStatus = { status: 'running', niche, city };
     broadcastScrapingStatus();
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://minerva-os-lite.com';
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://minerva-os-lite-desktop.vercel.app';
     const response = await fetch(`${appUrl}/api/scrape-maps`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

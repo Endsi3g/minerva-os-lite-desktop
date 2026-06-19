@@ -271,9 +271,15 @@ export async function POST(req: NextRequest) {
     }
 
     // High fidelity simulation stream fallback
-    const simulatedResponse = (typeof system === 'string' && system.includes('Lucifee'))
-      ? getLucifeeSimulatedReply(lastMessageLower)
-      : getSimulatedReply(lastMessageLower, activeTool);
+    const simulatedResponse = (() => {
+      if (selectedModel === 'nousresearch/hermes-3-llama-3-8b') {
+        return getHermesSimulatedReply(lastMessageLower, activeTool);
+      }
+      if (typeof system === 'string' && system.includes('Lucifee')) {
+        return getLucifeeSimulatedReply(lastMessageLower);
+      }
+      return getSimulatedReply(lastMessageLower, activeTool);
+    })();
 
     const stream = new ReadableStream({
       async start(controller) {
@@ -407,5 +413,78 @@ Dis-moi, qu'est-ce qu'on fait aujourd'hui ? Je suis pas la plus brillante de la 
 
   return `Hmm, attends, je réfléchis... 🤔💜 OK honnêtement je suis pas sûre à 100% de t'avoir bien compris (my bad), mais je vais te dire ce que je pense pareil :
 
-Fais confiance à ton instinct, tsé. Pis si ça marche pas, ben on rit pis on recommence. C'est ça la vie de prospection, non ? Anyway, je suis là si t'as besoin ! 😘`;
+  Fais confiance à ton instinct, tsé. Pis si ça marche pas, ben on rit pis on recommence. C'est ça la vie de prospection, non ? Anyway, je suis là si t'as besoin ! 😘`;
+}
+
+// Hermes Agent high fidelity streaming simulation
+function getHermesSimulatedReply(query: string, activeTool?: string): string {
+  if (query.includes('email') || query.includes('prospect') || query.includes('campagne') || query.includes('sequence') || query.includes('séquence') || activeTool === 'canvas') {
+    return `[Hermes Agent ⚡] Détection de l'intention : Planification et automatisation d'une séquence de prospection.
+[Hermes Agent ⚡] Appel d'outil en cours : GET /api/agent/campaigns/summary...
+[Hermes Agent ⚡] Analyse des résultats de la campagne : Campagne "Dentistes Montréal" active.
+[Hermes Agent ⚡] Appel d'outil en cours : POST /api/agent/inbox/suggest-reply...
+[Hermes Agent ⚡] Génération de la réponse recommandée avec analyse des sentiments.
+[Hermes Agent ⚡] Appel d'outil en cours : POST /api/agent/tasks/create (Tâche de relance à J+2).
+
+J'ai analysé notre campagne active et les messages reçus. Pour optimiser les résultats, j'ai rédigé un plan de relance stratégique et je l'ai ouvert dans l'éditeur **Canvas** à droite pour que vous puissiez le réviser.
+
+\`\`\`canvas:Séquence d'Optimisation Hermes
+# Séquence de prospection autonome - Hermes Agent ⚡
+
+## Étape 1 : Email d'introduction personnalisé (J+0)
+**Objet :** Opportunité d'optimisation numérique pour votre établissement
+
+Bonjour,
+J'ai identifié plusieurs leviers d'amélioration pour votre visibilité locale en ligne. Nos audits montrent qu'une fiche optimisée augmente le taux de conversion de plus de 25%.
+Seriez-vous ouvert à un court échange téléphonique ?
+
+## Étape 2 : Relance intelligente (J+2)
+**Objet :** Suite de notre échange
+
+Je fais suite à mon e-mail précédent. Avez-vous eu l'opportunité d'examiner notre proposition d'audit ?
+
+---
+*Action planifiée : Tâche de suivi créée dans le CRM pour le closer.*
+\`\`\`
+
+Le modèle a été optimisé et une tâche de suivi a été automatiquement ajoutée à vos actions du jour. Souhaitez-vous déployer ce playbook sur vos leads restants ?`;
+  }
+
+  if (query.includes('search') || query.includes('recherche') || query.includes('lead') || query.includes('trouver')) {
+    return `[Hermes Agent ⚡] Détection de l'intention : Recherche et analyse de leads dans le CRM.
+[Hermes Agent ⚡] Appel d'outil en cours : POST /api/agent/leads/search...
+[Hermes Agent ⚡] Résultat de l'outil : 12 leads trouvés correspondant aux critères.
+[Hermes Agent ⚡] Analyse croisée avec la base de connaissances active...
+
+J'ai effectué la recherche de prospects dans notre base de données. Voici le résumé structuré des opportunités détectées. Ce rapport a été chargé dans votre éditeur **Canvas** :
+
+\`\`\`canvas:Rapport d'opportunités Hermes
+# Rapport de recherche et d'opportunités - Hermes Agent ⚡
+
+## Synthèse de la recherche
+- **Cible recherchée :** Commerces locaux / Services
+- **Nombre de correspondances :** 12 prospects
+- **Potentiel d'affaires estimé :** High Fit (Maturité digitale faible, fort volume d'avis non répondus)
+
+## Recommandations d'actions
+1. Lancer la séquence de relance sur les 5 prospects les plus chauds.
+2. Planifier un appel de briefing pour la tournée terrain de demain.
+\`\`\`
+
+Vous pouvez consulter et modifier ce rapport à tout moment dans l'onglet de droite. Quelle est la prochaine étape ?`;
+  }
+
+  return `[Hermes Agent ⚡] Initialisation de la boucle de décision Hermes.
+[Hermes Agent ⚡] Analyse du contexte global et de la mémoire persistante...
+[Hermes Agent ⚡] Prêt à orchestrer vos opérations de vente et prospection.
+
+Bonjour ! Je suis **Hermes Agent ⚡**, votre couche d'automatisation autonome.
+
+Je suis connecté à vos flows Minerva et je peux :
+1. **Surveiller et qualifier vos campagnes** (\`POST /api/agent/campaigns/summary\`)
+2. **Rechercher et filtrer vos prospects** (\`POST /api/agent/leads/search\`)
+3. **Créer et planifier des tâches et relances** (\`POST /api/agent/tasks/create\`)
+4. **Déployer automatiquement des playbooks de vente** (\`POST /api/agent/playbooks/deploy\`)
+
+Quelles tâches autonomes souhaitez-vous me déléguer aujourd'hui ?`;
 }

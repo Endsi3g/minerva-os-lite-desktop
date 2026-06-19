@@ -11,7 +11,7 @@ export function getApiUrl(path: string): string {
   const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
   if ((isElectron || isCapacitorNative || isFileProtocol) && !isLocalhost) {
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://minerva-os-lite.com';
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://minerva-os-lite-desktop.vercel.app';
     const cleanBase = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
     const cleanPath = path.startsWith('/') ? path : `/${path}`;
     return `${cleanBase}${cleanPath}`;

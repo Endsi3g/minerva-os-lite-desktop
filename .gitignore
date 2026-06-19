@@ -40,3 +40,7 @@ next-env.d.ts
 # Google OAuth secrets
 client_secret*.json
 dist/
+
+# hermes agent external repo
+/hermes-agent/
+
