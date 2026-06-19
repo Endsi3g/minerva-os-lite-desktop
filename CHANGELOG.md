@@ -5,6 +5,14 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [2.74.0] - 2026-06-19
+
+### Ajouté — Redesign Assistant IA (Langdock & Canvas) et Icônes de Marque Transparentes
+- **Refonte de l'Assistant IA (Pixel Perfect)** — Implémentation complète d'un design inspiré de Langdock avec une interface de discussion épurée et moderne. Ajout d'une zone d'entrée de messages élégante, gestion de l'attachement de fichiers simulée, sélection de modèles IA dynamique, et boutons d'action rapide sous forme de puces interactives.
+- **Éditeur Canvas et Affichage Divisé (Split-screen)** — Ajout d'un panneau d'édition latéral Canvas se déployant côte à côte sur PC et sous forme de tiroir glissant (slide-over drawer) plein écran sur Mobile et Tablette. Intégration de la détection et du chargement automatique des blocs de documents (` ```canvas... ``` `) générés par l'IA dans l'éditeur, avec fonctionnalités d'édition de titre, de formatage de texte (headings, gras, italique), de copie et d'export en formats Markdown, HTML et Texte brut.
+- **Conditions d'utilisation (Terms of Use)** — Ajout d'une page publique de Conditions d'utilisation (`/terms`) et liaison de celle-ci dans les pieds de page, le menu des paramètres, et le formulaire d'inscription pour assurer la conformité d'accès public.
+- **Icônes Transparentes de la Marque** — Extraction et conversion de l'icône de marque `icon-192.png` pour supprimer son arrière-plan beige et l'appliquer de manière homogène sur toutes les variantes d'icônes de l'application (`favicon.ico`, `icon-192.png`, `icon-512.png` et `icon.png`).
+
 ## [2.73.0] - 2026-06-19
 
 ### Ajouté — Export Image & Partage Réseaux (LARP), Connexion Google App & Bannière de Mise à Jour
