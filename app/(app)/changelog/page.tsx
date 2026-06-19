@@ -18,6 +18,19 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v2.78.0',
+      date: '2026-06-19',
+      titleKey: 'changelog.v2_78_0_title' as TranslationKey,
+      descKey: 'changelog.v2_78_0_desc' as TranslationKey,
+      highlights: [
+        "3 modes de recherche : Autour de moi (géolocalisation GPS navigateur), Par ville (liste Québec), Libre (texte brut).",
+        "Overpass around:radius,lat,lon avec coordonnées GPS réelles — fini le centre-ville approximatif.",
+        "Bannière 'Centre de recherche' après scrape : label + coordonnées + rayon + raccourci 'Trier par distance'.",
+        "Tri Haversine par distance depuis le centre de recherche (km). Option de tri visible uniquement après un scrape géolocalisé.",
+        "Bouton 'Lancer la recherche' désactivé en mode GPS tant que la permission n'est pas accordée."
+      ],
+    },
+    {
       version: 'v2.77.0',
       date: '2026-06-19',
       titleKey: 'changelog.v2_77_0_title' as TranslationKey,

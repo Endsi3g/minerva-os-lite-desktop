@@ -5,6 +5,29 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [2.78.0] - 2026-06-19
+
+### Ajouté — Prospection Géolocalisée OSM (3 modes de recherche)
+- **3 modes de recherche dans le prospecteur** — Autour de moi (géolocalisation GPS réelle via le navigateur), Par ville (liste prédéfinie du Québec) et Libre (saisie de texte brut).
+- **Overpass around et coordonnées GPS réelles** — Passage automatique de la position exacte à l'API Overpass pour de la prospection hyper-locale par rayon (en mètres).
+- **Affichage dynamique du centre et distance Haversine** — Ajout d'une bannière affichant le centre de recherche avec option de tri par distance Haversine depuis le point GPS d'origine.
+- **Contrôles de validation** — Désactivation du bouton de recherche en mode GPS tant que les permissions de géolocalisation ne sont pas accordées.
+
+## [2.77.0] - 2026-06-19
+
+### Ajouté — Configuration & Déploiement Hermes Gateway
+- **Compétence Minerva (`SKILL.md`)** — Raccourcis et configuration intégrés pour interroger le CRM Minerva directement à partir d'Hermes.
+- **Client Python d'aide** — Utilitaire sécurisé avec jeton d'authentification pour piloter les actions CRM en ligne de commande.
+- **Panneau Hermes** — Interface visuelle et guides d'installation dans l'onglet API des paramètres.
+- **Déploiement Cloud/VPS** — Docker Compose et guides pas-à-pas pour l'exécution H24 d'Hermes.
+
+## [2.76.0] - 2026-06-19
+
+### Ajouté — Agent Hermes ⚡ & Correctif OSM
+- **Intégration d'Hermes Agent ⚡** — Couche agent autonome au-dessus des flux CRM et simulations d'actions agentiques.
+- **Correctif OSM** — Résolution d'erreur de parsing JSON en sécurisant le décodage contre les retours HTML des miroirs Overpass.
+- **Refonte de l'Assistant IA** — Transition vers l'accent vert émeraude du CRM, puces adaptatives et animations fluides.
+
 ## [2.75.0] - 2026-06-19
 
 ### Ajouté — Filtre d'E-mails Professionnels et Exclusion des Messages Automatiques/Bounces
