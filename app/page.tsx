@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { MinervaIcon } from '@/components/icons';
 import { TextureOverlay } from '@/components/ui/texture-overlay';
@@ -100,8 +101,13 @@ export default function LandingPage() {
           </div>
         </main>
 
-        <footer className="h-16 flex items-center justify-between px-8 border-t border-[#e6e5e0] text-[10px] text-[#807d72] font-semibold">
+        <footer className="h-16 flex items-center justify-between px-8 border-t border-[#e6e5e0] text-[10px] text-[#807d72] font-semibold bg-white/40 z-10 relative">
           <div className="flex items-center gap-1.5"><MinervaIcon size={14} className="text-[#10b981]" /><span>Minerva OS</span></div>
+          <div className="flex gap-4">
+            <Link href="/privacy" className="hover:underline hover:text-[#26251e] transition-colors">
+              Politique de confidentialité (Privacy Policy)
+            </Link>
+          </div>
         </footer>
       </div>
     </div>
