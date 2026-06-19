@@ -5,7 +5,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useReach } from '@/lib/reach-context';
 import { getApiUrl } from '@/lib/api-helper';
-import { createClient } from '@/lib/supabase/client';
 import { 
   X, 
   Sparkles, 
@@ -31,6 +30,20 @@ import {
   Maximize2
 } from 'lucide-react';
 import { MinervaIcon } from '@/components/icons';
+import {
+  dbGetSessions,
+  dbCreateSession,
+  dbUpdateSessionTitle,
+  dbDeleteSession,
+  dbGetMessages,
+  dbSaveMessage,
+  dbGetCanvasDocs,
+  dbSaveCanvasDoc,
+  dbDeleteCanvasDoc,
+  AssistantSession,
+  DBMessage,
+  AssistantCanvasDoc
+} from './assistant-db';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -40,6 +53,7 @@ interface Message {
 }
 
 interface CanvasDocument {
+  id: string;
   title: string;
   content: string;
   lastSaved: string;
@@ -54,25 +68,16 @@ const AI_MODELS = [
 
 export function AssistantRoot() {
   const { user, leads, activeWorkspace } = useReach();
-  const STORAGE_KEY = 'minerva_assistant_messages';
-  const CANVAS_STORAGE_KEY = 'minerva_assistant_canvas';
 
   // State Management
-  const [messages, setMessages] = useState<Message[]>(() => {
-    if (typeof window === 'undefined') return [];
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      return stored ? JSON.parse(stored) : [];
-    } catch { return []; }
-  });
-
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [selectedModel, setSelectedModel] = useState(AI_MODELS[0]);
   const [showModelDropdown, setShowModelDropdown] = useState(false);
 
-  // File Attachment Simulation
-  const [attachedFile, setAttachedFile] = useState<{ name: string; type: string } | null>(null);
+  // File Attachment
+  const [attachedFile, setAttachedFile] = useState<{ name: string; type: string; content?: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Voice Interaction Simulation
@@ -81,66 +86,121 @@ export function AssistantRoot() {
 
   // Canvas State
   const [isCanvasOpen, setIsCanvasOpen] = useState(false);
-  const [canvasDoc, setCanvasDoc] = useState<CanvasDocument | null>(() => {
-    if (typeof window === 'undefined') return null;
-    try {
-      const stored = localStorage.getItem(CANVAS_STORAGE_KEY);
-      return stored ? JSON.parse(stored) : null;
-    } catch { return null; }
-  });
+  const [canvasDoc, setCanvasDoc] = useState<CanvasDocument | null>(null);
+  const [editorDocId, setEditorDocId] = useState<string>('');
 
   // Editor states
-  const [editorTitle, setEditorTitle] = useState(canvasDoc?.title || "Document sans titre");
-  const [editorContent, setEditorContent] = useState(canvasDoc?.content || "");
+  const [editorTitle, setEditorTitle] = useState("Document sans titre");
+  const [editorContent, setEditorContent] = useState("");
   const [isSavedIndicator, setIsSavedIndicator] = useState("Modifications enregistrées");
   const [headingFormat, setHeadingFormat] = useState("normal");
   const [copied, setCopied] = useState(false);
   const [showExportDropdown, setShowExportDropdown] = useState(false);
 
+  // History panel states
+  const [isHistoryOpen, setIsHistoryOpen] = useState(true);
+  const [sessions, setSessions] = useState<AssistantSession[]>([]);
+  const [currentSession, setCurrentSession] = useState<AssistantSession | null>(null);
+  const [canvasDocs, setCanvasDocs] = useState<AssistantCanvasDoc[]>([]);
+  const [showAiDropdown, setShowAiDropdown] = useState(false);
+  const [isAiWorking, setIsAiWorking] = useState(false);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Sync states to local storage
+  const userId = user?.id || 'anonymous';
+  const workspaceId = activeWorkspace?.id || 'default_ws';
+
+  // Load database sessions and documents on mount or workspace change
+  useEffect(() => {
+    async function loadWorkspaceData() {
+      const sessList = await dbGetSessions(userId, workspaceId);
+      setSessions(sessList);
+
+      const docsList = await dbGetCanvasDocs(userId, workspaceId);
+      setCanvasDocs(docsList);
+
+      const storedSessId = localStorage.getItem(`minerva_active_sess_${workspaceId}`);
+      const activeSess = sessList.find(s => s.id === storedSessId);
+      if (activeSess) {
+        setCurrentSession(activeSess);
+        const msgs = await dbGetMessages(activeSess.id);
+        setMessages(msgs);
+      } else {
+        setCurrentSession(null);
+        setMessages([]);
+      }
+
+      const storedCanvasId = localStorage.getItem(`minerva_active_canvas_${workspaceId}`);
+      const activeDoc = docsList.find(d => d.id === storedCanvasId);
+      if (activeDoc) {
+        setEditorDocId(activeDoc.id);
+        setCanvasDoc({
+          id: activeDoc.id,
+          title: activeDoc.title,
+          content: activeDoc.content,
+          lastSaved: "Modifications enregistrées"
+        });
+        setEditorTitle(activeDoc.title);
+        setEditorContent(activeDoc.content);
+        setIsCanvasOpen(true);
+      } else {
+        setEditorDocId('');
+        setCanvasDoc(null);
+        setEditorTitle("Document sans titre");
+        setEditorContent("");
+      }
+    }
+    loadWorkspaceData();
+  }, [userId, workspaceId]);
+
+  // Scroll to bottom on message updates
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    if (typeof window !== 'undefined') {
-      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(messages)); } catch {}
-    }
   }, [messages]);
 
-  useEffect(() => {
-    if (canvasDoc && typeof window !== 'undefined') {
-      try { localStorage.setItem(CANVAS_STORAGE_KEY, JSON.stringify(canvasDoc)); } catch {}
-    }
-  }, [canvasDoc]);
-
-  // Handle title & content sync to state
+  // Canvas doc active state updates
   useEffect(() => {
     if (canvasDoc) {
       setEditorTitle(canvasDoc.title);
       setEditorContent(canvasDoc.content);
+      setEditorDocId(canvasDoc.id);
+      localStorage.setItem(`minerva_active_canvas_${workspaceId}`, canvasDoc.id);
+    } else {
+      localStorage.removeItem(`minerva_active_canvas_${workspaceId}`);
     }
-  }, [canvasDoc]);
+  }, [canvasDoc, workspaceId]);
 
-  // Auto-save simulation
+  // Auto-save logic
+  const saveDoc = async (id: string, title: string, content: string) => {
+    setIsSavedIndicator("Enregistrement...");
+    await dbSaveCanvasDoc(id, userId, workspaceId, title, content);
+    
+    // Refresh document list
+    const list = await dbGetCanvasDocs(userId, workspaceId);
+    setCanvasDocs(list);
+    setIsSavedIndicator("Modifications enregistrées");
+  };
+
   const handleContentChange = (newVal: string) => {
     setEditorContent(newVal);
-    setIsSavedIndicator("Enregistrement...");
-    
-    // Simulate auto-save delay
+    const docId = editorDocId || Math.random().toString(36).substring(2) + Date.now().toString(36);
+    if (!editorDocId) {
+      setEditorDocId(docId);
+      setCanvasDoc({
+        id: docId,
+        title: editorTitle,
+        content: newVal,
+        lastSaved: "À l'instant"
+      });
+    } else if (canvasDoc) {
+      setCanvasDoc({
+        ...canvasDoc,
+        content: newVal
+      });
+    }
+
     const timer = setTimeout(() => {
-      if (canvasDoc) {
-        setCanvasDoc({
-          ...canvasDoc,
-          content: newVal
-        });
-      } else {
-        setCanvasDoc({
-          title: editorTitle,
-          content: newVal,
-          lastSaved: "À l'instant"
-        });
-      }
-      setIsSavedIndicator("Modifications enregistrées");
+      saveDoc(docId, editorTitle, newVal);
     }, 1000);
 
     return () => clearTimeout(timer);
@@ -148,22 +208,24 @@ export function AssistantRoot() {
 
   const handleTitleChange = (newTitle: string) => {
     setEditorTitle(newTitle);
-    setIsSavedIndicator("Enregistrement...");
-    
+    const docId = editorDocId || Math.random().toString(36).substring(2) + Date.now().toString(36);
+    if (!editorDocId) {
+      setEditorDocId(docId);
+      setCanvasDoc({
+        id: docId,
+        title: newTitle,
+        content: editorContent,
+        lastSaved: "À l'instant"
+      });
+    } else if (canvasDoc) {
+      setCanvasDoc({
+        ...canvasDoc,
+        title: newTitle
+      });
+    }
+
     const timer = setTimeout(() => {
-      if (canvasDoc) {
-        setCanvasDoc({
-          ...canvasDoc,
-          title: newTitle
-        });
-      } else {
-        setCanvasDoc({
-          title: newTitle,
-          content: editorContent,
-          lastSaved: "À l'instant"
-        });
-      }
-      setIsSavedIndicator("Modifications enregistrées");
+      saveDoc(docId, newTitle, editorContent);
     }, 1000);
 
     return () => clearTimeout(timer);
@@ -202,12 +264,19 @@ export function AssistantRoot() {
             <Button
               size="sm"
               variant="outline"
-              onClick={() => {
-                setCanvasDoc({
+              onClick={async () => {
+                const docId = Math.random().toString(36).substring(2) + Date.now().toString(36);
+                setEditorDocId(docId);
+                const doc = {
+                  id: docId,
                   title: canvasData.title,
                   content: canvasData.content,
                   lastSaved: "À l'instant"
-                });
+                };
+                setCanvasDoc(doc);
+                await dbSaveCanvasDoc(docId, userId, workspaceId, canvasData.title, canvasData.content);
+                const list = await dbGetCanvasDocs(userId, workspaceId);
+                setCanvasDocs(list);
                 setIsCanvasOpen(true);
               }}
               className="text-xs font-bold h-8 border-emerald-200 hover:bg-emerald-50 text-emerald-700 hover:text-emerald-800 shrink-0"
@@ -225,8 +294,8 @@ export function AssistantRoot() {
       <div className="space-y-2">
         {msg.attachedFile && (
           <div className="inline-flex items-center gap-2 bg-neutral-100 dark:bg-neutral-800 border border-border px-3 py-1.5 rounded-lg text-[11px] font-bold">
-            <FileText className="h-3.5 w-3.5 text-red-500" />
-            <span>{msg.attachedFile.name}</span>
+            <FileText className="h-3.5 w-3.5 text-[#10b981]" />
+            <span className="truncate max-w-[150px]">{msg.attachedFile.name}</span>
           </div>
         )}
         <p className="whitespace-pre-wrap leading-relaxed text-sm">{msg.content}</p>
@@ -234,17 +303,11 @@ export function AssistantRoot() {
     );
   };
 
-  // Clear Chat history
+  // Start a new thread
   const handleClearChat = () => {
+    setCurrentSession(null);
     setMessages([]);
-    setCanvasDoc(null);
-    setIsCanvasOpen(false);
-    if (typeof window !== 'undefined') {
-      try {
-        localStorage.removeItem(STORAGE_KEY);
-        localStorage.removeItem(CANVAS_STORAGE_KEY);
-      } catch {}
-    }
+    localStorage.removeItem(`minerva_active_sess_${workspaceId}`);
   };
 
   // Send message handler
@@ -256,22 +319,49 @@ export function AssistantRoot() {
     const fileToAttach = attachedFile;
     setAttachedFile(null);
 
+    // Context Injection from uploaded file
+    let contentToSend = trimmed;
+    if (fileToAttach && fileToAttach.content) {
+      contentToSend = `[Fichier attaché : ${fileToAttach.name}]\n<attachment name="${fileToAttach.name}">\n${fileToAttach.content}\n</attachment>\n\n${trimmed}`;
+    }
+
+    // Load or create discussion session
+    let activeSess = currentSession;
+    if (!activeSess) {
+      const firstWords = trimmed.slice(0, 30) + (trimmed.length > 30 ? '...' : '');
+      const sessTitle = firstWords || (fileToAttach ? `Fichier : ${fileToAttach.name}` : "Discussion");
+      activeSess = await dbCreateSession(userId, workspaceId, sessTitle);
+      setCurrentSession(activeSess);
+      localStorage.setItem(`minerva_active_sess_${workspaceId}`, activeSess.id);
+      
+      const sessList = await dbGetSessions(userId, workspaceId);
+      setSessions(sessList);
+    }
+
     const userMsg: Message = { 
       role: 'user', 
       content: trimmed,
-      attachedFile: fileToAttach || undefined
+      attachedFile: fileToAttach ? { name: fileToAttach.name, type: fileToAttach.type } : undefined
     };
     
+    // Save to local database
+    await dbSaveMessage(activeSess.id, userId, 'user', trimmed, fileToAttach ? { name: fileToAttach.name, type: fileToAttach.type } : undefined);
+
     const history = [...messages, userMsg];
     setMessages(history);
     setIsLoading(true);
+
+    const apiHistory = [
+      ...messages.map(m => ({ role: m.role, content: m.content })),
+      { role: 'user' as const, content: contentToSend }
+    ];
 
     try {
       const res = await fetch(getApiUrl('/api/chat'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          messages: history,
+          messages: apiHistory,
           model: selectedModel.id,
           activeTool: isCanvasOpen ? 'canvas' : undefined
         }),
@@ -306,14 +396,27 @@ export function AssistantRoot() {
         }
       }
 
-      // Check if we generated a document block and load it automatically to canvas
+      // Save assistant response
+      if (activeSess) {
+        await dbSaveMessage(activeSess.id, userId, 'assistant', assistantContent);
+        const sessList = await dbGetSessions(userId, workspaceId);
+        setSessions(sessList);
+      }
+
+      // Handle embedded canvas document
       const canvasData = extractCanvasBlock(assistantContent);
       if (canvasData) {
+        const docId = Math.random().toString(36).substring(2) + Date.now().toString(36);
+        setEditorDocId(docId);
         setCanvasDoc({
+          id: docId,
           title: canvasData.title,
           content: canvasData.content,
           lastSaved: "À l'instant"
         });
+        await dbSaveCanvasDoc(docId, userId, workspaceId, canvasData.title, canvasData.content);
+        const list = await dbGetCanvasDocs(userId, workspaceId);
+        setCanvasDocs(list);
         setIsCanvasOpen(true);
       }
 
@@ -323,6 +426,87 @@ export function AssistantRoot() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Canvas AI rewrite commands helper
+  const handleAiCommand = async (command: string, extra?: string) => {
+    setShowAiDropdown(false);
+    const textarea = document.getElementById('canvas-textarea') as HTMLTextAreaElement;
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selection = editorContent.substring(start, end);
+    const targetText = selection || editorContent;
+
+    if (!targetText.trim()) return;
+
+    setIsAiWorking(true);
+    setIsSavedIndicator("L'IA travaille...");
+
+    let instruction = "";
+    if (command === 'summarize') instruction = "Résume le texte de façon synthétique et structurée.";
+    if (command === 'rephrase') instruction = "Reformule le texte pour améliorer le style et la clarté.";
+    if (command === 'longer') instruction = "Développe et enrichis le texte avec plus de détails et d'arguments.";
+    if (command === 'shorter') instruction = "Condense le texte pour le rendre plus concis.";
+    if (command === 'tone') instruction = `Réécris le texte en adoptant un ton ${extra}.`;
+
+    try {
+      const res = await fetch(getApiUrl('/api/chat'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          messages: [
+            { 
+              role: 'user', 
+              content: `${instruction}\n\nTexte à modifier:\n"""\n${targetText}\n"""` 
+            }
+          ],
+          model: selectedModel.id,
+          system: "Tu es un outil d'écriture assistée par IA intégré dans un Canvas de prospection. Réécris ou modifie le texte fourni en suivant l'instruction reçue. Ne renvoie AUCUNE introduction, conclusion, explication, ni de balises de code. Renvoie UNIQUEMENT le texte modifié prêt à être inséré."
+        }),
+      });
+
+      if (!res.ok || !res.body) throw new Error('API error');
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let replacement = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split('\n').filter(l => l.startsWith('data: '));
+        for (const line of lines) {
+          const data = line.slice(6);
+          if (data === '[DONE]') continue;
+          try {
+            const parsed = JSON.parse(data);
+            const delta = parsed.choices?.[0]?.delta?.content ?? '';
+            replacement += delta;
+          } catch {}
+        }
+      }
+
+      if (selection) {
+        replaceSelectedText(replacement.trim(), start, end);
+      } else {
+        handleContentChange(replacement.trim());
+      }
+
+    } catch (err) {
+      console.error(err);
+      setIsSavedIndicator("Erreur d'IA");
+    } finally {
+      setIsAiWorking(false);
+      setIsSavedIndicator("Modifications enregistrées");
+    }
+  };
+
+  const replaceSelectedText = (replacement: string, start: number, end: number) => {
+    const newVal = editorContent.substring(0, start) + replacement + editorContent.substring(end);
+    handleContentChange(newVal);
   };
 
   // Simulated Quick Actions
@@ -361,7 +545,7 @@ export function AssistantRoot() {
     handleSend(finalPrompt);
   };
 
-  // File Upload Handlers
+  // File Upload Handler
   const triggerFileUpload = () => {
     fileInputRef.current?.click();
   };
@@ -369,10 +553,16 @@ export function AssistantRoot() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      setAttachedFile({
-        name: file.name,
-        type: file.type || 'document/pdf'
-      });
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const textContent = event.target?.result as string || '';
+        setAttachedFile({
+          name: file.name,
+          type: file.type || 'text/plain',
+          content: textContent
+        });
+      };
+      reader.readAsText(file);
     }
   };
 
@@ -495,125 +685,453 @@ export function AssistantRoot() {
         }
       `}</style>
       
-      {/* ── LEFT PANEL: CHAT INTERFACE ── */}
-      <div className={`flex flex-col h-full bg-white transition-all duration-300 relative ${
+      {/* ── LEFT PANEL: CHAT INTERFACE & SIDEBAR ── */}
+      <div className={`flex h-full bg-white transition-all duration-300 relative overflow-hidden ${
         isCanvasOpen ? 'w-full md:w-[40%] border-r border-[#e6e5e0]' : 'w-full'
       }`}>
         
-        {/* Header toolbar */}
-        <header className="h-14 border-b border-[#e6e5e0]/60 px-4 flex items-center justify-between shrink-0 bg-white z-10">
-          <div className="flex items-center gap-2">
-            <div className="h-6 w-6 rounded-md bg-[#10b981]/15 text-[#10b981] flex items-center justify-center shrink-0">
-              <MinervaIcon size={14} />
-            </div>
-            <span className="text-xs font-bold text-foreground">Minerva AI Assistant</span>
-          </div>
-
-          <div className="flex items-center gap-2">
-            {messages.length > 0 && (
+        {/* collapsible sidebar for thread/canvas doc history */}
+        {isHistoryOpen && (
+          <div className="w-56 bg-[#fafaf9] border-r border-[#e6e5e0]/60 flex flex-col h-full shrink-0 select-none animate-fade-in">
+            {/* Sidebar header */}
+            <div className="h-14 border-b border-[#e6e5e0]/60 px-4 flex items-center justify-between shrink-0 bg-[#fafaf9]">
+              <span className="text-[10px] font-extrabold text-[#26251e] tracking-wider uppercase">Historique</span>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={handleClearChat}
-                className="text-[10px] h-7 font-bold text-muted-foreground hover:text-red-600 gap-1 rounded-full px-2.5 transition-colors border border-transparent hover:border-red-100"
+                className="h-7 w-7 rounded-full p-0 text-muted-foreground hover:text-[#10b981] transition-colors border border-transparent hover:border-neutral-200"
+                title="Nouvelle discussion"
               >
-                <Trash2 className="w-3.5 h-3.5" />
-                <span>Effacer</span>
+                <Plus className="h-3.5 w-3.5" />
               </Button>
-            )}
-          </div>
-        </header>
+            </div>
 
-        {/* Message Feed / Chat Window */}
-        <div className="flex-1 overflow-y-auto min-h-0 bg-white">
-          {messages.length === 0 ? (
-            /* Splash Centered Screen */
-            <div className="flex flex-col items-center justify-center min-h-full py-16 px-6 max-w-xl mx-auto space-y-8 animate-scale-up">
-              
-              <div className="flex flex-col items-center text-center space-y-3">
-                <div className="h-10 w-10 rounded-xl bg-white border border-[#e6e5e0] text-[#10b981] flex items-center justify-center shadow-sm">
-                  <MinervaIcon size={24} />
-                </div>
-                <h1 className="text-3xl tracking-tight text-[#26251e] font-serif font-light font-georgia leading-tight">
-                  Still at it! What can I help with?
-                </h1>
+            {/* Scrollable list of items */}
+            <div className="flex-1 overflow-y-auto p-2 space-y-4">
+              {/* Discussions list */}
+              <div className="space-y-1">
+                <div className="px-2 text-[8px] font-bold text-muted-foreground uppercase tracking-wider">Discussions</div>
+                {sessions.length === 0 ? (
+                  <div className="px-2 py-1.5 text-[9px] text-[#807d72] italic font-semibold">Aucune discussion</div>
+                ) : (
+                  sessions.map((sess) => (
+                    <div
+                      key={sess.id}
+                      className={`group flex items-center justify-between rounded-lg px-2 py-1.5 cursor-pointer text-[10px] font-bold transition-all relative ${
+                        currentSession?.id === sess.id 
+                          ? 'bg-emerald-50/70 text-emerald-800' 
+                          : 'text-[#555552] hover:bg-neutral-100 hover:text-[#26251e]'
+                      }`}
+                    >
+                      <button
+                        onClick={async () => {
+                          setCurrentSession(sess);
+                          localStorage.setItem(`minerva_active_sess_${workspaceId}`, sess.id);
+                          const msgs = await dbGetMessages(sess.id);
+                          setMessages(msgs);
+                        }}
+                        className="flex-1 text-left truncate pr-1"
+                      >
+                        {sess.title}
+                      </button>
+                      <button
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          await dbDeleteSession(workspaceId, sess.id);
+                          const sessList = await dbGetSessions(userId, workspaceId);
+                          setSessions(sessList);
+                          if (currentSession?.id === sess.id) {
+                            setCurrentSession(null);
+                            setMessages([]);
+                            localStorage.removeItem(`minerva_active_sess_${workspaceId}`);
+                          }
+                        }}
+                        className="opacity-0 group-hover:opacity-100 text-neutral-400 hover:text-red-600 transition-opacity p-0.5"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))
+                )}
               </div>
 
-              {/* Central Text Area Card */}
-              <div className="w-full border border-[#e6e5e0] rounded-2xl bg-white shadow-sm flex flex-col p-3 space-y-3 focus-within:border-[#10b981] transition-colors relative z-20 animate-fade-in-up">
+              {/* Documents list */}
+              <div className="space-y-1">
+                <div className="px-2 text-[8px] font-bold text-muted-foreground uppercase tracking-wider">Documents Canvas</div>
+                {canvasDocs.length === 0 ? (
+                  <div className="px-2 py-1.5 text-[9px] text-[#807d72] italic font-semibold">Aucun document</div>
+                ) : (
+                  canvasDocs.map((doc) => (
+                    <div
+                      key={doc.id}
+                      className={`group flex items-center justify-between rounded-lg px-2 py-1.5 cursor-pointer text-[10px] font-bold transition-all relative ${
+                        canvasDoc?.id === doc.id 
+                          ? 'bg-emerald-50/70 text-emerald-800' 
+                          : 'text-[#555552] hover:bg-neutral-100 hover:text-[#26251e]'
+                      }`}
+                    >
+                      <button
+                        onClick={() => {
+                          setCanvasDoc({
+                            id: doc.id,
+                            title: doc.title,
+                            content: doc.content,
+                            lastSaved: "Modifications enregistrées"
+                          });
+                          setEditorTitle(doc.title);
+                          setEditorContent(doc.content);
+                          setEditorDocId(doc.id);
+                          setIsCanvasOpen(true);
+                        }}
+                        className="flex-1 text-left truncate pr-1 flex items-center gap-1.5"
+                      >
+                        <FileText className="h-3 w-3 text-neutral-400 shrink-0" />
+                        <span className="truncate">{doc.title}</span>
+                      </button>
+                      <button
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          await dbDeleteCanvasDoc(workspaceId, doc.id);
+                          const docsList = await dbGetCanvasDocs(userId, workspaceId);
+                          setCanvasDocs(docsList);
+                          if (canvasDoc?.id === doc.id) {
+                            setCanvasDoc(null);
+                            setEditorDocId('');
+                            setEditorTitle("Document sans titre");
+                            setEditorContent("");
+                            localStorage.removeItem(`minerva_active_canvas_${workspaceId}`);
+                          }
+                        }}
+                        className="opacity-0 group-hover:opacity-100 text-neutral-400 hover:text-red-600 transition-opacity p-0.5"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Chat Feed Panel */}
+        <div className="flex-1 flex flex-col h-full min-w-0 bg-white relative">
+          
+          {/* Header toolbar */}
+          <header className="h-14 border-b border-[#e6e5e0]/60 px-4 flex items-center justify-between shrink-0 bg-white z-10">
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsHistoryOpen(!isHistoryOpen)}
+                className={`h-7 w-7 rounded-full p-0 transition-colors border border-transparent ${
+                  isHistoryOpen ? 'text-[#10b981] bg-emerald-50/70 border-emerald-100' : 'text-muted-foreground hover:text-primary hover:border-neutral-200'
+                }`}
+                title="Afficher/Masquer l'historique"
+              >
+                <History className="w-3.5 h-3.5" />
+              </Button>
+              <div className="h-6 w-6 rounded-md bg-[#10b981]/15 text-[#10b981] flex items-center justify-center shrink-0">
+                <MinervaIcon size={14} />
+              </div>
+              <span className="text-xs font-bold text-foreground">Minerva AI Assistant</span>
+              {currentSession && (
+                <span className="text-[10px] text-muted-foreground font-bold truncate max-w-[150px] border-l border-neutral-200 pl-2">
+                  {currentSession.title}
+                </span>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleClearChat}
+                className="text-[10px] h-7 font-bold text-muted-foreground hover:text-[#10b981] gap-1 rounded-full px-2.5 transition-colors border border-transparent hover:border-neutral-100"
+                title="Nouvelle discussion"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Nouveau</span>
+              </Button>
+            </div>
+          </header>
+
+          {/* Message Feed / Chat Window */}
+          <div className="flex-1 overflow-y-auto min-h-0 bg-white">
+            {messages.length === 0 ? (
+              /* Splash Centered Screen */
+              <div className="flex flex-col items-center justify-center min-h-full py-16 px-6 max-w-xl mx-auto space-y-8 animate-scale-up">
+                
+                <div className="flex flex-col items-center text-center space-y-3">
+                  <div className="h-10 w-10 rounded-xl bg-white border border-[#e6e5e0] text-[#10b981] flex items-center justify-center shadow-sm">
+                    <MinervaIcon size={24} />
+                  </div>
+                  <h1 className="text-3xl tracking-tight text-[#26251e] font-serif font-light font-georgia leading-tight">
+                    Still at it! What can I help with?
+                  </h1>
+                </div>
+
+                {/* Central Text Area Card */}
+                <div className="w-full border border-[#e6e5e0] rounded-2xl bg-white shadow-sm flex flex-col p-3 space-y-3 focus-within:border-[#10b981] transition-colors relative z-20 animate-fade-in-up">
+                  {attachedFile && (
+                    <div className="flex items-center justify-between bg-[#fafaf9] border border-[#e6e5e0]/60 px-3 py-2 rounded-xl text-xs">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <FileText className="h-4 w-4 text-[#10b981] shrink-0" />
+                        <span className="font-bold text-[#26251e] truncate">{attachedFile.name}</span>
+                        <span className="text-[10px] text-neutral-400 uppercase font-semibold shrink-0">
+                          {attachedFile.content ? 'Contenu extrait' : 'Document'}
+                        </span>
+                      </div>
+                      <button 
+                        onClick={() => setAttachedFile(null)}
+                        className="text-neutral-400 hover:text-[#26251e] p-0.5"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  )}
+                  
+                  <textarea
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+                    placeholder="Ask anything, format recommandés : .txt, .md, .csv, .json..."
+                    rows={3}
+                    className="w-full resize-none text-xs font-semibold text-[#26251e] bg-transparent outline-none placeholder:text-neutral-400 px-1 border-0"
+                  />
+
+                  {/* Bottom Row inside input area */}
+                  <div className="flex items-center justify-between border-t border-neutral-100/80 pt-2 shrink-0">
+                    <div className="flex items-center gap-1.5">
+                      {/* Add attachment button */}
+                      <input 
+                        type="file" 
+                        ref={fileInputRef} 
+                        onChange={handleFileChange} 
+                        className="hidden" 
+                        accept=".txt,.md,.json,.csv,.js,.ts"
+                      />
+                      <button 
+                        onClick={triggerFileUpload}
+                        className="h-7 w-7 rounded-full bg-neutral-50 hover:bg-neutral-100 text-[#555552] flex items-center justify-center cursor-pointer transition-colors border border-transparent active:scale-95"
+                        title="Joindre un fichier texte (.txt, .md, .csv, .json)"
+                      >
+                        <Plus className="h-4 w-4" />
+                      </button>
+
+                      {/* Canvas Toggle button */}
+                      <button
+                        onClick={() => setIsCanvasOpen(!isCanvasOpen)}
+                        className={`h-7 px-3 rounded-full flex items-center gap-1 text-[10px] font-bold transition-all border ${
+                          isCanvasOpen 
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
+                            : 'bg-neutral-50 hover:bg-neutral-100 text-[#555552] border-transparent'
+                        }`}
+                      >
+                        <FileText className="h-3.5 w-3.5" />
+                        <span>Canvas</span>
+                      </button>
+                    </div>
+
+                    <div className="flex items-center gap-1.5">
+                      {/* Model selector dropdown */}
+                      <div className="relative">
+                        <button
+                          onClick={() => setShowModelDropdown(!showModelDropdown)}
+                          className="h-7 px-3 rounded-full bg-neutral-50 hover:bg-neutral-100 border border-neutral-100/60 text-[#555552] flex items-center gap-1.5 text-[10px] font-bold cursor-pointer transition-colors"
+                        >
+                          <Globe className="h-3.5 w-3.5 text-neutral-400" />
+                          <span>{selectedModel.name}</span>
+                          <ChevronDown className="h-3 w-3" />
+                        </button>
+
+                        {showModelDropdown && (
+                          <div className="absolute right-0 bottom-8 z-50 bg-white border border-[#e6e5e0] rounded-xl py-1 shadow-lg w-52 text-left animate-scale-up">
+                            <div className="px-3 py-1 text-[8px] font-bold text-muted-foreground uppercase tracking-wider">Modèles Disponibles</div>
+                            {AI_MODELS.map((model) => (
+                              <button
+                                key={model.id}
+                                onClick={() => {
+                                  setSelectedModel(model);
+                                  setShowModelDropdown(false);
+                                }}
+                                className={`w-full text-left px-3 py-1.5 text-[10px] font-bold flex items-center justify-between hover:bg-neutral-50 ${
+                                  selectedModel.id === model.id ? 'text-[#10b981]' : 'text-[#26251e]'
+                                }`}
+                              >
+                                <span>{model.name}</span>
+                                {selectedModel.id === model.id && <Check className="h-3 w-3" />}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Microphone voice button */}
+                      <button
+                        onClick={isRecording ? stopRecording : startRecording}
+                        className={`h-7 w-7 rounded-full flex items-center justify-center cursor-pointer transition-all border ${
+                          isRecording 
+                            ? 'bg-red-500 text-white border-red-500 animate-pulse' 
+                            : 'bg-neutral-50 hover:bg-neutral-100 text-[#555552] border-transparent'
+                        }`}
+                        title={isRecording ? "Arrêter l'enregistrement" : "Message vocal"}
+                      >
+                        <Mic className="h-3.5 w-3.5" />
+                      </button>
+
+                      {/* Send button */}
+                      <button
+                        onClick={() => handleSend()}
+                        disabled={isLoading}
+                        className="h-7 w-7 rounded-full bg-[#10b981] hover:bg-[#059669] text-white flex items-center justify-center cursor-pointer transition-all shadow-sm active:scale-95 disabled:opacity-50"
+                        title="Envoyer"
+                      >
+                        <ArrowUp className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Prompt Bubbles Grid */}
+                <div className="w-full px-4 flex flex-wrap items-center justify-center gap-2 max-w-lg mx-auto animate-fade-in-up">
+                  {QUICK_PROMPTS.map((chip) => (
+                    <button
+                      key={chip.label}
+                      onClick={() => handleQuickPromptClick(chip)}
+                      className="bg-white border border-[#e6e5e0] hover:bg-[#f7f7f4] hover:border-[#10b981]/30 hover:text-[#10b981] text-[10.5px] font-bold text-[#555552] px-3.5 py-1.5 rounded-full cursor-pointer transition-all duration-200 active:scale-95 shadow-none"
+                    >
+                      {chip.label}
+                    </button>
+                  ))}
+                </div>
+
+              </div>
+            ) : (
+              /* Active message feed container */
+              <div className="p-4 space-y-6">
+                {messages.map((msg, i) => (
+                  <div 
+                    key={i} 
+                    className={`flex gap-3 max-w-[85%] animate-fade-in-up ${
+                      msg.role === 'user' ? 'ml-auto flex-row-reverse' : 'mr-auto'
+                    }`}
+                  >
+                    {msg.role === 'assistant' ? (
+                      <div className="h-7 w-7 rounded-lg bg-neutral-100 border border-neutral-200 text-[#10b981] flex items-center justify-center shrink-0 mt-0.5">
+                        <MinervaIcon size={16} />
+                      </div>
+                    ) : (
+                      <div className="h-7 w-7 rounded-full bg-[#26251e] text-white flex items-center justify-center shrink-0 text-[10px] font-bold mt-0.5 select-none">
+                        U
+                      </div>
+                    )}
+
+                    <div className={`rounded-2xl px-4 py-2.5 shadow-none ${
+                      msg.role === 'user'
+                        ? 'bg-neutral-50 text-[#26251e] border border-[#e6e5e0] rounded-tr-none'
+                        : 'bg-white text-foreground rounded-tl-none border-0'
+                    }`}>
+                      {renderMessageContent(msg, i)}
+                    </div>
+                  </div>
+                ))}
+
+                {isLoading && (
+                  <div className="flex gap-3 max-w-[85%] mr-auto items-center">
+                    <div className="h-7 w-7 rounded-lg bg-neutral-100 border border-neutral-200 text-[#10b981] flex items-center justify-center shrink-0 animate-pulse">
+                      <MinervaIcon size={16} />
+                    </div>
+                    <div className="bg-white border-0 rounded-2xl rounded-tl-none px-4 py-2.5">
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-neutral-400 animate-bounce" />
+                        <span className="w-1.5 h-1.5 rounded-full bg-neutral-400 animate-bounce delay-100" />
+                        <span className="w-1.5 h-1.5 rounded-full bg-neutral-400 animate-bounce delay-200" />
+                      </div>
+                    </div>
+                  </div>
+                )}
+                <div ref={messagesEndRef} />
+              </div>
+            )}
+          </div>
+
+          {/* Input Bar at bottom if chat has messages */}
+          {messages.length > 0 && (
+            <div className="border-t border-[#e6e5e0]/60 p-4 shrink-0 bg-white z-10">
+              <div className="max-w-2xl mx-auto border border-[#e6e5e0] rounded-2xl bg-white shadow-sm flex flex-col p-2 space-y-2 focus-within:border-[#10b981] transition-colors relative">
                 {attachedFile && (
-                  <div className="flex items-center justify-between bg-neutral-50 border border-neutral-100 px-3 py-2 rounded-xl text-xs">
+                  <div className="flex items-center justify-between bg-[#fafaf9] border border-[#e6e5e0]/60 px-3 py-1.5 rounded-xl text-xs animate-fade-in">
                     <div className="flex items-center gap-2 min-w-0">
-                      <FileText className="h-4 w-4 text-red-500 shrink-0" />
+                      <FileText className="h-3.5 w-3.5 text-[#10b981] shrink-0" />
                       <span className="font-bold text-[#26251e] truncate">{attachedFile.name}</span>
-                      <span className="text-[10px] text-neutral-400 uppercase font-semibold shrink-0">Document</span>
+                      <span className="text-[10px] text-neutral-400 uppercase font-semibold shrink-0">
+                        {attachedFile.content ? 'Contenu extrait' : 'Document'}
+                      </span>
                     </div>
                     <button 
                       onClick={() => setAttachedFile(null)}
                       className="text-neutral-400 hover:text-[#26251e] p-0.5"
                     >
-                      <X className="h-3.5 w-3.5" />
+                      <X className="h-3 w-3" />
                     </button>
                   </div>
                 )}
-                
+
                 <textarea
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
                   placeholder="Ask anything, @ for context and skills..."
-                  rows={3}
-                  className="w-full resize-none text-xs font-semibold text-[#26251e] bg-transparent outline-none placeholder:text-neutral-400 px-1 border-0"
+                  rows={1}
+                  className="w-full resize-none text-xs font-semibold text-[#26251e] bg-transparent outline-none placeholder:text-neutral-400 px-2 min-h-[24px] max-h-32 border-0 overflow-y-auto"
                 />
 
-                {/* Bottom Row inside input area */}
-                <div className="flex items-center justify-between border-t border-neutral-100/80 pt-2 shrink-0">
-                  <div className="flex items-center gap-1.5">
-                    {/* Add attachment button */}
+                {/* Input Card actions */}
+                <div className="flex items-center justify-between border-t border-neutral-100/60 pt-2 shrink-0">
+                  <div className="flex items-center gap-1">
                     <input 
                       type="file" 
                       ref={fileInputRef} 
                       onChange={handleFileChange} 
                       className="hidden" 
-                      accept=".pdf,.txt,.doc,.docx"
+                      accept=".txt,.md,.json,.csv,.js,.ts"
                     />
                     <button 
                       onClick={triggerFileUpload}
-                      className="h-7 w-7 rounded-full bg-neutral-50 hover:bg-neutral-100 text-[#555552] flex items-center justify-center cursor-pointer transition-colors border border-transparent active:scale-95"
-                      title="Joindre un fichier"
+                      className="h-6 w-6 rounded-full bg-neutral-50 hover:bg-neutral-100 text-[#555552] flex items-center justify-center cursor-pointer transition-colors border border-transparent"
+                      title="Joindre un fichier texte (.txt, .md, .csv, .json)"
                     >
-                      <Plus className="h-4 w-4" />
+                      <Plus className="h-3.5 w-3.5" />
                     </button>
 
-                    {/* Canvas Toggle button */}
                     <button
                       onClick={() => setIsCanvasOpen(!isCanvasOpen)}
-                      className={`h-7 px-3 rounded-full flex items-center gap-1 text-[10px] font-bold transition-all border ${
+                      className={`h-6 px-2.5 rounded-full flex items-center gap-1 text-[9px] font-bold transition-all border ${
                         isCanvasOpen 
                           ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
                           : 'bg-neutral-50 hover:bg-neutral-100 text-[#555552] border-transparent'
                       }`}
                     >
-                      <FileText className="h-3.5 w-3.5" />
+                      <FileText className="h-3 w-3" />
                       <span>Canvas</span>
                     </button>
                   </div>
 
                   <div className="flex items-center gap-1.5">
-                    {/* Model selector dropdown */}
                     <div className="relative">
                       <button
                         onClick={() => setShowModelDropdown(!showModelDropdown)}
-                        className="h-7 px-3 rounded-full bg-neutral-50 hover:bg-neutral-100 border border-neutral-100/60 text-[#555552] flex items-center gap-1.5 text-[10px] font-bold cursor-pointer transition-colors"
+                        className="h-6 px-2 rounded-full bg-neutral-50 hover:bg-neutral-100 border border-neutral-100/60 text-[#555552] flex items-center gap-1 text-[9px] font-bold cursor-pointer transition-colors"
                       >
-                        <Globe className="h-3.5 w-3.5 text-neutral-400" />
+                        <Globe className="h-3 w-3 text-neutral-400" />
                         <span>{selectedModel.name}</span>
-                        <ChevronDown className="h-3 w-3" />
+                        <ChevronDown className="h-2.5 w-2.5" />
                       </button>
 
                       {showModelDropdown && (
-                        <div className="absolute right-0 bottom-8 z-50 bg-white border border-[#e6e5e0] rounded-xl py-1 shadow-lg w-52 text-left">
-                          <div className="px-3 py-1 text-[8px] font-bold text-muted-foreground uppercase tracking-wider">Modèles Disponibles</div>
+                        <div className="absolute right-0 bottom-7 z-50 bg-white border border-[#e6e5e0] rounded-xl py-1 shadow-lg w-48 text-left animate-scale-up">
                           {AI_MODELS.map((model) => (
                             <button
                               key={model.id}
@@ -621,227 +1139,47 @@ export function AssistantRoot() {
                                 setSelectedModel(model);
                                 setShowModelDropdown(false);
                               }}
-                              className={`w-full text-left px-3 py-1.5 text-[10px] font-bold flex items-center justify-between hover:bg-neutral-50 ${
-                                selectedModel.id === model.id ? 'text-primary' : 'text-[#26251e]'
+                              className={`w-full text-left px-3 py-1.5 text-[9.5px] font-bold flex items-center justify-between hover:bg-neutral-50 ${
+                                selectedModel.id === model.id ? 'text-[#10b981]' : 'text-[#26251e]'
                               }`}
                             >
                               <span>{model.name}</span>
-                              {selectedModel.id === model.id && <Check className="h-3 w-3" />}
+                              {selectedModel.id === model.id && <Check className="h-2.5 w-2.5" />}
                             </button>
                           ))}
                         </div>
                       )}
                     </div>
 
-                    {/* Microphone voice button */}
                     <button
                       onClick={isRecording ? stopRecording : startRecording}
-                      className={`h-7 w-7 rounded-full flex items-center justify-center cursor-pointer transition-all border ${
+                      className={`h-6 w-6 rounded-full flex items-center justify-center cursor-pointer transition-all border ${
                         isRecording 
                           ? 'bg-red-500 text-white border-red-500 animate-pulse' 
                           : 'bg-neutral-50 hover:bg-neutral-100 text-[#555552] border-transparent'
                       }`}
-                      title={isRecording ? "Arrêter l'enregistrement" : "Message vocal"}
                     >
-                      <Mic className="h-3.5 w-3.5" />
+                      <Mic className="h-3 w-3" />
                     </button>
 
-                    {/* Send button */}
                     <button
                       onClick={() => handleSend()}
                       disabled={isLoading}
-                      className="h-7 w-7 rounded-full bg-[#10b981] hover:bg-[#059669] text-white flex items-center justify-center cursor-pointer transition-all shadow-sm active:scale-95 disabled:opacity-50"
-                      title="Envoyer"
+                      className="h-6 w-6 rounded-full bg-[#10b981] hover:bg-[#059669] text-white flex items-center justify-center cursor-pointer transition-all shadow-sm disabled:opacity-50"
                     >
-                      <ArrowUp className="h-4 w-4" />
+                      <ArrowUp className="h-3.5 w-3.5" />
                     </button>
                   </div>
                 </div>
               </div>
-
-              {/* Prompt Bubbles Grid */}
-              <div className="w-full px-4 flex flex-wrap items-center justify-center gap-2 max-w-lg mx-auto animate-fade-in-up">
-                {QUICK_PROMPTS.map((chip) => (
-                  <button
-                    key={chip.label}
-                    onClick={() => handleQuickPromptClick(chip)}
-                    className="bg-white border border-[#e6e5e0] hover:bg-[#f7f7f4] hover:border-[#10b981]/30 hover:text-[#10b981] text-[10.5px] font-bold text-[#555552] px-3.5 py-1.5 rounded-full cursor-pointer transition-all duration-200 active:scale-95 shadow-none"
-                  >
-                    {chip.label}
-                  </button>
-                ))}
-              </div>
-
-            </div>
-          ) : (
-            /* Active message feed container */
-            <div className="p-4 space-y-6">
-              {messages.map((msg, i) => (
-                <div 
-                  key={i} 
-                  className={`flex gap-3 max-w-[85%] animate-fade-in-up ${
-                    msg.role === 'user' ? 'ml-auto flex-row-reverse' : 'mr-auto'
-                  }`}
-                >
-                  {msg.role === 'assistant' ? (
-                    <div className="h-7 w-7 rounded-lg bg-neutral-100 border border-neutral-200 text-[#10b981] flex items-center justify-center shrink-0 mt-0.5">
-                      <MinervaIcon size={16} />
-                    </div>
-                  ) : (
-                    <div className="h-7 w-7 rounded-full bg-[#26251e] text-white flex items-center justify-center shrink-0 text-[10px] font-bold mt-0.5 select-none">
-                      U
-                    </div>
-                  )}
-
-                  <div className={`rounded-2xl px-4 py-2.5 shadow-none ${
-                    msg.role === 'user'
-                      ? 'bg-neutral-50 text-[#26251e] border border-[#e6e5e0] rounded-tr-none'
-                      : 'bg-white text-foreground rounded-tl-none border-0'
-                  }`}>
-                    {renderMessageContent(msg, i)}
-                  </div>
-                </div>
-              ))}
-
-              {isLoading && (
-                <div className="flex gap-3 max-w-[85%] mr-auto items-center">
-                  <div className="h-7 w-7 rounded-lg bg-neutral-100 border border-neutral-200 text-[#10b981] flex items-center justify-center shrink-0 animate-pulse">
-                    <MinervaIcon size={16} />
-                  </div>
-                  <div className="bg-white border-0 rounded-2xl rounded-tl-none px-4 py-2.5">
-                    <div className="flex items-center gap-1.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-neutral-400 animate-bounce" />
-                      <span className="w-1.5 h-1.5 rounded-full bg-neutral-400 animate-bounce delay-100" />
-                      <span className="w-1.5 h-1.5 rounded-full bg-neutral-400 animate-bounce delay-200" />
-                    </div>
-                  </div>
-                </div>
-              )}
-              <div ref={messagesEndRef} />
             </div>
           )}
         </div>
-
-        {/* Input Bar at bottom if chat has messages */}
-        {messages.length > 0 && (
-          <div className="border-t border-[#e6e5e0]/60 p-4 shrink-0 bg-white z-10">
-            <div className="max-w-2xl mx-auto border border-[#e6e5e0] rounded-2xl bg-white shadow-sm flex flex-col p-2 space-y-2 focus-within:border-[#10b981] transition-colors relative">
-              {attachedFile && (
-                <div className="flex items-center justify-between bg-neutral-50 border border-neutral-100 px-3 py-1.5 rounded-xl text-xs">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <FileText className="h-3.5 w-3.5 text-red-500 shrink-0" />
-                    <span className="font-bold text-[#26251e] truncate">{attachedFile.name}</span>
-                  </div>
-                  <button 
-                    onClick={() => setAttachedFile(null)}
-                    className="text-neutral-400 hover:text-[#26251e] p-0.5"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                </div>
-              )}
-
-              <textarea
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-                placeholder="Ask anything, @ for context and skills..."
-                rows={1}
-                className="w-full resize-none text-xs font-semibold text-[#26251e] bg-transparent outline-none placeholder:text-neutral-400 px-2 min-h-[24px] max-h-32 border-0 overflow-y-auto"
-              />
-
-              {/* Input Card actions */}
-              <div className="flex items-center justify-between border-t border-neutral-100/60 pt-2 shrink-0">
-                <div className="flex items-center gap-1">
-                  <input 
-                    type="file" 
-                    ref={fileInputRef} 
-                    onChange={handleFileChange} 
-                    className="hidden" 
-                    accept=".pdf,.txt,.doc,.docx"
-                  />
-                  <button 
-                    onClick={triggerFileUpload}
-                    className="h-6 w-6 rounded-full bg-neutral-50 hover:bg-neutral-100 text-[#555552] flex items-center justify-center cursor-pointer transition-colors border border-transparent"
-                    title="Joindre un fichier"
-                  >
-                    <Plus className="h-3.5 w-3.5" />
-                  </button>
-
-                  <button
-                    onClick={() => setIsCanvasOpen(!isCanvasOpen)}
-                    className={`h-6 px-2.5 rounded-full flex items-center gap-1 text-[9px] font-bold transition-all border ${
-                      isCanvasOpen 
-                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
-                        : 'bg-neutral-50 hover:bg-neutral-100 text-[#555552] border-transparent'
-                    }`}
-                  >
-                    <FileText className="h-3 w-3" />
-                    <span>Canvas</span>
-                  </button>
-                </div>
-
-                <div className="flex items-center gap-1.5">
-                  <div className="relative">
-                    <button
-                      onClick={() => setShowModelDropdown(!showModelDropdown)}
-                      className="h-6 px-2 rounded-full bg-neutral-50 hover:bg-neutral-100 border border-neutral-100/60 text-[#555552] flex items-center gap-1 text-[9px] font-bold cursor-pointer transition-colors"
-                    >
-                      <Globe className="h-3 w-3 text-neutral-400" />
-                      <span>{selectedModel.name}</span>
-                      <ChevronDown className="h-2.5 w-2.5" />
-                    </button>
-
-                    {showModelDropdown && (
-                      <div className="absolute right-0 bottom-7 z-50 bg-white border border-[#e6e5e0] rounded-xl py-1 shadow-lg w-48 text-left">
-                        {AI_MODELS.map((model) => (
-                          <button
-                            key={model.id}
-                            onClick={() => {
-                              setSelectedModel(model);
-                              setShowModelDropdown(false);
-                            }}
-                            className={`w-full text-left px-3 py-1.5 text-[9.5px] font-bold flex items-center justify-between hover:bg-neutral-50 ${
-                              selectedModel.id === model.id ? 'text-primary' : 'text-[#26251e]'
-                            }`}
-                          >
-                            <span>{model.name}</span>
-                            {selectedModel.id === model.id && <Check className="h-2.5 w-2.5" />}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  <button
-                    onClick={isRecording ? stopRecording : startRecording}
-                    className={`h-6 w-6 rounded-full flex items-center justify-center cursor-pointer transition-all border ${
-                      isRecording 
-                        ? 'bg-red-500 text-white border-red-500 animate-pulse' 
-                        : 'bg-neutral-50 hover:bg-neutral-100 text-[#555552] border-transparent'
-                    }`}
-                  >
-                    <Mic className="h-3 w-3" />
-                  </button>
-
-                  <button
-                    onClick={() => handleSend()}
-                    disabled={isLoading}
-                    className="h-6 w-6 rounded-full bg-[#10b981] hover:bg-[#059669] text-white flex items-center justify-center cursor-pointer transition-all shadow-sm disabled:opacity-50"
-                  >
-                    <ArrowUp className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* ── RIGHT PANEL: CANVAS DOCUMENT EDITOR (SPLIT VIEW) ── */}
       {isCanvasOpen && (
         <div className={`h-full bg-white flex flex-col z-50 transition-all duration-300 animate-scale-up ${
-          /* Responsive sizing: full screen on mobile/tablet, flex-1 on desktop */
           'fixed inset-0 md:relative md:flex-grow md:flex md:w-[60%] border-t border-[#e6e5e0] md:border-t-0'
         }`}>
           
@@ -872,6 +1210,64 @@ export function AssistantRoot() {
 
             {/* Canvas Action Bar */}
             <div className="flex items-center gap-1.5 shrink-0">
+              
+              {/* Actions IA */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowAiDropdown(!showAiDropdown)}
+                  disabled={isAiWorking}
+                  className="h-7 px-2.5 rounded-full bg-emerald-50 hover:bg-emerald-100 text-emerald-700 disabled:opacity-50 text-[10px] font-bold flex items-center gap-1.5 transition-all border border-emerald-200 cursor-pointer"
+                >
+                  <Sparkles className="h-3.5 w-3.5 text-[#10b981]" />
+                  <span>IA Canvas</span>
+                  <ChevronDown className="h-3 w-3" />
+                </button>
+
+                {showAiDropdown && (
+                  <div className="absolute right-0 top-8 z-50 bg-white border border-[#e6e5e0] rounded-xl py-1 shadow-lg w-44 text-left animate-scale-up">
+                    <button
+                      onClick={() => handleAiCommand('summarize')}
+                      className="w-full text-left px-3 py-1.5 text-[10px] font-bold text-[#26251e] hover:bg-neutral-50 flex items-center gap-2"
+                    >
+                      <Sparkles className="h-3.5 w-3.5 text-[#10b981]" />
+                      <span>Résumer</span>
+                    </button>
+                    <button
+                      onClick={() => handleAiCommand('rephrase')}
+                      className="w-full text-left px-3 py-1.5 text-[10px] font-bold text-[#26251e] hover:bg-neutral-50 flex items-center gap-2"
+                    >
+                      <Sparkles className="h-3.5 w-3.5 text-[#10b981]" />
+                      <span>Reformuler</span>
+                    </button>
+                    <button
+                      onClick={() => handleAiCommand('longer')}
+                      className="w-full text-left px-3 py-1.5 text-[10px] font-bold text-[#26251e] hover:bg-neutral-50 flex items-center gap-2"
+                    >
+                      <Sparkles className="h-3.5 w-3.5 text-[#10b981]" />
+                      <span>Allonger</span>
+                    </button>
+                    <button
+                      onClick={() => handleAiCommand('shorter')}
+                      className="w-full text-left px-3 py-1.5 text-[10px] font-bold text-[#26251e] hover:bg-neutral-50 flex items-center gap-2"
+                    >
+                      <Sparkles className="h-3.5 w-3.5 text-[#10b981]" />
+                      <span>Raccourcir</span>
+                    </button>
+                    <div className="border-t border-neutral-100 my-1" />
+                    <div className="px-3 py-1 text-[8px] font-bold text-muted-foreground uppercase">Ton de réécriture</div>
+                    {['Professionnel', 'Persuasif', 'Amical'].map(tone => (
+                      <button
+                        key={tone}
+                        onClick={() => handleAiCommand('tone', tone)}
+                        className="w-full text-left px-3 py-1.5 text-[9.5px] font-semibold text-[#555552] hover:bg-neutral-50 pl-5"
+                      >
+                        <span>{tone}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               {/* Heading select */}
               <div className="relative">
                 <select

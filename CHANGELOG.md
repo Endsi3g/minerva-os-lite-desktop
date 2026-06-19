@@ -5,7 +5,16 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [2.80.0] - 2026-06-19
+
+### Ajouté — Persistance SQLite/Supabase de l'Assistant IA, Multi-sessions & IA Canvas
+- **Persistance DB Offline-First** — Remplacement complet du stockage localStorage temporaire pour l'Assistant IA. Les sessions, les messages et les documents Canvas sont désormais stockés en base SQLite locale (avec des tables `assistant_sessions`, `assistant_messages`, et `assistant_canvas`) et synchronisables.
+- **Historique Multi-sessions** — Intégration d'un panneau d'historique latéral rétractable dans la page de l'Assistant, permettant de gérer et de basculer de manière transparente entre plusieurs discussions et documents de l'espace de travail.
+- **Extraction Réelle de Fichiers** — Remplacement de l'upload simulé de fichiers par une extraction client-side réelle du contenu des fichiers texte (.txt, .md, .json, .csv) et une injection automatique dans le contexte de l'assistant via des balises XML.
+- **Commandes IA dans le Canvas** — Intégration de commandes intelligentes (Sparkles) directement dans la barre d'outils du Canvas pour réécrire, résumer, reformuler, allonger, raccourcir ou adapter le ton (Professionnel, Persuasif, Amical) du document ou du texte sélectionné en temps réel.
+
 ## [2.79.0] - 2026-06-19
+
 
 ### Ajouté — Pipeline de Prospection OSM Enrichi, Normalisation & Validation Inbox
 - **Normalisation & Dédoublonnement** — Standardisation automatique des numéros de téléphone (`+1 (514) 555-0199`) et nettoyage des tracking parameters des sites web. Dédoublonnement intelligent client-side et CRM-side.

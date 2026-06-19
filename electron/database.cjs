@@ -521,6 +521,46 @@ function initDb() {
     db.run(`CREATE INDEX IF NOT EXISTS idx_osm_feedback_workspace_id ON osm_feedback(workspace_id)`);
     db.run(`CREATE INDEX IF NOT EXISTS idx_osm_feedback_sync_status ON osm_feedback(sync_status)`);
 
+    // v5.1.0 — AI Assistant sessions, messages, and canvas
+    db.run(`CREATE TABLE IF NOT EXISTS assistant_sessions (
+      id TEXT PRIMARY KEY,
+      user_id TEXT,
+      workspace_id TEXT,
+      title TEXT,
+      created_at TEXT,
+      updated_at TEXT,
+      sync_status TEXT DEFAULT 'synced'
+    )`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_assistant_sessions_workspace_id ON assistant_sessions(workspace_id)`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_assistant_sessions_user_id ON assistant_sessions(user_id)`);
+
+    db.run(`CREATE TABLE IF NOT EXISTS assistant_messages (
+      id TEXT PRIMARY KEY,
+      session_id TEXT REFERENCES assistant_sessions(id) ON DELETE CASCADE,
+      user_id TEXT,
+      role TEXT,
+      content TEXT,
+      attached_file_name TEXT,
+      attached_file_type TEXT,
+      created_at TEXT,
+      sync_status TEXT DEFAULT 'synced'
+    )`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_assistant_messages_session_id ON assistant_messages(session_id)`);
+
+    db.run(`CREATE TABLE IF NOT EXISTS assistant_canvas (
+      id TEXT PRIMARY KEY,
+      user_id TEXT,
+      workspace_id TEXT,
+      title TEXT,
+      content TEXT,
+      created_at TEXT,
+      updated_at TEXT,
+      sync_status TEXT DEFAULT 'synced'
+    )`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_assistant_canvas_workspace_id ON assistant_canvas(workspace_id)`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_assistant_canvas_user_id ON assistant_canvas(user_id)`);
+
+
     // Indexes to avoid full table scans during sync
     db.run(`CREATE INDEX IF NOT EXISTS idx_leads_user_id ON leads(user_id)`);
     db.run(`CREATE INDEX IF NOT EXISTS idx_leads_sync_status ON leads(sync_status)`);
