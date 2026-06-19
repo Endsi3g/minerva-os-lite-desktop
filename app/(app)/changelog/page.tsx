@@ -18,6 +18,17 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v2.76.0',
+      date: '2026-06-19',
+      titleKey: 'changelog.v2_76_0_title' as TranslationKey,
+      descKey: 'changelog.v2_76_0_desc' as TranslationKey,
+      highlights: [
+        "Intégration d'Hermes Agent ⚡ : couche agent autonome au-dessus des flux CRM et simulations d'actions agentiques hautes-fidélités.",
+        "Résolution de l'erreur OSM : mise à jour du domaine de repli par défaut vers l'URL active et sécurisation du parsing JSON contre les retours HTML.",
+        "Refonte de l'Assistant IA : transition vers l'accent vert émeraude du CRM, puces d'actions adaptatives connectées au CRM et animations fluides."
+      ],
+    },
+    {
       version: 'v2.75.0',
       date: '2026-06-19',
       titleKey: 'changelog.v2_75_0_title' as TranslationKey,
@@ -932,7 +943,7 @@ export default function ChangelogPage() {
   return (
     <div className="h-full overflow-y-auto bg-neutral-50/40 text-neutral-800 font-sans selection:bg-blue-500/10">
       <div className="max-w-3xl mx-auto px-8 py-10 space-y-8">
-        
+
         {/* ── Header ── */}
         <div className="flex items-start gap-4">
           <div className="w-10 h-10 rounded-lg bg-neutral-900 text-white flex items-center justify-center shrink-0 shadow-xs">
@@ -959,7 +970,7 @@ export default function ChangelogPage() {
 
             return (
               <div key={ver.version} className="relative group">
-                
+
                 {/* Timeline node dot */}
                 <div className="absolute -left-[41px] top-1.5 w-6 h-6 rounded-full bg-white border-2 border-neutral-300 flex items-center justify-center transition-colors group-hover:border-neutral-900 z-10">
                   <div className="w-2 h-2 rounded-full bg-neutral-300 group-hover:bg-neutral-900 transition-colors" />
@@ -967,7 +978,7 @@ export default function ChangelogPage() {
 
                 {/* Content Card */}
                 <div className="bg-white border border-neutral-200/60 rounded-xl p-6 shadow-2xs hover:border-neutral-300 transition-all space-y-4">
-                  
+
                   {/* Card Header metadata */}
                   <div className="flex flex-wrap items-center justify-between gap-2 border-b border-neutral-100 pb-3">
                     <div className="flex items-center gap-2">
@@ -978,7 +989,7 @@ export default function ChangelogPage() {
                         {t('changelog.version')}
                       </span>
                     </div>
-                    
+
                     <div className="flex items-center gap-1.5 text-[10px] text-neutral-400 font-bold uppercase tracking-wider">
                       <Calendar className="w-3.5 h-3.5" />
                       <span>{t('changelog.released')} {formattedDate}</span>
