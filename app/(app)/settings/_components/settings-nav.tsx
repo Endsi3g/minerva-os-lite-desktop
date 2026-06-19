@@ -132,7 +132,16 @@ export function SettingsNav({ section, onSectionChange }: SettingsNavProps) {
             </div>
           </div>
         ))}
-        <div className="pt-4 mt-4 border-t border-border/60 px-3">
+        <div className="pt-4 mt-4 border-t border-border/60 px-3 space-y-2">
+          <a
+            href="/terms"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[10px] font-semibold text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5"
+          >
+            <FileText className="h-3.5 w-3.5 shrink-0" />
+            <span>Terms of Use</span>
+          </a>
           <a
             href="/privacy"
             target="_blank"

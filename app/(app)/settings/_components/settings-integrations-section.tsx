@@ -280,7 +280,16 @@ export function SettingsIntegrationsSection() {
                 <p className="text-[11px] text-muted-foreground leading-relaxed">
                   Lien OAuth direct pour envoyer et programmer tes courriels de prospection en un clic via ton propre compte Gmail.
                 </p>
-                <div className="pt-1">
+                <div className="pt-1 flex flex-wrap gap-x-3 gap-y-1">
+                  <a
+                    href="/terms"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[10px] text-primary underline hover:text-primary/80 font-medium"
+                  >
+                    Conditions d'utilisation (Terms of Use)
+                  </a>
+                  <span className="text-[10px] text-muted-foreground">•</span>
                   <a
                     href="/privacy"
                     target="_blank"

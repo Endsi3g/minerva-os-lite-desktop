@@ -738,6 +738,17 @@ export default function LoginPage() {
                         </p>
                       )}
 
+                      <p className="text-[10px] text-muted-foreground text-center leading-relaxed py-1 px-2">
+                        En vous inscrivant, vous acceptez nos{" "}
+                        <a href="/terms" target="_blank" rel="noopener noreferrer" className="underline font-semibold hover:text-[#10b981] transition-colors">
+                          Conditions d'utilisation
+                        </a>{" "}
+                        et notre{" "}
+                        <a href="/privacy" target="_blank" rel="noopener noreferrer" className="underline font-semibold hover:text-[#10b981] transition-colors">
+                          Politique de confidentialité
+                        </a>.
+                      </p>
+
                       <button
                         type="submit"
                         disabled={isPending}
