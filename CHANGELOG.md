@@ -5,6 +5,14 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [2.73.0] - 2026-06-19
+
+### Ajouté — Export Image & Partage Réseaux (LARP), Connexion Google App & Bannière de Mise à Jour
+- **Bouton d'Authentification Google de l'Application** — Ajout d'une option "Continuer avec Google" sur l'écran de connexion (`/login`) et d'inscription (`/login?mode=signup`), intégrée à Supabase Auth pour simplifier l'accès à l'application.
+- **Téléchargement d'Image & Partage Réseaux Sociaux** — Intégration de la librairie légère `html-to-image` pour permettre le téléchargement direct de vos cartes de statistiques du Mode Esthétique sous format PNG ou JPEG. Ajout d'options de partage natif via l'API Web Share (`navigator.share`) et de raccourcis de partage pour LinkedIn, Facebook, et conseils pour Instagram.
+- **Bannière Globale de Mise à Jour** — Création d'une bannière de notification esthétique vert émeraude en haut de page pour notifier l'utilisateur lorsqu'une mise à jour est disponible et l'inciter à recharger l'application et explorer le Changelog.
+- **Gestion des Droits d'Application Google Non Vérifiée** — Ajout de conseils de configuration et de tutoriels pour contourner l'écran Google unverified app warning ("Google n'a pas vérifié cette application") lors de la synchronisation Gmail.
+
 ## [2.72.0] - 2026-06-19
 
 ### Ajouté — Mode Esthétique (LARP), Nouveau Favicon & Bypass Google OAuth

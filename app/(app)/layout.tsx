@@ -23,6 +23,7 @@ import {
   UserPlus,
   Users,
   Check,
+  X,
   Loader2,
   AlertCircle,
   Briefcase,
@@ -79,6 +80,49 @@ import {
   BreadcrumbPage, 
   BreadcrumbSeparator 
 } from '@/components/ui/breadcrumb';
+
+function UpdateBanner() {
+  const [visible, setVisible] = useState(false);
+  const router = useRouter();
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const dismissed = localStorage.getItem('minerva_dismiss_update_v2_73_0') === 'true';
+      if (!dismissed) {
+        setVisible(true);
+      }
+    }
+  }, []);
+
+  const handleDismiss = () => {
+    localStorage.setItem('minerva_dismiss_update_v2_73_0', 'true');
+    setVisible(false);
+  };
+
+  if (!visible) return null;
+
+  return (
+    <div className="bg-[#10b981] text-white text-xs font-semibold py-2 px-4 flex items-center justify-between gap-4 animate-in slide-in-from-top duration-300 relative z-50 shrink-0 select-none">
+      <div className="flex items-center gap-2">
+        <Sparkles className="h-4 w-4 animate-pulse shrink-0" />
+        <span>
+          Une nouvelle mise à jour (v2.73.0) est disponible ! Veuillez recharger la page et consulter le{' '}
+          <Link href="/changelog" onClick={handleDismiss} className="underline font-bold hover:text-emerald-100">
+            Changelog
+          </Link>{' '}
+          pour en savoir plus.
+        </span>
+      </div>
+      <button 
+        onClick={handleDismiss}
+        className="text-white/80 hover:text-white p-1 hover:bg-emerald-600 rounded-full transition-colors cursor-pointer border-0 bg-transparent shrink-0"
+        title="Fermer"
+      >
+        <X className="h-3.5 w-3.5" />
+      </button>
+    </div>
+  );
+}
 
 function AppLayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -1205,6 +1249,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
         </header>
 
         {/* Page Content Slot */}
+        <UpdateBanner />
         <main className="flex-1 overflow-hidden bg-white mobile-main-content relative">
           <div key={pathname} className="animate-page-enter w-full h-full flex flex-col overflow-hidden">
             {children}

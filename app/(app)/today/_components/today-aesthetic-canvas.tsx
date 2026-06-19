@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useReach } from '@/lib/reach-context';
 import { createClient } from '@/lib/supabase/client';
+import { toPng, toJpeg } from 'html-to-image';
 import { 
   X, 
   Sparkles, 
@@ -29,6 +30,59 @@ type ThemeStyle = 'cream' | 'emerald' | 'charcoal';
 
 export function TodayAestheticCanvas({ onClose }: TodayAestheticCanvasProps) {
   const { leads, user } = useReach();
+  const canvasRef = useRef<HTMLDivElement>(null);
+
+  const downloadImage = async (format: 'png' | 'jpeg') => {
+    if (!canvasRef.current) return;
+    try {
+      const fn = format === 'png' ? toPng : toJpeg;
+      const dataUrl = await fn(canvasRef.current, {
+        quality: 0.95,
+        pixelRatio: 2, // high quality
+      });
+      const link = document.createElement('a');
+      link.download = `minerva-dashboard-${displayAgencyName.toLowerCase().replace(/\s+/g, '-') || 'stats'}.${format}`;
+      link.href = dataUrl;
+      link.click();
+    } catch (err) {
+      console.error("Error generating image:", err);
+      alert("Erreur lors de la génération de l'image. Veuillez réessayer.");
+    }
+  };
+
+  const handleShareNative = async () => {
+    if (!canvasRef.current) return;
+    try {
+      const dataUrl = await toPng(canvasRef.current, { pixelRatio: 2 });
+      const res = await fetch(dataUrl);
+      const blob = await res.blob();
+      const file = new File([blob], 'minerva-dashboard.png', { type: 'image/png' });
+      
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          files: [file],
+          title: `Performance ${displayAgencyName}`,
+          text: `Aperçu de mes statistiques générées sur Minerva Reach !`,
+        });
+      } else {
+        alert("Votre navigateur ne prend pas en charge le partage de fichiers natif. Téléchargez l'image pour la publier manuellement.");
+      }
+    } catch (err) {
+      console.error("Error during native share:", err);
+      alert("Impossible de lancer le partage. Téléchargez l'image à la place.");
+    }
+  };
+
+  const sharePlatform = (platform: 'linkedin' | 'facebook' | 'instagram') => {
+    const appUrl = 'https://minerva-os-lite-desktop.vercel.app';
+    if (platform === 'linkedin') {
+      window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(appUrl)}`, '_blank');
+    } else if (platform === 'facebook') {
+      window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(appUrl)}`, '_blank');
+    } else if (platform === 'instagram') {
+      alert("Instagram ne supporte pas l'import d'image directe depuis les sites web. Veuillez télécharger l'image (format Carré ou Story conseillé) et la publier directement depuis l'application Instagram !");
+    }
+  };
   const [dataMode, setDataMode] = useState<'real' | 'mock'>('mock');
   const [ratio, setRatio] = useState<AspectRatio>('1:1');
   const [theme, setTheme] = useState<ThemeStyle>('cream');
@@ -312,6 +366,63 @@ export function TodayAestheticCanvas({ onClose }: TodayAestheticCanvasProps) {
               </div>
             </div>
           )}
+
+          {/* Download & Share Actions */}
+          <div className="space-y-2.5 pt-3.5 border-t border-[#1f1f1d]">
+            <label className="text-[10px] font-bold tracking-wider uppercase text-stone-400 block mb-1">Télécharger & Partager</label>
+            
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => downloadImage('png')}
+                className="py-2 text-[10px] font-bold bg-[#171715] hover:bg-[#1f1f1d] border border-[#1f1f1d] hover:border-stone-700 text-white rounded-lg flex items-center justify-center gap-1 cursor-pointer transition-colors"
+              >
+                <span>Image PNG</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => downloadImage('jpeg')}
+                className="py-2 text-[10px] font-bold bg-[#171715] hover:bg-[#1f1f1d] border border-[#1f1f1d] hover:border-stone-700 text-white rounded-lg flex items-center justify-center gap-1 cursor-pointer transition-colors"
+              >
+                <span>Image JPEG</span>
+              </button>
+            </div>
+
+            {/* Social Share Buttons */}
+            <div className="space-y-1.5 pt-1">
+              <button
+                type="button"
+                onClick={handleShareNative}
+                className="w-full py-2 bg-[#10b981] hover:bg-[#059669] text-white text-[10px] font-bold rounded-lg flex items-center justify-center gap-1.5 transition-colors cursor-pointer border-0"
+              >
+                Partager l'image (Natif)
+              </button>
+
+              <div className="grid grid-cols-3 gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => sharePlatform('linkedin')}
+                  className="py-1.5 text-[9px] font-bold bg-[#171715] hover:bg-[#1f1f1d] border border-[#1f1f1d] text-stone-300 rounded hover:text-white cursor-pointer transition-colors"
+                >
+                  LinkedIn
+                </button>
+                <button
+                  type="button"
+                  onClick={() => sharePlatform('facebook')}
+                  className="py-1.5 text-[9px] font-bold bg-[#171715] hover:bg-[#1f1f1d] border border-[#1f1f1d] text-stone-300 rounded hover:text-white cursor-pointer transition-colors"
+                >
+                  Facebook
+                </button>
+                <button
+                  type="button"
+                  onClick={() => sharePlatform('instagram')}
+                  className="py-1.5 text-[9px] font-bold bg-[#171715] hover:bg-[#1f1f1d] border border-[#1f1f1d] text-stone-300 rounded hover:text-white cursor-pointer transition-colors"
+                >
+                  Instagram
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div className="p-4 border-t border-[#1f1f1d] space-y-2">
@@ -355,6 +466,7 @@ export function TodayAestheticCanvas({ onClose }: TodayAestheticCanvasProps) {
 
         {/* The design canvas representing the social card */}
         <div 
+          ref={canvasRef}
           id="aesthetic-dashboard-card"
           style={themeClasses.gridStyle}
           className={`relative border flex flex-col justify-between p-7 sm:p-10 select-text transition-all duration-300 ${themeClasses.canvasBg} ${themeClasses.border} ${
