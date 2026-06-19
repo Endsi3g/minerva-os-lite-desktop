@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Copy, Download, Plus, Trash2, Eye, EyeOff } from 'lucide-react';
+import { Copy, Download, Plus, Trash2, Eye, EyeOff, Cpu, Terminal } from 'lucide-react';
 import { SettingsSectionWrapper } from './settings-section-wrapper';
 import { createClient } from '@/lib/supabase/client';
 
@@ -15,6 +15,7 @@ interface ApiKey {
 
 export function SettingsWorkspaceApiSection() {
   const [workspaceId, setWorkspaceId] = useState('');
+  const [apiUrl, setApiUrl] = useState('https://minerva-os-lite-desktop.vercel.app');
   const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
   const [showCreate, setShowCreate] = useState(false);
   const [newKeyName, setNewKeyName] = useState('');
@@ -24,6 +25,9 @@ export function SettingsWorkspaceApiSection() {
   useEffect(() => {
     const load = async () => {
       try {
+        if (typeof window !== 'undefined') {
+          setApiUrl(window.location.origin);
+        }
         const supabase = createClient();
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
@@ -136,6 +140,59 @@ export function SettingsWorkspaceApiSection() {
           </div>
         </div>
       )}
+
+      {/* Hermes Agent Integration */}
+      <div className="border border-emerald-500/20 rounded-xl p-5 bg-card/50 space-y-4">
+        <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
+          <Cpu className="w-5 h-5 shrink-0" />
+          <p className="text-sm font-bold">Configuration Hermes Agent ⚡</p>
+        </div>
+        <p className="text-[11px] text-muted-foreground leading-relaxed">
+          Hermes Agent est une couche d'automatisation autonome qui interagit avec votre CRM via des plateformes de messagerie (Telegram, Discord, SMS) et des cron-jobs planifiés.
+        </p>
+
+        <div className="space-y-3 pt-2">
+          {/* API URL Config */}
+          <div className="flex items-center justify-between gap-4 p-3 bg-muted/40 rounded-lg border border-border/60">
+            <div className="min-w-0">
+              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">MINERVA_API_URL</p>
+              <p className="text-xs font-mono text-foreground mt-1 truncate">{apiUrl}</p>
+            </div>
+            <button
+              onClick={() => handleCopy(apiUrl, 'hermes-api-url')}
+              className="flex items-center gap-1.5 px-3 py-1.5 border border-border rounded-lg text-xs font-semibold text-foreground hover:bg-muted transition-colors shrink-0"
+            >
+              <Copy className="w-3.5 h-3.5" />
+              {copied === 'hermes-api-url' ? 'Copié !' : 'Copier'}
+            </button>
+          </div>
+
+          {/* Workspace ID Config */}
+          <div className="flex items-center justify-between gap-4 p-3 bg-muted/40 rounded-lg border border-border/60">
+            <div className="min-w-0">
+              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">WORKSPACE_ID</p>
+              <p className="text-xs font-mono text-foreground mt-1 truncate">{workspaceId}</p>
+            </div>
+            <button
+              onClick={() => handleCopy(workspaceId, 'hermes-workspace-id')}
+              className="flex items-center gap-1.5 px-3 py-1.5 border border-border rounded-lg text-xs font-semibold text-foreground hover:bg-muted transition-colors shrink-0"
+            >
+              <Copy className="w-3.5 h-3.5" />
+              {copied === 'hermes-workspace-id' ? 'Copié !' : 'Copier'}
+            </button>
+          </div>
+
+          {/* Service Token Note */}
+          <div className="p-3 bg-emerald-500/5 rounded-lg border border-emerald-500/10">
+            <p className="text-[11px] font-bold text-emerald-700 dark:text-emerald-300">
+              Jeton de service sécurisé
+            </p>
+            <p className="text-[10px] text-emerald-600/90 dark:text-emerald-400/90 mt-1 leading-relaxed">
+              Assurez-vous de définir le jeton secret <code className="font-mono bg-emerald-500/10 px-1 py-0.5 rounded text-[10px]">HERMES_SERVICE_TOKEN</code> sur votre serveur Hermes et dans les variables d'environnement de Minerva (Vercel) pour valider et sécuriser les échanges.
+            </p>
+          </div>
+        </div>
+      </div>
 
       {/* API Keys */}
       <div className="space-y-3">
