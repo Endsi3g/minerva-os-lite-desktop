@@ -7,12 +7,17 @@ et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
 ## [2.70.0] - 2026-06-18
 
-### Ajouté — Mode Terrain sans Modales & Automations
+### Ajouté — Mode Terrain, Invitations temporaires, Présence en temps réel & Activités
 - **Expérience Outcome Dédiée** — Remplacement complet du modal de résultat de passage par des pages de saisie dédiées (`/field/[planId]/outcome/[leadId]`), offrant une interface plein écran premium et mobile-first.
 - **Conversion Automatique des RDV en Deals** — Marquer un lead comme "RDV pris" (`meeting_booked`) met à jour son statut à `'Won'` (Deal) et planifie automatiquement une tâche `'Appel de closing'` pour le lendemain.
 - **Séquence de Relance Automatique pour Absence** — Marquer un lead comme "Absent" (`absent`) génère automatiquement une séquence e-mail de relance `'Passé vous voir'` (e-mail immédiat à J+0 et rappel d'appel à J+3) si une adresse e-mail est disponible, ainsi qu'une tâche de rappel locale à J+2.
 - **Synchronisation Bidirectionnelle des Tournées** — Câblage de `sync.cjs` pour synchroniser les itinéraires (`route_plans`) et les fiches de visite (`field_visits`) entre SQLite (Electron) et Supabase (Web).
 - **Nouvel Endpoint API** — Endpoint `/api/route-plans/visits` gérant les résultats de passage et leurs automatisations associées pour les sessions connectées.
+- **Clés de Prospection & Sync Settings** — Résolution du vidage des clés API de scraping (Apify, Yelp, Firecrawl, HERE) en mode Electron. Les clés sont désormais écrites en SQLite local et synchronisées de manière bidirectionnelle avec Supabase.
+- **Invitations par Token Temporaire (Bypass Onboarding)** — Invitation sécurisée par lien à durée de validité configurable (1, 3 ou 7 jours). Flow d'inscription dédié évitant le formulaire d'onboarding pour rejoindre directement le workspace invité.
+- **Journal d'Activités Offline-First** — Enregistrement local des actions cruciales (création de prospects, complétion de tâches, ajout de notes, visites terrain) synchronisé en tâche de fond dans une table globale `activities`.
+- **Fiches Profils Membres Dédiées** — Suppression définitive des modaux de membres au profit de pages dédiées `/team/[id]`, présentant la biographie du collaborateur, son rôle, ses statistiques clés et son journal d'activités quotidiennes.
+- **Présence Collaborative en Temps Réel** — Intégration de Supabase Presence pour synchroniser et afficher instantanément les pages actives des utilisateurs. Présence signalée par des badges animés (pulsés avec initiales) sur la liste des leads et les cartes Kanban.
 
 ## [2.64.0] - 2026-06-18
 

@@ -307,7 +307,7 @@ async function syncPush() {
   // 5. Settings
   const pendingSettings = await db.all("SELECT * FROM settings WHERE sync_status != 'synced'");
   for (const setting of pendingSettings) {
-    const { user_id, full_name, last_name, phone, email, company_name, timezone, niches, cities, ai_tone, ai_density, quick_note, focus_title, focus_items, smtp_config, groq_api_key, together_api_key, avatar_base64, user_role, bio, email_signature } = setting;
+    const { user_id, full_name, last_name, phone, email, company_name, timezone, niches, cities, ai_tone, ai_density, quick_note, focus_title, focus_items, smtp_config, groq_api_key, together_api_key, avatar_base64, user_role, bio, email_signature, apify_token, here_api_key, yelp_api_key, firecrawl_api_key } = setting;
     const { error } = await supabase.from('settings').upsert({
       user_id,
       full_name,
@@ -330,6 +330,10 @@ async function syncPush() {
       user_role: user_role || null,
       bio: bio || null,
       email_signature: email_signature || null,
+      apify_token: apify_token || null,
+      here_api_key: here_api_key || null,
+      yelp_api_key: yelp_api_key || null,
+      firecrawl_api_key: firecrawl_api_key || null,
     });
     if (!error) {
       await db.run("UPDATE settings SET sync_status = 'synced' WHERE user_id = ?", [user_id]);
@@ -535,6 +539,29 @@ async function syncPush() {
       }
     }
   }
+
+  // 9. Activities Push
+  const pendingActivities = await db.all("SELECT * FROM activities WHERE sync_status = 'pending_insert'");
+  for (const act of pendingActivities) {
+    const { id, workspace_id, user_id, lead_id, campaign_id, type, title, body, metadata, created_at } = act;
+    const { error } = await supabase.from('activities').upsert({
+      id,
+      workspace_id: workspace_id || null,
+      user_id: user_id || currentUserId,
+      lead_id: lead_id || null,
+      campaign_id: campaign_id || null,
+      type,
+      title,
+      body,
+      metadata: metadata ? JSON.parse(metadata) : null,
+      created_at
+    });
+    if (!error) {
+      await db.run("UPDATE activities SET sync_status = 'synced' WHERE id = ?", [id]);
+    } else {
+      console.error("Error pushing insert for activity", id, error);
+    }
+  }
 }
 
 
@@ -552,9 +579,9 @@ async function syncPull() {
                          (localSetting.sync_status === 'synced' && 
                           new Date(remoteSettings.updated_at) > new Date(localSetting.updated_at || 0));
     if (shouldUpdate) {
-      const { user_id, full_name, last_name, phone, email, company_name, timezone, niches, cities, ai_tone, ai_density, quick_note, focus_title, focus_items, smtp_config, groq_api_key, together_api_key, avatar_base64, user_role, bio, email_signature, updated_at } = remoteSettings;
-      await db.run(`INSERT INTO settings (user_id, full_name, last_name, phone, email, company_name, timezone, niches, cities, ai_tone, ai_density, quick_note, focus_title, focus_items, smtp_config, groq_api_key, together_api_key, avatar_base64, user_role, bio, email_signature, updated_at, sync_status)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced')
+      const { user_id, full_name, last_name, phone, email, company_name, timezone, niches, cities, ai_tone, ai_density, quick_note, focus_title, focus_items, smtp_config, groq_api_key, together_api_key, avatar_base64, user_role, bio, email_signature, apify_token, here_api_key, yelp_api_key, firecrawl_api_key, updated_at } = remoteSettings;
+      await db.run(`INSERT INTO settings (user_id, full_name, last_name, phone, email, company_name, timezone, niches, cities, ai_tone, ai_density, quick_note, focus_title, focus_items, smtp_config, groq_api_key, together_api_key, avatar_base64, user_role, bio, email_signature, apify_token, here_api_key, yelp_api_key, firecrawl_api_key, updated_at, sync_status)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced')
         ON CONFLICT(user_id) DO UPDATE SET
           full_name = excluded.full_name,
           last_name = excluded.last_name,
@@ -576,9 +603,13 @@ async function syncPull() {
           user_role = excluded.user_role,
           bio = excluded.bio,
           email_signature = excluded.email_signature,
+          apify_token = excluded.apify_token,
+          here_api_key = excluded.here_api_key,
+          yelp_api_key = excluded.yelp_api_key,
+          firecrawl_api_key = excluded.firecrawl_api_key,
           updated_at = excluded.updated_at,
           sync_status = 'synced'`,
-        [user_id, full_name, last_name, phone, email, company_name, timezone, JSON.stringify(niches || []), JSON.stringify(cities || []), ai_tone, ai_density, quick_note, focus_title, JSON.stringify(focus_items || []), smtp_config || null, groq_api_key || null, together_api_key || null, avatar_base64 || null, user_role || null, bio || null, email_signature || null, updated_at]
+        [user_id, full_name, last_name, phone, email, company_name, timezone, JSON.stringify(niches || []), JSON.stringify(cities || []), ai_tone, ai_density, quick_note, focus_title, JSON.stringify(focus_items || []), smtp_config || null, groq_api_key || null, together_api_key || null, avatar_base64 || null, user_role || null, bio || null, email_signature || null, apify_token || null, here_api_key || null, yelp_api_key || null, firecrawl_api_key || null, updated_at]
       );
     }
   }
@@ -785,6 +816,34 @@ async function syncPull() {
           );
         }
       }
+    }
+  }
+
+  // 9. Activities Pull
+  const { data: remoteActivities, error: activitiesError } = await supabase
+    .from('activities')
+    .select('*')
+    .eq('user_id', currentUserId);
+
+  if (!activitiesError && remoteActivities) {
+    for (const act of remoteActivities) {
+      const { id, workspace_id, user_id, lead_id, campaign_id, type, title, body, metadata, created_at } = act;
+      await db.run(`INSERT INTO activities (id, workspace_id, user_id, lead_id, campaign_id, type, title, body, metadata, created_at, sync_status)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced')
+        ON CONFLICT(id) DO UPDATE SET
+          workspace_id = excluded.workspace_id,
+          user_id = excluded.user_id,
+          lead_id = excluded.lead_id,
+          campaign_id = excluded.campaign_id,
+          type = excluded.type,
+          title = excluded.title,
+          body = excluded.body,
+          metadata = excluded.metadata,
+          created_at = excluded.created_at,
+          sync_status = 'synced'
+        WHERE sync_status = 'synced'`,
+        [id, workspace_id, user_id, lead_id, campaign_id, type, title, body, metadata ? JSON.stringify(metadata) : null, created_at]
+      );
     }
   }
 }

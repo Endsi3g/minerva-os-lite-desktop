@@ -11,7 +11,8 @@ export async function middleware(request: NextRequest) {
     url.pathname.endsWith('.png') ||
     url.pathname.endsWith('.jpg') ||
     url.pathname.endsWith('.svg') ||
-    url.pathname.startsWith('/api/') // Let API routes handle their own authentication/redirect logic
+    url.pathname.startsWith('/api/') || // Let API routes handle their own authentication/redirect logic
+    url.pathname.startsWith('/invite/') // Allow invitations validation page
   ) {
     return NextResponse.next();
   }

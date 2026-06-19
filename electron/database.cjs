@@ -28,6 +28,7 @@ function initDb() {
       last_scrape_at TEXT,
       todoist_token TEXT,
       todoist_project_id TEXT,
+      apify_token TEXT,
       updated_at TEXT,
       sync_status TEXT DEFAULT 'synced'
     )`);
@@ -170,6 +171,7 @@ function initDb() {
 
     // v2.63.0 Firecrawl API key migration
     db.run(`ALTER TABLE settings ADD COLUMN firecrawl_api_key TEXT DEFAULT NULL`, () => {});
+    db.run(`ALTER TABLE settings ADD COLUMN apify_token TEXT DEFAULT NULL`, () => {});
 
     // v2.12.0 lead enrichment migrations
     db.run(`ALTER TABLE leads ADD COLUMN website TEXT DEFAULT NULL`, () => {});
@@ -277,12 +279,18 @@ function initDb() {
       title TEXT,
       body TEXT,
       metadata TEXT,
-      created_at TEXT
+      created_at TEXT,
+      updated_at TEXT,
+      sync_status TEXT DEFAULT 'synced'
     )`);
     db.run(`CREATE INDEX IF NOT EXISTS idx_activities_workspace_id ON activities(workspace_id)`);
     db.run(`CREATE INDEX IF NOT EXISTS idx_activities_lead_id ON activities(lead_id)`);
     db.run(`CREATE INDEX IF NOT EXISTS idx_activities_campaign_id ON activities(campaign_id)`);
     db.run(`CREATE INDEX IF NOT EXISTS idx_activities_created_at ON activities(created_at)`);
+
+    // activities sync migrations
+    db.run(`ALTER TABLE activities ADD COLUMN sync_status TEXT DEFAULT 'synced'`, () => {});
+    db.run(`ALTER TABLE activities ADD COLUMN updated_at TEXT`, () => {});
 
     // v2.40.0 — goals table
     db.run(`CREATE TABLE IF NOT EXISTS goals (
@@ -424,6 +432,21 @@ function initDb() {
       last_error TEXT,
       created_at TEXT
     )`);
+
+    // v3.0.0 — Team invites table
+    db.run(`CREATE TABLE IF NOT EXISTS team_invites (
+      id TEXT PRIMARY KEY,
+      workspace_id TEXT,
+      inviter_id TEXT,
+      email TEXT NOT NULL,
+      role TEXT DEFAULT 'editor',
+      token TEXT UNIQUE,
+      expires_at TEXT,
+      accepted_at TEXT,
+      created_at TEXT
+    )`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_team_invites_workspace_id ON team_invites(workspace_id)`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_team_invites_token ON team_invites(token)`);
 
     // Indexes to avoid full table scans during sync
     db.run(`CREATE INDEX IF NOT EXISTS idx_leads_user_id ON leads(user_id)`);

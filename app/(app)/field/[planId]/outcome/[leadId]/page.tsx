@@ -53,7 +53,7 @@ const OUTCOME_CONFIG: Record<
 export default function OutcomePage() {
   const router = useRouter();
   const params = useParams<{ planId: string; leadId: string }>();
-  const { leads, activeWorkspace } = useReach();
+  const { leads, activeWorkspace, logActivity } = useReach();
 
   const lead = leads.find((l) => l.id === params.leadId);
   const [selectedOutcome, setSelectedOutcome] = useState<VisitOutcome | null>(null);
@@ -116,6 +116,14 @@ export default function OutcomePage() {
           }),
         });
       }
+
+      const outcomeLabel = selectedOutcome === 'meeting_booked' ? 'RDV pris' : selectedOutcome === 'visited' ? 'Visité' : selectedOutcome === 'absent' ? 'Absent' : 'Non intéressé';
+      await logActivity(
+        'visit',
+        'Visite terrain enregistrée',
+        `Résultat: ${outcomeLabel}. Notes: ${notes || 'Aucune'}`,
+        lead.id
+      );
 
       setSaved(true);
       // Return to field page after short delay

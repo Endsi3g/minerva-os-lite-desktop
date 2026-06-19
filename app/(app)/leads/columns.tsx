@@ -12,6 +12,81 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { cn } from '@/lib/utils';
 import { getTemperatureStyle, getTemperatureLabel } from '@/lib/lead-badges';
 import { computeLeadScore } from '@/lib/lead-score';
+import { useReach } from '@/lib/reach-context';
+
+const BusinessCell = ({ row }: { row: any }) => {
+  const { onlineUsers, user } = useReach();
+  const name = row.getValue('businessName') as string;
+  const city = row.original.city;
+  const initial = name ? name.charAt(0).toUpperCase() : 'M';
+  const leadId = row.original.id;
+
+  // Find other users viewing this lead.
+  // A user is viewing this lead if their pathname is /leads/${leadId}
+  const viewers = (onlineUsers || []).filter(u => u.user_id !== user?.id && u.pathname === `/leads/${leadId}`);
+
+  return (
+    <div className="flex items-center gap-3 py-1">
+      <div className="relative shrink-0">
+        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-primary text-[10px] font-bold">
+          {initial}
+        </div>
+        
+        {/* Pulsing presence indicator for each active viewer */}
+        {viewers.length > 0 && (
+          <div className="absolute -top-1.5 -left-1.5 flex -space-x-1 select-none animate-pulse">
+            {viewers.map(v => {
+              const viewerInitials = (v.full_name || '')
+                .split(' ')
+                .map((n: string) => n[0])
+                .join('')
+                .substring(0, 2)
+                .toUpperCase();
+              
+              const colors = [
+                'bg-indigo-500 text-white',
+                'bg-emerald-500 text-white',
+                'bg-sky-500 text-white',
+                'bg-rose-500 text-white',
+                'bg-amber-500 text-white',
+                'bg-violet-500 text-white'
+              ];
+              const hash = (v.full_name || '').split('').reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0);
+              const myColor = colors[hash % colors.length];
+
+              return (
+                <Tooltip key={v.user_id}>
+                  <TooltipTrigger asChild>
+                    <div className={cn(
+                      "w-4.5 h-4.5 rounded-full border border-white flex items-center justify-center text-[7px] font-extrabold shrink-0 shadow-sm cursor-default select-none overflow-hidden",
+                      myColor
+                    )}>
+                      {v.avatar_base64 ? (
+                        <img src={v.avatar_base64} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <span>{viewerInitials}</span>
+                      )}
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent className="text-[10px] bg-[#26251e] text-white p-1.5 rounded font-sans border border-neutral-800 shadow-md">
+                    {v.full_name} consulte ce prospect
+                  </TooltipContent>
+                </Tooltip>
+              );
+            })}
+          </div>
+        )}
+      </div>
+      <div className="flex flex-col gap-0.5">
+        <span className="text-xs font-semibold text-foreground leading-tight">{name}</span>
+        <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+          <MapPin className="h-2.5 w-2.5" />
+          {city}
+        </span>
+      </div>
+    </div>
+  );
+};
 
 // Helper for status badge styling
 const getStatusStyle = (status: Lead['status']) => {
@@ -82,25 +157,7 @@ export const columns: ColumnDef<Lead>[] = [
         </button>
       );
     },
-    cell: ({ row }) => {
-      const name = row.getValue('businessName') as string;
-      const city = row.original.city;
-      const initial = name ? name.charAt(0).toUpperCase() : 'M';
-      return (
-        <div className="flex items-center gap-3 py-1">
-          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-primary text-[10px] font-bold shrink-0">
-            {initial}
-          </div>
-          <div className="flex flex-col gap-0.5">
-            <span className="text-xs font-semibold text-foreground leading-tight">{name}</span>
-            <span className="text-[10px] text-muted-foreground flex items-center gap-1">
-              <MapPin className="h-2.5 w-2.5" />
-              {city}
-            </span>
-          </div>
-        </div>
-      );
-    },
+    cell: ({ row }) => <BusinessCell row={row} />,
   },
   // Niche
   {

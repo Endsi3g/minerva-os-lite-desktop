@@ -6,6 +6,7 @@ import { User as SupabaseUser, AuthChangeEvent, Session } from '@supabase/supaba
 import { Lead, Task, Note, AiSuggestion, initialLeads, initialTasks } from './mock-data';
 import { computeLeadScore } from './lead-scoring';
 import { createClient } from './supabase/client';
+import { usePathname } from 'next/navigation';
 
 export interface Workspace {
   id: string;
@@ -144,6 +145,15 @@ interface ReachContextType {
   addGoal: (data: { metric: Goal['metric']; target: number; period: Goal['period'] }) => Promise<Goal | null>;
   updateGoal: (id: string, fields: Partial<Pick<Goal, 'target' | 'period'>>) => Promise<void>;
   deleteGoal: (id: string) => Promise<void>;
+  onlineUsers: any[];
+  logActivity: (
+    type: string,
+    title: string,
+    body?: string,
+    leadId?: string,
+    campaignId?: string,
+    metadata?: Record<string, any>
+  ) => Promise<void>;
 }
 
 const ReachContext = createContext<ReachContextType | undefined>(undefined);
@@ -383,6 +393,8 @@ function mapDbSuggestionToUi(s: DbSuggestion, leads: Lead[]): AiSuggestion {
 
 export function ReachProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<SupabaseUser | null>(null);
+  const pathname = usePathname();
+  const [onlineUsers, setOnlineUsers] = useState<any[]>([]);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [aiSuggestions, setAiSuggestions] = useState<AiSuggestion[]>([]);
@@ -411,6 +423,66 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
   // Campaigns State
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
+
+  const logActivity = useCallback(async (
+    type: string,
+    title: string,
+    body?: string,
+    leadId?: string,
+    campaignId?: string,
+    metadata?: Record<string, any>
+  ) => {
+    if (!user || !activeWorkspace) return;
+    const nowStr = new Date().toISOString();
+    const id = crypto.randomUUID();
+
+    const electronObj = typeof window !== 'undefined' && (window as any).electron;
+    if (electronObj) {
+      try {
+        await electronObj.dbRun(
+          `INSERT INTO activities (id, workspace_id, user_id, lead_id, campaign_id, type, title, body, metadata, created_at, updated_at, sync_status)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending_insert')`,
+          [
+            id,
+            activeWorkspace.id,
+            user.id,
+            leadId || null,
+            campaignId || null,
+            type,
+            title,
+            body || null,
+            metadata ? JSON.stringify(metadata) : null,
+            nowStr,
+            nowStr
+          ]
+        );
+        if (electronObj.triggerSync) {
+          electronObj.triggerSync();
+        }
+      } catch (err) {
+        console.error("Local logActivity error:", err);
+      }
+      return;
+    }
+
+    const supabase = createClient();
+    try {
+      await supabase.from('activities').insert({
+        id,
+        workspace_id: activeWorkspace.id,
+        user_id: user.id,
+        lead_id: leadId || null,
+        campaign_id: campaignId || null,
+        type,
+        title,
+        body: body || null,
+        metadata: metadata || null,
+        created_at: nowStr
+      });
+    } catch (err) {
+      console.error("Web logActivity error:", err);
+    }
+  }, [user, activeWorkspace]);
 
   const loadDataLocal = useCallback(async (userId: string, workspaceId: string) => {
     const electronObj = typeof window !== 'undefined' && (window as any).electron;
@@ -976,6 +1048,71 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  // Presence Realtime subscription
+  useEffect(() => {
+    if (!user || !activeWorkspace) {
+      setOnlineUsers([]);
+      return;
+    }
+
+    const supabase = createClient();
+    const presenceChannel = supabase.channel(`presence_workspace_${activeWorkspace.id}`, {
+      config: {
+        presence: {
+          key: user.id,
+        },
+      },
+    });
+
+    let userDetails = {
+      user_id: user.id,
+      full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Membre',
+      avatar_base64: null as string | null,
+      pathname: pathname || '',
+    };
+
+    const fetchUserDetails = async () => {
+      try {
+        const { data } = await supabase
+          .from('settings')
+          .select('full_name, avatar_base64')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        if (data) {
+          userDetails.full_name = data.full_name || userDetails.full_name;
+          userDetails.avatar_base64 = data.avatar_base64 || null;
+        }
+      } catch (e) {
+        console.error("Error fetching user details for presence:", e);
+      }
+
+      presenceChannel
+        .on('presence', { event: 'sync' }, () => {
+          const state = presenceChannel.presenceState();
+          const usersList: any[] = [];
+          Object.keys(state).forEach((key) => {
+            const presences = state[key] as any[];
+            if (presences && presences.length > 0) {
+              const latest = presences[presences.length - 1];
+              usersList.push(latest);
+            }
+          });
+          setOnlineUsers(usersList);
+        })
+        .subscribe(async (status: string) => {
+          if (status === 'SUBSCRIBED') {
+            await presenceChannel.track(userDetails);
+          }
+        });
+    };
+
+    fetchUserDetails();
+
+    return () => {
+      presenceChannel.unsubscribe();
+    };
+  }, [user, activeWorkspace, pathname]);
+
   // Load data whenever activeWorkspace or user changes
   useEffect(() => {
     if (user && activeWorkspace) {
@@ -1078,6 +1215,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
 
         setLeads(prev => [newUiLead, ...prev]);
         electronObj.triggerSync();
+        logActivity('lead_created', 'Prospect créé', `Le prospect ${leadData.businessName} a été créé`, leadId);
       } catch (err) {
         console.error("Local addLead error:", err);
       }
@@ -1156,6 +1294,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
       if (newDbLead) {
         const newUiLead = mapDbLeadToUi(newDbLead, insertedNotes);
         setLeads(prev => [newUiLead, ...prev]);
+        logActivity('lead_created', 'Prospect créé', `Le prospect ${leadData.businessName} a été créé`, newDbLead.id);
       }
     } catch (err: any) {
       console.error('addLead unexpected error:', err?.message ?? JSON.stringify(err));
@@ -1181,6 +1320,9 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
           t.id === id ? { ...t, completed: nextCompleted } : t
         ));
         electronObj.triggerSync();
+        if (nextCompleted) {
+          logActivity('task_completed', 'Tâche complétée', `La tâche "${currentTask.title}" a été complétée`);
+        }
       } catch (err) {
         console.error("Local toggleTask error:", err);
       }
@@ -1199,6 +1341,9 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
       setTasks(prev => prev.map(t => 
         t.id === id ? { ...t, completed: nextCompleted } : t
       ));
+      if (nextCompleted) {
+        logActivity('task_completed', 'Tâche complétée', `La tâche "${currentTask.title}" a été complétée`);
+      }
     } catch (err) {
       console.error("Error in toggleTask:", err);
     }
@@ -1468,6 +1613,11 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
           lead.id === leadId ? { ...lead, ...fields, updatedAt: new Date().toISOString() } : lead
         ));
         electronObj.triggerSync();
+        if (fields.status !== undefined) {
+          const leadObj = leads.find(l => l.id === leadId);
+          const leadName = leadObj ? leadObj.businessName : 'un prospect';
+          logActivity('status_change', 'Statut mis à jour', `Le statut de ${leadName} est passé à ${fields.status}`, leadId);
+        }
       } catch (err) {
         console.error("Local updateLead error:", err);
       }
@@ -1524,6 +1674,11 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
       setLeads(prev => prev.map(lead => 
         lead.id === leadId ? { ...lead, ...fields, updatedAt: new Date().toISOString() } : lead
       ));
+      if (fields.status !== undefined) {
+        const leadObj = leads.find(l => l.id === leadId);
+        const leadName = leadObj ? leadObj.businessName : 'un prospect';
+        logActivity('status_change', 'Statut mis à jour', `Le statut de ${leadName} est passé à ${fields.status}`, leadId);
+      }
     } catch (err) {
       console.error("Error in updateLead:", err);
     }
@@ -1638,6 +1793,8 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
           return lead;
         }));
         electronObj.triggerSync();
+        const leadName = leads.find(l => l.id === leadId)?.businessName || 'un prospect';
+        logActivity('note', 'Note ajoutée', `Une note a été ajoutée pour ${leadName}`, leadId);
       } catch (err) {
         console.error("Local addNoteToLead error:", err);
       }
@@ -1680,6 +1837,8 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
           }
           return lead;
         }));
+        const leadName = leads.find(l => l.id === leadId)?.businessName || 'un prospect';
+        logActivity('note', 'Note ajoutée', `Une note a été ajoutée pour ${leadName}`, leadId);
       }
     } catch (err) {
       console.error("Error in addNoteToLead:", err);
@@ -2226,6 +2385,8 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
         addGoal,
         updateGoal,
         deleteGoal,
+        onlineUsers,
+        logActivity,
       }}
     >
       {children}
