@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Target, MapPin, X, Plus, Info } from "lucide-react";
+import { ArrowLeft, Target, MapPin, X, Plus, Info, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -28,6 +28,10 @@ export function PersonaForm({ personaId }: PersonaFormProps) {
   const [targetNiches, setTargetNiches] = useState<string[]>([]);
   const [targetCities, setTargetCities] = useState<string[]>([]);
   const [scoringCriteria, setScoringCriteria] = useState<ScoringCriteria>({ ...DEFAULT_SCORING });
+  const [caseStudies, setCaseStudies] = useState<string[]>([]);
+  const [faqs, setFaqs] = useState<string[]>([]);
+  const [callScriptsInput, setCallScriptsInput] = useState("");
+  const [emailTemplatesInput, setEmailTemplatesInput] = useState("");
   
   const [saving, setSaving] = useState(false);
   const [initialLoaded, setInitialLoaded] = useState(false);
@@ -48,6 +52,10 @@ export function PersonaForm({ personaId }: PersonaFormProps) {
         setTargetNiches([...persona.targetNiches]);
         setTargetCities([...persona.targetCities]);
         setScoringCriteria({ ...persona.scoringCriteria });
+        setCaseStudies([...(persona.caseStudies || [])]);
+        setFaqs([...(persona.faqs || [])]);
+        setCallScriptsInput(JSON.stringify(persona.callScripts || {}, null, 2));
+        setEmailTemplatesInput(JSON.stringify(persona.emailTemplates || {}, null, 2));
         setInitialLoaded(true);
       }
     }
@@ -91,6 +99,10 @@ export function PersonaForm({ personaId }: PersonaFormProps) {
       targetNiches,
       targetCities,
       scoringCriteria,
+      caseStudies,
+      faqs,
+      callScripts: callScriptsInput ? JSON.parse(callScriptsInput) : {},
+      emailTemplates: emailTemplatesInput ? JSON.parse(emailTemplatesInput) : {},
     };
 
     try {
@@ -339,6 +351,110 @@ export function PersonaForm({ personaId }: PersonaFormProps) {
                   </span>
                 </div>
               ))}
+            </div>
+          </div>
+
+          {/* Card 4: Content Kit (Scripts & Templates) */}
+          <div className="bg-white border border-[#e5e5e0] rounded-2xl p-6 space-y-5">
+            <h2 className="text-xs font-bold uppercase tracking-wider text-[#807d72] flex items-center gap-2">
+              <FileText className="w-4 h-4 text-[#10b981]" />
+              Kit de Contenu
+            </h2>
+
+            <div className="space-y-4">
+              {/* Case Studies */}
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-[#807d72] block">
+                  Études de cas (URLs ou descriptions)
+                </label>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="URL d'une étude de cas..."
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        const val = e.currentTarget.value.trim();
+                        if (val && !caseStudies.includes(val)) setCaseStudies([...caseStudies, val]);
+                        e.currentTarget.value = "";
+                      }
+                    }}
+                    className="text-xs"
+                  />
+                </div>
+                {caseStudies.length > 0 && (
+                  <div className="flex flex-col gap-1.5 pt-1">
+                    {caseStudies.map((cs) => (
+                      <div key={cs} className="flex justify-between items-center text-[10px] px-2.5 py-1.5 rounded-md bg-neutral-100 text-[#26251e] border border-[#e5e5e0]">
+                        <span className="truncate max-w-[500px]">{cs}</span>
+                        <button type="button" onClick={() => setCaseStudies(prev => prev.filter(c => c !== cs))} className="hover:text-red-600 ml-2">
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* FAQs */}
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-[#807d72] block">
+                  Objections courantes & FAQs
+                </label>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Ex: Ça coûte trop cher -> Réponse: Le ROI..."
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        const val = e.currentTarget.value.trim();
+                        if (val && !faqs.includes(val)) setFaqs([...faqs, val]);
+                        e.currentTarget.value = "";
+                      }
+                    }}
+                    className="text-xs"
+                  />
+                </div>
+                {faqs.length > 0 && (
+                  <div className="flex flex-col gap-1.5 pt-1">
+                    {faqs.map((faq) => (
+                      <div key={faq} className="flex justify-between items-center text-[10px] px-2.5 py-1.5 rounded-md bg-neutral-100 text-[#26251e] border border-[#e5e5e0]">
+                        <span className="truncate max-w-[500px]">{faq}</span>
+                        <button type="button" onClick={() => setFaqs(prev => prev.filter(f => f !== faq))} className="hover:text-red-600 ml-2">
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Call Scripts */}
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-[#807d72]">
+                  Scripts d'Appel (JSON)
+                </label>
+                <Textarea
+                  placeholder='{"Cold Call": "Bonjour...", "Follow-up": "..."}'
+                  value={callScriptsInput}
+                  onChange={(e) => setCallScriptsInput(e.target.value)}
+                  rows={4}
+                  className="w-full text-xs font-mono"
+                />
+              </div>
+
+              {/* Email Templates */}
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-[#807d72]">
+                  Modèles d'Email (JSON)
+                </label>
+                <Textarea
+                  placeholder='{"Introduction": "Sujet: ...\n\nBonjour...", "Relance": "..."}'
+                  value={emailTemplatesInput}
+                  onChange={(e) => setEmailTemplatesInput(e.target.value)}
+                  rows={4}
+                  className="w-full text-xs font-mono"
+                />
+              </div>
             </div>
           </div>
 

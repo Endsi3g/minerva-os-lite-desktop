@@ -618,19 +618,48 @@ async function runOverpassQuery(
 }
 
 // Multi-niche, multi-city Overpass scraper
+// When userLat/userLon are provided (geolocated mode), they override city-based coords
 async function runOverpassScraper(
   niches: string[],
   cities: string[],
   maxResults: number,
-  radius: number
-): Promise<ScrapedLead[]> {
+  radius: number,
+  userLat?: number,
+  userLon?: number
+): Promise<{ leads: ScrapedLead[]; searchCenter: { lat: number; lon: number; label: string } }> {
   const allLeads: ScrapedLead[] = [];
-  const perNichePerCity = Math.max(Math.floor(maxResults / (niches.length * cities.length)), 10);
 
+  // If explicit coords provided (geolocation or manual zone), use a single search point
+  if (userLat !== undefined && userLon !== undefined) {
+    const searchCity = cities[0] ?? 'Ma position';
+    const perNiche = Math.max(Math.floor(maxResults / niches.length), 10);
+    const tasks: Promise<ScrapedLead[]>[] = [];
+    for (const niche of niches) {
+      const filters = getNicheOsmFilters(niche);
+      const keyword = extractNicheKeyword(niche);
+      const fetchLimit = Math.min(perNiche * 4, 400);
+      tasks.push(runOverpassQuery(filters, userLat, userLon, radius, fetchLimit, niche, searchCity, keyword ?? undefined));
+    }
+    const results = await Promise.allSettled(tasks);
+    for (const r of results) {
+      if (r.status === 'fulfilled') allLeads.push(...r.value);
+    }
+    return {
+      leads: allLeads,
+      searchCenter: { lat: userLat, lon: userLon, label: searchCity },
+    };
+  }
+
+  // City-based search (legacy / Par ville mode)
+  const perNichePerCity = Math.max(Math.floor(maxResults / (niches.length * cities.length)), 10);
   const tasks: Promise<ScrapedLead[]>[] = [];
+  let primaryLat = DEFAULT_COORDS[0];
+  let primaryLon = DEFAULT_COORDS[1];
+
   for (const city of cities) {
     const key = city.toLowerCase().trim().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, '-');
     const [lat, lon] = QUEBEC_CITY_COORDS[key] ?? QUEBEC_CITY_COORDS[city.toLowerCase().trim()] ?? DEFAULT_COORDS;
+    if (cities.indexOf(city) === 0) { primaryLat = lat; primaryLon = lon; }
     const r = ['montreal', 'montréal', 'laval'].includes(key) ? Math.max(radius, 12000) : radius;
 
     for (const niche of niches) {
@@ -646,7 +675,10 @@ async function runOverpassScraper(
     if (r.status === 'fulfilled') allLeads.push(...r.value);
   }
 
-  return allLeads;
+  return {
+    leads: allLeads,
+    searchCenter: { lat: primaryLat, lon: primaryLon, label: cities[0] ?? 'Québec' },
+  };
 }
 
 function dedup(leads: ScrapedLead[]): ScrapedLead[] {
@@ -691,13 +723,19 @@ export async function POST(req: NextRequest) {
     const maxResults = Math.min(Math.max(Number(body.maxResults) || 50, 5), 500);
     const radius = Math.min(Math.max(Number(body.radius) || 10000, 2000), 50000);
 
+    // Geolocated mode: client sends explicit coordinates
+    const userLat: number | undefined = typeof body.userLat === 'number' && isFinite(body.userLat) ? body.userLat : undefined;
+    const userLon: number | undefined = typeof body.userLon === 'number' && isFinite(body.userLon) ? body.userLon : undefined;
+
     const allLeads: ScrapedLead[] = [];
     const usedSources: string[] = [];
+    let searchCenter: { lat: number; lon: number; label: string } | undefined;
 
     // OSM / Overpass — open data, tag-based + name-keyword combined query
     if (sources.includes('google')) {
-      const osmLeads = await runOverpassScraper(niches, cities, maxResults, radius);
-      allLeads.push(...osmLeads);
+      const osmResult = await runOverpassScraper(niches, cities, maxResults, radius, userLat, userLon);
+      allLeads.push(...osmResult.leads);
+      searchCenter = osmResult.searchCenter;
       usedSources.push('osm');
     }
 
@@ -705,7 +743,10 @@ export async function POST(req: NextRequest) {
     if (sources.includes('here') && hereApiKey) {
       const hereTasks = cities.flatMap(city => {
         const key = city.toLowerCase().trim().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, '-');
-        const [lat, lon] = QUEBEC_CITY_COORDS[key] ?? QUEBEC_CITY_COORDS[city.toLowerCase().trim()] ?? DEFAULT_COORDS;
+        // Prefer explicit user coords when available
+        const [defLat, defLon] = QUEBEC_CITY_COORDS[key] ?? QUEBEC_CITY_COORDS[city.toLowerCase().trim()] ?? DEFAULT_COORDS;
+        const lat = userLat ?? defLat;
+        const lon = userLon ?? defLon;
         return niches.map(niche => scrapeHerePlaces(niche, city, lat, lon, radius, Math.ceil(maxResults / niches.length), hereApiKey!));
       });
       const hereResults = await Promise.allSettled(hereTasks);
@@ -750,6 +791,7 @@ export async function POST(req: NextRequest) {
         leads: unique.slice(0, maxResults),
         source: usedSources.join('+'),
         total: unique.length,
+        searchCenter: searchCenter ?? null,
       });
     }
 

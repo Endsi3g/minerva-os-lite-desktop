@@ -22,6 +22,7 @@ const fs = require('fs');
 const os = require('os');
 const db = require('./database.cjs');
 const sync = require('./sync.cjs');
+const agent = require('./agent.cjs');
 
 let scraperTimeout = null;
 let scraperInterval = null;
@@ -925,12 +926,14 @@ app.whenReady().then(() => {
   setupAutoUpdater();
   scheduleUpdateCheck();
   setupBackgroundScraper();
+  agent.startAgent();
 
   // Listen to power state changes to avoid macOS sleep/wake crashes
   powerMonitor.on('suspend', () => {
     console.log('[main] System suspending, clearing scraper and update timers...');
     clearBackgroundScraper();
     clearUpdateTimeout();
+    agent.stopAgent();
   });
 
   powerMonitor.on('resume', () => {
@@ -938,6 +941,7 @@ app.whenReady().then(() => {
     setTimeout(() => {
       scheduleUpdateCheck();
       setupBackgroundScraper();
+      agent.startAgent();
     }, 45000);
   });
 

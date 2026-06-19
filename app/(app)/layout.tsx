@@ -483,6 +483,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
       label: 'CRM & Prospection',
       items: [
         { name: 'Boîte de réception', href: '/inbox', icon: Inbox },
+        { name: 'Cockpit Ops', href: '/ops/prospecting', icon: Activity },
         { name: 'Campagnes', href: '/campaigns', icon: Megaphone },
         { name: 'Playbooks', href: '/playbooks', icon: BookOpen },
         { name: 'Pipeline', href: '/pipeline', icon: Kanban },
@@ -516,6 +517,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
       label: 'Plateforme',
       items: [
         { name: 'Configuration', href: '/setup', icon: ListChecks },
+        { name: 'Automations', href: '/settings/automations', icon: Zap },
         { name: t('nav.integrations'), href: '/integrations', icon: Plug },
         { name: 'Webhooks', href: '/webhooks', icon: Zap },
         { name: t('nav.download'), href: '/download', icon: Download },

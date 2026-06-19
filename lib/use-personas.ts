@@ -16,6 +16,10 @@ export interface Persona {
   targetNiches: string[];
   targetCities: string[];
   scoringCriteria: ScoringCriteria;
+  caseStudies: string[];
+  faqs: string[];
+  callScripts: Record<string, string>;
+  emailTemplates: Record<string, string>;
   createdAt: string;
   updatedAt: string;
 }
@@ -37,6 +41,14 @@ function mapDbPersona(row: Record<string, any>): Persona {
     scoringCriteria: row.scoring_criteria
       ? (typeof row.scoring_criteria === 'string' ? JSON.parse(row.scoring_criteria) : row.scoring_criteria)
       : DEFAULT_SCORING,
+    caseStudies: Array.isArray(row.case_studies) ? row.case_studies : (row.case_studies ? JSON.parse(row.case_studies) : []),
+    faqs: Array.isArray(row.faqs) ? row.faqs : (row.faqs ? JSON.parse(row.faqs) : []),
+    callScripts: row.call_scripts
+      ? (typeof row.call_scripts === 'string' ? JSON.parse(row.call_scripts) : row.call_scripts)
+      : {},
+    emailTemplates: row.email_templates
+      ? (typeof row.email_templates === 'string' ? JSON.parse(row.email_templates) : row.email_templates)
+      : {},
     createdAt: row.created_at ?? new Date().toISOString(),
     updatedAt: row.updated_at ?? new Date().toISOString(),
   };
@@ -60,9 +72,9 @@ export function usePersonas(workspaceId: string | undefined) {
     setLoading(true);
     try {
       if (isElectron()) {
-        const raw = localStorage.getItem(LS_KEY);
-        const all: Persona[] = raw ? JSON.parse(raw) : [];
-        setPersonas(all.filter(p => p.workspaceId === workspaceId));
+        const electronObj = (window as any).electron;
+        const rows = await electronObj.dbAll(`SELECT * FROM personas WHERE workspace_id = ? ORDER BY created_at DESC`, [workspaceId]);
+        setPersonas(rows.map(mapDbPersona));
       } else {
         const supabase = createClient();
         const { data } = await supabase
@@ -80,17 +92,28 @@ export function usePersonas(workspaceId: string | undefined) {
 
   const addPersona = useCallback(async (data: Omit<Persona, 'id' | 'createdAt' | 'updatedAt'>): Promise<Persona | null> => {
     const now = new Date().toISOString();
+    const id = typeof crypto !== 'undefined' ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
 
     if (isElectron()) {
       const persona: Persona = {
         ...data,
-        id: typeof crypto !== 'undefined' ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`,
+        id,
         createdAt: now,
         updatedAt: now,
+        caseStudies: data.caseStudies || [],
+        faqs: data.faqs || [],
+        callScripts: data.callScripts || {},
+        emailTemplates: data.emailTemplates || {}
       };
-      const next = [persona, ...personas];
-      saveToLocalStorage(next);
-      setPersonas(next);
+      
+      const electronObj = (window as any).electron;
+      await electronObj.dbRun(
+        `INSERT INTO personas (id, workspace_id, name, description, target_niches, target_cities, scoring_criteria, case_studies, faqs, call_scripts, email_templates, created_at, updated_at, sync_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending_insert')`,
+        [id, data.workspaceId, data.name, data.description, JSON.stringify(data.targetNiches), JSON.stringify(data.targetCities), JSON.stringify(data.scoringCriteria), JSON.stringify(data.caseStudies || []), JSON.stringify(data.faqs || []), JSON.stringify(data.callScripts || {}), JSON.stringify(data.emailTemplates || {}), now, now]
+      );
+      if (electronObj.triggerSync) electronObj.triggerSync();
+      
+      setPersonas(prev => [persona, ...prev]);
       return persona;
     }
 
@@ -98,12 +121,19 @@ export function usePersonas(workspaceId: string | undefined) {
     const { data: row, error } = await supabase
       .from('personas')
       .insert({
+        id,
         workspace_id: data.workspaceId,
         name: data.name,
         description: data.description,
         target_niches: data.targetNiches,
         target_cities: data.targetCities,
         scoring_criteria: data.scoringCriteria,
+        case_studies: data.caseStudies || [],
+        faqs: data.faqs || [],
+        call_scripts: data.callScripts || {},
+        email_templates: data.emailTemplates || {},
+        created_at: now,
+        updated_at: now
       })
       .select()
       .single();
@@ -112,15 +142,31 @@ export function usePersonas(workspaceId: string | undefined) {
     const persona = mapDbPersona(row);
     setPersonas(prev => [persona, ...prev]);
     return persona;
-  }, [personas, saveToLocalStorage]);
+  }, []);
 
   const updatePersona = useCallback(async (id: string, fields: Partial<Omit<Persona, 'id' | 'workspaceId' | 'createdAt'>>) => {
     const now = new Date().toISOString();
 
     if (isElectron()) {
-      const next = personas.map(p => p.id === id ? { ...p, ...fields, updatedAt: now } : p);
-      saveToLocalStorage(next);
-      setPersonas(next);
+      const electronObj = (window as any).electron;
+      const updates: string[] = ["updated_at = ?", "sync_status = 'pending_update'"];
+      const params: any[] = [now];
+      
+      if (fields.name !== undefined) { updates.push("name = ?"); params.push(fields.name); }
+      if (fields.description !== undefined) { updates.push("description = ?"); params.push(fields.description); }
+      if (fields.targetNiches !== undefined) { updates.push("target_niches = ?"); params.push(JSON.stringify(fields.targetNiches)); }
+      if (fields.targetCities !== undefined) { updates.push("target_cities = ?"); params.push(JSON.stringify(fields.targetCities)); }
+      if (fields.scoringCriteria !== undefined) { updates.push("scoring_criteria = ?"); params.push(JSON.stringify(fields.scoringCriteria)); }
+      if (fields.caseStudies !== undefined) { updates.push("case_studies = ?"); params.push(JSON.stringify(fields.caseStudies)); }
+      if (fields.faqs !== undefined) { updates.push("faqs = ?"); params.push(JSON.stringify(fields.faqs)); }
+      if (fields.callScripts !== undefined) { updates.push("call_scripts = ?"); params.push(JSON.stringify(fields.callScripts)); }
+      if (fields.emailTemplates !== undefined) { updates.push("email_templates = ?"); params.push(JSON.stringify(fields.emailTemplates)); }
+      
+      params.push(id);
+      await electronObj.dbRun(`UPDATE personas SET ${updates.join(", ")} WHERE id = ?`, params);
+      if (electronObj.triggerSync) electronObj.triggerSync();
+      
+      setPersonas(prev => prev.map(p => p.id === id ? { ...p, ...fields, updatedAt: now } : p));
       return;
     }
 
@@ -131,21 +177,26 @@ export function usePersonas(workspaceId: string | undefined) {
     if (fields.targetNiches !== undefined) dbFields.target_niches = fields.targetNiches;
     if (fields.targetCities !== undefined) dbFields.target_cities = fields.targetCities;
     if (fields.scoringCriteria !== undefined) dbFields.scoring_criteria = fields.scoringCriteria;
+    if (fields.caseStudies !== undefined) dbFields.case_studies = fields.caseStudies;
+    if (fields.faqs !== undefined) dbFields.faqs = fields.faqs;
+    if (fields.callScripts !== undefined) dbFields.call_scripts = fields.callScripts;
+    if (fields.emailTemplates !== undefined) dbFields.email_templates = fields.emailTemplates;
     await supabase.from('personas').update(dbFields).eq('id', id);
     setPersonas(prev => prev.map(p => p.id === id ? { ...p, ...fields, updatedAt: now } : p));
-  }, [personas, saveToLocalStorage]);
+  }, []);
 
   const deletePersona = useCallback(async (id: string) => {
     if (isElectron()) {
-      const next = personas.filter(p => p.id !== id);
-      saveToLocalStorage(next);
-      setPersonas(next);
+      const electronObj = (window as any).electron;
+      await electronObj.dbRun(`UPDATE personas SET sync_status = 'pending_delete' WHERE id = ?`, [id]);
+      if (electronObj.triggerSync) electronObj.triggerSync();
+      setPersonas(prev => prev.filter(p => p.id !== id));
       return;
     }
     const supabase = createClient();
     await supabase.from('personas').delete().eq('id', id);
     setPersonas(prev => prev.filter(p => p.id !== id));
-  }, [personas, saveToLocalStorage]);
+  }, []);
 
   return { personas, loading, addPersona, updatePersona, deletePersona, reload: load };
 }

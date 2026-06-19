@@ -15,6 +15,7 @@ import {
   Search, MapPin, Building, Loader2, Sparkles, Check, Globe, Phone, Star,
   Database, Plus, X, ChevronDown, WifiOff, CheckCircle2, Settings2, BarChart3,
   ExternalLink, Download, ArrowUpDown, SlidersHorizontal, History, Clock,
+  Navigation, Map as MapIcon, Edit3, Target,
 } from 'lucide-react';
 
 interface ScrapeJobRecord {
@@ -81,7 +82,28 @@ interface ScrapedLead {
   longitude?: number;
 }
 
-type SortKey = 'default' | 'rating_asc' | 'rating_desc' | 'opportunity' | 'reviews_desc';
+type SortKey = 'default' | 'rating_asc' | 'rating_desc' | 'opportunity' | 'reviews_desc' | 'distance_asc';
+type SearchMode = 'around_me' | 'par_ville' | 'libre';
+
+interface SearchCenter {
+  lat: number;
+  lon: number;
+  label: string;
+}
+
+/** Haversine distance in kilometres between two lat/lon points */
+function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
 
 function getOpportunityScore(l: ScrapedLead): number {
   let score = 0;
@@ -138,6 +160,18 @@ export function ProspectingRoot() {
   const [yelpConfigured, setYelpConfigured] = useState<boolean | 'checking'>('checking');
   const [firecrawlConfigured, setFirecrawlConfigured] = useState<boolean | 'checking'>('checking');
   const [userCities, setUserCities] = useState<string[]>([]);
+
+  // Search mode
+  const [searchMode, setSearchMode] = useState<SearchMode>('par_ville');
+
+  // Geolocation state (around_me mode)
+  const [geoStatus, setGeoStatus] = useState<'idle' | 'requesting' | 'granted' | 'denied' | 'error'>('idle');
+  const [userLat, setUserLat] = useState<number | null>(null);
+  const [userLon, setUserLon] = useState<number | null>(null);
+  const [geoError, setGeoError] = useState<string | null>(null);
+
+  // Search center returned by the API
+  const [searchCenter, setSearchCenter] = useState<SearchCenter | null>(null);
 
   // Niche selector
   const [selectedNiches, setSelectedNiches] = useState<string[]>([]);
@@ -257,6 +291,7 @@ export function ProspectingRoot() {
     setSourceSummary('');
     setApifyFallbackMsg(null);
     setOsmWarningMsg(null);
+    setSearchCenter(null);
     setScraping(true);
     setScrapeStep(0);
     setScrapeProgress(10);
@@ -310,10 +345,24 @@ export function ProspectingRoot() {
         ? fetch(getApiUrl('/api/scrape-maps'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ niches, cities, query: customQuery || undefined, sources: effectiveNativeSources, maxResults, radius }),
+            body: JSON.stringify({
+              niches,
+              cities,
+              query: customQuery || undefined,
+              sources: effectiveNativeSources,
+              maxResults,
+              radius,
+              // Pass explicit coords when in geolocated mode
+              ...(searchMode === 'around_me' && userLat !== null && userLon !== null
+                ? { userLat, userLon }
+                : {}),
+            }),
           })
             .then(checkResponseJson)
-            .then((d: any) => ({ leads: d.leads ?? [], source: 'osm' }))
+            .then((d: any) => {
+              if (d.searchCenter) setSearchCenter(d.searchCenter);
+              return { leads: d.leads ?? [], source: 'osm' };
+            })
             .catch((err) => { console.warn('[prospecting] OSM fetch error:', err); return { leads: [], source: 'osm', errorMsg: String(err) }; })
         : Promise.resolve({ leads: [], source: 'osm' });
 
@@ -405,7 +454,7 @@ export function ProspectingRoot() {
         return next;
       });
     }
-  }, [selectedNiches, selectedCities, selectedSources, customQuery, maxResults, radius, minRating, excludeExisting, onlyNoWebsite, onlyWithPhone, apifyConfigured, leads, saveJobHistory]);
+  }, [selectedNiches, selectedCities, selectedSources, customQuery, maxResults, radius, minRating, excludeExisting, onlyNoWebsite, onlyWithPhone, apifyConfigured, leads, saveJobHistory, searchMode, userLat, userLon]);
 
   const sortedLeads = [...scrapedLeads].sort((a, b) => {
     switch (sortKey) {
@@ -413,6 +462,12 @@ export function ProspectingRoot() {
       case 'rating_desc': return b.rating - a.rating;
       case 'opportunity': return getOpportunityScore(b) - getOpportunityScore(a);
       case 'reviews_desc': return b.reviewsCount - a.reviewsCount;
+      case 'distance_asc': {
+        if (!searchCenter) return 0;
+        const dA = (a.latitude && a.longitude) ? haversineKm(searchCenter.lat, searchCenter.lon, a.latitude, a.longitude) : 99999;
+        const dB = (b.latitude && b.longitude) ? haversineKm(searchCenter.lat, searchCenter.lon, b.latitude, b.longitude) : 99999;
+        return dA - dB;
+      }
       default: return 0;
     }
   });
@@ -470,6 +525,30 @@ export function ProspectingRoot() {
           </p>
         </div>
 
+        {/* Search Mode Tabs */}
+        <div className="flex gap-1 p-1 bg-muted/40 border border-border rounded-lg w-full sm:w-auto self-start">
+          {([
+            { id: 'around_me', label: 'Autour de moi', icon: Navigation },
+            { id: 'par_ville', label: 'Par ville', icon: MapIcon },
+            { id: 'libre', label: 'Libre', icon: Edit3 },
+          ] as { id: SearchMode; label: string; icon: any }[]).map(tab => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setSearchMode(tab.id)}
+              disabled={scraping}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                searchMode === tab.id
+                  ? 'bg-card text-foreground shadow-sm border border-border'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <tab.icon className="h-3.5 w-3.5" />
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Config card */}
           <Card className="md:col-span-2 border border-border bg-card">
@@ -481,50 +560,122 @@ export function ProspectingRoot() {
             <CardContent className="p-5">
               <form onSubmit={handleStartScrape} className="space-y-5">
 
-                {/* Niches multi */}
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                    Niches cibles <span className="normal-case font-normal">(multi-sélection)</span>
-                  </label>
-                  <div className="relative">
-                    <button type="button" onClick={() => setNicheDropdownOpen(!nicheDropdownOpen)} disabled={scraping}
-                      className="w-full flex items-center justify-between text-xs rounded-md border border-input bg-card h-9 px-3 focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50 text-left">
-                      <span className="truncate text-muted-foreground">
-                        {selectedNiches.length === 0 ? 'Choisir des niches…' : `${selectedNiches.length} niche${selectedNiches.length > 1 ? 's' : ''} sélectionnée${selectedNiches.length > 1 ? 's' : ''}`}
-                      </span>
-                      <ChevronDown className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                    </button>
-                    {nicheDropdownOpen && (
-                      <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-lg shadow-lg z-20 max-h-64 overflow-y-auto">
-                        <div className="p-2 border-b border-border/60 sticky top-0 bg-card">
-                          <Input placeholder="Rechercher une niche…" value={nicheSearchQuery} onChange={e => setNicheSearchQuery(e.target.value)} className="h-7 text-xs" />
+                {/* === MODE: AUTOUR DE MOI === */}
+                {searchMode === 'around_me' && (
+                  <div className="space-y-3">
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                      <Navigation className="h-3.5 w-3.5" />Géolocalisation
+                    </label>
+                    {geoStatus === 'idle' && (
+                      <button
+                        type="button"
+                        disabled={scraping}
+                        onClick={() => {
+                          if (!navigator.geolocation) {
+                            setGeoError('La géolocalisation n\'est pas supportée par ce navigateur.');
+                            setGeoStatus('error');
+                            return;
+                          }
+                          setGeoStatus('requesting');
+                          setGeoError(null);
+                          navigator.geolocation.getCurrentPosition(
+                            (pos) => {
+                              setUserLat(pos.coords.latitude);
+                              setUserLon(pos.coords.longitude);
+                              setGeoStatus('granted');
+                            },
+                            (err) => {
+                              setGeoError(err.code === 1 ? 'Permission refusée. Activez la localisation dans les paramètres de votre navigateur.' : 'Impossible d\'obtenir votre position.');
+                              setGeoStatus('denied');
+                            },
+                            { enableHighAccuracy: true, timeout: 10000 }
+                          );
+                        }}
+                        className="flex items-center gap-2 h-9 px-4 rounded-lg border border-dashed border-primary/40 bg-primary/5 text-primary text-xs font-semibold hover:bg-primary/10 transition-colors disabled:opacity-50"
+                      >
+                        <Navigation className="h-3.5 w-3.5" />
+                        Utiliser ma position GPS
+                      </button>
+                    )}
+                    {geoStatus === 'requesting' && (
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+                        Demande de position en cours…
+                      </div>
+                    )}
+                    {geoStatus === 'granted' && userLat !== null && userLon !== null && (
+                      <div className="flex items-center justify-between gap-2 rounded-lg border border-emerald-200 bg-emerald-50 dark:bg-emerald-950/20 dark:border-emerald-800 px-3 py-2">
+                        <div className="flex items-center gap-2 text-xs text-emerald-800 dark:text-emerald-300">
+                          <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+                          <span className="font-semibold">Position détectée</span>
+                          <span className="text-emerald-700 dark:text-emerald-400 font-mono">
+                            {userLat.toFixed(5)}, {userLon.toFixed(5)}
+                          </span>
                         </div>
-                        <div className="p-1">
-                          {filteredNiches.map(n => (
-                            <button type="button" key={n} onClick={() => toggleNiche(n)}
-                              className="w-full flex items-center gap-2.5 px-2.5 py-1.5 text-xs hover:bg-muted/50 rounded transition-colors text-left">
-                              <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${selectedNiches.includes(n) ? 'bg-primary border-primary' : 'border-input'}`}>
-                                {selectedNiches.includes(n) && <Check className="w-2.5 h-2.5 text-primary-foreground" />}
-                              </div>
-                              <span className={selectedNiches.includes(n) ? 'font-semibold text-foreground' : 'text-muted-foreground'}>{n}</span>
-                            </button>
-                          ))}
+                        <button type="button" onClick={() => { setGeoStatus('idle'); setUserLat(null); setUserLon(null); }} className="text-emerald-600 hover:text-emerald-800">
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    )}
+                    {(geoStatus === 'denied' || geoStatus === 'error') && (
+                      <div className="flex items-start gap-2 rounded-lg border border-rose-200 bg-rose-50 dark:bg-rose-950/20 px-3 py-2 text-xs text-rose-700 dark:text-rose-300">
+                        <WifiOff className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+                        <span>{geoError}</span>
+                      </div>
+                    )}
+                    <p className="text-[10px] text-muted-foreground leading-relaxed">
+                      Les résultats seront centrés sur votre position exacte (GPS) dans un rayon configurable ci-dessous.
+                    </p>
+                  </div>
+                )}
+
+                {/* Niches multi — visible en modes autour_de_moi et par_ville */}
+                {searchMode !== 'libre' && (
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                      Niches cibles <span className="normal-case font-normal">(multi-sélection)</span>
+                    </label>
+                    <div className="relative">
+                      <button type="button" onClick={() => setNicheDropdownOpen(!nicheDropdownOpen)} disabled={scraping}
+                        className="w-full flex items-center justify-between text-xs rounded-md border border-input bg-card h-9 px-3 focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50 text-left">
+                        <span className="truncate text-muted-foreground">
+                          {selectedNiches.length === 0 ? 'Choisir des niches…' : `${selectedNiches.length} niche${selectedNiches.length > 1 ? 's' : ''} sélectionnée${selectedNiches.length > 1 ? 's' : ''}`}
+                        </span>
+                        <ChevronDown className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                      </button>
+                      {nicheDropdownOpen && (
+                        <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-lg shadow-lg z-20 max-h-64 overflow-y-auto">
+                          <div className="p-2 border-b border-border/60 sticky top-0 bg-card">
+                            <Input placeholder="Rechercher une niche…" value={nicheSearchQuery} onChange={e => setNicheSearchQuery(e.target.value)} className="h-7 text-xs" />
+                          </div>
+                          <div className="p-1">
+                            {filteredNiches.map(n => (
+                              <button type="button" key={n} onClick={() => toggleNiche(n)}
+                                className="w-full flex items-center gap-2.5 px-2.5 py-1.5 text-xs hover:bg-muted/50 rounded transition-colors text-left">
+                                <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${selectedNiches.includes(n) ? 'bg-primary border-primary' : 'border-input'}`}>
+                                  {selectedNiches.includes(n) && <Check className="w-2.5 h-2.5 text-primary-foreground" />}
+                                </div>
+                                <span className={selectedNiches.includes(n) ? 'font-semibold text-foreground' : 'text-muted-foreground'}>{n}</span>
+                              </button>
+                            ))}
+                          </div>
                         </div>
+                      )}
+                    </div>
+                    {selectedNiches.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 pt-0.5">
+                        {selectedNiches.map(n => (
+                          <span key={n} className="inline-flex items-center gap-1 bg-primary/10 text-primary text-[10px] font-semibold px-2 py-0.5 rounded-full">
+                            {n}<button type="button" onClick={() => toggleNiche(n)}><X className="w-2.5 h-2.5" /></button>
+                          </span>
+                        ))}
                       </div>
                     )}
                   </div>
-                  {selectedNiches.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5 pt-0.5">
-                      {selectedNiches.map(n => (
-                        <span key={n} className="inline-flex items-center gap-1 bg-primary/10 text-primary text-[10px] font-semibold px-2 py-0.5 rounded-full">
-                          {n}<button type="button" onClick={() => toggleNiche(n)}><X className="w-2.5 h-2.5" /></button>
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                )}
 
-                {/* Cities multi */}
+                {/* Cities multi — visible only in par_ville mode */}
+                {searchMode === 'par_ville' && (
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                     Villes cibles <span className="normal-case font-normal">(multi-sélection)</span>
@@ -567,15 +718,19 @@ export function ProspectingRoot() {
                     </div>
                   )}
                 </div>
+                )}
 
-                {/* Free query */}
+                {/* Free query — visible only in libre mode */}
+                {searchMode === 'libre' && (
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex justify-between">
-                    <span>Recherche libre <span className="normal-case font-normal">(remplace niches+villes)</span></span>
+                    <span>Recherche libre</span>
                     {customQuery && <span className="text-primary italic text-[9px]">Actif</span>}
                   </label>
                   <Input placeholder="Ex: Clinique dentaire Laval, plombier urgence Québec…" value={customQuery} onChange={e => setCustomQuery(e.target.value)} disabled={scraping} className="text-xs h-9 bg-card" />
+                  <p className="text-[10px] text-muted-foreground">Saisie libre — la niche et la ville sont extraites du texte. Overpass cherchera par mot-clé dans un rayon global.</p>
                 </div>
+                )}
 
                 <div className="h-px bg-border/50" />
 
@@ -659,10 +814,26 @@ export function ProspectingRoot() {
                   </div>
                 </div>
 
-                <div className="flex justify-end">
-                  <Button type="submit" disabled={scraping || loadingPrefs || selectedSources.length === 0} className="h-9 text-xs font-bold gap-1.5">
-                    {scraping ? <><Loader2 className="h-3.5 w-3.5 animate-spin" />Recherche…</> : <><Sparkles className="h-3.5 w-3.5" />Lancer la recherche</>}
-                  </Button>
+                <div className="flex items-center justify-between">
+                  {/* Around-me validation hint */}
+                  {searchMode === 'around_me' && geoStatus !== 'granted' && (
+                    <p className="text-[10px] text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                      <Navigation className="h-3 w-3" />
+                      Activez votre position GPS pour lancer la recherche géolocalisée.
+                    </p>
+                  )}
+                  <div className="ml-auto">
+                    <Button
+                      type="submit"
+                      disabled={
+                        scraping || loadingPrefs || selectedSources.length === 0 ||
+                        (searchMode === 'around_me' && geoStatus !== 'granted')
+                      }
+                      className="h-9 text-xs font-bold gap-1.5"
+                    >
+                      {scraping ? <><Loader2 className="h-3.5 w-3.5 animate-spin" />Recherche…</> : <><Sparkles className="h-3.5 w-3.5" />Lancer la recherche</>}
+                    </Button>
+                  </div>
                 </div>
               </form>
             </CardContent>
@@ -683,11 +854,11 @@ export function ProspectingRoot() {
               </div>
               <div className="h-px bg-border/60" />
               <div className="space-y-2 text-[10px]">
-                <p><strong>Multi-sources :</strong> cochez plusieurs sources pour fusionner les résultats. Elles tournent en parallèle.</p>
-                <p><strong>Multi-villes :</strong> sélectionnez plusieurs villes pour scraper en même temps.</p>
-                <p><strong>Multi-niches :</strong> toutes les niches sélectionnées sont envoyées — une requête OSM par niche.</p>
-                <p><strong>Rayon OSM :</strong> rayon de recherche autour du centre-ville de chaque ville cible.</p>
-                <p><strong>Tri :</strong> « Opportunité » classe les prospects sans site ou à note faible en tête.</p>
+                <p><strong>Autour de moi :</strong> GPS du navigateur — rayon autour de votre position exacte.</p>
+                <p><strong>Par ville :</strong> centre-ville de chaque ville sélectionnée (rayon configurable).</p>
+                <p><strong>Libre :</strong> saisie directe — niche + ville extraites du texte brut.</p>
+                <p><strong>Multi-sources :</strong> cochez plusieurs sources pour fusionner les résultats.</p>
+                <p><strong>Distance :</strong> disponible après scrape géolocalisé — tri par km depuis le centre.</p>
                 <p><strong>Export CSV :</strong> disponible après scrape, avec BOM UTF-8 pour Excel.</p>
               </div>
               <div className="h-px bg-border/60" />
@@ -745,6 +916,26 @@ export function ProspectingRoot() {
           </Card>
         )}
 
+        {/* Search center indicator banner */}
+        {searchCenter && !scraping && scrapedLeads.length > 0 && (
+          <div className="flex items-center gap-3 rounded-lg border border-border bg-card px-4 py-2.5 animate-in fade-in duration-200">
+            <Target className="h-3.5 w-3.5 text-primary shrink-0" />
+            <p className="text-[11px] text-muted-foreground flex-1">
+              <span className="font-semibold text-foreground">Centre de recherche : </span>
+              {searchCenter.label}
+              {' — '}
+              <span className="font-mono">
+                {searchCenter.lat.toFixed(4)}, {searchCenter.lon.toFixed(4)}
+              </span>
+              {' — rayon '}
+              <span className="font-semibold text-foreground">{radius >= 1000 ? `${radius / 1000} km` : `${radius} m`}</span>
+            </p>
+            <button type="button" onClick={() => setSortKey('distance_asc')} className="text-[10px] text-primary font-semibold hover:underline shrink-0">
+              Trier par distance →
+            </button>
+          </div>
+        )}
+
         {/* Results */}
         {!scraping && scrapedLeads.length > 0 && (
           <Card className="border border-border bg-card">
@@ -769,6 +960,9 @@ export function ProspectingRoot() {
                   <option value="rating_asc">Note ↑ (la plus faible)</option>
                   <option value="rating_desc">Note ↓ (la plus haute)</option>
                   <option value="reviews_desc">Avis ↓</option>
+                  {searchCenter && (
+                    <option value="distance_asc">Distance ↑ (le plus proche)</option>
+                  )}
                 </select>
                 {/* Export CSV */}
                 <Button variant="outline" size="sm" className="h-8 text-xs gap-1.5" onClick={() => exportCsv(sortedLeads)}>

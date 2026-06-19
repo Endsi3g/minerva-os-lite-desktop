@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { useReach } from '@/lib/reach-context';
 import { useLanguage } from '@/lib/language-context';
+import { usePersonas } from '@/lib/use-personas';
 import { takePhoto } from '@/lib/native-bridge';
 import { getApiUrl } from '@/lib/api-helper';
 import { Lead, Note } from '@/lib/mock-data';
@@ -305,6 +306,9 @@ export function LeadDetailClient({ id }: { id: string }) {
 
   // Look up lead
   const lead = leads.find((l) => l.id === id);
+
+  const { personas } = usePersonas(activeWorkspace?.id);
+  const leadPersona = personas?.find(p => p.targetNiches.includes(lead?.niche || '') || p.targetCities.includes(lead?.city || ''));
 
   // States for new note form
   const [noteType, setNoteType] = useState<Note['type']>('general');
@@ -1588,6 +1592,32 @@ export function LeadDetailClient({ id }: { id: string }) {
                   />
                 </div>
               </div>
+
+              {/* Scripts Contextuels (Phase 3) */}
+              {leadPersona && (Object.keys(leadPersona.callScripts || {}).length > 0 || Object.keys(leadPersona.emailTemplates || {}).length > 0) && (
+                <div className="pt-4 border-t border-border mt-4 space-y-3">
+                  <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                    <FileText className="h-3 w-3" />
+                    Scripts & Modèles (ICP: {leadPersona.name})
+                  </h4>
+                  <div className="space-y-2">
+                    {Object.entries(leadPersona.callScripts || {}).map(([title, content]) => (
+                      <div key={title} className="p-2 border border-border rounded-md bg-background">
+                        <p className="text-[10px] font-bold text-foreground mb-1">📞 {title}</p>
+                        <p className="text-[10px] text-muted-foreground line-clamp-2">{content}</p>
+                        <Button variant="ghost" size="sm" className="h-5 text-[9px] px-2 mt-1" onClick={() => setGeneratedContent(content as string)}>Utiliser</Button>
+                      </div>
+                    ))}
+                    {Object.entries(leadPersona.emailTemplates || {}).map(([title, content]) => (
+                      <div key={title} className="p-2 border border-border rounded-md bg-background">
+                        <p className="text-[10px] font-bold text-foreground mb-1">✉️ {title}</p>
+                        <p className="text-[10px] text-muted-foreground line-clamp-2">{content}</p>
+                        <Button variant="ghost" size="sm" className="h-5 text-[9px] px-2 mt-1" onClick={() => setGeneratedContent(content as string)}>Utiliser</Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Assigner à */}
               <div className="pt-4 border-t border-border mt-4 space-y-2">

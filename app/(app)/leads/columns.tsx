@@ -213,6 +213,34 @@ export const columns: ColumnDef<Lead>[] = [
       );
     },
   },
+  // Intent Score
+  {
+    accessorKey: 'intentScore',
+    header: ({ column }) => (
+      <button
+        onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+        className="flex items-center gap-1 hover:text-foreground font-semibold"
+      >
+        <TrendingUp className="h-3 w-3" />
+        Intent
+        <ArrowUpDown className="h-3 w-3" />
+      </button>
+    ),
+    cell: ({ row }) => {
+      const intent = (row.getValue('intentScore') as number) ?? 0;
+      const colorClass = intent >= 80
+        ? 'bg-rose-100 text-rose-700 border-rose-200'
+        : intent >= 50
+        ? 'bg-orange-100 text-orange-700 border-orange-200'
+        : 'bg-slate-100 text-slate-500 border-slate-200';
+      if (!intent) return <span className="text-[10px] text-muted-foreground/40">—</span>;
+      return (
+        <div className={`inline-flex items-center justify-center w-10 h-6 rounded border text-[10px] font-black ${colorClass}`}>
+          {intent}%
+        </div>
+      );
+    },
+  },
   // Opportunity Score (computed, not from DB)
   {
     id: 'opportunityScore',

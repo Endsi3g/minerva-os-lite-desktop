@@ -425,6 +425,53 @@ function initDb() {
       created_at TEXT
     )`);
 
+    // v3.0.0 — personas table (migrated from local storage)
+    db.run(`CREATE TABLE IF NOT EXISTS personas (
+      id TEXT PRIMARY KEY,
+      workspace_id TEXT,
+      name TEXT,
+      description TEXT,
+      target_niches TEXT DEFAULT '[]',
+      target_cities TEXT DEFAULT '[]',
+      scoring_criteria TEXT DEFAULT '{}',
+      case_studies TEXT DEFAULT '[]',
+      faqs TEXT DEFAULT '[]',
+      call_scripts TEXT DEFAULT '{}',
+      email_templates TEXT DEFAULT '{}',
+      created_at TEXT,
+      updated_at TEXT,
+      sync_status TEXT DEFAULT 'pending_insert'
+    )`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_personas_workspace_id ON personas(workspace_id)`);
+
+    // v4.0.0 — automations and logs
+    db.run(`CREATE TABLE IF NOT EXISTS automations (
+      id TEXT PRIMARY KEY,
+      workspace_id TEXT,
+      name TEXT,
+      trigger_type TEXT,
+      conditions TEXT DEFAULT '[]',
+      actions TEXT DEFAULT '[]',
+      is_active INTEGER DEFAULT 1,
+      created_at TEXT,
+      updated_at TEXT,
+      sync_status TEXT DEFAULT 'pending_insert'
+    )`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_automations_workspace_id ON automations(workspace_id)`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_automations_is_active ON automations(is_active)`);
+
+    db.run(`CREATE TABLE IF NOT EXISTS automation_logs (
+      id TEXT PRIMARY KEY,
+      automation_id TEXT,
+      workspace_id TEXT,
+      trigger_event TEXT,
+      status TEXT,
+      error TEXT,
+      created_at TEXT
+    )`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_automation_logs_workspace_id ON automation_logs(workspace_id)`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_automation_logs_automation_id ON automation_logs(automation_id)`);
+
     // Indexes to avoid full table scans during sync
     db.run(`CREATE INDEX IF NOT EXISTS idx_leads_user_id ON leads(user_id)`);
     db.run(`CREATE INDEX IF NOT EXISTS idx_leads_sync_status ON leads(sync_status)`);
