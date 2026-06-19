@@ -24,6 +24,60 @@ async function refreshAccessToken(refreshToken: string): Promise<{ accessToken: 
   return { accessToken: data.access_token, expiresAt };
 }
 
+function isBusinessReply(subject: string, fromHeader: string, snippet: string, headers: { name: string; value: string }[]): boolean {
+  const fromLower = fromHeader.toLowerCase();
+  const subjectLower = subject.toLowerCase();
+  const snippetLower = snippet.toLowerCase();
+
+  // 1. Check for Bounce / Undelivered email senders
+  if (
+    fromLower.includes('mailer-daemon') ||
+    fromLower.includes('postmaster') ||
+    fromLower.includes('noreply') ||
+    fromLower.includes('no-reply')
+  ) {
+    return false;
+  }
+
+  // 2. Check for bounce / automatic subjects
+  if (
+    subjectLower.includes('undeliver') ||
+    subjectLower.includes('failure') ||
+    subjectLower.includes('non distribué') ||
+    subjectLower.includes('réponse automatique') ||
+    subjectLower.includes('out of office') ||
+    subjectLower.includes('absent') ||
+    subjectLower.includes('auto-repl') ||
+    subjectLower.includes('auto:') ||
+    subjectLower.includes('automatic reply')
+  ) {
+    return false;
+  }
+
+  // 3. Check snippet content for automatic / away responses
+  if (
+    snippetLower.includes('out of office') ||
+    snippetLower.includes('je suis absent') ||
+    snippetLower.includes('réponse automatique') ||
+    snippetLower.includes('automatic reply') ||
+    snippetLower.includes('delivery failure') ||
+    snippetLower.includes('adresse introuvable') ||
+    snippetLower.includes('address not found')
+  ) {
+    return false;
+  }
+
+  // 4. Check headers for auto-submitted flags
+  if (headers && Array.isArray(headers)) {
+    const autoSubmitted = headers.find(h => h.name.toLowerCase() === 'auto-submitted')?.value || '';
+    if (autoSubmitted && autoSubmitted.toLowerCase() !== 'no') {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 export async function GET(req: NextRequest) {
   try {
     const supabase = await createClient();
@@ -71,7 +125,7 @@ export async function GET(req: NextRequest) {
     const results = await Promise.allSettled(
       leads.map(async (lead) => {
         const res = await fetch(
-          `https://gmail.googleapis.com/v1/users/me/threads/${lead.gmail_thread_id}?format=minimal`,
+          `https://gmail.googleapis.com/v1/users/me/threads/${lead.gmail_thread_id}?format=metadata&metadataHeaders=From&metadataHeaders=Subject&metadataHeaders=Auto-Submitted`,
           { headers: { Authorization: `Bearer ${accessToken}` } }
         );
 
@@ -83,6 +137,24 @@ export async function GET(req: NextRequest) {
 
         const thread = await res.json();
         const messages: any[] = thread.messages || [];
+        if (messages.length < 2) return null; // No replies at all
+
+        // Validate if at least one reply is a business message
+        const senderEmail = settings.google_email;
+        const hasBusinessReply = messages.some((msg: any, idx: number) => {
+          if (idx === 0) return false;
+          const headers = msg.payload?.headers || [];
+          const fromHeader = headers.find((h: any) => h.name === 'From')?.value || '';
+          if (fromHeader.includes(senderEmail)) return false;
+
+          const subjectHeader = headers.find((h: any) => h.name === 'Subject')?.value || '';
+          const snippet = msg.snippet || '';
+
+          return isBusinessReply(subjectHeader, fromHeader, snippet, headers);
+        });
+
+        if (!hasBusinessReply) return null;
+
         const lastMsg = messages[messages.length - 1];
 
         return {

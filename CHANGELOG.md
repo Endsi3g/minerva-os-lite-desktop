@@ -5,6 +5,14 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [2.75.0] - 2026-06-19
+
+### Ajouté — Filtre d'E-mails Professionnels et Exclusion des Messages Automatiques/Bounces
+- **Filtrage Intelligent des Réponses (Inbox & Cron)** — Ajout d'une fonction d'analyse et de filtrage `isBusinessReply` pour la boîte de réception et le script de détection automatique des réponses. Cette fonction inspecte le sujet, l'expéditeur, le snippet et les en-têtes (notamment `Auto-Submitted`) des e-mails entrants pour exclure tous les messages non professionnels :
+  * *Bounces & Erreurs de livraison* (ex: Mailer-Daemon, postmaster, noreply, delivery failure, undelivered mail).
+  * *Réponses automatiques et messages d'absence* (ex: Out of Office, absent, réponse automatique, automatic reply, auto-repl, auto:).
+- **Stabilité du Statut des Leads** — Les e-mails automatiques exclus ne modifient plus le statut du lead en "Meeting Booked" et ne génèrent plus de notifications "Réponse détectée". Seules les réelles réponses de prospects humains s'affichent dans la boîte de réception.
+
 ## [2.74.0] - 2026-06-19
 
 ### Ajouté — Redesign Assistant IA (Langdock & Canvas) et Icônes de Marque Transparentes
