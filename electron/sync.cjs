@@ -81,7 +81,7 @@ async function syncPush() {
   const pendingLeads = await db.all("SELECT * FROM leads WHERE sync_status != 'synced'");
   for (const lead of pendingLeads) {
     if (lead.sync_status === 'pending_insert') {
-      const { id, user_id, business_name, contact_name, contact_email, niche, city, source, status, temperature, next_action, next_action_date, owner, image_url, workspace_id } = lead;
+      const { id, user_id, business_name, contact_name, contact_email, niche, city, source, status, temperature, next_action, next_action_date, owner, image_url, workspace_id, website, rating, reviews_count, maps_url, latitude, longitude, phone, score, fit_score, intent_score, reply_status } = lead;
       const { error } = await supabase.from('leads').upsert({
         id,
         user_id,
@@ -97,7 +97,18 @@ async function syncPush() {
         next_action_date,
         owner,
         image_url,
-        workspace_id
+        workspace_id,
+        website,
+        rating,
+        reviews_count,
+        maps_url,
+        latitude,
+        longitude,
+        phone,
+        score,
+        fit_score,
+        intent_score,
+        reply_status
       });
       if (!error) {
         await db.run("UPDATE leads SET sync_status = 'synced' WHERE id = ?", [id]);
@@ -105,7 +116,7 @@ async function syncPush() {
         console.error("Error pushing insert for lead", id, error);
       }
     } else if (lead.sync_status === 'pending_update') {
-      const { id, business_name, contact_name, contact_email, niche, city, source, status, temperature, next_action, next_action_date, owner, image_url, reply_status } = lead;
+      const { id, business_name, contact_name, contact_email, niche, city, source, status, temperature, next_action, next_action_date, owner, image_url, reply_status, website, rating, reviews_count, maps_url, latitude, longitude, phone, score, fit_score, intent_score } = lead;
       const { error } = await supabase.from('leads').update({
         business_name,
         contact_name,
@@ -119,7 +130,17 @@ async function syncPush() {
         next_action_date,
         owner,
         image_url,
-        reply_status: reply_status ?? null
+        reply_status: reply_status ?? null,
+        website,
+        rating,
+        reviews_count,
+        maps_url,
+        latitude,
+        longitude,
+        phone,
+        score,
+        fit_score,
+        intent_score
       }).eq('id', id);
       if (!error) {
         await db.run("UPDATE leads SET sync_status = 'synced' WHERE id = ?", [id]);
@@ -594,6 +615,94 @@ async function syncPush() {
       }
     }
   }
+
+  // 9. Lead Validations Push
+  const pendingValidations = await db.all("SELECT * FROM lead_validations WHERE sync_status != 'synced'");
+  for (const val of pendingValidations) {
+    if (val.sync_status === 'pending_insert') {
+      const { id, user_id, workspace_id, business_name, niche, city, phone, email, website, address, rating, reviews_count, latitude, longitude, source, status, original_tags, quality_score, completeness_score, local_fit_score, opportunity_score, created_at, updated_at } = val;
+      const { error } = await supabase.from('lead_validations').upsert({
+        id,
+        user_id,
+        workspace_id,
+        business_name,
+        niche,
+        city,
+        phone,
+        email,
+        website,
+        address,
+        rating,
+        reviews_count,
+        latitude,
+        longitude,
+        source,
+        status,
+        original_tags: (() => { try { return JSON.parse(original_tags || '{}'); } catch { return {}; } })(),
+        quality_score,
+        completeness_score,
+        local_fit_score,
+        opportunity_score,
+        created_at,
+        updated_at
+      });
+      if (!error) {
+        await db.run("UPDATE lead_validations SET sync_status = 'synced' WHERE id = ?", [id]);
+      } else {
+        console.error("Error pushing insert for lead_validation", id, error);
+      }
+    } else if (val.sync_status === 'pending_update') {
+      const { id, business_name, phone, email, website, address, status, quality_score, completeness_score, local_fit_score, opportunity_score, updated_at } = val;
+      const { error } = await supabase.from('lead_validations').update({
+        business_name,
+        phone,
+        email,
+        website,
+        address,
+        status,
+        quality_score,
+        completeness_score,
+        local_fit_score,
+        opportunity_score,
+        updated_at
+      }).eq('id', id);
+      if (!error) {
+        await db.run("UPDATE lead_validations SET sync_status = 'synced' WHERE id = ?", [id]);
+      } else {
+        console.error("Error pushing update for lead_validation", id, error);
+      }
+    } else if (val.sync_status === 'pending_delete') {
+      const { error } = await supabase.from('lead_validations').delete().eq('id', val.id);
+      if (!error) {
+        await db.run("DELETE FROM lead_validations WHERE id = ?", [val.id]);
+      } else {
+        console.error("Error pushing delete for lead_validation", val.id, error);
+      }
+    }
+  }
+
+  // 10. OSM Feedback Push
+  const pendingFeedback = await db.all("SELECT * FROM osm_feedback WHERE sync_status = 'pending_insert'");
+  for (const fb of pendingFeedback) {
+    const { id, user_id, workspace_id, niche, city, action_type, original_value, corrected_value, osm_id, created_at } = fb;
+    const { error } = await supabase.from('osm_feedback').upsert({
+      id,
+      user_id,
+      workspace_id,
+      niche,
+      city,
+      action_type,
+      original_value,
+      corrected_value,
+      osm_id,
+      created_at
+    });
+    if (!error) {
+      await db.run("UPDATE osm_feedback SET sync_status = 'synced' WHERE id = ?", [id]);
+    } else {
+      console.error("Error pushing osm_feedback", id, error);
+    }
+  }
 }
 
 
@@ -653,13 +762,13 @@ async function syncPull() {
     const localLeadsMap = new Map(localLeadsRows.map(l => [l.id, l]));
 
     for (const lead of remoteLeads) {
-      const { id, user_id, business_name, contact_name, contact_email, niche, city, source, status, temperature, next_action, next_action_date, owner, image_url, workspace_id, created_at, updated_at } = lead;
+      const { id, user_id, business_name, contact_name, contact_email, niche, city, source, status, temperature, next_action, next_action_date, owner, image_url, workspace_id, created_at, updated_at, website, rating, reviews_count, maps_url, latitude, longitude, phone, score, fit_score, intent_score, reply_status } = lead;
 
       const localLead = localLeadsMap.get(id);
       if (!localLead) {
-        await db.run(`INSERT INTO leads (id, user_id, business_name, contact_name, contact_email, niche, city, source, status, temperature, next_action, next_action_date, owner, image_url, workspace_id, created_at, updated_at, sync_status)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced')`,
-          [id, user_id, business_name, contact_name, contact_email, niche, city, source, status, temperature, next_action, next_action_date, owner, image_url, workspace_id, created_at, updated_at]
+        await db.run(`INSERT INTO leads (id, user_id, business_name, contact_name, contact_email, niche, city, source, status, temperature, next_action, next_action_date, owner, image_url, workspace_id, created_at, updated_at, website, rating, reviews_count, maps_url, latitude, longitude, phone, score, fit_score, intent_score, reply_status, sync_status)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced')`,
+          [id, user_id, business_name, contact_name, contact_email, niche, city, source, status, temperature, next_action, next_action_date, owner, image_url, workspace_id, created_at, updated_at, website, rating, reviews_count, maps_url, latitude, longitude, phone, score, fit_score, intent_score, reply_status]
         );
       } else {
         const isRemoteNewer = new Date(updated_at) > new Date(localLead.updated_at || 0);
@@ -668,9 +777,9 @@ async function syncPull() {
           await db.run(`UPDATE leads SET
             user_id = ?, business_name = ?, contact_name = ?, contact_email = ?, niche = ?, city = ?, source = ?,
             status = ?, temperature = ?, next_action = ?, next_action_date = ?, owner = ?, image_url = ?,
-            workspace_id = ?, created_at = ?, updated_at = ?, sync_status = 'synced'
+            workspace_id = ?, created_at = ?, updated_at = ?, website = ?, rating = ?, reviews_count = ?, maps_url = ?, latitude = ?, longitude = ?, phone = ?, score = ?, fit_score = ?, intent_score = ?, reply_status = ?, sync_status = 'synced'
             WHERE id = ?`,
-            [user_id, business_name, contact_name, contact_email, niche, city, source, status, temperature, next_action, next_action_date, owner, image_url, workspace_id, created_at, updated_at, id]
+            [user_id, business_name, contact_name, contact_email, niche, city, source, status, temperature, next_action, next_action_date, owner, image_url, workspace_id, created_at, updated_at, website, rating, reviews_count, maps_url, latitude, longitude, phone, score, fit_score, intent_score, reply_status, id]
           );
         }
       }
@@ -881,6 +990,38 @@ async function syncPull() {
             sequence_config = ?, goals = ?, playbook_run_id = ?, sync_status = 'synced'
             WHERE id = ?`,
             [workspace_id, user_id, name, description, nichesStr, citiesStr, status, start_date, end_date, created_at, updated_at, persona_id, seqStr, goalsStr, playbook_run_id, id]
+          );
+        }
+      }
+    }
+  }
+
+  // 11. Lead Validations Pull
+  const { data: remoteValidations, error: valError } = await supabase
+    .from('lead_validations')
+    .select('*')
+    .eq('user_id', currentUserId);
+
+  if (!valError && remoteValidations) {
+    const localValRows = await db.all("SELECT id, updated_at, sync_status FROM lead_validations WHERE user_id = ?", [currentUserId]);
+    const localValMap = new Map(localValRows.map(v => [v.id, v]));
+
+    for (const val of remoteValidations) {
+      const { id, user_id, workspace_id, business_name, niche, city, phone, email, website, address, rating, reviews_count, latitude, longitude, source, status, original_tags, quality_score, completeness_score, local_fit_score, opportunity_score, created_at, updated_at } = val;
+      const localVal = localValMap.get(id);
+
+      if (!localVal) {
+        await db.run(`INSERT INTO lead_validations (id, user_id, workspace_id, business_name, niche, city, phone, email, website, address, rating, reviews_count, latitude, longitude, source, status, original_tags, quality_score, completeness_score, local_fit_score, opportunity_score, created_at, updated_at, sync_status)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced')`,
+          [id, user_id, workspace_id, business_name, niche, city, phone, email, website, address, rating, reviews_count, latitude, longitude, source, status, JSON.stringify(original_tags || {}), quality_score, completeness_score, local_fit_score, opportunity_score, created_at, updated_at]
+        );
+      } else {
+        const isRemoteNewer = new Date(updated_at) > new Date(localVal.updated_at || 0);
+        if (localVal.sync_status === 'synced' || isRemoteNewer) {
+          await db.run(`UPDATE lead_validations SET
+            business_name = ?, phone = ?, email = ?, website = ?, address = ?, status = ?, quality_score = ?, completeness_score = ?, local_fit_score = ?, opportunity_score = ?, updated_at = ?, sync_status = 'synced'
+            WHERE id = ?`,
+            [business_name, phone, email, website, address, status, quality_score, completeness_score, local_fit_score, opportunity_score, updated_at, id]
           );
         }
       }

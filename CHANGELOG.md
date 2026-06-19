@@ -5,6 +5,15 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [2.79.0] - 2026-06-19
+
+### Ajouté — Pipeline de Prospection OSM Enrichi, Normalisation & Validation Inbox
+- **Normalisation & Dédoublonnement** — Standardisation automatique des numéros de téléphone (`+1 (514) 555-0199`) et nettoyage des tracking parameters des sites web. Dédoublonnement intelligent client-side et CRM-side.
+- **Indicateurs de Score** — Système complet de scoring calculant la complétude des données, l'alignement niche-prospect, la proximité géographique et les opportunités commerciales (ex: sans site web).
+- **Boîte de Validation (Inbox UI)** — Interface en 4 onglets (*À vérifier*, *Prêts*, *Importés*, *Ignorés*) avec persistance SQLite/Supabase.
+- **Raccourcis OSM & Géocodage gratuit** — Mode de recherche par adresse textuelle (via géocodeur gratuit Nominatim) et raccourcis d'édition directe vers l'éditeur iD d'OpenStreetMap ou la signalisation de notes.
+- **Merge & Actions en masse** — Possibilité de fusionner des doublons directement depuis le panneau de détails et de valider, exclure ou importer en bloc.
+
 ## [2.78.0] - 2026-06-19
 
 ### Ajouté — Prospection Géolocalisée OSM (3 modes de recherche)

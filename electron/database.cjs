@@ -179,6 +179,7 @@ function initDb() {
     db.run(`ALTER TABLE leads ADD COLUMN photos TEXT DEFAULT NULL`, () => {});
     db.run(`ALTER TABLE leads ADD COLUMN social_links TEXT DEFAULT NULL`, () => {});
     db.run(`ALTER TABLE leads ADD COLUMN assigned_to TEXT DEFAULT NULL`, () => {});
+    db.run(`ALTER TABLE leads ADD COLUMN phone TEXT DEFAULT NULL`, () => {});
 
     // 8. Team messages table
     db.run(`CREATE TABLE IF NOT EXISTS team_messages (
@@ -471,6 +472,54 @@ function initDb() {
     )`);
     db.run(`CREATE INDEX IF NOT EXISTS idx_automation_logs_workspace_id ON automation_logs(workspace_id)`);
     db.run(`CREATE INDEX IF NOT EXISTS idx_automation_logs_automation_id ON automation_logs(automation_id)`);
+
+    // v5.0.0 — lead_validations table
+    db.run(`CREATE TABLE IF NOT EXISTS lead_validations (
+      id TEXT PRIMARY KEY,
+      user_id TEXT,
+      workspace_id TEXT,
+      business_name TEXT,
+      niche TEXT,
+      city TEXT,
+      phone TEXT,
+      email TEXT,
+      website TEXT,
+      address TEXT,
+      rating REAL,
+      reviews_count INTEGER,
+      latitude REAL,
+      longitude REAL,
+      source TEXT,
+      status TEXT DEFAULT 'to_verify',
+      original_tags TEXT DEFAULT '{}',
+      quality_score INTEGER DEFAULT 0,
+      completeness_score INTEGER DEFAULT 0,
+      local_fit_score INTEGER DEFAULT 0,
+      opportunity_score INTEGER DEFAULT 0,
+      created_at TEXT,
+      updated_at TEXT,
+      sync_status TEXT DEFAULT 'synced'
+    )`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_lead_validations_workspace_id ON lead_validations(workspace_id)`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_lead_validations_status ON lead_validations(status)`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_lead_validations_sync_status ON lead_validations(sync_status)`);
+
+    // v5.0.0 — osm_feedback table
+    db.run(`CREATE TABLE IF NOT EXISTS osm_feedback (
+      id TEXT PRIMARY KEY,
+      user_id TEXT,
+      workspace_id TEXT,
+      niche TEXT,
+      city TEXT,
+      action_type TEXT,
+      original_value TEXT,
+      corrected_value TEXT,
+      osm_id TEXT,
+      created_at TEXT,
+      sync_status TEXT DEFAULT 'synced'
+    )`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_osm_feedback_workspace_id ON osm_feedback(workspace_id)`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_osm_feedback_sync_status ON osm_feedback(sync_status)`);
 
     // Indexes to avoid full table scans during sync
     db.run(`CREATE INDEX IF NOT EXISTS idx_leads_user_id ON leads(user_id)`);

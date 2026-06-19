@@ -34,6 +34,7 @@ export interface Lead {
   assignedTo?: string;
   latitude?: number;
   longitude?: number;
+  phone?: string;
   // Qualification & enrichissement (v2.34.0)
   fitScore?: number;
   intentScore?: number;

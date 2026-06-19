@@ -18,6 +18,13 @@ interface ScrapedLead {
   source?: string;
   latitude?: number;
   longitude?: number;
+  qualityScore?: number;
+  completenessScore?: number;
+  localFitScore?: number;
+  opportunityScore?: number;
+  proximityScore?: number;
+  distanceKm?: number;
+  originalTags?: Record<string, any>;
 }
 
 // Extended Quebec city coordinates
@@ -305,9 +312,99 @@ function buildOverpassQuery(
 function cleanPhone(raw: string): string {
   if (!raw) return '';
   const digits = raw.replace(/\D/g, '');
-  if (digits.length === 10) return `+1 ${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6)}`;
-  if (digits.length === 11 && digits[0] === '1') return `+1 ${digits.slice(1, 4)}-${digits.slice(4, 7)}-${digits.slice(7)}`;
+  if (digits.length === 10) return `+1 (${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+  if (digits.length === 11 && digits[0] === '1') return `+1 (${digits.slice(1, 4)}) ${digits.slice(4, 7)}-${digits.slice(7)}`;
   return raw.trim();
+}
+
+function cleanWebsite(url: string): string {
+  if (!url) return '';
+  let cleaned = url.trim();
+  if (!cleaned) return '';
+  try {
+    const parsed = new URL(cleaned.startsWith('http') ? cleaned : `http://${cleaned}`);
+    parsed.search = '';
+    parsed.hash = '';
+    let result = parsed.toString().toLowerCase();
+    if (!url.startsWith('http') && result.startsWith('http://')) {
+      result = result.replace('http://', 'https://');
+    }
+    if (result.endsWith('/')) {
+      result = result.slice(0, -1);
+    }
+    return result;
+  } catch {
+    return cleaned.toLowerCase().replace(/\/+$/, '');
+  }
+}
+
+function calculateScores(lead: {
+  phone: string;
+  website: string;
+  address?: string;
+  rating: number;
+  reviewsCount: number;
+  niche: string;
+  businessName: string;
+  source?: string;
+  latitude?: number;
+  longitude?: number;
+}, searchCenter?: { lat: number; lon: number } | null) {
+  const phone = lead.phone || '';
+  const website = lead.website || '';
+  const address = lead.address || '';
+  const hasPostalCode = /[A-Z]\d[A-Z]\s?\d[A-Z]\d/i.test(address);
+  const hasCompleteAddress = /^\d+/.test(address.trim()) && address.trim().split(' ').length >= 2;
+  
+  let completenessScore = 0;
+  if (phone) completenessScore += 25;
+  if (website) completenessScore += 25;
+  if (hasCompleteAddress) completenessScore += 25;
+  if (hasPostalCode) completenessScore += 25;
+
+  let localFitScore = 70; // default for other sources
+  const nameLower = lead.businessName.toLowerCase();
+  const nicheLower = lead.niche.toLowerCase();
+  
+  if (nameLower.includes(nicheLower.slice(0, 5))) {
+    localFitScore = 100;
+  } else if (lead.source === 'osm') {
+    localFitScore = 90; 
+  }
+
+  let proximityScore = 50;
+  let distanceKm = 0;
+  if (lead.latitude && lead.longitude && searchCenter) {
+    const R = 6371;
+    const dLat = (lead.latitude - searchCenter.lat) * Math.PI / 180;
+    const dLon = (lead.longitude - searchCenter.lon) * Math.PI / 180;
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+              Math.cos(searchCenter.lat * Math.PI / 180) * Math.cos(lead.latitude * Math.PI / 180) *
+              Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    distanceKm = R * c;
+    
+    proximityScore = Math.max(0, Math.round(100 - (distanceKm * 5)));
+  }
+
+  let opportunityScore = 10;
+  if (!website) opportunityScore += 40;
+  if (phone) opportunityScore += 20;
+  if (lead.rating > 0 && lead.rating < 3.8) opportunityScore += 30;
+  if (lead.reviewsCount === 0) opportunityScore += 10;
+  opportunityScore = Math.min(100, opportunityScore);
+
+  const normalizedRating = lead.rating > 0 ? (lead.rating / 5) * 30 : 15;
+  const qualityScore = Math.round((completenessScore * 0.3) + (localFitScore * 0.4) + normalizedRating);
+
+  return {
+    completenessScore,
+    localFitScore,
+    proximityScore,
+    opportunityScore,
+    qualityScore,
+    distanceKm: Math.round(distanceKm * 100) / 100
+  };
 }
 
 async function scrapeHerePlaces(
@@ -572,6 +669,11 @@ function processOsmElements(elements: any[], niche: string, cityFallback: string
       source: 'osm',
       latitude: elLat,
       longitude: elLon,
+      originalTags: {
+        osm_id: el.id,
+        osm_type: el.type,
+        ...tags
+      }
     });
   }
 
@@ -617,6 +719,36 @@ async function runOverpassQuery(
   return processOsmElements(elements, niche, cityFallback);
 }
 
+async function runMultiStrategySearch(
+  niche: string,
+  city: string,
+  lat: number,
+  lon: number,
+  radius: number,
+  limit: number
+): Promise<ScrapedLead[]> {
+  const primaryFilters = getNicheOsmFilters(niche);
+  const keyword = extractNicheKeyword(niche);
+
+  // Strategy 1: Strict primary tags only
+  let leads = await runOverpassQuery(primaryFilters, lat, lon, radius, limit, niche, city);
+
+  // Strategy 2: If primary leads < 5 and keyword exists, run secondary broader search
+  if (leads.length < 5 && keyword) {
+    const secondaryFilters = ['"office"="company"', '"shop"="trade"', '"amenity"~"restaurant|cafe|bar"', '"office"~"."', '"shop"~"."', '"craft"~"."'];
+    const secondaryLeads = await runOverpassQuery(secondaryFilters, lat, lon, Math.min(radius, 15000), limit, niche, city, keyword);
+    leads = [...leads, ...secondaryLeads];
+  }
+
+  // Strategy 3: If still 0 results and initial radius is reasonable, try a wider search
+  if (leads.length === 0 && radius < 25000) {
+    const widerLeads = await runOverpassQuery(primaryFilters, lat, lon, Math.min(radius * 2.5, 30000), limit, niche, city, keyword ?? undefined);
+    leads = [...leads, ...widerLeads];
+  }
+
+  return leads;
+}
+
 // Multi-niche, multi-city Overpass scraper
 // When userLat/userLon are provided (geolocated mode), they override city-based coords
 async function runOverpassScraper(
@@ -635,10 +767,7 @@ async function runOverpassScraper(
     const perNiche = Math.max(Math.floor(maxResults / niches.length), 10);
     const tasks: Promise<ScrapedLead[]>[] = [];
     for (const niche of niches) {
-      const filters = getNicheOsmFilters(niche);
-      const keyword = extractNicheKeyword(niche);
-      const fetchLimit = Math.min(perNiche * 4, 400);
-      tasks.push(runOverpassQuery(filters, userLat, userLon, radius, fetchLimit, niche, searchCity, keyword ?? undefined));
+      tasks.push(runMultiStrategySearch(niche, searchCity, userLat, userLon, radius, perNiche * 3));
     }
     const results = await Promise.allSettled(tasks);
     for (const r of results) {
@@ -663,10 +792,7 @@ async function runOverpassScraper(
     const r = ['montreal', 'montréal', 'laval'].includes(key) ? Math.max(radius, 12000) : radius;
 
     for (const niche of niches) {
-      const filters = getNicheOsmFilters(niche);
-      const keyword = extractNicheKeyword(niche);
-      const fetchLimit = Math.min(perNichePerCity * 4, 400);
-      tasks.push(runOverpassQuery(filters, lat, lon, r, fetchLimit, niche, city, keyword ?? undefined));
+      tasks.push(runMultiStrategySearch(niche, city, lat, lon, r, perNichePerCity * 3));
     }
   }
 
@@ -702,14 +828,30 @@ export async function POST(req: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
 
-    const { data: apiKeys } = await supabase
-      .from('settings')
-      .select('here_api_key, yelp_api_key, firecrawl_api_key')
-      .eq('user_id', user.id)
-      .maybeSingle();
+    // Parallel fetch settings API keys and OSM feedback exclusions/corrections
+    const [settingsRes, feedbackRes] = await Promise.all([
+      supabase.from('settings').select('here_api_key, yelp_api_key, firecrawl_api_key').eq('user_id', user.id).maybeSingle(),
+      supabase.from('osm_feedback').select('niche, city, action_type, original_value, corrected_value').eq('user_id', user.id)
+    ]);
+
+    const apiKeys = settingsRes.data;
+    const feedbackList = feedbackRes.data || [];
+
     const hereApiKey: string | null = (apiKeys as any)?.here_api_key ?? null;
     const yelpApiKey: string | null = (apiKeys as any)?.yelp_api_key ?? null;
     const firecrawlApiKey: string = (apiKeys as any)?.firecrawl_api_key || process.env.FIRECRAWL_API_KEY || '';
+
+    // Build ignore set and corrections map
+    const ignoredNames = new Set<string>();
+    const correctionsMap = new Map<string, string>();
+
+    feedbackList.forEach((fb: any) => {
+      if (fb.action_type === 'ignore' && fb.original_value) {
+        ignoredNames.add(fb.original_value.toLowerCase().trim());
+      } else if (fb.action_type === 'correct' && fb.original_value && fb.corrected_value) {
+        correctionsMap.set(fb.original_value.toLowerCase().trim(), fb.corrected_value);
+      }
+    });
 
     const body = await req.json();
     const niches: string[] = Array.isArray(body.niches) && body.niches.length > 0
@@ -757,7 +899,7 @@ export async function POST(req: NextRequest) {
     // Yelp
     if (sources.includes('yelp') && yelpApiKey) {
       const yelpTasks = cities.flatMap(city =>
-        niches.map(niche => scrapeYelp(niche, city, 0, 0, radius, Math.ceil(maxResults / niches.length), yelpApiKey!))
+         niches.map(niche => scrapeYelp(niche, city, 0, 0, radius, Math.ceil(maxResults / niches.length), yelpApiKey!))
       );
       const yelpResults = await Promise.allSettled(yelpTasks);
       for (const r of yelpResults) { if (r.status === 'fulfilled') allLeads.push(...r.value); }
@@ -787,8 +929,26 @@ export async function POST(req: NextRequest) {
     const unique = dedup(allLeads);
 
     if (unique.length > 0) {
+      const scoredLeads = unique
+        .filter(lead => !ignoredNames.has(lead.businessName.toLowerCase().trim())) // Apply learning ignore feedback
+        .map(lead => {
+          let name = lead.businessName;
+          const normalNameKey = name.toLowerCase().trim();
+          if (correctionsMap.has(normalNameKey)) {
+            name = correctionsMap.get(normalNameKey)!; // Apply learning manual corrections feedback
+          }
+          const cleanedPhone = cleanPhone(lead.phone);
+          const cleanedWebsite = cleanWebsite(lead.website);
+          const updatedLead = { ...lead, businessName: name, phone: cleanedPhone, website: cleanedWebsite };
+          const scores = calculateScores(updatedLead, searchCenter);
+          return {
+            ...updatedLead,
+            ...scores
+          };
+        });
+
       return NextResponse.json({
-        leads: unique.slice(0, maxResults),
+        leads: scoredLeads.slice(0, maxResults),
         source: usedSources.join('+'),
         total: unique.length,
         searchCenter: searchCenter ?? null,
@@ -797,8 +957,27 @@ export async function POST(req: NextRequest) {
 
     // Fallback: Generate realistic Quebec leads for this niche and city
     const fallbackLeads = generateFallbackQuebecLeads(niches, cities, maxResults);
+    const scoredFallback = fallbackLeads
+      .filter(lead => !ignoredNames.has(lead.businessName.toLowerCase().trim()))
+      .map(lead => {
+        let name = lead.businessName;
+        const normalNameKey = name.toLowerCase().trim();
+        if (correctionsMap.has(normalNameKey)) {
+          name = correctionsMap.get(normalNameKey)!;
+        }
+        const cleanedPhone = cleanPhone(lead.phone);
+        const cleanedWebsite = cleanWebsite(lead.website);
+        const updatedLead = { ...lead, businessName: name, phone: cleanedPhone, website: cleanedWebsite };
+        const fallbackCenter = searchCenter ?? { lat: lead.latitude ?? 46.8, lon: lead.longitude ?? -72.5 };
+        const scores = calculateScores(updatedLead, fallbackCenter);
+        return {
+          ...updatedLead,
+          ...scores
+        };
+      });
+
     return NextResponse.json({
-      leads: fallbackLeads,
+      leads: scoredFallback,
       source: 'fallback_local',
       total: fallbackLeads.length,
       message: 'Génération de prospects locaux (secours connecté) pour ' + niches.join(', ') + ' à ' + cities.join(', ')

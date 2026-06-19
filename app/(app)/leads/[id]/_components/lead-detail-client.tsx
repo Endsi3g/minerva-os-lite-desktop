@@ -301,7 +301,7 @@ function QualificationPanel({ lead, onSave }: { lead: Lead; onSave: (fields: Par
 }
 
 export function LeadDetailClient({ id }: { id: string }) {
-  const { leads, updateLead, addNoteToLead, campaigns } = useReach();
+  const { leads, updateLead, addNoteToLead, campaigns, activeWorkspace } = useReach();
   const { t } = useLanguage();
 
   // Look up lead
@@ -315,7 +315,6 @@ export function LeadDetailClient({ id }: { id: string }) {
   const [noteContent, setNoteContent] = useState('');
 
   // Load workspace and user profile for realtime collaboration
-  const { activeWorkspace } = useReach();
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [userProfile, setUserProfile] = useState<{ fullName: string } | null>(null);
   const [isEditing, setIsEditing] = useState(false);

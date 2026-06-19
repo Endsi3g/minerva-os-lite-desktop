@@ -82,6 +82,32 @@ export interface Goal {
   updatedAt: string;
 }
 
+export interface LeadValidation {
+  id: string;
+  userId: string;
+  workspaceId: string;
+  businessName: string;
+  niche: string;
+  city: string;
+  phone: string;
+  email: string;
+  website: string;
+  address: string;
+  rating: number;
+  reviewsCount: number;
+  latitude?: number;
+  longitude?: number;
+  source: string;
+  status: 'to_verify' | 'ready' | 'imported' | 'ignored';
+  originalTags: Record<string, any>;
+  qualityScore: number;
+  completenessScore: number;
+  localFitScore: number;
+  opportunityScore: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 interface ReachContextType {
   user: SupabaseUser | null;
   leads: Lead[];
@@ -109,6 +135,7 @@ interface ReachContextType {
     nextAction: string;
     nextActionDate: string;
     notes?: string;
+    imageUrl?: string;
     website?: string;
     rating?: number;
     reviewsCount?: number;
@@ -116,6 +143,9 @@ interface ReachContextType {
     photos?: string[];
     socialLinks?: Record<string, string>;
     assignedTo?: string;
+    latitude?: number;
+    longitude?: number;
+    phone?: string;
   }) => void;
   toggleTask: (id: string) => void;
   addTask: (title: string, category: Task['category'], dueDate?: string) => void;
@@ -159,6 +189,11 @@ interface ReachContextType {
   addGoal: (data: { metric: Goal['metric']; target: number; period: Goal['period'] }) => Promise<Goal | null>;
   updateGoal: (id: string, fields: Partial<Pick<Goal, 'target' | 'period'>>) => Promise<void>;
   deleteGoal: (id: string) => Promise<void>;
+  leadValidations: LeadValidation[];
+  addLeadValidations: (validations: Omit<LeadValidation, 'id' | 'userId' | 'workspaceId' | 'createdAt' | 'updatedAt'>[]) => Promise<void>;
+  updateLeadValidation: (id: string, fields: Partial<LeadValidation>) => Promise<void>;
+  deleteLeadValidation: (id: string) => Promise<void>;
+  addOsmFeedback: (fb: { niche: string; city: string; actionType: 'ignore' | 'correct' | 'merge'; originalValue?: string; correctedValue?: string; osmId?: string }) => Promise<void>;
 }
 
 const ReachContext = createContext<ReachContextType | undefined>(undefined);
@@ -190,6 +225,7 @@ interface DbLead {
   assigned_to?: string | null;
   latitude?: number | null;
   longitude?: number | null;
+  phone?: string | null;
   fit_score?: number | null;
   intent_score?: number | null;
   bant_budget?: number | null;
@@ -267,6 +303,7 @@ function mapDbLeadToUi(dbLead: DbLead, dbNotes: DbNote[] = []): Lead {
     assignedTo: dbLead.assigned_to || undefined,
     latitude: dbLead.latitude ?? undefined,
     longitude: dbLead.longitude ?? undefined,
+    phone: dbLead.phone || undefined,
     fitScore: dbLead.fit_score ?? undefined,
     intentScore: dbLead.intent_score ?? undefined,
     bantBudget: Boolean(dbLead.bant_budget),
@@ -293,6 +330,42 @@ function mapDbLeadToUi(dbLead: DbLead, dbNotes: DbNote[] = []): Lead {
         content: n.content,
         createdAt: n.created_at
       }))
+  };
+}
+
+function mapDbValidationToUi(db: any): LeadValidation {
+  let tags: Record<string, any> = {};
+  try {
+    tags = typeof db.original_tags === 'string'
+      ? JSON.parse(db.original_tags)
+      : (db.original_tags || {});
+  } catch {
+    tags = {};
+  }
+  return {
+    id: db.id,
+    userId: db.user_id,
+    workspaceId: db.workspace_id,
+    businessName: db.business_name,
+    niche: db.niche || '',
+    city: db.city || '',
+    phone: db.phone || '',
+    email: db.email || '',
+    website: db.website || '',
+    address: db.address || '',
+    rating: db.rating ?? 0,
+    reviewsCount: db.reviews_count ?? 0,
+    latitude: db.latitude ?? undefined,
+    longitude: db.longitude ?? undefined,
+    source: db.source || 'osm',
+    status: db.status || 'to_verify',
+    originalTags: tags,
+    qualityScore: db.quality_score ?? 0,
+    completenessScore: db.completeness_score ?? 0,
+    localFitScore: db.local_fit_score ?? 0,
+    opportunityScore: db.opportunity_score ?? 0,
+    createdAt: db.created_at,
+    updatedAt: db.updated_at
   };
 }
 
@@ -427,6 +500,9 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
   const [workspacesList, setWorkspacesList] = useState<Workspace[]>([]);
   const [activeWorkspace, setActiveWorkspace] = useState<Workspace | null>(null);
 
+  // Lead Validations State
+  const [leadValidations, setLeadValidations] = useState<LeadValidation[]>([]);
+
   // Notifications State
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const unreadCount = notifications.filter(n => !n.isRead).length;
@@ -447,7 +523,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
 
     try {
       // All IPC calls in parallel — no round-trip sequencing overhead
-      const [dbLeads, dbNotes, dbTasks, dbSettings, dbNotifs, dbMsgs, dbProjects, dbCampaigns, dbGoals] = await Promise.all([
+      const [dbLeads, dbNotes, dbTasks, dbSettings, dbNotifs, dbMsgs, dbProjects, dbCampaigns, dbGoals, dbValidations] = await Promise.all([
         electronObj.dbAll("SELECT * FROM leads WHERE workspace_id = ? ORDER BY created_at DESC", [workspaceId]),
         electronObj.dbAll("SELECT * FROM notes WHERE workspace_id = ? ORDER BY created_at ASC", [workspaceId]),
         electronObj.dbAll("SELECT * FROM tasks WHERE workspace_id = ? ORDER BY created_at DESC", [workspaceId]),
@@ -457,6 +533,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
         electronObj.dbAll("SELECT * FROM projects WHERE workspace_id = ? ORDER BY created_at DESC", [workspaceId]),
         electronObj.dbAll("SELECT * FROM campaigns WHERE workspace_id = ? ORDER BY created_at DESC", [workspaceId]),
         electronObj.dbAll("SELECT * FROM goals WHERE user_id = ? ORDER BY created_at DESC", [userId]),
+        electronObj.dbAll("SELECT * FROM lead_validations WHERE workspace_id = ? ORDER BY created_at DESC", [workspaceId]),
       ]);
 
       const uiLeads = (dbLeads || []).map((lead: any) => {
@@ -477,6 +554,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
       setProjects((dbProjects || []).map(mapDbProjectToUi));
       setCampaigns((dbCampaigns || []).map(mapDbCampaignToUi));
       setGoals((dbGoals || []).map(mapDbGoalToUi));
+      setLeadValidations((dbValidations || []).map(mapDbValidationToUi));
     } catch (err) {
       console.error("Failed to load local SQLite data in ReachProvider:", err);
     }
@@ -564,6 +642,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
         { data: dbProjects },
         { data: dbCampaigns },
         { data: dbGoals },
+        { data: dbValidations },
       ] = await Promise.all([
         supabase.from('leads').select('*').eq('workspace_id', activeWs.id).order('created_at', { ascending: false }),
         supabase.from('notes').select('*').eq('workspace_id', activeWs.id).order('created_at', { ascending: true }),
@@ -575,6 +654,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
         supabase.from('projects').select('*').eq('workspace_id', activeWs.id).order('created_at', { ascending: false }),
         supabase.from('campaigns').select('*').eq('workspace_id', activeWs.id).order('created_at', { ascending: false }),
         supabase.from('goals').select('*').eq('user_id', currUser.id).order('created_at', { ascending: false }),
+        supabase.from('lead_validations').select('*').eq('workspace_id', activeWs.id).order('created_at', { ascending: false }),
       ]);
 
       const uiLeads = (dbLeads || []).map((lead: DbLead) => {
@@ -600,6 +680,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
       if (dbProjects) setProjects(dbProjects.map(mapDbProjectToUi));
       if (dbCampaigns) setCampaigns(dbCampaigns.map(mapDbCampaignToUi));
       if (dbGoals) setGoals(dbGoals.map(mapDbGoalToUi));
+      setLeadValidations((dbValidations || []).map(mapDbValidationToUi));
 
     } catch (e) {
       console.error("Error loading data from Supabase:", e);
@@ -1044,6 +1125,9 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
     photos?: string[];
     socialLinks?: Record<string, string>;
     assignedTo?: string;
+    latitude?: number;
+    longitude?: number;
+    phone?: string;
   }) => {
     if (!user || !activeWorkspace) return;
     const electronObj = typeof window !== 'undefined' && (window as any).electron;
@@ -1058,9 +1142,9 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
           source: leadData.source
         });
 
-        await electronObj.dbRun(`INSERT INTO leads (id, user_id, business_name, contact_name, contact_email, niche, city, source, status, temperature, next_action, next_action_date, owner, image_url, workspace_id, score, website, rating, reviews_count, maps_url, photos, social_links, assigned_to, created_at, updated_at, sync_status)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending_insert')`,
-          [leadId, user.id, leadData.businessName, leadData.contactName, leadData.contactEmail || '', leadData.niche, leadData.city, leadData.source, leadData.status, leadData.temperature, leadData.nextAction, leadData.nextActionDate || null, 'Moi', leadData.imageUrl || null, activeWorkspace.id, leadScore, leadData.website || null, leadData.rating ?? null, leadData.reviewsCount ?? null, leadData.mapsUrl || null, leadData.photos ? JSON.stringify(leadData.photos) : null, leadData.socialLinks ? JSON.stringify(leadData.socialLinks) : null, leadData.assignedTo || null, nowStr, nowStr]
+        await electronObj.dbRun(`INSERT INTO leads (id, user_id, business_name, contact_name, contact_email, niche, city, source, status, temperature, next_action, next_action_date, owner, image_url, workspace_id, score, website, rating, reviews_count, maps_url, photos, social_links, assigned_to, latitude, longitude, phone, created_at, updated_at, sync_status)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending_insert')`,
+          [leadId, user.id, leadData.businessName, leadData.contactName, leadData.contactEmail || '', leadData.niche, leadData.city, leadData.source, leadData.status, leadData.temperature, leadData.nextAction, leadData.nextActionDate || null, 'Moi', leadData.imageUrl || null, activeWorkspace.id, leadScore, leadData.website || null, leadData.rating ?? null, leadData.reviewsCount ?? null, leadData.mapsUrl || null, leadData.photos ? JSON.stringify(leadData.photos) : null, leadData.socialLinks ? JSON.stringify(leadData.socialLinks) : null, leadData.assignedTo || null, leadData.latitude ?? null, leadData.longitude ?? null, leadData.phone || null, nowStr, nowStr]
         );
 
         const insertedNotes: DbNote[] = [];
@@ -1102,7 +1186,10 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
           maps_url: leadData.mapsUrl || null,
           photos: leadData.photos ? JSON.stringify(leadData.photos) : null,
           social_links: leadData.socialLinks ? JSON.stringify(leadData.socialLinks) : null,
-          assigned_to: leadData.assignedTo || null
+          assigned_to: leadData.assignedTo || null,
+          latitude: leadData.latitude ?? null,
+          longitude: leadData.longitude ?? null,
+          phone: leadData.phone || null
         }, insertedNotes);
 
         setLeads(prev => [newUiLead, ...prev]);
@@ -1140,6 +1227,9 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
       photos: leadData.photos || null,
       social_links: leadData.socialLinks || null,
       assigned_to: leadData.assignedTo || null,
+      latitude: leadData.latitude ?? null,
+      longitude: leadData.longitude ?? null,
+      phone: leadData.phone || null,
     };
 
     try {
@@ -1484,6 +1574,9 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
         if (fields.replyDetectedAt !== undefined) { dbFields.push("reply_detected_at = ?"); params.push(fields.replyDetectedAt || null); }
         if (fields.gmailThreadId !== undefined) { dbFields.push("gmail_thread_id = ?"); params.push(fields.gmailThreadId || null); }
         if (fields.replyStatus !== undefined) { dbFields.push("reply_status = ?"); params.push(fields.replyStatus ?? null); }
+        if (fields.latitude !== undefined) { dbFields.push("latitude = ?"); params.push(fields.latitude ?? null); }
+        if (fields.longitude !== undefined) { dbFields.push("longitude = ?"); params.push(fields.longitude ?? null); }
+        if (fields.phone !== undefined) { dbFields.push("phone = ?"); params.push(fields.phone || null); }
 
         if (dbFields.length > 0) {
           dbFields.push("updated_at = ?");
@@ -1541,6 +1634,9 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
     if (fields.replyDetectedAt !== undefined) dbFields.reply_detected_at = fields.replyDetectedAt || null;
     if (fields.gmailThreadId !== undefined) dbFields.gmail_thread_id = fields.gmailThreadId || null;
     if (fields.replyStatus !== undefined) dbFields.reply_status = fields.replyStatus ?? null;
+    if (fields.latitude !== undefined) dbFields.latitude = fields.latitude ?? null;
+    if (fields.longitude !== undefined) dbFields.longitude = fields.longitude ?? null;
+    if (fields.phone !== undefined) dbFields.phone = fields.phone || null;
 
     try {
       const { error } = await supabase
@@ -2243,6 +2339,212 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
     } catch (err) { console.error("Error in deleteGoal:", err); }
   };
 
+  const addLeadValidations = async (items: Omit<LeadValidation, 'id' | 'userId' | 'workspaceId' | 'createdAt' | 'updatedAt'>[]) => {
+    if (!user || !activeWorkspace) return;
+    const electronObj = typeof window !== 'undefined' && (window as any).electron;
+    const nowStr = new Date().toISOString();
+
+    const mappedItems = items.map(item => ({
+      ...item,
+      id: crypto.randomUUID(),
+      userId: user.id,
+      workspaceId: activeWorkspace.id,
+      createdAt: nowStr,
+      updatedAt: nowStr
+    }));
+
+    if (electronObj) {
+      try {
+        for (const item of mappedItems) {
+          await electronObj.dbRun(
+            `INSERT INTO lead_validations (id, user_id, workspace_id, business_name, niche, city, phone, email, website, address, rating, reviews_count, latitude, longitude, source, status, original_tags, quality_score, completeness_score, local_fit_score, opportunity_score, created_at, updated_at, sync_status)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending_insert')`,
+            [
+              item.id, item.userId, item.workspaceId, item.businessName, item.niche, item.city, item.phone, item.email, item.website, item.address, item.rating, item.reviewsCount, item.latitude ?? null, item.longitude ?? null, item.source, item.status, JSON.stringify(item.originalTags || {}), item.qualityScore, item.completenessScore, item.localFitScore, item.opportunityScore, item.createdAt, item.updatedAt
+            ]
+          );
+        }
+        setLeadValidations(prev => [...mappedItems, ...prev]);
+        electronObj.triggerSync();
+      } catch (err) {
+        console.error("Local addLeadValidations error:", err);
+      }
+      return;
+    }
+
+    const supabase = createClient();
+    try {
+      const dbItems = mappedItems.map(item => ({
+        id: item.id,
+        user_id: item.userId,
+        workspace_id: item.workspaceId,
+        business_name: item.businessName,
+        niche: item.niche,
+        city: item.city,
+        phone: item.phone,
+        email: item.email,
+        website: item.website,
+        address: item.address,
+        rating: item.rating,
+        reviews_count: item.reviewsCount,
+        latitude: item.latitude ?? null,
+        longitude: item.longitude ?? null,
+        source: item.source,
+        status: item.status,
+        original_tags: item.originalTags || {},
+        quality_score: item.qualityScore,
+        completeness_score: item.completenessScore,
+        local_fit_score: item.localFitScore,
+        opportunity_score: item.opportunityScore,
+        created_at: item.createdAt,
+        updated_at: item.updatedAt
+      }));
+
+      const { error } = await supabase.from('lead_validations').insert(dbItems);
+      if (!error) {
+        setLeadValidations(prev => [...mappedItems, ...prev]);
+      } else {
+        console.error("Supabase addLeadValidations error:", error);
+      }
+    } catch (err) {
+      console.error("Supabase addLeadValidations error:", err);
+    }
+  };
+
+  const updateLeadValidation = async (id: string, fields: Partial<LeadValidation>) => {
+    if (!user) return;
+    const electronObj = typeof window !== 'undefined' && (window as any).electron;
+    const nowStr = new Date().toISOString();
+
+    if (electronObj) {
+      try {
+        const dbFields: string[] = [];
+        const params: any[] = [];
+
+        if (fields.businessName !== undefined) { dbFields.push("business_name = ?"); params.push(fields.businessName); }
+        if (fields.phone !== undefined) { dbFields.push("phone = ?"); params.push(fields.phone); }
+        if (fields.email !== undefined) { dbFields.push("email = ?"); params.push(fields.email); }
+        if (fields.website !== undefined) { dbFields.push("website = ?"); params.push(fields.website); }
+        if (fields.address !== undefined) { dbFields.push("address = ?"); params.push(fields.address); }
+        if (fields.status !== undefined) { dbFields.push("status = ?"); params.push(fields.status); }
+        if (fields.qualityScore !== undefined) { dbFields.push("quality_score = ?"); params.push(fields.qualityScore); }
+        if (fields.completenessScore !== undefined) { dbFields.push("completeness_score = ?"); params.push(fields.completenessScore); }
+        if (fields.localFitScore !== undefined) { dbFields.push("local_fit_score = ?"); params.push(fields.localFitScore); }
+        if (fields.opportunityScore !== undefined) { dbFields.push("opportunity_score = ?"); params.push(fields.opportunityScore); }
+
+        if (dbFields.length > 0) {
+          dbFields.push("updated_at = ?");
+          params.push(nowStr);
+          dbFields.push("sync_status = 'pending_update'");
+          params.push(id);
+          await electronObj.dbRun(`UPDATE lead_validations SET ${dbFields.join(", ")} WHERE id = ?`, params);
+        }
+
+        setLeadValidations(prev => prev.map(val =>
+          val.id === id ? { ...val, ...fields, updatedAt: nowStr } : val
+        ));
+        electronObj.triggerSync();
+      } catch (err) {
+        console.error("Local updateLeadValidation error:", err);
+      }
+      return;
+    }
+
+    const supabase = createClient();
+    const dbFields: any = {};
+    if (fields.businessName !== undefined) dbFields.business_name = fields.businessName;
+    if (fields.phone !== undefined) dbFields.phone = fields.phone;
+    if (fields.email !== undefined) dbFields.email = fields.email;
+    if (fields.website !== undefined) dbFields.website = fields.website;
+    if (fields.address !== undefined) dbFields.address = fields.address;
+    if (fields.status !== undefined) dbFields.status = fields.status;
+    if (fields.qualityScore !== undefined) dbFields.quality_score = fields.qualityScore;
+    if (fields.completenessScore !== undefined) dbFields.completeness_score = fields.completenessScore;
+    if (fields.localFitScore !== undefined) dbFields.local_fit_score = fields.localFitScore;
+    if (fields.opportunityScore !== undefined) dbFields.opportunity_score = fields.opportunityScore;
+    dbFields.updated_at = nowStr;
+
+    try {
+      const { error } = await supabase.from('lead_validations').update(dbFields).eq('id', id);
+      if (!error) {
+        setLeadValidations(prev => prev.map(val =>
+          val.id === id ? { ...val, ...fields, updatedAt: nowStr } : val
+        ));
+      } else {
+        console.error("Supabase updateLeadValidation error:", error);
+      }
+    } catch (err) {
+      console.error("Supabase updateLeadValidation error:", err);
+    }
+  };
+
+  const deleteLeadValidation = async (id: string) => {
+    if (!user) return;
+    const electronObj = typeof window !== 'undefined' && (window as any).electron;
+
+    if (electronObj) {
+      try {
+        await electronObj.dbRun("UPDATE lead_validations SET sync_status = 'pending_delete' WHERE id = ?", [id]);
+        setLeadValidations(prev => prev.filter(val => val.id !== id));
+        electronObj.triggerSync();
+      } catch (err) {
+        console.error("Local deleteLeadValidation error:", err);
+      }
+      return;
+    }
+
+    const supabase = createClient();
+    try {
+      const { error } = await supabase.from('lead_validations').delete().eq('id', id);
+      if (!error) {
+        setLeadValidations(prev => prev.filter(val => val.id !== id));
+      } else {
+        console.error("Supabase deleteLeadValidation error:", error);
+      }
+    } catch (err) {
+      console.error("Supabase deleteLeadValidation error:", err);
+    }
+  };
+
+  const addOsmFeedback = async (fb: { niche: string; city: string; actionType: 'ignore' | 'correct' | 'merge'; originalValue?: string; correctedValue?: string; osmId?: string }) => {
+    if (!user || !activeWorkspace) return;
+    const electronObj = typeof window !== 'undefined' && (window as any).electron;
+    const nowStr = new Date().toISOString();
+    const id = crypto.randomUUID();
+
+    if (electronObj) {
+      try {
+        await electronObj.dbRun(
+          `INSERT INTO osm_feedback (id, user_id, workspace_id, niche, city, action_type, original_value, corrected_value, osm_id, created_at, sync_status)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending_insert')`,
+          [id, user.id, activeWorkspace.id, fb.niche, fb.city, fb.actionType, fb.originalValue || null, fb.correctedValue || null, fb.osmId || null, nowStr]
+        );
+        electronObj.triggerSync();
+      } catch (err) {
+        console.error("Local addOsmFeedback error:", err);
+      }
+      return;
+    }
+
+    const supabase = createClient();
+    try {
+      await supabase.from('osm_feedback').insert({
+        id,
+        user_id: user.id,
+        workspace_id: activeWorkspace.id,
+        niche: fb.niche,
+        city: fb.city,
+        action_type: fb.actionType,
+        original_value: fb.originalValue || null,
+        corrected_value: fb.correctedValue || null,
+        osm_id: fb.osmId || null,
+        created_at: nowStr
+      });
+    } catch (err) {
+      console.error("Supabase addOsmFeedback error:", err);
+    }
+  };
+
   const importDemoData = async () => {
     if (!user || !activeWorkspace) return;
     await populateMockData(user.id, activeWorkspace.id);
@@ -2298,6 +2600,11 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
         addGoal,
         updateGoal,
         deleteGoal,
+        leadValidations,
+        addLeadValidations,
+        updateLeadValidation,
+        deleteLeadValidation,
+        addOsmFeedback,
       }}
     >
       {children}

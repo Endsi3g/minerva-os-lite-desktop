@@ -763,3 +763,97 @@ create trigger update_route_plans_updated_at before update on public.route_plans
 
 create trigger update_field_visits_updated_at before update on public.field_visits
   for each row execute function public.update_updated_at_column();
+
+-- ========================================================
+-- v5.0.0 — Lead validations, OSM Feedback and Lead Phone additions
+
+-- 1. Add columns to public.leads (if not exists)
+alter table public.leads add column if not exists phone text;
+alter table public.leads add column if not exists website text;
+alter table public.leads add column if not exists rating numeric(3,2);
+alter table public.leads add column if not exists reviews_count integer;
+alter table public.leads add column if not exists maps_url text;
+alter table public.leads add column if not exists latitude double precision;
+alter table public.leads add column if not exists longitude double precision;
+
+-- 2. Create lead_validations table
+create table if not exists public.lead_validations (
+    id uuid default gen_random_uuid() primary key,
+    user_id uuid references auth.users(id) on delete cascade not null,
+    workspace_id uuid references public.workspaces(id) on delete cascade,
+    business_name text not null,
+    niche text,
+    city text,
+    phone text,
+    email text,
+    website text,
+    address text,
+    rating numeric(3,2),
+    reviews_count integer,
+    latitude double precision,
+    longitude double precision,
+    source text,
+    status text not null default 'to_verify' check (status in ('to_verify', 'ready', 'imported', 'ignored')),
+    original_tags jsonb default '{}'::jsonb,
+    quality_score integer default 0,
+    completeness_score integer default 0,
+    local_fit_score integer default 0,
+    opportunity_score integer default 0,
+    created_at timestamp with time zone default now() not null,
+    updated_at timestamp with time zone default now() not null
+);
+
+alter table public.lead_validations enable row level security;
+
+create policy "Users manage own lead_validations" on public.lead_validations
+    for all using (
+        exists (
+            select 1 from public.workspaces w
+            where w.id = public.lead_validations.workspace_id
+              and (w.owner_id = auth.uid() or exists (
+                  select 1 from public.team_members tm
+                  where tm.workspace_id = w.id
+                    and tm.member_user_id = auth.uid()
+                    and tm.status = 'active'
+              ))
+        )
+    );
+
+create index if not exists idx_lead_validations_workspace_id on public.lead_validations(workspace_id);
+create index if not exists idx_lead_validations_status on public.lead_validations(status);
+
+create trigger update_lead_validations_updated_at before update on public.lead_validations
+    for each row execute function public.update_updated_at_column();
+
+-- 3. Create osm_feedback table
+create table if not exists public.osm_feedback (
+    id uuid default gen_random_uuid() primary key,
+    user_id uuid references auth.users(id) on delete cascade not null,
+    workspace_id uuid references public.workspaces(id) on delete cascade,
+    niche text,
+    city text,
+    action_type text not null,
+    original_value text,
+    corrected_value text,
+    osm_id text,
+    created_at timestamp with time zone default now() not null
+);
+
+alter table public.osm_feedback enable row level security;
+
+create policy "Users manage own osm_feedback" on public.osm_feedback
+    for all using (
+        exists (
+            select 1 from public.workspaces w
+            where w.id = public.osm_feedback.workspace_id
+              and (w.owner_id = auth.uid() or exists (
+                  select 1 from public.team_members tm
+                  where tm.workspace_id = w.id
+                    and tm.member_user_id = auth.uid()
+                    and tm.status = 'active'
+              ))
+        )
+    );
+
+create index if not exists idx_osm_feedback_workspace_id on public.osm_feedback(workspace_id);
+

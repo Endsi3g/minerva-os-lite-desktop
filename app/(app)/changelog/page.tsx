@@ -18,6 +18,20 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v2.79.0',
+      date: '2026-06-19',
+      titleKey: 'changelog.v2_79_0_title' as TranslationKey,
+      descKey: 'changelog.v2_79_0_desc' as TranslationKey,
+      highlights: [
+        "Normalisation Téléphone & URLs : Nettoyage automatique des sites web et formatage +1 (514) 555-0199.",
+        "Scores d'opportunités : Calcul automatique client/serveur de complétude, local fit, proximité et opportunité.",
+        "Inbox de Validation : Interface en 4 onglets persistée localement dans SQLite/Supabase avec panel de scores HSL premium.",
+        "Géocodage d'adresse gratuit : Saisie et géocodage textuel d'adresse de recherche via Nominatim OpenStreetMap.",
+        "Raccourcis OSM & Doublons : Redirection vers l'éditeur OSM iD et fusion intelligente de doublons CRM/Inbox en un clic.",
+        "Actions en bloc : Validation, exclusion, CRM import et suppression en masse des prospects."
+      ],
+    },
+    {
       version: 'v2.78.0',
       date: '2026-06-19',
       titleKey: 'changelog.v2_78_0_title' as TranslationKey,
