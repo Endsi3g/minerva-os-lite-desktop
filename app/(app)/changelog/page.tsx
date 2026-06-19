@@ -18,6 +18,18 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v2.77.0',
+      date: '2026-06-19',
+      titleKey: 'changelog.v2_77_0_title' as TranslationKey,
+      descKey: 'changelog.v2_77_0_desc' as TranslationKey,
+      highlights: [
+        "Compétence Minerva (`SKILL.md`) : raccourcis et configuration intégrés pour interroger le CRM Minerva directement à partir d'Hermes.",
+        "Client d'aide Python (`minerva_client.py`) : utilitaire sécurisé avec jeton d'authentification pour piloter les actions CRM en ligne de commande.",
+        "Panneau d'administration Hermes : interface utilisateur visuelle et guides d'installation rapide ajoutés à l'onglet API des paramètres.",
+        "Déploiement Cloud & VPS : configurations Docker Compose et guide pas-à-pas pour l'exécution H24 d'Hermes Gateway."
+      ],
+    },
+    {
       version: 'v2.76.0',
       date: '2026-06-19',
       titleKey: 'changelog.v2_76_0_title' as TranslationKey,

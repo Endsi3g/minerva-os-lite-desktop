@@ -18,7 +18,7 @@
 [![pnpm Package Manager](https://img.shields.io/badge/pnpm-%3E%3D9.0.0-orange.svg?style=flat-square)](https://pnpm.io/)
 [![Framework Next.js](https://img.shields.io/badge/next.js-16.2.6-black.svg?style=flat-square)](https://nextjs.org/)
 [![Database Supabase](https://img.shields.io/badge/database-supabase-emerald.svg?style=flat-square)](https://supabase.com/)
-[![Version](https://img.shields.io/badge/version-2.76.0-f54e00.svg?style=flat-square)](#changelog)
+[![Version](https://img.shields.io/badge/version-2.77.0-f54e00.svg?style=flat-square)](#changelog)
 
 </div>
 
