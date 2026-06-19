@@ -18,6 +18,19 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v2.70.0',
+      date: '2026-06-18',
+      titleKey: 'changelog.v2_70_0_title' as TranslationKey,
+      descKey: 'changelog.v2_70_0_desc' as TranslationKey,
+      highlights: [
+        "Mode Terrain sans Modales : Remplacement complet du modal d'outcome par des pages dédiées (/field/[planId]/outcome/[leadId]).",
+        "RDV pris (meeting_booked) : Passage automatique du statut à 'Won' (Deal) + création d'une tâche 'Appel de closing' pour le lendemain.",
+        "Absent (absent) : Création automatique d'une séquence de relance e-mail 'Passé vous voir' (e-mail J+0 + appel J+3) si e-mail disponible, plus tâche de rappel à J+2.",
+        "Synchronisation bidirectionnelle : Mise à jour de sync.cjs pour synchroniser les tournées (route_plans) et les fiches de visite (field_visits) entre SQLite et Supabase.",
+        "Endpoint de passage en ligne : Ajout de la route API /api/route-plans/visits gérant les passages terrain et leurs automations associées."
+      ],
+    },
+    {
       version: 'v2.64.0',
       date: '2026-06-18',
       titleKey: 'changelog.v2_59_0_title' as TranslationKey,

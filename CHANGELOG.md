@@ -5,6 +5,15 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [2.70.0] - 2026-06-18
+
+### Ajouté — Mode Terrain sans Modales & Automations
+- **Expérience Outcome Dédiée** — Remplacement complet du modal de résultat de passage par des pages de saisie dédiées (`/field/[planId]/outcome/[leadId]`), offrant une interface plein écran premium et mobile-first.
+- **Conversion Automatique des RDV en Deals** — Marquer un lead comme "RDV pris" (`meeting_booked`) met à jour son statut à `'Won'` (Deal) et planifie automatiquement une tâche `'Appel de closing'` pour le lendemain.
+- **Séquence de Relance Automatique pour Absence** — Marquer un lead comme "Absent" (`absent`) génère automatiquement une séquence e-mail de relance `'Passé vous voir'` (e-mail immédiat à J+0 et rappel d'appel à J+3) si une adresse e-mail est disponible, ainsi qu'une tâche de rappel locale à J+2.
+- **Synchronisation Bidirectionnelle des Tournées** — Câblage de `sync.cjs` pour synchroniser les itinéraires (`route_plans`) et les fiches de visite (`field_visits`) entre SQLite (Electron) et Supabase (Web).
+- **Nouvel Endpoint API** — Endpoint `/api/route-plans/visits` gérant les résultats de passage et leurs automatisations associées pour les sessions connectées.
+
 ## [2.64.0] - 2026-06-18
 
 ### Ajouté — Pages produit
