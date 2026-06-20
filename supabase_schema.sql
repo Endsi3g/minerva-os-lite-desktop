@@ -957,3 +957,172 @@ CREATE TRIGGER update_assistant_canvas_updated_at BEFORE UPDATE ON public.assist
     FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
 
+-- v2.85.0 - GOOGLE MODULAR INTEGRATION TABLES
+
+-- 1. google_accounts
+CREATE TABLE IF NOT EXISTS public.google_accounts (
+    id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT null,
+    workspace_id uuid REFERENCES public.workspaces(id) ON DELETE CASCADE,
+    google_email text NOT NULL,
+    status text NOT NULL DEFAULT 'connected' CHECK (status IN ('connected', 'disconnected', 'error')),
+    created_at timestamp with time zone DEFAULT now() NOT null,
+    updated_at timestamp with time zone DEFAULT now() NOT null
+);
+
+-- 2. google_tokens
+CREATE TABLE IF NOT EXISTS public.google_tokens (
+    account_id uuid REFERENCES public.google_accounts(id) ON DELETE CASCADE PRIMARY KEY,
+    user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT null,
+    access_token text NOT NULL,
+    refresh_token text,
+    expires_at timestamp with time zone NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT null,
+    updated_at timestamp with time zone DEFAULT now() NOT null
+);
+
+-- 3. google_scope_grants
+CREATE TABLE IF NOT EXISTS public.google_scope_grants (
+    id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+    account_id uuid REFERENCES public.google_accounts(id) ON DELETE CASCADE NOT null,
+    user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT null,
+    scope text NOT NULL,
+    granted_at timestamp with time zone DEFAULT now() NOT null
+);
+
+-- 4. gmail_threads
+CREATE TABLE IF NOT EXISTS public.gmail_threads (
+    id text PRIMARY KEY, -- Google Thread ID
+    user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT null,
+    workspace_id uuid REFERENCES public.workspaces(id) ON DELETE CASCADE,
+    lead_id uuid REFERENCES public.leads(id) ON DELETE CASCADE,
+    subject text,
+    last_message_at timestamp with time zone,
+    snippet text,
+    unread boolean DEFAULT false NOT null,
+    sync_status text DEFAULT 'synced',
+    created_at timestamp with time zone DEFAULT now() NOT null,
+    updated_at timestamp with time zone DEFAULT now() NOT null
+);
+
+-- 5. calendar_links
+CREATE TABLE IF NOT EXISTS public.calendar_links (
+    id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+    account_id uuid REFERENCES public.google_accounts(id) ON DELETE CASCADE NOT null,
+    user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT null,
+    lead_id uuid REFERENCES public.leads(id) ON DELETE CASCADE,
+    google_event_id text NOT NULL,
+    title text,
+    start_time timestamp with time zone,
+    end_time timestamp with time zone,
+    meet_link text,
+    created_at timestamp with time zone DEFAULT now() NOT null,
+    updated_at timestamp with time zone DEFAULT now() NOT null
+);
+
+-- 6. drive_files
+CREATE TABLE IF NOT EXISTS public.drive_files (
+    id text PRIMARY KEY, -- Google File ID
+    user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT null,
+    workspace_id uuid REFERENCES public.workspaces(id) ON DELETE CASCADE,
+    lead_id uuid REFERENCES public.leads(id) ON DELETE CASCADE,
+    name text NOT NULL,
+    mime_type text,
+    web_view_link text,
+    created_at timestamp with time zone DEFAULT now() NOT null,
+    updated_at timestamp with time zone DEFAULT now() NOT null
+);
+
+-- 7. meet_sessions
+CREATE TABLE IF NOT EXISTS public.meet_sessions (
+    id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT null,
+    calendar_link_id uuid REFERENCES public.calendar_links(id) ON DELETE CASCADE,
+    google_meet_code text,
+    status text DEFAULT 'scheduled',
+    start_time timestamp with time zone,
+    end_time timestamp with time zone,
+    created_at timestamp with time zone DEFAULT now() NOT null,
+    updated_at timestamp with time zone DEFAULT now() NOT null
+);
+
+-- RLS Enable
+ALTER TABLE public.google_accounts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.google_tokens ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.google_scope_grants ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.gmail_threads ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.calendar_links ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.drive_files ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.meet_sessions ENABLE ROW LEVEL SECURITY;
+
+-- Policies (TO authenticated, ownership in USING and WITH CHECK)
+CREATE POLICY "Users can manage their own google_accounts" ON public.google_accounts
+    TO authenticated
+    USING (auth.uid() = user_id)
+    WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can manage their own google_tokens" ON public.google_tokens
+    TO authenticated
+    USING (auth.uid() = user_id)
+    WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can manage their own google_scope_grants" ON public.google_scope_grants
+    TO authenticated
+    USING (auth.uid() = user_id)
+    WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can manage their own gmail_threads" ON public.gmail_threads
+    TO authenticated
+    USING (auth.uid() = user_id)
+    WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can manage their own calendar_links" ON public.calendar_links
+    TO authenticated
+    USING (auth.uid() = user_id)
+    WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can manage their own drive_files" ON public.drive_files
+    TO authenticated
+    USING (auth.uid() = user_id)
+    WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can manage their own meet_sessions" ON public.meet_sessions
+    TO authenticated
+    USING (auth.uid() = user_id)
+    WITH CHECK (auth.uid() = user_id);
+
+-- Indexes
+CREATE INDEX IF NOT EXISTS idx_google_accounts_user_id ON public.google_accounts(user_id);
+CREATE INDEX IF NOT EXISTS idx_google_accounts_workspace_id ON public.google_accounts(workspace_id);
+CREATE INDEX IF NOT EXISTS idx_google_tokens_user_id ON public.google_tokens(user_id);
+CREATE INDEX IF NOT EXISTS idx_google_scope_grants_account_id ON public.google_scope_grants(account_id);
+CREATE INDEX IF NOT EXISTS idx_gmail_threads_user_id ON public.gmail_threads(user_id);
+CREATE INDEX IF NOT EXISTS idx_gmail_threads_workspace_id ON public.gmail_threads(workspace_id);
+CREATE INDEX IF NOT EXISTS idx_gmail_threads_lead_id ON public.gmail_threads(lead_id);
+CREATE INDEX IF NOT EXISTS idx_calendar_links_user_id ON public.calendar_links(user_id);
+CREATE INDEX IF NOT EXISTS idx_calendar_links_lead_id ON public.calendar_links(lead_id);
+CREATE INDEX IF NOT EXISTS idx_drive_files_user_id ON public.drive_files(user_id);
+CREATE INDEX IF NOT EXISTS idx_drive_files_workspace_id ON public.drive_files(workspace_id);
+CREATE INDEX IF NOT EXISTS idx_drive_files_lead_id ON public.drive_files(lead_id);
+CREATE INDEX IF NOT EXISTS idx_meet_sessions_user_id ON public.meet_sessions(user_id);
+
+-- Triggers for updated_at
+CREATE TRIGGER update_google_accounts_updated_at BEFORE UPDATE ON public.google_accounts
+    FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+CREATE TRIGGER update_google_tokens_updated_at BEFORE UPDATE ON public.google_tokens
+    FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+CREATE TRIGGER update_gmail_threads_updated_at BEFORE UPDATE ON public.gmail_threads
+    FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+CREATE TRIGGER update_calendar_links_updated_at BEFORE UPDATE ON public.calendar_links
+    FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+CREATE TRIGGER update_drive_files_updated_at BEFORE UPDATE ON public.drive_files
+    FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+CREATE TRIGGER update_meet_sessions_updated_at BEFORE UPDATE ON public.meet_sessions
+    FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+

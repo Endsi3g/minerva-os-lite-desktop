@@ -561,6 +561,81 @@ function initDb() {
     db.run(`CREATE INDEX IF NOT EXISTS idx_assistant_canvas_user_id ON assistant_canvas(user_id)`);
 
 
+    // v2.85.0 - google integration tables for local SQLite
+    db.run(`CREATE TABLE IF NOT EXISTS google_accounts (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      workspace_id TEXT,
+      google_email TEXT NOT NULL,
+      status TEXT DEFAULT 'connected',
+      created_at TEXT,
+      updated_at TEXT
+    )`);
+    db.run(`CREATE TABLE IF NOT EXISTS google_tokens (
+      account_id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      access_token TEXT NOT NULL,
+      refresh_token TEXT,
+      expires_at TEXT,
+      created_at TEXT,
+      updated_at TEXT
+    )`);
+    db.run(`CREATE TABLE IF NOT EXISTS google_scope_grants (
+      id TEXT PRIMARY KEY,
+      account_id TEXT NOT NULL,
+      user_id TEXT NOT NULL,
+      scope TEXT NOT NULL,
+      granted_at TEXT
+    )`);
+    db.run(`CREATE TABLE IF NOT EXISTS gmail_threads (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      workspace_id TEXT,
+      lead_id TEXT,
+      subject TEXT,
+      last_message_at TEXT,
+      snippet TEXT,
+      unread INTEGER DEFAULT 0,
+      sync_status TEXT DEFAULT 'synced',
+      created_at TEXT,
+      updated_at TEXT
+    )`);
+    db.run(`CREATE TABLE IF NOT EXISTS calendar_links (
+      id TEXT PRIMARY KEY,
+      account_id TEXT NOT NULL,
+      user_id TEXT NOT NULL,
+      lead_id TEXT,
+      google_event_id TEXT NOT NULL,
+      title TEXT,
+      start_time TEXT,
+      end_time TEXT,
+      meet_link TEXT,
+      created_at TEXT,
+      updated_at TEXT
+    )`);
+    db.run(`CREATE TABLE IF NOT EXISTS drive_files (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      workspace_id TEXT,
+      lead_id TEXT,
+      name TEXT NOT NULL,
+      mime_type TEXT,
+      web_view_link TEXT,
+      created_at TEXT,
+      updated_at TEXT
+    )`);
+    db.run(`CREATE TABLE IF NOT EXISTS meet_sessions (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      calendar_link_id TEXT,
+      google_meet_code TEXT,
+      status TEXT DEFAULT 'scheduled',
+      start_time TEXT,
+      end_time TEXT,
+      created_at TEXT,
+      updated_at TEXT
+    )`);
+
     // Indexes to avoid full table scans during sync
     db.run(`CREATE INDEX IF NOT EXISTS idx_leads_user_id ON leads(user_id)`);
     db.run(`CREATE INDEX IF NOT EXISTS idx_leads_sync_status ON leads(sync_status)`);

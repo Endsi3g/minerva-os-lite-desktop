@@ -16,6 +16,8 @@ import {
   Cpu,
   Wrench,
   X,
+  Mail,
+  MapPin,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -73,20 +75,119 @@ interface IntegrationItem {
 
 const DEFAULT_INTEGRATIONS: IntegrationItem[] = [
   {
-    id: 'google-calendar',
-    name: 'Google Calendar',
-    category: 'calendar',
+    id: 'google-gmail',
+    name: 'Gmail',
+    nameKey: 'integrations.google_gmail.name',
+    category: 'communication',
     owner: 'Alex Smith',
     email: 'alexsmith@minerva-os-lite.com',
-    accEmail: 'alexsmith.mobbin@gmail.com',
-    icon: GoogleCalendarIcon,
-    status: 'Active',
-    statusKey: 'integrations.status.active',
+    accEmail: 'gmail.readonly, gmail.send',
+    accEmailKey: 'integrations.google_gmail.acc_email',
+    icon: () => <Mail className="w-5 h-5 text-[#EA4335]" />,
+    status: 'Inactive',
+    statusKey: 'integrations.status.inactive',
     assets: '—',
     access: 'Private',
     accessKey: 'integrations.access.private',
-    description: 'Synchronise your Google Calendar to extract context from upcoming events and schedules.',
-    descriptionKey: 'integrations.google_calendar.description'
+    description: 'Connectez Gmail pour lire, rédiger et synchroniser vos échanges d\'emails avec vos prospects CRM.',
+    descriptionKey: 'integrations.google_gmail.description',
+    steps: [
+      'Cliquez sur « Se connecter » pour autoriser Minerva à accéder à votre messagerie Gmail.',
+      'Configurez les scopes nécessaires (lecture et envoi).',
+      'Vos échanges par emails seront alors automatiquement reliés à vos prospects dans Minerva.'
+    ]
+  },
+  {
+    id: 'google-calendar',
+    name: 'Google Calendar',
+    nameKey: 'integrations.google_calendar.name',
+    category: 'calendar',
+    owner: 'Alex Smith',
+    email: 'alexsmith@minerva-os-lite.com',
+    accEmail: 'calendar.events, calendar.freebusy',
+    accEmailKey: 'integrations.google_calendar.acc_email',
+    icon: GoogleCalendarIcon,
+    status: 'Inactive',
+    statusKey: 'integrations.status.inactive',
+    assets: '—',
+    access: 'Private',
+    accessKey: 'integrations.access.private',
+    description: 'Synchronisez votre agenda Google pour gérer vos rendez-vous clients, relances et visites terrain.',
+    descriptionKey: 'integrations.google_calendar.description',
+    steps: [
+      'Cliquez sur « Se connecter » pour autoriser Minerva à accéder à votre Google Calendar.',
+      'Sélectionnez les calendriers de votre choix.',
+      'Vos événements et plannings seront synchronisés avec Minerva.'
+    ]
+  },
+  {
+    id: 'google-meet',
+    name: 'Google Meet',
+    nameKey: 'integrations.google_meet.name',
+    category: 'meeting',
+    owner: 'Alex Smith',
+    email: 'alexsmith@minerva-os-lite.com',
+    accEmail: 'meeting.create, artifacts',
+    accEmailKey: 'integrations.google_meet.acc_email',
+    icon: GoogleMeetIcon,
+    status: 'Inactive',
+    statusKey: 'integrations.status.inactive',
+    assets: '—',
+    access: 'Private',
+    accessKey: 'integrations.access.private',
+    description: 'Planifiez des visioconférences Google Meet et associez les comptes-rendus à vos opportunités.',
+    descriptionKey: 'integrations.google_meet.description',
+    steps: [
+      'L\'intégration nécessite l\'autorisation de votre compte Google principal (Gmail & Calendar).',
+      'Lors de la création de rendez-vous dans Minerva, un lien Google Meet sera généré automatiquement.',
+      'Les enregistrements et transcriptions associés dans votre Google Drive seront synchronisés.'
+    ]
+  },
+  {
+    id: 'google-drive',
+    name: 'Google Drive',
+    nameKey: 'integrations.google_drive.name',
+    category: 'document',
+    owner: 'Alex Smith',
+    email: 'alexsmith@minerva-os-lite.com',
+    accEmail: 'drive.file, metadata.readonly',
+    accEmailKey: 'integrations.google_drive.acc_email',
+    icon: GoogleDriveIcon,
+    status: 'Inactive',
+    statusKey: 'integrations.status.inactive',
+    assets: '—',
+    access: 'Private',
+    accessKey: 'integrations.access.private',
+    description: 'Stockez et exportez vos propositions commerciales et audits sous format de fichier Google Docs.',
+    descriptionKey: 'integrations.google_drive.description',
+    steps: [
+      'Cliquez sur « Se connecter » pour autoriser l\'accès progressive à Google Drive (sensible).',
+      'Autorisez l\'accès aux fichiers créés ou ouverts par l\'application (scope drive.file).',
+      'Exportez vos audits SEO ou propositions commerciales de Minerva directement en un clic dans votre Drive.'
+    ]
+  },
+  {
+    id: 'google-places',
+    name: 'Google Places',
+    nameKey: 'integrations.google_places.name',
+    category: 'scraping',
+    owner: 'Alex Smith',
+    email: 'alexsmith@minerva-os-lite.com',
+    accEmail: 'Clé API Serveur',
+    accEmailKey: 'integrations.google_places.acc_email',
+    icon: () => <MapPin className="w-5 h-5 text-[#34A853]" />,
+    status: 'Active',
+    statusKey: 'integrations.status.active',
+    assets: 'Illimité',
+    access: 'Entire workspace',
+    accessKey: 'integrations.access.entire_workspace',
+    description: 'Recherchez et enrichissez vos prospects locaux en utilisant l\'API officielle Google Places (New).',
+    descriptionKey: 'integrations.google_places.description',
+    steps: [
+      'Cette intégration est activée globalement côté serveur à l\'aide d\'une clé d\'API Google Cloud Maps.',
+      'Elle est disponible dans l\'outil de prospection pour enrichir les fiches et coordonnées des commerces.',
+      'Aucune authentification OAuth individuelle n\'est nécessaire pour vos utilisateurs.'
+    ]
   },
   {
     id: 'demo-website-1',
@@ -169,22 +270,6 @@ const DEFAULT_INTEGRATIONS: IntegrationItem[] = [
     accessKey: 'integrations.access.private',
     description: 'Find and access all of your SharePoint content. Limited to your 1,000 most recent files in the Free tier.',
     descriptionKey: 'integrations.sharepoint.description'
-  },
-  {
-    id: 'google-drive',
-    name: 'Google Drive',
-    category: 'document',
-    owner: 'Alex Smith',
-    email: 'alexsmith@minerva-os-lite.com',
-    accEmail: 'alexsmith.drive@gmail.com',
-    icon: GoogleDriveIcon,
-    status: 'Active',
-    statusKey: 'integrations.status.active',
-    assets: '—',
-    access: 'Private',
-    accessKey: 'integrations.access.private',
-    description: 'Ask your docs, sheets, presentations, and files anything. Limited to your 1,000 most recent files in the Free tier.',
-    descriptionKey: 'integrations.google_drive.description'
   },
   {
     id: 'website',
@@ -299,6 +384,52 @@ export default function IntegrationsPage() {
   // Store-backed states
   const [connectedIds, setConnectedIds] = useState<string[]>([]);
 
+  const [googleStatus, setGoogleStatus] = useState<{
+    connected: boolean;
+    email?: string;
+    scopes: string[];
+  }>({ connected: false, scopes: [] });
+  const [loadingGoogle, setLoadingGoogle] = useState(true);
+
+  const fetchGoogleStatus = async () => {
+    try {
+      const res = await fetch('/api/google/auth/status');
+      if (res.ok) {
+        const data = await res.json();
+        setGoogleStatus(data);
+      }
+    } catch (err) {
+      console.error('Error fetching Google status:', err);
+    } finally {
+      setLoadingGoogle(false);
+    }
+  };
+
+  const handleDisconnect = async (id: string) => {
+    if (id.startsWith('google-') && id !== 'google-places') {
+      try {
+        const res = await fetch('/api/google/auth/disconnect', { method: 'POST' });
+        if (res.ok) {
+          await fetchGoogleStatus();
+          alert(t('integrations.disconnected_success', 'Intégration Google déconnectée avec succès.'));
+        } else {
+          alert('Erreur lors de la déconnexion Google.');
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    } else {
+      disconnectIntegration(id);
+      setConnectedIds(prev => prev.filter(item => item !== id));
+    }
+    setActiveIntegrationEditId(null);
+    setDetailIntegration(null);
+  };
+
+  useEffect(() => {
+    fetchGoogleStatus();
+  }, []);
+
   // Todoist States
   const [todoistToken, setTodoistToken] = useState('');
   const [todoistProjectId, setTodoistProjectId] = useState('');
@@ -409,12 +540,84 @@ export default function IntegrationsPage() {
 
   useEffect(() => {
     const syncStore = () => {
-      setConnectedIds(getConnectedIntegrations());
+      const baseConnected = getConnectedIntegrations();
+      const googleConnected: string[] = [];
+
+      if (googleStatus.connected) {
+        if (googleStatus.scopes.some(s => s.includes('gmail.readonly'))) {
+          googleConnected.push('google-gmail');
+        }
+        if (googleStatus.scopes.some(s => s.includes('calendar.events'))) {
+          googleConnected.push('google-calendar');
+          googleConnected.push('google-meet');
+        }
+        if (googleStatus.scopes.some(s => s.includes('drive.file'))) {
+          googleConnected.push('google-drive');
+        }
+      }
+      googleConnected.push('google-places');
+
+      const allConnected = Array.from(new Set([...baseConnected, ...googleConnected]));
+      setConnectedIds(allConnected);
 
       const imported = getImportedIntegrations();
-      if (imported.length === 0) return;
       setIntegrationsList(prev => {
-        const existingIds = new Set(prev.map(item => item.id));
+        // Map the default and imported list with current statuses
+        const listToMap = prev.length > 0 ? prev : DEFAULT_INTEGRATIONS;
+        const mappedList = listToMap.map(item => {
+          if (item.id === 'google-gmail') {
+            const isConnected = googleStatus.connected && googleStatus.scopes.some(s => s.includes('gmail.readonly'));
+            return {
+              ...item,
+              status: isConnected ? 'Active' : 'Inactive',
+              statusKey: (isConnected ? 'integrations.status.active' : 'integrations.status.inactive') as TranslationKey,
+              accEmail: isConnected ? (googleStatus.email || '') : 'gmail.readonly, gmail.send',
+              accEmailKey: undefined
+            };
+          }
+          if (item.id === 'google-calendar') {
+            const isConnected = googleStatus.connected && googleStatus.scopes.some(s => s.includes('calendar.events'));
+            return {
+              ...item,
+              status: isConnected ? 'Active' : 'Inactive',
+              statusKey: (isConnected ? 'integrations.status.active' : 'integrations.status.inactive') as TranslationKey,
+              accEmail: isConnected ? (googleStatus.email || '') : 'calendar.events, calendar.freebusy',
+              accEmailKey: undefined
+            };
+          }
+          if (item.id === 'google-meet') {
+            const isConnected = googleStatus.connected && googleStatus.scopes.some(s => s.includes('calendar.events'));
+            return {
+              ...item,
+              status: isConnected ? 'Active' : 'Inactive',
+              statusKey: (isConnected ? 'integrations.status.active' : 'integrations.status.inactive') as TranslationKey,
+              accEmail: isConnected ? (googleStatus.email || '') : 'meeting.create, artifacts',
+              accEmailKey: undefined
+            };
+          }
+          if (item.id === 'google-drive') {
+            const isConnected = googleStatus.connected && googleStatus.scopes.some(s => s.includes('drive.file'));
+            return {
+              ...item,
+              status: isConnected ? 'Active' : 'Inactive',
+              statusKey: (isConnected ? 'integrations.status.active' : 'integrations.status.inactive') as TranslationKey,
+              accEmail: isConnected ? (googleStatus.email || '') : 'drive.file, metadata.readonly',
+              accEmailKey: undefined
+            };
+          }
+          if (item.id === 'google-places') {
+            return {
+              ...item,
+              status: 'Active',
+              statusKey: 'integrations.status.active' as TranslationKey,
+              accEmail: 'Clé API Serveur',
+              accEmailKey: 'integrations.google_places.acc_email' as TranslationKey
+            };
+          }
+          return item;
+        });
+
+        const existingIds = new Set(mappedList.map(item => item.id));
         const newItems: IntegrationItem[] = imported
           .filter(imp => !existingIds.has(imp.id))
           .map(imp => ({
@@ -438,13 +641,14 @@ export default function IntegrationsPage() {
             description: imp.description,
             custom: true
           }));
-        return newItems.length > 0 ? [...prev, ...newItems] : prev;
+
+        return [...mappedList, ...newItems];
       });
     };
     syncStore();
     window.addEventListener('minerva_store_update', syncStore);
     return () => window.removeEventListener('minerva_store_update', syncStore);
-  }, []);
+  }, [googleStatus]);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -709,11 +913,7 @@ export default function IntegrationsPage() {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-44 text-xs font-semibold bg-white border-[#e5e5e0] shadow-md rounded-md p-1 font-sans">
                       <DropdownMenuItem
-                        onClick={() => {
-                          disconnectIntegration(activeEditIntegration.id);
-                          setConnectedIds(prev => prev.filter(id => id !== activeEditIntegration.id));
-                          setActiveIntegrationEditId(null);
-                        }}
+                        onClick={() => handleDisconnect(activeEditIntegration.id)}
                         className="hover:bg-red-50 cursor-pointer p-2 rounded text-red-600"
                       >
                         {t('integrations.editor.disconnect')}
@@ -867,6 +1067,84 @@ export default function IntegrationsPage() {
                                 {t('integrations.editor.back')}
                               </Button>
                             </div>
+                          </div>
+                        </div>
+                      ) : activeEditIntegration.id.startsWith('google-') ? (
+                        <div className="border border-[#e5e5e0] rounded-xl bg-white p-6 space-y-6 shadow-2xs">
+                          <div className="flex items-center justify-between border-b border-[#e5e5e0]/60 pb-3">
+                            <h2 className="font-bold text-sm">Configuration Google Integration</h2>
+                          </div>
+
+                          <div className="space-y-4 max-w-xl text-xs text-left">
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold text-[#7a7a76]">Statut de connexion :</span>
+                              {googleStatus.connected ? (
+                                <span className="font-semibold text-emerald-600 bg-emerald-50 border border-emerald-100 rounded px-2 py-0.5">Connecté</span>
+                              ) : (
+                                <span className="font-semibold text-slate-500 bg-slate-50 border border-slate-100 rounded px-2 py-0.5">Non connecté</span>
+                              )}
+                            </div>
+
+                            {googleStatus.connected && googleStatus.email && (
+                              <div className="flex items-center gap-2">
+                                <span className="font-bold text-[#7a7a76]">Compte Google :</span>
+                                <span className="font-mono text-[#26251e] bg-slate-50 border border-slate-200 rounded px-2 py-0.5">{googleStatus.email}</span>
+                              </div>
+                            )}
+
+                            {activeEditIntegration.id === 'google-places' ? (
+                              <div className="p-4 bg-emerald-50/50 border border-emerald-200/50 rounded-xl space-y-2">
+                                <p className="text-[11px] text-emerald-800 leading-relaxed font-semibold">
+                                  L'intégration Google Places utilise la clé d'API serveur de Minerva.
+                                </p>
+                                <p className="text-[11px] text-[#7a7a76] leading-relaxed">
+                                  Elle est active pour tout l'espace de travail et prête pour la recherche de prospects et POIs locaux.
+                                </p>
+                              </div>
+                            ) : (
+                              <>
+                                <div className="space-y-2">
+                                  <span className="font-bold text-[#7a7a76]">{t('integrations.google.connected_scopes')}</span>
+                                  <div className="flex flex-wrap gap-1.5 pt-1">
+                                    {googleStatus.scopes.length > 0 ? (
+                                      googleStatus.scopes.map((sc, index) => (
+                                        <span key={index} className="bg-slate-100 text-[#555552] border border-slate-200 rounded px-2 py-0.5 font-mono text-[9px]">
+                                          {sc.replace('https://www.googleapis.com/auth/', '')}
+                                        </span>
+                                      ))
+                                    ) : (
+                                      <span className="text-[#7a7a76] italic">Aucune permission accordée.</span>
+                                    )}
+                                  </div>
+                                </div>
+
+                                {activeEditIntegration.id === 'google-drive' && googleStatus.connected && !googleStatus.scopes.some(s => s.includes('drive.file')) && (
+                                  <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl space-y-3">
+                                    <p className="text-[11px] text-amber-800 leading-relaxed font-semibold">
+                                      {t('integrations.google.drive_auth_warning')}
+                                    </p>
+                                    <Button
+                                      onClick={() => {
+                                        window.location.href = `/api/google/auth/start?pack=documents&redirect=/integrations`;
+                                      }}
+                                      className="h-8 text-xs bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-lg px-4"
+                                    >
+                                      {t('integrations.google.drive_auth_cta')}
+                                    </Button>
+                                  </div>
+                                )}
+
+                                <div className="pt-4 border-t border-[#e5e5e0]/60">
+                                  <Button
+                                    type="button"
+                                    onClick={() => handleDisconnect(activeEditIntegration.id)}
+                                    className="h-8 border border-red-200 text-red-600 bg-red-50 hover:bg-red-100 font-bold text-xs rounded-lg px-4"
+                                  >
+                                    {t('integrations.editor.disconnect_integration')}
+                                  </Button>
+                                </div>
+                              </>
+                            )}
                           </div>
                         </div>
                       ) : (
@@ -1413,8 +1691,13 @@ export default function IntegrationsPage() {
               </Button>
               <Button
                 onClick={() => {
-                  connectIntegration(selectedIntegration.id);
-                  setConnectedIds(prev => [...prev, selectedIntegration.id]);
+                  if (selectedIntegration.id.startsWith('google-') && selectedIntegration.id !== 'google-places') {
+                    const pack = selectedIntegration.id === 'google-drive' ? 'documents' : 'communication';
+                    window.location.href = `/api/google/auth/start?pack=${pack}&redirect=/integrations`;
+                  } else {
+                    connectIntegration(selectedIntegration.id);
+                    setConnectedIds(prev => Array.from(new Set([...prev, selectedIntegration.id])));
+                  }
                   setSelectedIntegration(null);
                   setShowConnectModal(false);
                 }}

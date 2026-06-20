@@ -18,6 +18,19 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v2.85.0',
+      date: '2026-06-20',
+      titleKey: 'changelog.v2_85_0_title' as TranslationKey,
+      descKey: 'changelog.v2_85_0_desc' as TranslationKey,
+      highlights: [
+        "Intégration Google Workspace Modulaire : Unification des connecteurs Gmail, Calendar, Meet et Drive dans un calque de services backend sécurisé.",
+        "Autorisation progressive OAuth : Flux de consentement dynamique demandant le minimum de scopes initialement, puis incrémentant la portée (ex: accès aux documents Drive) via include_granted_scopes=true sans déconnecter les services existants.",
+        "Base de données relationnelle : Tables synchronisées (google_accounts, google_tokens, google_scope_grants, drive_files, meet_sessions, calendar_links) supportant la réplication offline-first SQLite locale d'Electron.",
+        "Connecteurs séparés et modulaires : Pages d'intégration granulaires pour activer/désactiver individuellement chaque service Google (Gmail, Agenda, Drive, Meet) avec statut et permissions en temps réel.",
+        "Service Google Places API : Couche premium d'enrichissement géographique et prospection de prospects locaux via Places API (New) avec clé API serveur."
+      ],
+    },
+    {
       version: 'v2.84.0',
       date: '2026-06-20',
       titleKey: 'changelog.v2_84_0_title' as TranslationKey,
