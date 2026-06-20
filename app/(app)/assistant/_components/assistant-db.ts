@@ -6,6 +6,8 @@ export interface AssistantSession {
   userId: string;
   workspaceId: string;
   title: string;
+  pinned?: boolean;
+  projectId?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -53,14 +55,22 @@ export async function dbGetSessions(userId: string, workspaceId: string): Promis
     return [];
   }
 
-  return data.map((r: any) => ({
-    id: r.id,
-    userId: r.user_id,
-    workspaceId: r.workspace_id,
-    title: r.title,
-    createdAt: r.created_at,
-    updatedAt: r.updated_at,
-  }));
+  return data
+    .map((r: any) => ({
+      id: r.id,
+      userId: r.user_id,
+      workspaceId: r.workspace_id,
+      title: r.title,
+      pinned: r.pinned ?? false,
+      projectId: r.project_id ?? null,
+      createdAt: r.created_at,
+      updatedAt: r.updated_at,
+    }))
+    .sort((a: AssistantSession, b: AssistantSession) => {
+      if (a.pinned && !b.pinned) return -1;
+      if (!a.pinned && b.pinned) return 1;
+      return 0;
+    });
 }
 
 export async function dbCreateSession(userId: string, workspaceId: string, title: string): Promise<AssistantSession> {
@@ -260,5 +270,29 @@ export async function dbDeleteCanvasDoc(workspaceId: string, id: string): Promis
 
   if (error) {
     console.error('Supabase deleteCanvasDoc failed:', error);
+  }
+}
+
+export async function dbToggleSessionPin(sessionId: string, pinned: boolean): Promise<void> {
+  const supabase = createClient();
+  const { error } = await supabase
+    .from('assistant_sessions')
+    .update({ pinned, updated_at: new Date().toISOString() })
+    .eq('id', sessionId);
+
+  if (error) {
+    console.error('Supabase toggleSessionPin failed:', error);
+  }
+}
+
+export async function dbUpdateSessionProject(sessionId: string, projectId: string | null): Promise<void> {
+  const supabase = createClient();
+  const { error } = await supabase
+    .from('assistant_sessions')
+    .update({ project_id: projectId, updated_at: new Date().toISOString() })
+    .eq('id', sessionId);
+
+  if (error) {
+    console.error('Supabase updateSessionProject failed:', error);
   }
 }

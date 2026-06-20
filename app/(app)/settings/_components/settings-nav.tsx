@@ -2,23 +2,15 @@
 
 import React from 'react';
 import {
-  User, Settings2, FileText, Bell, Sun, Shield,
-  LayoutDashboard, Briefcase, CreditCard, Cpu, Paintbrush,
-  Users, UsersRound, Lock,
-  Target, Brain, KeyRound, Link2, BarChart3, Code2,
+  User, Sun, Briefcase, Users, Brain, Link2, Target, FileText,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/lib/language-context';
 
 export type SettingsSection =
-  // Account
-  | 'profile' | 'preferences' | 'custom_instructions' | 'notifications' | 'appearance' | 'security'
-  // Workspace
-  | 'workspace_overview' | 'workspace_general' | 'billing' | 'models' | 'customizations' | 'workspace_api'
-  // User Management
-  | 'members' | 'groups' | 'roles'
-  // Tools / existing
-  | 'prospecting' | 'ai' | 'api_keys' | 'integrations' | 'analytics' | 'goals';
+  | 'profile' | 'appearance'
+  | 'workspace_general' | 'members'
+  | 'ai' | 'integrations' | 'goals';
 
 interface NavGroup {
   label: string;
@@ -38,40 +30,21 @@ export function SettingsNav({ section, onSectionChange }: SettingsNavProps) {
       label: 'Compte',
       items: [
         { id: 'profile', name: t('settings.tab_profile'), icon: User },
-        { id: 'preferences', name: t('settings.tab_preferences'), icon: Settings2 },
-        { id: 'custom_instructions', name: 'Instructions personnalisées', icon: FileText },
-        { id: 'notifications', name: t('settings.tab_notifications'), icon: Bell },
         { id: 'appearance', name: t('settings.tab_appearance'), icon: Sun },
-        { id: 'security', name: 'Sécurité', icon: Shield },
       ],
     },
     {
       label: 'Espace de travail',
       items: [
-        { id: 'workspace_overview', name: "Vue d'ensemble", icon: LayoutDashboard },
         { id: 'workspace_general', name: 'Général', icon: Briefcase },
-        { id: 'billing', name: 'Facturation', icon: CreditCard },
-        { id: 'models', name: 'Modèles IA', icon: Cpu },
-        { id: 'customizations', name: 'Personnalisations', icon: Paintbrush },
-        { id: 'workspace_api', name: 'API', icon: Code2 },
-      ],
-    },
-    {
-      label: 'Gestion des utilisateurs',
-      items: [
         { id: 'members', name: 'Membres', icon: Users },
-        { id: 'groups', name: 'Groupes', icon: UsersRound },
-        { id: 'roles', name: 'Rôles', icon: Lock },
       ],
     },
     {
       label: 'Outils',
       items: [
-        { id: 'prospecting', name: t('settings.tab_prospecting'), icon: Target },
         { id: 'ai', name: t('settings.tab_ai'), icon: Brain },
-        { id: 'api_keys', name: 'Clés API', icon: KeyRound },
         { id: 'integrations', name: t('settings.tab_integrations'), icon: Link2 },
-        { id: 'analytics', name: t('nav.analytics'), icon: BarChart3 },
         { id: 'goals', name: 'Objectifs', icon: Target },
       ],
     },

@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { SettingsSectionWrapper } from './settings-section-wrapper';
 import { Mail, Search, Globe, RefreshCw, Check, Key, Server, ChevronDown, ChevronUp } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import { toast } from 'sonner';
 
 interface SmtpConfig {
   host: string;
@@ -44,20 +45,41 @@ export function SettingsIntegrationsSection() {
   useEffect(() => {
     const fetchConnections = async () => {
       try {
+        // Check Gmail via google_accounts table (v2.85.0+ modular OAuth)
+        const gmailRes = await fetch('/api/google/auth/status').catch(() => null);
+        if (gmailRes?.ok) {
+          const gmailStatus = await gmailRes.json();
+          if (gmailStatus?.connected) {
+            setGmailConnected(true);
+            setGmailEmail(gmailStatus.email || 'Connecté');
+          }
+        } else {
+          // Fallback: check old column for backwards compat
+          const supabase = createClient();
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            const { data: settRow } = await supabase
+              .from('settings')
+              .select('google_refresh_token, google_email')
+              .eq('user_id', user.id)
+              .maybeSingle();
+            if (settRow?.google_refresh_token) {
+              setGmailConnected(true);
+              setGmailEmail(settRow.google_email || 'Connecté');
+            }
+          }
+        }
+
         const supabase = createClient();
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
           const { data } = await supabase
             .from('settings')
-            .select('google_refresh_token, google_email, apify_token, smtp_config, here_api_key, yelp_api_key, firecrawl_api_key')
+            .select('apify_token, smtp_config, here_api_key, yelp_api_key, firecrawl_api_key')
             .eq('user_id', user.id)
             .maybeSingle();
 
           if (data) {
-            if (data.google_refresh_token) {
-              setGmailConnected(true);
-              setGmailEmail(data.google_email || 'Connecté');
-            }
             if (data.smtp_config) {
               try {
                 const parsed = JSON.parse(data.smtp_config);
@@ -91,33 +113,23 @@ export function SettingsIntegrationsSection() {
 
   const handleConnectGmail = async () => {
     if (typeof window !== 'undefined') {
-      window.location.href = `/api/auth/google/login?redirect=${encodeURIComponent('/settings?tab=integrations')}`;
+      window.location.href = `/api/google/auth/start?pack=communication&redirect=${encodeURIComponent('/settings?tab=integrations')}`;
     }
   };
 
   const handleDisconnectGmail = async () => {
     setLoading(true);
     try {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        await supabase
-          .from('settings')
-          .update({
-            google_access_token: null,
-            google_refresh_token: null,
-            google_token_expires_at: null,
-            google_email: null,
-            updated_at: new Date().toISOString()
-          })
-          .eq('user_id', user.id);
-        
+      const res = await fetch('/api/google/auth/disconnect', { method: 'POST' });
+      if (res.ok) {
         setGmailConnected(false);
         setGmailEmail('');
+      } else {
+        toast.error("Erreur lors de la déconnexion de Gmail");
       }
     } catch (e) {
       console.error(e);
-      alert("Erreur lors de la déconnexion de Gmail");
+      toast.error("Erreur lors de la déconnexion de Gmail");
     }
     setLoading(false);
   };
@@ -138,11 +150,11 @@ export function SettingsIntegrationsSection() {
           })
           .eq('user_id', user.id);
         
-        alert(scraperEngine === 'native' ? "Moteur de recherche natif Minerva activé avec succès !" : "Token Apify enregistré avec succès !");
+        toast.success(scraperEngine === 'native' ? "Moteur de recherche natif Minerva activé avec succès !" : "Token Apify enregistré avec succès !");
       }
     } catch (e) {
       console.error(e);
-      alert("Erreur lors de la sauvegarde de la configuration de prospection");
+      toast.error("Erreur lors de la sauvegarde de la configuration de prospection");
     }
     setSavingApify(false);
   };
@@ -154,9 +166,9 @@ export function SettingsIntegrationsSection() {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         await supabase.from('settings').update({ here_api_key: hereApiKey.trim() || null, updated_at: new Date().toISOString() }).eq('user_id', user.id);
-        alert('Clé HERE enregistrée !');
+        toast.success('Clé HERE enregistrée !');
       }
-    } catch (e) { console.error(e); alert('Erreur sauvegarde HERE'); }
+    } catch (e) { console.error(e); toast.error('Erreur sauvegarde HERE'); }
     setSavingHere(false);
   };
 
@@ -167,9 +179,9 @@ export function SettingsIntegrationsSection() {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         await supabase.from('settings').update({ yelp_api_key: yelpApiKey.trim() || null, updated_at: new Date().toISOString() }).eq('user_id', user.id);
-        alert('Clé Yelp enregistrée !');
+        toast.success('Clé Yelp enregistrée !');
       }
-    } catch (e) { console.error(e); alert('Erreur sauvegarde Yelp'); }
+    } catch (e) { console.error(e); toast.error('Erreur sauvegarde Yelp'); }
     setSavingYelp(false);
   };
 
@@ -180,9 +192,9 @@ export function SettingsIntegrationsSection() {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         await supabase.from('settings').update({ firecrawl_api_key: firecrawlApiKey.trim() || null, updated_at: new Date().toISOString() }).eq('user_id', user.id);
-        alert('Clé Firecrawl enregistrée !');
+        toast.success('Clé Firecrawl enregistrée !');
       }
-    } catch (e) { console.error(e); alert('Erreur sauvegarde Firecrawl'); }
+    } catch (e) { console.error(e); toast.error('Erreur sauvegarde Firecrawl'); }
     setSavingFirecrawl(false);
   };
 
@@ -211,7 +223,7 @@ export function SettingsIntegrationsSection() {
       setSmtpSaved(true);
     } catch (e) {
       console.error(e);
-      alert("Erreur lors de la sauvegarde SMTP");
+      toast.error("Erreur lors de la sauvegarde SMTP");
     }
     setSavingSmtp(false);
   };
@@ -223,15 +235,15 @@ export function SettingsIntegrationsSection() {
       if (electronObj && electronObj.testSmtpConnection) {
         const result = await electronObj.testSmtpConnection(smtpConfig);
         if (result.success) {
-          alert("Connexion SMTP réussie !");
+          toast.success("Connexion SMTP réussie !");
         } else {
-          alert(`Échec de la connexion SMTP : ${result.error}`);
+          toast.error(`Échec de la connexion SMTP : ${result.error}`);
         }
       } else {
-        alert("Le test SMTP est disponible uniquement dans l'application Electron.");
+        toast.info("Le test SMTP est disponible uniquement dans l'application Electron.");
       }
     } catch (e: any) {
-      alert("Erreur : " + e.message);
+      toast.error("Erreur : " + e.message);
     }
     setTestingSmtp(false);
   };

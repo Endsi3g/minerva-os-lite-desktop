@@ -3,29 +3,14 @@
 import React, { useState, useEffect } from 'react';
 import { SettingsNav, SettingsSection } from './settings-nav';
 import { SettingsProfileSection } from './settings-profile-section';
-import { SettingsProspectingSection } from './settings-prospecting-section';
 import { SettingsAiSection } from './settings-ai-section';
-import { SettingsNotificationsSection } from './settings-notifications-section';
 import { SettingsAppearanceSection } from './settings-appearance-section';
 import { SettingsIntegrationsSection } from './settings-integrations-section';
-import { SettingsPreferencesSection, PreferencesData } from './settings-preferences-section';
-import { SettingsApiKeysSection } from './settings-api-keys-section';
-import { SettingsCustomInstructionsSection, CustomInstructionsData } from './settings-custom-instructions-section';
-import { SettingsSecuritySection } from './settings-security-section';
-import { SettingsWorkspaceOverviewSection } from './settings-workspace-overview-section';
 import { SettingsWorkspaceGeneralSection } from './settings-workspace-general-section';
-import { SettingsBillingSection } from './settings-billing-section';
-import { SettingsModelsSection, ModelsData } from './settings-models-section';
-import { SettingsCustomizationsSection, CustomizationsData } from './settings-customizations-section';
-import { SettingsWorkspaceApiSection } from './settings-workspace-api-section';
 import { SettingsMembersSection } from './settings-members-section';
-import { SettingsGroupsSection } from './settings-groups-section';
-import { SettingsRolesSection } from './settings-roles-section';
 import { SettingsGoalsSection } from './settings-goals-section';
-import { Locale } from '@/lib/translations';
 import { createClient } from '@/lib/supabase/client';
 import { getApiUrl } from '@/lib/api-helper';
-import { AnalyticsDashboard } from '@/components/analytics-dashboard';
 import { cn } from '@/lib/utils';
 
 interface ProfileData {
@@ -39,18 +24,6 @@ interface ProfileData {
   avatarBase64: string;
 }
 
-interface ProspectingData {
-  niches: string[];
-  cities: string[];
-  services: {
-    website: boolean;
-    seoAudit: boolean;
-    acquisition: boolean;
-  };
-  language: string;
-  dailyEmailLimit: number;
-}
-
 interface AiData {
   tone: 'casual' | 'professional' | 'storytelling';
   customization: 'low' | 'medium' | 'high';
@@ -61,13 +34,6 @@ interface AiData {
   groqKeyMasked: string | null;
   togetherKeyMasked: string | null;
   aiModel: string;
-}
-
-interface NotificationsData {
-  reminderOverdue: boolean;
-  dailyDigest: boolean;
-  weeklyReport: boolean;
-  digestTime: string;
 }
 
 interface AppearanceData {
@@ -83,14 +49,8 @@ interface WorkspaceGeneralData {
 
 interface AppSettings {
   profile: ProfileData;
-  prospecting: ProspectingData;
   ai: AiData;
-  notifications: NotificationsData;
   appearance: AppearanceData;
-  preferences: PreferencesData;
-  customInstructions: CustomInstructionsData;
-  models: ModelsData;
-  customizations: CustomizationsData;
   workspaceGeneral: WorkspaceGeneralData;
 }
 
@@ -105,13 +65,6 @@ const DEFAULT_SETTINGS: AppSettings = {
     bio: '',
     avatarBase64: '',
   },
-  prospecting: {
-    niches: ['Boulangerie / Artisanat', 'Automobile', 'Restauration', 'Coiffure & Beauté'],
-    cities: ['Montréal', 'Laval'],
-    services: { website: true, seoAudit: true, acquisition: false },
-    language: 'both',
-    dailyEmailLimit: 50,
-  },
   ai: {
     tone: 'casual',
     customization: 'medium',
@@ -121,40 +74,11 @@ const DEFAULT_SETTINGS: AppSettings = {
     openrouterKeyMasked: null,
     groqKeyMasked: null,
     togetherKeyMasked: null,
-    aiModel: 'meta-llama/llama-3-8b-instruct:free',
-  },
-  notifications: {
-    reminderOverdue: true,
-    dailyDigest: true,
-    weeklyReport: false,
-    digestTime: '20:00',
+    aiModel: 'meta-llama/llama-3.3-70b-instruct:free',
   },
   appearance: {
     density: 'comfortable',
     theme: 'system',
-  },
-  preferences: {
-    defaultModel: 'None',
-    defaultImageModel: 'None',
-    chatCapabilities: ['web_search', 'image_generation', 'data_analyst', 'canvas'],
-    language: 'fr',
-  },
-  customInstructions: {
-    active: true,
-    aboutYou: '',
-    modelInstructions: '',
-  },
-  models: {
-    defaultChatModel: '',
-    defaultImageModel: '',
-  },
-  customizations: {
-    customColor: '#f54e00',
-    backgroundImageBase64: '',
-    showWorkspaceLogo: true,
-    hideModelLogo: false,
-    chatDisclaimer: '',
-    infoBoxes: [],
   },
   workspaceGeneral: {
     workspaceName: '',
@@ -193,13 +117,6 @@ export function SettingsRoot() {
                 bio: dbSettings.bio || '',
                 avatarBase64: dbSettings.avatar_base64 || '',
               },
-              prospecting: {
-                niches: dbSettings.niches || [],
-                cities: dbSettings.cities || [],
-                services: { website: true, seoAudit: true, acquisition: false },
-                language: 'both',
-                dailyEmailLimit: dbSettings.daily_email_limit ?? 50,
-              },
               ai: {
                 tone: dbSettings.ai_tone === 'Direct & Closer' ? 'professional' : dbSettings.ai_tone === 'Storytelling' ? 'storytelling' : 'casual',
                 customization: dbSettings.ai_density === 'Standard' ? 'low' : dbSettings.ai_density === 'Profond' ? 'high' : 'medium',
@@ -209,28 +126,11 @@ export function SettingsRoot() {
                 openrouterKeyMasked: null,
                 groqKeyMasked: null,
                 togetherKeyMasked: null,
-                aiModel: dbSettings.ai_model || 'meta-llama/llama-3-8b-instruct:free',
-              },
-              notifications: {
-                reminderOverdue: true,
-                dailyDigest: true,
-                weeklyReport: false,
-                digestTime: '20:00',
+                aiModel: dbSettings.ai_model || 'meta-llama/llama-3.3-70b-instruct:free',
               },
               appearance: {
                 density: 'comfortable',
                 theme: ((typeof window !== 'undefined' && localStorage.getItem('theme')) as AppearanceData['theme']) || 'system',
-              },
-              preferences: {
-                defaultModel: dbSettings.default_model || 'None',
-                defaultImageModel: dbSettings.default_image_model || 'None',
-                chatCapabilities: dbSettings.chat_capabilities || ['web_search', 'image_generation', 'data_analyst', 'canvas'],
-                language: (dbSettings.language as Locale) || 'fr',
-              },
-              customInstructions: {
-                active: dbSettings.custom_instructions_enabled ?? true,
-                aboutYou: dbSettings.custom_instructions_about || '',
-                modelInstructions: dbSettings.custom_instructions_model || '',
               },
               workspaceGeneral: {
                 workspaceName: dbSettings.workspace_name || dbSettings.company_name || '',
@@ -254,8 +154,8 @@ export function SettingsRoot() {
             delete parsed.ai.groqKey;
             delete parsed.ai.togetherKey;
           }
-          setSettings((prev) => ({ ...prev, ...parsed }));
-          localStorage.setItem('minerva_reach_settings', JSON.stringify(parsed));
+          const { profile, ai, appearance, workspaceGeneral } = parsed;
+          setSettings((prev) => ({ ...prev, ...(profile && { profile }), ...(ai && { ai }), ...(appearance && { appearance }), ...(workspaceGeneral && { workspaceGeneral }) }));
         } catch (e) {
           console.error('Failed to parse settings', e);
         }
@@ -321,38 +221,12 @@ export function SettingsRoot() {
               timezone: nextSettings.profile.timezone,
               bio: nextSettings.profile.bio,
               avatar_base64: nextSettings.profile.avatarBase64,
-              niches: nextSettings.prospecting.niches,
-              cities: nextSettings.prospecting.cities,
-              daily_email_limit: nextSettings.prospecting.dailyEmailLimit,
               ai_tone: nextSettings.ai.tone === 'casual' ? 'Calme & Conseil' : nextSettings.ai.tone === 'professional' ? 'Direct & Closer' : 'Storytelling',
               ai_density: nextSettings.ai.customization === 'low' ? 'Standard' : nextSettings.ai.customization === 'medium' ? 'Personnalisé' : 'Profond',
               ai_provider: nextSettings.ai.aiProvider,
               ai_model: nextSettings.ai.aiModel,
             });
             if (baseError) console.error('Error saving base settings:', baseError.message);
-
-            if (secKey === 'preferences') {
-              const pref = nextSettings.preferences;
-              const { error: prefError } = await supabase.from('settings').upsert({
-                user_id: user.id,
-                language: pref.language,
-                default_model: pref.defaultModel,
-                default_image_model: pref.defaultImageModel,
-                chat_capabilities: pref.chatCapabilities,
-              });
-              if (prefError) console.warn('Could not save preferences:', prefError.message);
-            }
-
-            if (secKey === 'customInstructions') {
-              const ci = nextSettings.customInstructions;
-              const { error: ciError } = await supabase.from('settings').upsert({
-                user_id: user.id,
-                custom_instructions_enabled: ci.active,
-                custom_instructions_about: ci.aboutYou,
-                custom_instructions_model: ci.modelInstructions,
-              });
-              if (ciError) console.warn('Could not save custom instructions:', ciError.message);
-            }
 
             if (secKey === 'workspaceGeneral') {
               const wg = nextSettings.workspaceGeneral;
@@ -415,40 +289,13 @@ export function SettingsRoot() {
       <SettingsNav section={section} onSectionChange={setSection} />
 
       <div className="flex-1 overflow-y-auto min-h-0 scrollbar-thin">
-        <div className={cn(
-          'mx-auto flex flex-col gap-6 p-6',
-          section === 'analytics' ? 'max-w-5xl' : 'max-w-2xl'
-        )}>
+        <div className="mx-auto flex flex-col gap-6 p-6 max-w-2xl">
           {section === 'profile' && (
             <SettingsProfileSection
               data={settings.profile}
               onChange={(updates) => updateSettingsSection('profile', updates)}
               onSave={() => updateSettingsSection('profile', {})}
               isSaving={!!savingSection.profile}
-            />
-          )}
-
-          {section === 'preferences' && (
-            <SettingsPreferencesSection
-              data={settings.preferences}
-              onChange={(updates) => updateSettingsSection('preferences', updates)}
-              isSaving={!!savingSection.preferences}
-            />
-          )}
-
-          {section === 'custom_instructions' && (
-            <SettingsCustomInstructionsSection
-              data={settings.customInstructions}
-              onChange={(updates) => updateSettingsSection('customInstructions', updates)}
-              isSaving={!!savingSection.customInstructions}
-            />
-          )}
-
-          {section === 'notifications' && (
-            <SettingsNotificationsSection
-              data={settings.notifications}
-              onChange={(updates) => updateSettingsSection('notifications', updates)}
-              isSaving={!!savingSection.notifications}
             />
           )}
 
@@ -460,10 +307,6 @@ export function SettingsRoot() {
             />
           )}
 
-          {section === 'security' && <SettingsSecuritySection />}
-
-          {section === 'workspace_overview' && <SettingsWorkspaceOverviewSection />}
-
           {section === 'workspace_general' && (
             <SettingsWorkspaceGeneralSection
               data={settings.workspaceGeneral}
@@ -472,39 +315,7 @@ export function SettingsRoot() {
             />
           )}
 
-          {section === 'billing' && <SettingsBillingSection />}
-
-          {section === 'models' && (
-            <SettingsModelsSection
-              data={settings.models}
-              onChange={(updates) => updateSettingsSection('models', updates)}
-              isSaving={!!savingSection.models}
-            />
-          )}
-
-          {section === 'customizations' && (
-            <SettingsCustomizationsSection
-              data={settings.customizations}
-              onChange={(updates) => updateSettingsSection('customizations', updates)}
-              isSaving={!!savingSection.customizations}
-            />
-          )}
-
-          {section === 'workspace_api' && <SettingsWorkspaceApiSection />}
-
           {section === 'members' && <SettingsMembersSection />}
-
-          {section === 'groups' && <SettingsGroupsSection />}
-
-          {section === 'roles' && <SettingsRolesSection />}
-
-          {section === 'prospecting' && (
-            <SettingsProspectingSection
-              data={settings.prospecting}
-              onChange={(updates) => updateSettingsSection('prospecting', updates)}
-              isSaving={!!savingSection.prospecting}
-            />
-          )}
 
           {section === 'ai' && (
             <SettingsAiSection
@@ -516,22 +327,7 @@ export function SettingsRoot() {
             />
           )}
 
-          {section === 'api_keys' && (
-            <SettingsApiKeysSection
-              data={{
-                openrouterKeyMasked: settings.ai.openrouterKeyMasked,
-                groqKeyMasked: settings.ai.groqKeyMasked,
-                togetherKeyMasked: settings.ai.togetherKeyMasked,
-              }}
-              onSaveKey={saveAiKey}
-              onDeleteKey={deleteAiKey}
-              isSaving={!!savingSection.ai}
-            />
-          )}
-
           {section === 'integrations' && <SettingsIntegrationsSection />}
-
-          {section === 'analytics' && <AnalyticsDashboard />}
 
           {section === 'goals' && <SettingsGoalsSection />}
         </div>

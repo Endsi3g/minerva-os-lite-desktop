@@ -18,6 +18,22 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v2.87.0',
+      date: '2026-06-20 01:05',
+      titleKey: 'changelog.v2_87_0_title' as TranslationKey,
+      descKey: 'changelog.v2_87_0_desc' as TranslationKey,
+      highlights: [
+        "Assistant IA : Rendu Markdown complet (titres, listes, gras/italique, blocs de code avec bouton Copier et syntaxe colorée).",
+        "Sessions épinglées : épinglage/désépinglage des conversations IA dans la sidebar et le panneau historique — les épinglées remontent toujours en premier.",
+        "Modèles OpenRouter gratuits : Llama 3.3 70B Instruct, Gemini 2.5 Flash, DeepSeek R1 et Hermes Agent disponibles sans frais.",
+        "Titre automatique amélioré : génération à partir des 6 premiers mots significatifs (ponctuation et mots vides ignorés).",
+        "Paramètres simplifiés : navigation réduite à 7 onglets en 3 groupes (Compte, Espace de travail, Outils) — instructions personnalisées intégrées à la section IA.",
+        "Layout adaptatif : `body.sidebar-collapsed` injecté sur `<body>` pour élargir automatiquement les zones `.max-w-5xl` à 88rem quand la sidebar est repliée.",
+        "Connexion Gmail : migration vers `/api/google/auth/start?pack=communication` et `/api/google/auth/disconnect` — alignée sur l'architecture modulaire v2.85.",
+        "Redirection `/chat` → `/assistant` : l'ancienne route redirige maintenant automatiquement vers le nouvel Assistant IA.",
+      ],
+    },
+    {
       version: 'v2.86.0',
       date: '2026-06-20 10:15',
       titleKey: 'changelog.v2_86_0_title' as TranslationKey,

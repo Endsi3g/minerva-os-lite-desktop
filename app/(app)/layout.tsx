@@ -72,14 +72,21 @@ import {
   onboardingTasks,
   toggleOnboardingTask
 } from '@/lib/onboarding-store';
-import { 
-  Breadcrumb, 
-  BreadcrumbList, 
-  BreadcrumbItem, 
-  BreadcrumbLink, 
-  BreadcrumbPage, 
-  BreadcrumbSeparator 
+import {
+  Breadcrumb,
+  BreadcrumbList,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbPage,
+  BreadcrumbSeparator
 } from '@/components/ui/breadcrumb';
+import {
+  dbGetSessions,
+  dbDeleteSession,
+  dbToggleSessionPin,
+  AssistantSession
+} from '@/app/(app)/assistant/_components/assistant-db';
+import { Pin, PinOff } from 'lucide-react';
 
 const CURRENT_VERSION = '2.77.0';
 
@@ -156,6 +163,10 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
   // New states for Minerva OS Lite interactive features
   const [showNewProjectModal, setShowNewProjectModal] = useState(false);
   const [newProjectName, setNewProjectName] = useState('');
+
+  // Assistant sessions for sidebar display
+  const [assistantSessions, setAssistantSessions] = useState<AssistantSession[]>([]);
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [onboarding, setOnboarding] = useState({ percent: 12, score: 0 });
   const [completedTasks, setCompletedTasks] = useState<string[]>([]);
 
@@ -325,11 +336,37 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  useEffect(() => {
+    if (!pathname.startsWith('/assistant') || !contextUser || !activeWorkspace) return;
+    const loadSessions = async () => {
+      const sessions = await dbGetSessions(contextUser.id, activeWorkspace.id);
+      setAssistantSessions(sessions);
+      const stored = localStorage.getItem(`minerva_active_sess_${activeWorkspace.id}`);
+      if (stored) setActiveSessionId(stored);
+    };
+    loadSessions();
+  }, [pathname, contextUser, activeWorkspace]);
+
   const toggleCollapse = () => {
     const nextState = !isCollapsed;
     setIsCollapsed(nextState);
     localStorage.setItem('minerva_sidebar_collapsed', String(nextState));
+    if (nextState) {
+      document.body.classList.add('sidebar-collapsed');
+    } else {
+      document.body.classList.remove('sidebar-collapsed');
+    }
   };
+
+  // Sync body class on mount
+  useEffect(() => {
+    if (isCollapsed) {
+      document.body.classList.add('sidebar-collapsed');
+    } else {
+      document.body.classList.remove('sidebar-collapsed');
+    }
+    return () => document.body.classList.remove('sidebar-collapsed');
+  }, [isCollapsed]);
 
   const [inviteError, setInviteError] = useState('');
 
@@ -720,23 +757,82 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
 
         {/* Sidebar Navigation */}
         <div className="flex-1 overflow-y-auto overflow-x-hidden py-3 space-y-4">
-          {pathname.startsWith('/chat') && (!isCollapsed ? (
-            <div className="px-3 mb-2">
+          {(pathname.startsWith('/assistant') || pathname.startsWith('/chat')) && (!isCollapsed ? (
+            <div className="px-3 mb-1 space-y-1">
               <Link
-                href="/chat"
-                onClick={() => setSidebarOpen(false)}
+                href="/assistant"
+                onClick={() => { setSidebarOpen(false); setActiveSessionId(null); if (activeWorkspace) localStorage.removeItem(`minerva_active_sess_${activeWorkspace.id}`); }}
                 className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-[#10b981] bg-[#10b981]/10 border border-[#10b981]/20 rounded-md hover:bg-[#10b981]/15 transition-all w-full justify-center"
               >
                 <MessageSquare className="w-3.5 h-3.5 shrink-0" />
                 <span>{t('nav.new_chat')}</span>
               </Link>
+
+              {assistantSessions.length > 0 && (
+                <div className="space-y-0.5 mt-1 max-h-48 overflow-y-auto">
+                  {assistantSessions.map((sess) => (
+                    <div
+                      key={sess.id}
+                      className={cn(
+                        "group flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-semibold transition-all",
+                        activeSessionId === sess.id
+                          ? "bg-[#10b981]/10 text-[#10b981]"
+                          : "text-[#555552] hover:bg-[#e5e5e2]/60 hover:text-[#26251e]"
+                      )}
+                    >
+                      {sess.pinned && <Pin className="h-2.5 w-2.5 text-amber-500 shrink-0" />}
+                      <Link
+                        href="/assistant"
+                        onClick={() => {
+                          setSidebarOpen(false);
+                          setActiveSessionId(sess.id);
+                          if (activeWorkspace) localStorage.setItem(`minerva_active_sess_${activeWorkspace.id}`, sess.id);
+                        }}
+                        className="flex-1 truncate text-left"
+                      >
+                        {sess.title}
+                      </Link>
+                      <button
+                        onClick={async (e) => {
+                          e.preventDefault();
+                          if (!activeWorkspace) return;
+                          await dbToggleSessionPin(sess.id, !sess.pinned);
+                          const updated = await dbGetSessions(contextUser!.id, activeWorkspace.id);
+                          setAssistantSessions(updated);
+                        }}
+                        className="opacity-0 group-hover:opacity-100 text-neutral-400 hover:text-amber-500 transition-opacity p-0.5"
+                        title={sess.pinned ? "Désépingler" : "Épingler"}
+                      >
+                        {sess.pinned ? <PinOff className="h-2.5 w-2.5" /> : <Pin className="h-2.5 w-2.5" />}
+                      </button>
+                      <button
+                        onClick={async (e) => {
+                          e.preventDefault();
+                          if (!activeWorkspace) return;
+                          await dbDeleteSession(activeWorkspace.id, sess.id);
+                          const updated = await dbGetSessions(contextUser!.id, activeWorkspace.id);
+                          setAssistantSessions(updated);
+                          if (activeSessionId === sess.id) {
+                            setActiveSessionId(null);
+                            localStorage.removeItem(`minerva_active_sess_${activeWorkspace.id}`);
+                          }
+                        }}
+                        className="opacity-0 group-hover:opacity-100 text-neutral-400 hover:text-red-600 transition-opacity p-0.5"
+                        title="Supprimer"
+                      >
+                        <X className="h-2.5 w-2.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           ) : (
             <div className="px-2 mb-2 flex justify-center">
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Link
-                    href="/chat"
+                    href="/assistant"
                     onClick={() => setSidebarOpen(false)}
                     className="flex h-8 w-8 items-center justify-center rounded-md text-[#10b981] bg-[#10b981]/10 hover:bg-[#10b981]/15 border border-[#10b981]/20 transition-all"
                   >

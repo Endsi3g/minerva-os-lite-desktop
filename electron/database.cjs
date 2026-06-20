@@ -534,6 +534,10 @@ function initDb() {
     db.run(`CREATE INDEX IF NOT EXISTS idx_assistant_sessions_workspace_id ON assistant_sessions(workspace_id)`);
     db.run(`CREATE INDEX IF NOT EXISTS idx_assistant_sessions_user_id ON assistant_sessions(user_id)`);
 
+    // v2.87.0 — assistant_sessions: project linking + pinning
+    db.run(`ALTER TABLE assistant_sessions ADD COLUMN project_id TEXT DEFAULT NULL`, () => {});
+    db.run(`ALTER TABLE assistant_sessions ADD COLUMN pinned INTEGER DEFAULT 0`, () => {});
+
     db.run(`CREATE TABLE IF NOT EXISTS assistant_messages (
       id TEXT PRIMARY KEY,
       session_id TEXT REFERENCES assistant_sessions(id) ON DELETE CASCADE,

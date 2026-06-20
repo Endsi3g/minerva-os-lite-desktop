@@ -40,10 +40,137 @@ import {
   dbGetCanvasDocs,
   dbSaveCanvasDoc,
   dbDeleteCanvasDoc,
+  dbToggleSessionPin,
   AssistantSession,
   DBMessage,
   AssistantCanvasDoc
 } from './assistant-db';
+import { Pin, PinOff } from 'lucide-react';
+
+function MarkdownRenderer({ content }: { content: string }) {
+  const [copiedBlock, setCopiedBlock] = React.useState<number | null>(null);
+
+  const copyCode = (code: string, idx: number) => {
+    navigator.clipboard.writeText(code);
+    setCopiedBlock(idx);
+    setTimeout(() => setCopiedBlock(null), 1500);
+  };
+
+  // Split on fenced code blocks first
+  const parts = content.split(/(```[\s\S]*?```)/g);
+  let codeIdx = 0;
+
+  return (
+    <div className="space-y-2 text-sm leading-relaxed select-text">
+      {parts.map((part, i) => {
+        if (part.startsWith('```')) {
+          const match = part.match(/^```(\w*)\n?([\s\S]*?)```$/);
+          const lang = match?.[1] || '';
+          const code = match?.[2] ?? part.slice(3, -3);
+          const blockIdx = codeIdx++;
+          return (
+            <div key={i} className="relative rounded-lg bg-neutral-900 text-neutral-100 text-xs font-mono overflow-hidden border border-neutral-800">
+              <div className="flex items-center justify-between px-3 py-1.5 bg-neutral-800/60 border-b border-neutral-700">
+                <span className="text-[10px] text-neutral-400 font-sans">{lang || 'code'}</span>
+                <button
+                  onClick={() => copyCode(code, blockIdx)}
+                  className="text-[10px] text-neutral-400 hover:text-white transition-colors flex items-center gap-1"
+                >
+                  {copiedBlock === blockIdx ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
+                  <span>{copiedBlock === blockIdx ? 'Copié' : 'Copier'}</span>
+                </button>
+              </div>
+              <pre className="p-3 overflow-x-auto whitespace-pre text-xs leading-relaxed">{code}</pre>
+            </div>
+          );
+        }
+
+        // Parse inline markdown in text blocks
+        const lines = part.split('\n');
+        const nodes: React.ReactNode[] = [];
+        let i2 = 0;
+
+        while (i2 < lines.length) {
+          const line = lines[i2];
+
+          // Headings
+          const h3 = line.match(/^### (.+)/);
+          const h2 = line.match(/^## (.+)/);
+          const h1 = line.match(/^# (.+)/);
+          if (h3) { nodes.push(<h3 key={`${i}-${i2}`} className="text-sm font-bold text-foreground mt-2 mb-0.5">{renderInline(h3[1])}</h3>); i2++; continue; }
+          if (h2) { nodes.push(<h2 key={`${i}-${i2}`} className="text-sm font-extrabold text-foreground mt-3 mb-1">{renderInline(h2[1])}</h2>); i2++; continue; }
+          if (h1) { nodes.push(<h1 key={`${i}-${i2}`} className="text-base font-extrabold text-foreground mt-3 mb-1">{renderInline(h1[1])}</h1>); i2++; continue; }
+
+          // Bullet list
+          if (/^[-*]\s/.test(line)) {
+            const items: string[] = [];
+            while (i2 < lines.length && /^[-*]\s/.test(lines[i2])) {
+              items.push(lines[i2].replace(/^[-*]\s+/, ''));
+              i2++;
+            }
+            nodes.push(
+              <ul key={`${i}-ul-${i2}`} className="list-disc pl-5 space-y-0.5 my-1">
+                {items.map((item, idx) => <li key={idx}>{renderInline(item)}</li>)}
+              </ul>
+            );
+            continue;
+          }
+
+          // Numbered list
+          if (/^\d+\.\s/.test(line)) {
+            const items: string[] = [];
+            while (i2 < lines.length && /^\d+\.\s/.test(lines[i2])) {
+              items.push(lines[i2].replace(/^\d+\.\s+/, ''));
+              i2++;
+            }
+            nodes.push(
+              <ol key={`${i}-ol-${i2}`} className="list-decimal pl-5 space-y-0.5 my-1">
+                {items.map((item, idx) => <li key={idx}>{renderInline(item)}</li>)}
+              </ol>
+            );
+            continue;
+          }
+
+          // Horizontal rule
+          if (/^---+$/.test(line.trim())) {
+            nodes.push(<hr key={`${i}-${i2}`} className="border-border/40 my-2" />);
+            i2++;
+            continue;
+          }
+
+          // Blank line = paragraph break
+          if (line.trim() === '') {
+            nodes.push(<div key={`${i}-${i2}`} className="h-1" />);
+            i2++;
+            continue;
+          }
+
+          // Normal paragraph line
+          nodes.push(<p key={`${i}-${i2}`} className="whitespace-pre-wrap">{renderInline(line)}</p>);
+          i2++;
+        }
+
+        return <React.Fragment key={i}>{nodes}</React.Fragment>;
+      })}
+    </div>
+  );
+}
+
+function renderInline(text: string): React.ReactNode {
+  const parts = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`)/g);
+  return parts.map((part, i) => {
+    if (part.startsWith('**') && part.endsWith('**')) {
+      return <strong key={i} className="font-bold">{part.slice(2, -2)}</strong>;
+    }
+    if (part.startsWith('*') && part.endsWith('*') && part.length > 2) {
+      return <em key={i} className="italic">{part.slice(1, -1)}</em>;
+    }
+    if (part.startsWith('`') && part.endsWith('`')) {
+      return <code key={i} className="bg-neutral-100 dark:bg-neutral-800 text-[#cf2d56] px-1 py-0.5 rounded text-[11px] font-mono">{part.slice(1, -1)}</code>;
+    }
+    return part;
+  });
+}
 
 interface Message {
   role: 'user' | 'assistant';
@@ -60,10 +187,10 @@ interface CanvasDocument {
 }
 
 const AI_MODELS = [
-  { id: 'meta-llama/llama-3-8b-instruct:free', name: 'Minerva AI (Llama 3.1)', provider: 'openrouter' },
+  { id: 'meta-llama/llama-3.3-70b-instruct:free', name: 'Minerva AI (Llama 3.3 70B)', provider: 'openrouter' },
+  { id: 'google/gemini-2.5-flash:free', name: 'Gemini 2.5 Flash', provider: 'openrouter' },
+  { id: 'deepseek/deepseek-r1:free', name: 'DeepSeek R1 — Raisonnement', provider: 'openrouter' },
   { id: 'nousresearch/hermes-3-llama-3-8b', name: 'Hermes Agent ⚡', provider: 'openrouter' },
-  { id: 'claude-3-5-sonnet-20241022', name: 'Claude 3.5 Sonnet', provider: 'anthropic' },
-  { id: 'gpt-4o', name: 'GPT-4o', provider: 'openai' }
 ];
 
 export function AssistantRoot() {
@@ -289,7 +416,22 @@ export function AssistantRoot() {
       );
     }
 
-    // Normal message rendering with attachment support
+    // Markdown renderer for assistant messages
+    if (msg.role === 'assistant') {
+      return (
+        <div className="space-y-2">
+          {msg.attachedFile && (
+            <div className="inline-flex items-center gap-2 bg-neutral-100 dark:bg-neutral-800 border border-border px-3 py-1.5 rounded-lg text-[11px] font-bold">
+              <FileText className="h-3.5 w-3.5 text-[#10b981]" />
+              <span className="truncate max-w-[150px]">{msg.attachedFile.name}</span>
+            </div>
+          )}
+          <MarkdownRenderer content={msg.content} />
+        </div>
+      );
+    }
+
+    // Plain user message
     return (
       <div className="space-y-2">
         {msg.attachedFile && (
@@ -328,8 +470,14 @@ export function AssistantRoot() {
     // Load or create discussion session
     let activeSess = currentSession;
     if (!activeSess) {
-      const firstWords = trimmed.slice(0, 30) + (trimmed.length > 30 ? '...' : '');
-      const sessTitle = firstWords || (fileToAttach ? `Fichier : ${fileToAttach.name}` : "Discussion");
+      const words = trimmed
+        .replace(/[^\w\sÀ-ɏ'-]/g, '')
+        .split(/\s+/)
+        .filter(Boolean)
+        .slice(0, 6);
+      const sessTitle = words.length > 0
+        ? words.join(' ')
+        : (fileToAttach ? `Fichier : ${fileToAttach.name}` : 'Discussion');
       activeSess = await dbCreateSession(userId, workspaceId, sessTitle);
       setCurrentSession(activeSess);
       localStorage.setItem(`minerva_active_sess_${workspaceId}`, activeSess.id);
@@ -718,12 +866,13 @@ export function AssistantRoot() {
                   sessions.map((sess) => (
                     <div
                       key={sess.id}
-                      className={`group flex items-center justify-between rounded-lg px-2 py-1.5 cursor-pointer text-[10px] font-bold transition-all relative ${
-                        currentSession?.id === sess.id 
-                          ? 'bg-emerald-50/70 text-emerald-800' 
+                      className={`group flex items-center gap-1 rounded-lg px-2 py-1.5 cursor-pointer text-[10px] font-bold transition-all relative ${
+                        currentSession?.id === sess.id
+                          ? 'bg-emerald-50/70 text-emerald-800'
                           : 'text-[#555552] hover:bg-neutral-100 hover:text-[#26251e]'
                       }`}
                     >
+                      {sess.pinned && <Pin className="h-2.5 w-2.5 text-amber-500 shrink-0" />}
                       <button
                         onClick={async () => {
                           setCurrentSession(sess);
@@ -731,9 +880,21 @@ export function AssistantRoot() {
                           const msgs = await dbGetMessages(sess.id);
                           setMessages(msgs);
                         }}
-                        className="flex-1 text-left truncate pr-1"
+                        className="flex-1 text-left truncate"
                       >
                         {sess.title}
+                      </button>
+                      <button
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          await dbToggleSessionPin(sess.id, !sess.pinned);
+                          const sessList = await dbGetSessions(userId, workspaceId);
+                          setSessions(sessList);
+                        }}
+                        className="opacity-0 group-hover:opacity-100 text-neutral-400 hover:text-amber-500 transition-opacity p-0.5"
+                        title={sess.pinned ? "Désépingler" : "Épingler"}
+                      >
+                        {sess.pinned ? <PinOff className="h-2.5 w-2.5" /> : <Pin className="h-2.5 w-2.5" />}
                       </button>
                       <button
                         onClick={async (e) => {
@@ -749,7 +910,7 @@ export function AssistantRoot() {
                         }}
                         className="opacity-0 group-hover:opacity-100 text-neutral-400 hover:text-red-600 transition-opacity p-0.5"
                       >
-                        <Trash2 className="h-3 w-3" />
+                        <Trash2 className="h-2.5 w-2.5" />
                       </button>
                     </div>
                   ))

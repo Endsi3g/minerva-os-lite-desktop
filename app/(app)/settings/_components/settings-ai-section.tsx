@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -8,7 +8,8 @@ import { SettingsSectionWrapper } from './settings-section-wrapper';
 import { cn } from '@/lib/utils';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
-import { Sparkles, Loader2, Mail, Eye } from 'lucide-react';
+import { Sparkles, Loader2, Mail } from 'lucide-react';
+import { createClient } from '@/lib/supabase/client';
 
 interface AiData {
   tone: 'casual' | 'professional' | 'storytelling';
@@ -105,6 +106,43 @@ function ApiKeyField({
 }
 
 export function SettingsAiSection({ data, onChange, onSaveKey, onDeleteKey, isSaving }: SettingsAiSectionProps) {
+  const [aboutYou, setAboutYou] = useState('');
+  const [modelInstructions, setModelInstructions] = useState('');
+  const [savingInstructions, setSavingInstructions] = useState(false);
+
+  useEffect(() => {
+    const load = async () => {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data: row } = await supabase
+        .from('settings')
+        .select('custom_instructions_about, custom_instructions_model')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      if (row) {
+        setAboutYou(row.custom_instructions_about || '');
+        setModelInstructions(row.custom_instructions_model || '');
+      }
+    };
+    load();
+  }, []);
+
+  const handleSaveInstructions = async () => {
+    setSavingInstructions(true);
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      await supabase.from('settings').upsert({
+        user_id: user.id,
+        custom_instructions_enabled: true,
+        custom_instructions_about: aboutYou,
+        custom_instructions_model: modelInstructions,
+      });
+    }
+    setSavingInstructions(false);
+  };
+
   const tones = [
     { id: 'casual' as const, name: 'Calme & Conseil', description: 'Ton d\'accompagnement chaleureux et axé sur l\'audit technique gratuit.' },
     { id: 'professional' as const, name: 'Direct & Closer', description: 'Ton direct de closing rapide, insistant sur le ROI commercial immédiat.' },
@@ -119,10 +157,11 @@ export function SettingsAiSection({ data, onChange, onSaveKey, onDeleteKey, isSa
   ];
 
   const FREE_MODELS = [
+    { id: 'meta-llama/llama-3.3-70b-instruct:free', name: 'Minerva AI (Llama 3.3 70B) — Recommandé' },
+    { id: 'google/gemini-2.5-flash:free', name: 'Gemini 2.5 Flash (Free)' },
+    { id: 'deepseek/deepseek-r1:free', name: 'DeepSeek R1 — Raisonnement (Free)' },
     { id: 'meta-llama/llama-3-8b-instruct:free', name: 'Llama 3 8B (Free)' },
     { id: 'mistralai/mistral-7b-instruct:free', name: 'Mistral 7B (Free)' },
-    { id: 'openchat/openchat-7b:free', name: 'OpenChat 7B (Free)' },
-    { id: 'microsoft/phi-3-medium-128k-instruct:free', name: 'Phi-3 Medium (Free)' },
     { id: 'qwen/qwen-2-7b-instruct:free', name: 'Qwen 2 7B (Free)' },
   ];
 
@@ -419,6 +458,51 @@ export function SettingsAiSection({ data, onChange, onSaveKey, onDeleteKey, isSa
                   onCheckedChange={(checked: boolean) => onChange({ autoFollowUps: checked })}
                   aria-label="Basculer la suggestion de relances dans le panneau Today"
                 />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* DIRECTIVES PERSONNALISÉES */}
+        <Card className="border border-border bg-card">
+          <CardContent className="p-5 space-y-4">
+            <h3 className="text-xs font-bold text-foreground uppercase tracking-wider">Directives Personnalisées</h3>
+            <p className="text-[11px] text-muted-foreground leading-normal">
+              Ces instructions sont injectées dans chaque conversation avec l'IA pour personnaliser ses réponses.
+            </p>
+
+            <div className="space-y-3 pt-1">
+              <div className="grid gap-1.5">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">À propos de vous</label>
+                <textarea
+                  rows={3}
+                  value={aboutYou}
+                  onChange={(e) => setAboutYou(e.target.value)}
+                  placeholder="Ex: Je suis un consultant en marketing digital pour des PME québécoises..."
+                  className="w-full text-xs p-2.5 bg-white border border-border rounded-xl focus:outline-none focus:ring-1 focus:ring-primary font-sans resize-none"
+                />
+              </div>
+
+              <div className="grid gap-1.5">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Instructions au modèle</label>
+                <textarea
+                  rows={3}
+                  value={modelInstructions}
+                  onChange={(e) => setModelInstructions(e.target.value)}
+                  placeholder="Ex: Réponds toujours en français. Sois concis et pratique. Fournis des exemples concrets..."
+                  className="w-full text-xs p-2.5 bg-white border border-border rounded-xl focus:outline-none focus:ring-1 focus:ring-primary font-sans resize-none"
+                />
+              </div>
+
+              <div className="flex justify-end">
+                <Button
+                  onClick={handleSaveInstructions}
+                  disabled={savingInstructions}
+                  className="h-8 text-xs bg-[#26251e] hover:bg-[#3d3c36] text-white font-bold flex items-center gap-1.5"
+                >
+                  {savingInstructions ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
+                  Enregistrer les directives
+                </Button>
               </div>
             </div>
           </CardContent>

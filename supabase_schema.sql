@@ -956,6 +956,10 @@ CREATE TRIGGER update_assistant_sessions_updated_at BEFORE UPDATE ON public.assi
 CREATE TRIGGER update_assistant_canvas_updated_at BEFORE UPDATE ON public.assistant_canvas
     FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
+-- v2.87.0 — assistant_sessions: project linking + pinning
+ALTER TABLE public.assistant_sessions ADD COLUMN IF NOT EXISTS project_id uuid REFERENCES public.projects(id) ON DELETE SET NULL;
+ALTER TABLE public.assistant_sessions ADD COLUMN IF NOT EXISTS pinned boolean DEFAULT false;
+
 
 -- v2.85.0 - GOOGLE MODULAR INTEGRATION TABLES
 
