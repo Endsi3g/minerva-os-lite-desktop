@@ -1,5 +1,6 @@
 import { CampaignDetailRoot } from './_components/campaign-detail-root';
 
-export default function CampaignDetailPage({ params }: { params: { id: string } }) {
-  return <CampaignDetailRoot id={params.id} />;
+export default async function CampaignDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  return <CampaignDetailRoot id={id} />;
 }

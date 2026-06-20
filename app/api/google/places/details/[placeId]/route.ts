@@ -4,7 +4,7 @@ import { getGooglePlaceDetails } from '@/lib/google/google-places-service';
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { placeId: string } }
+  { params }: { params: Promise<{ placeId: string }> }
 ) {
   try {
     const supabase = await createClient();
@@ -13,7 +13,7 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { placeId } = params;
+    const { placeId } = await params;
     if (!placeId) {
       return NextResponse.json({ error: 'Missing placeId parameter' }, { status: 400 });
     }

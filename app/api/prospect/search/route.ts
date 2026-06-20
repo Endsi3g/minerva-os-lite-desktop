@@ -709,7 +709,7 @@ export async function POST(req: NextRequest) {
       .maybeSingle();
 
     const apifyToken = (settings as any)?.apify_token;
-    const hasApify = apifyToken && apifyToken !== 'native' && apifyToken.startsWith('apify_api_');
+    const hasApify = apifyToken && apifyToken !== 'native' && apifyToken.trim().length > 5;
 
     const body = await req.json();
     
@@ -757,6 +757,7 @@ export async function POST(req: NextRequest) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               searchTerms,
+              searchStringsArray: searchTerms,
               maxCrawledPlacesPerSearch: Math.max(perSearch, 10),
               language: 'fr',
               countryCode: 'ca',

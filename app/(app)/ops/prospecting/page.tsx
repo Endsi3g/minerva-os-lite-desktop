@@ -5,6 +5,51 @@ import { useReach } from "@/lib/reach-context";
 import { Activity, Target, Zap, Bot, ArrowUpRight, ArrowDownRight, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
+import {
+  TerminalAnimationRoot,
+  TerminalAnimationWindow,
+  TerminalAnimationContent,
+  TerminalAnimationCommandBar,
+  TerminalAnimationOutput,
+  TerminalAnimationTabList,
+  TerminalAnimationTabTrigger,
+} from "@/components/ui/terminal-animation";
+
+const terminalTabs = [
+  {
+    label: "inbox",
+    command: "minerva inbox --check",
+    lines: [
+      { text: "  Checking Gmail inbox for active threads...", color: "text-[#b39aff]", delay: 300 },
+      { text: "  Found 0 new unread messages.", color: "text-slate-400", delay: 200 },
+      { text: "  Evaluating reply intent scores for recent threads...", color: "text-slate-500", delay: 300 },
+      { text: "  All inbox processing complete. Waiting for next cron cycle.", color: "text-[#22ff73]", delay: 200 },
+    ],
+  },
+  {
+    label: "automation",
+    command: "minerva autocrons --run",
+    lines: [
+      { text: "  Running active automation rules for workspace...", color: "text-[#b39aff]", delay: 400 },
+      { text: "  Checking rule: 'Follow-up if no reply' for lead queue...", color: "text-slate-400", delay: 200 },
+      { text: "  ✓ Rule matched for lead: 'Boulangerie L'Épi d'Or'", color: "text-[#22ff73]", delay: 300 },
+      { text: "  Action: Created follow-up task and generated draft email.", color: "text-amber-400", delay: 250 },
+      { text: "  All autocrons rules executed successfully.", color: "text-slate-500", delay: 200 },
+    ],
+  },
+  {
+    label: "leads",
+    command: "minerva leads --enrich",
+    lines: [
+      { text: "  Scanning database for leads needing enrichment...", color: "text-[#b39aff]", delay: 300 },
+      { text: "  Lead: 'Garage St-Laurent' -- enrichment in progress...", color: "text-slate-400", delay: 400 },
+      { text: "  ✓ Google Places rating: 4.2★ (12 reviews)", color: "text-[#22ff73]", delay: 200 },
+      { text: "  ✓ Calculated quality score: 85/100", color: "text-[#32f3e9]", delay: 150 },
+      { text: "  ✓ Calculated opportunity score: 75/100", color: "text-[#32f3e9]", delay: 150 },
+      { text: "  Database records successfully updated.", color: "text-slate-500", delay: 200 },
+    ],
+  },
+];
 
 export default function OpsProspectingDashboard() {
   const { activeWorkspace, leads, campaigns } = useReach();
@@ -55,7 +100,7 @@ export default function OpsProspectingDashboard() {
 
   return (
     <div className="h-full overflow-y-auto bg-[#fafaf9] text-[#26251e] font-sans">
-      <div className="max-w-6xl mx-auto p-6 space-y-6">
+      <div className="max-w-6xl mx-auto p-6 pb-24 space-y-6">
         
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -112,32 +157,38 @@ export default function OpsProspectingDashboard() {
         {/* Live Feed & Agent Activity */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 bg-white border rounded-xl shadow-sm overflow-hidden flex flex-col h-[400px]">
-            <div className="p-4 border-b flex items-center gap-2 bg-slate-50">
-              <Bot className="w-4 h-4 text-slate-600" />
-              <h3 className="text-sm font-bold text-slate-800">Flux de Décision (Agent Interne)</h3>
-            </div>
-            <div className="p-4 flex-1 overflow-y-auto space-y-3 bg-slate-900 font-mono text-[11px] text-slate-300">
-              <div className="flex gap-3 text-emerald-400">
-                <span className="shrink-0">[10:04:12]</span>
-                <span>Analyse de la boîte de réception... 0 nouveaux messages.</span>
+            <div className="p-4 border-b flex items-center justify-between bg-slate-50 shrink-0">
+              <div className="flex items-center gap-2">
+                <Bot className="w-4 h-4 text-slate-600" />
+                <h3 className="text-sm font-bold text-slate-800">Flux de Décision (Agent Interne)</h3>
               </div>
-              <div className="flex gap-3 text-emerald-400">
-                <span className="shrink-0">[10:04:13]</span>
-                <span>Évaluation des automations pour le workspace {activeWorkspace?.id.slice(0,6)}...</span>
-              </div>
-              <div className="flex gap-3 text-amber-400">
-                <span className="shrink-0">[10:05:01]</span>
-                <span>Condition "Relance si pas de réponse" validée pour Lead-2. Création de la tâche.</span>
-              </div>
-              <div className="flex gap-3 text-sky-400">
-                <span className="shrink-0">[10:05:02]</span>
-                <span>Lead-5 intent score a dépassé 80. Déclenchement de l'alerte.</span>
-              </div>
-              <div className="flex gap-3 text-slate-500">
-                <span className="shrink-0">[10:05:03]</span>
-                <span>Mise en veille jusqu'à la prochaine vérification (interval: 5m)...</span>
+              <div className="flex items-center gap-1">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </span>
+                <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider">Live</span>
               </div>
             </div>
+
+            <TerminalAnimationRoot tabs={terminalTabs} defaultActiveTab={0} className="flex-1 flex flex-col overflow-hidden">
+              <TerminalAnimationWindow className="flex-1 min-h-0 bg-slate-950 border-0 rounded-none text-slate-300" animateOnVisible={false}>
+                <TerminalAnimationContent className="font-mono text-[11px] leading-relaxed p-4 h-full overflow-y-auto">
+                  <div className="flex items-center gap-1.5 text-slate-500 mb-2">
+                    <span>$</span>
+                    <TerminalAnimationCommandBar className="font-mono" />
+                  </div>
+                  <TerminalAnimationOutput className="space-y-1" />
+                </TerminalAnimationContent>
+              </TerminalAnimationWindow>
+              <TerminalAnimationTabList className="flex border-t border-[#e6e5e0] bg-slate-50 h-9 shrink-0">
+                {terminalTabs.map((tab, index) => (
+                  <TerminalAnimationTabTrigger key={tab.label} index={index}>
+                    {tab.label}
+                  </TerminalAnimationTabTrigger>
+                ))}
+              </TerminalAnimationTabList>
+            </TerminalAnimationRoot>
           </div>
 
           <div className="bg-white border rounded-xl shadow-sm p-4 flex flex-col h-[400px]">
@@ -171,3 +222,4 @@ export default function OpsProspectingDashboard() {
     </div>
   );
 }
+

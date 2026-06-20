@@ -9,6 +9,7 @@ export async function generateStaticParams() {
   ];
 }
 
-export default function AgentDetailPage({ params }: { params: { id: string } }) {
-  return <AgentDetailRoot agentId={params.id} />;
+export default async function AgentDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  return <AgentDetailRoot agentId={id} />;
 }

@@ -18,8 +18,21 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v2.86.0',
+      date: '2026-06-20 10:15',
+      titleKey: 'changelog.v2_86_0_title' as TranslationKey,
+      descKey: 'changelog.v2_86_0_desc' as TranslationKey,
+      highlights: [
+        "Terminal de Cockpit Animé : Remplacement du flux statique par un terminal interactif à onglets (inbox, automation, leads) avec exécution simulée de commandes CLI.",
+        "Page dédiée aux Playbooks : Le bouton Voir les détails redirige vers la page `/playbooks/[slug]/view` reprenant la structure complète du Drawer.",
+        "Correction du Scraper Apify : Résolution du message 'Apify indisponible' en adaptant le payload pour `compass/crawler-google-places` et en assouplissant la vérification du token.",
+        "Ajustement du Flou de bas de page : Ajout d'espaces de sécurité `pb-24` pour garantir la lisibilité des éléments inférieurs.",
+        "Correction Build Vercel : Migration des paramètres de routes dynamiques vers l'API async (Promise<params>) requise par Next.js 16 — résout l'erreur TypeScript RouteHandlerConfig sur /api/google/drive/files/[id] et /api/google/places/details/[placeId]."
+      ],
+    },
+    {
       version: 'v2.85.0',
-      date: '2026-06-20',
+      date: '2026-06-20 09:30',
       titleKey: 'changelog.v2_85_0_title' as TranslationKey,
       descKey: 'changelog.v2_85_0_desc' as TranslationKey,
       highlights: [
@@ -1060,7 +1073,7 @@ export default function ChangelogPage() {
 
   return (
     <div className="h-full overflow-y-auto bg-neutral-50/40 text-neutral-800 font-sans selection:bg-blue-500/10">
-      <div className="max-w-3xl mx-auto px-8 py-10 space-y-8">
+      <div className="max-w-3xl mx-auto px-8 pt-10 pb-24 space-y-8">
 
         {/* ── Header ── */}
         <div className="flex items-start gap-4">
@@ -1080,11 +1093,16 @@ export default function ChangelogPage() {
         {/* ── Timeline Timeline ── */}
         <div className="relative border-l border-neutral-200/80 ml-5 pl-8 space-y-8 py-2">
           {versions.map((ver) => {
-            const formattedDate = new Date(ver.date).toLocaleDateString(undefined, {
+            const dateObj = new Date(ver.date);
+            const formattedDate = dateObj.toLocaleDateString(undefined, {
               month: 'long',
               day: 'numeric',
               year: 'numeric'
             });
+            const hasTime = ver.date.includes(' ') || ver.date.includes(':') || ver.date.includes('T');
+            const formattedTime = hasTime
+              ? dateObj.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
+              : '';
 
             return (
               <div key={ver.version} className="relative group">
@@ -1110,7 +1128,10 @@ export default function ChangelogPage() {
 
                     <div className="flex items-center gap-1.5 text-[10px] text-neutral-400 font-bold uppercase tracking-wider">
                       <Calendar className="w-3.5 h-3.5" />
-                      <span>{t('changelog.released')} {formattedDate}</span>
+                      <span>
+                        {t('changelog.released')} {formattedDate}
+                        {formattedTime ? ` à ${formattedTime}` : ''}
+                      </span>
                     </div>
                   </div>
 

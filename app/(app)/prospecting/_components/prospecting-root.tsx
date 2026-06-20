@@ -499,7 +499,7 @@ export function ProspectingRoot() {
             setUserCities((data as any).cities || []);
             if ((data as any).cities?.length > 0) setSelectedCities([(data as any).cities[0]]);
             const token = (data as any).apify_token;
-            setApifyConfigured(!!(token && token !== 'native' && token.startsWith('apify_api_')));
+            setApifyConfigured(!!(token && token !== 'native' && token.trim().length > 5));
           } else {
             setApifyConfigured(false);
           }

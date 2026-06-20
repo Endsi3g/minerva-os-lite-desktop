@@ -4,6 +4,7 @@ export async function generateStaticParams() {
   return [];
 }
 
-export default function CreatorProfilePage({ params }: { params: { userId: string } }) {
-  return <CreatorProfileRoot userId={params.userId} />;
+export default async function CreatorProfilePage({ params }: { params: Promise<{ userId: string }> }) {
+  const { userId } = await params;
+  return <CreatorProfileRoot userId={userId} />;
 }

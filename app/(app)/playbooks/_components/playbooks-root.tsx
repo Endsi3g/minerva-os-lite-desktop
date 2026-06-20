@@ -8,14 +8,14 @@ import { getApiUrl } from '@/lib/api-helper';
 import { BookOpen, ChevronRight, X, CheckCircle2, Loader2, Phone, Mail, FileText, User, Play, BarChart2, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-interface PlaybookSequenceStep {
+export interface PlaybookSequenceStep {
   day: number;
   channel: string;
   subject?: string;
   template: string;
 }
 
-interface Playbook {
+export interface Playbook {
   id: string;
   emoji: string;
   title: string;
@@ -38,7 +38,7 @@ interface Playbook {
   proposalTemplate: string;
 }
 
-const PLAYBOOKS: Playbook[] = [
+export const PLAYBOOKS: Playbook[] = [
   {
     id: 'dentistes-mtl',
     emoji: '🦷',
@@ -234,7 +234,7 @@ const PLAYBOOKS: Playbook[] = [
   },
 ];
 
-const CATEGORY_COLORS: Record<string, string> = {
+export const CATEGORY_COLORS: Record<string, string> = {
   'Santé': 'bg-blue-50 text-blue-700 border-blue-200',
   'Restauration': 'bg-orange-50 text-orange-700 border-orange-200',
   'Artisans': 'bg-stone-100 text-stone-700 border-stone-200',
@@ -246,7 +246,7 @@ const CATEGORY_COLORS: Record<string, string> = {
   'Juridique': 'bg-amber-50 text-amber-700 border-amber-200',
 };
 
-const CHANNEL_ICONS: Record<string, React.ReactNode> = {
+export const CHANNEL_ICONS: Record<string, React.ReactNode> = {
   email: <Mail className="h-3.5 w-3.5" />,
   call: <Phone className="h-3.5 w-3.5" />,
 };
@@ -254,7 +254,6 @@ const CHANNEL_ICONS: Record<string, React.ReactNode> = {
 export function PlaybooksRoot() {
   const router = useRouter();
   const { activeWorkspace } = useReach();
-  const [selectedPlaybook, setSelectedPlaybook] = useState<Playbook | null>(null);
   const [activeCategory, setActiveCategory] = useState<string>('Tous');
   const [runs, setRuns] = useState<Array<{ id: string; playbook_id: string; status: string; created_at: string; campaign_id: string }>>([]);
   const [runsLoading, setRunsLoading] = useState(false);
@@ -294,7 +293,7 @@ export function PlaybooksRoot() {
 
   return (
     <div className="h-full overflow-y-auto">
-      <div className="max-w-5xl mx-auto p-6 space-y-6">
+      <div className="max-w-5xl mx-auto p-6 pb-24 space-y-6">
         {/* Header */}
         <div>
           <div className="flex items-center gap-2">
@@ -401,7 +400,7 @@ export function PlaybooksRoot() {
 
               <div className="flex gap-2 pt-1">
                 <button
-                  onClick={() => setSelectedPlaybook(pb)}
+                  onClick={() => router.push(`/playbooks/${pb.id}/view`)}
                   className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-[#e5e5e0] text-xs font-semibold text-[#555552] hover:bg-[#f4f4f3] hover:text-[#26251e] transition-colors"
                 >
                   <ChevronRight className="h-3.5 w-3.5" />
@@ -420,165 +419,6 @@ export function PlaybooksRoot() {
         </div>
       </div>
 
-      {/* Detail Drawer */}
-      {selectedPlaybook && (
-        <div
-          className="fixed inset-0 z-[100] flex justify-end bg-black/30 backdrop-blur-xs"
-          onClick={() => setSelectedPlaybook(null)}
-        >
-          <div
-            className="w-full max-w-lg h-full bg-white shadow-xl overflow-y-auto flex flex-col animate-in slide-in-from-right duration-200"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Drawer header */}
-            <div className="flex items-center justify-between border-b border-[#e5e5e0] p-5 shrink-0">
-              <div className="flex items-center gap-3 min-w-0">
-                <span className="text-2xl">{selectedPlaybook.emoji}</span>
-                <div className="min-w-0">
-                  <p className="text-sm font-bold text-[#26251e] leading-snug">{selectedPlaybook.title}</p>
-                  <span
-                    className={cn(
-                      'inline-block mt-0.5 text-[10px] font-semibold px-2 py-0.5 rounded-full border',
-                      CATEGORY_COLORS[selectedPlaybook.category] ?? 'bg-neutral-100 text-neutral-600 border-neutral-200'
-                    )}
-                  >
-                    {selectedPlaybook.category}
-                  </span>
-                </div>
-              </div>
-              <button
-                onClick={() => setSelectedPlaybook(null)}
-                className="h-8 w-8 rounded-lg border border-[#e5e5e0] flex items-center justify-center text-[#7a7a76] hover:text-[#26251e] hover:bg-[#f4f4f3] transition-colors shrink-0"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-
-            {/* Drawer content */}
-            <div className="flex-1 overflow-y-auto p-5 space-y-6 text-left">
-              {/* ICP */}
-              <section className="space-y-3">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-[#7a7a76] flex items-center gap-2">
-                  <User className="h-3.5 w-3.5" />
-                  Persona ICP
-                </h3>
-                <p className="text-xs text-[#26251e] leading-relaxed bg-[#f7f7f4] rounded-xl p-3 border border-[#e5e5e0]">
-                  {selectedPlaybook.icp.persona}
-                </p>
-                <div className="space-y-1">
-                  {selectedPlaybook.icp.painPoints.map((p, i) => (
-                    <div key={i} className="flex items-start gap-2 text-xs text-[#555552]">
-                      <span className="text-[#f54e00] shrink-0 font-bold mt-0.5">✗</span>
-                      <span>{p}</span>
-                    </div>
-                  ))}
-                </div>
-                <div className="flex gap-4 text-xs">
-                  <div>
-                    <span className="text-[10px] font-bold uppercase text-[#7a7a76]">Budget</span>
-                    <p className="font-semibold text-[#26251e]">{selectedPlaybook.icp.budget}</p>
-                  </div>
-                  <div>
-                    <span className="text-[10px] font-bold uppercase text-[#7a7a76]">Secteur</span>
-                    <p className="font-semibold text-[#26251e]">{selectedPlaybook.icp.sector}</p>
-                  </div>
-                </div>
-              </section>
-
-              {/* Scraping preset */}
-              <section className="space-y-2">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-[#7a7a76]">Preset Scraping</h3>
-                <div className="rounded-xl border border-[#e5e5e0] p-3 space-y-2 bg-white text-xs">
-                  <div>
-                    <span className="text-[10px] font-bold text-[#7a7a76]">Niches</span>
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {selectedPlaybook.scraping.niches.map((n) => (
-                        <span key={n} className="px-2 py-0.5 bg-[#059669]/10 text-[#059669] rounded-full border border-[#059669]/20 text-[10px] font-semibold">
-                          {n}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                  <div>
-                    <span className="text-[10px] font-bold text-[#7a7a76]">Villes</span>
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {selectedPlaybook.scraping.cities.map((c) => (
-                        <span key={c} className="px-2 py-0.5 bg-neutral-100 text-neutral-700 rounded-full border border-neutral-200 text-[10px] font-semibold">
-                          {c}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </section>
-
-              {/* Sequence */}
-              <section className="space-y-2">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-[#7a7a76]">Séquence de contact</h3>
-                <div className="space-y-2">
-                  {selectedPlaybook.sequence.map((step, i) => (
-                    <div key={i} className="rounded-xl border border-[#e5e5e0] p-3 bg-white space-y-2">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[#7a7a76]">{CHANNEL_ICONS[step.channel] ?? <Mail className="h-3.5 w-3.5" />}</span>
-                        <span className="text-xs font-bold text-[#26251e] capitalize">{step.channel}</span>
-                        <span className="text-[10px] text-[#7a7a76] ml-auto">Jour {step.day}</span>
-                      </div>
-                      {step.subject && (
-                        <p className="text-[10px] font-semibold text-[#555552]">Objet : {step.subject}</p>
-                      )}
-                      <pre className="text-[10px] text-[#555552] leading-relaxed whitespace-pre-wrap font-sans">
-                        {step.template}
-                      </pre>
-                    </div>
-                  ))}
-                </div>
-              </section>
-
-              {/* Call script */}
-              <section className="space-y-2">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-[#7a7a76] flex items-center gap-2">
-                  <Phone className="h-3.5 w-3.5" />
-                  Script d'appel
-                </h3>
-                <pre className="text-xs text-[#555552] leading-relaxed whitespace-pre-wrap bg-[#f7f7f4] rounded-xl p-3 border border-[#e5e5e0] font-sans">
-                  {selectedPlaybook.callScript}
-                </pre>
-              </section>
-
-              {/* Proposal */}
-              <section className="space-y-2">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-[#7a7a76] flex items-center gap-2">
-                  <FileText className="h-3.5 w-3.5" />
-                  Modèle de proposition
-                </h3>
-                <pre className="text-xs text-[#555552] leading-relaxed whitespace-pre-wrap bg-[#f7f7f4] rounded-xl p-3 border border-[#e5e5e0] font-sans">
-                  {selectedPlaybook.proposalTemplate}
-                </pre>
-              </section>
-            </div>
-
-            {/* Drawer footer */}
-            <div className="border-t border-[#e5e5e0] p-4 shrink-0 flex gap-3">
-              <button
-                onClick={() => setSelectedPlaybook(null)}
-                className="flex-1 px-4 py-2 rounded-lg border border-[#e5e5e0] text-xs font-semibold text-[#555552] hover:bg-[#f4f4f3] transition-colors"
-              >
-                Fermer
-              </button>
-              <button
-                onClick={() => {
-                  setSelectedPlaybook(null);
-                  handleDeploy(selectedPlaybook);
-                }}
-                className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg bg-[#059669] hover:bg-[#047857] text-white text-xs font-bold transition-colors"
-              >
-                <Play className="h-3.5 w-3.5" />
-                Lancer le wizard
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
 
     const { data: settings } = await supabase.from('settings').select('apify_token').eq('user_id', user.id).maybeSingle();
     const apifyToken = (settings as any)?.apify_token;
-    if (!apifyToken || apifyToken === 'native' || !apifyToken.startsWith('apify_api_')) {
+    if (!apifyToken || apifyToken === 'native' || apifyToken.trim().length <= 5) {
       return NextResponse.json({ error: 'Clé API Apify manquante ou invalide. Configurez-la dans Paramètres → Intégrations.' }, { status: 400 });
     }
 
@@ -77,6 +77,7 @@ export async function POST(req: NextRequest) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           searchTerms,
+          searchStringsArray: searchTerms,
           maxCrawledPlacesPerSearch: Math.max(perSearch, 10),
           language: 'fr',
           countryCode: 'ca',

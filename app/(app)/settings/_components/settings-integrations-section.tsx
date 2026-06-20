@@ -66,7 +66,7 @@ export function SettingsIntegrationsSection() {
               } catch {}
             }
             if (data.apify_token) {
-              if (data.apify_token === 'native' || !data.apify_token.startsWith('apify_api_')) {
+              if (data.apify_token === 'native' || data.apify_token.trim().length <= 5) {
                 setScraperEngine('native');
                 setApifyInput(data.apify_token === 'native' ? '' : data.apify_token);
               } else {
