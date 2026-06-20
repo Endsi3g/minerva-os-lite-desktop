@@ -1825,6 +1825,8 @@ export const translations = {
     "changelog.subtitle": "Neue Funktionen und Produkt-Updates",
     "changelog.version": "Version",
     "changelog.released": "Veröffentlicht am",
+    "changelog.v2_88_0_title": "v2.88.0 - Projektliste & Bereinigung fiktiver Daten",
+    "changelog.v2_88_0_desc": "Neue Listenseite /projects mit Kachelansicht und schneller Erstellung. Entfernung von 4 hartkodierten Fake-Konkurrenzprofilen aus dem Performance-Ranking (Globales Netzwerk durch einen ehrlichen Platzhalter ersetzt). Die App zeigt keine erfundenen Daten mehr an.",
     "changelog.v2_87_0_title": "v2.87.0 - Adaptiver KI-Assistent, Markdown & Vereinfachte Einstellungen",
     "changelog.v2_87_0_desc": "Komplette Überarbeitung des KI-Assistenten mit Markdown-Rendering, Session-Pinning und echten OpenRouter-Gratismodellen (Llama 3.3 70B, Gemini 2.5 Flash, DeepSeek R1). Einstellungsnavigation auf 7 Tabs in 3 Gruppen reduziert. Adaptives Layout mit automatischer Inhaltsverbreiterung bei eingeklappter Seitenleiste. Gmail-Verbindung auf die neue modulare OAuth-Architektur v2.85 migriert.",
     "changelog.v2_86_0_title": "v2.86.0 - Interaktives Terminal, Eigene Playbook-Seite & Apify-Fixes",
