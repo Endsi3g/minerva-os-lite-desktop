@@ -857,3 +857,103 @@ create policy "Users manage own osm_feedback" on public.osm_feedback
 
 create index if not exists idx_osm_feedback_workspace_id on public.osm_feedback(workspace_id);
 
+-- ── 4. Create AI Assistant Tables ──
+
+-- Table des sessions de discussion de l'assistant
+CREATE TABLE IF NOT EXISTS public.assistant_sessions (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE not null,
+    workspace_id uuid REFERENCES public.workspaces(id) ON DELETE CASCADE,
+    title text NOT NULL,
+    created_at timestamp with time zone default now() not null,
+    updated_at timestamp with time zone default now() not null
+);
+
+-- Table des messages
+CREATE TABLE IF NOT EXISTS public.assistant_messages (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    session_id uuid REFERENCES public.assistant_sessions(id) ON DELETE CASCADE not null,
+    user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE not null,
+    role text NOT NULL,
+    content text NOT NULL,
+    attached_file_name text,
+    attached_file_type text,
+    created_at timestamp with time zone default now() not null
+);
+
+-- Table des documents Canvas
+CREATE TABLE IF NOT EXISTS public.assistant_canvas (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE not null,
+    workspace_id uuid REFERENCES public.workspaces(id) ON DELETE CASCADE,
+    title text NOT NULL,
+    content text NOT NULL,
+    created_at timestamp with time zone default now() not null,
+    updated_at timestamp with time zone default now() not null
+);
+
+-- Activation de RLS
+ALTER TABLE public.assistant_sessions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.assistant_messages ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.assistant_canvas ENABLE ROW LEVEL SECURITY;
+
+-- Politiques de sécurité (RLS)
+CREATE POLICY "Users manage own assistant_sessions" ON public.assistant_sessions
+    FOR ALL USING (
+        exists (
+            select 1 from public.workspaces w
+            where w.id = public.assistant_sessions.workspace_id
+              and (w.owner_id = auth.uid() or exists (
+                  select 1 from public.team_members tm
+                  where tm.workspace_id = w.id
+                    and tm.member_user_id = auth.uid()
+                    and tm.status = 'active'
+              ))
+        )
+    );
+
+CREATE POLICY "Users manage own assistant_messages" ON public.assistant_messages
+    FOR ALL USING (
+        exists (
+            select 1 from public.assistant_sessions s
+            where s.id = public.assistant_messages.session_id
+              and exists (
+                select 1 from public.workspaces w
+                where w.id = s.workspace_id
+                  and (w.owner_id = auth.uid() or exists (
+                      select 1 from public.team_members tm
+                      where tm.workspace_id = w.id
+                        and tm.member_user_id = auth.uid()
+                        and tm.status = 'active'
+                  ))
+              )
+        )
+    );
+
+CREATE POLICY "Users manage own assistant_canvas" ON public.assistant_canvas
+    FOR ALL USING (
+        exists (
+            select 1 from public.workspaces w
+            where w.id = public.assistant_canvas.workspace_id
+              and (w.owner_id = auth.uid() or exists (
+                  select 1 from public.team_members tm
+                  where tm.workspace_id = w.id
+                    and tm.member_user_id = auth.uid()
+                    and tm.status = 'active'
+              ))
+        )
+    );
+
+-- Indexes
+CREATE INDEX IF NOT EXISTS idx_assistant_sessions_workspace_id ON public.assistant_sessions(workspace_id);
+CREATE INDEX IF NOT EXISTS idx_assistant_messages_session_id ON public.assistant_messages(session_id);
+CREATE INDEX IF NOT EXISTS idx_assistant_canvas_workspace_id ON public.assistant_canvas(workspace_id);
+
+-- Triggers for updated_at
+CREATE TRIGGER update_assistant_sessions_updated_at BEFORE UPDATE ON public.assistant_sessions
+    FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+CREATE TRIGGER update_assistant_canvas_updated_at BEFORE UPDATE ON public.assistant_canvas
+    FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+

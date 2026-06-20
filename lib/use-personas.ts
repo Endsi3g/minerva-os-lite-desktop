@@ -27,7 +27,7 @@ export interface Persona {
 const LS_KEY = 'minerva_personas_v1';
 
 function isElectron(): boolean {
-  return typeof window !== 'undefined' && !!(window as any).electron;
+  return false;
 }
 
 function mapDbPersona(row: Record<string, any>): Persona {

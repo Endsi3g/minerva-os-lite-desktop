@@ -49,31 +49,15 @@ function setSession(session) {
 }
 
 function startSyncTimer() {
-  stopSyncTimer();
-  // Sync every 10 minutes — on-demand sync via triggerSync() handles immediate needs
-  syncTimer = setInterval(() => {
-    triggerSync().catch(err => console.error("Periodic sync failed:", err));
-  }, 10 * 60 * 1000);
+  // Sync disabled - everything goes direct to Supabase
 }
 
 function stopSyncTimer() {
-  if (syncTimer) {
-    clearInterval(syncTimer);
-    syncTimer = null;
-  }
+  // Sync disabled
 }
 
 async function triggerSync() {
-  if (!supabase || !currentUserId || syncInProgress) return;
-  syncInProgress = true;
-  try {
-    await syncPush();
-    await syncPull();
-  } catch (err) {
-    console.error("Sync error:", err);
-  } finally {
-    syncInProgress = false;
-  }
+  // Sync disabled
 }
 
 async function syncPush() {

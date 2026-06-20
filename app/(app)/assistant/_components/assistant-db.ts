@@ -1,4 +1,5 @@
 // Assistant Database Helpers
+import { createClient } from '@/lib/supabase/client';
 
 export interface AssistantSession {
   id: string;
@@ -29,10 +30,6 @@ export interface AssistantCanvasDoc {
   updatedAt: string;
 }
 
-// Check if electron is available
-const isElectron = typeof window !== 'undefined' && (window as any).electron !== undefined;
-const getElectron = () => (window as any).electron;
-
 // Generate UUID safely client-side
 const getUUID = () => {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) {
@@ -44,33 +41,26 @@ const getUUID = () => {
 // ── SESSIONS ──
 
 export async function dbGetSessions(userId: string, workspaceId: string): Promise<AssistantSession[]> {
-  if (isElectron) {
-    try {
-      const rows = await getElectron().dbAll(
-        'SELECT * FROM assistant_sessions WHERE workspace_id = ? ORDER BY updated_at DESC',
-        [workspaceId]
-      );
-      return (rows || []).map((r: any) => ({
-        id: r.id,
-        userId: r.user_id,
-        workspaceId: r.workspace_id,
-        title: r.title,
-        createdAt: r.created_at,
-        updatedAt: r.updated_at,
-      }));
-    } catch (e) {
-      console.error('SQLite getSessions failed, falling back to localStorage:', e);
-    }
-  }
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from('assistant_sessions')
+    .select('*')
+    .eq('workspace_id', workspaceId)
+    .order('updated_at', { ascending: false });
 
-  // LocalStorage Fallback
-  try {
-    const key = `minerva_as_sessions_${workspaceId}`;
-    const stored = localStorage.getItem(key);
-    return stored ? JSON.parse(stored) : [];
-  } catch {
+  if (error || !data) {
+    console.error('Supabase getSessions failed:', error);
     return [];
   }
+
+  return data.map((r: any) => ({
+    id: r.id,
+    userId: r.user_id,
+    workspaceId: r.workspace_id,
+    title: r.title,
+    createdAt: r.created_at,
+    updatedAt: r.updated_at,
+  }));
 }
 
 export async function dbCreateSession(userId: string, workspaceId: string, title: string): Promise<AssistantSession> {
@@ -83,114 +73,73 @@ export async function dbCreateSession(userId: string, workspaceId: string, title
     updatedAt: new Date().toISOString(),
   };
 
-  if (isElectron) {
-    try {
-      await getElectron().dbRun(
-        'INSERT INTO assistant_sessions (id, user_id, workspace_id, title, created_at, updated_at, sync_status) VALUES (?, ?, ?, ?, ?, ?, "synced")',
-        [newSession.id, userId, workspaceId, title, newSession.createdAt, newSession.updatedAt]
-      );
-      return newSession;
-    } catch (e) {
-      console.error('SQLite createSession failed:', e);
-    }
+  const supabase = createClient();
+  const { error } = await supabase.from('assistant_sessions').insert({
+    id: newSession.id,
+    user_id: userId,
+    workspace_id: workspaceId,
+    title,
+    created_at: newSession.createdAt,
+    updated_at: newSession.updatedAt,
+  });
+
+  if (error) {
+    console.error('Supabase createSession failed:', error);
   }
 
-  // LocalStorage Fallback
-  try {
-    const key = `minerva_as_sessions_${workspaceId}`;
-    const sessions = await dbGetSessions(userId, workspaceId);
-    sessions.unshift(newSession);
-    localStorage.setItem(key, JSON.stringify(sessions));
-  } catch {}
   return newSession;
 }
 
 export async function dbUpdateSessionTitle(workspaceId: string, sessionId: string, title: string): Promise<void> {
-  if (isElectron) {
-    try {
-      await getElectron().dbRun(
-        'UPDATE assistant_sessions SET title = ?, updated_at = ? WHERE id = ?',
-        [title, new Date().toISOString(), sessionId]
-      );
-      return;
-    } catch (e) {
-      console.error('SQLite updateSessionTitle failed:', e);
-    }
-  }
+  const supabase = createClient();
+  const { error } = await supabase
+    .from('assistant_sessions')
+    .update({ title, updated_at: new Date().toISOString() })
+    .eq('id', sessionId);
 
-  // LocalStorage Fallback
-  try {
-    const key = `minerva_as_sessions_${workspaceId}`;
-    const stored = localStorage.getItem(key);
-    if (stored) {
-      const sessions = JSON.parse(stored) as AssistantSession[];
-      const found = sessions.find(s => s.id === sessionId);
-      if (found) {
-        found.title = title;
-        found.updatedAt = new Date().toISOString();
-        localStorage.setItem(key, JSON.stringify(sessions));
-      }
-    }
-  } catch {}
+  if (error) {
+    console.error('Supabase updateSessionTitle failed:', error);
+  }
 }
 
 export async function dbDeleteSession(workspaceId: string, sessionId: string): Promise<void> {
-  if (isElectron) {
-    try {
-      await getElectron().dbRun('DELETE FROM assistant_sessions WHERE id = ?', [sessionId]);
-      await getElectron().dbRun('DELETE FROM assistant_messages WHERE session_id = ?', [sessionId]);
-      return;
-    } catch (e) {
-      console.error('SQLite deleteSession failed:', e);
-    }
-  }
+  const supabase = createClient();
+  const { error } = await supabase
+    .from('assistant_sessions')
+    .delete()
+    .eq('id', sessionId);
 
-  // LocalStorage Fallback
-  try {
-    const key = `minerva_as_sessions_${workspaceId}`;
-    const stored = localStorage.getItem(key);
-    if (stored) {
-      let sessions = JSON.parse(stored) as AssistantSession[];
-      sessions = sessions.filter(s => s.id !== sessionId);
-      localStorage.setItem(key, JSON.stringify(sessions));
-    }
-    localStorage.removeItem(`minerva_as_msgs_${sessionId}`);
-  } catch {}
+  if (error) {
+    console.error('Supabase deleteSession failed:', error);
+  }
 }
 
 // ── MESSAGES ──
 
 export async function dbGetMessages(sessionId: string): Promise<DBMessage[]> {
-  if (isElectron) {
-    try {
-      const rows = await getElectron().dbAll(
-        'SELECT * FROM assistant_messages WHERE session_id = ? ORDER BY created_at ASC',
-        [sessionId]
-      );
-      return (rows || []).map((r: any) => ({
-        id: r.id,
-        sessionId: r.session_id,
-        userId: r.user_id,
-        role: r.role as 'user' | 'assistant',
-        content: r.content,
-        attachedFile: r.attached_file_name
-          ? { name: r.attached_file_name, type: r.attached_file_type || '' }
-          : undefined,
-        createdAt: r.created_at,
-      }));
-    } catch (e) {
-      console.error('SQLite getMessages failed:', e);
-    }
-  }
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from('assistant_messages')
+    .select('*')
+    .eq('session_id', sessionId)
+    .order('created_at', { ascending: true });
 
-  // LocalStorage Fallback
-  try {
-    const key = `minerva_as_msgs_${sessionId}`;
-    const stored = localStorage.getItem(key);
-    return stored ? JSON.parse(stored) : [];
-  } catch {
+  if (error || !data) {
+    console.error('Supabase getMessages failed:', error);
     return [];
   }
+
+  return data.map((r: any) => ({
+    id: r.id,
+    sessionId: r.session_id,
+    userId: r.user_id,
+    role: r.role as 'user' | 'assistant',
+    content: r.content,
+    attachedFile: r.attached_file_name
+      ? { name: r.attached_file_name, type: r.attached_file_type || '' }
+      : undefined,
+    createdAt: r.created_at,
+  }));
 }
 
 export async function dbSaveMessage(
@@ -210,73 +159,58 @@ export async function dbSaveMessage(
     createdAt: new Date().toISOString(),
   };
 
-  if (isElectron) {
-    try {
-      await getElectron().dbRun(
-        'INSERT INTO assistant_messages (id, session_id, user_id, role, content, attached_file_name, attached_file_type, created_at, sync_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, "synced")',
-        [
-          newMsg.id,
-          sessionId,
-          userId,
-          role,
-          content,
-          attachedFile?.name || null,
-          attachedFile?.type || null,
-          newMsg.createdAt,
-        ]
-      );
-      // Touch session updated_at
-      await getElectron().dbRun(
-        'UPDATE assistant_sessions SET updated_at = ? WHERE id = ?',
-        [newMsg.createdAt, sessionId]
-      );
-      return newMsg;
-    } catch (e) {
-      console.error('SQLite saveMessage failed:', e);
+  const supabase = createClient();
+  const { error: msgError } = await supabase.from('assistant_messages').insert({
+    id: newMsg.id,
+    session_id: sessionId,
+    user_id: userId,
+    role,
+    content,
+    attached_file_name: attachedFile?.name || null,
+    attached_file_type: attachedFile?.type || null,
+    created_at: newMsg.createdAt,
+  });
+
+  if (msgError) {
+    console.error('Supabase saveMessage failed:', msgError);
+  } else {
+    // Touch session updated_at
+    const { error: sessionError } = await supabase
+      .from('assistant_sessions')
+      .update({ updated_at: newMsg.createdAt })
+      .eq('id', sessionId);
+    if (sessionError) {
+      console.error('Supabase touch session failed:', sessionError);
     }
   }
 
-  // LocalStorage Fallback
-  try {
-    const key = `minerva_as_msgs_${sessionId}`;
-    const messages = await dbGetMessages(sessionId);
-    messages.push(newMsg);
-    localStorage.setItem(key, JSON.stringify(messages));
-  } catch {}
   return newMsg;
 }
 
 // ── CANVAS DOCUMENTS ──
 
 export async function dbGetCanvasDocs(userId: string, workspaceId: string): Promise<AssistantCanvasDoc[]> {
-  if (isElectron) {
-    try {
-      const rows = await getElectron().dbAll(
-        'SELECT * FROM assistant_canvas WHERE workspace_id = ? ORDER BY updated_at DESC',
-        [workspaceId]
-      );
-      return (rows || []).map((r: any) => ({
-        id: r.id,
-        userId: r.user_id,
-        workspaceId: r.workspace_id,
-        title: r.title,
-        content: r.content,
-        createdAt: r.created_at,
-        updatedAt: r.updated_at,
-      }));
-    } catch (e) {
-      console.error('SQLite getCanvasDocs failed:', e);
-    }
-  }
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from('assistant_canvas')
+    .select('*')
+    .eq('workspace_id', workspaceId)
+    .order('updated_at', { ascending: false });
 
-  // LocalStorage Fallback
-  try {
-    const key = `minerva_as_canvas_${workspaceId}`;
-    const stored = localStorage.getItem(key);
-    return stored ? JSON.parse(stored) : [];
-  } catch {
+  if (error || !data) {
+    console.error('Supabase getCanvasDocs failed:', error);
     return [];
   }
+
+  return data.map((r: any) => ({
+    id: r.id,
+    userId: r.user_id,
+    workspaceId: r.workspace_id,
+    title: r.title,
+    content: r.content,
+    createdAt: r.created_at,
+    updatedAt: r.updated_at,
+  }));
 }
 
 export async function dbSaveCanvasDoc(
@@ -297,61 +231,34 @@ export async function dbSaveCanvasDoc(
     updatedAt: now,
   };
 
-  if (isElectron) {
-    try {
-      await getElectron().dbRun(
-        `INSERT INTO assistant_canvas (id, user_id, workspace_id, title, content, created_at, updated_at, sync_status)
-         VALUES (?, ?, ?, ?, ?, ?, ?, 'synced')
-         ON CONFLICT(id) DO UPDATE SET
-           title = excluded.title,
-           content = excluded.content,
-           updated_at = excluded.updated_at`,
-        [doc.id, userId, workspaceId, title, content, now, now]
-      );
-      return doc;
-    } catch (e) {
-      console.error('SQLite saveCanvasDoc failed:', e);
-    }
+  const supabase = createClient();
+  const { error } = await supabase
+    .from('assistant_canvas')
+    .upsert({
+      id,
+      user_id: userId,
+      workspace_id: workspaceId,
+      title,
+      content,
+      created_at: now,
+      updated_at: now
+    });
+
+  if (error) {
+    console.error('Supabase saveCanvasDoc failed:', error);
   }
 
-  // LocalStorage Fallback
-  try {
-    const key = `minerva_as_canvas_${workspaceId}`;
-    const docs = await dbGetCanvasDocs(userId, workspaceId);
-    const existingIdx = docs.findIndex(d => d.id === id);
-    if (existingIdx !== -1) {
-      docs[existingIdx] = {
-        ...docs[existingIdx],
-        title,
-        content,
-        updatedAt: now,
-      };
-    } else {
-      docs.unshift(doc);
-    }
-    localStorage.setItem(key, JSON.stringify(docs));
-  } catch {}
   return doc;
 }
 
 export async function dbDeleteCanvasDoc(workspaceId: string, id: string): Promise<void> {
-  if (isElectron) {
-    try {
-      await getElectron().dbRun('DELETE FROM assistant_canvas WHERE id = ?', [id]);
-      return;
-    } catch (e) {
-      console.error('SQLite deleteCanvasDoc failed:', e);
-    }
-  }
+  const supabase = createClient();
+  const { error } = await supabase
+    .from('assistant_canvas')
+    .delete()
+    .eq('id', id);
 
-  // LocalStorage Fallback
-  try {
-    const key = `minerva_as_canvas_${workspaceId}`;
-    const stored = localStorage.getItem(key);
-    if (stored) {
-      let docs = JSON.parse(stored) as AssistantCanvasDoc[];
-      docs = docs.filter(d => d.id !== id);
-      localStorage.setItem(key, JSON.stringify(docs));
-    }
-  } catch {}
+  if (error) {
+    console.error('Supabase deleteCanvasDoc failed:', error);
+  }
 }

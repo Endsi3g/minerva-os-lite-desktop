@@ -88,7 +88,7 @@ export function AgentDetailRoot({ agentId }: { agentId: string }) {
 
   // Load reviews from DB or localStorage
   const loadReviews = async () => {
-    const electronObj = typeof window !== 'undefined' && (window as any).electron;
+    const electronObj = null as any;
     try {
       if (electronObj) {
         const rows = await electronObj.dbAll(
@@ -211,7 +211,7 @@ export function AgentDetailRoot({ agentId }: { agentId: string }) {
     };
 
     try {
-      const electronObj = typeof window !== 'undefined' && (window as any).electron;
+      const electronObj = null as any;
       if (electronObj) {
         await electronObj.dbRun(
           'INSERT INTO agent_reviews (id, agent_id, user_id, user_name, rating, comment, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)',

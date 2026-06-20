@@ -18,6 +18,32 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v2.81.0',
+      date: '2026-06-19',
+      titleKey: 'changelog.v2_81_0_title' as TranslationKey,
+      descKey: 'changelog.v2_81_0_desc' as TranslationKey,
+      highlights: [
+        "Saisie manuelle : Formulaire dédié pour ajouter des prospects individuellement dans la boîte de validation.",
+        "Import CSV local : Lecteur de fichier CSV client avec détection automatique intelligente de colonnes.",
+        "Scores client-side : Calcul instantané de complétude, local fit et opportunité pour les leads importés.",
+        "Message OSM permanent : Avertissement sur la couverture de la base de données pour orienter la prospection.",
+        "Layout Côte-à-Côte : Grille responsive affichant la liste de validation et la carte côte à côte sur grand écran.",
+        "Carte Sticky : Rendu de la carte en mode collant lors du défilement vertical de la liste des prospects."
+      ],
+    },
+    {
+      version: 'v2.80.0',
+      date: '2026-06-19',
+      titleKey: 'changelog.v2_80_0_title' as TranslationKey,
+      descKey: 'changelog.v2_80_0_desc' as TranslationKey,
+      highlights: [
+        "Architecture Direct-Cloud : Déclassement de la base offline-first SQLite locale d'Electron.",
+        "Supabase en temps réel : CRUD direct depuis l'application desktop (leads, tâches, notes, campagnes, Goals).",
+        "Spotlight & Tray : Recherche Spotlight et widgets réécrits pour interroger directement la base cloud.",
+        "Assistant IA & Canvas Cloud : Sessions, messages et documents persistés sur le cloud avec sécurité RLS."
+      ],
+    },
+    {
       version: 'v2.79.0',
       date: '2026-06-19',
       titleKey: 'changelog.v2_79_0_title' as TranslationKey,

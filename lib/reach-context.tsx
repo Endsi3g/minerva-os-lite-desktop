@@ -518,7 +518,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
   const [goals, setGoals] = useState<Goal[]>([]);
 
   const loadDataLocal = useCallback(async (userId: string, workspaceId: string) => {
-    const electronObj = typeof window !== 'undefined' && (window as any).electron;
+    const electronObj = null as any;
     if (!electronObj) return;
 
     try {
@@ -623,7 +623,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const loadData = useCallback(async (currUser: SupabaseUser, activeWs: Workspace) => {
-    const electronObj = typeof window !== 'undefined' && (window as any).electron;
+    const electronObj = null as any;
     if (electronObj) {
       await loadDataLocal(currUser.id, activeWs.id);
       return;
@@ -689,7 +689,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
 
   // Load Workspaces List
   const loadWorkspaces = useCallback(async () => {
-    const electronObj = typeof window !== 'undefined' && (window as any).electron;
+    const electronObj = null as any;
     if (electronObj) {
       try {
         const list = await electronObj.dbAll("SELECT * FROM workspaces WHERE sync_status != 'pending_delete'");
@@ -788,7 +788,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
 
   const createWorkspace = async (name: string): Promise<Workspace | null> => {
     if (!user) return null;
-    const electronObj = typeof window !== 'undefined' && (window as any).electron;
+    const electronObj = null as any;
     if (electronObj) {
       try {
         const id = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : Math.random().toString(36).substring(2) + Date.now().toString(36);
@@ -841,7 +841,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
 
   const renameWorkspace = async (id: string, name: string) => {
     if (!user) return;
-    const electronObj = typeof window !== 'undefined' && (window as any).electron;
+    const electronObj = null as any;
     if (electronObj) {
       try {
         const existing = await electronObj.dbGet("SELECT sync_status FROM workspaces WHERE id = ?", [id]);
@@ -885,7 +885,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
 
   const updateWorkspace = async (id: string, fields: Partial<Workspace>) => {
     if (!user) return;
-    const electronObj = typeof window !== 'undefined' && (window as any).electron;
+    const electronObj = null as any;
     if (electronObj) {
       try {
         const existing = await electronObj.dbGet("SELECT sync_status FROM workspaces WHERE id = ?", [id]);
@@ -950,7 +950,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
     const updatedList = workspacesList.filter(w => w.id !== id);
     const fallback = updatedList.find(w => w.isOwner) || updatedList[0] || null;
     
-    const electronObj = typeof window !== 'undefined' && (window as any).electron;
+    const electronObj = null as any;
     if (electronObj) {
       try {
         if (fallback) {
@@ -1130,7 +1130,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
     phone?: string;
   }) => {
     if (!user || !activeWorkspace) return;
-    const electronObj = typeof window !== 'undefined' && (window as any).electron;
+    const electronObj = null as any;
 
     if (electronObj) {
       try {
@@ -1287,7 +1287,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
     if (!currentTask) return;
 
     const nextCompleted = !currentTask.completed;
-    const electronObj = typeof window !== 'undefined' && (window as any).electron;
+    const electronObj = null as any;
 
     if (electronObj) {
       try {
@@ -1325,7 +1325,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
 
   const addTask = async (title: string, category: Task['category'], dueDate?: string) => {
     if (!user || !activeWorkspace) return;
-    const electronObj = typeof window !== 'undefined' && (window as any).electron;
+    const electronObj = null as any;
 
     if (electronObj) {
       try {
@@ -1381,7 +1381,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
 
   const deleteTask = async (id: string) => {
     if (!user) return;
-    const electronObj = typeof window !== 'undefined' && (window as any).electron;
+    const electronObj = null as any;
 
     if (electronObj) {
       try {
@@ -1416,7 +1416,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
 
   const updateTask = async (id: string, fields: { title?: string; dueDate?: string; category?: Task['category'] }) => {
     if (!user) return;
-    const electronObj = typeof window !== 'undefined' && (window as any).electron;
+    const electronObj = null as any;
 
     if (electronObj) {
       try {
@@ -1459,7 +1459,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
     // Only allow owner to modify settings
     if (!activeWorkspace.isOwner) return;
 
-    const electronObj = typeof window !== 'undefined' && (window as any).electron;
+    const electronObj = null as any;
     if (electronObj) {
       try {
         await electronObj.dbRun(`INSERT INTO settings (user_id, quick_note, updated_at, sync_status)
@@ -1498,7 +1498,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
     // Only allow owner to modify settings
     if (!activeWorkspace.isOwner) return;
 
-    const electronObj = typeof window !== 'undefined' && (window as any).electron;
+    const electronObj = null as any;
     if (electronObj) {
       try {
         await electronObj.dbRun(`INSERT INTO settings (user_id, focus_title, focus_items, updated_at, sync_status)
@@ -1533,7 +1533,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
 
   const updateLead = async (leadId: string, fields: Partial<Lead>) => {
     if (!user) return;
-    const electronObj = typeof window !== 'undefined' && (window as any).electron;
+    const electronObj = null as any;
     if (electronObj) {
       try {
         const dbFields: string[] = [];
@@ -1660,7 +1660,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
 
   const deleteLeads = async (ids: string[]) => {
     if (!user) return;
-    const electronObj = typeof window !== 'undefined' && (window as any).electron;
+    const electronObj = null as any;
     if (electronObj) {
       try {
         for (const id of ids) {
@@ -1698,7 +1698,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
 
   const updateLeadsStatus = async (ids: string[], status: Lead['status']) => {
     if (!user) return;
-    const electronObj = typeof window !== 'undefined' && (window as any).electron;
+    const electronObj = null as any;
     if (electronObj) {
       try {
         for (const id of ids) {
@@ -1734,7 +1734,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
 
   const addNoteToLead = async (leadId: string, content: string, type: Note['type']) => {
     if (!user || !activeWorkspace) return;
-    const electronObj = typeof window !== 'undefined' && (window as any).electron;
+    const electronObj = null as any;
     if (electronObj) {
       try {
         const noteId = crypto.randomUUID();
@@ -1842,7 +1842,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
 
     setNotifications(prev => [newNotif, ...prev]);
 
-    const electronObj = typeof window !== 'undefined' && (window as any).electron;
+    const electronObj = null as any;
     if (electronObj) {
       try {
         await electronObj.dbRun(
@@ -1879,7 +1879,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
   const markNotificationRead = async (id: string) => {
     setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
 
-    const electronObj = typeof window !== 'undefined' && (window as any).electron;
+    const electronObj = null as any;
     if (electronObj) {
       try {
         await electronObj.dbRun(
@@ -1904,7 +1904,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
   const markAllNotificationsRead = async () => {
     setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
 
-    const electronObj = typeof window !== 'undefined' && (window as any).electron;
+    const electronObj = null as any;
     if (electronObj) {
       if (!user) return;
       try {
@@ -1954,7 +1954,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
 
     setTeamMessages(prev => [...prev, optimisticMsg].slice(-50));
 
-    const electronObj = typeof window !== 'undefined' && (window as any).electron;
+    const electronObj = null as any;
     if (electronObj) {
       try {
         await electronObj.dbRun(
@@ -2023,7 +2023,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
     };
     setProjects(prev => [optimistic, ...prev]);
 
-    const electronObj = typeof window !== 'undefined' && (window as any).electron;
+    const electronObj = null as any;
     if (electronObj) {
       try {
         await electronObj.dbRun(
@@ -2059,7 +2059,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
     if (!user) return;
     setProjects(prev => prev.map(p => p.id === id ? { ...p, name, updatedAt: new Date().toISOString() } : p));
 
-    const electronObj = typeof window !== 'undefined' && (window as any).electron;
+    const electronObj = null as any;
     if (electronObj) {
       try {
         const existing = await electronObj.dbGet("SELECT sync_status FROM projects WHERE id = ?", [id]);
@@ -2087,7 +2087,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
     if (!user) return;
     setProjects(prev => prev.filter(p => p.id !== id));
 
-    const electronObj = typeof window !== 'undefined' && (window as any).electron;
+    const electronObj = null as any;
     if (electronObj) {
       try {
         const existing = await electronObj.dbGet("SELECT sync_status FROM projects WHERE id = ?", [id]);
@@ -2124,7 +2124,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
     playbookRunId?: string;
   }): Promise<Campaign | null> => {
     if (!user || !activeWorkspace) return null;
-    const electronObj = typeof window !== 'undefined' && (window as any).electron;
+    const electronObj = null as any;
     const newCampaign: Campaign = {
       id: crypto.randomUUID(),
       workspaceId: activeWorkspace.id,
@@ -2192,7 +2192,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
 
   const updateCampaign = async (id: string, fields: Partial<Campaign>): Promise<void> => {
     if (!user) return;
-    const electronObj = typeof window !== 'undefined' && (window as any).electron;
+    const electronObj = null as any;
     const dbFields: string[] = [];
     const params: any[] = [];
     if (fields.name !== undefined) { dbFields.push("name = ?"); params.push(fields.name); }
@@ -2239,7 +2239,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
 
   const deleteCampaign = async (id: string): Promise<void> => {
     if (!user) return;
-    const electronObj = typeof window !== 'undefined' && (window as any).electron;
+    const electronObj = null as any;
     if (electronObj) {
       try {
         await electronObj.dbRun("UPDATE campaigns SET sync_status = 'pending_delete' WHERE id = ?", [id]);
@@ -2257,7 +2257,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
 
   const addGoal = async (data: { metric: Goal['metric']; target: number; period: Goal['period'] }): Promise<Goal | null> => {
     if (!user || !activeWorkspace) return null;
-    const electronObj = typeof window !== 'undefined' && (window as any).electron;
+    const electronObj = null as any;
     const now = new Date().toISOString();
     const newGoal: Goal = {
       id: crypto.randomUUID(),
@@ -2296,7 +2296,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
 
   const updateGoal = async (id: string, fields: Partial<Pick<Goal, 'target' | 'period'>>): Promise<void> => {
     if (!user) return;
-    const electronObj = typeof window !== 'undefined' && (window as any).electron;
+    const electronObj = null as any;
     const now = new Date().toISOString();
     if (electronObj) {
       try {
@@ -2323,7 +2323,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
 
   const deleteGoal = async (id: string): Promise<void> => {
     if (!user) return;
-    const electronObj = typeof window !== 'undefined' && (window as any).electron;
+    const electronObj = null as any;
     if (electronObj) {
       try {
         await electronObj.dbRun("DELETE FROM goals WHERE id = ?", [id]);
@@ -2341,7 +2341,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
 
   const addLeadValidations = async (items: Omit<LeadValidation, 'id' | 'userId' | 'workspaceId' | 'createdAt' | 'updatedAt'>[]) => {
     if (!user || !activeWorkspace) return;
-    const electronObj = typeof window !== 'undefined' && (window as any).electron;
+    const electronObj = null as any;
     const nowStr = new Date().toISOString();
 
     const mappedItems = items.map(item => ({
@@ -2413,7 +2413,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
 
   const updateLeadValidation = async (id: string, fields: Partial<LeadValidation>) => {
     if (!user) return;
-    const electronObj = typeof window !== 'undefined' && (window as any).electron;
+    const electronObj = null as any;
     const nowStr = new Date().toISOString();
 
     if (electronObj) {
@@ -2480,7 +2480,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
 
   const deleteLeadValidation = async (id: string) => {
     if (!user) return;
-    const electronObj = typeof window !== 'undefined' && (window as any).electron;
+    const electronObj = null as any;
 
     if (electronObj) {
       try {
@@ -2508,7 +2508,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
 
   const addOsmFeedback = async (fb: { niche: string; city: string; actionType: 'ignore' | 'correct' | 'merge'; originalValue?: string; correctedValue?: string; osmId?: string }) => {
     if (!user || !activeWorkspace) return;
-    const electronObj = typeof window !== 'undefined' && (window as any).electron;
+    const electronObj = null as any;
     const nowStr = new Date().toISOString();
     const id = crypto.randomUUID();
 

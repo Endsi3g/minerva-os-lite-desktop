@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useReach } from '@/lib/reach-context';
+import { createClient } from '@/lib/supabase/client';
 import { getApiUrl } from '@/lib/api-helper';
 import { cn } from '@/lib/utils';
 import {
@@ -221,17 +222,17 @@ export function FieldRoot({ planId }: { planId: string }) {
       .finally(() => setLoading(false));
   }, [planId, leads]);
 
-  // Load visit logs from SQLite (Electron) or local state re-hydration on focus
+  // Load visit logs from Supabase Cloud directly
   useEffect(() => {
-    const isElectron = typeof window !== 'undefined' && !!(window as unknown as Record<string, unknown>).electron;
-    if (!isElectron || !planId) return;
-    const electron = (window as unknown as Record<string, unknown>).electron as {
-      dbAll: (sql: string, params: unknown[]) => Promise<Record<string, unknown>[]>;
-    };
-    electron.dbAll('SELECT * FROM field_visits WHERE route_plan_id = ?', [planId])
-      .then((rows) => {
+    if (!planId) return;
+    const supabase = createClient();
+    supabase.from('field_visits')
+      .select('*')
+      .eq('route_plan_id', planId)
+      .then(({ data, error }: { data: any; error: any }) => {
+        if (error || !data) return;
         const logs: Record<string, VisitLog> = {};
-        for (const row of rows) {
+        for (const row of data) {
           logs[row.lead_id as string] = {
             leadId: row.lead_id as string,
             outcome: row.outcome as VisitOutcome,
@@ -258,12 +259,8 @@ export function FieldRoot({ planId }: { planId: string }) {
   const handleSync = async () => {
     setSyncing(true);
     try {
-      const isElectron = typeof window !== 'undefined' && !!(window as unknown as Record<string, unknown>).electron;
-      if (isElectron) {
-        const electron = (window as unknown as Record<string, unknown>).electron as { triggerSync: () => void };
-        electron.triggerSync();
-        await new Promise((resolve) => setTimeout(resolve, 2000));
-      }
+      // Data is live, simply mock a short delay for indicator UX
+      await new Promise((resolve) => setTimeout(resolve, 600));
       setSyncDone(true);
       setTimeout(() => setSyncDone(false), 3000);
     } finally {

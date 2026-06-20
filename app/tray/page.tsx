@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { createClient } from '@/lib/supabase/client';
 import { 
   Play, 
   Loader2, 
@@ -32,12 +33,18 @@ export default function TrayPage() {
   const isElectron = typeof window !== 'undefined' && (window as any).electron;
 
   const loadSettingsAndTasks = async () => {
-    if (!isElectron) return;
-    const electron = (window as any).electron;
-
     try {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
       // Get settings (last_scrape_at)
-      const setting = await electron.dbGet("SELECT last_scrape_at FROM settings ORDER BY updated_at DESC LIMIT 1");
+      const { data: setting } = await supabase
+        .from('settings')
+        .select('last_scrape_at')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
       if (setting && setting.last_scrape_at) {
         const dateObj = new Date(setting.last_scrape_at);
         setLastScrapeTime(dateObj.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) + ' le ' + dateObj.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }));
@@ -46,20 +53,32 @@ export default function TrayPage() {
       }
 
       // Get 3 uncompleted tasks
-      const rows = await electron.dbAll("SELECT id, title, completed, category FROM tasks WHERE completed = 0 ORDER BY created_at DESC LIMIT 3");
-      setTasks(rows || []);
+      const { data: rows } = await supabase
+        .from('tasks')
+        .select('id, title, completed, category')
+        .eq('user_id', user.id)
+        .eq('completed', false)
+        .order('created_at', { ascending: false })
+        .limit(3);
+
+      setTasks((rows || []).map((r: any) => ({
+        id: r.id,
+        title: r.title,
+        completed: r.completed ? 1 : 0,
+        category: r.category || 'General'
+      })));
     } catch (err) {
-      console.error("Failed to load local DB data in Tray popover:", err);
+      console.error("Failed to load local DB data in Tray popover from Supabase:", err);
     }
   };
 
   // 1. Initial loads and event subscriptions
   useEffect(() => {
-    if (!isElectron) return;
-    const electron = (window as any).electron;
-
     // Load initial tasks and last scrape time
     loadSettingsAndTasks();
+
+    if (!isElectron) return;
+    const electron = (window as any).electron;
 
     // Subscribe to background scraper status changes
     if (electron.onScrapingStatusChanged) {
@@ -110,24 +129,20 @@ export default function TrayPage() {
 
   // 3. Toggle task completion
   const handleToggleTask = async (taskId: string, currentCompleted: number) => {
-    if (!isElectron) return;
-    const electron = (window as any).electron;
-
     const nextCompleted = currentCompleted === 1 ? 0 : 1;
     const nowIso = new Date().toISOString();
 
     try {
-      await electron.dbRun(
-        "UPDATE tasks SET completed = ?, sync_status = 'pending_update', updated_at = ? WHERE id = ?",
-        [nextCompleted, nowIso, taskId]
-      );
+      const supabase = createClient();
+      await supabase
+        .from('tasks')
+        .update({ completed: nextCompleted === 1, updated_at: nowIso })
+        .eq('id', taskId);
+
       // Optimistic state update
       setTasks(prev => prev.filter(t => t.id !== taskId));
-      
-      // Trigger synchronization
-      electron.triggerSync();
     } catch (err) {
-      console.error("Failed to toggle task in Tray:", err);
+      console.error("Failed to toggle task in Tray on Supabase:", err);
     }
   };
 

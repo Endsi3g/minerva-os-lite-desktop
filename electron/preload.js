@@ -15,12 +15,12 @@ contextBridge.exposeInMainWorld('electron', {
     };
   },
   
-  // Database API
-  dbAll: (sql, params) => ipcRenderer.invoke('db-all', { sql, params }),
-  dbRun: (sql, params) => ipcRenderer.invoke('db-run', { sql, params }),
-  dbGet: (sql, params) => ipcRenderer.invoke('db-get', { sql, params }),
+  // Database API (SQLite disabled - direct Supabase Cloud used instead)
+  dbAll: () => Promise.resolve([]),
+  dbRun: () => Promise.resolve({ lastID: 0, changes: 0 }),
+  dbGet: () => Promise.resolve(null),
   setSession: (session) => ipcRenderer.invoke('set-session', session),
-  triggerSync: () => ipcRenderer.invoke('trigger-sync'),
+  triggerSync: () => Promise.resolve(),
 
   // Spotlight search API
   hideSpotlight: () => ipcRenderer.send('hide-spotlight'),

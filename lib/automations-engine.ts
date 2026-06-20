@@ -39,48 +39,27 @@ function evaluateCondition(lead: Record<string, any>, condition: Condition): boo
 }
 
 export async function processAutomations(workspaceId: string, trigger: TriggerType, leadData: Record<string, any>) {
-  const isElectron = typeof window !== 'undefined' && !!(window as any).electron;
   let automations: Automation[] = [];
 
-  if (isElectron) {
-    try {
-      const rows = await (window as any).electron.dbAll(
-        `SELECT * FROM automations WHERE workspace_id = ? AND trigger_type = ? AND is_active = 1`,
-        [workspaceId, trigger]
-      );
-      automations = rows.map((r: any) => ({
-        id: r.id,
-        workspaceId: r.workspace_id,
-        name: r.name,
-        triggerType: r.trigger_type,
-        conditions: JSON.parse(r.conditions || '[]'),
-        actions: JSON.parse(r.actions || '[]'),
-        isActive: Boolean(r.is_active)
-      }));
-    } catch (e) {
-      console.error("Error loading local automations:", e);
-    }
-  } else {
-    // Web fallback
-    const supabase = createClient();
-    const { data } = await supabase
-      .from('automations')
-      .select('*')
-      .eq('workspace_id', workspaceId)
-      .eq('trigger_type', trigger)
-      .eq('is_active', true);
-      
-    if (data) {
-      automations = data.map((r: any) => ({
-        id: r.id,
-        workspaceId: r.workspace_id,
-        name: r.name,
-        triggerType: r.trigger_type,
-        conditions: typeof r.conditions === 'string' ? JSON.parse(r.conditions) : r.conditions,
-        actions: typeof r.actions === 'string' ? JSON.parse(r.actions) : r.actions,
-        isActive: r.is_active
-      }));
-    }
+  // Web / Supabase direct
+  const supabase = createClient();
+  const { data } = await supabase
+    .from('automations')
+    .select('*')
+    .eq('workspace_id', workspaceId)
+    .eq('trigger_type', trigger)
+    .eq('is_active', true);
+    
+  if (data) {
+    automations = data.map((r: any) => ({
+      id: r.id,
+      workspaceId: r.workspace_id,
+      name: r.name,
+      triggerType: r.trigger_type,
+      conditions: typeof r.conditions === 'string' ? JSON.parse(r.conditions) : r.conditions,
+      actions: typeof r.actions === 'string' ? JSON.parse(r.actions) : r.actions,
+      isActive: r.is_active
+    }));
   }
 
   for (const automation of automations) {
@@ -106,58 +85,84 @@ export async function processAutomations(workspaceId: string, trigger: TriggerTy
 }
 
 async function executeAction(workspaceId: string, action: Action, context: Record<string, any>, automationId: string) {
-  const isElectron = typeof window !== 'undefined' && !!(window as any).electron;
   const now = new Date().toISOString();
+  const supabase = createClient();
   
   switch (action.type) {
-    case 'create_task':
+    case 'create_task': {
       const taskId = crypto.randomUUID();
       const title = action.payload.title.replace('{{leadName}}', context.businessName || 'Lead');
-      if (isElectron) {
-        await (window as any).electron.dbRun(
-          `INSERT INTO tasks (id, user_id, workspace_id, title, category, created_at, sync_status) VALUES (?, ?, ?, ?, ?, ?, 'pending_insert')`,
-          [taskId, context.user_id || context.userId || 'system', workspaceId, title, action.payload.category || 'General', now]
-        );
-        if ((window as any).electron.triggerSync) (window as any).electron.triggerSync();
+      
+      let targetUserId = context.user_id || context.userId;
+      if (!targetUserId || targetUserId === 'system') {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) targetUserId = user.id;
+      }
+      
+      if (targetUserId && targetUserId !== 'system') {
+        await supabase.from('tasks').insert({
+          id: taskId,
+          user_id: targetUserId,
+          workspace_id: workspaceId,
+          title: title,
+          category: action.payload.category || 'General',
+          due_date: now.split('T')[0],
+          created_at: now
+        });
       }
       break;
+    }
       
     case 'update_lead_status':
-      if (context.id && isElectron) {
-        await (window as any).electron.dbRun(
-          `UPDATE leads SET status = ?, sync_status = 'pending_update' WHERE id = ?`,
-          [action.payload.status, context.id]
-        );
-        if ((window as any).electron.triggerSync) (window as any).electron.triggerSync();
+      if (context.id) {
+        await supabase.from('leads')
+          .update({ status: action.payload.status, updated_at: now })
+          .eq('id', context.id);
       }
       break;
       
-    case 'notify':
+    case 'notify': {
       const notifId = crypto.randomUUID();
       const msg = action.payload.message.replace('{{leadName}}', context.businessName || 'Lead');
-      if (isElectron) {
-        await (window as any).electron.dbRun(
-          `INSERT INTO notifications (id, user_id, workspace_id, type, title, body, created_at, sync_status) VALUES (?, ?, ?, ?, ?, ?, ?, 'pending_insert')`,
-          [notifId, context.user_id || context.userId || 'system', workspaceId, 'info', 'Automation: ' + msg, msg, now]
-        );
-        if ((window as any).electron.triggerSync) (window as any).electron.triggerSync();
+      
+      let targetUserId = context.user_id || context.userId;
+      if (!targetUserId || targetUserId === 'system') {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) targetUserId = user.id;
+      }
+      
+      if (targetUserId && targetUserId !== 'system') {
+        await supabase.from('notifications').insert({
+          id: notifId,
+          user_id: targetUserId,
+          workspace_id: workspaceId,
+          type: 'info',
+          title: 'Automation: ' + msg,
+          body: msg,
+          created_at: now
+        });
       }
       break;
+    }
   }
 }
 
 async function logAutomationEvent(automationId: string, workspaceId: string, triggerEvent: string, status: string, error: string | null) {
-  const isElectron = typeof window !== 'undefined' && !!(window as any).electron;
   const logId = crypto.randomUUID();
   const now = new Date().toISOString();
-  
-  if (isElectron) {
-    try {
-      await (window as any).electron.dbRun(
-        `INSERT INTO automation_logs (id, automation_id, workspace_id, trigger_event, status, error, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [logId, automationId, workspaceId, triggerEvent, status, error, now]
-      );
-    } catch (e) {}
+  const supabase = createClient();
+  try {
+    await supabase.from('automation_logs').insert({
+      id: logId,
+      automation_id: automationId,
+      workspace_id: workspaceId,
+      trigger_event: triggerEvent,
+      status: status,
+      error: error,
+      created_at: now
+    });
+  } catch (e) {
+    console.error("Error logging automation event:", e);
   }
 }
 

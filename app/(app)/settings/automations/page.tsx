@@ -16,7 +16,7 @@ export default function AutomationsSettingsPage() {
     async function loadAutomations() {
       if (!activeWorkspace) return;
       setLoading(true);
-      const electronObj = typeof window !== "undefined" && (window as any).electron;
+      const electronObj = null as any;
       if (electronObj) {
         try {
           const rows = await electronObj.dbAll("SELECT * FROM automations WHERE workspace_id = ?", [activeWorkspace.id]);
@@ -100,7 +100,7 @@ export default function AutomationsSettingsPage() {
   const toggleActive = async (id: string, current: boolean) => {
     const next = !current;
     setAutomations(prev => prev.map(a => a.id === id ? { ...a, isActive: next } : a));
-    const electronObj = typeof window !== "undefined" && (window as any).electron;
+    const electronObj = null as any;
     if (electronObj) {
       await electronObj.dbRun(`UPDATE automations SET is_active = ?, sync_status = 'pending_update' WHERE id = ?`, [next ? 1 : 0, id]);
       if (electronObj.triggerSync) electronObj.triggerSync();
@@ -112,7 +112,7 @@ export default function AutomationsSettingsPage() {
 
   const deleteAutomation = async (id: string) => {
     setAutomations(prev => prev.filter(a => a.id !== id));
-    const electronObj = typeof window !== "undefined" && (window as any).electron;
+    const electronObj = null as any;
     if (electronObj) {
       await electronObj.dbRun(`UPDATE automations SET sync_status = 'pending_delete' WHERE id = ?`, [id]);
       if (electronObj.triggerSync) electronObj.triggerSync();

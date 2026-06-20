@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, Mail } from 'lucide-react';
+import { createClient } from '@/lib/supabase/client';
 
 interface SpotlightLead {
   id: string;
@@ -29,24 +30,29 @@ export default function SpotlightPage() {
   // Fetch leads based on search query
   useEffect(() => {
     const fetchLeads = async () => {
-      const electronObj = (window as any).electron;
-      if (!electronObj) return;
-
       try {
-        let rows;
+        const supabase = createClient();
+        let data;
         if (!query.trim()) {
           // Show recent leads
-          rows = await electronObj.dbAll("SELECT id, business_name, contact_name, contact_email, niche, city, status FROM leads ORDER BY updated_at DESC LIMIT 5");
+          const res = await supabase
+            .from('leads')
+            .select('id, business_name, contact_name, contact_email, niche, city, status')
+            .order('updated_at', { ascending: false })
+            .limit(5);
+          data = res.data;
         } else {
-          rows = await electronObj.dbAll(
-            "SELECT id, business_name, contact_name, contact_email, niche, city, status FROM leads WHERE business_name LIKE ? OR niche LIKE ? OR city LIKE ? LIMIT 6",
-            [`%${query}%`, `%${query}%`, `%${query}%`]
-          );
+          const res = await supabase
+            .from('leads')
+            .select('id, business_name, contact_name, contact_email, niche, city, status')
+            .or(`business_name.ilike.%${query}%,niche.ilike.%${query}%,city.ilike.%${query}%`)
+            .limit(6);
+          data = res.data;
         }
-        setLeads(rows || []);
+        setLeads((data || []) as unknown as SpotlightLead[]);
         setSelectedIndex(0);
       } catch (err) {
-        console.error("Failed to query SQLite leads in Spotlight:", err);
+        console.error("Failed to query Supabase leads in Spotlight:", err);
       }
     };
 

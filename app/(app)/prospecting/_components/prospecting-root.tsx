@@ -16,7 +16,7 @@ import {
   Database, Plus, X, ChevronDown, WifiOff, CheckCircle2, Settings2, BarChart3,
   ExternalLink, Download, ArrowUpDown, SlidersHorizontal, History, Clock,
   Navigation, Map as MapIcon, Edit3, Target, Trash2, Edit2, GitMerge, Info,
-  AlertTriangle, Inbox, CheckCircle, RefreshCw, ThumbsDown
+  AlertTriangle, Inbox, CheckCircle, RefreshCw, ThumbsDown, Upload
 } from 'lucide-react';
 
 interface ScrapeJobRecord {
@@ -66,7 +66,7 @@ const QUEBEC_CITIES = [
 ];
 
 type SortKey = 'default' | 'rating_asc' | 'rating_desc' | 'opportunity' | 'reviews_desc' | 'distance_asc' | 'quality';
-type SearchMode = 'around_me' | 'par_ville' | 'address' | 'libre';
+type SearchMode = 'around_me' | 'par_ville' | 'address' | 'libre' | 'manual_import';
 type ValidationStatus = 'to_verify' | 'ready' | 'imported' | 'ignored';
 
 interface SearchCenter {
@@ -74,6 +74,33 @@ interface SearchCenter {
   lon: number;
   label: string;
 }
+
+/** Compute opportunity and quality scores for manual and CSV imported leads */
+const computeManualScores = (item: { website?: string; rating?: number; reviewsCount?: number; phone?: string }) => {
+  let completeness = 20; // name is always present
+  if (item.phone) completeness += 20;
+  if (item.website) completeness += 25;
+  if (item.rating && item.rating > 0) completeness += 20;
+  if (item.reviewsCount && item.reviewsCount > 0) completeness += 15;
+
+  let opportunity = 50;
+  if (!item.website) opportunity += 30;
+  if (!item.phone) opportunity += 10;
+  if (item.rating && item.rating > 0 && item.rating < 4.0) opportunity += 15;
+  if (item.reviewsCount !== undefined && item.reviewsCount < 10) opportunity += 10;
+  opportunity = Math.min(100, Math.max(0, opportunity));
+
+  let quality = Math.round(completeness);
+  if (item.rating && item.rating >= 4.0) quality += 15;
+  quality = Math.min(100, Math.max(0, quality));
+
+  return {
+    qualityScore: quality,
+    completenessScore: completeness,
+    localFitScore: 70,
+    opportunityScore: opportunity
+  };
+};
 
 /** Haversine distance in kilometres between two lat/lon points */
 function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
@@ -188,6 +215,217 @@ export function ProspectingRoot() {
       setGeocodeError('Erreur de connexion au serveur de géocodage.');
     }
     setGeocoding(false);
+  };
+
+  // Manual / Import tab state
+  const [manualImportSubTab, setManualImportSubTab] = useState<'manual' | 'csv'>('manual');
+  
+  // Manual form states
+  const [manualName, setManualName] = useState('');
+  const [manualNiche, setManualNiche] = useState('');
+  const [manualCity, setManualCity] = useState('');
+  const [manualWebsite, setManualWebsite] = useState('');
+  const [manualPhone, setManualPhone] = useState('');
+  const [manualAddress, setManualAddress] = useState('');
+  const [manualRating, setManualRating] = useState(0);
+  const [manualReviewsCount, setManualReviewsCount] = useState(0);
+  const [manualError, setManualError] = useState<string | null>(null);
+  const [manualSuccess, setManualSuccess] = useState<string | null>(null);
+
+  // CSV import states
+  const [csvFile, setCsvFile] = useState<File | null>(null);
+  const [csvPreview, setCsvPreview] = useState<any[]>([]);
+  const [csvLoading, setCsvLoading] = useState(false);
+  const [csvError, setCsvError] = useState<string | null>(null);
+
+  const handleManualSubmit = async () => {
+    setManualError(null);
+    setManualSuccess(null);
+    if (!manualName.trim() || !manualNiche.trim() || !manualCity.trim()) {
+      setManualError('Le nom, la niche et la ville sont obligatoires.');
+      return;
+    }
+
+    try {
+      const scores = computeManualScores({
+        website: manualWebsite,
+        phone: manualPhone,
+        rating: manualRating,
+        reviewsCount: manualReviewsCount
+      });
+
+      const newValidation = {
+        businessName: manualName.trim(),
+        niche: manualNiche.trim(),
+        city: manualCity.trim(),
+        phone: manualPhone.trim(),
+        email: '',
+        website: manualWebsite.trim(),
+        address: manualAddress.trim(),
+        rating: manualRating,
+        reviewsCount: manualReviewsCount,
+        source: 'Saisie manuelle',
+        status: 'to_verify' as const,
+        originalTags: {},
+        ...scores
+      };
+
+      await addLeadValidations([newValidation]);
+      setManualSuccess('Prospect ajouté avec succès dans la boîte de validation !');
+      
+      // Reset form
+      setManualName('');
+      setManualNiche('');
+      setManualCity('');
+      setManualWebsite('');
+      setManualPhone('');
+      setManualAddress('');
+      setManualRating(0);
+      setManualReviewsCount(0);
+    } catch (err) {
+      setManualError("Erreur lors de l'enregistrement du prospect.");
+    }
+  };
+
+  const handleCsvFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setCsvError(null);
+    setCsvPreview([]);
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setCsvFile(file);
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const text = event.target?.result as string;
+        if (!text) {
+          setCsvError('Le fichier est vide.');
+          return;
+        }
+
+        const lines = text.split(/\r?\n/);
+        if (lines.length < 2) {
+          setCsvError('Le fichier CSV doit contenir une ligne d\'entête et au moins une ligne de données.');
+          return;
+        }
+
+        const parseLine = (line: string) => {
+          const result = [];
+          let start = 0;
+          let inQuotes = false;
+          for (let i = 0; i < line.length; i++) {
+            if (line[i] === '"') {
+              inQuotes = !inQuotes;
+            } else if (line[i] === ',' && !inQuotes) {
+              let cell = line.substring(start, i).trim();
+              if (cell.startsWith('"') && cell.endsWith('"')) {
+                cell = cell.substring(1, cell.length - 1).trim();
+              }
+              result.push(cell.replace(/""/g, '"'));
+              start = i + 1;
+            }
+          }
+          let cell = line.substring(start).trim();
+          if (cell.startsWith('"') && cell.endsWith('"')) {
+            cell = cell.substring(1, cell.length - 1).trim();
+          }
+          result.push(cell.replace(/""/g, '"'));
+          return result;
+        };
+
+        const headers = parseLine(lines[0]).map(h => h.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""));
+        const findHeaderIndex = (keywords: string[]): number => {
+          return headers.findIndex(h => keywords.some(kw => h.includes(kw)));
+        };
+
+        const nameIdx = findHeaderIndex(['nom', 'name', 'etablissement', 'entreprise', 'business', 'commerce']);
+        const nicheIdx = findHeaderIndex(['niche', 'categorie', 'category', 'activite', 'metier']);
+        const cityIdx = findHeaderIndex(['ville', 'city', 'municipalite']);
+        const phoneIdx = findHeaderIndex(['tel', 'phone', 'telephone', 'mobile']);
+        const emailIdx = findHeaderIndex(['email', 'courriel', 'mail']);
+        const websiteIdx = findHeaderIndex(['web', 'site', 'website', 'url']);
+        const addressIdx = findHeaderIndex(['adresse', 'address', 'rue']);
+        const ratingIdx = findHeaderIndex(['note', 'rating', 'score']);
+        const reviewsCountIdx = findHeaderIndex(['avis', 'reviews', 'count', 'nombre']);
+
+        if (nameIdx === -1) {
+          setCsvError('Impossible de trouver la colonne du nom (Nom, Name, Entreprise, etc.).');
+          return;
+        }
+        if (nicheIdx === -1) {
+          setCsvError('Impossible de trouver la colonne de la niche/catégorie (Niche, Catégorie, Category, etc.).');
+          return;
+        }
+        if (cityIdx === -1) {
+          setCsvError('Impossible de trouver la colonne de la ville (Ville, City).');
+          return;
+        }
+
+        const parsedRows = [];
+        for (let i = 1; i < lines.length; i++) {
+          const line = lines[i].trim();
+          if (!line) continue;
+          const vals = parseLine(line);
+          const name = vals[nameIdx] || '';
+          const niche = vals[nicheIdx] || '';
+          const city = vals[cityIdx] || '';
+          if (!name || !niche || !city) continue; // Skip incomplete row
+
+          const phone = phoneIdx !== -1 ? vals[phoneIdx] || '' : '';
+          const email = emailIdx !== -1 ? vals[emailIdx] || '' : '';
+          const website = websiteIdx !== -1 ? vals[websiteIdx] || '' : '';
+          const address = addressIdx !== -1 ? vals[addressIdx] || '' : '';
+          const rating = ratingIdx !== -1 ? parseFloat(vals[ratingIdx]) || 0 : 0;
+          const reviewsCount = reviewsCountIdx !== -1 ? parseInt(vals[reviewsCountIdx]) || 0 : 0;
+
+          const scores = computeManualScores({ website, phone, rating, reviewsCount });
+
+          parsedRows.push({
+            businessName: name,
+            niche,
+            city,
+            phone,
+            email,
+            website,
+            address,
+            rating,
+            reviewsCount,
+            source: 'Import CSV',
+            status: 'to_verify' as const,
+            originalTags: {},
+            ...scores
+          });
+        }
+
+        if (parsedRows.length === 0) {
+          setCsvError('Aucune ligne valide n\'a pu être extraite.');
+          return;
+        }
+
+        setCsvPreview(parsedRows);
+      } catch (err) {
+        setCsvError('Erreur de lecture ou format CSV invalide.');
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  const handleCsvSubmit = async () => {
+    if (csvPreview.length === 0) return;
+    setCsvLoading(true);
+    setCsvError(null);
+    try {
+      await addLeadValidations(csvPreview);
+      setImportCount(csvPreview.length);
+      setCsvPreview([]);
+      setCsvFile(null);
+      // Switch active tab in validation inbox to show imported to_verify leads
+      setActiveTab('to_verify');
+    } catch (err) {
+      setCsvError("Erreur lors de l'importation massive des prospects.");
+    } finally {
+      setCsvLoading(false);
+    }
   };
 
   // Niche selector
@@ -785,12 +1023,13 @@ export function ProspectingRoot() {
         </div>
 
         {/* Search Mode Tabs */}
-        <div className="flex gap-1 p-1 bg-muted/40 border border-border rounded-lg w-full sm:w-auto self-start">
+        <div className="flex gap-1 p-1 bg-muted/40 border border-border rounded-lg w-full sm:w-auto self-start flex-wrap">
           {([
             { id: 'around_me', label: 'Autour de moi', icon: Navigation },
             { id: 'par_ville', label: 'Par ville', icon: MapIcon },
             { id: 'address', label: 'Par adresse', icon: MapPin },
             { id: 'libre', label: 'Libre', icon: Edit3 },
+            { id: 'manual_import', label: 'Manuel / import', icon: Plus },
           ] as { id: SearchMode; label: string; icon: any }[]).map(tab => (
             <button
               key={tab.id}
@@ -825,343 +1064,612 @@ export function ProspectingRoot() {
               </CardTitle>
             </CardHeader>
             <CardContent className="p-5">
-              <form onSubmit={handleStartScrape} className="space-y-5">
+              {/* Permanent OSM disclaimer box */}
+              <div className="rounded-lg border border-amber-200/50 bg-amber-500/5 dark:bg-amber-500/10 p-3.5 text-xs text-amber-700 dark:text-amber-300 space-y-1 mb-5">
+                <div className="flex items-center gap-1.5 font-semibold">
+                  <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" />
+                  <span>Information sur la couverture OSM</span>
+                </div>
+                <p className="leading-relaxed text-[11px] opacity-90">
+                  Les résultats de recherche locale dépendent des données communautaires d'OpenStreetMap et peuvent varier selon la zone et la catégorie commerciale. Utilisez la validation manuelle ou l'import CSV pour enrichir et compléter votre prospection locale.
+                </p>
+              </div>
 
-                {/* === MODE: PAR ADRESSE === */}
-                {searchMode === 'address' && (
-                  <div className="space-y-3">
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-                      <MapPin className="h-3.5 w-3.5" />Adresse de recherche
-                    </label>
-                    <div className="flex gap-2">
-                      <Input
-                        placeholder="Ex: 123 Rue Sherbrooke, Montréal..."
-                        value={geocodeAddress}
-                        onChange={e => setGeocodeAddress(e.target.value)}
-                        disabled={scraping}
-                        className="text-xs h-9 bg-card flex-1"
-                      />
-                      <Button
-                        type="button"
-                        onClick={handleGeocode}
-                        disabled={scraping || geocoding || !geocodeAddress.trim()}
-                        className="h-9 text-xs font-semibold px-3"
-                      >
-                        {geocoding ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Géocoder'}
-                      </Button>
-                    </div>
+              {searchMode !== 'manual_import' ? (
+                <form onSubmit={handleStartScrape} className="space-y-5">
 
-                    {geocodeResult && (
-                      <div className="flex items-center justify-between gap-2 rounded-lg border border-emerald-200 bg-emerald-50 dark:bg-emerald-950/20 dark:border-emerald-800 px-3 py-2">
-                        <div className="flex items-center gap-2 text-xs text-emerald-800 dark:text-emerald-300">
-                          <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
-                          <div>
-                            <span className="font-semibold block">Adresse validée</span>
-                            <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-mono leading-tight block">{geocodeResult.label}</span>
-                            <span className="text-[9px] text-muted-foreground font-mono mt-0.5 block">Coords: {geocodeResult.lat.toFixed(5)}, {geocodeResult.lon.toFixed(5)}</span>
+                  {/* === MODE: PAR ADRESSE === */}
+                  {searchMode === 'address' && (
+                    <div className="space-y-3">
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                        <MapPin className="h-3.5 w-3.5" />Adresse de recherche
+                      </label>
+                      <div className="flex gap-2">
+                        <Input
+                          placeholder="Ex: 123 Rue Sherbrooke, Montréal..."
+                          value={geocodeAddress}
+                          onChange={e => setGeocodeAddress(e.target.value)}
+                          disabled={scraping}
+                          className="text-xs h-9 bg-card flex-1"
+                        />
+                        <Button
+                          type="button"
+                          onClick={handleGeocode}
+                          disabled={scraping || geocoding || !geocodeAddress.trim()}
+                          className="h-9 text-xs font-semibold px-3"
+                        >
+                          {geocoding ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Géocoder'}
+                        </Button>
+                      </div>
+
+                      {geocodeResult && (
+                        <div className="flex items-center justify-between gap-2 rounded-lg border border-emerald-200 bg-emerald-50 dark:bg-emerald-950/20 dark:border-emerald-800 px-3 py-2">
+                          <div className="flex items-center gap-2 text-xs text-emerald-800 dark:text-emerald-300">
+                            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                            <div>
+                              <span className="font-semibold block">Adresse validée</span>
+                              <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-mono leading-tight block">{geocodeResult.label}</span>
+                              <span className="text-[9px] text-muted-foreground font-mono mt-0.5 block">Coords: {geocodeResult.lat.toFixed(5)}, {geocodeResult.lon.toFixed(5)}</span>
+                            </div>
                           </div>
+                          <button type="button" onClick={() => { setGeocodeResult(null); setUserLat(null); setUserLon(null); }} className="text-emerald-600 hover:text-emerald-800">
+                            <X className="h-3.5 w-3.5" />
+                          </button>
                         </div>
-                        <button type="button" onClick={() => { setGeocodeResult(null); setUserLat(null); setUserLon(null); }} className="text-emerald-600 hover:text-emerald-800">
-                          <X className="h-3.5 w-3.5" />
+                      )}
+
+                      {geocodeError && (
+                        <div className="flex items-start gap-2 rounded-lg border border-rose-200 bg-rose-50 dark:bg-rose-950/20 px-3 py-2 text-xs text-rose-700 dark:text-rose-300">
+                          <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+                          <span>{geocodeError}</span>
+                        </div>
+                      )}
+                      <p className="text-[10px] text-muted-foreground leading-relaxed">
+                        La recherche s'effectuera dans le rayon configuré autour de cette adresse validée.
+                      </p>
+                    </div>
+                  )}
+
+                  {/* === MODE: AUTOUR DE MOI === */}
+                  {searchMode === 'around_me' && (
+                    <div className="space-y-3">
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                        <Navigation className="h-3.5 w-3.5" />Géolocalisation
+                      </label>
+                      {geoStatus === 'idle' && (
+                        <button
+                          type="button"
+                          disabled={scraping}
+                          onClick={() => {
+                            if (!navigator.geolocation) {
+                              setGeoError('La géolocalisation n\'est pas supportée par ce navigateur.');
+                              setGeoStatus('error');
+                              return;
+                            }
+                            setGeoStatus('requesting');
+                            setGeoError(null);
+                            navigator.geolocation.getCurrentPosition(
+                              (pos) => {
+                                setUserLat(pos.coords.latitude);
+                                setUserLon(pos.coords.longitude);
+                                setGeoStatus('granted');
+                              },
+                              (err) => {
+                                setGeoError(err.code === 1 ? 'Permission refusée. Activez la localisation dans les paramètres de votre navigateur.' : 'Impossible d\'obtenir votre position.');
+                                setGeoStatus('denied');
+                              },
+                              { enableHighAccuracy: true, timeout: 10000 }
+                            );
+                          }}
+                          className="flex items-center gap-2 h-9 px-4 rounded-lg border border-dashed border-primary/40 bg-primary/5 text-primary text-xs font-semibold hover:bg-primary/10 transition-colors disabled:opacity-50"
+                        >
+                          <Navigation className="h-3.5 w-3.5" />
+                          Utiliser ma position GPS
                         </button>
-                      </div>
-                    )}
+                      )}
+                      {geoStatus === 'requesting' && (
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+                          Demande de position en cours…
+                        </div>
+                      )}
+                      {geoStatus === 'granted' && userLat !== null && userLon !== null && (
+                        <div className="flex items-center justify-between gap-2 rounded-lg border border-emerald-200 bg-emerald-50 dark:bg-emerald-950/20 dark:border-emerald-800 px-3 py-2">
+                          <div className="flex items-center gap-2 text-xs text-emerald-800 dark:text-emerald-300">
+                             <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+                            <span className="font-semibold">Position détectée</span>
+                            <span className="text-emerald-700 dark:text-emerald-400 font-mono">
+                              {userLat.toFixed(5)}, {userLon.toFixed(5)}
+                            </span>
+                          </div>
+                          <button type="button" onClick={() => { setGeoStatus('idle'); setUserLat(null); setUserLon(null); }} className="text-emerald-600 hover:text-emerald-800">
+                            <X className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      )}
+                      {(geoStatus === 'denied' || geoStatus === 'error') && (
+                        <div className="flex items-start gap-2 rounded-lg border border-rose-200 bg-rose-50 dark:bg-rose-950/20 px-3 py-2 text-xs text-rose-700 dark:text-rose-300">
+                          <WifiOff className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+                          <span>{geoError}</span>
+                        </div>
+                      )}
+                      <p className="text-[10px] text-muted-foreground leading-relaxed">
+                        Les résultats seront centrés sur votre position exacte (GPS) dans un rayon configurable ci-dessous.
+                      </p>
+                    </div>
+                  )}
 
-                    {geocodeError && (
-                      <div className="flex items-start gap-2 rounded-lg border border-rose-200 bg-rose-50 dark:bg-rose-950/20 px-3 py-2 text-xs text-rose-700 dark:text-rose-300">
-                        <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
-                        <span>{geocodeError}</span>
-                      </div>
-                    )}
-                    <p className="text-[10px] text-muted-foreground leading-relaxed">
-                      La recherche s'effectuera dans le rayon configuré autour de cette adresse validée.
-                    </p>
-                  </div>
-                )}
-
-                {/* === MODE: AUTOUR DE MOI === */}
-                {searchMode === 'around_me' && (
-                  <div className="space-y-3">
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-                      <Navigation className="h-3.5 w-3.5" />Géolocalisation
-                    </label>
-                    {geoStatus === 'idle' && (
-                      <button
-                        type="button"
-                        disabled={scraping}
-                        onClick={() => {
-                          if (!navigator.geolocation) {
-                            setGeoError('La géolocalisation n\'est pas supportée par ce navigateur.');
-                            setGeoStatus('error');
-                            return;
-                          }
-                          setGeoStatus('requesting');
-                          setGeoError(null);
-                          navigator.geolocation.getCurrentPosition(
-                            (pos) => {
-                              setUserLat(pos.coords.latitude);
-                              setUserLon(pos.coords.longitude);
-                              setGeoStatus('granted');
-                            },
-                            (err) => {
-                              setGeoError(err.code === 1 ? 'Permission refusée. Activez la localisation dans les paramètres de votre navigateur.' : 'Impossible d\'obtenir votre position.');
-                              setGeoStatus('denied');
-                            },
-                            { enableHighAccuracy: true, timeout: 10000 }
-                          );
-                        }}
-                        className="flex items-center gap-2 h-9 px-4 rounded-lg border border-dashed border-primary/40 bg-primary/5 text-primary text-xs font-semibold hover:bg-primary/10 transition-colors disabled:opacity-50"
-                      >
-                        <Navigation className="h-3.5 w-3.5" />
-                        Utiliser ma position GPS
-                      </button>
-                    )}
-                    {geoStatus === 'requesting' && (
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
-                        Demande de position en cours…
-                      </div>
-                    )}
-                    {geoStatus === 'granted' && userLat !== null && userLon !== null && (
-                      <div className="flex items-center justify-between gap-2 rounded-lg border border-emerald-200 bg-emerald-50 dark:bg-emerald-950/20 dark:border-emerald-800 px-3 py-2">
-                        <div className="flex items-center gap-2 text-xs text-emerald-800 dark:text-emerald-300">
-                           <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
-                          <span className="font-semibold">Position détectée</span>
-                          <span className="text-emerald-700 dark:text-emerald-400 font-mono">
-                            {userLat.toFixed(5)}, {userLon.toFixed(5)}
+                  {/* Niches multi */}
+                  {searchMode !== 'libre' && (
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                        Niches cibles <span className="normal-case font-normal">(multi-sélection)</span>
+                      </label>
+                      <div className="relative">
+                        <button type="button" onClick={() => setNicheDropdownOpen(!nicheDropdownOpen)} disabled={scraping}
+                          className="w-full flex items-center justify-between text-xs rounded-md border border-input bg-card h-9 px-3 focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50 text-left">
+                          <span className="truncate text-muted-foreground">
+                            {selectedNiches.length === 0 ? 'Choisir des niches…' : `${selectedNiches.length} niche${selectedNiches.length > 1 ? 's' : ''} sélectionnée${selectedNiches.length > 1 ? 's' : ''}`}
                           </span>
-                        </div>
-                        <button type="button" onClick={() => { setGeoStatus('idle'); setUserLat(null); setUserLon(null); }} className="text-emerald-600 hover:text-emerald-800">
-                          <X className="h-3.5 w-3.5" />
+                          <ChevronDown className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                         </button>
+                        {nicheDropdownOpen && (
+                          <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-lg shadow-lg z-20 max-h-64 overflow-y-auto">
+                            <div className="p-2 border-b border-border/60 sticky top-0 bg-card">
+                              <Input placeholder="Rechercher une niche…" value={nicheSearchQuery} onChange={e => setNicheSearchQuery(e.target.value)} className="h-7 text-xs" />
+                            </div>
+                            <div className="p-1">
+                              {filteredNiches.map(n => (
+                                <button type="button" key={n} onClick={() => toggleNiche(n)}
+                                  className="w-full flex items-center gap-2.5 px-2.5 py-1.5 text-xs hover:bg-muted/50 rounded transition-colors text-left">
+                                  <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${selectedNiches.includes(n) ? 'bg-primary border-primary' : 'border-input'}`}>
+                                    {selectedNiches.includes(n) && <Check className="w-2.5 h-2.5 text-primary-foreground" />}
+                                  </div>
+                                  <span className={selectedNiches.includes(n) ? 'font-semibold text-foreground' : 'text-muted-foreground'}>{n}</span>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
-                    )}
-                    {(geoStatus === 'denied' || geoStatus === 'error') && (
-                      <div className="flex items-start gap-2 rounded-lg border border-rose-200 bg-rose-50 dark:bg-rose-950/20 px-3 py-2 text-xs text-rose-700 dark:text-rose-300">
-                        <WifiOff className="h-3.5 w-3.5 shrink-0 mt-0.5" />
-                        <span>{geoError}</span>
-                      </div>
-                    )}
-                    <p className="text-[10px] text-muted-foreground leading-relaxed">
-                      Les résultats seront centrés sur votre position exacte (GPS) dans un rayon configurable ci-dessous.
-                    </p>
-                  </div>
-                )}
+                      {selectedNiches.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 pt-0.5">
+                          {selectedNiches.map(n => (
+                            <span key={n} className="inline-flex items-center gap-1 bg-primary/10 text-primary text-[10px] font-semibold px-2 py-0.5 rounded-full">
+                              {n}<button type="button" onClick={() => toggleNiche(n)}><X className="w-2.5 h-2.5" /></button>
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
 
-                {/* Niches multi */}
-                {searchMode !== 'libre' && (
+                  {/* Cities multi — visible only in par_ville mode */}
+                  {searchMode === 'par_ville' && (
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                      Niches cibles <span className="normal-case font-normal">(multi-sélection)</span>
+                      Villes cibles <span className="normal-case font-normal">(multi-sélection)</span>
                     </label>
                     <div className="relative">
-                      <button type="button" onClick={() => setNicheDropdownOpen(!nicheDropdownOpen)} disabled={scraping}
+                      <button type="button" onClick={() => setCityDropdownOpen(!cityDropdownOpen)} disabled={scraping}
                         className="w-full flex items-center justify-between text-xs rounded-md border border-input bg-card h-9 px-3 focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50 text-left">
                         <span className="truncate text-muted-foreground">
-                          {selectedNiches.length === 0 ? 'Choisir des niches…' : `${selectedNiches.length} niche${selectedNiches.length > 1 ? 's' : ''} sélectionnée${selectedNiches.length > 1 ? 's' : ''}`}
+                          {selectedCities.length === 0 ? 'Choisir des villes…' : selectedCities.join(', ')}
                         </span>
                         <ChevronDown className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                       </button>
-                      {nicheDropdownOpen && (
+                      {cityDropdownOpen && (
                         <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-lg shadow-lg z-20 max-h-64 overflow-y-auto">
                           <div className="p-2 border-b border-border/60 sticky top-0 bg-card">
-                            <Input placeholder="Rechercher une niche…" value={nicheSearchQuery} onChange={e => setNicheSearchQuery(e.target.value)} className="h-7 text-xs" />
+                            <Input placeholder="Rechercher une ville…" value={citySearchQuery} onChange={e => setCitySearchQuery(e.target.value)} className="h-7 text-xs" />
                           </div>
                           <div className="p-1">
-                            {filteredNiches.map(n => (
-                              <button type="button" key={n} onClick={() => toggleNiche(n)}
+                            {filteredCities.map(c => (
+                              <button type="button" key={c} onClick={() => toggleCity(c)}
                                 className="w-full flex items-center gap-2.5 px-2.5 py-1.5 text-xs hover:bg-muted/50 rounded transition-colors text-left">
-                                <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${selectedNiches.includes(n) ? 'bg-primary border-primary' : 'border-input'}`}>
-                                  {selectedNiches.includes(n) && <Check className="w-2.5 h-2.5 text-primary-foreground" />}
+                                <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${selectedCities.includes(c) ? 'bg-primary border-primary' : 'border-input'}`}>
+                                  {selectedCities.includes(c) && <Check className="w-2.5 h-2.5 text-primary-foreground" />}
                                 </div>
-                                <span className={selectedNiches.includes(n) ? 'font-semibold text-foreground' : 'text-muted-foreground'}>{n}</span>
+                                <span className={selectedCities.includes(c) ? 'font-semibold text-foreground' : 'text-muted-foreground'}>{c}</span>
                               </button>
                             ))}
                           </div>
                         </div>
                       )}
                     </div>
-                    {selectedNiches.length > 0 && (
+                    {selectedCities.length > 0 && (
                       <div className="flex flex-wrap gap-1.5 pt-0.5">
-                        {selectedNiches.map(n => (
-                          <span key={n} className="inline-flex items-center gap-1 bg-primary/10 text-primary text-[10px] font-semibold px-2 py-0.5 rounded-full">
-                            {n}<button type="button" onClick={() => toggleNiche(n)}><X className="w-2.5 h-2.5" /></button>
+                        {selectedCities.map(c => (
+                          <span key={c} className="inline-flex items-center gap-1 bg-sky-50 text-sky-700 border border-sky-200 text-[10px] font-semibold px-2 py-0.5 rounded-full">
+                            <MapPin className="w-2.5 h-2.5 shrink-0" />{c}
+                            <button type="button" onClick={() => toggleCity(c)}><X className="w-2.5 h-2.5" /></button>
                           </span>
                         ))}
                       </div>
                     )}
                   </div>
-                )}
+                  )}
 
-                {/* Cities multi — visible only in par_ville mode */}
-                {searchMode === 'par_ville' && (
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                    Villes cibles <span className="normal-case font-normal">(multi-sélection)</span>
-                  </label>
-                  <div className="relative">
-                    <button type="button" onClick={() => setCityDropdownOpen(!cityDropdownOpen)} disabled={scraping}
-                      className="w-full flex items-center justify-between text-xs rounded-md border border-input bg-card h-9 px-3 focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50 text-left">
-                      <span className="truncate text-muted-foreground">
-                        {selectedCities.length === 0 ? 'Choisir des villes…' : selectedCities.join(', ')}
-                      </span>
-                      <ChevronDown className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                    </button>
-                    {cityDropdownOpen && (
-                      <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-lg shadow-lg z-20 max-h-64 overflow-y-auto">
-                        <div className="p-2 border-b border-border/60 sticky top-0 bg-card">
-                          <Input placeholder="Rechercher une ville…" value={citySearchQuery} onChange={e => setCitySearchQuery(e.target.value)} className="h-7 text-xs" />
-                        </div>
-                        <div className="p-1">
-                          {filteredCities.map(c => (
-                            <button type="button" key={c} onClick={() => toggleCity(c)}
-                              className="w-full flex items-center gap-2.5 px-2.5 py-1.5 text-xs hover:bg-muted/50 rounded transition-colors text-left">
-                              <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${selectedCities.includes(c) ? 'bg-primary border-primary' : 'border-input'}`}>
-                                {selectedCities.includes(c) && <Check className="w-2.5 h-2.5 text-primary-foreground" />}
+                  {/* Free query — visible only in libre mode */}
+                  {searchMode === 'libre' && (
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex justify-between">
+                      <span>Recherche libre</span>
+                      {customQuery && <span className="text-primary italic text-[9px]">Actif</span>}
+                    </label>
+                    <Input placeholder="Ex: Clinique dentaire Laval, plombier urgence Québec…" value={customQuery} onChange={e => setCustomQuery(e.target.value)} disabled={scraping} className="text-xs h-9 bg-card" />
+                    <p className="text-[10px] text-muted-foreground">Saisie libre — la niche et la ville sont extraites du texte brut.</p>
+                  </div>
+                  )}
+
+                  <div className="h-px bg-border/50" />
+
+                  {/* Sources */}
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Sources <span className="normal-case font-normal">(combinables)</span></label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {sources.map(src => {
+                        const available = src.available === true;
+                        const checking = src.available === 'checking';
+                        return (
+                          <label key={src.id} className={`flex items-start gap-2.5 p-2.5 rounded-lg border text-xs transition-colors ${available ? 'border-border bg-card cursor-pointer hover:bg-muted/30' : 'border-border/40 bg-muted/20 cursor-not-allowed opacity-60'}`}>
+                            <Checkbox checked={selectedSources.includes(src.id)} onCheckedChange={c => {
+                              if (!available) return;
+                              setSelectedSources(prev => c ? [...prev, src.id] : prev.filter(s => s !== src.id));
+                            }} disabled={scraping || !available} className="mt-0.5 shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-1.5 font-semibold text-foreground">
+                                {src.label}
+                                {available && <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0" />}
+                                {!available && !checking && <WifiOff className="w-3 h-3 text-rose-400 shrink-0" />}
+                                {checking && <Loader2 className="w-3 h-3 text-muted-foreground animate-spin shrink-0" />}
                               </div>
-                              <span className={selectedCities.includes(c) ? 'font-semibold text-foreground' : 'text-muted-foreground'}>{c}</span>
-                            </button>
-                          ))}
+                              <p className="text-[10px] text-muted-foreground leading-snug mt-0.5">{src.description}</p>
+                              {(src as any).needsKey && !available && !checking && (
+                                <a href="/settings" className="text-[9px] text-primary underline mt-0.5 inline-block">Configurer dans Paramètres →</a>
+                              )}
+                            </div>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="h-px bg-border/50" />
+
+                  {/* Filters */}
+                  <div className="space-y-3">
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                      <SlidersHorizontal className="h-3.5 w-3.5" />Filtres & Limites
+                    </label>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-medium text-muted-foreground flex justify-between">
+                          <span>Note minimum</span>
+                          <span className="font-bold text-foreground">{minRating > 0 ? `${minRating}★` : 'Aucune'}</span>
+                        </label>
+                        <input type="range" min={0} max={5} step={0.5} value={minRating} onChange={e => setMinRating(parseFloat(e.target.value))} disabled={scraping} className="w-full accent-primary h-1.5 cursor-pointer" />
+                        <div className="flex justify-between text-[9px] text-muted-foreground"><span>0</span><span>2.5</span><span>5</span></div>
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-medium text-muted-foreground flex justify-between">
+                          <span>Limite résultats</span>
+                          <span className="font-bold text-foreground">{maxResults}</span>
+                        </label>
+                        <input type="range" min={10} max={500} step={10} value={maxResults} onChange={e => setMaxResults(parseInt(e.target.value))} disabled={scraping} className="w-full accent-primary h-1.5 cursor-pointer" />
+                        <div className="flex justify-between text-[9px] text-muted-foreground"><span>10</span><span>250</span><span>500</span></div>
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-medium text-muted-foreground flex justify-between">
+                          <span>Rayon OSM</span>
+                          <span className="font-bold text-foreground">{radius >= 1000 ? `${radius / 1000}km` : `${radius}m`}</span>
+                        </label>
+                        <input type="range" min={2000} max={50000} step={1000} value={radius} onChange={e => setRadius(parseInt(e.target.value))} disabled={scraping} className="w-full accent-primary h-1.5 cursor-pointer" />
+                        <div className="flex justify-between text-[9px] text-muted-foreground"><span>2km</span><span>25km</span><span>50km</span></div>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap gap-5 pt-1">
+                      <label className="flex items-center gap-2 text-xs font-medium text-foreground cursor-pointer">
+                        <Checkbox checked={excludeExisting} onCheckedChange={c => setExcludeExisting(!!c)} disabled={scraping} />
+                        <span>Exclure leads déjà en CRM</span>
+                      </label>
+                      <label className="flex items-center gap-2 text-xs font-medium text-foreground cursor-pointer">
+                        <Checkbox checked={onlyNoWebsite} onCheckedChange={c => setOnlyNoWebsite(!!c)} disabled={scraping} />
+                        <span>Sans site web uniquement</span>
+                      </label>
+                      <label className="flex items-center gap-2 text-xs font-medium text-foreground cursor-pointer">
+                        <Checkbox checked={onlyWithPhone} onCheckedChange={c => setOnlyWithPhone(!!c)} disabled={scraping} />
+                        <span>Avec téléphone uniquement</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    {searchMode === 'around_me' && geoStatus !== 'granted' && (
+                      <p className="text-[10px] text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                        <Navigation className="h-3 w-3" />
+                        Activez votre position GPS pour lancer la recherche.
+                      </p>
+                    )}
+                    {searchMode === 'address' && !geocodeResult && (
+                      <p className="text-[10px] text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                        <MapPin className="h-3 w-3" />
+                        Saisissez et validez une adresse pour activer la recherche.
+                      </p>
+                    )}
+                    <div className="ml-auto">
+                      <Button
+                        type="submit"
+                        disabled={
+                          scraping || loadingPrefs || selectedSources.length === 0 ||
+                          (searchMode === 'around_me' && geoStatus !== 'granted') ||
+                          (searchMode === 'address' && !geocodeResult)
+                        }
+                        className="h-9 text-xs font-bold gap-1.5"
+                      >
+                        {scraping ? <><Loader2 className="h-3.5 w-3.5 animate-spin" />Recherche…</> : <><Sparkles className="h-3.5 w-3.5" />Lancer la recherche</>}
+                      </Button>
+                    </div>
+                  </div>
+                </form>
+              ) : (
+                <div className="space-y-4">
+                  {/* Sub-tabs Saisie / Import CSV */}
+                  <div className="flex border-b border-border mb-4">
+                    <button
+                      type="button"
+                      onClick={() => setManualImportSubTab('manual')}
+                      className={`pb-2 px-4 text-xs font-semibold border-b-2 transition-all ${
+                        manualImportSubTab === 'manual'
+                          ? 'border-primary text-foreground font-bold'
+                          : 'border-transparent text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      Saisie manuelle
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setManualImportSubTab('csv')}
+                      className={`pb-2 px-4 text-xs font-semibold border-b-2 transition-all ${
+                        manualImportSubTab === 'csv'
+                          ? 'border-primary text-foreground font-bold'
+                          : 'border-transparent text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      Import CSV
+                    </button>
+                  </div>
+
+                  {manualImportSubTab === 'manual' && (
+                    <div className="space-y-4 animate-in fade-in-50 duration-200">
+                      {manualError && (
+                        <div className="p-3 bg-destructive/10 border border-destructive/20 text-destructive text-xs rounded-lg flex items-start gap-2">
+                          <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+                          <span>{manualError}</span>
+                        </div>
+                      )}
+                      {manualSuccess && (
+                        <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs rounded-lg flex items-start gap-2">
+                          <CheckCircle2 className="h-4 w-4 shrink-0 mt-0.5" />
+                          <span>{manualSuccess}</span>
+                        </div>
+                      )}
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                            Nom de l'établissement <span className="text-destructive">*</span>
+                          </label>
+                          <Input
+                            placeholder="Ex: Café de la Gare"
+                            value={manualName}
+                            onChange={e => setManualName(e.target.value)}
+                            className="text-xs h-9 bg-card"
+                          />
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                            Niche / Catégorie <span className="text-destructive">*</span>
+                          </label>
+                          <Input
+                            placeholder="Ex: Restaurant"
+                            value={manualNiche}
+                            onChange={e => setManualNiche(e.target.value)}
+                            className="text-xs h-9 bg-card"
+                          />
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                            Ville <span className="text-destructive">*</span>
+                          </label>
+                          <Input
+                            placeholder="Ex: Montréal"
+                            value={manualCity}
+                            onChange={e => setManualCity(e.target.value)}
+                            className="text-xs h-9 bg-card"
+                          />
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                            Adresse complète
+                          </label>
+                          <Input
+                            placeholder="Ex: 456 Rue Principale, Montréal"
+                            value={manualAddress}
+                            onChange={e => setManualAddress(e.target.value)}
+                            className="text-xs h-9 bg-card"
+                          />
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                            Site Internet
+                          </label>
+                          <Input
+                            placeholder="Ex: https://cafe-gare.ca"
+                            value={manualWebsite}
+                            onChange={e => setManualWebsite(e.target.value)}
+                            className="text-xs h-9 bg-card"
+                          />
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                            Téléphone
+                          </label>
+                          <Input
+                            placeholder="Ex: +1 514-555-0199"
+                            value={manualPhone}
+                            onChange={e => setManualPhone(e.target.value)}
+                            className="text-xs h-9 bg-card"
+                          />
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                            Note Google Maps / Avis (0 à 5)
+                          </label>
+                          <Input
+                            type="number"
+                            min={0}
+                            max={5}
+                            step={0.1}
+                            placeholder="Ex: 4.5"
+                            value={manualRating || ''}
+                            onChange={e => setManualRating(parseFloat(e.target.value) || 0)}
+                            className="text-xs h-9 bg-card"
+                          />
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                            Nombre d'avis
+                          </label>
+                          <Input
+                            type="number"
+                            min={0}
+                            placeholder="Ex: 42"
+                            value={manualReviewsCount || ''}
+                            onChange={e => setManualReviewsCount(parseInt(e.target.value) || 0)}
+                            className="text-xs h-9 bg-card"
+                          />
                         </div>
                       </div>
-                    )}
-                  </div>
-                  {selectedCities.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5 pt-0.5">
-                      {selectedCities.map(c => (
-                        <span key={c} className="inline-flex items-center gap-1 bg-sky-50 text-sky-700 border border-sky-200 text-[10px] font-semibold px-2 py-0.5 rounded-full">
-                          <MapPin className="w-2.5 h-2.5 shrink-0" />{c}
-                          <button type="button" onClick={() => toggleCity(c)}><X className="w-2.5 h-2.5" /></button>
-                        </span>
-                      ))}
+
+                      <div className="flex justify-end pt-2">
+                        <Button
+                          type="button"
+                          onClick={handleManualSubmit}
+                          className="h-9 text-xs font-bold gap-1.5"
+                        >
+                          <Plus className="h-3.5 w-3.5" />
+                          Ajouter le prospect
+                        </Button>
+                      </div>
                     </div>
                   )}
-                </div>
-                )}
 
-                {/* Free query — visible only in libre mode */}
-                {searchMode === 'libre' && (
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex justify-between">
-                    <span>Recherche libre</span>
-                    {customQuery && <span className="text-primary italic text-[9px]">Actif</span>}
-                  </label>
-                  <Input placeholder="Ex: Clinique dentaire Laval, plombier urgence Québec…" value={customQuery} onChange={e => setCustomQuery(e.target.value)} disabled={scraping} className="text-xs h-9 bg-card" />
-                  <p className="text-[10px] text-muted-foreground">Saisie libre — la niche et la ville sont extraites du texte brut.</p>
-                </div>
-                )}
+                  {manualImportSubTab === 'csv' && (
+                    <div className="space-y-4 animate-in fade-in-50 duration-200">
+                      {csvError && (
+                        <div className="p-3 bg-destructive/10 border border-destructive/20 text-destructive text-xs rounded-lg flex items-start gap-2">
+                          <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+                          <span>{csvError}</span>
+                        </div>
+                      )}
 
-                <div className="h-px bg-border/50" />
+                      <div className="border-2 border-dashed border-border/80 hover:border-primary/50 transition-colors rounded-xl p-6 text-center cursor-pointer relative bg-muted/10">
+                        <input
+                          type="file"
+                          accept=".csv"
+                          onChange={handleCsvFileChange}
+                          className="absolute inset-0 opacity-0 cursor-pointer"
+                          disabled={csvLoading}
+                        />
+                        <div className="space-y-2">
+                          <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center mx-auto">
+                            <Upload className="h-5 w-5" />
+                          </div>
+                          <div className="text-xs font-semibold text-foreground">
+                            {csvFile ? csvFile.name : 'Sélectionner un fichier CSV'}
+                          </div>
+                          <p className="text-[10px] text-muted-foreground max-w-xs mx-auto">
+                            Colonnes attendues : Nom/Name, Niche/Catégorie, Ville/City. Autres colonnes facultatives : Site web, Téléphone, Note, Avis.
+                          </p>
+                        </div>
+                      </div>
 
-                {/* Sources */}
-                <div className="space-y-2">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Sources <span className="normal-case font-normal">(combinables)</span></label>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    {sources.map(src => {
-                      const available = src.available === true;
-                      const checking = src.available === 'checking';
-                      return (
-                        <label key={src.id} className={`flex items-start gap-2.5 p-2.5 rounded-lg border text-xs transition-colors ${available ? 'border-border bg-card cursor-pointer hover:bg-muted/30' : 'border-border/40 bg-muted/20 cursor-not-allowed opacity-60'}`}>
-                          <Checkbox checked={selectedSources.includes(src.id)} onCheckedChange={c => {
-                            if (!available) return;
-                            setSelectedSources(prev => c ? [...prev, src.id] : prev.filter(s => s !== src.id));
-                          }} disabled={scraping || !available} className="mt-0.5 shrink-0" />
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-1.5 font-semibold text-foreground">
-                              {src.label}
-                              {available && <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0" />}
-                              {!available && !checking && <WifiOff className="w-3 h-3 text-rose-400 shrink-0" />}
-                              {checking && <Loader2 className="w-3 h-3 text-muted-foreground animate-spin shrink-0" />}
-                            </div>
-                            <p className="text-[10px] text-muted-foreground leading-snug mt-0.5">{src.description}</p>
-                            {(src as any).needsKey && !available && !checking && (
-                              <a href="/settings" className="text-[9px] text-primary underline mt-0.5 inline-block">Configurer dans Paramètres →</a>
+                      {csvPreview.length > 0 && (
+                        <div className="space-y-3 animate-in slide-in-from-top-2 duration-300">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                              Aperçu de l'import ({csvPreview.length} prospects)
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setCsvPreview([]);
+                                setCsvFile(null);
+                              }}
+                              className="text-[10px] text-destructive hover:underline"
+                            >
+                              Annuler
+                            </button>
+                          </div>
+                          
+                          <div className="border border-border rounded-lg overflow-hidden max-h-48 overflow-y-auto">
+                            <table className="w-full text-left border-collapse text-[10px]">
+                              <thead>
+                                <tr className="bg-muted border-b border-border font-bold text-muted-foreground">
+                                  <th className="p-2">Nom</th>
+                                  <th className="p-2">Niche</th>
+                                  <th className="p-2">Ville</th>
+                                  <th className="p-2">Site Web</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-border">
+                                {csvPreview.slice(0, 5).map((row, idx) => (
+                                  <tr key={idx} className="hover:bg-muted/30">
+                                    <td className="p-2 font-medium truncate max-w-[120px]">{row.businessName}</td>
+                                    <td className="p-2 truncate max-w-[100px]">{row.niche}</td>
+                                    <td className="p-2">{row.city}</td>
+                                    <td className="p-2 truncate max-w-[120px] text-muted-foreground">{row.website || '-'}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                            {csvPreview.length > 5 && (
+                              <div className="p-2 text-center text-muted-foreground bg-muted/20 border-t border-border text-[9px] italic">
+                                Et {csvPreview.length - 5} autres lignes...
+                              </div>
                             )}
                           </div>
-                        </label>
-                      );
-                    })}
-                  </div>
-                </div>
 
-                <div className="h-px bg-border/50" />
-
-                {/* Filters */}
-                <div className="space-y-3">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-                    <SlidersHorizontal className="h-3.5 w-3.5" />Filtres & Limites
-                  </label>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-medium text-muted-foreground flex justify-between">
-                        <span>Note minimum</span>
-                        <span className="font-bold text-foreground">{minRating > 0 ? `${minRating}★` : 'Aucune'}</span>
-                      </label>
-                      <input type="range" min={0} max={5} step={0.5} value={minRating} onChange={e => setMinRating(parseFloat(e.target.value))} disabled={scraping} className="w-full accent-primary h-1.5 cursor-pointer" />
-                      <div className="flex justify-between text-[9px] text-muted-foreground"><span>0</span><span>2.5</span><span>5</span></div>
+                          <div className="flex justify-end pt-2">
+                            <Button
+                              type="button"
+                              onClick={handleCsvSubmit}
+                              disabled={csvLoading}
+                              className="h-9 text-xs font-bold gap-1.5"
+                            >
+                              {csvLoading ? (
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              ) : (
+                                <Check className="h-3.5 w-3.5" />
+                              )}
+                              Importer les {csvPreview.length} prospects
+                            </Button>
+                          </div>
+                        </div>
+                      )}
                     </div>
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-medium text-muted-foreground flex justify-between">
-                        <span>Limite résultats</span>
-                        <span className="font-bold text-foreground">{maxResults}</span>
-                      </label>
-                      <input type="range" min={10} max={500} step={10} value={maxResults} onChange={e => setMaxResults(parseInt(e.target.value))} disabled={scraping} className="w-full accent-primary h-1.5 cursor-pointer" />
-                      <div className="flex justify-between text-[9px] text-muted-foreground"><span>10</span><span>250</span><span>500</span></div>
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-medium text-muted-foreground flex justify-between">
-                        <span>Rayon OSM</span>
-                        <span className="font-bold text-foreground">{radius >= 1000 ? `${radius / 1000}km` : `${radius}m`}</span>
-                      </label>
-                      <input type="range" min={2000} max={50000} step={1000} value={radius} onChange={e => setRadius(parseInt(e.target.value))} disabled={scraping} className="w-full accent-primary h-1.5 cursor-pointer" />
-                      <div className="flex justify-between text-[9px] text-muted-foreground"><span>2km</span><span>25km</span><span>50km</span></div>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-wrap gap-5 pt-1">
-                    <label className="flex items-center gap-2 text-xs font-medium text-foreground cursor-pointer">
-                      <Checkbox checked={excludeExisting} onCheckedChange={c => setExcludeExisting(!!c)} disabled={scraping} />
-                      <span>Exclure leads déjà en CRM</span>
-                    </label>
-                    <label className="flex items-center gap-2 text-xs font-medium text-foreground cursor-pointer">
-                      <Checkbox checked={onlyNoWebsite} onCheckedChange={c => setOnlyNoWebsite(!!c)} disabled={scraping} />
-                      <span>Sans site web uniquement</span>
-                    </label>
-                    <label className="flex items-center gap-2 text-xs font-medium text-foreground cursor-pointer">
-                      <Checkbox checked={onlyWithPhone} onCheckedChange={c => setOnlyWithPhone(!!c)} disabled={scraping} />
-                      <span>Avec téléphone uniquement</span>
-                    </label>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  {searchMode === 'around_me' && geoStatus !== 'granted' && (
-                    <p className="text-[10px] text-amber-600 dark:text-amber-400 flex items-center gap-1">
-                      <Navigation className="h-3 w-3" />
-                      Activez votre position GPS pour lancer la recherche.
-                    </p>
                   )}
-                  {searchMode === 'address' && !geocodeResult && (
-                    <p className="text-[10px] text-amber-600 dark:text-amber-400 flex items-center gap-1">
-                      <MapPin className="h-3 w-3" />
-                      Saisissez et validez une adresse pour activer la recherche.
-                    </p>
-                  )}
-                  <div className="ml-auto">
-                    <Button
-                      type="submit"
-                      disabled={
-                        scraping || loadingPrefs || selectedSources.length === 0 ||
-                        (searchMode === 'around_me' && geoStatus !== 'granted') ||
-                        (searchMode === 'address' && !geocodeResult)
-                      }
-                      className="h-9 text-xs font-bold gap-1.5"
-                    >
-                      {scraping ? <><Loader2 className="h-3.5 w-3.5 animate-spin" />Recherche…</> : <><Sparkles className="h-3.5 w-3.5" />Lancer la recherche</>}
-                    </Button>
-                  </div>
                 </div>
-              </form>
+              )}
             </CardContent>
           </Card>
 
@@ -1262,8 +1770,11 @@ export function ProspectingRoot() {
           </div>
         )}
 
-        {/* Validation Inbox UI Layer */}
-        <Card className="border border-border bg-card">
+        {/* Side-by-side Grid: Inbox & Map */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          <div className="lg:col-span-7">
+            {/* Validation Inbox UI Layer */}
+            <Card className="border border-border bg-card">
           <CardHeader className="pb-3 border-b border-border/50 p-5">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
@@ -1632,9 +2143,11 @@ export function ProspectingRoot() {
             )}
           </CardContent>
         </Card>
+          </div>
 
-        {/* Map view section */}
-        <Card className="border border-border bg-card">
+          <div className="lg:col-span-5 lg:sticky lg:top-6">
+            {/* Map view section */}
+            <Card className="border border-border bg-card">
           <CardHeader className="pb-3 border-b border-border/50 flex flex-row items-center justify-between">
             <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
               <MapIcon className="h-4 w-4 text-primary" />Carte des validation prospects ({filteredValidations.length} affichés)
@@ -1701,6 +2214,8 @@ export function ProspectingRoot() {
             )}
           </CardContent>
         </Card>
+          </div>
+        </div>
 
         {/* Import success success badge */}
         {importCount !== null && (
