@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Check,
   Plus,
@@ -110,7 +110,9 @@ function FinalizingCheck({ index, delay }: { index: number; delay: number }) {
 // ─── Main Component ────────────────────────────────────────────────────────────
 export default function OnboardingPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { locale, setLocale } = useLanguage();
+  const [isInvited, setIsInvited] = useState(false);
   const [step, setStep] = useState<Step>('selection');
   const [direction, setDirection] = useState<Direction>('forward');
   const [slidePhase, setSlidePhase] = useState<'idle' | 'exit' | 'enter'>('idle');
@@ -161,6 +163,11 @@ export default function OnboardingPage() {
     ];
     setIsPersonalEmail(personalDomains.includes(domain?.toLowerCase()));
   }, []);
+
+  // Detect invited flow
+  useEffect(() => {
+    if (searchParams.get('invited') === 'true') setIsInvited(true);
+  }, [searchParams]);
 
   // ── Pre-populate from session ───────────────────────────────────────────────
   useEffect(() => {
@@ -663,7 +670,7 @@ export default function OnboardingPage() {
                   <button onClick={() => router.push('/')} className="inline-flex items-center justify-center gap-1.5 rounded-full border border-[#e6e5e0] bg-white hover:bg-neutral-50 px-6 py-2.5 text-xs font-bold text-[#26251e] shadow-none transition-colors">
                     Back
                   </button>
-                  <button onClick={() => goToStep('workspace', 'forward')} className="flex-1 rounded-full py-2.5 text-xs font-bold bg-[#26251e] hover:bg-[#1a1a19] text-white cursor-pointer shadow-none text-center">
+                  <button onClick={() => goToStep(isInvited ? 'pricing' : 'workspace', 'forward')} className="flex-1 rounded-full py-2.5 text-xs font-bold bg-[#26251e] hover:bg-[#1a1a19] text-white cursor-pointer shadow-none text-center">
                     Continue
                   </button>
                 </div>
@@ -818,7 +825,7 @@ export default function OnboardingPage() {
                 </p>
 
                 <div className="flex items-center gap-4 pt-2 border-t border-[#e6e5e0]/60">
-                  <button onClick={() => goToStep('workspace', 'backward')} className="inline-flex items-center justify-center rounded-full border border-[#e6e5e0] bg-white hover:bg-neutral-50 px-6 py-2.5 text-xs font-bold text-[#26251e] shadow-none transition-colors">
+                  <button onClick={() => goToStep(isInvited ? 'selection' : 'workspace', 'backward')} className="inline-flex items-center justify-center rounded-full border border-[#e6e5e0] bg-white hover:bg-neutral-50 px-6 py-2.5 text-xs font-bold text-[#26251e] shadow-none transition-colors">
                     Back
                   </button>
                 </div>

@@ -86,7 +86,7 @@ async function getGmailThread(accessToken: string, threadId: string) {
 export async function GET(req: NextRequest) {
   if (process.env.NODE_ENV !== 'development') {
     const authHeader = req.headers.get('authorization');
-    if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+    if (!process.env.CRON_SECRET || authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
   }

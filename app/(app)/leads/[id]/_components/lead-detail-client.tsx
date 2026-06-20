@@ -50,6 +50,7 @@ import {
 import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
 import type { REALTIME_SUBSCRIBE_STATES } from '@supabase/supabase-js';
+import { toast } from 'sonner';
 
 
 // Helper inline edit component for text properties
@@ -556,11 +557,11 @@ export function LeadDetailClient({ id }: { id: string }) {
         setGeneratedContent(''); // Clear active editor
         await fetchDrafts();
       } else {
-        alert(data.error || t('lead.send_email_error'));
+        toast.error(data.error || t('lead.send_email_error'));
       }
     } catch (err) {
       console.error("Error sending email:", err);
-      alert(t('lead.send_email_conn_error'));
+      toast.error(t('lead.send_email_conn_error'));
     }
     setSendingEmail(false);
   };
@@ -640,12 +641,12 @@ export function LeadDetailClient({ id }: { id: string }) {
 
         const result = await electronObj.printToPdf(defaultFileName, formattedHtml);
         if (result && result.success) {
-          alert("Rapport PDF exporté avec succès !");
+          toast.success("Rapport PDF exporté avec succès !");
           addNoteToLead(lead.id, `[Desktop] Audit SEO exporté en PDF : ${result.filePath}`, 'general');
         }
       } catch (err) {
         console.error("Error generating PDF:", err);
-        alert("Erreur lors de la génération du PDF.");
+        toast.error("Erreur lors de la génération du PDF.");
       }
     }
   };
@@ -661,12 +662,12 @@ export function LeadDetailClient({ id }: { id: string }) {
         const defaultFileName = getExportFileName(lead.businessName);
         const result = await electronObj.exportAudit(defaultFileName, contentToExport);
         if (result && result.success) {
-          alert(t('lead.export_local_success').replace('{filePath}', result.filePath));
+          toast.success(t('lead.export_local_success').replace('{filePath}', result.filePath));
           addNoteToLead(lead.id, `[Desktop] Audit SEO exporté localement : ${result.filePath}`, 'general');
         }
       } catch (err) {
         console.error("Error exporting locally in Electron:", err);
-        alert("Erreur lors de l'exportation locale de l'audit.");
+        toast.error("Erreur lors de l'exportation locale de l'audit.");
       }
       setExportingDrive(false);
       return;
@@ -685,17 +686,17 @@ export function LeadDetailClient({ id }: { id: string }) {
       });
       const data = await res.json();
       if (res.ok && data.success) {
-        alert(t('lead.drive_export_success').replace('{fileName}', data.fileName));
-        const logText = data.simulated 
-          ? `[Simulé] Audit SEO exporté avec succès sur Google Drive (mode bac à sable) :\nFichier : ${data.fileName}` 
+        toast.success(t('lead.drive_export_success').replace('{fileName}', data.fileName));
+        const logText = data.simulated
+          ? `[Simulé] Audit SEO exporté avec succès sur Google Drive (mode bac à sable) :\nFichier : ${data.fileName}`
           : `Audit SEO exporté avec succès sur Google Drive (compte ${googleEmail || 'connecté'}) :\nFichier : ${data.fileName}`;
         addNoteToLead(lead.id, logText, 'general');
       } else {
-        alert(data.error || t('lead.drive_export_error'));
+        toast.error(data.error || t('lead.drive_export_error'));
       }
     } catch (err) {
       console.error("Error exporting to Google Drive:", err);
-      alert(t('lead.drive_export_conn_error'));
+      toast.error(t('lead.drive_export_conn_error'));
     }
     setExportingDrive(false);
   };

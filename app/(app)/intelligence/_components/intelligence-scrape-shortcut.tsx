@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useReach } from '@/lib/reach-context';
 import { createClient } from '@/lib/supabase/client';
 import { getApiUrl } from '@/lib/api-helper';
+import { toast } from 'sonner';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -145,7 +146,7 @@ export function IntelligenceScrapeShortcut({ onImportComplete }: IntelligenceScr
       console.error("Scrape failed:", err);
       clearInterval(stepInterval);
       setScraping(false);
-      alert("La prospection a échoué. Veuillez réessayer.");
+      toast.error("La prospection a échoué. Veuillez réessayer.");
     }
   };
 
@@ -202,7 +203,7 @@ export function IntelligenceScrapeShortcut({ onImportComplete }: IntelligenceScr
       }
     } catch (e) {
       console.error(e);
-      alert("Une erreur est survenue lors de l'importation");
+      toast.error("Une erreur est survenue lors de l'importation");
     }
     setImporting(false);
   };

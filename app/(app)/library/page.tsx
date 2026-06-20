@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import {
   Plus,
   Folder as FolderIcon,
@@ -799,7 +800,7 @@ export default function LibraryPage() {
                                 onClick={() => {
                                   const link = `${window.location.origin}/share/document/${doc.id}`;
                                   navigator.clipboard.writeText(link);
-                                  alert("Lien de partage du document copié !");
+                                  toast.success("Lien de partage du document copié !");
                                 }}
                                 className="cursor-pointer gap-2 text-[#10b981]"
                               >

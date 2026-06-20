@@ -197,7 +197,17 @@ export async function POST(request: NextRequest) {
       console.warn('RESEND_API_KEY is not set. Email dispatch skipped.');
     }
 
-    // 6. Insert team member record
+    // 6. Resolve workspace_id for the invitee membership
+    const { data: ownerWorkspace } = await supabase
+      .from('workspaces')
+      .select('id')
+      .eq('owner_id', ownerId)
+      .order('created_at', { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    const workspaceId = ownerWorkspace?.id ?? null;
+
+    // Insert team member record
     const resolvedMemberId = existingUserId ?? inviteData?.user?.id ?? null;
     const resolvedStatus = resolvedMemberId ? 'active' : 'pending';
 
@@ -211,7 +221,8 @@ export async function POST(request: NextRequest) {
         status: resolvedStatus,
         invited_by: user.id,
         plan: 'Business',
-        usage_count: 0
+        usage_count: 0,
+        workspace_id: workspaceId,
       })
       .select()
       .single();

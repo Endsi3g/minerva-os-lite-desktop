@@ -3,7 +3,8 @@ import { createClient } from '@supabase/supabase-js';
 
 function verifyServiceToken(req: NextRequest): boolean {
   const authHeader = req.headers.get('authorization');
-  const expectedToken = process.env.HERMES_SERVICE_TOKEN || 'hermes_service_token_secret_12345';
+  const expectedToken = process.env.HERMES_SERVICE_TOKEN || '';
+  if (!expectedToken) return false;
   if (!authHeader || !authHeader.startsWith('Bearer ')) return false;
   return authHeader.substring(7) === expectedToken;
 }

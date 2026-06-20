@@ -50,6 +50,7 @@ import {
 import { useLanguage } from '@/lib/language-context';
 import { useReach } from '@/lib/reach-context';
 import { TranslationKey } from '@/lib/translations';
+import { toast } from 'sonner';
 
 interface IntegrationItem {
   id: string;
@@ -411,9 +412,9 @@ export default function IntegrationsPage() {
         const res = await fetch('/api/google/auth/disconnect', { method: 'POST' });
         if (res.ok) {
           await fetchGoogleStatus();
-          alert(t('integrations.disconnected_success', 'Intégration Google déconnectée avec succès.'));
+          toast.success(t('integrations.disconnected_success', 'Intégration Google déconnectée avec succès.'));
         } else {
-          alert('Erreur lors de la déconnexion Google.');
+          toast.error('Erreur lors de la déconnexion Google.');
         }
       } catch (err) {
         console.error(err);
@@ -489,11 +490,11 @@ export default function IntegrationsPage() {
         const data = await res.json();
         setTodoistProjects(data);
       } else {
-        alert(t('integrations.todoist.error_load_projects'));
+        toast.error(t('integrations.todoist.error_load_projects'));
       }
     } catch (err) {
       console.error(err);
-      alert(t('integrations.todoist.error_connection'));
+      toast.error(t('integrations.todoist.error_connection'));
     } finally {
       setLoadingProjects(false);
     }
@@ -530,11 +531,11 @@ export default function IntegrationsPage() {
         if (error) throw new Error(error.message);
       }
       applyConnected();
-      alert(t('integrations.todoist.saved_success'));
+      toast.success(t('integrations.todoist.saved_success'));
       setActiveIntegrationEditId(null);
     } catch (err) {
       console.error(err);
-      alert(t('integrations.todoist.error_save'));
+      toast.error(t('integrations.todoist.error_save'));
     }
   };
 
@@ -1048,7 +1049,7 @@ export default function IntegrationsPage() {
                                         ? { ...item, status: 'Inactive', statusKey: 'integrations.status.inactive' as TranslationKey, accEmail: 'Todoist Task Connector', accEmailKey: 'integrations.todoist.acc_email' as TranslationKey }
                                         : item
                                     ));
-                                    alert(t('integrations.todoist.disconnected_success'));
+                                    toast.success(t('integrations.todoist.disconnected_success'));
                                     setActiveIntegrationEditId(null);
                                   } catch (err) {
                                     console.error(err);
@@ -1258,7 +1259,7 @@ export default function IntegrationsPage() {
                             onClick={() => {
                               if (inviteEmailInput.trim()) {
                                 setInviteEmailInput('');
-                                alert(t('integrations.editor.invite_user_success'));
+                                toast.success(t('integrations.editor.invite_user_success'));
                               }
                             }}
                             className="h-9 text-xs font-bold bg-[#059669] hover:bg-[#047857] text-white"

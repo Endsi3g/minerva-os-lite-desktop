@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useReach } from '@/lib/reach-context';
 import { createClient } from '@/lib/supabase/client';
 import { toPng, toJpeg } from 'html-to-image';
+import { toast } from 'sonner';
 import { 
   X, 
   Sparkles, 
@@ -46,7 +47,7 @@ export function TodayAestheticCanvas({ onClose }: TodayAestheticCanvasProps) {
       link.click();
     } catch (err) {
       console.error("Error generating image:", err);
-      alert("Erreur lors de la génération de l'image. Veuillez réessayer.");
+      toast.error("Erreur lors de la génération de l'image. Veuillez réessayer.");
     }
   };
 
@@ -65,11 +66,11 @@ export function TodayAestheticCanvas({ onClose }: TodayAestheticCanvasProps) {
           text: `Aperçu de mes statistiques générées sur Minerva Reach !`,
         });
       } else {
-        alert("Votre navigateur ne prend pas en charge le partage de fichiers natif. Téléchargez l'image pour la publier manuellement.");
+        toast.info("Votre navigateur ne prend pas en charge le partage de fichiers natif. Téléchargez l'image pour la publier manuellement.");
       }
     } catch (err) {
       console.error("Error during native share:", err);
-      alert("Impossible de lancer le partage. Téléchargez l'image à la place.");
+      toast.error("Impossible de lancer le partage. Téléchargez l'image à la place.");
     }
   };
 
@@ -80,10 +81,10 @@ export function TodayAestheticCanvas({ onClose }: TodayAestheticCanvasProps) {
     } else if (platform === 'facebook') {
       window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(appUrl)}`, '_blank');
     } else if (platform === 'instagram') {
-      alert("Instagram ne supporte pas l'import d'image directe depuis les sites web. Veuillez télécharger l'image (format Carré ou Story conseillé) et la publier directement depuis l'application Instagram !");
+      toast.info("Instagram ne supporte pas l'import d'image directe depuis les sites web. Veuillez télécharger l'image (format Carré ou Story conseillé) et la publier directement depuis l'application Instagram !");
     }
   };
-  const [dataMode, setDataMode] = useState<'real' | 'mock'>('mock');
+  const [dataMode, setDataMode] = useState<'real' | 'mock'>('real');
   const [ratio, setRatio] = useState<AspectRatio>('1:1');
   const [theme, setTheme] = useState<ThemeStyle>('cream');
   const [hideControls, setHideControls] = useState(false);

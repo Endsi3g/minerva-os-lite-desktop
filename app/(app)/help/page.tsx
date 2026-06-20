@@ -275,39 +275,15 @@ export default function HelpPage() {
 
         {/* Videos */}
         {tab === 'videos' && (
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h2 className="text-sm font-bold text-[#26251e]">Tutoriels vidéo</h2>
-              <span className="text-[10px] font-semibold text-[#7a7a76]">{VIDEOS.length} vidéos</span>
+          <div className="rounded-xl border border-[#e5e5e0] bg-white p-8 flex flex-col items-center gap-3 text-center">
+            <div className="w-12 h-12 rounded-xl bg-[#f4f4f3] border border-[#e5e5e0] flex items-center justify-center">
+              <PlayCircle className="h-6 w-6 text-[#c8c6be]" />
             </div>
-            <div className="rounded-xl border border-[#e5e5e0] bg-white overflow-hidden divide-y divide-[#e5e5e0]/60">
-              {VIDEOS.map((video) => (
-                <div
-                  key={video.title}
-                  className="flex items-center gap-4 px-5 py-4 hover:bg-[#f4f4f3]/40 transition-colors"
-                >
-                  {/* Thumbnail placeholder */}
-                  <div className="shrink-0 w-16 h-10 rounded-md bg-[#f4f4f3] border border-[#e5e5e0] flex items-center justify-center">
-                    <PlayCircle className="h-5 w-5 text-[#10b981]" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-bold text-[#26251e] truncate">{video.title}</p>
-                    <p className="text-[11px] text-[#7a7a76] mt-0.5">{video.description}</p>
-                  </div>
-                  <div className="shrink-0 flex flex-col items-end gap-1">
-                    <span className="text-[10px] font-semibold text-[#7a7a76]">{video.duration}</span>
-                    <a
-                      href={video.url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-[10px] font-bold text-[#059669] hover:text-[#047857] flex items-center gap-1 transition-colors"
-                    >
-                      Regarder
-                      <ExternalLink className="h-3 w-3" />
-                    </a>
-                  </div>
-                </div>
-              ))}
+            <div>
+              <p className="text-sm font-bold text-[#26251e]">Tutoriels vidéo à venir</p>
+              <p className="text-[11px] text-[#7a7a76] mt-1 leading-relaxed">
+                Nos tutoriels vidéo sont en cours de production. En attendant, consultez les guides écrits dans l&apos;onglet Tutoriels.
+              </p>
             </div>
           </div>
         )}

@@ -6,6 +6,7 @@ import { PageTransition } from "@/components/page-transition"
 import { cn } from "@/lib/utils"
 import { Analytics } from "@vercel/analytics/next"
 import { SpeedInsights } from "@vercel/speed-insights/next"
+import { Toaster } from "sonner"
 import type { Metadata, Viewport } from "next"
 
 const inter = Inter({
@@ -71,6 +72,7 @@ export default function RootLayout({
             </PageTransition>
           </LanguageProvider>
         </ThemeProvider>
+        <Toaster position="top-right" richColors closeButton />
         <Analytics />
         <SpeedInsights />
       </body>

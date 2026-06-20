@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils';
 import { TextureOverlay } from '@/components/ui/texture-overlay';
 import { useLanguage } from '@/lib/language-context';
 import { createClient } from '@/lib/supabase/client';
+import { toast } from 'sonner';
 
 // ─── types ────────────────────────────────────────────────────────────────────
 type MainMode = 'login' | 'signup' | 'otp';
@@ -80,7 +81,7 @@ export default function LoginPage() {
       if (error) throw error;
     } catch (e: any) {
       console.error(e);
-      alert("Erreur d'authentification Google : " + e.message);
+      toast.error("Erreur d'authentification Google : " + e.message);
     }
   };
 

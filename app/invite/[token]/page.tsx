@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { getApiUrl } from "@/lib/api-helper";
 import { CheckCircle2, XCircle, Loader2, UserPlus2, ArrowRight } from "lucide-react";
 
 export default function InviteTokenPage() {
@@ -39,10 +40,16 @@ export default function InviteTokenPage() {
         throw error;
       }
 
+      // Activate the pending team membership server-side
+      try {
+        await fetch(getApiUrl('/api/team/accept-invite'), { method: 'POST' });
+      } catch (activateErr) {
+        console.warn('accept-invite call failed (non-blocking):', activateErr);
+      }
+
       setStatus("success");
-      // Give a brief moment for the success animation before redirecting
       setTimeout(() => {
-        router.push("/onboarding");
+        router.push("/onboarding?invited=true");
       }, 1500);
     } catch (err: any) {
       console.error("Verification error:", err);
