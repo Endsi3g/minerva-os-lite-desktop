@@ -280,7 +280,8 @@ const containerClasses =
 
 export function TerminalAnimationContainer({
   className,
-  ...props: TerminalAnimationContainerProps) {
+  ...props
+}: TerminalAnimationContainerProps) {
   return (
     <div
       className={cn(containerClasses, className)}
@@ -311,7 +312,8 @@ export function TerminalAnimationWindow({
   minHeight = "28rem",
   animateOnVisible = true,
   style,
-  ...props: TerminalAnimationWindowProps) {
+  ...props
+}: TerminalAnimationWindowProps) {
   const windowRef = useRef<HTMLDivElement>(null)
   const [hasAnimated, setHasAnimated] = useState(false)
 
@@ -366,7 +368,8 @@ const contentClasses = "flex-1 px-6 py-6 sm:px-8 sm:py-6"
 
 export function TerminalAnimationContent({
   className,
-  ...props: TerminalAnimationContentProps) {
+  ...props
+}: TerminalAnimationContentProps) {
   return (
     <div
       className={cn(contentClasses, className)}
@@ -384,7 +387,8 @@ export type TerminalAnimationBlinkingCursorProps = React.ComponentProps<"span">
 
 export function TerminalAnimationBlinkingCursor({
   className,
-  ...props: TerminalAnimationBlinkingCursorProps) {
+  ...props
+}: TerminalAnimationBlinkingCursorProps) {
   return (
     <span
       aria-hidden
@@ -410,7 +414,8 @@ export type TerminalAnimationCommandBarProps = React.ComponentProps<"div"> & {
 export function TerminalAnimationCommandBar({
   className,
   cursor,
-  ...props: TerminalAnimationCommandBarProps) {
+  ...props
+}: TerminalAnimationCommandBarProps) {
   const { commandTyped, isTypingCommand, showCursor } =
     useTerminalAnimationContext()
 
@@ -441,7 +446,8 @@ export function TerminalAnimationOutputLine({
   line,
   visible,
   className,
-  ...props: TerminalAnimationOutputLineProps) {
+  ...props
+}: TerminalAnimationOutputLineProps) {
   if (!visible) {
     return null
   }
@@ -472,7 +478,8 @@ export type TerminalAnimationOutputProps = React.ComponentProps<"div"> & {
 export function TerminalAnimationOutput({
   className,
   renderLine,
-  ...props: TerminalAnimationOutputProps) {
+  ...props
+}: TerminalAnimationOutputProps) {
   const { isTypingCommand, visibleLines, currentTab, activeTab } =
     useTerminalAnimationContext()
 
@@ -520,7 +527,8 @@ export type TerminalAnimationTrailingPromptProps = React.ComponentProps<"div">
 export function TerminalAnimationTrailingPrompt({
   className,
   children,
-  ...props: TerminalAnimationTrailingPromptProps) {
+  ...props
+}: TerminalAnimationTrailingPromptProps) {
   const { isTypingCommand, showCursor, visibleLines, currentTab } =
     useTerminalAnimationContext()
 
@@ -550,7 +558,8 @@ export type TerminalAnimationTabListProps = React.ComponentProps<"div">
 
 export function TerminalAnimationTabList({
   className,
-  ...props: TerminalAnimationTabListProps) {
+  ...props
+}: TerminalAnimationTabListProps) {
   return (
     <div
       aria-label="Terminal commands"
@@ -593,7 +602,7 @@ export function TerminalAnimationTabTrigger({
   }
 
   if (asChild) {
-    return <Slot {...triggerProps} {...props} className={className} />
+    return <Slot.Root {...triggerProps} {...props} className={className} />
   }
 
   return (
