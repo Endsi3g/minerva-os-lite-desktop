@@ -18,6 +18,17 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v2.88.0',
+      date: '2026-06-20',
+      titleKey: 'changelog.v2_88_0_title' as TranslationKey,
+      descKey: 'changelog.v2_88_0_desc' as TranslationKey,
+      highlights: [
+        "Page /projects : création d'une page liste complète pour tous les projets — grille de cartes avec nom, date de création et nombre de leads liés, état vide avec CTA, création rapide inline, lien vers la vue détail.",
+        "Classement Performance : suppression des 4 profils fictifs (Julien Tremblay, Sophie Royer, Marc-André Fortin, Élise Dupont) de l'onglet 'Réseau Global' — seuls les vrais membres de l'équipe apparaissent désormais dans le classement.",
+        "Onglet Réseau Global : remplacement des données simulées par un placeholder 'Classement réseau bientôt disponible' (honnête et sans données inventées).",
+      ],
+    },
+    {
       version: 'v2.87.0',
       date: '2026-06-20',
       titleKey: 'changelog.v2_87_0_title' as TranslationKey,

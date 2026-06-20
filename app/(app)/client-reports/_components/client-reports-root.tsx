@@ -29,7 +29,6 @@ interface LeaderboardItem {
   email: string;
   role: string;
   avatarUrl?: string;
-  isSimulated: boolean;
   totalLeads: number;
   wonLeads: number;
   lostLeads: number;
@@ -127,7 +126,6 @@ export function ClientReportsRoot() {
       email: currentUser.email || "",
       role: "Propriétaire",
       avatarUrl: currentUserProfile?.avatarBase64 || undefined,
-      isSimulated: false,
       totalLeads: stats.total,
       wonLeads: stats.won,
       lostLeads: stats.lost,
@@ -154,7 +152,6 @@ export function ClientReportsRoot() {
       email: member.email,
       role: member.role === "admin" ? "Administrateur" : member.role === "editor" ? "Éditeur" : "Lecteur",
       avatarUrl: undefined,
-      isSimulated: false,
       totalLeads: stats.total,
       wonLeads: stats.won,
       lostLeads: stats.lost,
@@ -169,94 +166,9 @@ export function ClientReportsRoot() {
     });
   });
 
-  // Simulated competitors for "Everyone" tab
-  const simulatedCompetitors: LeaderboardItem[] = [
-    {
-      id: "sim-1",
-      name: "Julien Tremblay",
-      email: "julien.t@topoutreach.ca",
-      role: "Growth Marketer (Simulé)",
-      isSimulated: true,
-      totalLeads: 45,
-      wonLeads: 33,
-      lostLeads: 8,
-      revenue: 49500,
-      efficiency: 73,
-      skills: [
-        { name: "Closing", level: 95 },
-        { name: "Cold Outreach", level: 90 },
-        { name: "Data Scraping", level: 85 },
-      ],
-      projects: ["B2B Quebec SaaS", "SEO Local Laurentides"],
-    },
-    {
-      id: "sim-2",
-      name: "Sophie Royer",
-      email: "sophie@novaprospect.ca",
-      role: "Lead Gen Specialist (Simulé)",
-      isSimulated: true,
-      totalLeads: 32,
-      wonLeads: 20,
-      lostLeads: 6,
-      revenue: 30000,
-      efficiency: 62,
-      skills: [
-        { name: "LinkedIn Automation", level: 88 },
-        { name: "Cold Call", level: 85 },
-        { name: "Audit de site", level: 90 },
-      ],
-      projects: ["Cliniques Esthétiques", "Garages Rive-Sud"],
-    },
-    {
-      id: "sim-3",
-      name: "Marc-André Fortin",
-      email: "ma.fortin@leadsflow.ca",
-      role: "SEO Consultant (Simulé)",
-      isSimulated: true,
-      totalLeads: 28,
-      wonLeads: 14,
-      lostLeads: 9,
-      revenue: 21000,
-      efficiency: 50,
-      skills: [
-        { name: "Local SEO", level: 92 },
-        { name: "GMB Optimization", level: 88 },
-        { name: "Outreach", level: 75 },
-      ],
-      projects: ["Plombiers Grand Montréal", "Électriciens Québec"],
-    },
-    {
-      id: "sim-4",
-      name: "Élise Dupont",
-      email: "elise@reachagency.ca",
-      role: "Business Developer (Simulé)",
-      isSimulated: true,
-      totalLeads: 18,
-      wonLeads: 8,
-      lostLeads: 4,
-      revenue: 12000,
-      efficiency: 44,
-      skills: [
-        { name: "Closing", level: 80 },
-        { name: "Relations clients", level: 85 },
-        { name: "Copywriting", level: 78 },
-      ],
-      projects: ["Salons de Beauté", "Restaurants Quartier Latin"],
-    },
-  ];
+  const sortedLeaderboard = [...realLeaderboard].sort((a, b) => b.wonLeads - a.wonLeads);
 
-  // Combine real and simulated for the "Everyone" tab
-  const combinedLeaderboard = [...realLeaderboard, ...simulatedCompetitors].sort(
-    (a, b) => b.wonLeads - a.wonLeads
-  );
-
-  const activeLeaderboard =
-    activeTab === "members"
-      ? realLeaderboard.sort((a, b) => b.wonLeads - a.wonLeads)
-      : combinedLeaderboard;
-
-  // Search Filter
-  const filteredLeaderboard = activeLeaderboard.filter(
+  const filteredLeaderboard = sortedLeaderboard.filter(
     (item) =>
       item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.role.toLowerCase().includes(searchQuery.toLowerCase())
@@ -327,7 +239,7 @@ export function ClientReportsRoot() {
               )}
             >
               <Sparkles className="w-3.5 h-3.5" />
-              Tout le monde (Global)
+              Réseau Global
             </button>
           </div>
 
@@ -345,6 +257,16 @@ export function ClientReportsRoot() {
         </div>
 
         {/* Leaderboard Table Container */}
+        {activeTab === "everyone" ? (
+          <div className="bg-white border border-[#e5e5e0] rounded-2xl p-12 text-center shadow-xs space-y-3">
+            <BarChart2 className="w-10 h-10 text-[#807d72]/30 mx-auto" />
+            <p className="text-sm font-semibold text-[#26251e]">Classement réseau bientôt disponible</p>
+            <p className="text-xs text-[#807d72] max-w-sm mx-auto">
+              Les performances des utilisateurs Minerva à travers le réseau seront visibles ici.
+              En attendant, suivez votre équipe dans l&apos;onglet <strong>Membres d&apos;équipe</strong>.
+            </p>
+          </div>
+        ) : (
         <div className="bg-white border border-[#e5e5e0] rounded-2xl overflow-hidden shadow-xs">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
@@ -472,6 +394,7 @@ export function ClientReportsRoot() {
             </table>
           </div>
         </div>
+        )}
 
         {/* User Detail modal */}
         {selectedUser && (
@@ -494,13 +417,8 @@ export function ClientReportsRoot() {
                     </div>
                   )}
                   <div>
-                    <h3 className="font-bold text-base text-[#26251e] flex items-center gap-2">
+                    <h3 className="font-bold text-base text-[#26251e]">
                       {selectedUser.name}
-                      {selectedUser.isSimulated && (
-                        <span className="text-[8px] border border-neutral-300 text-neutral-500 px-1.5 py-0.2 rounded-full uppercase">
-                          IA Simulé
-                        </span>
-                      )}
                     </h3>
                     <p className="text-xs text-[#807d72]">{selectedUser.role}</p>
                     <p className="text-[10px] text-[#807d72] mt-0.5">{selectedUser.email}</p>
