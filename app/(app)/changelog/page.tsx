@@ -18,6 +18,19 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v2.84.0',
+      date: '2026-06-20',
+      titleKey: 'changelog.v2_84_0_title' as TranslationKey,
+      descKey: 'changelog.v2_84_0_desc' as TranslationKey,
+      highlights: [
+        "Planificateur de Tournées (Field Route Planner) : Refonte de la page de la carte avec un layout moderne à 3 panneaux (étapes à gauche, carte au centre, résumé financier à droite).",
+        "Trois Variantes de Tournées : Choix instantané entre l'Optimisation Commerciale (Hot d'abord), l'Itinéraire le plus court (heuristique TSP géographique pure) et l'Ordre personnalisé (drag & drop manuel).",
+        "Régulateurs Temporels : Configuration de l'heure de départ, de la durée moyenne de visite et des types de départ/destination (GPS, premier lead, boucle de retour, dernier lead).",
+        "Calculs Métiers CRM : Calcul du Chiffre d'Affaires potentiel cumulé et du taux de priorité pour chaque variante, avec enregistrement direct de la tournée dans route_plans.",
+        "Recalcul en Direct Mode Terrain : Intégration du GPS live (watchPosition) et recalcul dynamique automatique de l'itinéraire restant et des ETAs à chaque étape de la tournée."
+      ],
+    },
+    {
       version: 'v2.83.0',
       date: '2026-06-20',
       titleKey: 'changelog.v2_83_0_title' as TranslationKey,

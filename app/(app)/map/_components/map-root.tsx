@@ -101,50 +101,156 @@ interface RouteInfo {
   distanceKm: number;
   durationMin: number;
   geometry: GeoJSON.LineString;
+  legs?: { duration: number; distance: number }[];
+  waypoints?: LeadWithCoords[];
 }
 
-// Inner component that has access to the MapLibre instance via useMap()
-function RouteLayer({ routeInfo }: { routeInfo: RouteInfo | null }) {
+// Optimization algorithm for Variante Géographique (Nearest Neighbor TSP)
+const optimizeGeographical = (start: [number, number], stops: LeadWithCoords[]): LeadWithCoords[] => {
+  const unvisited = [...stops];
+  const ordered: LeadWithCoords[] = [];
+  let currentLat = start[0];
+  let currentLng = start[1];
+  
+  while (unvisited.length > 0) {
+    let closestIdx = 0;
+    let minDistance = Infinity;
+    for (let i = 0; i < unvisited.length; i++) {
+      const d = haversineKm(currentLat, currentLng, unvisited[i]._lat, unvisited[i]._lng);
+      if (d < minDistance) {
+        minDistance = d;
+        closestIdx = i;
+      }
+    }
+    const nextStop = unvisited.splice(closestIdx, 1)[0];
+    ordered.push(nextStop);
+    currentLat = nextStop._lat;
+    currentLng = nextStop._lng;
+  }
+  return ordered;
+};
+
+// Optimization algorithm for Variante Commerciale (Hot -> Warm -> Cold with local NN TSP)
+const optimizeCommercial = (start: [number, number], stops: LeadWithCoords[]): LeadWithCoords[] => {
+  const hot = stops.filter(s => s.temperature === 'Hot');
+  const warm = stops.filter(s => s.temperature === 'Warm');
+  const cold = stops.filter(s => s.temperature === 'Cold' || !s.temperature);
+  
+  const ordered: LeadWithCoords[] = [];
+  let currentLat = start[0];
+  let currentLng = start[1];
+  
+  const addNearest = (list: LeadWithCoords[]) => {
+    const unvisited = [...list];
+    while (unvisited.length > 0) {
+      let closestIdx = 0;
+      let minDistance = Infinity;
+      for (let i = 0; i < unvisited.length; i++) {
+        const d = haversineKm(currentLat, currentLng, unvisited[i]._lat, unvisited[i]._lng);
+        if (d < minDistance) {
+          minDistance = d;
+          closestIdx = i;
+        }
+      }
+      const nextStop = unvisited.splice(closestIdx, 1)[0];
+      ordered.push(nextStop);
+      currentLat = nextStop._lat;
+      currentLng = nextStop._lng;
+    }
+  };
+  
+  addNearest(hot);
+  addNearest(warm);
+  addNearest(cold);
+  
+  return ordered;
+};
+
+// Inner component that renders multi-stop routes on MapLibre
+function RouteLayer({
+  activeRoute,
+  commercialRoute,
+  shortestRoute,
+  customRoute,
+  onSelectVariant,
+}: {
+  activeRoute: RouteInfo | null;
+  commercialRoute: RouteInfo | null;
+  shortestRoute: RouteInfo | null;
+  customRoute: RouteInfo | null;
+  onSelectVariant: (v: 'commercial' | 'shortest' | 'custom') => void;
+}) {
   const { map, isLoaded } = useMap();
 
   useEffect(() => {
     if (!map || !isLoaded) return;
 
-    const SOURCE_ID = 'osrm-route';
-    const LAYER_ID = 'osrm-route-line';
-
+    const ids = ['active-route', 'comm-route', 'short-route', 'cust-route'];
+    
     const cleanup = () => {
-      if (map.getLayer(LAYER_ID)) map.removeLayer(LAYER_ID);
-      if (map.getSource(SOURCE_ID)) map.removeSource(SOURCE_ID);
+      ids.forEach(id => {
+        if (map.getLayer(`${id}-line`)) map.removeLayer(`${id}-line`);
+        if (map.getSource(id)) map.removeSource(id);
+      });
     };
 
     cleanup();
 
-    if (!routeInfo) return;
+    const addRouteSourceAndLayer = (id: string, geometry: any, color: string, width: number, opacity: number) => {
+      map.addSource(id, {
+        type: 'geojson',
+        data: {
+          type: 'Feature',
+          properties: {},
+          geometry: geometry,
+        },
+      });
 
-    map.addSource(SOURCE_ID, {
-      type: 'geojson',
-      data: {
-        type: 'Feature',
-        properties: {},
-        geometry: routeInfo.geometry,
-      },
-    });
+      map.addLayer({
+        id: `${id}-line`,
+        type: 'line',
+        source: id,
+        layout: { 'line-join': 'round', 'line-cap': 'round' },
+        paint: {
+          'line-color': color,
+          'line-width': width,
+          'line-opacity': opacity,
+        },
+      });
+    };
 
-    map.addLayer({
-      id: LAYER_ID,
-      type: 'line',
-      source: SOURCE_ID,
-      layout: { 'line-join': 'round', 'line-cap': 'round' },
-      paint: {
-        'line-color': '#059669',
-        'line-width': 4,
-        'line-opacity': 0.85,
-      },
-    });
+    // 1. Draw alternative routes in semi-transparent gray
+    if (commercialRoute && activeRoute !== commercialRoute) {
+      addRouteSourceAndLayer('comm-route', commercialRoute.geometry, '#9ca3af', 3, 0.45);
+    }
+    if (shortestRoute && activeRoute !== shortestRoute) {
+      addRouteSourceAndLayer('short-route', shortestRoute.geometry, '#9ca3af', 3, 0.45);
+    }
+    if (customRoute && activeRoute !== customRoute) {
+      addRouteSourceAndLayer('cust-route', customRoute.geometry, '#9ca3af', 3, 0.45);
+    }
 
-    return cleanup;
-  }, [map, isLoaded, routeInfo]);
+    // 2. Draw active route in emerald green on top
+    if (activeRoute) {
+      addRouteSourceAndLayer('active-route', activeRoute.geometry, '#059669', 5, 0.9);
+    }
+
+    // Click handlers to select route variant from the map directly
+    const handleCommClick = () => onSelectVariant('commercial');
+    const handleShortClick = () => onSelectVariant('shortest');
+    const handleCustClick = () => onSelectVariant('custom');
+
+    if (map.getLayer('comm-route-line')) map.on('click', 'comm-route-line', handleCommClick);
+    if (map.getLayer('short-route-line')) map.on('click', 'short-route-line', handleShortClick);
+    if (map.getLayer('cust-route-line')) map.on('click', 'cust-route-line', handleCustClick);
+
+    return () => {
+      if (map.getLayer('comm-route-line')) map.off('click', 'comm-route-line', handleCommClick);
+      if (map.getLayer('short-route-line')) map.off('click', 'short-route-line', handleShortClick);
+      if (map.getLayer('cust-route-line')) map.off('click', 'cust-route-line', handleCustClick);
+      cleanup();
+    };
+  }, [map, isLoaded, activeRoute, commercialRoute, shortestRoute, customRoute, onSelectVariant]);
 
   return null;
 }
@@ -170,6 +276,21 @@ export function MapRoot() {
   const [routeLoading, setRouteLoading] = useState(false);
   const [routeError, setRouteError] = useState<string | null>(null);
   const [terrainSaving, setTerrainSaving] = useState(false);
+
+  // New Route Planning configuration
+  const [departureType, setDepartureType] = useState<'gps' | 'first_lead'>('gps');
+  const [arrivalType, setArrivalType] = useState<'loop' | 'last_lead'>('loop');
+  const [departureTime, setDepartureTime] = useState('09:00');
+  const [visitDuration, setVisitDuration] = useState(20); // in minutes
+  const [selectedVariant, setSelectedVariant] = useState<'commercial' | 'shortest' | 'custom'>('commercial');
+
+  // Variant routes
+  const [commercialRoute, setCommercialRoute] = useState<RouteInfo | null>(null);
+  const [shortestRoute, setShortestRoute] = useState<RouteInfo | null>(null);
+  const [customRoute, setCustomRoute] = useState<RouteInfo | null>(null);
+
+  // Drag and drop state for manual reordering
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
 
   const leadsWithCoords = useMemo<LeadWithCoords[]>(() => {
     return leads.map((lead) => {
@@ -219,6 +340,17 @@ export function MapRoot() {
     }
   }, [selectedLeadId]);
 
+  // Compute start coordinates
+  const startCoords = useMemo<[number, number]>(() => {
+    if (departureType === 'gps' && userLocation) {
+      return userLocation;
+    }
+    if (waypoints.length > 0) {
+      return [waypoints[0]._lat, waypoints[0]._lng];
+    }
+    return DEFAULT_COORDS;
+  }, [departureType, userLocation, waypoints]);
+
   // Toggle waypoint in route mode
   const toggleWaypoint = useCallback((lead: LeadWithCoords) => {
     setWaypoints((prev) => {
@@ -227,37 +359,131 @@ export function MapRoot() {
       return [...prev, lead];
     });
     setRouteInfo(null);
+    setCommercialRoute(null);
+    setShortestRoute(null);
+    setCustomRoute(null);
     setRouteError(null);
   }, []);
 
-  // Fetch OSRM route
+  // Fetch OSRM routes for all 3 variants
   const fetchRoute = useCallback(async () => {
-    if (waypoints.length < 2) return;
+    if (waypoints.length < 1) return;
     setRouteLoading(true);
     setRouteError(null);
     try {
-      const coords = waypoints.map((w) => `${w._lng},${w._lat}`).join(';');
-      const url = `https://router.project-osrm.org/route/v1/driving/${coords}?overview=full&geometries=geojson`;
-      const res = await fetch(url);
-      if (!res.ok) throw new Error(`OSRM ${res.status}`);
-      const data = await res.json();
-      if (data.code !== 'Ok' || !data.routes?.[0]) throw new Error('Aucun itinéraire trouvé');
-      const route = data.routes[0];
-      setRouteInfo({
-        distanceKm: Math.round(route.distance / 100) / 10,
-        durationMin: Math.round(route.duration / 60),
-        geometry: route.geometry,
-      });
-    } catch (err) {
-      setRouteError(err instanceof Error ? err.message : 'Erreur OSRM');
+      const start = startCoords;
+
+      // 1. Commercial optimization (Grouped Hot -> Warm -> Cold + Nearest Neighbor)
+      const commercialWaypoints = optimizeCommercial(start, waypoints);
+      // 2. Shortest route optimization (Geographical TSP)
+      const shortestWaypoints = optimizeGeographical(start, waypoints);
+      // 3. Custom order variant (exactly as arranged by user)
+      const customWaypoints = [...waypoints];
+
+      const fetchSingleRoute = async (orderedStops: LeadWithCoords[]): Promise<RouteInfo> => {
+        const seqCoords: string[] = [];
+
+        // Add departure point
+        if (departureType === 'gps' && userLocation) {
+          seqCoords.push(`${userLocation[1]},${userLocation[0]}`);
+        }
+
+        // Add stops
+        orderedStops.forEach((w) => {
+          // If first lead matches start point and GPS is not used, don't duplicate
+          if (departureType === 'first_lead' && seqCoords.length === 0) {
+            seqCoords.push(`${w._lng},${w._lat}`);
+          } else {
+            seqCoords.push(`${w._lng},${w._lat}`);
+          }
+        });
+
+        // Add loop return coordinates
+        if (arrivalType === 'loop') {
+          if (departureType === 'gps' && userLocation) {
+            seqCoords.push(`${userLocation[1]},${userLocation[0]}`);
+          } else if (orderedStops.length > 0) {
+            seqCoords.push(`${orderedStops[0]._lng},${orderedStops[0]._lat}`);
+          }
+        }
+
+        if (seqCoords.length < 2) {
+          throw new Error('Pas assez d\'étapes pour calculer l\'itinéraire.');
+        }
+
+        const coords = seqCoords.join(';');
+        const url = `https://router.project-osrm.org/route/v1/driving/${coords}?overview=full&geometries=geojson`;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`Erreur OSRM HTTP ${res.status}`);
+        const data = await res.json();
+        if (data.code !== 'Ok' || !data.routes?.[0]) throw new Error('Aucun itinéraire trouvé.');
+        const route = data.routes[0];
+
+        return {
+          distanceKm: Math.round(route.distance / 100) / 10,
+          durationMin: Math.round(route.duration / 60),
+          geometry: route.geometry,
+          legs: route.legs?.map((l: any) => ({ duration: l.duration, distance: l.distance })),
+          waypoints: orderedStops,
+        };
+      };
+
+      const [commRes, shortRes, custRes] = await Promise.allSettled([
+        fetchSingleRoute(commercialWaypoints),
+        fetchSingleRoute(shortestWaypoints),
+        fetchSingleRoute(customWaypoints),
+      ]);
+
+      if (commRes.status === 'fulfilled') setCommercialRoute(commRes.value);
+      if (shortRes.status === 'fulfilled') setShortestRoute(shortRes.value);
+      if (custRes.status === 'fulfilled') setCustomRoute(custRes.value);
+
+      if (commRes.status === 'rejected' && shortRes.status === 'rejected' && custRes.status === 'rejected') {
+        const errorMsg = [commRes, shortRes, custRes]
+          .filter((r) => r.status === 'rejected')
+          .map((r: any) => r.reason?.message || 'Erreur inconnue')
+          .join(' / ');
+        throw new Error(`Échec du calcul : ${errorMsg}`);
+      }
+    } catch (err: any) {
+      setRouteError(err?.message || 'Erreur OSRM');
     } finally {
       setRouteLoading(false);
     }
-  }, [waypoints]);
+  }, [waypoints, startCoords, departureType, arrivalType, userLocation]);
+
+  // Handle Drag & Drop reordering of waypoints
+  const handleDrop = (index: number) => {
+    if (draggedIndex === null || draggedIndex === index) return;
+    const reordered = [...waypoints];
+    const [draggedItem] = reordered.splice(draggedIndex, 1);
+    reordered.splice(index, 0, draggedItem);
+    setWaypoints(reordered);
+    setDraggedIndex(null);
+    // Clear computed routes to force recalculation
+    setRouteInfo(null);
+    setCommercialRoute(null);
+    setShortestRoute(null);
+    setCustomRoute(null);
+  };
+
+  const activeRouteInfo = useMemo(() => {
+    if (selectedVariant === 'commercial') return commercialRoute;
+    if (selectedVariant === 'shortest') return shortestRoute;
+    return customRoute;
+  }, [selectedVariant, commercialRoute, shortestRoute, customRoute]);
+
+  // Sync routeInfo state with active route
+  useEffect(() => {
+    setRouteInfo(activeRouteInfo);
+  }, [activeRouteInfo]);
 
   const clearRoute = () => {
     setWaypoints([]);
     setRouteInfo(null);
+    setCommercialRoute(null);
+    setShortestRoute(null);
+    setCustomRoute(null);
     setRouteError(null);
   };
 
@@ -268,11 +494,14 @@ export function MapRoot() {
 
   // Save route plan + launch field mode
   const handleLaunchTerrain = useCallback(async () => {
-    if (!routeInfo || waypoints.length === 0) return;
+    const activeRoute = selectedVariant === 'commercial' ? commercialRoute : selectedVariant === 'shortest' ? shortestRoute : customRoute;
+    if (!activeRoute || !activeRoute.waypoints || activeRoute.waypoints.length === 0) return;
+    
     setTerrainSaving(true);
     try {
       const isElectron = typeof window !== 'undefined' && !!(window as unknown as Record<string, unknown>).electron;
       let planId: string;
+      const plannedWaypoints = activeRoute.waypoints;
 
       if (isElectron) {
         const electron = (window as unknown as Record<string, unknown>).electron as {
@@ -284,7 +513,7 @@ export function MapRoot() {
         await electron.dbRun(
           `INSERT INTO route_plans (id, workspace_id, user_id, campaign_id, lead_ids, distance_km, duration_min, status, created_at, updated_at, sync_status)
            VALUES (?, ?, ?, ?, ?, ?, ?, 'planned', ?, ?, 'pending_insert')`,
-          [planId, activeWorkspace?.id ?? '', '', null, JSON.stringify(waypoints.map((w) => w.id)), routeInfo.distanceKm, routeInfo.durationMin, now, now]
+          [planId, activeWorkspace?.id ?? '', '', null, JSON.stringify(plannedWaypoints.map((w) => w.id)), activeRoute.distanceKm, activeRoute.durationMin, now, now]
         );
         electron.triggerSync();
       } else {
@@ -293,9 +522,9 @@ export function MapRoot() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             workspace_id: activeWorkspace?.id,
-            lead_ids: waypoints.map((w) => w.id),
-            distance_km: routeInfo.distanceKm,
-            duration_min: routeInfo.durationMin,
+            lead_ids: plannedWaypoints.map((w) => w.id),
+            distance_km: activeRoute.distanceKm,
+            duration_min: activeRoute.durationMin,
           }),
         });
         const data = await res.json();
@@ -308,7 +537,7 @@ export function MapRoot() {
     } finally {
       setTerrainSaving(false);
     }
-  }, [routeInfo, waypoints, activeWorkspace, router]);
+  }, [selectedVariant, commercialRoute, shortestRoute, customRoute, activeWorkspace, router]);
 
   const requestGeolocation = useCallback(() => {
     if (!navigator.geolocation) return;
@@ -339,121 +568,418 @@ export function MapRoot() {
     { value: 'Cold', label: 'Froids' },
   ];
 
+  // Helper function to calculate stop ETAs based OSRM legs duration
+  const stopsWithEtas = useMemo(() => {
+    const stops = activeRouteInfo?.waypoints || waypoints;
+    const legs = activeRouteInfo?.legs;
+    if (!legs || legs.length === 0 || stops.length === 0) {
+      return stops.map(s => ({ ...s, eta: '--:--' }));
+    }
+
+    const [startHours, startMinutes] = departureTime.split(':').map(Number);
+    let currentMinutes = startHours * 60 + startMinutes;
+    
+    return stops.map((stop, i) => {
+      // Travel duration of the leg leading to this stop (leg index matches stop index)
+      const legDurationSec = legs[i]?.duration || 0;
+      const travelMin = Math.round(legDurationSec / 60);
+      
+      currentMinutes += travelMin;
+      const hours = Math.floor(currentMinutes / 60) % 24;
+      const mins = currentMinutes % 60;
+      const etaStr = `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
+      
+      // Add visit duration spent on site
+      currentMinutes += visitDuration;
+      
+      return { ...stop, eta: etaStr };
+    });
+  }, [activeRouteInfo, waypoints, departureTime, visitDuration]);
+
+  // Summary Metrics calculations
+  const totalTravelMin = activeRouteInfo?.durationMin ?? 0;
+  const totalTimeMin = totalTravelMin + (waypoints.length * visitDuration);
+  const etaFinStr = useMemo(() => {
+    const [h, m] = departureTime.split(':').map(Number);
+    const date = new Date();
+    date.setHours(h);
+    date.setMinutes(m + totalTimeMin);
+    return date.toLocaleTimeString('fr-CA', { hour: '2-digit', minute: '2-digit' });
+  }, [departureTime, totalTimeMin]);
+
+  const potentialRevenue = useMemo(() => {
+    return waypoints.reduce((sum, w) => sum + (w.dealAmount || 1000), 0);
+  }, [waypoints]);
+
+  const priorityRate = useMemo(() => {
+    if (waypoints.length === 0) return 0;
+    const highPriority = waypoints.filter(w => w.temperature === 'Hot' || w.temperature === 'Warm').length;
+    return Math.round((highPriority / waypoints.length) * 100);
+  }, [waypoints]);
+
+  const activeWaypointsList = activeRouteInfo?.waypoints || waypoints;
+
   return (
-    <div className="flex h-full w-full overflow-hidden absolute inset-0">
-      {/* Left Sidebar */}
-      <div className="w-[300px] flex flex-col border-r border-[#e5e5e0] bg-[#fafaf8] shrink-0 overflow-hidden">
-        <div className="p-4 border-b border-[#e5e5e0] shrink-0">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-black text-[#26251e]">
-              {routeMode ? 'Planifier une route' : 'Carte des leads'}
-            </h2>
-            <Button
-              size="sm"
-              variant={routeMode ? 'destructive' : 'outline'}
-              className={cn(
-                'h-7 text-[10px] font-bold gap-1 px-2',
-                !routeMode && 'border-[#059669] text-[#059669] hover:bg-[#059669]/10'
-              )}
-              onClick={routeMode ? exitRouteMode : () => setRouteMode(true)}
-            >
-              {routeMode ? <><X className="h-3 w-3" /> Quitter</> : <><Route className="h-3 w-3" /> Itinéraire</>}
-            </Button>
-          </div>
+    <div className="flex h-full w-full overflow-hidden absolute inset-0 text-foreground">
+      {routeMode ? (
+        <>
+          {/* === PANEL LEFT: Route steps and configuration === */}
+          <div className="w-[320px] flex flex-col border-r border-[#e5e5e0] bg-[#fafaf8] shrink-0 overflow-hidden">
+            <div className="p-4 border-b border-[#e5e5e0] shrink-0 space-y-3.5">
+              <div className="flex items-center justify-between">
+                <h2 className="text-sm font-black text-[#26251e] flex items-center gap-1.5">
+                  <Route className="h-4 w-4 text-[#059669]" />
+                  Planificateur de route
+                </h2>
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  className="h-7 text-[10px] font-bold gap-1 px-2"
+                  onClick={exitRouteMode}
+                >
+                  <X className="h-3.5 w-3.5" />
+                  Quitter
+                </Button>
+              </div>
 
-          {!routeMode && (
-            <Button
-              size="sm"
-              variant="outline"
-              className={cn(
-                'h-7 text-[10px] font-bold gap-1 px-2 w-full mb-3',
-                userLocation
-                  ? 'border-blue-400 text-blue-600 hover:bg-blue-50'
-                  : 'border-[#e5e5e0] text-[#7a7a76] hover:border-[#26251e]/30'
-              )}
-              onClick={requestGeolocation}
-              disabled={geoLoading}
-            >
-              {geoLoading ? (
-                <Loader2 className="h-3 w-3 animate-spin" />
-              ) : (
-                <MapPin className="h-3 w-3" />
-              )}
-              {userLocation ? 'Position localisée — Actualiser' : 'Afficher ma position + distances'}
-            </Button>
-          )}
-
-          {routeMode ? (
-            /* Route planning panel */
-            <div className="space-y-2">
-              <p className="text-[10px] text-[#7a7a76]">
-                Cliquez sur les leads dans la liste pour les ajouter comme étapes.
-              </p>
-              {waypoints.length > 0 && (
+              {/* Start & End Settings */}
+              <div className="grid grid-cols-2 gap-2 text-xs">
                 <div className="space-y-1">
-                  {waypoints.map((w, i) => (
-                    <div key={w.id} className="flex items-center gap-2 bg-white border border-[#e5e5e0] rounded px-2 py-1.5 text-xs">
-                      <span className="h-4 w-4 rounded-full bg-[#059669] text-white text-[9px] font-bold flex items-center justify-center shrink-0">
-                        {i + 1}
-                      </span>
-                      <span className="flex-1 truncate font-semibold text-[#26251e]">{w.businessName}</span>
-                      <button onClick={() => toggleWaypoint(w)} className="text-[#7a7a76] hover:text-red-500">
-                        <X className="h-3 w-3" />
-                      </button>
-                    </div>
-                  ))}
+                  <span className="text-[9px] font-bold uppercase text-[#7a7a76]">Départ</span>
+                  <select
+                    value={departureType}
+                    onChange={(e) => {
+                      setDepartureType(e.target.value as any);
+                      clearRoute();
+                    }}
+                    className="w-full bg-white border border-[#e5e5e0] rounded px-1.5 py-1 text-[11px] focus:outline-none"
+                  >
+                    <option value="gps">📍 Ma Position GPS</option>
+                    <option value="first_lead">🎯 Premier Lead</option>
+                  </select>
                 </div>
-              )}
+                <div className="space-y-1">
+                  <span className="text-[9px] font-bold uppercase text-[#7a7a76]">Arrivée</span>
+                  <select
+                    value={arrivalType}
+                    onChange={(e) => {
+                      setArrivalType(e.target.value as any);
+                      clearRoute();
+                    }}
+                    className="w-full bg-white border border-[#e5e5e0] rounded px-1.5 py-1 text-[11px] focus:outline-none"
+                  >
+                    <option value="loop">🔄 Retour / Boucle</option>
+                    <option value="last_lead">🏁 Dernier Lead</option>
+                  </select>
+                </div>
+              </div>
 
-              <div className="flex gap-1.5">
+              {/* Temporal Parameters Settings */}
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="space-y-1">
+                  <span className="text-[9px] font-bold uppercase text-[#7a7a76]">Heure de départ</span>
+                  <input
+                    type="time"
+                    value={departureTime}
+                    onChange={(e) => setDepartureTime(e.target.value)}
+                    className="w-full bg-white border border-[#e5e5e0] rounded px-1.5 py-0.5 text-[11px] focus:outline-none"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <span className="text-[9px] font-bold uppercase text-[#7a7a76]">Visite (minutes)</span>
+                  <input
+                    type="number"
+                    min={5}
+                    max={120}
+                    step={5}
+                    value={visitDuration}
+                    onChange={(e) => setVisitDuration(parseInt(e.target.value) || 20)}
+                    className="w-full bg-white border border-[#e5e5e0] rounded px-1.5 py-0.5 text-[11px] focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              {/* Waypoint controls */}
+              <div className="flex gap-2">
                 <Button
                   size="sm"
                   onClick={fetchRoute}
-                  disabled={waypoints.length < 2 || routeLoading}
-                  className="flex-1 h-7 text-[10px] font-bold bg-[#059669] hover:bg-[#047857] text-white gap-1"
+                  disabled={waypoints.length < (departureType === 'gps' ? 1 : 2) || routeLoading}
+                  className="flex-1 h-8 text-[11px] font-bold bg-[#059669] hover:bg-[#047857] text-white gap-1"
                 >
-                  {routeLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Navigation className="h-3 w-3" />}
-                  {routeLoading ? 'Calcul...' : 'Calculer'}
+                  {routeLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Navigation className="h-3.5 w-3.5" />}
+                  Calculer l'itinéraire
                 </Button>
-                {(waypoints.length > 0 || routeInfo) && (
-                  <Button size="sm" variant="outline" onClick={clearRoute} className="h-7 px-2">
-                    <RotateCcw className="h-3 w-3" />
+                {waypoints.length > 0 && (
+                  <Button size="sm" variant="outline" onClick={clearRoute} className="h-8 px-2 border-[#e5e5e0]">
+                    <RotateCcw className="h-3.5 w-3.5" />
                   </Button>
                 )}
               </div>
 
               {routeError && (
-                <p className="text-[10px] text-red-500 bg-red-50 px-2 py-1 rounded">{routeError}</p>
+                <p className="text-[10px] text-red-500 bg-red-50 px-2 py-1 rounded border border-red-100">{routeError}</p>
               )}
+            </div>
 
-              {routeInfo && (
-                <div className="bg-[#059669]/10 border border-[#059669]/20 rounded p-2 space-y-1">
-                  <div className="flex items-center gap-1.5 text-[11px] font-bold text-[#059669]">
-                    <Navigation className="h-3 w-3" />
-                    {routeInfo.distanceKm} km
-                  </div>
-                  <div className="flex items-center gap-1.5 text-[10px] text-[#7a7a76]">
-                    <Clock className="h-3 w-3" />
-                    ~{routeInfo.durationMin < 60
-                      ? `${routeInfo.durationMin} min`
-                      : `${Math.floor(routeInfo.durationMin / 60)}h${(routeInfo.durationMin % 60).toString().padStart(2, '0')}`}
-                  </div>
-                  <p className="text-[9px] text-[#7a7a76]">{waypoints.length} arrêts</p>
-                  <Button
-                    size="sm"
-                    onClick={handleLaunchTerrain}
-                    disabled={terrainSaving}
-                    className="w-full h-7 text-[10px] font-bold bg-[#26251e] hover:bg-[#3a3930] text-white gap-1 mt-1"
+            {/* List of stops with drag and drop order and ETA labels */}
+            <div className="flex-1 overflow-y-auto p-3 space-y-1.5">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76] block mb-1">
+                {waypoints.length} étape{waypoints.length !== 1 ? 's' : ''} dans la tournée
+              </span>
+              
+              {activeWaypointsList.length === 0 ? (
+                <p className="text-[11px] text-[#7a7a76] italic p-3 text-center border border-dashed border-[#e5e5e0] rounded-xl bg-white">
+                  Sélectionnez des leads dans la liste ci-dessous ou cliquez sur la carte.
+                </p>
+              ) : (
+                stopsWithEtas.map((w, index) => {
+                  const color = getMarkerColor(w);
+                  const isWaypoint = waypoints.some(x => x.id === w.id);
+                  const itemIndex = activeWaypointsList.findIndex(x => x.id === w.id);
+                  const isDragged = draggedIndex === itemIndex;
+
+                  return (
+                    <div
+                      key={w.id}
+                      draggable={selectedVariant === 'custom'}
+                      onDragStart={() => selectedVariant === 'custom' && setDraggedIndex(itemIndex)}
+                      onDragOver={(e) => selectedVariant === 'custom' && e.preventDefault()}
+                      onDrop={() => selectedVariant === 'custom' && handleDrop(itemIndex)}
+                      className={cn(
+                        'flex items-center gap-2.5 px-3 py-2 bg-white border border-[#e5e5e0] rounded-xl text-xs transition-all shadow-sm',
+                        selectedVariant === 'custom' && 'cursor-grab active:cursor-grabbing',
+                        isDragged && 'opacity-35 border-dashed border-primary',
+                        selectedVariant === 'custom' && 'hover:border-primary/50'
+                      )}
+                    >
+                      <span className="h-5 w-5 rounded-full bg-[#059669] text-white text-[10px] font-extrabold flex items-center justify-center shrink-0">
+                        {index + 1}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <span className="font-bold text-[#26251e] block truncate leading-tight">{w.businessName}</span>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <span className="text-[9px] text-[#7a7a76] truncate max-w-[120px]">{w.niche}</span>
+                          <span className="text-[9px] text-[#7a7a76] font-bold">·</span>
+                          <span className="text-[9px] text-blue-500 font-extrabold">{getTemperatureLabel(w.temperature)}</span>
+                        </div>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <span className="text-[10px] font-bold text-[#059669] block font-mono">{w.eta}</span>
+                        <span className="text-[8px] text-[#7a7a76] block uppercase tracking-wider">ETA</span>
+                      </div>
+                      {selectedVariant === 'custom' && (
+                        <div className="flex flex-col gap-0.5 text-[#7a7a76] shrink-0 pl-1">
+                          <div className="w-2.5 h-0.5 bg-[#e5e5e0] rounded" />
+                          <div className="w-2.5 h-0.5 bg-[#e5e5e0] rounded" />
+                          <div className="w-2.5 h-0.5 bg-[#e5e5e0] rounded" />
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+
+          {/* === PANEL CENTER: Interactive Map === */}
+          <div className="flex-1 relative min-h-0">
+            <Map
+              ref={mapRef}
+              center={userLocation ? [userLocation[1], userLocation[0]] : [-73.5674, 45.5019]}
+              zoom={userLocation ? 13 : 12}
+              className="absolute inset-0 w-full h-full"
+            >
+              <MapControls position="bottom-right" showZoom />
+              <RouteLayer
+                activeRoute={routeInfo}
+                commercialRoute={commercialRoute}
+                shortestRoute={shortestRoute}
+                customRoute={customRoute}
+                onSelectVariant={setSelectedVariant}
+              />
+
+              {filteredLeads.map((lead) => {
+                const color = getMarkerColor(lead);
+                const isSelected = selectedLeadId === lead.id;
+                
+                // Index is computed from the active route order
+                const waypointIdx = activeWaypointsList.findIndex((w) => w.id === lead.id);
+                const isWaypoint = waypointIdx !== -1;
+
+                return (
+                  <MapMarker key={lead.id} longitude={lead._lng} latitude={lead._lat}>
+                    <MarkerContent>
+                      <div
+                        className={cn(
+                          'rounded-full border-2 border-white shadow-lg cursor-pointer transition-transform hover:scale-125',
+                          isSelected || isWaypoint ? 'h-6 w-6 scale-125' : 'h-4 w-4'
+                        )}
+                        style={{ backgroundColor: isWaypoint ? '#059669' : color }}
+                        title={lead.businessName}
+                        onClick={() => toggleWaypoint(lead)}
+                      >
+                        {isWaypoint && (
+                          <span className="absolute inset-0 flex items-center justify-center text-white text-[8px] font-bold">
+                            {waypointIdx + 1}
+                          </span>
+                        )}
+                      </div>
+                    </MarkerContent>
+                  </MapMarker>
+                );
+              })}
+
+              {userLocation && (
+                <MapMarker longitude={userLocation[1]} latitude={userLocation[0]}>
+                  <MarkerContent>
+                    <div
+                      className="h-5 w-5 rounded-full bg-blue-500 border-2 border-white shadow-lg flex items-center justify-center cursor-default"
+                      title="Votre position"
+                    >
+                      <div className="h-2 w-2 rounded-full bg-white" />
+                    </div>
+                  </MarkerContent>
+                </MapMarker>
+              )}
+            </Map>
+          </div>
+
+          {/* === PANEL RIGHT: Commercial summary & Actions === */}
+          <div className="w-[280px] flex flex-col border-l border-[#e5e5e0] bg-[#fafaf8] shrink-0 overflow-hidden">
+            <div className="p-4 border-b border-[#e5e5e0]">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76] block mb-2">Variantes d'itinéraires</span>
+              <div className="space-y-2">
+                {[
+                  { id: 'commercial', title: '⭐ Optimisation Commerciale', desc: 'Priorité leads chauds (Hot d\'abord) puis regroupement par proximité.', value: commercialRoute },
+                  { id: 'shortest', title: '🏁 Itinéraire le plus court', desc: 'Optimisation TSP géographique pure (plus court trajet).', value: shortestRoute },
+                  { id: 'custom', title: '✏️ Ordre personnalisé', desc: 'Routage exact suivant l\'ordre défini manuellement (Drag & Drop).', value: customRoute },
+                ].map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => setSelectedVariant(item.id as any)}
+                    className={cn(
+                      'w-full text-left p-2.5 rounded-xl border text-xs transition-all bg-white',
+                      selectedVariant === item.id
+                        ? 'border-[#059669] ring-2 ring-[#059669]/10 shadow-sm'
+                        : 'border-[#e5e5e0] hover:border-[#26251e]/20'
+                    )}
                   >
-                    {terrainSaving ? <Loader2 className="h-3 w-3 animate-spin" /> : <Footprints className="h-3 w-3" />}
-                    {terrainSaving ? 'Enregistrement…' : 'Mode Terrain →'}
-                  </Button>
+                    <div className="font-bold text-[#26251e] leading-snug">{item.title}</div>
+                    <p className="text-[9px] text-[#7a7a76] mt-0.5 leading-normal">{item.desc}</p>
+                    {item.value ? (
+                      <div className="mt-1.5 flex items-center justify-between text-[10px] font-bold text-[#059669] font-mono">
+                        <span>{item.value.distanceKm} km</span>
+                        <span>~{item.value.durationMin} min</span>
+                      </div>
+                    ) : (
+                      <div className="mt-1.5 text-[9px] text-muted-foreground italic">Non calculé</div>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Resume and KPI metrics */}
+            <div className="flex-1 p-4 space-y-4 overflow-y-auto">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76] block">Résumé de la tournée</span>
+              
+              {activeRouteInfo ? (
+                <div className="space-y-3.5">
+                  <div className="grid grid-cols-2 gap-2 text-center">
+                    <div className="bg-white border border-[#e5e5e0] rounded-xl p-2.5">
+                      <span className="text-[8px] text-[#7a7a76] font-bold uppercase tracking-wider block">Distance</span>
+                      <span className="text-sm font-black font-mono text-foreground block mt-0.5">{activeRouteInfo.distanceKm} km</span>
+                    </div>
+                    <div className="bg-white border border-[#e5e5e0] rounded-xl p-2.5">
+                      <span className="text-[8px] text-[#7a7a76] font-bold uppercase tracking-wider block">Temps Route</span>
+                      <span className="text-sm font-black font-mono text-foreground block mt-0.5">~{activeRouteInfo.durationMin} min</span>
+                    </div>
+                  </div>
+
+                  <div className="bg-white border border-[#e5e5e0] rounded-xl p-3 space-y-2">
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-[#7a7a76] font-medium">Fin de tournée</span>
+                      <span className="font-bold text-[#26251e] font-mono">{etaFinStr}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-[#7a7a76] font-medium">Temps Total (Terrain)</span>
+                      <span className="font-bold text-[#26251e] font-mono">
+                        {totalTimeMin < 60 ? `${totalTimeMin} min` : `${Math.floor(totalTimeMin / 60)}h${(totalTimeMin % 60).toString().padStart(2, '0')}`}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center text-xs border-t border-[#e5e5e0] pt-2">
+                      <span className="text-[#7a7a76] font-medium">CA Potentiel</span>
+                      <span className="font-bold text-emerald-600 font-mono">
+                        {new Intl.NumberFormat('fr-CA', { style: 'currency', currency: 'CAD', maximumFractionDigits: 0 }).format(potentialRevenue)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-[#7a7a76] font-medium">Taux Priorité</span>
+                      <span className="font-bold text-blue-500 font-mono">{priorityRate}%</span>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center p-6 border border-dashed border-[#e5e5e0] bg-white rounded-xl text-xs text-muted-foreground italic">
+                  Calculez un itinéraire pour afficher le résumé.
                 </div>
               )}
             </div>
-          ) : (
-            /* Normal filters */
-            <>
+
+            {/* CTAs */}
+            <div className="p-3 border-t border-[#e5e5e0] bg-white space-y-2">
+              <Button
+                size="sm"
+                onClick={handleLaunchTerrain}
+                disabled={!activeRouteInfo || terrainSaving}
+                className="w-full h-9 text-xs font-bold bg-[#059669] hover:bg-[#047857] text-white gap-1.5 shadow-sm"
+              >
+                {terrainSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Footprints className="h-3.5 w-3.5" />}
+                Démarrer sur le terrain →
+              </Button>
+            </div>
+          </div>
+        </>
+      ) : (
+        <>
+          {/* === PREVIOUS NORMAL MAP SIDEBAR === */}
+          <div className="w-[300px] flex flex-col border-r border-[#e5e5e0] bg-[#fafaf8] shrink-0 overflow-hidden">
+            <div className="p-4 border-b border-[#e5e5e0] shrink-0">
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-sm font-black text-[#26251e]">
+                  Carte des leads
+                </h2>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-[10px] font-bold gap-1 px-2 border-[#059669] text-[#059669] hover:bg-[#059669]/10"
+                  onClick={() => setRouteMode(true)}
+                >
+                  <Route className="h-3 w-3" /> Itinéraire
+                </Button>
+              </div>
+
+              <Button
+                size="sm"
+                variant="outline"
+                className={cn(
+                  'h-7 text-[10px] font-bold gap-1 px-2 w-full mb-3',
+                  userLocation
+                    ? 'border-blue-400 text-blue-600 hover:bg-blue-50'
+                    : 'border-[#e5e5e0] text-[#7a7a76] hover:border-[#26251e]/30'
+                )}
+                onClick={requestGeolocation}
+                disabled={geoLoading}
+              >
+                {geoLoading ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : (
+                  <MapPin className="h-3 w-3" />
+                )}
+                {userLocation ? 'Position localisée — Actualiser' : 'Afficher ma position + distances'}
+              </Button>
+
               <div className="relative mb-3">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#7a7a76]" />
                 <Input
@@ -479,225 +1005,196 @@ export function MapRoot() {
                   </button>
                 ))}
               </div>
-            </>
-          )}
-        </div>
+            </div>
 
-        {/* Stats */}
-        <div className="p-3 border-b border-[#e5e5e0] bg-white shrink-0">
-          <p className="text-[10px] font-bold text-[#7a7a76] uppercase tracking-wider">
-            {routeMode
-              ? `${waypoints.length} étape${waypoints.length !== 1 ? 's' : ''} sélectionnée${waypoints.length !== 1 ? 's' : ''}`
-              : `${filteredLeads.length} lead${filteredLeads.length !== 1 ? 's' : ''} affichés`}
-          </p>
-        </div>
+            {/* Stats */}
+            <div className="p-3 border-b border-[#e5e5e0] bg-white shrink-0">
+              <p className="text-[10px] font-bold text-[#7a7a76] uppercase tracking-wider">
+                {filteredLeads.length} lead{filteredLeads.length !== 1 ? 's' : ''} affichés
+              </p>
+            </div>
 
-        {/* Lead list grouped by city */}
-        <div className="flex-1 overflow-y-auto p-2">
-          {leadsByCity.length === 0 ? (
-            <p className="text-[11px] text-[#7a7a76] italic p-3">Aucun résultat</p>
-          ) : (
-            leadsByCity.map(([city, cityLeads]) => {
-              const isCityCollapsed = collapsedCities[city] ?? false;
-              return (
-                <div key={city} className="mb-1">
-                  <button
-                    onClick={() => toggleCity(city)}
-                    className="w-full flex items-center justify-between px-2 py-1.5 text-[10px] font-bold text-[#7a7a76] uppercase tracking-wider hover:text-[#26251e] transition-colors"
-                  >
-                    <span className="flex items-center gap-1.5">
-                      <MapPin className="h-3 w-3" />
-                      {city}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Badge variant="outline" className="text-[9px] font-bold h-4 px-1.5 border-[#e5e5e0] text-[#7a7a76]">
-                        {cityLeads.length}
-                      </Badge>
-                      {isCityCollapsed ? <ChevronRight className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-                    </span>
-                  </button>
+            {/* Lead list grouped by city */}
+            <div className="flex-1 overflow-y-auto p-2">
+              {leadsByCity.length === 0 ? (
+                <p className="text-[11px] text-[#7a7a76] italic p-3">Aucun résultat</p>
+              ) : (
+                leadsByCity.map(([city, cityLeads]) => {
+                  const isCityCollapsed = collapsedCities[city] ?? false;
+                  return (
+                    <div key={city} className="mb-1">
+                      <button
+                        onClick={() => toggleCity(city)}
+                        className="w-full flex items-center justify-between px-2 py-1.5 text-[10px] font-bold text-[#7a7a76] uppercase tracking-wider hover:text-[#26251e] transition-colors"
+                      >
+                        <span className="flex items-center gap-1.5">
+                          <MapPin className="h-3 w-3" />
+                          {city}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Badge variant="outline" className="text-[9px] font-bold h-4 px-1.5 border-[#e5e5e0] text-[#7a7a76]">
+                            {cityLeads.length}
+                          </Badge>
+                          {isCityCollapsed ? <ChevronRight className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                        </span>
+                      </button>
 
-                  {!isCityCollapsed && (
-                    <div className="space-y-0.5">
-                      {cityLeads.map((lead) => {
-                        const color = getMarkerColor(lead);
-                        const isSelected = selectedLeadId === lead.id;
-                        const waypointIdx = waypoints.findIndex((w) => w.id === lead.id);
-                        const isWaypoint = waypointIdx !== -1;
+                      {!isCityCollapsed && (
+                        <div className="space-y-0.5">
+                          {cityLeads.map((lead) => {
+                            const color = getMarkerColor(lead);
+                            const isSelected = selectedLeadId === lead.id;
 
-                        return (
-                          <div
-                            key={lead.id}
-                            ref={(el) => { leadItemRefs.current[lead.id] = el; }}
-                            onClick={() => {
-                              if (routeMode) {
-                                toggleWaypoint(lead);
-                              } else {
-                                setSelectedLeadId(lead.id === selectedLeadId ? null : lead.id);
-                              }
-                            }}
-                            className={cn(
-                              'flex items-center gap-2 px-2 py-2 rounded cursor-pointer transition-all text-left',
-                              routeMode && isWaypoint
-                                ? 'bg-[#059669]/10 border border-[#059669]/30'
-                                : isSelected
-                                ? 'bg-[#059669]/10 border border-[#059669]/20'
-                                : 'hover:bg-[#e5e5e0]/40 border border-transparent'
-                            )}
-                          >
-                            {routeMode && isWaypoint ? (
-                              <span className="h-4 w-4 rounded-full bg-[#059669] text-white text-[9px] font-bold flex items-center justify-center shrink-0">
-                                {waypointIdx + 1}
-                              </span>
-                            ) : (
-                              <div className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
-                            )}
-                            <div className="flex-1 min-w-0">
-                              <p className="text-xs font-bold text-[#26251e] truncate">{lead.businessName}</p>
-                              {lead.niche && <p className="text-[9px] text-[#7a7a76] truncate">{lead.niche}</p>}
-                              <div className="flex items-center gap-1 mt-0.5 flex-wrap">
-                                <span className="text-[9px] font-semibold text-[#7a7a76]">{getTemperatureLabel(lead.temperature)}</span>
-                                <span className="text-[9px] text-[#7a7a76]">·</span>
-                                <span
-                                  className="text-[9px] font-bold px-1 py-0.5 rounded border"
-                                  style={{
-                                    color: lead.status === 'Won' ? '#059669' : lead.status === 'New' ? '#3b82f6' : '#7a7a76',
-                                    borderColor: lead.status === 'Won' ? '#05966940' : lead.status === 'New' ? '#3b82f640' : '#e5e5e0',
-                                    backgroundColor: lead.status === 'Won' ? '#05966910' : lead.status === 'New' ? '#3b82f610' : 'transparent',
-                                  }}
-                                >
-                                  {lead.status}
-                                </span>
-                                {userLocation && (
-                                  <>
-                                    <span className="text-[9px] text-[#7a7a76]">·</span>
-                                    <span className="text-[9px] font-bold text-blue-500">
-                                      {haversineKm(userLocation[0], userLocation[1], lead._lat, lead._lng).toFixed(1)} km
-                                    </span>
-                                  </>
+                            return (
+                              <div
+                                key={lead.id}
+                                ref={(el) => { leadItemRefs.current[lead.id] = el; }}
+                                onClick={() => setSelectedLeadId(lead.id === selectedLeadId ? null : lead.id)}
+                                className={cn(
+                                  'flex items-center gap-2 px-2 py-2 rounded cursor-pointer transition-all text-left border border-transparent',
+                                  isSelected ? 'bg-[#059669]/10 border-[#059669]/20' : 'hover:bg-[#e5e5e0]/40'
                                 )}
+                              >
+                                <div className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-xs font-bold text-[#26251e] truncate">{lead.businessName}</p>
+                                  {lead.niche && <p className="text-[9px] text-[#7a7a76] truncate">{lead.niche}</p>}
+                                  <div className="flex items-center gap-1 mt-0.5 flex-wrap">
+                                    <span className="text-[9px] font-semibold text-[#7a7a76]">{getTemperatureLabel(lead.temperature)}</span>
+                                    <span className="text-[9px] text-[#7a7a76]">·</span>
+                                    <span
+                                      className="text-[9px] font-bold px-1 py-0.5 rounded border"
+                                      style={{
+                                        color: lead.status === 'Won' ? '#059669' : lead.status === 'New' ? '#3b82f6' : '#7a7a76',
+                                        borderColor: lead.status === 'Won' ? '#05966940' : lead.status === 'New' ? '#3b82f640' : '#e5e5e0',
+                                        backgroundColor: lead.status === 'Won' ? '#05966910' : lead.status === 'New' ? '#3b82f610' : 'transparent',
+                                      }}
+                                    >
+                                      {lead.status}
+                                    </span>
+                                    {userLocation && (
+                                      <>
+                                        <span className="text-[9px] text-[#7a7a76]">·</span>
+                                        <span className="text-[9px] font-bold text-blue-500">
+                                          {haversineKm(userLocation[0], userLocation[1], lead._lat, lead._lng).toFixed(1)} km
+                                        </span>
+                                      </>
+                                    )}
+                                  </div>
+                                </div>
                               </div>
-                            </div>
-                          </div>
-                        );
-                      })}
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
-              );
-            })
-          )}
-        </div>
+                  );
+                })
+              )}
+            </div>
 
-        {/* Legend */}
-        {!routeMode && (
-          <div className="p-4 border-t border-[#e5e5e0] shrink-0">
-            <p className="text-[10px] font-bold text-[#7a7a76] uppercase tracking-wider mb-2">Légende</p>
-            <div className="space-y-1.5">
-              {[
-                { color: '#ef4444', label: 'Lead chaud' },
-                { color: '#f59e0b', label: 'Lead tiède' },
-                { color: '#3b82f6', label: 'Lead froid' },
-                { color: '#7a7a76', label: 'Sans site web (opportunité)' },
-              ].map((item) => (
-                <div key={item.label} className="flex items-center gap-2">
-                  <div className="h-2.5 w-2.5 rounded-full shrink-0 border border-white shadow-sm" style={{ backgroundColor: item.color }} />
-                  <span className="text-[10px] text-[#7a7a76]">{item.label}</span>
-                </div>
-              ))}
+            {/* Legend */}
+            <div className="p-4 border-t border-[#e5e5e0] shrink-0">
+              <p className="text-[10px] font-bold text-[#7a7a76] uppercase tracking-wider mb-2">Légende</p>
+              <div className="space-y-1.5">
+                {[
+                  { color: '#ef4444', label: 'Lead chaud' },
+                  { color: '#f59e0b', label: 'Lead tiède' },
+                  { color: '#3b82f6', label: 'Lead froid' },
+                  { color: '#7a7a76', label: 'Sans site web (opportunité)' },
+                ].map((item) => (
+                  <div key={item.label} className="flex items-center gap-2">
+                    <div className="h-2.5 w-2.5 rounded-full shrink-0 border border-white shadow-sm" style={{ backgroundColor: item.color }} />
+                    <span className="text-[10px] text-[#7a7a76]">{item.label}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
-        )}
-      </div>
 
-      {/* Map — center uses [lng, lat] as MapLibre expects */}
-      <div className="flex-1 relative min-h-0">
-        <Map
-          ref={mapRef}
-          center={userLocation ? [userLocation[1], userLocation[0]] : [-73.5674, 45.5019]}
-          zoom={userLocation ? 13 : 12}
-          className="absolute inset-0 w-full h-full"
-        >
-          <MapControls position="bottom-right" showZoom />
-          <RouteLayer routeInfo={routeInfo} />
+          {/* === PREVIOUS NORMAL MAP === */}
+          <div className="flex-1 relative min-h-0">
+            <Map
+              ref={mapRef}
+              center={userLocation ? [userLocation[1], userLocation[0]] : [-73.5674, 45.5019]}
+              zoom={userLocation ? 13 : 12}
+              className="absolute inset-0 w-full h-full"
+            >
+              <MapControls position="bottom-right" showZoom />
+              <RouteLayer
+                activeRoute={routeInfo}
+                commercialRoute={commercialRoute}
+                shortestRoute={shortestRoute}
+                customRoute={customRoute}
+                onSelectVariant={setSelectedVariant}
+              />
 
-          {filteredLeads.map((lead) => {
-            const color = getMarkerColor(lead);
-            const isSelected = selectedLeadId === lead.id;
-            const waypointIdx = waypoints.findIndex((w) => w.id === lead.id);
-            const isWaypoint = waypointIdx !== -1;
+              {filteredLeads.map((lead) => {
+                const color = getMarkerColor(lead);
+                const isSelected = selectedLeadId === lead.id;
 
-            return (
-              <MapMarker key={lead.id} longitude={lead._lng} latitude={lead._lat}>
-                <MarkerContent>
-                  <div
-                    className={cn(
-                      'rounded-full border-2 border-white shadow-lg cursor-pointer transition-transform hover:scale-125',
-                      isSelected || isWaypoint ? 'h-6 w-6 scale-125' : 'h-4 w-4'
-                    )}
-                    style={{ backgroundColor: isWaypoint ? '#059669' : color }}
-                    title={lead.businessName}
-                    onClick={() => {
-                      if (routeMode) toggleWaypoint(lead);
-                      else setSelectedLeadId(lead.id === selectedLeadId ? null : lead.id);
-                    }}
-                  >
-                    {isWaypoint && (
-                      <span className="absolute inset-0 flex items-center justify-center text-white text-[8px] font-bold">
-                        {waypointIdx + 1}
-                      </span>
-                    )}
-                  </div>
-                </MarkerContent>
-
-                {!routeMode && (
-                  <MarkerPopup closeButton>
-                    <div className="min-w-[180px]">
-                      <p className="text-sm font-bold text-[#26251e] mb-0.5 leading-tight">{lead.businessName}</p>
-                      {lead.niche && <p className="text-[10px] text-[#7a7a76] mb-1">{lead.niche}</p>}
-                      <div className="flex items-center gap-1 mb-2">
-                        <span className="text-[9px] font-bold rounded px-1.5 py-0.5 text-white" style={{ backgroundColor: color }}>
-                          {getTemperatureLabel(lead.temperature)}
-                        </span>
-                        <span className="text-[10px] text-[#7a7a76]">{lead.status}</span>
-                      </div>
-                      <div className="flex items-center gap-1 text-[11px] text-[#7a7a76] mb-2 flex-wrap">
-                        <MapPin className="h-3 w-3 shrink-0" />
-                        {lead.city}
-                        {userLocation && (
-                          <span className="font-bold text-blue-500">
-                            · {haversineKm(userLocation[0], userLocation[1], lead._lat, lead._lng).toFixed(1)} km
-                          </span>
+                return (
+                  <MapMarker key={lead.id} longitude={lead._lng} latitude={lead._lat}>
+                    <MarkerContent>
+                      <div
+                        className={cn(
+                          'rounded-full border-2 border-white shadow-lg cursor-pointer transition-transform hover:scale-125',
+                          isSelected ? 'h-6 w-6 scale-125' : 'h-4 w-4'
                         )}
-                      </div>
-                      <Link
-                        href={`/leads/${lead.id}`}
-                        className="inline-flex items-center text-[10px] font-bold text-[#059669] hover:underline"
-                        onClick={() => setSelectedLeadId(lead.id)}
-                      >
-                        Voir le lead →
-                      </Link>
-                    </div>
-                  </MarkerPopup>
-                )}
-              </MapMarker>
-            );
-          })}
+                        style={{ backgroundColor: color }}
+                        title={lead.businessName}
+                        onClick={() => setSelectedLeadId(lead.id === selectedLeadId ? null : lead.id)}
+                      />
+                    </MarkerContent>
 
-          {userLocation && (
-            <MapMarker longitude={userLocation[1]} latitude={userLocation[0]}>
-              <MarkerContent>
-                <div
-                  className="h-5 w-5 rounded-full bg-blue-500 border-2 border-white shadow-lg flex items-center justify-center cursor-default"
-                  title="Votre position"
-                >
-                  <div className="h-2 w-2 rounded-full bg-white" />
-                </div>
-              </MarkerContent>
-            </MapMarker>
-          )}
-        </Map>
-      </div>
+                    <MarkerPopup closeButton>
+                      <div className="min-w-[180px]">
+                        <p className="text-sm font-bold text-[#26251e] mb-0.5 leading-tight">{lead.businessName}</p>
+                        {lead.niche && <p className="text-[10px] text-[#7a7a76] mb-1">{lead.niche}</p>}
+                        <div className="flex items-center gap-1 mb-2">
+                          <span className="text-[9px] font-bold rounded px-1.5 py-0.5 text-white" style={{ backgroundColor: color }}>
+                            {getTemperatureLabel(lead.temperature)}
+                          </span>
+                          <span className="text-[10px] text-[#7a7a76]">{lead.status}</span>
+                        </div>
+                        <div className="flex items-center gap-1 text-[11px] text-[#7a7a76] mb-2 flex-wrap">
+                          <MapPin className="h-3 w-3 shrink-0" />
+                          {lead.city}
+                          {userLocation && (
+                            <span className="font-bold text-blue-500">
+                              · {haversineKm(userLocation[0], userLocation[1], lead._lat, lead._lng).toFixed(1)} km
+                            </span>
+                          )}
+                        </div>
+                        <Link
+                          href={`/leads/${lead.id}`}
+                          className="inline-flex items-center text-[10px] font-bold text-[#059669] hover:underline"
+                          onClick={() => setSelectedLeadId(lead.id)}
+                        >
+                          Voir le lead →
+                        </Link>
+                      </div>
+                    </MarkerPopup>
+                  </MapMarker>
+                );
+              })}
+
+              {userLocation && (
+                <MapMarker longitude={userLocation[1]} latitude={userLocation[0]}>
+                  <MarkerContent>
+                    <div
+                      className="h-5 w-5 rounded-full bg-blue-500 border-2 border-white shadow-lg flex items-center justify-center cursor-default"
+                      title="Votre position"
+                    >
+                      <div className="h-2 w-2 rounded-full bg-white" />
+                    </div>
+                  </MarkerContent>
+                </MapMarker>
+              )}
+            </Map>
+          </div>
+        </>
+      )}
     </div>
   );
 }

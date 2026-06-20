@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useReach } from '@/lib/reach-context';
 import { createClient } from '@/lib/supabase/client';
@@ -44,6 +44,37 @@ const OUTCOME_BADGE: Record<
   not_interested: { label: 'Non intéressé', classes: 'text-red-500 bg-red-50 border-red-200' },
 };
 
+// ─── Geographic Fallbacks ──────────────────────────────────────────────────────
+
+const QUEBEC_CITY_COORDS: Record<string, [number, number]> = {
+  'montreal': [45.5019, -73.5674],
+  'montréal': [45.5019, -73.5674],
+  'quebec': [46.8139, -71.2080],
+  'québec': [46.8139, -71.2080],
+  'laval': [45.6066, -73.7124],
+  'gatineau': [45.4765, -75.7013],
+  'longueuil': [45.5312, -73.5183],
+  'sherbrooke': [45.4042, -71.8929],
+  'saguenay': [48.4279, -71.0686],
+  'levis': [46.8033, -71.1778],
+  'lévis': [46.8033, -71.1778],
+  'trois-rivieres': [46.3432, -72.5429],
+  'trois-rivières': [46.3432, -72.5429],
+  'terrebonne': [45.7000, -73.6334],
+  'saint-jean-sur-richelieu': [45.3072, -73.2619],
+  'repentigny': [45.7423, -73.4513],
+  'drummondville': [45.8835, -72.4831],
+  'granby': [45.4042, -72.7340],
+  'saint-jerome': [45.7805, -74.0034],
+  'saint-jérôme': [45.7805, -74.0034],
+};
+
+const DEFAULT_COORDS: [number, number] = [46.8, -72.5];
+
+function applyJitter(val: number): number {
+  return val + (Math.random() - 0.5) * 0.03;
+}
+
 // ─── Haversine ────────────────────────────────────────────────────────────────
 
 function haversine(lat1: number, lng1: number, lat2: number, lng2: number): number {
@@ -63,6 +94,7 @@ function LeadCard({
   planId,
   userLat,
   userLng,
+  eta,
 }: {
   lead: ReturnType<typeof useReach>['leads'][number];
   index: number;
@@ -70,10 +102,11 @@ function LeadCard({
   planId: string;
   userLat: number | null;
   userLng: number | null;
+  eta?: string;
 }) {
   const router = useRouter();
-  const distance = userLat && userLng && lead.latitude && lead.longitude
-    ? Math.round(haversine(userLat, userLng, lead.latitude, lead.longitude) * 10) / 10
+  const distance = userLat && userLng
+    ? Math.round(haversine(userLat, userLng, (lead as any)._lat || lead.latitude, (lead as any)._lng || lead.longitude) * 10) / 10
     : null;
 
   const badge = visitLog ? OUTCOME_BADGE[visitLog.outcome] : null;
@@ -94,11 +127,16 @@ function LeadCard({
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2">
             <p className="text-sm font-bold text-[#26251e] leading-snug">{lead.businessName}</p>
-            {badge && (
+            {badge ? (
               <span className={cn('text-[9px] font-bold px-2 py-0.5 rounded-full border shrink-0', badge.classes)}>
                 {badge.label}
               </span>
-            )}
+            ) : eta ? (
+              <div className="text-right shrink-0">
+                <span className="text-[10px] font-black text-[#059669] block font-mono leading-none">{eta}</span>
+                <span className="text-[7px] text-[#7a7a76] block uppercase tracking-wider text-right">ETA</span>
+              </div>
+            ) : null}
           </div>
           <p className="text-[10px] text-[#7a7a76] mt-0.5 line-clamp-1">{lead.niche}</p>
         </div>
@@ -200,6 +238,11 @@ export function FieldRoot({ planId }: { planId: string }) {
   const [userLat, setUserLat] = useState<number | null>(null);
   const [userLng, setUserLng] = useState<number | null>(null);
 
+  // Recalculation states
+  const [remainingDistanceKm, setRemainingDistanceKm] = useState<number | null>(null);
+  const [remainingDurationMin, setRemainingDurationMin] = useState<number | null>(null);
+  const [remainingEtas, setRemainingEtas] = useState<Record<string, string>>({});
+
   // Fetch route plan
   useEffect(() => {
     if (!planId || planId === 'default') {
@@ -246,15 +289,128 @@ export function FieldRoot({ planId }: { planId: string }) {
       .catch(() => {});
   }, [planId]);
 
-  // Geolocation
+  // Geolocation with watchPosition
   useEffect(() => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => { setUserLat(pos.coords.latitude); setUserLng(pos.coords.longitude); },
-        () => {},
-      );
-    }
+    if (!navigator.geolocation) return;
+    const watchId = navigator.geolocation.watchPosition(
+      (pos) => {
+        setUserLat(pos.coords.latitude);
+        setUserLng(pos.coords.longitude);
+      },
+      (err) => {
+        console.error('[watchPosition error]', err);
+      },
+      { enableHighAccuracy: true }
+    );
+    return () => navigator.geolocation.clearWatch(watchId);
   }, []);
+
+  // Compute fallbacks for lead coordinates
+  const orderedLeadsWithCoords = useMemo(() => {
+    return orderedLeads.map((lead) => {
+      let lat: number;
+      let lng: number;
+      if (lead.latitude && lead.longitude) {
+        lat = lead.latitude;
+        lng = lead.longitude;
+      } else {
+        const key = (lead.city || '').toLowerCase().trim();
+        const coords = QUEBEC_CITY_COORDS[key] || DEFAULT_COORDS;
+        lat = applyJitter(coords[0]);
+        lng = applyJitter(coords[1]);
+      }
+      return { ...lead, _lat: lat, _lng: lng };
+    });
+  }, [orderedLeads]);
+
+  // Fetch remaining route from current GPS location using OSRM
+  useEffect(() => {
+    const remaining = orderedLeadsWithCoords.filter((l) => !visitLogs[l.id]);
+    if (remaining.length === 0) {
+      setRemainingDistanceKm(null);
+      setRemainingDurationMin(null);
+      setRemainingEtas({});
+      return;
+    }
+
+    let isCancelled = false;
+
+    async function fetchRoute() {
+      try {
+        const seqCoords: string[] = [];
+        if (userLat !== null && userLng !== null) {
+          seqCoords.push(`${userLng},${userLat}`);
+        }
+        remaining.forEach((lead) => {
+          seqCoords.push(`${lead._lng},${lead._lat}`);
+        });
+
+        if (seqCoords.length < 2) {
+          const now = new Date();
+          const h = String(now.getHours()).padStart(2, '0');
+          const m = String(now.getMinutes()).padStart(2, '0');
+          if (!isCancelled) {
+            setRemainingDistanceKm(0);
+            setRemainingDurationMin(0);
+            setRemainingEtas({ [remaining[0].id]: `${h}:${m}` });
+          }
+          return;
+        }
+
+        const coords = seqCoords.join(';');
+        const url = `https://router.project-osrm.org/route/v1/driving/${coords}?overview=false`;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`OSRM HTTP error ${res.status}`);
+        const data = await res.json();
+        if (data.code !== 'Ok' || !data.routes?.[0]) throw new Error('No route found');
+
+        const route = data.routes[0];
+        const legs = route.legs || [];
+        const distanceKm = Math.round(route.distance / 100) / 10;
+        const durationMin = Math.round(route.duration / 60);
+
+        const etas: Record<string, string> = {};
+        const now = new Date();
+        let currentMinutes = now.getHours() * 60 + now.getMinutes();
+        const visitDuration = 20; // fallback standard visit duration in minutes
+
+        remaining.forEach((lead, i) => {
+          let travelMin = 0;
+          if (userLat !== null && userLng !== null) {
+            const legDurationSec = legs[i]?.duration || 0;
+            travelMin = Math.round(legDurationSec / 60);
+          } else if (i > 0) {
+            const legDurationSec = legs[i - 1]?.duration || 0;
+            travelMin = Math.round(legDurationSec / 60);
+          }
+
+          currentMinutes += travelMin;
+          const hours = Math.floor(currentMinutes / 60) % 24;
+          const mins = currentMinutes % 60;
+          etas[lead.id] = `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
+
+          currentMinutes += visitDuration;
+        });
+
+        if (!isCancelled) {
+          setRemainingDistanceKm(distanceKm);
+          setRemainingDurationMin(durationMin);
+          setRemainingEtas(etas);
+        }
+      } catch (err) {
+        console.error('[fetchRemainingRoute error]', err);
+      }
+    }
+
+    const timer = setTimeout(() => {
+      fetchRoute();
+    }, 1500);
+
+    return () => {
+      isCancelled = true;
+      clearTimeout(timer);
+    };
+  }, [userLat, userLng, orderedLeadsWithCoords, visitLogs]);
 
   const handleSync = async () => {
     setSyncing(true);
@@ -269,7 +425,7 @@ export function FieldRoot({ planId }: { planId: string }) {
   };
 
   const visitedCount = Object.keys(visitLogs).length;
-  const totalCount = orderedLeads.length;
+  const totalCount = orderedLeadsWithCoords.length;
   const progress = totalCount > 0 ? (visitedCount / totalCount) * 100 : 0;
 
   // Outcome counts for summary
@@ -302,8 +458,14 @@ export function FieldRoot({ planId }: { planId: string }) {
             <p className="text-xs font-black text-[#26251e]">Mode Terrain 📍</p>
             <p className="text-[10px] text-[#7a7a76]">
               {visitedCount}/{totalCount} visites
-              {routePlan?.distance_km && ` · ${routePlan.distance_km.toFixed(1)} km`}
-              {routePlan?.duration_min && ` · ~${routePlan.duration_min} min`}
+              {remainingDistanceKm !== null ? (
+                ` · Reste ${remainingDistanceKm.toFixed(1)} km (~${remainingDurationMin} min)`
+              ) : (
+                <>
+                  {routePlan?.distance_km && ` · ${routePlan.distance_km.toFixed(1)} km`}
+                  {routePlan?.duration_min && ` · ~${routePlan.duration_min} min`}
+                </>
+              )}
             </p>
           </div>
           <button
@@ -343,7 +505,7 @@ export function FieldRoot({ planId }: { planId: string }) {
 
       {/* Lead list */}
       <div className="p-4 space-y-3 max-w-lg mx-auto">
-        {orderedLeads.length === 0 ? (
+        {orderedLeadsWithCoords.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <AlertCircle className="h-8 w-8 text-[#7a7a76] mb-3" />
             <p className="text-sm font-bold text-[#26251e]">Aucun lead dans cette tournée</p>
@@ -358,7 +520,7 @@ export function FieldRoot({ planId }: { planId: string }) {
           </div>
         ) : (
           <>
-            {orderedLeads.map((lead, i) => (
+            {orderedLeadsWithCoords.map((lead, i) => (
               <LeadCard
                 key={lead.id}
                 lead={lead}
@@ -367,6 +529,7 @@ export function FieldRoot({ planId }: { planId: string }) {
                 planId={planId}
                 userLat={userLat}
                 userLng={userLng}
+                eta={remainingEtas[lead.id]}
               />
             ))}
 
