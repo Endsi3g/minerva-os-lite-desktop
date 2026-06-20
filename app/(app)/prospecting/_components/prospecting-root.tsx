@@ -165,9 +165,6 @@ export function ProspectingRoot() {
 
   const [loadingPrefs, setLoadingPrefs] = useState(true);
   const [apifyConfigured, setApifyConfigured] = useState<boolean | 'checking'>('checking');
-  const [hereConfigured, setHereConfigured] = useState<boolean | 'checking'>('checking');
-  const [yelpConfigured, setYelpConfigured] = useState<boolean | 'checking'>('checking');
-  const [firecrawlConfigured, setFirecrawlConfigured] = useState<boolean | 'checking'>('checking');
   const [userCities, setUserCities] = useState<string[]>([]);
 
   // Search mode
@@ -440,8 +437,7 @@ export function ProspectingRoot() {
 
   const [customQuery, setCustomQuery] = useState('');
 
-  // Sources
-  const [selectedSources, setSelectedSources] = useState<string[]>(['google']);
+  // Selected search sources are now handled server-side
 
   // Filters
   const [minRating, setMinRating] = useState(0);
@@ -498,30 +494,18 @@ export function ProspectingRoot() {
         const supabase = createClient();
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-          const { data } = await supabase.from('settings').select('niches, cities, apify_token, here_api_key, yelp_api_key, firecrawl_api_key').eq('user_id', user.id).maybeSingle();
+          const { data } = await supabase.from('settings').select('niches, cities, apify_token').eq('user_id', user.id).maybeSingle();
           if (data) {
             setUserCities((data as any).cities || []);
             if ((data as any).cities?.length > 0) setSelectedCities([(data as any).cities[0]]);
             const token = (data as any).apify_token;
             setApifyConfigured(!!(token && token !== 'native' && token.startsWith('apify_api_')));
-            const hereKey = (data as any)?.here_api_key;
-            setHereConfigured(!!(hereKey && hereKey.length > 5));
-            const yelpKey = (data as any)?.yelp_api_key;
-            setYelpConfigured(!!(yelpKey && yelpKey.length > 10));
-            const firecrawlKey = (data as any)?.firecrawl_api_key;
-            setFirecrawlConfigured(!!(firecrawlKey && firecrawlKey.length > 5));
           } else {
             setApifyConfigured(false);
-            setHereConfigured(false);
-            setYelpConfigured(false);
-            setFirecrawlConfigured(false);
           }
         }
       } catch {
         setApifyConfigured(false);
-        setHereConfigured(false);
-        setYelpConfigured(false);
-        setFirecrawlConfigured(false);
       }
       setLoadingPrefs(false);
     };
@@ -534,25 +518,6 @@ export function ProspectingRoot() {
 
   const toggleNiche = (n: string) => setSelectedNiches(prev => prev.includes(n) ? prev.filter(x => x !== n) : [...prev, n]);
   const toggleCity = (c: string) => setSelectedCities(prev => prev.includes(c) ? prev.filter(x => x !== c) : [...prev, c]);
-
-  const sources = [
-    { id: 'google', label: 'Google Maps / OSM', description: 'Données ouvertes — toujours disponible', available: true },
-    { id: 'here', label: 'HERE Places', description: hereConfigured === true ? 'Clé configurée — 250k req/mois gratuits' : hereConfigured === false ? 'Clé manquante → Paramètres > Intégrations' : 'Vérification...', available: hereConfigured, needsKey: true },
-    { id: 'yelp', label: 'Yelp Fusion', description: yelpConfigured === true ? 'Clé configurée — 500 req/jour gratuits' : yelpConfigured === false ? 'Clé manquante → Paramètres > Intégrations' : 'Vérification...', available: yelpConfigured, needsKey: true },
-    { id: 'pagesjaunes', label: 'PagesJaunes / YellowPages', description: firecrawlConfigured === true ? 'Clé Firecrawl configurée — YellowPages.ca' : firecrawlConfigured === false ? 'Clé Firecrawl manquante → Paramètres > Intégrations' : 'Vérification...', available: firecrawlConfigured, needsKey: true },
-    { id: '411', label: '411.ca', description: 'Scraping direct gratuit — données variables', available: true },
-    {
-      id: 'apify', label: 'Apify (Google Places)',
-      description: apifyConfigured === true ? 'Clé configurée — données enrichies (photos, email)' : apifyConfigured === false ? 'Clé manquante → Paramètres > Intégrations' : 'Vérification...',
-      available: apifyConfigured, needsKey: true,
-    },
-  ];
-
-  const saveJobHistory = useCallback((jobs: ScrapeJobRecord[]) => {
-    const limited = jobs.slice(0, 20);
-    setJobHistory(limited);
-    try { localStorage.setItem(HISTORY_KEY, JSON.stringify(limited)); } catch { /* ignore */ }
-  }, []);
 
   const handleStartScrape = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
@@ -571,7 +536,7 @@ export function ProspectingRoot() {
       id: jobId,
       niches: selectedNiches.length > 0 ? selectedNiches : ['commerce local'],
       cities: selectedCities.length > 0 ? selectedCities : ['Montréal'],
-      sources: selectedSources,
+      sources: ['apify'],
       status: 'running',
       resultsCount: 0,
       startedAt: new Date().toISOString(),
@@ -593,11 +558,6 @@ export function ProspectingRoot() {
     try {
       const niches = selectedNiches.length > 0 ? selectedNiches : ['commerce local'];
       const cities = selectedCities.length > 0 ? selectedCities : ['Montréal'];
-      const nativeSources = selectedSources.filter(s => s !== 'apify');
-      const useApify = selectedSources.includes('apify') && apifyConfigured === true;
-      const effectiveNativeSources = nativeSources.length > 0 ? nativeSources : (useApify ? ['google'] : []);
-
-      type FetchResult = { leads: any[]; source: string; errorMsg?: string };
 
       const checkResponseJson = async (r: Response) => {
         const contentType = r.headers.get('content-type');
@@ -608,73 +568,37 @@ export function ProspectingRoot() {
         return r.json();
       };
 
-      const osmPromise: Promise<FetchResult> = effectiveNativeSources.length > 0
-        ? fetch(getApiUrl('/api/scrape-maps'), {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              niches,
-              cities,
-              query: customQuery || undefined,
-              sources: effectiveNativeSources,
-              maxResults,
-              radius,
-              ...((searchMode === 'around_me' || searchMode === 'address') && userLat !== null && userLon !== null ? { userLat, userLon } : {}),
-            }),
-          })
-            .then(checkResponseJson)
-            .then((d: any) => {
-              if (d.searchCenter) setSearchCenter(d.searchCenter);
-              return { leads: d.leads ?? [], source: 'osm' };
-            })
-            .catch((err) => { console.warn('[prospecting] OSM fetch error:', err); return { leads: [], source: 'osm', errorMsg: String(err) }; })
-        : Promise.resolve({ leads: [], source: 'osm' });
-
-      const apifyPromise: Promise<FetchResult> = useApify
-        ? fetch(getApiUrl('/api/scrape-apify'), {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ niches, cities, query: customQuery || undefined, maxResults }),
-          })
-            .then(checkResponseJson)
-            .then((d: any) => d.error
-              ? { leads: [], source: 'apify', errorMsg: d.error }
-              : { leads: d.leads ?? [], source: 'apify' })
-            .catch((err) => { console.warn('[prospecting] Apify fetch error:', err); return { leads: [], source: 'apify', errorMsg: String(err) }; })
-        : Promise.resolve({ leads: [], source: 'apify' });
-
-      const [osmResult, apifyResult] = await Promise.all([osmPromise, apifyPromise]);
-
-      if (osmResult.leads.length === 0 && effectiveNativeSources.includes('google')) {
-        if (osmResult.errorMsg) {
-          setOsmWarningMsg(`OSM indisponible (${osmResult.errorMsg.slice(0, 80)}). Activez Apify pour des résultats Google Maps garantis.`);
-        } else {
-          setOsmWarningMsg('Aucun résultat OSM pour cette niche. Activez Apify pour accéder aux données Google Maps.');
-        }
-      }
-
-      if (useApify && (apifyResult.errorMsg || apifyResult.leads.length === 0)) {
-        const raw = apifyResult.errorMsg ?? 'aucun résultat retourné';
-        const reason = raw.includes('SyntaxError') || raw.includes('DOCTYPE') || raw.includes('non-JSON') || raw.includes('HTML')
-          ? 'La clé API Apify est peut-être invalide ou expirée — vérifiez-la dans Paramètres → Intégrations.'
-          : raw;
-        setApifyFallbackMsg(`Apify indisponible : ${reason} Leads obtenus via OpenStreetMap / Overpass.`);
-      }
-
-      let allLeads: any[] = [...osmResult.leads, ...apifyResult.leads];
-
-      // Dedup by name+city
-      const seen = new Set<string>();
-      allLeads = allLeads.filter(l => {
-        const k = `${l.businessName?.toLowerCase().replace(/[^a-z0-9]/g, '')}|${l.city?.toLowerCase()}`;
-        if (seen.has(k)) return false;
-        seen.add(k);
-        return true;
+      const res = await fetch(getApiUrl('/api/prospect/search'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          niches,
+          cities,
+          query: customQuery || undefined,
+          maxResults,
+          radius,
+          ...((searchMode === 'around_me' || searchMode === 'address') && userLat !== null && userLon !== null ? { userLat, userLon } : {}),
+        }),
       });
 
-      // Apply filters
+      const d = await checkResponseJson(res);
+
+      if (d.searchCenter) {
+        setSearchCenter(d.searchCenter);
+      }
+
+      if (d.provider === 'osm' || d.provider === 'fallback') {
+        setApifyFallbackMsg(
+          d.message || "Apify indisponible : Clé manquante ou en échec. Les prospects ont été obtenus via OpenStreetMap."
+        );
+      }
+
+      let allLeads: any[] = d.leads ?? [];
+
+      // Apply client-side filters
       const existingMapsUrls = new Set(excludeExisting ? leads.map(l => l.mapsUrl).filter(Boolean) : []);
       const existingNames = new Set(excludeExisting ? leads.map(l => l.businessName?.toLowerCase().replace(/[^a-z0-9]/g, '')) : []);
+      
       allLeads = allLeads.filter(l => {
         if (minRating > 0 && l.rating > 0 && l.rating < minRating) return false;
         if (excludeExisting && l.mapsUrl && existingMapsUrls.has(l.mapsUrl)) return false;
@@ -700,7 +624,7 @@ export function ProspectingRoot() {
         reviewsCount: l.reviewsCount ?? 0,
         latitude: l.latitude,
         longitude: l.longitude,
-        source: l.source || 'osm',
+        source: l.source || 'apify',
         status: 'to_verify' as const,
         originalTags: l.originalTags || {},
         qualityScore: l.qualityScore ?? 50,
@@ -739,7 +663,7 @@ export function ProspectingRoot() {
         return next;
       });
     }
-  }, [selectedNiches, selectedCities, selectedSources, customQuery, maxResults, radius, minRating, excludeExisting, onlyNoWebsite, onlyWithPhone, apifyConfigured, leads, saveJobHistory, searchMode, userLat, userLon, addLeadValidations]);
+  }, [selectedNiches, selectedCities, customQuery, maxResults, radius, minRating, excludeExisting, onlyNoWebsite, onlyWithPhone, leads, searchMode, userLat, userLon, addLeadValidations]);
 
   // Duplicate Check logic
   const getDuplicate = useCallback((val: any) => {
@@ -1018,7 +942,7 @@ export function ProspectingRoot() {
             Prospection locale
           </h1>
           <p className="text-xs text-muted-foreground">
-            Scraping OSM (données ouvertes) + Apify Google Maps (clé requise). Validez vos prospects dans l'inbox CRM.
+            Recherche locale propulsée par Apify. Les données d'OpenStreetMap (OSM) servent de fallback automatique en cas de besoin.
           </p>
         </div>
 
@@ -1064,16 +988,7 @@ export function ProspectingRoot() {
               </CardTitle>
             </CardHeader>
             <CardContent className="p-5">
-              {/* Permanent OSM disclaimer box */}
-              <div className="rounded-lg border border-amber-200/50 bg-amber-500/5 dark:bg-amber-500/10 p-3.5 text-xs text-amber-700 dark:text-amber-300 space-y-1 mb-5">
-                <div className="flex items-center gap-1.5 font-semibold">
-                  <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" />
-                  <span>Information sur la couverture OSM</span>
-                </div>
-                <p className="leading-relaxed text-[11px] opacity-90">
-                  Les résultats de recherche locale dépendent des données communautaires d'OpenStreetMap et peuvent varier selon la zone et la catégorie commerciale. Utilisez la validation manuelle ou l'import CSV pour enrichir et compléter votre prospection locale.
-                </p>
-              </div>
+
 
               {searchMode !== 'manual_import' ? (
                 <form onSubmit={handleStartScrape} className="space-y-5">
@@ -1304,35 +1219,59 @@ export function ProspectingRoot() {
 
                   <div className="h-px bg-border/50" />
 
-                  {/* Sources */}
+                  {/* Apify Connection Status */}
                   <div className="space-y-2">
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Sources <span className="normal-case font-normal">(combinables)</span></label>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      {sources.map(src => {
-                        const available = src.available === true;
-                        const checking = src.available === 'checking';
-                        return (
-                          <label key={src.id} className={`flex items-start gap-2.5 p-2.5 rounded-lg border text-xs transition-colors ${available ? 'border-border bg-card cursor-pointer hover:bg-muted/30' : 'border-border/40 bg-muted/20 cursor-not-allowed opacity-60'}`}>
-                            <Checkbox checked={selectedSources.includes(src.id)} onCheckedChange={c => {
-                              if (!available) return;
-                              setSelectedSources(prev => c ? [...prev, src.id] : prev.filter(s => s !== src.id));
-                            }} disabled={scraping || !available} className="mt-0.5 shrink-0" />
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-1.5 font-semibold text-foreground">
-                                {src.label}
-                                {available && <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0" />}
-                                {!available && !checking && <WifiOff className="w-3 h-3 text-rose-400 shrink-0" />}
-                                {checking && <Loader2 className="w-3 h-3 text-muted-foreground animate-spin shrink-0" />}
-                              </div>
-                              <p className="text-[10px] text-muted-foreground leading-snug mt-0.5">{src.description}</p>
-                              {(src as any).needsKey && !available && !checking && (
-                                <a href="/settings" className="text-[9px] text-primary underline mt-0.5 inline-block">Configurer dans Paramètres →</a>
-                              )}
-                            </div>
-                          </label>
-                        );
-                      })}
-                    </div>
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Moteur de recherche</label>
+                    {apifyConfigured === 'checking' && (
+                      <div className="rounded-xl border border-border bg-card p-4 flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                        <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                        <span>Vérification de la configuration d'Apify...</span>
+                      </div>
+                    )}
+                    {apifyConfigured === true && (
+                      <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 dark:bg-emerald-500/10 p-4 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
+                            <span className="text-xs font-bold text-foreground">Recherche locale propulsée par Apify (Google Maps)</span>
+                          </div>
+                          <Badge variant="outline" className="text-[9px] font-bold rounded px-1.5 py-0 bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-900/30">
+                            Connecté
+                          </Badge>
+                        </div>
+                        <p className="text-[11px] text-muted-foreground leading-relaxed">
+                          Le scraper Premium Google Places est actif. Vos recherches extrairont directement les données enrichies (sites web, avis, coordonnées GPS).
+                        </p>
+                      </div>
+                    )}
+                    {apifyConfigured === false && (
+                      <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 dark:bg-amber-500/10 p-4 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" />
+                            <span className="text-xs font-bold text-foreground">Configuration Apify requise</span>
+                          </div>
+                          <Badge variant="outline" className="text-[9px] font-bold rounded px-1.5 py-0 bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/20 dark:text-amber-400 dark:border-amber-900/30">
+                            Clé manquante
+                          </Badge>
+                        </div>
+                        <p className="text-[11px] text-muted-foreground leading-relaxed">
+                          Apify est le moteur officiel de recherche locale. Pour commencer à prospecter des établissements avec la puissance de Google Maps, veuillez configurer votre clé API.
+                        </p>
+                        <div className="pt-1">
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            className="text-[11px] h-8 font-semibold border-amber-500/30 hover:bg-amber-500/10 hover:text-amber-800 dark:hover:text-amber-300"
+                            onClick={() => window.location.href = '/settings'}
+                          >
+                            <Settings2 className="h-3.5 w-3.5 mr-1" />
+                            Configurer Apify dans Paramètres
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <div className="h-px bg-border/50" />
@@ -1402,7 +1341,7 @@ export function ProspectingRoot() {
                       <Button
                         type="submit"
                         disabled={
-                          scraping || loadingPrefs || selectedSources.length === 0 ||
+                          scraping || loadingPrefs || apifyConfigured !== true ||
                           (searchMode === 'around_me' && geoStatus !== 'granted') ||
                           (searchMode === 'address' && !geocodeResult)
                         }

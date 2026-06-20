@@ -18,6 +18,19 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v2.83.0',
+      date: '2026-06-20',
+      titleKey: 'changelog.v2_83_0_title' as TranslationKey,
+      descKey: 'changelog.v2_83_0_desc' as TranslationKey,
+      highlights: [
+        "Prospection Unifiée : Transition d'un modèle multi-sources exposé vers une interface unifiée propulsée par Apify (Google Maps) pour une expérience haut de gamme.",
+        "Simplification UX : Suppression des sélecteurs complexes de providers (OSM, Yelp, 411, PagesJaunes, Firecrawl) pour une interface épurée avec un seul bouton d'action.",
+        "Statut de Connexion Apify : Indication visuelle claire du statut (Connecté / Non configuré) avec un CTA d'onboarding direct vers la configuration des intégrations.",
+        "Fallback Silencieux Serveur : Intégration d'OpenStreetMap (OSM) et du générateur québécois en tant que fallbacks transparents en arrière-plan en cas de souci d'API Apify.",
+        "Scoring Côté Serveur : Calcul et enrichissement dynamiques des indicateurs de pertinence (Quality, Opportunity, Proximity) directement par la route d'API unifiée.",
+      ],
+    },
+    {
       version: 'v2.82.0',
       date: '2026-06-19',
       titleKey: 'changelog.v2_82_0_title' as TranslationKey,
