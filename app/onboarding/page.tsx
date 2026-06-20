@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Check,
@@ -108,7 +108,7 @@ function FinalizingCheck({ index, delay }: { index: number; delay: number }) {
 }
 
 // ─── Main Component ────────────────────────────────────────────────────────────
-export default function OnboardingPage() {
+function OnboardingPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { locale, setLocale } = useLanguage();
@@ -1135,5 +1135,13 @@ export default function OnboardingPage() {
 
       </div>
     </div>
+  );
+}
+
+export default function OnboardingPage() {
+  return (
+    <Suspense>
+      <OnboardingPageContent />
+    </Suspense>
   );
 }
