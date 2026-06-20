@@ -18,6 +18,20 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v2.82.0',
+      date: '2026-06-19',
+      titleKey: 'changelog.v2_82_0_title' as TranslationKey,
+      descKey: 'changelog.v2_82_0_desc' as TranslationKey,
+      highlights: [
+        "Profils Agents Structurés : Chaque fiche agent affiche désormais ses instructions système, modèle IA, créativité, type d'entrée (formulaire ou prompt), actions activées et base de connaissances dans des cartes premium séparées.",
+        "Mode Édition Complet : Les agents personnalisés ont un bouton Modifier déverrouillant un formulaire d'édition complet identique à la page de création — nom, avatar, instructions, modèle, créativité, actions et labels.",
+        "Architecture IA Visuelle : Barre de créativité animée (Déterministe → Créatif), badge de modèle (Rapide / Recommandé / Puissant) et indicateur de niveau de créativité textuel.",
+        "Champs de Formulaire Enrichis : Aperçu interactif des champs de formulaire avec types colorés (Texte, Sélection, Date…) et options visibles directement sur la fiche agent.",
+        "Actions & Outils Visuels : Toutes les actions de l'agent (Recherche web, Audit GMB, Analyse données…) affichées avec état actif/inactif visuel et icônes distinctes.",
+        "Agents Intégrés Enrichis : Metadata statique complète ajoutée pour Audit GMB, Pitcheur Québécois, Radar Réputation et Lucifee (instructions, modèle, créativité, actions réelles).",
+      ],
+    },
+    {
       version: 'v2.81.0',
       date: '2026-06-19',
       titleKey: 'changelog.v2_81_0_title' as TranslationKey,
