@@ -222,6 +222,15 @@ export default function TeamPage() {
     return () => { supabase.removeChannel(channel); };
   }, [fetchMembers, triggerToast]);
 
+  // Re-fetch members when the user switches back to this tab (catches settings name updates)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') fetchMembers();
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [fetchMembers]);
+
   // Supabase Presence — track which members are currently online in the app
   useEffect(() => {
     if (!currentUser || !activeWorkspace) return;
@@ -694,40 +703,54 @@ export default function TeamPage() {
             </div>
 
             {/* @mention autocomplete */}
-            {showMentions && (
-              <div className="absolute bottom-[60px] left-3 right-3 bg-white border border-[#e5e5e0] rounded-xl shadow-lg z-10 overflow-hidden max-h-40 overflow-y-auto">
-                {members
-                  .filter(m => (m.profile?.full_name || m.email).toLowerCase().includes(mentionQuery.toLowerCase()))
-                  .slice(0, 5)
-                  .map(m => {
-                    const displayName = m.profile?.full_name || m.email.split('@')[0];
-                    return (
-                      <button
-                        key={m.id}
-                        type="button"
-                        className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-left hover:bg-[#f4f4f3] transition-colors"
-                        onMouseDown={e => {
-                          e.preventDefault();
-                          const atIdx = chatMessage.lastIndexOf('@');
-                          const newMsg = chatMessage.slice(0, atIdx) + `@${displayName} `;
-                          setChatMessage(newMsg);
-                          setShowMentions(false);
-                          chatInputRef.current?.focus();
-                        }}
-                      >
-                        <div className="w-6 h-6 rounded-full bg-[#e5e5e0] flex items-center justify-center text-[9px] font-bold shrink-0">
-                          {displayName.charAt(0).toUpperCase()}
-                        </div>
-                        <span className="font-semibold text-[#26251e]">{displayName}</span>
-                        <span className="text-[#7a7a76]">{m.email}</span>
-                      </button>
-                    );
-                  })}
-                {members.filter(m => (m.profile?.full_name || m.email).toLowerCase().includes(mentionQuery.toLowerCase())).length === 0 && (
-                  <div className="px-3 py-3 text-xs text-[#7a7a76]">Aucun membre trouvé</div>
-                )}
-              </div>
-            )}
+            {showMentions && (() => {
+              // Build candidates: all team members + currentUser (owner), deduplicated by id
+              const ownerCandidate = currentUser
+                ? [{ id: 'current_user', email: currentUser.email, displayName: currentUser.name }]
+                : [];
+              const memberCandidates = members.map(m => ({
+                id: m.id,
+                email: m.email,
+                displayName: m.profile?.full_name || m.email.split('@')[0],
+              }));
+              const allCandidates = [
+                ...ownerCandidate,
+                ...memberCandidates.filter(c => c.email !== currentUser?.email),
+              ];
+              const q = mentionQuery.toLowerCase();
+              // Search BOTH display name AND email (not short-circuit OR)
+              const matched = allCandidates.filter(c =>
+                c.displayName.toLowerCase().includes(q) || c.email.toLowerCase().includes(q)
+              ).slice(0, 5);
+
+              return (
+                <div className="absolute bottom-[60px] left-3 right-3 bg-white border border-[#e5e5e0] rounded-xl shadow-lg z-10 overflow-hidden max-h-40 overflow-y-auto">
+                  {matched.length === 0 ? (
+                    <div className="px-3 py-3 text-xs text-[#7a7a76]">Aucun membre trouvé</div>
+                  ) : matched.map(c => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-left hover:bg-[#f4f4f3] transition-colors"
+                      onMouseDown={e => {
+                        e.preventDefault();
+                        const atIdx = chatMessage.lastIndexOf('@');
+                        const newMsg = chatMessage.slice(0, atIdx) + `@${c.displayName} `;
+                        setChatMessage(newMsg);
+                        setShowMentions(false);
+                        chatInputRef.current?.focus();
+                      }}
+                    >
+                      <div className="w-6 h-6 rounded-full bg-[#e5e5e0] flex items-center justify-center text-[9px] font-bold shrink-0">
+                        {c.displayName.charAt(0).toUpperCase()}
+                      </div>
+                      <span className="font-semibold text-[#26251e]">{c.displayName}</span>
+                      <span className="text-[#7a7a76] ml-1">{c.email}</span>
+                    </button>
+                  ))}
+                </div>
+              );
+            })()}
             {/* Input bar */}
             <div className="border-t border-[#e5e5e0] p-3 flex gap-2 items-center bg-white shrink-0 relative">
               <input
@@ -1153,7 +1176,7 @@ export default function TeamPage() {
                               ) : (
                                 <div className="relative shrink-0">
                                   <div className="w-8 h-8 rounded-full bg-[#26251e] text-white font-extrabold text-xs flex items-center justify-center">
-                                    {(member.profile?.full_name || member.email).slice(0, 2).toUpperCase()}
+                                    {(member.profile?.full_name || member.email.split('@')[0]).slice(0, 2).toUpperCase()}
                                   </div>
                                   {/* Online presence dot */}
                                   {isOnline && (
@@ -1165,7 +1188,7 @@ export default function TeamPage() {
                               <div className="min-w-0">
                                 <div className="flex items-center gap-1.5 flex-wrap">
                                   <span className="text-xs font-bold text-neutral-900 truncate">
-                                    {isInvited ? member.email : (member.profile?.full_name || member.email)}
+                                    {isInvited ? member.email : (member.profile?.full_name || member.email.split('@')[0])}
                                   </span>
                                   {isInvited ? (
                                     <span className="bg-amber-50 text-amber-600 border border-amber-200 text-[9px] font-bold px-1.5 py-0.5 rounded select-none shrink-0">
