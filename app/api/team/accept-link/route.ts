@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
     // Find the pending invite row by token
     const { data: invite, error: findError } = await adminClient
       .from('team_members')
-      .select('id, workspace_owner_id, role, status')
+      .select('id, workspace_owner_id, workspace_id, role, status')
       .eq('invite_token', token)
       .eq('status', 'pending')
       .maybeSingle();
@@ -51,7 +51,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'You cannot accept your own invitation' }, { status: 400 });
     }
 
-    // Accept: update row with real user info
+    // Resolve workspace_id if missing (old invite rows created before the fix)
+    let workspaceId: string | null = invite.workspace_id ?? null;
+    if (!workspaceId) {
+      const { data: ownerWs } = await adminClient
+        .from('workspaces')
+        .select('id')
+        .eq('owner_id', invite.workspace_owner_id)
+        .order('created_at', { ascending: true })
+        .limit(1)
+        .maybeSingle();
+      workspaceId = ownerWs?.id ?? null;
+    }
+
+    // Accept: update row with real user info + workspace_id so RLS grants access
     const { error: updateError } = await adminClient
       .from('team_members')
       .update({
@@ -60,6 +73,7 @@ export async function POST(request: NextRequest) {
         status: 'active',
         joined_at: new Date().toISOString(),
         invite_token: null,
+        workspace_id: workspaceId,
       })
       .eq('id', invite.id);
 
@@ -71,6 +85,7 @@ export async function POST(request: NextRequest) {
       success: true,
       role: invite.role,
       workspaceOwnerId: invite.workspace_owner_id,
+      workspaceId,
     });
   } catch (err) {
     console.error('[accept-link]', err);
