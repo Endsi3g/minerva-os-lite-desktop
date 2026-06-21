@@ -5,7 +5,7 @@ import Link from 'next/link';
 import {
   Mail, Search, Download, Filter, Check, X,
   Loader2, ChevronDown, Info, Trash2, ArrowUpDown,
-  MessageSquare, Send
+  MessageSquare, Send, Link2, Copy
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
@@ -66,6 +66,13 @@ export default function TeamPage() {
   const [invitePlan, setInvitePlan] = useState<Plan>('Business');
   const [isSending, setIsSending] = useState(false);
   const [inviteError, setInviteError] = useState('');
+
+  // Link-based invite
+  const [showLinkModal, setShowLinkModal] = useState(false);
+  const [linkRole, setLinkRole] = useState<Role>('editor');
+  const [generatingLink, setGeneratingLink] = useState(false);
+  const [generatedLink, setGeneratedLink] = useState<string | null>(null);
+  const [linkCopied, setLinkCopied] = useState(false);
 
   // Active Dropdowns for Table Inline Edits
   const [activeDropdown, setActiveDropdown] = useState<{ id: string; type: 'role' | 'plan' } | null>(null);
@@ -173,6 +180,37 @@ export default function TeamPage() {
     } finally {
       setIsSending(false);
     }
+  };
+
+  // Handle link-based invite
+  const handleGenerateLink = async () => {
+    setGeneratingLink(true);
+    setGeneratedLink(null);
+    try {
+      const res = await fetch(getApiUrl('/api/team/create-invite-link'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role: linkRole }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setGeneratedLink(data.link);
+        await fetchMembers();
+      } else {
+        triggerToast(`Erreur: ${data.error || 'Impossible de générer le lien'}`);
+      }
+    } catch {
+      triggerToast('Erreur réseau');
+    } finally {
+      setGeneratingLink(false);
+    }
+  };
+
+  const handleCopyLink = async () => {
+    if (!generatedLink) return;
+    await navigator.clipboard.writeText(generatedLink);
+    setLinkCopied(true);
+    setTimeout(() => setLinkCopied(false), 2500);
   };
 
   // Handle Role/Plan Update Inline
@@ -687,6 +725,16 @@ export default function TeamPage() {
                 <span>{t('team.btn_export')}</span>
               </button>
 
+              {/* Link-based invite */}
+              <button
+                onClick={() => { setShowLinkModal(true); setGeneratedLink(null); setLinkCopied(false); }}
+                className="h-8 bg-white border border-[#e6e5e0] hover:bg-neutral-50 text-[#26251e] text-xs font-semibold rounded-md px-3 shadow-2xs flex items-center gap-1.5 transition-colors"
+                title="Générer un lien d'invitation (sans email)"
+              >
+                <Link2 className="h-3.5 w-3.5" />
+                <span>Lien</span>
+              </button>
+
               <button
                 onClick={() => {
                   setShowInviteModal(true);
@@ -1157,6 +1205,78 @@ export default function TeamPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── Link-based Invite Modal ── */}
+      {showLinkModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-xs animate-fade-in">
+          <div className="w-full max-w-sm bg-white border border-neutral-200 rounded-xl p-5 space-y-4 shadow-xl text-left">
+            <div className="flex items-start justify-between">
+              <div className="space-y-1">
+                <h3 className="text-sm font-bold text-neutral-900 flex items-center gap-2">
+                  <Link2 className="h-4 w-4 text-[#059669]" />
+                  Lien d'invitation
+                </h3>
+                <p className="text-[11px] text-neutral-400 font-medium">
+                  Générez un lien à partager — aucun email requis.
+                </p>
+              </div>
+              <button onClick={() => setShowLinkModal(false)} className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-neutral-100 transition-colors text-neutral-400">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Role select */}
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">Rôle</label>
+              <select
+                value={linkRole}
+                onChange={e => setLinkRole(e.target.value as Role)}
+                className="w-full h-8 text-xs border border-neutral-200 rounded-lg px-2 bg-white outline-none focus:ring-1 focus:ring-[#059669]"
+              >
+                <option value="viewer">Observateur</option>
+                <option value="editor">Éditeur</option>
+                <option value="admin">Administrateur</option>
+              </select>
+            </div>
+
+            {/* Generated link */}
+            {generatedLink && (
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">Lien à partager</label>
+                <div className="flex items-center gap-2">
+                  <input
+                    readOnly
+                    value={generatedLink}
+                    className="flex-1 h-8 text-[10px] border border-neutral-200 rounded-lg px-2 bg-neutral-50 font-mono outline-none"
+                  />
+                  <button
+                    onClick={handleCopyLink}
+                    className={`h-8 px-3 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors ${linkCopied ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-neutral-100 hover:bg-neutral-200 text-neutral-700'}`}
+                  >
+                    {linkCopied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                    {linkCopied ? 'Copié' : 'Copier'}
+                  </button>
+                </div>
+                <p className="text-[10px] text-neutral-400">Ce lien est valide une seule fois.</p>
+              </div>
+            )}
+
+            <div className="flex justify-end gap-2 pt-1">
+              <button onClick={() => setShowLinkModal(false)} className="h-8 px-4 text-xs font-semibold rounded-md border border-neutral-200 hover:bg-neutral-50 transition-colors">
+                Fermer
+              </button>
+              <button
+                onClick={handleGenerateLink}
+                disabled={generatingLink}
+                className="h-8 px-4 text-xs font-bold rounded-md bg-[#059669] hover:bg-[#047857] text-white flex items-center gap-1.5 transition-colors disabled:opacity-50"
+              >
+                {generatingLink && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                {generatedLink ? 'Nouveau lien' : 'Générer le lien'}
+              </button>
+            </div>
           </div>
         </div>
       )}

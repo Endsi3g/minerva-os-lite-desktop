@@ -38,22 +38,24 @@ const roadmapData: RoadmapItem[] = [
   { module: 'Plateforme', feature: 'Équipes & Workspaces', desc: 'Multi-workspaces, invitations, rôles basiques et cloisonnement des données.', priority: 'medium', status: 'available' },
   { module: 'Analytics', feature: 'Tableau de bord & KPIs', desc: 'Analytics pipeline, quotas, performance par rep et rapports clients.', priority: 'medium', status: 'available' },
 
-  // ─── In Progress (v2.93.0 scope) ─────────────────────────────────────
-  { module: 'CRM', feature: 'Données prospect dans fiche lead', desc: 'Affichage étoiles, avis Google, téléphone, site web, lien Google Maps et description directement dans la page lead.', priority: 'high', status: 'in_progress' },
-  { module: 'Pipeline', feature: 'Kanban drag & drop', desc: 'Déplacer les leads entre colonnes Kanban par glisser-déposer natif, sans passer par les flèches.', priority: 'high', status: 'in_progress' },
-  { module: 'Carte', feature: 'Clic lead → navigation directe', desc: 'Cliquer sur un lead en mode carte centre la vue sur ce lead (flyTo), comme le bouton de localisation GPS.', priority: 'high', status: 'in_progress' },
-  { module: 'Carte', feature: 'Calcul de route automatique', desc: 'Dès que 2+ waypoints sont ajoutés, OSRM calcule automatiquement les 3 variantes sans appui manuel.', priority: 'high', status: 'in_progress' },
-  { module: 'Board', feature: 'Onglet Boîte de réception', desc: "Ajout de l'onglet Inbox dans la page Today/Board afin que les e-mails soient visibles en permanence depuis le tableau de bord.", priority: 'high', status: 'in_progress' },
-  { module: 'Inbox', feature: 'Config e-mail sous zéro fil', desc: "Bouton 'Configurer l'e-mail' ou 'Changer de compte' visible sous le message 'Zéro fil de discussion' dans la boîte de réception.", priority: 'medium', status: 'in_progress' },
-  { module: 'IA', feature: 'Bouton Script fonctionnel', desc: "Le bouton Script dans la fiche lead scrape le site web du prospect (Firecrawl) et génère un pitch script personnalisé via l'IA.", priority: 'high', status: 'in_progress' },
-  { module: 'IA', feature: 'Action pills réelles dans le chat', desc: "Les pills d'action sous le chat assistant déclenchent de vraies actions IA (résumer leads, rédiger email, analyser pipeline) au lieu de texte hardcodé.", priority: 'medium', status: 'in_progress' },
+  // ─── Available (shipped v2.93.0+) ────────────────────────────────────
+  { module: 'CRM', feature: 'Données prospect dans fiche lead', desc: 'Affichage étoiles, avis Google, téléphone, site web, lien Google Maps directement dans la page lead.', priority: 'high', status: 'available' },
+  { module: 'Pipeline', feature: 'Kanban drag & drop', desc: 'Déplacer les leads entre colonnes Kanban par glisser-déposer natif, sans passer par les flèches.', priority: 'high', status: 'available' },
+  { module: 'Carte', feature: 'Clic lead → navigation directe', desc: 'Cliquer sur un lead en mode carte centre la vue sur ce lead (flyTo), comme le bouton de localisation GPS.', priority: 'high', status: 'available' },
+  { module: 'Carte', feature: 'Calcul de route automatique', desc: 'Dès que 2+ waypoints sont ajoutés, OSRM calcule automatiquement les 3 variantes sans appui manuel.', priority: 'high', status: 'available' },
+  { module: 'Board', feature: 'Onglet Boîte de réception', desc: "Onglet Inbox dans la page Today/Board pour accéder à Gmail depuis le tableau de bord.", priority: 'high', status: 'available' },
+  { module: 'Inbox', feature: 'Config e-mail sous zéro fil', desc: "Lien 'Configurer votre e-mail →' visible sous 'Aucun fil de discussion' dans la boîte de réception.", priority: 'medium', status: 'available' },
+  { module: 'IA', feature: 'Script de pitch IA (Firecrawl)', desc: "Le panel Script dans la fiche lead scrape le site web du prospect et génère un pitch script de 60s personnalisé.", priority: 'high', status: 'available' },
+  { module: 'IA', feature: 'Action pills contextuelles', desc: "7 pills d'action dans l'assistant déclenchent de vraies analyses CRM : pipeline, email, priorités, script, recherche, plan du jour, rapport.", priority: 'medium', status: 'available' },
+
+  // ─── In Progress (v2.94.0 scope) ─────────────────────────────────────
+  { module: 'Canvas', feature: 'Éditeur riche TipTap + Export', desc: 'Canvas en éditeur WYSIWYG (style Word) avec export PDF, HTML et Markdown. Après export, proposition de déposer dans la Bibliothèque.', priority: 'high', status: 'in_progress' },
+  { module: 'Terrain', feature: 'Page visite terrain dédiée', desc: "Page de préparation de visite : script IA, notes passées, compte-rendu. Notification équipe après visite.", priority: 'high', status: 'in_progress' },
+  { module: 'Services', feature: 'Page Services & Tarifs', desc: 'Refonte complète avec catalogue de prestations, packages, grilles tarifaires et devis PDF.', priority: 'medium', status: 'in_progress' },
+  { module: 'Équipes', feature: 'Invitations via lien (sans SMTP)', desc: "Remplacement du système SMTP par un lien d'invitation sécurisé, sans configuration email requise.", priority: 'high', status: 'in_progress' },
 
   // ─── Planned ─────────────────────────────────────────────────────────
   { module: 'Booking', feature: 'Scheduling public / Booking Links', desc: 'Page publique /book/[username] avec Google Calendar freebusy, slots disponibles et lien partageable. Nécessite scope calendar.events OAuth.', priority: 'high', status: 'planned' },
-  { module: 'Équipes', feature: 'Invitations via lien (sans SMTP)', desc: "Remplacement du système d'invitation par email SMTP par un lien d'invitation sécurisé, sans configuration SMTP requise.", priority: 'high', status: 'planned' },
-  { module: 'Canvas', feature: 'Éditeur riche TipTap + Export', desc: 'Canvas en éditeur WYSIWYG (style Word) avec export PDF, HTML et Markdown. Après export, proposition de déposer dans la Bibliothèque.', priority: 'high', status: 'planned' },
-  { module: 'Terrain', feature: 'Page visite terrain dédiée', desc: "Page de préparation de visite montrant les recherches sur le prospect, le script IA, les notes passées. Ajout de compte-rendu avec notification aux membres de l'équipe.", priority: 'high', status: 'planned' },
-  { module: 'Services', feature: 'Page Services & Tarifs', desc: 'Refonte complète de la page services/tarifs avec catalogue de prestations, packages, grilles tarifaires et devis PDF.', priority: 'medium', status: 'planned' },
   { module: 'CRM', feature: 'Accounts / Entreprises', desc: 'Vue 360° par société regroupant contacts, deals, emails, meetings, notes et visites.', priority: 'high', status: 'planned' },
   { module: 'CRM', feature: 'Timeline unifiée par compte', desc: 'Flux chronologique unique par lead/compte : emails, calls, meetings, notes, visites.', priority: 'high', status: 'planned' },
 

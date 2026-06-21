@@ -18,6 +18,20 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v2.94.0',
+      date: '2026-06-21',
+      titleKey: 'changelog.v2_94_0_title' as TranslationKey,
+      descKey: 'changelog.v2_94_0_desc' as TranslationKey,
+      highlights: [
+        "Canvas — 3 boutons fonctionnels : Notes (annotations horodatées), Historique (documents récents cliquables) et Taille de texte (S / M / L) dans le panneau latéral droit.",
+        "Canvas — Collapse automatique : la sidebar historique se rétracte quand le canvas est ouvert pour maximiser l'espace d'édition.",
+        "Canvas — Save to Library : après chaque export (HTML / MD / TXT), une alerte propose de déposer le document dans la Bibliothèque.",
+        "Services & Tarifs — Refonte complète : 3 onglets — Catalogue (CRUD + templates IA par niche), Forfaits (groupes de services avec prix réduit + badge 'Recommandé'), Devis (sélection de services + infos client → export HTML imprimable).",
+        "Équipes — Invitations par lien : bouton 'Lien' génère un token unique à partager sans email. Page /join/[token] pour l'acceptation. Fonctionne aussi bien que l'invitation email classique.",
+        "IA — Action Pills CRM : les 7 pills de l'assistant génèrent maintenant des prompts contextuels avec vos vrais leads, pipeline, leads chauds, niches et tâches en retard.",
+      ],
+    },
+    {
       version: 'v2.93.0',
       date: '2026-06-21',
       titleKey: 'changelog.v2_93_0_title' as TranslationKey,

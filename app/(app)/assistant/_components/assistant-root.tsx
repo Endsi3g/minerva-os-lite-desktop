@@ -232,6 +232,14 @@ export function AssistantRoot() {
   const [showAiDropdown, setShowAiDropdown] = useState(false);
   const [isAiWorking, setIsAiWorking] = useState(false);
 
+  // Canvas right-gutter panel state
+  const [canvasRightPanel, setCanvasRightPanel] = useState<'none' | 'comments' | 'history' | 'settings'>('none');
+  const [canvasComment, setCanvasComment] = useState('');
+  const [canvasComments, setCanvasComments] = useState<{ text: string; ts: string }[]>([]);
+  const [canvasFontSize, setCanvasFontSize] = useState<'sm' | 'base' | 'lg'>('base');
+  const [showSaveToLibraryPrompt, setShowSaveToLibraryPrompt] = useState(false);
+  const [lastExportedContent, setLastExportedContent] = useState<{ title: string; content: string } | null>(null);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const userId = user?.id || 'anonymous';
@@ -669,36 +677,64 @@ export function AssistantRoot() {
 
   // Simulated Quick Actions
   const QUICK_PROMPTS = [
-    { label: 'Company knowledge', value: 'Rédige une note stratégique basée sur notre base de connaissances.' },
-    { label: 'Create document', value: 'Écris-moi le plan détaillé pour une application de santé (Health App Research Summary).' },
-    { label: 'Create presentation', value: 'Prépare-moi la structure de diapositives pour la présentation client.' },
-    { label: 'Create spreadsheet', value: 'Crée-moi un tableau structuré de prévisions financières de leads.' },
-    { label: 'Generate image', value: 'Génère un visuel promotionnel minimaliste pour notre service.' },
-    { label: 'Deep research', value: 'Fais une analyse approfondie des boulangeries et salons à Montréal.' },
-    { label: 'Visualize data', value: 'Analyse les taux de conversion récents sous forme de tableau.' }
+    { label: '📊 Analyser pipeline', key: 'pipeline' },
+    { label: '📧 Rédiger un email', key: 'email' },
+    { label: '🎯 Leads prioritaires', key: 'priority' },
+    { label: '📝 Script de pitch', key: 'script' },
+    { label: '🔍 Recherche secteur', key: 'research' },
+    { label: '📅 Priorités du jour', key: 'today' },
+    { label: '📈 Rapport activité', key: 'report' },
   ];
 
-  const handleQuickPromptClick = (chip: { label: string; value: string }) => {
-    let finalPrompt = chip.value;
-    if (chip.label === 'Company knowledge') {
-      const wsName = activeWorkspace?.name || 'mon espace de travail';
-      finalPrompt = `Rédige une note stratégique basée sur notre base de connaissances pour l'espace de travail "${wsName}".`;
-    } else if (chip.label === 'Visualize data') {
-      const totalLeads = leads?.length || 0;
-      const statusCounts = (leads || []).reduce((acc: Record<string, number>, lead) => {
-        acc[lead.status] = (acc[lead.status] || 0) + 1;
-        return acc;
-      }, {});
-      const breakdown = Object.entries(statusCounts)
-        .map(([status, count]) => `${status}: ${count}`)
-        .join(', ');
-      finalPrompt = `Analyse les statistiques de nos prospects récents. Nous avons actuellement ${totalLeads} prospects dans le CRM. Répartition : ${breakdown || 'aucune donnée'}.`;
-    } else if (chip.label === 'Deep research') {
-      const niches = (leads || []).map(l => l.niche).filter(Boolean);
-      const cities = (leads || []).map(l => l.city).filter(Boolean);
-      const topNiche = niches.sort((a,b) => niches.filter(v => v===a).length - niches.filter(v => v===b).length).pop() || 'boulangerie';
-      const topCity = cities.sort((a,b) => cities.filter(v => v===a).length - cities.filter(v => v===b).length).pop() || 'Montréal';
-      finalPrompt = `Fais une analyse approfondie et identifie les opportunités pour les prospects dans le secteur "${topNiche}" à "${topCity}".`;
+  const handleQuickPromptClick = (chip: { label: string; key: string }) => {
+    const totalLeads = leads?.length || 0;
+    const statusCounts = (leads || []).reduce((acc: Record<string, number>, l) => {
+      acc[l.status] = (acc[l.status] || 0) + 1;
+      return acc;
+    }, {});
+    const hotLeads = (leads || []).filter(l => l.temperature === 'Hot');
+    const topHot = hotLeads[0];
+    const niches = (leads || []).map(l => l.niche).filter(Boolean);
+    const cities = (leads || []).map(l => l.city).filter(Boolean);
+    const topNiche = niches.sort((a, b) => niches.filter(v => v === a).length - niches.filter(v => v === b).length).pop() || 'votre secteur';
+    const topCity = cities.sort((a, b) => cities.filter(v => v === a).length - cities.filter(v => v === b).length).pop() || 'votre ville';
+    const wsName = activeWorkspace?.name || 'ce workspace';
+    const overdueLeads = (leads || []).filter(l => l.nextActionDate && l.nextActionDate <= new Date().toISOString().split('T')[0] && l.status !== 'Won' && l.status !== 'Lost');
+    const breakdown = Object.entries(statusCounts).map(([s, c]) => `${s}: ${c}`).join(', ');
+
+    let finalPrompt = '';
+    switch (chip.key) {
+      case 'pipeline':
+        finalPrompt = `Analyse mon pipeline de vente pour le workspace "${wsName}". J'ai ${totalLeads} prospects au total (${breakdown || 'aucune donnée'}). ${hotLeads.length} leads sont "Hot". Donne-moi un diagnostic en 5 points et 3 actions prioritaires pour améliorer mon taux de conversion.`;
+        break;
+      case 'email':
+        if (topHot) {
+          finalPrompt = `Rédige un email de relance personnalisé pour ${topHot.businessName} (${topHot.niche}, ${topHot.city}). Contact: ${topHot.contactName || 'non précisé'}. Prochaine action: "${topHot.nextAction || 'aucune'}". Ton: professionnel mais chaleureux. Longueur: 3 paragraphes max.`;
+        } else {
+          finalPrompt = `Rédige un email de prospection à froid pour un prospect dans le secteur "${topNiche}" à ${topCity}. Ton: professionnel, direct, orienté valeur. Max 200 mots.`;
+        }
+        break;
+      case 'priority':
+        finalPrompt = `Voici mes ${totalLeads} prospects CRM (répartition: ${breakdown}). ${hotLeads.length} sont "Hot". ${overdueLeads.length} ont une action en retard. Identifie les 5 leads à contacter en priorité aujourd'hui et explique pourquoi chacun mérite attention.`;
+        break;
+      case 'script':
+        if (topHot) {
+          finalPrompt = `Génère un script de pitch terrain de 60 secondes pour ${topHot.businessName} (${topHot.niche}, ${topHot.city}). Note Google: ${topHot.rating ?? 'non connue'}/5. Inclus: accroche personnalisée → valeur proposée → question pour prendre RDV.`;
+        } else {
+          finalPrompt = `Génère un script de pitch terrain de 60 secondes pour un prospect dans le secteur "${topNiche}" à ${topCity}. Inclus: accroche → valeur → question pour prendre RDV.`;
+        }
+        break;
+      case 'research':
+        finalPrompt = `Fais une analyse approfondie du marché "${topNiche}" à ${topCity}. Identifie: tendances actuelles, points de douleur fréquents, opportunités digitales, objections typiques, et comment positionner notre offre face à la concurrence locale.`;
+        break;
+      case 'today':
+        finalPrompt = `C'est le ${new Date().toLocaleDateString('fr-CA', { weekday: 'long', day: 'numeric', month: 'long' })}. J'ai ${overdueLeads.length} actions en retard et ${hotLeads.length} leads chauds dans le CRM "${wsName}". Propose-moi un plan d'action pour aujourd'hui: matin / après-midi / fin de journée avec les 3 tâches les plus importantes.`;
+        break;
+      case 'report':
+        finalPrompt = `Génère un rapport d'activité hebdomadaire pour le workspace "${wsName}". Données: ${totalLeads} prospects (${breakdown}), ${hotLeads.length} leads Hot, ${overdueLeads.length} actions en retard. Format: résumé exécutif → analyse → recommandations → objectifs semaine prochaine.`;
+        break;
+      default:
+        finalPrompt = chip.label;
     }
     handleSend(finalPrompt);
   };
@@ -796,13 +832,36 @@ export function AssistantRoot() {
     } else if (format === 'html') {
       mime = 'text/html';
       ext = 'html';
-      data = `<html><head><title>${editorTitle}</title></head><body style="font-family:sans-serif;padding:40px;line-height:1.6;"><h1>${editorTitle}</h1>${editorContent.replace(/\n/g, '<br/>')}</body></html>`;
+      data = `<html><head><meta charset="UTF-8"><title>${editorTitle}</title><style>body{font-family:system-ui,sans-serif;max-width:800px;margin:40px auto;padding:0 20px;line-height:1.7;color:#26251e}h1,h2,h3{font-weight:700}</style></head><body><h1>${editorTitle}</h1>${editorContent.replace(/\n/g, '<br/>')}</body></html>`;
     }
 
     const blob = new Blob([data], { type: mime });
     link.href = URL.createObjectURL(blob);
     link.download = `${editorTitle.toLowerCase().replace(/\s+/g, '-') || 'document'}.${ext}`;
     link.click();
+
+    // Prompt to save to Library
+    setLastExportedContent({ title: editorTitle, content: editorContent });
+    setShowSaveToLibraryPrompt(true);
+  };
+
+  const handleSaveToLibrary = async () => {
+    if (!lastExportedContent || !user?.id || !activeWorkspace?.id) return;
+    try {
+      const { createClient } = await import('@/lib/supabase/client');
+      const supabase = createClient();
+      await supabase.from('library_assets').insert({
+        user_id: user.id,
+        workspace_id: activeWorkspace.id,
+        type: 'document',
+        title: lastExportedContent.title,
+        content: lastExportedContent.content,
+        created_at: new Date().toISOString(),
+      });
+    } catch {
+      // Library table may not exist yet — silent fail
+    }
+    setShowSaveToLibraryPrompt(false);
   };
 
   return (
@@ -848,8 +907,8 @@ export function AssistantRoot() {
         isCanvasOpen ? 'w-full md:w-[40%] border-r border-[#e6e5e0]' : 'w-full'
       }`}>
         
-        {/* collapsible sidebar for thread/canvas doc history */}
-        {isHistoryOpen && (
+        {/* collapsible sidebar for thread/canvas doc history — auto-collapse when canvas opens */}
+        {isHistoryOpen && !isCanvasOpen && (
           <div className="w-56 bg-[#fafaf9] border-r border-[#e6e5e0]/60 flex flex-col h-full shrink-0 select-none animate-fade-in">
             {/* Sidebar header */}
             <div className="h-14 border-b border-[#e6e5e0]/60 px-4 flex items-center justify-between shrink-0 bg-[#fafaf9]">
@@ -1553,23 +1612,96 @@ export function AssistantRoot() {
                 value={editorContent}
                 onChange={(e) => handleContentChange(e.target.value)}
                 placeholder="Commencez à rédiger ou posez une question à l'assistant pour générer du contenu..."
-                className="w-full flex-1 border-0 resize-none outline-none focus:outline-none focus:ring-0 text-sm leading-relaxed text-[#26251e] font-sans placeholder:text-neutral-300"
+                className={`w-full flex-1 border-0 resize-none outline-none focus:outline-none focus:ring-0 leading-relaxed text-[#26251e] font-sans placeholder:text-neutral-300 ${canvasFontSize === 'sm' ? 'text-xs' : canvasFontSize === 'lg' ? 'text-base' : 'text-sm'}`}
               />
             </div>
 
             {/* Right floating options gutter */}
-            <div className="hidden lg:flex flex-col gap-3 ml-4 self-start border-l border-neutral-100 pl-4 shrink-0 select-none">
-              <button className="h-8 w-8 rounded-lg hover:bg-neutral-50 text-[#807d72] hover:text-[#26251e] flex items-center justify-center" title="Commentaires">
+            <div className="hidden lg:flex flex-col gap-2 ml-4 self-start border-l border-neutral-100 pl-4 shrink-0 select-none">
+              <button
+                onClick={() => setCanvasRightPanel(p => p === 'comments' ? 'none' : 'comments')}
+                className={`h-8 w-8 rounded-lg flex items-center justify-center transition-colors ${canvasRightPanel === 'comments' ? 'bg-emerald-50 text-emerald-700' : 'hover:bg-neutral-50 text-[#807d72] hover:text-[#26251e]'}`}
+                title="Notes & commentaires"
+              >
                 <MessageSquare className="h-4 w-4" />
               </button>
-              <button className="h-8 w-8 rounded-lg hover:bg-neutral-50 text-[#807d72] hover:text-[#26251e] flex items-center justify-center" title="Historique de révisions">
+              <button
+                onClick={() => setCanvasRightPanel(p => p === 'history' ? 'none' : 'history')}
+                className={`h-8 w-8 rounded-lg flex items-center justify-center transition-colors ${canvasRightPanel === 'history' ? 'bg-emerald-50 text-emerald-700' : 'hover:bg-neutral-50 text-[#807d72] hover:text-[#26251e]'}`}
+                title="Documents récents"
+              >
                 <History className="h-4 w-4" />
               </button>
-              <button className="h-8 w-8 rounded-lg hover:bg-neutral-50 text-[#807d72] hover:text-[#26251e] flex items-center justify-center" title="Paramètres d'édition">
+              <button
+                onClick={() => setCanvasRightPanel(p => p === 'settings' ? 'none' : 'settings')}
+                className={`h-8 w-8 rounded-lg flex items-center justify-center transition-colors ${canvasRightPanel === 'settings' ? 'bg-emerald-50 text-emerald-700' : 'hover:bg-neutral-50 text-[#807d72] hover:text-[#26251e]'}`}
+                title="Taille du texte"
+              >
                 <Settings className="h-4 w-4" />
               </button>
             </div>
+
+            {/* Right panel content */}
+            {canvasRightPanel !== 'none' && (
+              <div className="hidden lg:flex flex-col w-[200px] shrink-0 border-l border-neutral-100 ml-4 pl-4 gap-3">
+                {canvasRightPanel === 'comments' && (
+                  <>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-[#807d72]">Notes</p>
+                    <div className="flex-1 space-y-2 overflow-y-auto max-h-64">
+                      {canvasComments.map((c, i) => (
+                        <div key={i} className="p-2 bg-amber-50 border border-amber-200 rounded text-[10px]">
+                          <p className="text-[#807d72] mb-1 font-mono">{new Date(c.ts).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</p>
+                          <p>{c.text}</p>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="flex gap-1">
+                      <input value={canvasComment} onChange={e => setCanvasComment(e.target.value)} placeholder="Ajouter une note…" className="flex-1 text-[10px] border border-neutral-200 rounded px-2 py-1 focus:outline-none" onKeyDown={e => { if (e.key === 'Enter' && canvasComment.trim()) { setCanvasComments(c => [...c, { text: canvasComment.trim(), ts: new Date().toISOString() }]); setCanvasComment(''); }}} />
+                      <button onClick={() => { if (canvasComment.trim()) { setCanvasComments(c => [...c, { text: canvasComment.trim(), ts: new Date().toISOString() }]); setCanvasComment(''); }}} className="text-[10px] bg-neutral-100 hover:bg-neutral-200 rounded px-2 py-1">+</button>
+                    </div>
+                  </>
+                )}
+                {canvasRightPanel === 'history' && (
+                  <>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-[#807d72]">Documents</p>
+                    <div className="flex-1 space-y-1.5 overflow-y-auto max-h-64">
+                      {canvasDocs.length === 0 && <p className="text-[10px] text-muted-foreground italic">Aucun document</p>}
+                      {canvasDocs.map(doc => (
+                        <button key={doc.id} onClick={() => { setCanvasDoc({ id: doc.id, title: doc.title, content: doc.content, lastSaved: doc.updatedAt }); setCanvasRightPanel('none'); }} className="w-full text-left p-2 rounded hover:bg-neutral-50 text-[10px] border border-neutral-100 transition-colors">
+                          <p className="font-bold truncate">{doc.title || 'Sans titre'}</p>
+                          <p className="text-muted-foreground font-mono">{new Date(doc.updatedAt).toLocaleDateString('fr-FR')}</p>
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+                {canvasRightPanel === 'settings' && (
+                  <>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-[#807d72]">Taille texte</p>
+                    <div className="flex gap-2">
+                      {(['sm', 'base', 'lg'] as const).map(size => (
+                        <button key={size} onClick={() => setCanvasFontSize(size)} className={`flex-1 py-1 text-[10px] font-bold rounded border transition-colors ${canvasFontSize === size ? 'bg-[#26251e] text-white border-[#26251e]' : 'border-neutral-200 hover:bg-neutral-50'}`}>
+                          {size === 'sm' ? 'S' : size === 'base' ? 'M' : 'L'}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
           </div>
+
+          {/* Save to Library prompt */}
+          {showSaveToLibraryPrompt && (
+            <div className="absolute bottom-4 right-4 z-50 bg-white border border-border shadow-lg rounded-xl p-4 w-72 animate-scale-up">
+              <p className="text-sm font-bold text-foreground mb-1">Sauvegarder dans la Bibliothèque ?</p>
+              <p className="text-[11px] text-muted-foreground mb-3">Ajouter « {editorTitle} » à votre Bibliothèque de ressources.</p>
+              <div className="flex gap-2">
+                <button onClick={handleSaveToLibrary} className="flex-1 py-1.5 text-[11px] font-bold bg-[#059669] text-white rounded-lg hover:bg-[#047857] transition-colors">Oui, ajouter</button>
+                <button onClick={() => setShowSaveToLibraryPrompt(false)} className="flex-1 py-1.5 text-[11px] font-bold border border-border rounded-lg hover:bg-muted/50 transition-colors">Non merci</button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

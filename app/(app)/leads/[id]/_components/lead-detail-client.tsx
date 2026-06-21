@@ -176,6 +176,99 @@ function BantCheckbox({ label, checked, onChange }: { label: string; checked: bo
   );
 }
 
+function ScriptPanel({ lead }: { lead: Lead }) {
+  const [loading, setLoading] = useState(false);
+  const [script, setScript] = useState<string | null>(null);
+  const [scraped, setScraped] = useState(false);
+  const [open, setOpen] = useState(false);
+
+  const handleGenerate = async () => {
+    setLoading(true);
+    setOpen(true);
+    try {
+      const res = await fetch('/api/generate-script', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          businessName: lead.businessName,
+          niche: lead.niche,
+          city: lead.city,
+          website: lead.website,
+          phone: lead.phone,
+          rating: lead.rating,
+          reviewsCount: lead.reviewsCount,
+          temperature: lead.temperature,
+          contactName: lead.contactName,
+          notes: lead.notes?.slice(-3),
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setScript(data.script);
+        setScraped(data.scraped);
+      } else {
+        setScript('Erreur lors de la génération du script.');
+      }
+    } catch {
+      setScript('Erreur réseau lors de la génération.');
+    }
+    setLoading(false);
+  };
+
+  const handleCopy = async () => {
+    if (!script) return;
+    await navigator.clipboard.writeText(script);
+    toast.success('Script copié !');
+  };
+
+  return (
+    <div className="pt-4 border-t border-border mt-4 space-y-2">
+      <div className="flex items-center justify-between">
+        <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+          <FileSignature className="h-3 w-3" />
+          Script de Pitch
+        </h4>
+        <button
+          onClick={handleGenerate}
+          disabled={loading}
+          className="flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold border border-[#f54e00]/30 text-[#f54e00] bg-[#f54e00]/5 hover:bg-[#f54e00]/10 transition-colors disabled:opacity-50"
+        >
+          {loading ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : <Zap className="w-2.5 h-2.5" />}
+          Générer
+        </button>
+      </div>
+
+      {open && (
+        <div className="rounded-md border border-border bg-muted/20 p-3 space-y-2">
+          {loading ? (
+            <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+              <Loader2 className="h-3 w-3 animate-spin" />
+              {lead.website ? 'Analyse du site web + génération…' : 'Génération du script…'}
+            </div>
+          ) : script ? (
+            <>
+              {scraped && (
+                <p className="text-[9px] text-[#059669] font-medium flex items-center gap-1">
+                  <Globe className="h-2.5 w-2.5" />
+                  Basé sur le site web
+                </p>
+              )}
+              <div className="text-[11px] text-foreground leading-relaxed whitespace-pre-wrap">{script}</div>
+              <button
+                onClick={handleCopy}
+                className="flex items-center gap-1 text-[9px] text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <Copy className="h-2.5 w-2.5" />
+                Copier le script
+              </button>
+            </>
+          ) : null}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function QualificationPanel({ lead, onSave }: { lead: Lead; onSave: (fields: Partial<Lead>) => void }) {
   const [loading, setLoading] = useState(false);
   const [dmName, setDmName] = useState(lead.decisionMakerName || '');
@@ -1755,6 +1848,9 @@ export function LeadDetailClient({ id }: { id: string }) {
                   </div>
                 )}
               </div>
+
+              {/* Script de Pitch IA */}
+              <ScriptPanel lead={lead} />
 
               {/* Actions terrain */}
               <div className="pt-4 border-t border-border mt-4 space-y-2">
