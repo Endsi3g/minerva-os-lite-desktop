@@ -57,8 +57,11 @@ const roadmapData: RoadmapItem[] = [
   { module: 'Équipes', feature: 'Rôles personnalisés & Permissions', desc: "Onglet Rôles dans /team : création de rôles custom avec 19 toggles de modules. Sidebar filtrée selon le rôle effectif (défaut ou custom).", priority: 'high', status: 'available' },
   { module: 'Équipes', feature: 'Page invitation redesignée', desc: "Page /join animée : avatar workspace, confetti à l'acceptation, badge rôle avec description, preview des modules accessibles.", priority: 'medium', status: 'available' },
 
+  // ─── In Progress ─────────────────────────────────────────────────────
+  { module: 'Booking', feature: 'Scheduling public / Booking Links', desc: 'Page publique /book/[username] avec Google Calendar freebusy, slots disponibles et lien partageable. APIs créées, page publique live.', priority: 'high', status: 'in_progress' },
+  { module: 'Équipes', feature: 'Page dédiée gestion de rôle membre', desc: 'Page /team/member/[id] : assigner un rôle prédéfini ou personnalisé à un membre, créer un rôle inline.', priority: 'medium', status: 'available' },
+
   // ─── Planned ─────────────────────────────────────────────────────────
-  { module: 'Booking', feature: 'Scheduling public / Booking Links', desc: 'Page publique /book/[username] avec Google Calendar freebusy, slots disponibles et lien partageable. Nécessite scope calendar.events OAuth.', priority: 'high', status: 'planned' },
   { module: 'CRM', feature: 'Accounts / Entreprises', desc: 'Vue 360° par société regroupant contacts, deals, emails, meetings, notes et visites.', priority: 'high', status: 'planned' },
   { module: 'CRM', feature: 'Timeline unifiée par compte', desc: 'Flux chronologique unique par lead/compte : emails, calls, meetings, notes, visites.', priority: 'high', status: 'planned' },
 

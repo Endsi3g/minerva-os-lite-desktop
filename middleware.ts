@@ -30,7 +30,8 @@ export async function middleware(request: NextRequest) {
   const isPublicPage =
     url.pathname === '/login' ||
     url.pathname.startsWith('/join/') ||
-    url.pathname.startsWith('/lead-preview/');
+    url.pathname.startsWith('/lead-preview/') ||
+    url.pathname.startsWith('/book/');
 
   const isLoginPage = url.pathname === '/login';
 

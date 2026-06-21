@@ -1240,13 +1240,22 @@ export default function TeamPage() {
                                 </button>
                               </div>
                             ) : (
-                              <button
-                                onClick={() => setConfirmRemoveId(member.id)}
-                                className="w-7 h-7 flex items-center justify-center rounded hover:bg-red-50 text-neutral-400 hover:text-red-600 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
-                                title="Supprimer ce membre"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
+                              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                                <Link
+                                  href={`/team/member/${member.id}`}
+                                  className="w-7 h-7 flex items-center justify-center rounded hover:bg-[#f4f4f3] text-neutral-400 hover:text-[#26251e] transition-colors"
+                                  title="Gérer le rôle"
+                                >
+                                  <ChevronRight className="w-3.5 h-3.5" />
+                                </Link>
+                                <button
+                                  onClick={() => setConfirmRemoveId(member.id)}
+                                  className="w-7 h-7 flex items-center justify-center rounded hover:bg-red-50 text-neutral-400 hover:text-red-600 transition-colors"
+                                  title="Supprimer ce membre"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
                             )}
                           </td>
                         </tr>

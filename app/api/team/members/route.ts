@@ -29,7 +29,7 @@ export async function GET() {
     .from('team_members')
     .select('*')
     .eq('workspace_owner_id', user.id)
-    .order('created_at', { ascending: false });
+    .order('invited_at', { ascending: false });
 
   if (fetchError) {
     return NextResponse.json({ error: fetchError.message }, { status: 500 });
@@ -79,7 +79,7 @@ export async function PATCH(request: NextRequest) {
   }
 
   const body = await request.json();
-  const { memberId, role, plan, usageCount } = body;
+  const { memberId, role, plan, usageCount, customRoleId } = body;
 
   if (!memberId) {
     return NextResponse.json({ error: 'Member ID required' }, { status: 400 });
@@ -97,12 +97,16 @@ export async function PATCH(request: NextRequest) {
   }
 
   // Construct updates map
-  const updates: Record<string, string | number> = {};
-  if (role !== undefined) {
+  const updates: Record<string, string | number | null> = {};
+  if (role !== undefined && role !== 'custom') {
     if (!['admin', 'editor', 'viewer'].includes(role)) {
       return NextResponse.json({ error: 'Invalid role' }, { status: 400 });
     }
     updates.role = role;
+  }
+  if (customRoleId !== undefined) {
+    updates.custom_role_id = customRoleId || null;
+    if (!role || role === 'custom') updates.role = 'editor';
   }
   if (plan !== undefined) {
     updates.plan = plan;

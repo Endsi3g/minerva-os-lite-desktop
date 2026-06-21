@@ -103,11 +103,11 @@ const TYPE_LABELS: Record<ServiceType, string> = {
 };
 
 const TYPE_COLORS: Record<ServiceType, string> = {
-  digital: 'bg-blue-100 text-blue-800 border-blue-200',
-  saas: 'bg-emerald-100 text-emerald-800 border-emerald-200',
-  audit: 'bg-amber-100 text-amber-800 border-amber-200',
-  formation: 'bg-purple-100 text-purple-800 border-purple-200',
-  autre: 'bg-gray-100 text-gray-700 border-gray-200',
+  digital:   'bg-[#dbeafe]/60 text-[#1e40af] border-[#93c5fd]/60',
+  saas:      'bg-[#ecfdf5] text-[#065f46] border-[#6ee7b7]/60',
+  audit:     'bg-[#fef3c7]/80 text-[#92400e] border-[#fcd34d]/60',
+  formation: 'bg-[#f5f3ff] text-[#5b21b6] border-[#c4b5fd]/60',
+  autre:     'bg-[#f4f4f3] text-[#26251e] border-[#e5e5e0]',
 };
 
 const EMPTY_FORM = { name: '', price: '', type: 'digital' as ServiceType, description: '' };
@@ -733,7 +733,7 @@ export default function ServicesRoot() {
                 ) : (
                   <div className="space-y-1.5 max-h-48 overflow-y-auto">
                     {services.map(s => (
-                      <label key={s.id} className={cn('flex items-center gap-2 text-xs cursor-pointer p-2 rounded-lg transition-colors', selectedServiceIds.has(s.id) ? 'bg-emerald-50 border border-emerald-200' : 'hover:bg-[#f0efe9] border border-transparent')}>
+                      <label key={s.id} className={cn('flex items-center gap-2 text-xs cursor-pointer p-2 rounded-lg transition-colors', selectedServiceIds.has(s.id) ? 'bg-[#ecfdf5] border border-[#6ee7b7]/60' : 'hover:bg-[#f0efe9] border border-transparent')}>
                         <input type="checkbox" checked={selectedServiceIds.has(s.id)} onChange={() => toggleServiceInQuote(s.id)} className="rounded text-[#059669]" />
                         <span className="flex-1 truncate font-medium">{s.name}</span>
                         <span className={cn('text-[8px] font-bold uppercase tracking-wider px-1 py-0.5 rounded border', TYPE_COLORS[s.type])}>{TYPE_LABELS[s.type]}</span>

@@ -92,7 +92,7 @@ import {
 } from '@/app/(app)/assistant/_components/assistant-db';
 import { Pin, PinOff } from 'lucide-react';
 
-const CURRENT_VERSION = '2.96.0';
+const CURRENT_VERSION = '2.97.0';
 
 function UpdateBanner() {
   const [visible, setVisible] = useState(false);
