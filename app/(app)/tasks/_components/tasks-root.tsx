@@ -211,8 +211,8 @@ export default function TasksRoot() {
         {/* Header */}
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-[#f54e00]/10 flex items-center justify-center">
-              <ClipboardList className="h-5 w-5 text-[#f54e00]" />
+            <div className="h-10 w-10 rounded-xl bg-[#059669]/10 flex items-center justify-center">
+              <ClipboardList className="h-5 w-5 text-[#059669]" />
             </div>
             <div>
               <h1 className="text-xl font-bold text-foreground">{t('tasks.title')}</h1>
@@ -249,7 +249,7 @@ export default function TasksRoot() {
             { label: t('tasks.filter_done'), value: doneCount },
           ].map(s => (
             <div key={s.label} className="rounded-xl border border-border bg-card/60 p-3 text-center">
-              <div className={cn('text-2xl font-bold', s.accent ? 'text-[#f54e00]' : 'text-foreground')}>{s.value}</div>
+              <div className={cn('text-2xl font-bold', s.accent ? 'text-[#059669]' : 'text-foreground')}>{s.value}</div>
               <div className="text-xs text-muted-foreground mt-0.5">{s.label}</div>
             </div>
           ))}
@@ -297,7 +297,7 @@ export default function TasksRoot() {
             size="sm"
             onClick={handleAddTask}
             disabled={!newTitle.trim()}
-            className="h-8 bg-[#f54e00] hover:bg-[#d94400] text-white gap-1.5 text-xs"
+            className="h-8 bg-[#059669] hover:bg-[#047857] text-white gap-1.5 text-xs"
           >
             <Plus className="h-3.5 w-3.5" />
             {t('tasks.add')}
@@ -313,7 +313,7 @@ export default function TasksRoot() {
                 selected={selectedDate}
                 onSelect={setSelectedDate}
                 modifiers={{ hasTask: (d) => taskDays.has(d.toISOString().split('T')[0]) }}
-                modifiersClassNames={{ hasTask: 'bg-[#f54e00]/10 font-bold text-[#f54e00] rounded-md' }}
+                modifiersClassNames={{ hasTask: 'bg-[#059669]/10 font-bold text-[#059669] rounded-md' }}
                 className="rounded-xl border border-border bg-card p-3"
               />
             </div>
@@ -348,7 +348,7 @@ export default function TasksRoot() {
                   className={cn(
                     'h-7 px-3 text-xs rounded-full',
                     filter === f
-                      ? 'bg-[#f54e00] text-white hover:bg-[#d94400]'
+                      ? 'bg-[#059669] text-white hover:bg-[#047857]'
                       : 'bg-muted/50 text-muted-foreground hover:bg-muted'
                   )}
                 >
@@ -379,7 +379,7 @@ export default function TasksRoot() {
                   <Button
                     size="sm"
                     onClick={() => document.querySelector<HTMLInputElement>('input[placeholder]')?.focus()}
-                    className="bg-[#f54e00] hover:bg-[#d94400] text-white text-xs gap-1.5"
+                    className="bg-[#059669] hover:bg-[#047857] text-white text-xs gap-1.5"
                   >
                     <Plus className="h-3.5 w-3.5" />
                     {t('tasks.add')}

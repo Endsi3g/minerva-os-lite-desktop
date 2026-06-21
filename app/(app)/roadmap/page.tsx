@@ -50,7 +50,7 @@ const roadmapData: RoadmapItem[] = [
 ];
 
 const PRIORITY_STYLES: Record<Priority, string> = {
-  high: 'bg-[#f54e00]/10 text-[#f54e00] border-[#f54e00]/30',
+  high: 'bg-[#059669]/10 text-[#059669] border-[#059669]/30',
   medium: 'bg-muted text-muted-foreground border-border',
   low: 'bg-secondary text-secondary-foreground border-border',
 };
@@ -103,8 +103,8 @@ export default function RoadmapPage() {
 
         {/* Header */}
         <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-[#f54e00]/10 flex items-center justify-center">
-            <Flag className="h-5 w-5 text-[#f54e00]" />
+          <div className="h-10 w-10 rounded-xl bg-[#059669]/10 flex items-center justify-center">
+            <Flag className="h-5 w-5 text-[#059669]" />
           </div>
           <div>
             <h1 className="text-xl font-bold text-foreground">{t('roadmap.title')}</h1>

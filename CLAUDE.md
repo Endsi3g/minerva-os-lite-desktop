@@ -2,6 +2,16 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Design System — MANDATORY
+
+**Always read and follow `DESIGN.md` before touching any UI or styling.** Every color, spacing, typography, and component pattern decision must conform to the tokens and conventions defined there. Never use Tailwind named colors for brand elements — use hex literals only (`#26251e`, `#059669`, `#f54e00`, etc.). Per-page accent color assignments:
+
+| Page | Accent |
+|---|---|
+| Tasks (`/tasks`) | `#059669` (Brand Green) — completion/success |
+| Roadmap (`/roadmap`) | `#059669` (Brand Green) — completion/success |
+| All others (default) | `#f54e00` (Primary Orange) unless DESIGN.md specifies otherwise |
+
 ## Commands
 
 ```bash
