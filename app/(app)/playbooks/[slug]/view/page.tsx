@@ -8,6 +8,10 @@ interface Props {
   params: Promise<{ slug: string }>;
 }
 
+export function generateStaticParams() {
+  return [{ slug: '_placeholder_' }];
+}
+
 export default async function PlaybookViewPage({ params }: Props) {
   const { slug } = await params;
   const playbook = PLAYBOOKS.find((p) => p.id === slug);

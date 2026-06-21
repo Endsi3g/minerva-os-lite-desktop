@@ -1,10 +1,15 @@
-'use client';
-
 import React from 'react';
-import { useParams } from 'next/navigation';
 import { FieldRoot } from '../_components/field-root';
 
-export default function FieldPlanPage() {
-  const params = useParams<{ planId: string }>();
-  return <FieldRoot planId={params.planId} />;
+export function generateStaticParams() {
+  return [{ planId: '_placeholder_' }];
+}
+
+export default async function FieldPlanPage({
+  params,
+}: {
+  params: Promise<{ planId: string }>;
+}) {
+  const resolved = await params;
+  return <FieldRoot planId={resolved.planId} />;
 }

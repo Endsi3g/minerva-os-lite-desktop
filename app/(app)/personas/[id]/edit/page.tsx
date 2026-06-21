@@ -8,6 +8,10 @@ interface EditPersonaPageProps {
   params: Promise<{ id: string }>;
 }
 
+export function generateStaticParams() {
+  return [{ id: "_placeholder_" }];
+}
+
 export default async function EditPersonaPage({ params }: EditPersonaPageProps) {
   const { id } = await params;
   return <PersonaForm personaId={id} />;
