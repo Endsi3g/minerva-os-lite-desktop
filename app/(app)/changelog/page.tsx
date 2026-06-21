@@ -18,6 +18,19 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v2.95.0',
+      date: '2026-06-21',
+      titleKey: 'changelog.v2_95_0_title' as TranslationKey,
+      descKey: 'changelog.v2_95_0_desc' as TranslationKey,
+      highlights: [
+        "Facturation (BillingSDK) — Module complet 5 onglets : Abonnement (TrialExpiryCard + SubscriptionManagement + PaymentFailure), Forfaits (PricingTableTwo avec 4 plans Minerva), Utilisation (UsageMeter live + DetailedUsageTable), Paiement (PaymentMethodSelector + UpcomingCharges), Factures (InvoiceHistory).",
+        "Lead partage public — Bouton 'Partager' dans la fiche lead génère un lien /lead-preview/[token] accessible sans compte. Page de preview lecture seule : nom, email, téléphone, adresse, catégorie, score, site web.",
+        "Token invite sécurisé — Suppression de tout usage localStorage pour les tokens d'invitation. Redirect chain propre : /join/[token] → /login?next=/join/[token] → retour /join/[token] après connexion.",
+        "Middleware étendu — /join/[token] et /lead-preview/[token] sont désormais des pages publiques (pas de redirect login).",
+        "Plans Minerva — billingsdk-config.ts reconfiguré avec 4 plans spécifiques : Gratuit (0$), Pro (29$/mois), Business (79$/mois), Entreprise (sur devis).",
+      ],
+    },
+    {
       version: 'v2.94.0',
       date: '2026-06-21',
       titleKey: 'changelog.v2_94_0_title' as TranslationKey,

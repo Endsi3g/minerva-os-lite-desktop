@@ -24,6 +24,7 @@ export async function login(_state: unknown, formData: FormData): Promise<Action
   const supabase = createClient();
   const email = formData.get('email') as string;
   const password = formData.get('password') as string;
+  const next = (formData.get('next') as string) || '/today';
 
   if (!email || !password) {
     return { error: 'Veuillez saisir votre e-mail et votre mot de passe.' };
@@ -32,7 +33,7 @@ export async function login(_state: unknown, formData: FormData): Promise<Action
   const { error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) return { error: error.message || 'Identifiants invalides.' };
 
-  navigate('/today');
+  navigate(next);
   return {};
 }
 
@@ -44,6 +45,7 @@ export async function signup(_state: unknown, formData: FormData): Promise<Actio
   const lastName = formData.get('lastName') as string;
   const phone = formData.get('phone') as string;
   const companyName = formData.get('companyName') as string;
+  const next = (formData.get('next') as string) || null;
 
   if (!email || !password) return { error: 'Veuillez saisir votre e-mail et votre mot de passe.' };
   if (password.length < 6) return { error: 'Le mot de passe doit contenir au moins 6 caractères.' };
@@ -89,6 +91,11 @@ export async function signup(_state: unknown, formData: FormData): Promise<Actio
     }
   }
 
+  // If there's a pending invite, go to onboarding first then redirect
+  // For new signups with a next path, store it in sessionStorage so onboarding can pick it up
+  if (next && next !== '/today' && typeof window !== 'undefined') {
+    try { sessionStorage.setItem('minerva_post_onboarding_next', next); } catch {}
+  }
   navigate('/onboarding');
   return {};
 }
@@ -122,6 +129,7 @@ export async function verifyOtp(
   const supabase = createClient();
   const email = formData.get('email') as string;
   const token = formData.get('token') as string;
+  const next = (formData.get('next') as string) || '/today';
 
   if (!email || !token || token.length !== 6) {
     return { error: 'Code invalide. Vérifiez le code à 6 chiffres.' };
@@ -130,7 +138,7 @@ export async function verifyOtp(
   const { error } = await supabase.auth.verifyOtp({ email, token, type: 'email' });
   if (error) return { error: error.message };
 
-  navigate('/today');
+  navigate(next);
   return {};
 }
 

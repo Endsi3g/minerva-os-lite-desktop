@@ -26,11 +26,17 @@ export async function middleware(request: NextRequest) {
   }
 
   const { supabaseResponse, user, supabase } = updateResult;
+  // Public pages that don't require authentication
+  const isPublicPage =
+    url.pathname === '/login' ||
+    url.pathname.startsWith('/join/') ||
+    url.pathname.startsWith('/lead-preview/');
+
   const isLoginPage = url.pathname === '/login';
 
   // If user is not logged in
   if (!user) {
-    if (!isLoginPage) {
+    if (!isPublicPage) {
       url.pathname = '/login';
       return NextResponse.redirect(url);
     }

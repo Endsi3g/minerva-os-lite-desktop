@@ -49,6 +49,8 @@ import {
   Star,
   Phone,
   Globe,
+  Share2,
+  Link as LinkIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
@@ -569,6 +571,41 @@ export function LeadDetailClient({ id }: { id: string }) {
   const [newVarKey, setNewVarKey] = useState('');
   const [newVarValue, setNewVarValue] = useState('');
 
+  // Share lead state
+  const [shareLink, setShareLink] = useState<string | null>(null);
+  const [sharingLead, setSharingLead] = useState(false);
+  const [shareLinkCopied, setShareLinkCopied] = useState(false);
+
+  const handleShareLead = async () => {
+    if (!lead) return;
+    setSharingLead(true);
+    try {
+      const res = await fetch(getApiUrl('/api/leads/create-share'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ leadId: lead.id }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setShareLink(data.link);
+      } else {
+        toast.error(data.error || 'Impossible de créer le lien de partage.');
+      }
+    } catch {
+      toast.error('Erreur réseau.');
+    } finally {
+      setSharingLead(false);
+    }
+  };
+
+  const handleCopyShareLink = () => {
+    if (!shareLink) return;
+    navigator.clipboard.writeText(shareLink);
+    setShareLinkCopied(true);
+    toast.success('Lien copié dans le presse-papiers !');
+    setTimeout(() => setShareLinkCopied(false), 2500);
+  };
+
   // Team members for "Assigner à"
   interface TeamMember { id: string; email: string; full_name: string; role: string }
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
@@ -948,8 +985,38 @@ export function LeadDetailClient({ id }: { id: string }) {
               <span>{t('lead.back_to_portfolio')}</span>
             </Link>
           </Button>
-          <div className="text-[10px] text-muted-foreground font-mono">
-            {t('lead.last_updated')} {new Date(lead.updatedAt).toLocaleString('fr-FR')}
+          <div className="flex items-center gap-2">
+            {/* Share lead button */}
+            {!shareLink ? (
+              <button
+                onClick={handleShareLead}
+                disabled={sharingLead}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#e5e5e0] bg-white hover:bg-[#f4f4f3] text-[11px] font-bold text-[#26251e] transition-colors disabled:opacity-60"
+              >
+                {sharingLead ? <Loader2 className="h-3 w-3 animate-spin" /> : <Share2 className="h-3 w-3" />}
+                Partager
+              </button>
+            ) : (
+              <div className="flex items-center gap-1.5 bg-emerald-50 border border-emerald-200 rounded-lg px-2 py-1.5">
+                <LinkIcon className="h-3 w-3 text-[#059669]" />
+                <span className="text-[10px] text-[#059669] font-semibold max-w-[140px] truncate">{shareLink}</span>
+                <button
+                  onClick={handleCopyShareLink}
+                  className="p-0.5 hover:bg-emerald-100 rounded transition-colors"
+                >
+                  {shareLinkCopied ? <Check className="h-3 w-3 text-[#059669]" /> : <Copy className="h-3 w-3 text-[#059669]" />}
+                </button>
+                <button
+                  onClick={() => setShareLink(null)}
+                  className="p-0.5 hover:bg-emerald-100 rounded transition-colors"
+                >
+                  <X className="h-3 w-3 text-[#059669]" />
+                </button>
+              </div>
+            )}
+            <div className="text-[10px] text-muted-foreground font-mono">
+              {t('lead.last_updated')} {new Date(lead.updatedAt).toLocaleString('fr-FR')}
+            </div>
           </div>
         </div>
 

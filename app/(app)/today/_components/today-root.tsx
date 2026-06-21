@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { TodayHeader } from './today-header';
 import { TodayGoalsCard } from './today-goals-card';
 import { TodayAgendaCard } from './today-agenda-card';
@@ -14,51 +14,14 @@ import { TodayStatsCard } from './today-stats-card';
 import { TodaySetupBanner } from './today-setup-banner';
 import { TodayAestheticCanvas } from './today-aesthetic-canvas';
 import { InboxRoot } from '@/app/(app)/inbox/_components/inbox-root';
-import { LayoutDashboard, Mail, Users, X } from 'lucide-react';
-import Link from 'next/link';
+import { LayoutDashboard, Mail } from 'lucide-react';
 
 export function TodayRoot() {
   const [showAestheticMode, setShowAestheticMode] = useState(false);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'inbox'>('dashboard');
-  const [pendingInviteToken, setPendingInviteToken] = useState<string | null>(null);
-  const [inviteDismissed, setInviteDismissed] = useState(false);
-
-  useEffect(() => {
-    try {
-      const token = localStorage.getItem('minerva_pending_invite');
-      if (token) setPendingInviteToken(token);
-    } catch {}
-  }, []);
-
-  const dismissInvite = () => {
-    setInviteDismissed(true);
-    try { localStorage.removeItem('minerva_pending_invite'); } catch {}
-  };
 
   return (
     <div className="h-full overflow-hidden flex flex-col">
-      {/* Pending invite notification banner */}
-      {pendingInviteToken && !inviteDismissed && (
-        <div className="shrink-0 mx-4 mt-3 flex items-center gap-3 bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3 animate-fade-in">
-          <div className="h-8 w-8 rounded-lg bg-white border border-emerald-200 flex items-center justify-center shrink-0">
-            <Users className="h-4 w-4 text-[#059669]" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-xs font-bold text-[#26251e]">Invitation en attente</p>
-            <p className="text-[11px] text-[#807d72]">Quelqu'un vous a invité à rejoindre son équipe.</p>
-          </div>
-          <Link
-            href={`/join/${pendingInviteToken}`}
-            className="shrink-0 px-3 py-1.5 bg-[#059669] hover:bg-[#047857] text-white text-[11px] font-bold rounded-lg transition-colors"
-          >
-            Voir l'invitation
-          </Link>
-          <button onClick={dismissInvite} className="shrink-0 h-6 w-6 rounded flex items-center justify-center text-[#807d72] hover:text-[#26251e] hover:bg-emerald-100 transition-colors">
-            <X className="h-3.5 w-3.5" />
-          </button>
-        </div>
-      )}
-
       {/* Tab bar */}
       <div className="flex items-center gap-1 border-b border-border px-4 pt-3 pb-0 bg-background shrink-0">
         <button

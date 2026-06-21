@@ -32,11 +32,6 @@ export default function JoinPage() {
   const [previewError, setPreviewError] = useState(false);
 
   useEffect(() => {
-    // Always persist the token so login/signup can redirect back here
-    try {
-      localStorage.setItem('minerva_pending_invite', token);
-    } catch {}
-
     async function init() {
       // Fetch invite preview (public, no auth needed)
       try {
@@ -77,8 +72,6 @@ export default function JoinPage() {
         setError(data.error || "Impossible d'accepter l'invitation");
         setStatus('error');
       } else {
-        // Clear pending invite from localStorage
-        try { localStorage.removeItem('minerva_pending_invite'); } catch {}
         setStatus('success');
         setTimeout(() => router.push('/today'), 2200);
       }
@@ -89,7 +82,6 @@ export default function JoinPage() {
   };
 
   const handleDecline = () => {
-    try { localStorage.removeItem('minerva_pending_invite'); } catch {}
     router.push('/today');
   };
 
@@ -144,18 +136,14 @@ export default function JoinPage() {
             </p>
             <div className="flex flex-col gap-3">
               <Link
-                href="/login"
+                href={`/login?next=/join/${token}`}
                 className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-[#26251e] text-white text-sm font-bold rounded-xl hover:bg-[#1a1a19] transition-colors"
               >
                 <LogIn className="h-4 w-4" />
                 Se connecter
               </Link>
               <Link
-                href="/login"
-                onClick={() => {
-                  // Force signup mode via sessionStorage hint
-                  try { sessionStorage.setItem('minerva_login_mode', 'signup'); } catch {}
-                }}
+                href={`/login?next=/join/${token}`}
                 className="inline-flex items-center justify-center gap-2 px-6 py-2.5 bg-white border border-[#e6e5e0] text-[#26251e] text-sm font-bold rounded-xl hover:bg-[#fafaf9] transition-colors"
               >
                 Créer un compte gratuit

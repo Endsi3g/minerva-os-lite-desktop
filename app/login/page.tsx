@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useActionState, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useActionState, useRef, useCallback, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { login, signup, requestOtp, verifyOtp, requestPasswordReset } from './actions';
 import { MinervaIcon } from '@/components/icons';
 import { Lock, Mail, Loader2, Sparkles, Eye, EyeOff, ArrowLeft, CheckCircle2, User, Building2, Phone } from 'lucide-react';
@@ -62,8 +63,11 @@ function OtpGrid({
   );
 }
 
-// ─── main component ────────────────────────────────────────────────────────────
-export default function LoginPage() {
+// ─── inner component (needs useSearchParams, must be inside Suspense) ────────
+function LoginPageInner() {
+  const searchParams = useSearchParams();
+  const nextPath = searchParams.get('next') || '/today';
+
   const [mode, setMode] = useState<MainMode>('login');
   const [view, setView] = useState<SubView>('main');
   const [showPwd, setShowPwd] = useState(false);
@@ -490,6 +494,7 @@ export default function LoginPage() {
                   {/* ── LOGIN mode ─────────────────────────────────────────── */}
                   {mode === 'login' && (
                     <form action={loginAction} className="space-y-4">
+                      <input type="hidden" name="next" value={nextPath} />
                       <div className="space-y-1.5">
                         <label htmlFor="email-login" className="text-[10px] font-bold uppercase tracking-wider text-[#807d72]">
                           Adresse e-mail
@@ -604,6 +609,7 @@ export default function LoginPage() {
                   {/* ── SIGNUP mode ─────────────────────────────────────────── */}
                   {mode === 'signup' && (
                     <form action={signupAction} className="space-y-4">
+                      <input type="hidden" name="next" value={nextPath} />
                       <div className="grid grid-cols-2 gap-3">
                         <div className="space-y-1.5">
                           <label htmlFor="firstname-signup" className="text-[10px] font-bold uppercase tracking-wider text-[#807d72]">
@@ -801,6 +807,7 @@ export default function LoginPage() {
                   {/* ── OTP REQUEST mode ────────────────────────────────────── */}
                   {mode === 'otp' && (
                     <form action={otpReqAction} className="space-y-4">
+                      <input type="hidden" name="next" value={nextPath} />
                       <p className="text-xs text-[#807d72] font-semibold leading-relaxed">
                         Entrez votre adresse e-mail. Nous vous enverrons un code à usage unique pour vous connecter sans mot de passe.
                       </p>
@@ -888,5 +895,14 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+// useSearchParams requires Suspense
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginPageInner />
+    </Suspense>
   );
 }
