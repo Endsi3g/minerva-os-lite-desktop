@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useReach } from '@/lib/reach-context';
 import { createClient } from '@/lib/supabase/client';
 import { getApiUrl } from '@/lib/api-helper';
+import { toast } from 'sonner';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -591,6 +592,9 @@ export function ProspectingRoot() {
         setApifyFallbackMsg(
           d.message || "Apify indisponible : Clé manquante ou en échec. Les prospects ont été obtenus via OpenStreetMap."
         );
+        if (d.apifyError) {
+          toast.warning(`Apify: ${String(d.apifyError).slice(0, 120)}`, { duration: 7000 });
+        }
       }
 
       let allLeads: any[] = d.leads ?? [];
@@ -654,6 +658,7 @@ export function ProspectingRoot() {
       console.error('Scrape failed:', err);
       clearInterval(stepInterval);
       setScraping(false);
+      toast.error(`Erreur de prospection : ${String(err).slice(0, 140)}`, { duration: 8000 });
       if ((window as any).electron?.updateScrapingStatus) (window as any).electron.updateScrapingStatus('idle');
       
       // Mark job failed

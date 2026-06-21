@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useReach } from "@/lib/reach-context";
 import { Activity, Target, Zap, Bot, ArrowUpRight, ArrowDownRight, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -52,6 +53,7 @@ const terminalTabs = [
 ];
 
 export default function OpsProspectingDashboard() {
+  const router = useRouter();
   const { activeWorkspace, leads, campaigns } = useReach();
   const [loading, setLoading] = useState(true);
   const [metrics, setMetrics] = useState({
@@ -198,21 +200,21 @@ export default function OpsProspectingDashboard() {
                 <p className="text-[10px] font-bold text-amber-800 mb-1">Priorité Haute</p>
                 <p className="text-xs font-medium">Appeler "Boulangerie L'Épi d'Or" - Intent à 95%</p>
                 <div className="mt-2 flex justify-end">
-                  <Button size="sm" className="h-6 text-[10px] bg-amber-600 hover:bg-amber-700 text-white">Traiter</Button>
+                  <Button size="sm" className="h-6 text-[10px] bg-amber-600 hover:bg-amber-700 text-white cursor-pointer" onClick={() => router.push('/prospecting')}>Traiter</Button>
                 </div>
               </div>
               <div className="p-3 border rounded-lg">
                 <p className="text-[10px] font-bold text-muted-foreground mb-1">Routine</p>
                 <p className="text-xs font-medium">Lancer la campagne "Garages Avril"</p>
                 <div className="mt-2 flex justify-end">
-                  <Button size="sm" variant="outline" className="h-6 text-[10px]">Voir</Button>
+                  <Button size="sm" variant="outline" className="h-6 text-[10px] cursor-pointer" onClick={() => router.push('/campaigns')}>Voir</Button>
                 </div>
               </div>
               <div className="p-3 border rounded-lg">
                 <p className="text-[10px] font-bold text-muted-foreground mb-1">Routine</p>
                 <p className="text-xs font-medium">Valider 3 nouveaux brouillons d'emails</p>
                 <div className="mt-2 flex justify-end">
-                  <Button size="sm" variant="outline" className="h-6 text-[10px]">Voir</Button>
+                  <Button size="sm" variant="outline" className="h-6 text-[10px] cursor-pointer" onClick={() => router.push('/sequences')}>Voir</Button>
                 </div>
               </div>
             </div>

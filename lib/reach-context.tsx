@@ -2340,7 +2340,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
   };
 
   const addLeadValidations = async (items: Omit<LeadValidation, 'id' | 'userId' | 'workspaceId' | 'createdAt' | 'updatedAt'>[]) => {
-    if (!user || !activeWorkspace) return;
+    if (!user || !activeWorkspace) throw new Error('Aucun espace de travail actif — rechargez la page.');
     const electronObj = null as any;
     const nowStr = new Date().toISOString();
 
@@ -2405,9 +2405,11 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
         setLeadValidations(prev => [...mappedItems, ...prev]);
       } else {
         console.error("Supabase addLeadValidations error:", error);
+        throw new Error(error.message);
       }
     } catch (err) {
       console.error("Supabase addLeadValidations error:", err);
+      throw err;
     }
   };
 

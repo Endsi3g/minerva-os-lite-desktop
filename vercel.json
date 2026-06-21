@@ -1,5 +1,6 @@
 {
   "functions": {
+    "app/api/prospect/search/route.ts": { "maxDuration": 120 },
     "app/api/scrape-maps/route.ts": { "maxDuration": 60 },
     "app/api/scrape-apify/route.ts": { "maxDuration": 90 },
     "app/api/cron/gmail-check-replies/route.ts": { "maxDuration": 60 },

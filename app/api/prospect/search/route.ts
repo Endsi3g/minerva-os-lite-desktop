@@ -741,6 +741,8 @@ export async function POST(req: NextRequest) {
     }
     const searchCenter = { lat: primaryLat, lon: primaryLon, label: cities[0] ?? 'Québec' };
 
+    let apifyErrorMsg: string | null = null;
+
     // --- STRATEGY 1: Apify (Premium Google Maps Scraper) ---
     if (hasApify) {
       try {
@@ -751,7 +753,7 @@ export async function POST(req: NextRequest) {
         const perSearch = Math.ceil(maxResults / searchTerms.length);
 
         const apifyRes = await fetch(
-          `https://api.apify.com/v2/acts/compass~crawler-google-places/run-sync-get-dataset-items?token=${apifyToken}&timeout=90&memory=1024`,
+          `https://api.apify.com/v2/acts/compass~crawler-google-places/run-sync-get-dataset-items?token=${apifyToken}&timeout=55&memory=1024`,
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -763,7 +765,7 @@ export async function POST(req: NextRequest) {
               countryCode: 'ca',
               scrapeWebsite: false,
             }),
-            signal: AbortSignal.timeout(85000), // abort slightly early for Next.js boundary
+            signal: AbortSignal.timeout(60000), // abort before Vercel function limit
           }
         );
 
@@ -827,8 +829,8 @@ export async function POST(req: NextRequest) {
           searchCenter
         });
       } catch (err: any) {
-        console.error('[prospect/search] Apify premium scraping failed, falling back to OSM:', err);
-        // Silently proceed to OSM Strategy
+        apifyErrorMsg = (err as any)?.message || String(err) || 'Erreur Apify inconnue';
+        console.error('[prospect/search] Apify failed:', apifyErrorMsg);
       }
     }
 
@@ -846,8 +848,11 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({
           ok: true,
           provider: 'osm',
+          apifyError: apifyErrorMsg,
           leads: scoredLeads.slice(0, maxResults),
-          message: 'Résultats partiels via OpenStreetMap (Apify indisponible ou en échec).',
+          message: apifyErrorMsg
+            ? `Apify indisponible (${apifyErrorMsg.slice(0, 80)}). Résultats via OpenStreetMap.`
+            : 'Résultats partiels via OpenStreetMap.',
           fallbackUsed: true,
           searchCenter: osmResult.searchCenter
         });
@@ -866,6 +871,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       ok: true,
       provider: 'fallback',
+      apifyError: apifyErrorMsg,
       leads: scoredFallback,
       message: 'Génération de prospects locaux (secours connecté) pour ' + niches.join(', ') + ' à ' + cities.join(', '),
       fallbackUsed: true,

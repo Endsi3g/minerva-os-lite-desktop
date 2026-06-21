@@ -18,6 +18,18 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v2.89.0',
+      date: '2026-06-20',
+      titleKey: 'changelog.v2_89_0_title' as TranslationKey,
+      descKey: 'changelog.v2_89_0_desc' as TranslationKey,
+      highlights: [
+        "Fix Apify pipeline : réduction des timeouts (acteur 90s → 55s, AbortSignal 85s → 60s) pour garantir que les résultats Apify arrivent dans la fenêtre Vercel. Ajout de `/api/prospect/search` dans vercel.json avec maxDuration 120s.",
+        "Erreurs Apify visibles : quand Apify échoue et bascule sur OSM, un toast orange affiche maintenant le message d'erreur exact (ex: 'HTTP 402 Payment Required', timeout, token invalide) — fini les erreurs silencieuses.",
+        "Erreurs d'insertion visibles : si l'insert Supabase échoue dans addLeadValidations (RLS, réseau, schéma), un toast rouge s'affiche immédiatement — les leads manquants ne sont plus silencieux.",
+        "Boutons /ops/prospecting fonctionnels : 'Traiter' redirige vers /prospecting, 'Voir' redirige vers /campaigns et /sequences.",
+      ],
+    },
+    {
       version: 'v2.88.0',
       date: '2026-06-20',
       titleKey: 'changelog.v2_88_0_title' as TranslationKey,
