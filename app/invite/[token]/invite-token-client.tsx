@@ -47,9 +47,21 @@ export default function InviteTokenClient() {
         console.warn('accept-invite call failed (non-blocking):', activateErr);
       }
 
+      // Check if the user already completed onboarding (existing account joining a new workspace)
+      const { data: { user: freshUser } } = await supabase.auth.getUser();
+      let alreadyOnboarded = false;
+      if (freshUser) {
+        const { data: settings } = await supabase
+          .from('settings')
+          .select('full_name, company_name')
+          .eq('user_id', freshUser.id)
+          .maybeSingle();
+        alreadyOnboarded = !!(settings?.full_name && settings?.company_name);
+      }
+
       setStatus("success");
       setTimeout(() => {
-        router.push("/onboarding?invited=true");
+        router.push(alreadyOnboarded ? "/today" : "/onboarding?invited=true");
       }, 1500);
     } catch (err: any) {
       console.error("Verification error:", err);

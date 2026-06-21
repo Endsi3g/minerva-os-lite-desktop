@@ -29,6 +29,7 @@ export async function middleware(request: NextRequest) {
   // Public pages that don't require authentication
   const isPublicPage =
     url.pathname === '/login' ||
+    url.pathname.startsWith('/invite/') ||
     url.pathname.startsWith('/join/') ||
     url.pathname.startsWith('/lead-preview/') ||
     url.pathname.startsWith('/book/');
@@ -44,9 +45,11 @@ export async function middleware(request: NextRequest) {
     return supabaseResponse;
   }
 
-  // If user is logged in
+  // If user is logged in and hits /login, redirect to ?next or /welcome
   if (isLoginPage) {
-    url.pathname = '/welcome';
+    const next = url.searchParams.get('next');
+    url.pathname = (next && next.startsWith('/')) ? next : '/welcome';
+    url.searchParams.delete('next');
     return NextResponse.redirect(url);
   }
 
