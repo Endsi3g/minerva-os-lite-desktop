@@ -733,15 +733,10 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
 
         setWorkspacesList(mappedList);
 
-        const savedId = localStorage.getItem('minerva_active_workspace_id');
-        let active = mappedList.find((w: Workspace) => w.id === savedId);
-        if (!active && mappedList.length > 0) {
-          active = mappedList.find((w: Workspace) => w.isOwner) || mappedList[0];
-        }
-
+        // Electron path: no Supabase settings yet, default to owned workspace
+        const active = mappedList.find((w: Workspace) => w.isOwner) || mappedList[0];
         if (active) {
           setActiveWorkspace(active);
-          localStorage.setItem('minerva_active_workspace_id', active.id);
         }
       } catch (e) {
         console.error("Error loading local workspaces:", e);
@@ -753,36 +748,47 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
       const res = await fetch(getApiUrl('/api/workspaces'));
       if (res.ok) {
         const data = await res.json();
-        const list = data.workspaces || [];
+        const list: Workspace[] = data.workspaces || [];
         setWorkspacesList(list);
 
-        const savedId = localStorage.getItem('minerva_active_workspace_id');
-        let active = list.find((w: Workspace) => w.id === savedId);
+        // Active workspace comes from Supabase settings (no localStorage)
+        const savedId: string | null = data.activeWorkspaceId ?? null;
+        let active = savedId ? list.find((w) => w.id === savedId) : null;
         if (!active && list.length > 0) {
-          active = list.find((w: Workspace) => w.isOwner) || list[0];
+          // Prefer the workspace the user was invited to (non-owner) if they have one,
+          // otherwise fall back to their own workspace
+          active = list.find((w) => !w.isOwner) || list.find((w) => w.isOwner) || list[0];
         }
 
         if (active) {
           setActiveWorkspace(active);
-          localStorage.setItem('minerva_active_workspace_id', active.id);
+          // Persist choice back to Supabase (fire-and-forget)
+          fetch(getApiUrl('/api/workspaces'), {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ activeWorkspaceId: active.id }),
+          }).catch(() => {});
         }
       } else if (res.status !== 401) {
-        // 401 = session not ready yet, silently skip; log anything else unexpected
         console.error("Error loading workspaces:", res.status, res.statusText);
       }
     } catch {
-      // Network error (e.g. server not yet ready, Supabase timeout) — will retry
-      // automatically on the next auth state change or workspace switch.
+      // Network error — will retry on next auth state change
     }
   }, []);
 
-  // Workspace Switcher actions
+  // Workspace Switcher actions — persists to Supabase, no localStorage
   const switchWorkspace = async (workspaceId: string) => {
     const ws = workspacesList.find(w => w.id === workspaceId);
     if (ws) {
       setActiveWorkspace(ws);
-      localStorage.setItem('minerva_active_workspace_id', ws.id);
       window.dispatchEvent(new Event('minerva_workspace_changed'));
+      // Persist preference to Supabase settings
+      fetch(getApiUrl('/api/workspaces'), {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ activeWorkspaceId: ws.id }),
+      }).catch(() => {});
     }
   };
 
@@ -970,11 +976,6 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
         setWorkspacesList(updatedList);
         if (activeWorkspace?.id === id) {
           setActiveWorkspace(fallback);
-          if (fallback) {
-            localStorage.setItem('minerva_active_workspace_id', fallback.id);
-          } else {
-            localStorage.removeItem('minerva_active_workspace_id');
-          }
         }
         if (electronObj.triggerSync) {
           electronObj.triggerSync();
@@ -1001,10 +1002,13 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
         setWorkspacesList(updatedList);
         if (activeWorkspace?.id === id) {
           setActiveWorkspace(fallback);
+          // Persist the new active workspace to Supabase
           if (fallback) {
-            localStorage.setItem('minerva_active_workspace_id', fallback.id);
-          } else {
-            localStorage.removeItem('minerva_active_workspace_id');
+            fetch(getApiUrl('/api/workspaces'), {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ activeWorkspaceId: fallback.id }),
+            }).catch(() => {});
           }
         }
       }

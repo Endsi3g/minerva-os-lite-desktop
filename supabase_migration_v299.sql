@@ -1,8 +1,10 @@
--- Migration v2.99.0 — Fix workspace_id in team_members for accepted invitations
+-- Migration v2.99.0 — Fix workspace access for invited members
 -- Run this in the Supabase SQL Editor
 
--- Patch team_members rows where workspace_id is NULL but status = 'active'
--- Sets workspace_id to the oldest workspace owned by workspace_owner_id
+-- 1. Add active_workspace_id to settings (persistent workspace preference, replaces localStorage)
+ALTER TABLE public.settings ADD COLUMN IF NOT EXISTS active_workspace_id uuid REFERENCES public.workspaces(id) ON DELETE SET NULL;
+
+-- 2. Patch team_members rows where workspace_id is NULL but status = 'active'
 UPDATE public.team_members tm
 SET workspace_id = (
   SELECT w.id
@@ -15,7 +17,7 @@ WHERE tm.workspace_id IS NULL
   AND tm.status = 'active'
   AND tm.member_user_id IS NOT NULL;
 
--- Also patch pending rows created via invite-link (before the fix)
+-- 3. Patch pending invite-link rows missing workspace_id
 UPDATE public.team_members tm
 SET workspace_id = (
   SELECT w.id
@@ -26,3 +28,22 @@ SET workspace_id = (
 )
 WHERE tm.workspace_id IS NULL
   AND tm.status = 'pending';
+
+-- 4. Set active_workspace_id for existing active members to the workspace they joined
+UPDATE public.settings s
+SET active_workspace_id = (
+  SELECT tm.workspace_id
+  FROM public.team_members tm
+  WHERE tm.member_user_id = s.user_id
+    AND tm.status = 'active'
+    AND tm.workspace_id IS NOT NULL
+  ORDER BY tm.joined_at ASC
+  LIMIT 1
+)
+WHERE s.active_workspace_id IS NULL
+  AND EXISTS (
+    SELECT 1 FROM public.team_members tm
+    WHERE tm.member_user_id = s.user_id
+      AND tm.status = 'active'
+      AND tm.workspace_id IS NOT NULL
+  );

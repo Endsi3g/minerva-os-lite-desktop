@@ -203,10 +203,6 @@ export default function JoinPage() {
         setError(data.error || "Impossible d'accepter l'invitation");
         setStatus('error');
       } else {
-        // Switch localStorage to the joined workspace so ReachContext loads it on /today
-        if (data.workspaceId) {
-          localStorage.setItem('minerva_active_workspace_id', data.workspaceId);
-        }
         setStatus('success');
         setTimeout(() => router.push('/today'), 3000);
       }

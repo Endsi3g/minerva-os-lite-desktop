@@ -81,6 +81,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: updateError.message }, { status: 500 });
     }
 
+    // Persist active workspace to Supabase settings for the invited user (no localStorage needed)
+    if (workspaceId) {
+      await adminClient
+        .from('settings')
+        .upsert({ user_id: user.id, active_workspace_id: workspaceId }, { onConflict: 'user_id' });
+    }
+
     return NextResponse.json({
       success: true,
       role: invite.role,

@@ -74,7 +74,41 @@ export async function GET() {
     })
   );
 
-  return NextResponse.json({ workspaces: enriched });
+  // Read active workspace preference from Supabase settings (no localStorage)
+  const { data: userSettings } = await supabase
+    .from('settings')
+    .select('active_workspace_id')
+    .eq('user_id', user.id)
+    .maybeSingle();
+
+  const activeWorkspaceId = userSettings?.active_workspace_id ?? null;
+
+  return NextResponse.json({ workspaces: enriched, activeWorkspaceId });
+}
+
+// PATCH — persist active workspace preference to Supabase settings
+export async function PATCH(request: NextRequest) {
+  const supabase = await getAuthClient();
+  const { data: { user }, error } = await supabase.auth.getUser();
+
+  if (error || !user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const { activeWorkspaceId } = await request.json();
+  if (!activeWorkspaceId) {
+    return NextResponse.json({ error: 'activeWorkspaceId requis' }, { status: 400 });
+  }
+
+  const { error: upsertError } = await supabase
+    .from('settings')
+    .upsert({ user_id: user.id, active_workspace_id: activeWorkspaceId }, { onConflict: 'user_id' });
+
+  if (upsertError) {
+    return NextResponse.json({ error: upsertError.message }, { status: 500 });
+  }
+
+  return NextResponse.json({ success: true });
 }
 
 export async function POST(request: NextRequest) {
