@@ -5,6 +5,20 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [2.89.1] - 2026-06-20
+
+### Corrigé — Alignement du schéma de base de données Supabase
+- **Script de récupération du schéma SQL** — Création d'un complément de schéma SQL complet pour configurer l'ensemble des tables, politiques de sécurité (RLS), index et triggers manquants (`lead_validations`, `projects`, `campaigns`, `goals`, etc.) sur l'instance Supabase distante afin de résoudre l'erreur de cache PostgREST.
+
+## [2.89.0] - 2026-06-20
+
+### Ajouté — Adaptivité de l'interface, Paramètres épurés & Améliorations de l'Assistant
+- **Adaptivité de l'interface globale** — Expansion automatique et fluide des widgets de la page d'accueil (Today) et de toutes les pages utilisant `.max-w-5xl` lorsque la barre latérale gauche est repliée (`max-width: 88rem`).
+- **Simplification des paramètres** — Nettoyage complet des paramètres pour ne conserver que 7 sections clés : Profil, Apparence, Espace Général, Membres, IA (incluant directives et clés API OpenRouter), Intégrations et Objectifs.
+- **Gmail & Connexion Google Modulaire** — Câblage complet des pages de configuration, d'inbox et de messagerie vers les nouveaux endpoints de redirection OAuth progressifs (`/api/google/auth/start`, `/api/google/auth/status`, `/api/google/auth/disconnect`) de la table `google_accounts`.
+- **Liaison CRM & Projets Discussions** — Ajout de sélecteurs de projets Workspace et filtres de recherche dans la liste latérale gauche des discussions de l'Assistant, avec création à la volée.
+- **Titre automatique & Markdown Assistant** — Autogénération de titre à partir des premiers mots du message utilisateur, et rendu de syntaxe Markdown performant client-side.
+
 ## [2.80.0] - 2026-06-19
 
 ### Ajouté — Persistance SQLite/Supabase de l'Assistant IA, Multi-sessions & IA Canvas

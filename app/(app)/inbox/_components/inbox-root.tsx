@@ -193,7 +193,7 @@ export function InboxRoot() {
           <button
             onClick={() => {
               if (typeof window !== 'undefined') {
-                window.location.href = `/api/auth/google/login?redirect=${encodeURIComponent('/inbox')}`;
+                window.location.href = `/api/google/auth/start?pack=communication&redirect=${encodeURIComponent('/inbox')}`;
               }
             }}
             className="w-full py-2.5 px-4 bg-[#10b981] hover:bg-[#059669] text-white font-bold rounded-lg text-xs transition-colors flex items-center justify-center gap-2 shadow-xs cursor-pointer border-0"

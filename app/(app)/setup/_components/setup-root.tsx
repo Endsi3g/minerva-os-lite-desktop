@@ -38,12 +38,18 @@ export function SetupRoot() {
       try {
         const supabase = createClient();
 
-        const [settingsRes, sequencesRes, teamRes] = await Promise.all([
+        const [settingsRes, googleAccountRes, sequencesRes, teamRes] = await Promise.all([
           supabase
             .from('settings')
-            .select('full_name, company_name, google_refresh_token')
+            .select('full_name, company_name')
             .eq('user_id', user.id)
             .single(),
+          supabase
+            .from('google_accounts')
+            .select('id')
+            .eq('user_id', user.id)
+            .eq('status', 'connected')
+            .maybeSingle(),
           activeWorkspace
             ? supabase
                 .from('email_sequences')
@@ -61,7 +67,7 @@ export function SetupRoot() {
 
         const s = settingsRes.data;
         setProfileDone(!!(s?.full_name && s?.company_name));
-        setGmailDone(!!s?.google_refresh_token);
+        setGmailDone(!!googleAccountRes.data);
         setSequenceDone((sequencesRes.count ?? 0) > 0);
         setTeamDone((teamRes.count ?? 0) > 0);
       } catch {
@@ -87,7 +93,7 @@ export function SetupRoot() {
       id: 'gmail',
       title: 'Connecter Gmail',
       description: 'Autorisez l\'accès Gmail pour envoyer des emails de prospection et lire les réponses dans la boîte de réception.',
-      href: '/api/auth/google/login',
+      href: '/api/google/auth/start?pack=communication&redirect=/setup',
       icon: <Mail className="h-5 w-5" />,
       completed: gmailDone,
     },

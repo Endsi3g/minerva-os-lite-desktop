@@ -278,6 +278,14 @@ export function AssistantRoot() {
       }
     }
     loadWorkspaceData();
+
+    const handleSync = () => {
+      loadWorkspaceData();
+    };
+    window.addEventListener('minerva_assistant_sync', handleSync);
+    return () => {
+      window.removeEventListener('minerva_assistant_sync', handleSync);
+    };
   }, [userId, workspaceId]);
 
   // Scroll to bottom on message updates
@@ -450,6 +458,7 @@ export function AssistantRoot() {
     setCurrentSession(null);
     setMessages([]);
     localStorage.removeItem(`minerva_active_sess_${workspaceId}`);
+    window.dispatchEvent(new CustomEvent('minerva_assistant_sync'));
   };
 
   // Send message handler
@@ -484,6 +493,7 @@ export function AssistantRoot() {
       
       const sessList = await dbGetSessions(userId, workspaceId);
       setSessions(sessList);
+      window.dispatchEvent(new CustomEvent('minerva_assistant_sync'));
     }
 
     const userMsg: Message = { 
@@ -890,6 +900,7 @@ export function AssistantRoot() {
                           await dbToggleSessionPin(sess.id, !sess.pinned);
                           const sessList = await dbGetSessions(userId, workspaceId);
                           setSessions(sessList);
+                          window.dispatchEvent(new CustomEvent('minerva_assistant_sync'));
                         }}
                         className="opacity-0 group-hover:opacity-100 text-neutral-400 hover:text-amber-500 transition-opacity p-0.5"
                         title={sess.pinned ? "Désépingler" : "Épingler"}
@@ -907,6 +918,7 @@ export function AssistantRoot() {
                             setMessages([]);
                             localStorage.removeItem(`minerva_active_sess_${workspaceId}`);
                           }
+                          window.dispatchEvent(new CustomEvent('minerva_assistant_sync'));
                         }}
                         className="opacity-0 group-hover:opacity-100 text-neutral-400 hover:text-red-600 transition-opacity p-0.5"
                       >

@@ -74,7 +74,7 @@ export function InboxList({
           <AlertCircle className="h-3.5 w-3.5 shrink-0" />
           <span>Gmail nécessite une nouvelle autorisation.</span>
           <a
-            href="/api/auth/google/login"
+            href="/api/google/auth/start?pack=communication&redirect=/inbox"
             className="ml-auto font-semibold underline whitespace-nowrap"
           >
             Réautoriser
