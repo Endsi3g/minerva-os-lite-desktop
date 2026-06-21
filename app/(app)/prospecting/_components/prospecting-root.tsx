@@ -935,10 +935,10 @@ export function ProspectingRoot() {
   };
 
   return (
-    <div className="h-full overflow-y-auto bg-background relative pb-12">
+    <div className={`h-full overflow-y-auto bg-background relative pb-6 md:pb-12 ${selectedValidationIds.length > 0 ? 'pb-52 md:pb-12' : ''}`}>
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-0 opacity-30 dark:opacity-15"
         style={{ backgroundImage: 'radial-gradient(circle, #a1a1aa 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
-      <div className="relative z-10 max-w-6xl mx-auto p-6 space-y-6">
+      <div className="relative z-10 max-w-6xl mx-auto px-3 py-4 sm:px-4 md:px-6 md:py-6 space-y-4 md:space-y-6">
 
         {/* Header */}
         <div className="space-y-1">
@@ -1751,7 +1751,7 @@ export function ProspectingRoot() {
             </div>
 
             {/* Validation Inbox Tabs & Counts */}
-            <div className="flex gap-2 border-b border-border/50 pt-4 flex-wrap">
+            <div className="flex gap-2 border-b border-border/50 pt-4 overflow-x-auto flex-nowrap [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {([
                 { id: 'to_verify', label: 'À vérifier', count: stats.to_verify, activeColor: 'border-primary text-primary' },
                 { id: 'ready', label: 'Prêts à importer', count: stats.ready, activeColor: 'border-emerald-600 text-emerald-600' },
@@ -1766,7 +1766,7 @@ export function ProspectingRoot() {
                     setSelectedValidationIds([]);
                     setExpandedValidationId(null);
                   }}
-                  className={`text-xs font-bold pb-2 px-1 border-b-2 transition-all flex items-center gap-1.5 ${
+                  className={`text-xs font-bold pb-2 px-1 border-b-2 transition-all flex items-center gap-1.5 shrink-0 ${
                     activeTab === tab.id
                       ? tab.activeColor
                       : 'border-transparent text-muted-foreground hover:text-foreground'
@@ -1782,33 +1782,67 @@ export function ProspectingRoot() {
 
             {/* Bulk actions block */}
             {selectedValidationIds.length > 0 && (
-              <div className="flex items-center gap-2 bg-muted/40 p-2 rounded-lg border border-border/40 mt-3 animate-in slide-in-from-top-1">
-                <span className="text-[10px] font-mono text-muted-foreground pl-1">{selectedValidationIds.length} sélectionné(s) :</span>
-                {activeTab === 'to_verify' && (
-                  <>
-                    <Button size="sm" onClick={handleBulkValidate} className="h-7 text-[10px] font-semibold bg-emerald-600 hover:bg-emerald-700 text-white gap-1"><Check className="w-3 h-3" />Valider</Button>
-                    <Button size="sm" onClick={handleBulkIgnore} variant="outline" className="h-7 text-[10px] font-semibold border-rose-200 text-rose-700 bg-rose-50 hover:bg-rose-100 gap-1"><ThumbsDown className="w-3 h-3" />Ignorer</Button>
-                  </>
-                )}
-                {activeTab === 'ready' && (
-                  <>
-                    <Button size="sm" onClick={handleBulkImport} className="h-7 text-[10px] font-semibold bg-emerald-600 hover:bg-emerald-700 text-white gap-1"><Plus className="w-3 h-3" />Importer dans le CRM</Button>
-                    <Button size="sm" onClick={handleBulkIgnore} variant="outline" className="h-7 text-[10px] font-semibold border-rose-200 text-rose-700 bg-rose-50 hover:bg-rose-100 gap-1"><ThumbsDown className="w-3 h-3" />Ignorer</Button>
-                  </>
-                )}
-                {activeTab === 'ignored' && (
-                  <>
-                    <Button size="sm" onClick={handleBulkRestore} className="h-7 text-[10px] font-semibold bg-primary hover:bg-primary/90 text-primary-foreground gap-1"><RefreshCw className="w-3 h-3" />Restaurer</Button>
-                    <Button size="sm" onClick={handleBulkDelete} variant="destructive" className="h-7 text-[10px] font-semibold gap-1"><Trash2 className="w-3 h-3" />Supprimer</Button>
-                  </>
-                )}
-                {activeTab === 'imported' && (
-                  <Button size="sm" onClick={handleBulkDelete} variant="destructive" className="h-7 text-[10px] font-semibold gap-1"><Trash2 className="w-3 h-3" />Supprimer l'historique</Button>
-                )}
-              </div>
+              <>
+                {/* Desktop Version */}
+                <div className="hidden md:flex items-center gap-2 bg-muted/40 p-2 rounded-lg border border-border/40 mt-3 animate-in slide-in-from-top-1">
+                  <span className="text-[10px] font-mono text-muted-foreground pl-1">{selectedValidationIds.length} sélectionné(s) :</span>
+                  {activeTab === 'to_verify' && (
+                    <>
+                      <Button size="sm" onClick={handleBulkValidate} className="h-7 text-[10px] font-semibold bg-emerald-600 hover:bg-emerald-700 text-white gap-1"><Check className="w-3 h-3" />Valider</Button>
+                      <Button size="sm" onClick={handleBulkIgnore} variant="outline" className="h-7 text-[10px] font-semibold border-rose-200 text-rose-700 bg-rose-50 hover:bg-rose-100 gap-1"><ThumbsDown className="w-3 h-3" />Ignorer</Button>
+                    </>
+                  )}
+                  {activeTab === 'ready' && (
+                    <>
+                      <Button size="sm" onClick={handleBulkImport} className="h-7 text-[10px] font-semibold bg-emerald-600 hover:bg-emerald-700 text-white gap-1"><Plus className="w-3 h-3" />Importer dans le CRM</Button>
+                      <Button size="sm" onClick={handleBulkIgnore} variant="outline" className="h-7 text-[10px] font-semibold border-rose-200 text-rose-700 bg-rose-50 hover:bg-rose-100 gap-1"><ThumbsDown className="w-3 h-3" />Ignorer</Button>
+                    </>
+                  )}
+                  {activeTab === 'ignored' && (
+                    <>
+                      <Button size="sm" onClick={handleBulkRestore} className="h-7 text-[10px] font-semibold bg-primary hover:bg-primary/90 text-primary-foreground gap-1"><RefreshCw className="w-3 h-3" />Restaurer</Button>
+                      <Button size="sm" onClick={handleBulkDelete} variant="destructive" className="h-7 text-[10px] font-semibold gap-1"><Trash2 className="w-3 h-3" />Supprimer</Button>
+                    </>
+                  )}
+                  {activeTab === 'imported' && (
+                    <Button size="sm" onClick={handleBulkDelete} variant="destructive" className="h-7 text-[10px] font-semibold gap-1"><Trash2 className="w-3 h-3" />Supprimer l'historique</Button>
+                  )}
+                </div>
+
+                {/* Mobile Version (Floating bottom bar) */}
+                <div className="md:hidden fixed bottom-[76px] left-4 right-4 z-50 bg-background/95 backdrop-blur-md border border-border shadow-xl rounded-2xl p-4 flex flex-col gap-3 animate-in fade-in slide-in-from-bottom-5">
+                  <div className="flex items-center justify-between border-b border-border/50 pb-2">
+                    <span className="text-xs font-bold text-foreground">Actions groupées</span>
+                    <span className="text-[10px] font-mono bg-muted px-2 py-0.5 rounded-full text-muted-foreground">{selectedValidationIds.length} sélectionné(s)</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    {activeTab === 'to_verify' && (
+                      <>
+                        <Button size="sm" onClick={handleBulkValidate} className="w-full h-9 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5"><Check className="w-3.5 h-3.5" />Valider</Button>
+                        <Button size="sm" onClick={handleBulkIgnore} variant="outline" className="w-full h-9 text-xs font-bold border-rose-200 text-rose-700 bg-rose-50 hover:bg-rose-100 gap-1.5"><ThumbsDown className="w-3.5 h-3.5" />Ignorer</Button>
+                      </>
+                    )}
+                    {activeTab === 'ready' && (
+                      <>
+                        <Button size="sm" onClick={handleBulkImport} className="w-full h-9 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5"><Plus className="w-3.5 h-3.5" />Importer CRM</Button>
+                        <Button size="sm" onClick={handleBulkIgnore} variant="outline" className="w-full h-9 text-xs font-bold border-rose-200 text-rose-700 bg-rose-50 hover:bg-rose-100 gap-1.5"><ThumbsDown className="w-3.5 h-3.5" />Ignorer</Button>
+                      </>
+                    )}
+                    {activeTab === 'ignored' && (
+                      <>
+                        <Button size="sm" onClick={handleBulkRestore} className="w-full h-9 text-xs font-bold bg-primary hover:bg-primary/90 text-primary-foreground gap-1.5"><RefreshCw className="w-3.5 h-3.5" />Restaurer</Button>
+                        <Button size="sm" onClick={handleBulkDelete} variant="destructive" className="w-full h-9 text-xs font-bold gap-1.5"><Trash2 className="w-3.5 h-3.5" />Supprimer</Button>
+                      </>
+                    )}
+                    {activeTab === 'imported' && (
+                      <Button size="sm" onClick={handleBulkDelete} variant="destructive" className="w-full h-9 text-xs font-bold gap-1.5 col-span-2"><Trash2 className="w-3.5 h-3.5" />Supprimer l'historique</Button>
+                    )}
+                  </div>
+                </div>
+              </>
             )}
           </CardHeader>
-          <CardContent className="p-0 overflow-x-auto">
+          <CardContent className="p-0">
             {sortedValidations.length === 0 ? (
               <div className="p-12 flex flex-col items-center justify-center text-center space-y-3">
                 <div className="p-3 bg-muted rounded-full text-muted-foreground/60">
@@ -1820,162 +1854,432 @@ export function ProspectingRoot() {
                 </div>
               </div>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow className="hover:bg-transparent">
-                    <TableHead className="w-10 text-center pl-4">
-                      <Checkbox
-                        checked={selectedValidationIds.length === sortedValidations.length && sortedValidations.length > 0}
-                        onCheckedChange={c => setSelectedValidationIds(c ? sortedValidations.map(l => l.id) : [])}
-                      />
-                    </TableHead>
-                    <TableHead className="text-[10px] font-bold uppercase tracking-wider">Établissement & Description</TableHead>
-                    <TableHead className="text-[10px] font-bold uppercase tracking-wider">Coordonnées</TableHead>
-                    <TableHead className="text-[10px] font-bold uppercase tracking-wider">Score Qualité</TableHead>
-                    <TableHead className="text-[10px] font-bold uppercase tracking-wider pr-4 text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
+              <>
+                {/* Desktop View: Table */}
+                <div className="hidden md:block overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="hover:bg-transparent">
+                        <TableHead className="w-10 text-center pl-4">
+                          <Checkbox
+                            checked={selectedValidationIds.length === sortedValidations.length && sortedValidations.length > 0}
+                            onCheckedChange={c => setSelectedValidationIds(c ? sortedValidations.map(l => l.id) : [])}
+                          />
+                        </TableHead>
+                        <TableHead className="text-[10px] font-bold uppercase tracking-wider">Établissement & Description</TableHead>
+                        <TableHead className="text-[10px] font-bold uppercase tracking-wider">Coordonnées</TableHead>
+                        <TableHead className="text-[10px] font-bold uppercase tracking-wider">Score Qualité</TableHead>
+                        <TableHead className="text-[10px] font-bold uppercase tracking-wider pr-4 text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {sortedValidations.map(item => {
+                        const isExpanded = expandedValidationId === item.id;
+                        const isEditing = editingValidationId === item.id;
+                        const duplicate = getDuplicate(item);
+                        
+                        return (
+                          <React.Fragment key={item.id}>
+                            <TableRow className={`hover:bg-muted/30 ${isExpanded ? 'bg-muted/10 border-b-transparent' : ''}`}>
+                              <TableCell className="text-center pl-4">
+                                <Checkbox
+                                  checked={selectedValidationIds.includes(item.id)}
+                                  onCheckedChange={c => setSelectedValidationIds(prev => c ? [...prev, item.id] : prev.filter(id => id !== item.id))}
+                                />
+                              </TableCell>
+                              <TableCell>
+                                {isEditing ? (
+                                  <Input
+                                    value={editFields.businessName}
+                                    onChange={e => setEditFields(prev => ({ ...prev, businessName: e.target.value }))}
+                                    className="h-7 text-xs font-semibold py-0"
+                                  />
+                                ) : (
+                                  <div className="space-y-1 py-1">
+                                    <div className="font-semibold text-xs text-foreground truncate max-w-[320px] flex items-center gap-1.5">
+                                      {item.businessName}
+                                      {duplicate && (
+                                        <Badge variant="outline" className="bg-rose-50 text-rose-700 border-rose-200 text-[8px] font-extrabold flex items-center gap-0.5">
+                                          <AlertTriangle className="w-2 h-2 shrink-0" />
+                                          Doublon {duplicate.type === 'crm' ? 'CRM' : 'Inbox'}
+                                        </Badge>
+                                      )}
+                                    </div>
+                                    <div className="text-[10px] text-muted-foreground flex items-center gap-1.5 flex-wrap">
+                                      <Badge variant="outline" className="text-[8px] font-mono uppercase px-1 py-0 scale-90 -translate-x-0.5">{item.source}</Badge>
+                                      <span className="font-medium text-foreground bg-muted/60 px-1.5 py-0.5 rounded text-[9px]">{item.niche}</span>
+                                      <span>·</span>
+                                      <span>{item.city}</span>
+                                    </div>
+                                    <p className="text-[10px] text-slate-500 leading-normal max-w-xl">
+                                      {item.website ? `🌐 Site : ${item.website.replace(/https?:\/\/(www\.)?/, '')}` : '❌ Aucun site internet détecté'} · {item.rating > 0 ? `⭐ ${item.rating}★ (${item.reviewsCount} avis)` : '⭐ Aucun avis public'} · {item.phone ? `📞 ${item.phone}` : '📞 Pas de numéro de téléphone'}
+                                    </p>
+                                  </div>
+                                )}
+                              </TableCell>
+                              <TableCell className="text-xs space-y-0.5">
+                                {isEditing ? (
+                                  <div className="space-y-1">
+                                    <Input placeholder="Téléphone" value={editFields.phone} onChange={e => setEditFields(prev => ({ ...prev, phone: e.target.value }))} className="h-6 text-[10px] py-0" />
+                                    <Input placeholder="Site Web" value={editFields.website} onChange={e => setEditFields(prev => ({ ...prev, website: e.target.value }))} className="h-6 text-[10px] py-0" />
+                                  </div>
+                                ) : (
+                                  <>
+                                    {item.phone ? (
+                                      <div className="flex items-center gap-1 text-[10px] text-foreground"><Phone className="h-3 w-3 text-muted-foreground shrink-0" />{item.phone}</div>
+                                    ) : (
+                                      <div className="text-[9px] text-muted-foreground italic">Pas de téléphone</div>
+                                    )}
+                                    {item.website ? (
+                                      <a href={item.website} target="_blank" rel="noopener noreferrer" className="text-[10px] text-primary hover:underline flex items-center gap-1 max-w-[140px] truncate">
+                                        <Globe className="h-3 w-3 shrink-0" />
+                                        {item.website.replace(/https?:\/\/(www\.)?/, '')}
+                                      </a>
+                                    ) : (
+                                      <div className="text-[9px] text-rose-500 font-semibold flex items-center gap-0.5">Aucun site web</div>
+                                    )}
+                                  </>
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-2">
+                                  <Badge
+                                    variant="outline"
+                                    className={`text-[10px] font-bold px-1.5 py-0.5 ${
+                                      item.qualityScore >= 75
+                                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                        : item.qualityScore >= 50
+                                          ? 'bg-amber-50 text-amber-700 border-amber-200'
+                                          : 'bg-rose-50 text-rose-700 border-rose-200'
+                                    }`}
+                                  >
+                                    {item.qualityScore} / 100
+                                  </Badge>
+                                  {item.opportunityScore >= 70 && (
+                                    <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200 text-[8px] font-bold animate-pulse">
+                                      Haut Potentiel
+                                    </Badge>
+                                  )}
+                                </div>
+                              </TableCell>
+                              <TableCell className="pr-4 text-right">
+                                <div className="flex items-center justify-end gap-1.5">
+                                  {isEditing ? (
+                                    <>
+                                      <Button size="sm" variant="outline" className="h-7 text-[10px] px-2" onClick={() => setEditingValidationId(null)}>Annuler</Button>
+                                      <Button size="sm" className="h-7 text-[10px] px-2 bg-emerald-600 text-white" onClick={() => handleSaveEdit(item.id)}><Check className="w-3 h-3" /></Button>
+                                    </>
+                                  ) : (
+                                    <>
+                                      {activeTab === 'to_verify' && (
+                                        <Button size="sm" variant="outline" className="h-7 px-2 hover:bg-emerald-50 hover:text-emerald-600 hover:border-emerald-200" onClick={() => handleValidateLead(item.id)}>
+                                          <Check className="h-3 w-3" />
+                                        </Button>
+                                      )}
+                                      {activeTab === 'ready' && (
+                                        <Button size="sm" className="h-7 text-[10px] font-semibold gap-1 bg-emerald-600 hover:bg-emerald-700 text-white px-2" onClick={() => handleImportToCrm(item)}>
+                                          <Plus className="h-3 w-3" /> CRM
+                                        </Button>
+                                      )}
+                                      {(activeTab === 'to_verify' || activeTab === 'ready') && (
+                                        <Button size="sm" variant="outline" className="h-7 px-2 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200" onClick={() => handleIgnoreLead(item)}>
+                                          <ThumbsDown className="h-3 w-3" />
+                                        </Button>
+                                      )}
+                                      <Button size="sm" variant="outline" className="h-7 px-2" onClick={() => handleStartEdit(item)}>
+                                        <Edit2 className="h-3 w-3" />
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className={`h-7 px-2 text-[10px] font-semibold ${isExpanded ? 'bg-muted' : ''}`}
+                                        onClick={() => setExpandedValidationId(isExpanded ? null : item.id)}
+                                      >
+                                        Détails
+                                      </Button>
+                                    </>
+                                  )}
+                                </div>
+                              </TableCell>
+                            </TableRow>
+
+                            {/* Detailed expansion card */}
+                            {isExpanded && (
+                              <TableRow className="bg-muted/10 hover:bg-muted/10 border-b border-border/60">
+                                <TableCell colSpan={5} className="p-4 pl-12 pr-4">
+                                  <div className="grid grid-cols-1 md:grid-cols-12 gap-5">
+                                    
+                                    {/* Score Indicators (4 circular gauges) */}
+                                    <div className="md:col-span-4 space-y-3 border-r border-border/50 pr-4">
+                                      <h5 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5"><SlidersHorizontal className="w-3.5 h-3.5 text-primary" />Métriques & Scoring</h5>
+                                      <div className="grid grid-cols-2 gap-2">
+                                        <ScoreGauge value={item.completenessScore} label="Complétude" color="stroke-emerald-500" />
+                                        <ScoreGauge value={item.localFitScore} label="Alignement" color="stroke-sky-500" />
+                                        <ScoreGauge value={item.opportunityScore} label="Opportunité" color="stroke-orange-500" />
+                                        <ScoreGauge value={item.qualityScore} label="Qualité Globale" color="stroke-primary" />
+                                      </div>
+                                    </div>
+
+                                    {/* SEO Audit & Duplicates check */}
+                                    <div className="md:col-span-5 space-y-3 border-r border-border/50 pr-4">
+                                      <h5 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5"><Info className="w-3.5 h-3.5 text-primary" />Opportunités Commerciales</h5>
+                                      <div className="p-3 bg-muted/40 rounded-lg border border-border/40 text-[11px] text-muted-foreground space-y-2">
+                                        <div className="flex items-start gap-1.5">
+                                          <Star className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
+                                          <div>
+                                            <p className="font-semibold text-foreground">Évaluation en ligne :</p>
+                                            <p>{item.rating > 0 ? `${item.rating}/5 étoiles basées sur ${item.reviewsCount} avis.` : 'Aucune note disponible sur les profils publics.'}</p>
+                                          </div>
+                                        </div>
+                                        <div className="flex items-start gap-1.5 border-t border-border/30 pt-2">
+                                          <Globe className="w-3.5 h-3.5 text-primary shrink-0 mt-0.5" />
+                                          <div>
+                                            <p className="font-semibold text-foreground">Audit de présence web :</p>
+                                            <p>{!item.website ? 'Aucun site web détecté dans la base OSM / Google Maps. Opportunité directe de création.' : `Site actif: ${item.website}`}</p>
+                                          </div>
+                                        </div>
+                                        {item.address && (
+                                          <div className="flex items-start gap-1.5 border-t border-border/30 pt-2">
+                                            <MapPin className="w-3.5 h-3.5 text-muted-foreground shrink-0 mt-0.5" />
+                                            <div>
+                                              <p className="font-semibold text-foreground">Adresse complète :</p>
+                                              <p className="font-mono text-[10px]">{item.address}</p>
+                                            </div>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+
+                                    {/* Merge duplicates section & metadata */}
+                                    <div className="md:col-span-3 space-y-3 flex flex-col justify-between">
+                                      <div>
+                                        <h5 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5"><GitMerge className="w-3.5 h-3.5 text-primary" />Dédoublonnement</h5>
+                                        {duplicate ? (
+                                          <div className="p-2.5 rounded-lg border border-rose-200 bg-rose-50/20 text-[10px] text-muted-foreground space-y-2 mt-1.5">
+                                            <p className="leading-snug">
+                                              Un prospect similaire a été détecté dans {duplicate.type === 'crm' ? 'votre CRM' : 'votre boîte de validation'}{' '}
+                                              (<span className="font-semibold text-foreground">{duplicate.name}</span>).
+                                            </p>
+                                            <Button
+                                              size="sm"
+                                              variant="outline"
+                                              onClick={() => handleMergeDuplicate(item, duplicate)}
+                                              className="w-full h-7 text-[10px] font-bold gap-1 border-rose-300 text-rose-700 bg-rose-50 hover:bg-rose-100"
+                                            >
+                                              <GitMerge className="w-3 h-3" />
+                                              Fusionner les données
+                                            </Button>
+                                          </div>
+                                        ) : (
+                                          <p className="text-[10px] text-muted-foreground italic mt-2">Aucun doublon détecté pour ce prospect.</p>
+                                        )}
+                                      </div>
+
+                                      <div>
+                                        <h5 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5"><MapIcon className="w-3.5 h-3.5 text-primary" />Contribution OSM</h5>
+                                        <div className="space-y-1.5 mt-1.5">
+                                          {item.originalTags?.osm_id && item.originalTags?.osm_type ? (
+                                            <a
+                                              href={`https://www.openstreetmap.org/edit?editor=id&${item.originalTags.osm_type}=${item.originalTags.osm_id}`}
+                                              target="_blank"
+                                              rel="noopener noreferrer"
+                                              className="w-full inline-flex items-center justify-center h-8 rounded-lg border border-primary/20 bg-primary/5 hover:bg-primary/10 text-primary text-[10px] font-bold gap-1 transition-colors"
+                                            >
+                                              <Edit2 className="w-3 h-3 shrink-0" />
+                                              Améliorer sur OSM (iD)
+                                            </a>
+                                          ) : item.latitude && item.longitude ? (
+                                            <a
+                                              href={`https://www.openstreetmap.org/note/new?lat=${item.latitude}&lon=${item.longitude}#map=17/${item.latitude}/${item.longitude}`}
+                                              target="_blank"
+                                              rel="noopener noreferrer"
+                                              className="w-full inline-flex items-center justify-center h-8 rounded-lg border border-amber-200 bg-amber-50/50 hover:bg-amber-50 text-amber-700 text-[10px] font-bold gap-1 transition-colors"
+                                            >
+                                              <AlertTriangle className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                                              Signaler fiche incomplète
+                                            </a>
+                                          ) : null}
+                                        </div>
+                                      </div>
+
+                                      <div className="text-[9px] text-muted-foreground font-mono space-y-0.5 text-right mt-auto">
+                                        <p>Créé le: {new Date(item.createdAt).toLocaleString('fr-CA')}</p>
+                                        {item.originalTags && Object.keys(item.originalTags).length > 0 && (
+                                          <p className="text-[9px] text-primary truncate max-w-full">Tags: {Object.keys(item.originalTags).slice(0, 5).join(', ')}</p>
+                                        )}
+                                      </div>
+                                    </div>
+
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            )}
+                          </React.Fragment>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+
+                {/* Mobile View: Stacked Cards */}
+                <div className="md:hidden divide-y divide-border/50">
                   {sortedValidations.map(item => {
                     const isExpanded = expandedValidationId === item.id;
                     const isEditing = editingValidationId === item.id;
                     const duplicate = getDuplicate(item);
                     
                     return (
-                      <React.Fragment key={item.id}>
-                        <TableRow className={`hover:bg-muted/30 ${isExpanded ? 'bg-muted/10 border-b-transparent' : ''}`}>
-                          <TableCell className="text-center pl-4">
-                            <Checkbox
-                              checked={selectedValidationIds.includes(item.id)}
-                              onCheckedChange={c => setSelectedValidationIds(prev => c ? [...prev, item.id] : prev.filter(id => id !== item.id))}
-                            />
-                          </TableCell>
-                          <TableCell>
-                            {isEditing ? (
-                              <Input
-                                value={editFields.businessName}
-                                onChange={e => setEditFields(prev => ({ ...prev, businessName: e.target.value }))}
-                                className="h-7 text-xs font-semibold py-0"
-                              />
-                            ) : (
-                              <div className="space-y-1 py-1">
-                                <div className="font-semibold text-xs text-foreground truncate max-w-[320px] flex items-center gap-1.5">
-                                  {item.businessName}
-                                  {duplicate && (
-                                    <Badge variant="outline" className="bg-rose-50 text-rose-700 border-rose-200 text-[8px] font-extrabold flex items-center gap-0.5">
-                                      <AlertTriangle className="w-2 h-2 shrink-0" />
-                                      Doublon {duplicate.type === 'crm' ? 'CRM' : 'Inbox'}
-                                    </Badge>
-                                  )}
-                                </div>
-                                <div className="text-[10px] text-muted-foreground flex items-center gap-1.5 flex-wrap">
-                                  <Badge variant="outline" className="text-[8px] font-mono uppercase px-1 py-0 scale-90 -translate-x-0.5">{item.source}</Badge>
-                                  <span className="font-medium text-foreground bg-muted/60 px-1.5 py-0.5 rounded text-[9px]">{item.niche}</span>
-                                  <span>·</span>
-                                  <span>{item.city}</span>
-                                </div>
-                                <p className="text-[10px] text-slate-500 leading-normal max-w-xl">
-                                  {item.website ? `🌐 Site : ${item.website.replace(/https?:\/\/(www\.)?/, '')}` : '❌ Aucun site internet détecté'} · {item.rating > 0 ? `⭐ ${item.rating}★ (${item.reviewsCount} avis)` : '⭐ Aucun avis public'} · {item.phone ? `📞 ${item.phone}` : '📞 Pas de numéro de téléphone'}
-                                </p>
-                              </div>
-                            )}
-                          </TableCell>
-                          <TableCell className="text-xs space-y-0.5">
-                            {isEditing ? (
+                      <div key={item.id} className={`p-4 flex flex-col gap-3 relative transition-colors ${isExpanded ? 'bg-muted/15' : 'hover:bg-muted/5'}`}>
+                        {isEditing ? (
+                          <div className="space-y-3 p-1">
+                            <div className="flex items-center justify-between border-b border-border/50 pb-2">
+                              <span className="text-xs font-bold text-foreground">Modifier le prospect</span>
+                              <span className="text-[10px] text-muted-foreground font-mono">ID: {item.id.slice(0, 8)}</span>
+                            </div>
+                            <div className="space-y-2.5">
                               <div className="space-y-1">
-                                <Input placeholder="Téléphone" value={editFields.phone} onChange={e => setEditFields(prev => ({ ...prev, phone: e.target.value }))} className="h-6 text-[10px] py-0" />
-                                <Input placeholder="Site Web" value={editFields.website} onChange={e => setEditFields(prev => ({ ...prev, website: e.target.value }))} className="h-6 text-[10px] py-0" />
+                                <label className="text-[10px] font-bold text-muted-foreground uppercase">Nom de l'établissement</label>
+                                <Input
+                                  value={editFields.businessName}
+                                  onChange={e => setEditFields(prev => ({ ...prev, businessName: e.target.value }))}
+                                  className="h-8 text-xs py-1"
+                                />
                               </div>
-                            ) : (
-                              <>
+                              <div className="space-y-1">
+                                <label className="text-[10px] font-bold text-muted-foreground uppercase">Téléphone</label>
+                                <Input
+                                  placeholder="Téléphone"
+                                  value={editFields.phone}
+                                  onChange={e => setEditFields(prev => ({ ...prev, phone: e.target.value }))}
+                                  className="h-8 text-xs py-1"
+                                />
+                              </div>
+                              <div className="space-y-1">
+                                <label className="text-[10px] font-bold text-muted-foreground uppercase">Site Web</label>
+                                <Input
+                                  placeholder="Site Web"
+                                  value={editFields.website}
+                                  onChange={e => setEditFields(prev => ({ ...prev, website: e.target.value }))}
+                                  className="h-8 text-xs py-1"
+                                />
+                              </div>
+                            </div>
+                            <div className="flex items-center justify-end gap-2 pt-2 border-t border-border/50">
+                              <Button size="sm" variant="outline" className="h-8 text-xs px-3" onClick={() => setEditingValidationId(null)}>
+                                Annuler
+                              </Button>
+                              <Button size="sm" className="h-8 text-xs px-3 bg-emerald-600 hover:bg-emerald-700 text-white gap-1" onClick={() => handleSaveEdit(item.id)}>
+                                <Check className="w-3.5 h-3.5" /> Enregistrer
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            {/* Header */}
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="flex items-start gap-2.5 pt-0.5">
+                                <Checkbox
+                                  checked={selectedValidationIds.includes(item.id)}
+                                  onCheckedChange={c => setSelectedValidationIds(prev => c ? [...prev, item.id] : prev.filter(id => id !== item.id))}
+                                  className="mt-0.5"
+                                />
+                                <div className="space-y-1 min-w-0">
+                                  <div className="font-semibold text-xs text-foreground leading-snug break-words">
+                                    {item.businessName}
+                                  </div>
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    <Badge variant="outline" className="text-[8px] font-mono uppercase px-1 py-0">{item.source}</Badge>
+                                    <span className="font-medium text-foreground bg-muted/80 px-1 py-0.5 rounded text-[8px]">{item.niche}</span>
+                                    <span className="text-[9px] text-muted-foreground">{item.city}</span>
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="flex flex-col items-end gap-1 shrink-0">
+                                <Badge
+                                  variant="outline"
+                                  className={`text-[9px] font-bold px-1.5 py-0.5 whitespace-nowrap ${
+                                    item.qualityScore >= 75
+                                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                      : item.qualityScore >= 50
+                                        ? 'bg-amber-50 text-amber-700 border-amber-200'
+                                        : 'bg-rose-50 text-rose-700 border-rose-200'
+                                  }`}
+                                >
+                                  {item.qualityScore} / 100
+                                </Badge>
+                                {item.opportunityScore >= 70 && (
+                                  <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200 text-[8px] font-bold">
+                                    Haut Potentiel
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Body */}
+                            <div className="pl-7 space-y-1.5 text-[10px] text-muted-foreground">
+                              {duplicate && (
+                                <Badge variant="outline" className="bg-rose-50 text-rose-700 border-rose-200 text-[8px] font-extrabold flex items-center gap-0.5 w-fit">
+                                  <AlertTriangle className="w-2.5 h-2.5 shrink-0" />
+                                  Doublon {duplicate.type === 'crm' ? 'CRM' : 'Inbox'}
+                                </Badge>
+                              )}
+                              <div className="flex flex-col gap-1">
                                 {item.phone ? (
-                                  <div className="flex items-center gap-1 text-[10px] text-foreground"><Phone className="h-3 w-3 text-muted-foreground shrink-0" />{item.phone}</div>
+                                  <div className="flex items-center gap-1.5"><Phone className="h-3.5 w-3.5 text-muted-foreground shrink-0" />{item.phone}</div>
                                 ) : (
-                                  <div className="text-[9px] text-muted-foreground italic">Pas de téléphone</div>
+                                  <div className="text-[9px] italic text-muted-foreground flex items-center gap-1.5"><Phone className="h-3.5 w-3.5 text-muted-foreground shrink-0 opacity-40" />Pas de téléphone</div>
                                 )}
                                 {item.website ? (
-                                  <a href={item.website} target="_blank" rel="noopener noreferrer" className="text-[10px] text-primary hover:underline flex items-center gap-1 max-w-[140px] truncate">
-                                    <Globe className="h-3 w-3 shrink-0" />
+                                  <a href={item.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline flex items-center gap-1.5 truncate max-w-full">
+                                    <Globe className="h-3.5 w-3.5 shrink-0" />
                                     {item.website.replace(/https?:\/\/(www\.)?/, '')}
                                   </a>
                                 ) : (
-                                  <div className="text-[9px] text-rose-500 font-semibold flex items-center gap-0.5">Aucun site web</div>
+                                  <div className="text-rose-500 font-semibold flex items-center gap-1.5"><Globe className="h-3.5 w-3.5 text-rose-500 shrink-0 opacity-70" />Aucun site web</div>
                                 )}
-                              </>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <Badge
-                                variant="outline"
-                                className={`text-[10px] font-bold px-1.5 py-0.5 ${
-                                  item.qualityScore >= 75
-                                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                                    : item.qualityScore >= 50
-                                      ? 'bg-amber-50 text-amber-700 border-amber-200'
-                                      : 'bg-rose-50 text-rose-700 border-rose-200'
-                                }`}
-                              >
-                                {item.qualityScore} / 100
-                              </Badge>
-                              {item.opportunityScore >= 70 && (
-                                <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200 text-[8px] font-bold animate-pulse">
-                                  Haut Potentiel
-                                </Badge>
-                              )}
+                              </div>
                             </div>
-                          </TableCell>
-                          <TableCell className="pr-4 text-right">
-                            <div className="flex items-center justify-end gap-1.5">
-                              {isEditing ? (
-                                <>
-                                  <Button size="sm" variant="outline" className="h-7 text-[10px] px-2" onClick={() => setEditingValidationId(null)}>Annuler</Button>
-                                  <Button size="sm" className="h-7 text-[10px] px-2 bg-emerald-600 text-white" onClick={() => handleSaveEdit(item.id)}><Check className="w-3 h-3" /></Button>
-                                </>
-                              ) : (
-                                <>
-                                  {activeTab === 'to_verify' && (
-                                    <Button size="sm" variant="outline" className="h-7 px-2 hover:bg-emerald-50 hover:text-emerald-600 hover:border-emerald-200" onClick={() => handleValidateLead(item.id)}>
-                                      <Check className="h-3 w-3" />
-                                    </Button>
-                                  )}
-                                  {activeTab === 'ready' && (
-                                    <Button size="sm" className="h-7 text-[10px] font-semibold gap-1 bg-emerald-600 hover:bg-emerald-700 text-white px-2" onClick={() => handleImportToCrm(item)}>
-                                      <Plus className="h-3 w-3" /> CRM
-                                    </Button>
-                                  )}
-                                  {(activeTab === 'to_verify' || activeTab === 'ready') && (
-                                    <Button size="sm" variant="outline" className="h-7 px-2 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200" onClick={() => handleIgnoreLead(item)}>
-                                      <ThumbsDown className="h-3 w-3" />
-                                    </Button>
-                                  )}
-                                  <Button size="sm" variant="outline" className="h-7 px-2" onClick={() => handleStartEdit(item)}>
-                                    <Edit2 className="h-3 w-3" />
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className={`h-7 px-2 text-[10px] font-semibold ${isExpanded ? 'bg-muted' : ''}`}
-                                    onClick={() => setExpandedValidationId(isExpanded ? null : item.id)}
-                                  >
-                                    Détails
-                                  </Button>
-                                </>
-                              )}
-                            </div>
-                          </TableCell>
-                        </TableRow>
 
-                        {/* Detailed expansion card */}
-                        {isExpanded && (
-                          <TableRow className="bg-muted/10 hover:bg-muted/10 border-b border-border/60">
-                            <TableCell colSpan={5} className="p-4 pl-12 pr-4">
-                              <div className="grid grid-cols-1 md:grid-cols-12 gap-5">
-                                
+                            {/* Quick Actions */}
+                            <div className="pl-7 flex items-center justify-between gap-1.5 pt-1">
+                              <div className="flex items-center gap-1.5">
+                                {activeTab === 'to_verify' && (
+                                  <Button size="sm" variant="outline" className="h-7 text-[10px] font-bold px-2.5 hover:bg-emerald-50 hover:text-emerald-600 hover:border-emerald-200 gap-1" onClick={() => handleValidateLead(item.id)}>
+                                    <Check className="h-3 w-3" /> Valider
+                                  </Button>
+                                )}
+                                {activeTab === 'ready' && (
+                                  <Button size="sm" className="h-7 text-[10px] font-bold gap-1 bg-emerald-600 hover:bg-emerald-700 text-white px-2.5" onClick={() => handleImportToCrm(item)}>
+                                    <Plus className="h-3 w-3" /> CRM
+                                  </Button>
+                                )}
+                                {(activeTab === 'to_verify' || activeTab === 'ready') && (
+                                  <Button size="sm" variant="outline" className="h-7 text-[10px] px-2.5 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 gap-1" onClick={() => handleIgnoreLead(item)}>
+                                    <ThumbsDown className="h-3 w-3" /> Ignorer
+                                  </Button>
+                                )}
+                                <Button size="sm" variant="outline" className="h-7 text-[10px] px-2 gap-1" onClick={() => handleStartEdit(item)}>
+                                  <Edit2 className="h-3 w-3" /> Éditer
+                                </Button>
+                              </div>
+
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className={`h-7 text-[10px] px-2.5 font-semibold gap-1 ${isExpanded ? 'bg-muted border-muted-foreground/30' : ''}`}
+                                onClick={() => setExpandedValidationId(isExpanded ? null : item.id)}
+                              >
+                                Détails {isExpanded ? '↑' : '↓'}
+                              </Button>
+                            </div>
+
+                            {/* Detailed expansion card */}
+                            {isExpanded && (
+                              <div className="pl-7 mt-3 pt-3 border-t border-border/50 space-y-4 animate-in slide-in-from-top-2">
                                 {/* Score Indicators (4 circular gauges) */}
-                                <div className="md:col-span-4 space-y-3 border-r border-border/50 pr-4">
-                                  <h5 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5"><SlidersHorizontal className="w-3.5 h-3.5 text-primary" />Métriques & Scoring</h5>
-                                  <div className="grid grid-cols-2 gap-2">
+                                <div className="space-y-2">
+                                  <h5 className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1"><SlidersHorizontal className="w-3 h-3 text-primary" />Métriques & Scoring</h5>
+                                  <div className="grid grid-cols-2 xs:grid-cols-4 gap-2">
                                     <ScoreGauge value={item.completenessScore} label="Complétude" color="stroke-emerald-500" />
                                     <ScoreGauge value={item.localFitScore} label="Alignement" color="stroke-sky-500" />
                                     <ScoreGauge value={item.opportunityScore} label="Opportunité" color="stroke-orange-500" />
@@ -1984,29 +2288,29 @@ export function ProspectingRoot() {
                                 </div>
 
                                 {/* SEO Audit & Duplicates check */}
-                                <div className="md:col-span-5 space-y-3 border-r border-border/50 pr-4">
-                                  <h5 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5"><Info className="w-3.5 h-3.5 text-primary" />Opportunités Commerciales</h5>
-                                  <div className="p-3 bg-muted/40 rounded-lg border border-border/40 text-[11px] text-muted-foreground space-y-2">
+                                <div className="space-y-2">
+                                  <h5 className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1"><Info className="w-3 h-3 text-primary" />Opportunités Commerciales</h5>
+                                  <div className="p-2.5 bg-muted/40 rounded-lg border border-border/30 text-[10px] text-muted-foreground space-y-2">
                                     <div className="flex items-start gap-1.5">
-                                      <Star className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
+                                      <Star className="w-3 h-3 text-amber-500 shrink-0 mt-0.5" />
                                       <div>
                                         <p className="font-semibold text-foreground">Évaluation en ligne :</p>
                                         <p>{item.rating > 0 ? `${item.rating}/5 étoiles basées sur ${item.reviewsCount} avis.` : 'Aucune note disponible sur les profils publics.'}</p>
                                       </div>
                                     </div>
-                                    <div className="flex items-start gap-1.5 border-t border-border/30 pt-2">
-                                      <Globe className="w-3.5 h-3.5 text-primary shrink-0 mt-0.5" />
+                                    <div className="flex items-start gap-1.5 border-t border-border/20 pt-2">
+                                      <Globe className="w-3 h-3 text-primary shrink-0 mt-0.5" />
                                       <div>
                                         <p className="font-semibold text-foreground">Audit de présence web :</p>
                                         <p>{!item.website ? 'Aucun site web détecté dans la base OSM / Google Maps. Opportunité directe de création.' : `Site actif: ${item.website}`}</p>
                                       </div>
                                     </div>
                                     {item.address && (
-                                      <div className="flex items-start gap-1.5 border-t border-border/30 pt-2">
-                                        <MapPin className="w-3.5 h-3.5 text-muted-foreground shrink-0 mt-0.5" />
+                                      <div className="flex items-start gap-1.5 border-t border-border/20 pt-2">
+                                        <MapPin className="w-3 h-3 text-muted-foreground shrink-0 mt-0.5" />
                                         <div>
                                           <p className="font-semibold text-foreground">Adresse complète :</p>
-                                          <p className="font-mono text-[10px]">{item.address}</p>
+                                          <p className="font-mono text-[9px] break-all">{item.address}</p>
                                         </div>
                                       </div>
                                     )}
@@ -2014,74 +2318,66 @@ export function ProspectingRoot() {
                                 </div>
 
                                 {/* Merge duplicates section & metadata */}
-                                <div className="md:col-span-3 space-y-3 flex flex-col justify-between">
-                                  <div>
-                                    <h5 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5"><GitMerge className="w-3.5 h-3.5 text-primary" />Dédoublonnement</h5>
-                                    {duplicate ? (
-                                      <div className="p-2.5 rounded-lg border border-rose-200 bg-rose-50/20 text-[10px] text-muted-foreground space-y-2 mt-1.5">
-                                        <p className="leading-snug">
-                                          Un prospect similaire a été détecté dans {duplicate.type === 'crm' ? 'votre CRM' : 'votre boîte de validation'}{' '}
-                                          (<span className="font-semibold text-foreground">{duplicate.name}</span>).
-                                        </p>
-                                        <Button
-                                          size="sm"
-                                          variant="outline"
-                                          onClick={() => handleMergeDuplicate(item, duplicate)}
-                                          className="w-full h-7 text-[10px] font-bold gap-1 border-rose-300 text-rose-700 bg-rose-50 hover:bg-rose-100"
-                                        >
-                                          <GitMerge className="w-3 h-3" />
-                                          Fusionner les données
-                                        </Button>
-                                      </div>
-                                    ) : (
-                                      <p className="text-[10px] text-muted-foreground italic mt-2">Aucun doublon détecté pour ce prospect.</p>
-                                    )}
-                                  </div>
-
-                                  <div>
-                                    <h5 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5"><MapIcon className="w-3.5 h-3.5 text-primary" />Contribution OSM</h5>
-                                    <div className="space-y-1.5 mt-1.5">
-                                      {item.originalTags?.osm_id && item.originalTags?.osm_type ? (
-                                        <a
-                                          href={`https://www.openstreetmap.org/edit?editor=id&${item.originalTags.osm_type}=${item.originalTags.osm_id}`}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                          className="w-full inline-flex items-center justify-center h-8 rounded-lg border border-primary/20 bg-primary/5 hover:bg-primary/10 text-primary text-[10px] font-bold gap-1 transition-colors"
-                                        >
-                                          <Edit2 className="w-3 h-3 shrink-0" />
-                                          Améliorer sur OSM (iD)
-                                        </a>
-                                      ) : item.latitude && item.longitude ? (
-                                        <a
-                                          href={`https://www.openstreetmap.org/note/new?lat=${item.latitude}&lon=${item.longitude}#map=17/${item.latitude}/${item.longitude}`}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                          className="w-full inline-flex items-center justify-center h-8 rounded-lg border border-amber-200 bg-amber-50/50 hover:bg-amber-50 text-amber-700 text-[10px] font-bold gap-1 transition-colors"
-                                        >
-                                          <AlertTriangle className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                                          Signaler fiche incomplète
-                                        </a>
-                                      ) : null}
+                                <div className="grid grid-cols-1 gap-3">
+                                  {duplicate && (
+                                    <div className="p-2.5 rounded-lg border border-rose-200 bg-rose-50/20 text-[10px] text-muted-foreground space-y-2">
+                                      <p className="leading-snug">
+                                        Un prospect similaire a été détecté dans {duplicate.type === 'crm' ? 'votre CRM' : 'votre boîte de validation'}{' '}
+                                        (<span className="font-semibold text-foreground">{duplicate.name}</span>).
+                                      </p>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => handleMergeDuplicate(item, duplicate)}
+                                        className="w-full h-7 text-[10px] font-bold gap-1 border-rose-300 text-rose-700 bg-rose-50 hover:bg-rose-100"
+                                      >
+                                        <GitMerge className="w-3 h-3" />
+                                        Fusionner les données
+                                      </Button>
                                     </div>
-                                  </div>
+                                  )}
 
-                                  <div className="text-[9px] text-muted-foreground font-mono space-y-0.5 text-right mt-auto">
-                                    <p>Créé le: {new Date(item.createdAt).toLocaleString('fr-CA')}</p>
-                                    {item.originalTags && Object.keys(item.originalTags).length > 0 && (
-                                      <p className="text-[9px] text-primary truncate max-w-full">Tags: {Object.keys(item.originalTags).slice(0, 5).join(', ')}</p>
-                                    )}
+                                  <div className="space-y-1.5">
+                                    <h5 className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1"><MapIcon className="w-3 h-3 text-primary" />Contribution OSM</h5>
+                                    {item.originalTags?.osm_id && item.originalTags?.osm_type ? (
+                                      <a
+                                        href={`https://www.openstreetmap.org/edit?editor=id&${item.originalTags.osm_type}=${item.originalTags.osm_id}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="w-full inline-flex items-center justify-center h-8 rounded-lg border border-primary/20 bg-primary/5 hover:bg-primary/10 text-primary text-[10px] font-bold gap-1 transition-colors"
+                                      >
+                                        <Edit2 className="w-3 h-3 shrink-0" />
+                                        Améliorer sur OSM (iD)
+                                      </a>
+                                    ) : item.latitude && item.longitude ? (
+                                      <a
+                                        href={`https://www.openstreetmap.org/note/new?lat=${item.latitude}&lon=${item.longitude}#map=17/${item.latitude}/${item.longitude}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="w-full inline-flex items-center justify-center h-8 rounded-lg border border-amber-200 bg-amber-50/50 hover:bg-amber-50 text-amber-700 text-[10px] font-bold gap-1 transition-colors"
+                                      >
+                                        <AlertTriangle className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                                        Signaler fiche incomplète
+                                      </a>
+                                    ) : null}
                                   </div>
                                 </div>
 
+                                <div className="text-[8px] text-muted-foreground font-mono space-y-0.5 text-right pt-2 border-t border-border/20">
+                                  <p>Créé le: {new Date(item.createdAt).toLocaleString('fr-CA')}</p>
+                                  {item.originalTags && Object.keys(item.originalTags).length > 0 && (
+                                    <p className="truncate max-w-full">Tags: {Object.keys(item.originalTags).slice(0, 5).join(', ')}</p>
+                                  )}
+                                </div>
                               </div>
-                            </TableCell>
-                          </TableRow>
+                            )}
+                          </>
                         )}
-                      </React.Fragment>
+                      </div>
                     );
                   })}
-                </TableBody>
-              </Table>
+                </div>
+              </>
             )}
           </CardContent>
         </Card>

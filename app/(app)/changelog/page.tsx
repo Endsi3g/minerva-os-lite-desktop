@@ -18,6 +18,17 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v2.90.0',
+      date: '2026-06-20',
+      titleKey: 'changelog.v2_90_0_title' as TranslationKey,
+      descKey: 'changelog.v2_90_0_desc' as TranslationKey,
+      highlights: [
+        "Fix clipping mobile : la barre flottante d'actions groupées (bulk actions) était positionnée à bottom-6 (24px) et s'affichait derrière la bottom navigation bar (64px). Corrigé à bottom-[76px] pour apparaître au-dessus.",
+        "Fix padding responsive : l'espacement intérieur du widget Boîte de Validation est réduit sur mobile (px-3 au lieu de p-6) pour éviter tout débordement horizontal sur petits écrans.",
+        "Scroll dynamique : quand la barre flottante d'actions est active sur mobile, le conteneur scrollable ajoute automatiquement pb-52 pour que le dernier prospect reste scrollable au-dessus de la barre.",
+      ],
+    },
+    {
       version: 'v2.89.0',
       date: '2026-06-20',
       titleKey: 'changelog.v2_89_0_title' as TranslationKey,
