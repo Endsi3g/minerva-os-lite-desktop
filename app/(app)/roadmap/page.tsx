@@ -52,7 +52,10 @@ const roadmapData: RoadmapItem[] = [
   { module: 'Canvas', feature: 'Éditeur riche TipTap + Export', desc: 'Canvas en éditeur WYSIWYG (style Word) avec export PDF, HTML et Markdown. Après export, proposition de déposer dans la Bibliothèque.', priority: 'high', status: 'in_progress' },
   { module: 'Terrain', feature: 'Page visite terrain dédiée', desc: "Page de préparation de visite : script IA, notes passées, compte-rendu. Notification équipe après visite.", priority: 'high', status: 'in_progress' },
   { module: 'Services', feature: 'Page Services & Tarifs', desc: 'Refonte complète avec catalogue de prestations, packages, grilles tarifaires et devis PDF.', priority: 'medium', status: 'in_progress' },
-  { module: 'Équipes', feature: 'Invitations via lien (sans SMTP)', desc: "Remplacement du système SMTP par un lien d'invitation sécurisé, sans configuration email requise.", priority: 'high', status: 'in_progress' },
+  { module: 'Équipes', feature: 'Invitations via lien (sans SMTP)', desc: "Remplacement du système SMTP par un lien d'invitation sécurisé, sans configuration email requise.", priority: 'high', status: 'available' },
+  { module: 'Équipes', feature: 'Quitter une équipe', desc: "Un membre peut quitter un workspace. Son accès est révoqué immédiatement et la table team_members est nettoyée.", priority: 'medium', status: 'available' },
+  { module: 'Équipes', feature: 'Rôles personnalisés & Permissions', desc: "Onglet Rôles dans /team : création de rôles custom avec 19 toggles de modules. Sidebar filtrée selon le rôle effectif (défaut ou custom).", priority: 'high', status: 'available' },
+  { module: 'Équipes', feature: 'Page invitation redesignée', desc: "Page /join animée : avatar workspace, confetti à l'acceptation, badge rôle avec description, preview des modules accessibles.", priority: 'medium', status: 'available' },
 
   // ─── Planned ─────────────────────────────────────────────────────────
   { module: 'Booking', feature: 'Scheduling public / Booking Links', desc: 'Page publique /book/[username] avec Google Calendar freebusy, slots disponibles et lien partageable. Nécessite scope calendar.events OAuth.', priority: 'high', status: 'planned' },
@@ -62,7 +65,7 @@ const roadmapData: RoadmapItem[] = [
   // ─── Backlog ──────────────────────────────────────────────────────────
   { module: 'Canvas', feature: 'IA ouvre le canvas automatiquement', desc: "L'IA détecte quand la réponse nécessite le canvas (long document, rapport, script) et l'ouvre automatiquement. Sidebar se réduit à l'ouverture.", priority: 'medium', status: 'backlog' },
   { module: 'Terrain', feature: 'Notifications équipe après visite', desc: "Après un compte-rendu de visite terrain, notifier les membres de l'équipe dans l'app avec le résultat et les prochaines étapes.", priority: 'medium', status: 'backlog' },
-  { module: 'Plateforme', feature: 'Permissions & audit admin', desc: 'Matrice rôles owner/admin/manager/rep, accès par module, audit log.', priority: 'medium', status: 'backlog' },
+  { module: 'Plateforme', feature: 'Audit log admin', desc: "Journal d'audit des actions : qui a modifié quoi, quand. Visible uniquement par l'owner.", priority: 'medium', status: 'backlog' },
   { module: 'Automation', feature: 'Builder visuel', desc: 'Builder trigger → conditions → actions (interface no-code drag & drop).', priority: 'medium', status: 'backlog' },
   { module: 'Contenu', feature: 'Templates email versionnés', desc: 'Bibliothèque de templates email avec A/B tests, snippets partagés et analytics par template.', priority: 'medium', status: 'backlog' },
   { module: 'Google', feature: 'People / Contacts API', desc: "Sync bidirectionnel Google Contacts — importer et enrichir depuis le carnet d'adresses Google.", priority: 'low', status: 'backlog' },
