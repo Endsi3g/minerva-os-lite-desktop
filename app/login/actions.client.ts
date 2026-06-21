@@ -3,6 +3,15 @@
 // All Supabase auth calls are made directly from the browser — no server required.
 import { createClient } from '@/lib/supabase/client';
 
+// After successful auth, check for a pending team invite and redirect there first.
+function getPostAuthDestination(defaultPath: string): string {
+  try {
+    const pendingInvite = localStorage.getItem('minerva_pending_invite');
+    if (pendingInvite) return `/join/${pendingInvite}`;
+  } catch {}
+  return defaultPath;
+}
+
 type ActionResult = { error?: string; success?: boolean };
 
 export async function login(_state: unknown, formData: FormData): Promise<ActionResult> {
@@ -17,8 +26,7 @@ export async function login(_state: unknown, formData: FormData): Promise<Action
   const { error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) return { error: error.message || 'Identifiants invalides.' };
 
-  // Client-side navigation after login
-  window.location.replace('/today');
+  window.location.replace(getPostAuthDestination('/today'));
   return {};
 }
 
@@ -75,7 +83,9 @@ export async function signup(_state: unknown, formData: FormData): Promise<Actio
     }
   }
 
-  window.location.replace('/onboarding');
+  // If there's a pending invite, go accept it first; the join page will redirect to /today
+  // which triggers onboarding check via middleware if settings are incomplete.
+  window.location.replace(getPostAuthDestination('/onboarding'));
   return {};
 }
 
@@ -116,7 +126,7 @@ export async function verifyOtp(
   const { error } = await supabase.auth.verifyOtp({ email, token, type: 'email' });
   if (error) return { error: error.message };
 
-  window.location.replace('/today');
+  window.location.replace(getPostAuthDestination('/today'));
   return {};
 }
 
