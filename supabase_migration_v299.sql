@@ -29,7 +29,7 @@ SET workspace_id = (
 WHERE tm.workspace_id IS NULL
   AND tm.status = 'pending';
 
--- 4. Set active_workspace_id for existing active members to the workspace they joined
+-- 4. Set active_workspace_id for existing active members to the MOST RECENTLY joined workspace
 UPDATE public.settings s
 SET active_workspace_id = (
   SELECT tm.workspace_id
@@ -37,7 +37,7 @@ SET active_workspace_id = (
   WHERE tm.member_user_id = s.user_id
     AND tm.status = 'active'
     AND tm.workspace_id IS NOT NULL
-  ORDER BY tm.joined_at ASC
+  ORDER BY tm.joined_at DESC
   LIMIT 1
 )
 WHERE s.active_workspace_id IS NULL

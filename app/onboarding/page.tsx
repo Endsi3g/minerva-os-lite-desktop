@@ -337,7 +337,7 @@ function OnboardingPageContent() {
   };
 
   const handleFinalizeOnboarding = async () => {
-    const name = fullName.trim() || 'Utilisateur Minerva';
+    const name = fullName.trim() || email.split('@')[0] || 'Utilisateur';
     const nameParts = name.split(/\s+/);
     const firstName = nameParts[0] || '';
     const lastName = nameParts.slice(1).join(' ') || '';

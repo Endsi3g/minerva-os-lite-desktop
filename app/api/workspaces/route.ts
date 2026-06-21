@@ -48,16 +48,25 @@ export async function GET() {
   const adminClient = getAdminClient();
   const { data: memberships } = await adminClient
     .from('team_members')
-    .select('id, workspace_id, workspace_owner_id')
+    .select('id, workspace_id, workspace_owner_id, joined_at')
     .eq('member_user_id', user.id)
-    .eq('status', 'active');
+    .eq('status', 'active')
+    .order('joined_at', { ascending: false }); // most recently joined first
 
+  // Map membership metadata by workspace_id for joined_at ordering
+  const membershipMeta: Record<string, string> = {};
   let memberWorkspaces: { id: string; name: string; owner_id: string; created_at: string }[] = [];
+
   if (memberships && memberships.length > 0) {
     const directIds = memberships.map((m: any) => m.workspace_id).filter(Boolean) as string[];
     const ownerFallbacks = memberships
       .filter((m: any) => !m.workspace_id && m.workspace_owner_id)
-      .map((m: any) => ({ rowId: m.id, ownerId: m.workspace_owner_id as string }));
+      .map((m: any) => ({ rowId: m.id, ownerId: m.workspace_owner_id as string, joinedAt: m.joined_at as string }));
+
+    // Record joined_at per workspace_id for ordering
+    memberships.forEach((m: any) => {
+      if (m.workspace_id) membershipMeta[m.workspace_id] = m.joined_at;
+    });
 
     // Fetch workspaces by direct workspace_id
     if (directIds.length > 0) {
@@ -72,6 +81,7 @@ export async function GET() {
       if (ws) {
         for (const w of ws) {
           memberWorkspaces.push(w);
+          membershipMeta[w.id] = ownerFallbacks.find(f => f.ownerId === w.owner_id)?.joinedAt ?? '';
           // Auto-fix: backfill workspace_id so RLS works on next load
           const row = ownerFallbacks.find(f => f.ownerId === w.owner_id);
           if (row) {
@@ -85,10 +95,16 @@ export async function GET() {
     }
   }
 
-  // Combine workspaces
+  // Combine: owned first, then member workspaces sorted by joined_at DESC (most recent first)
+  memberWorkspaces.sort((a, b) => {
+    const tA = membershipMeta[a.id] ?? '';
+    const tB = membershipMeta[b.id] ?? '';
+    return tB.localeCompare(tA);
+  });
+
   const allWorkspaces = [
     ...(owned || []).map(w => ({ ...w, isOwner: true, role: 'owner' })),
-    ...memberWorkspaces.map(w => ({ ...w, isOwner: false, role: 'member' }))
+    ...memberWorkspaces.map(w => ({ ...w, isOwner: false, role: 'member', joinedAt: membershipMeta[w.id] ?? null }))
   ];
 
   // Enrich with owner full name
