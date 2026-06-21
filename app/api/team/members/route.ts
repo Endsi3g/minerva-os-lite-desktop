@@ -86,7 +86,27 @@ export async function GET(request: NextRequest) {
     })
   );
 
-  return NextResponse.json({ members: enriched });
+  // Prepend the workspace owner as an assignable person (they're not in team_members)
+  const [ownerProfile, ownerAuth] = await Promise.all([
+    admin.from('settings').select('full_name, company_name').eq('user_id', ownerUserId).maybeSingle(),
+    admin.auth.admin.getUserById(ownerUserId),
+  ]);
+  const ownerEntry = {
+    id: `__owner__${ownerUserId}`,
+    workspace_owner_id: ownerUserId,
+    member_user_id: ownerUserId,
+    email: ownerAuth.data?.user?.email || '',
+    role: 'admin' as const,
+    status: 'active' as const,
+    invited_at: null,
+    joined_at: null,
+    plan: 'Business',
+    usage_count: 0,
+    profile: ownerProfile.data ?? null,
+    isOwner: true,
+  };
+
+  return NextResponse.json({ members: [ownerEntry, ...enriched] });
 }
 
 // PATCH /api/team/members — Update a member's role, plan, or usage_count (owner only)

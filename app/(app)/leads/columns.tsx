@@ -13,6 +13,7 @@ import { cn } from '@/lib/utils';
 import { getTemperatureStyle, getTemperatureLabel } from '@/lib/lead-badges';
 import { computeLeadScore } from '@/lib/lead-score';
 import { LeadsAssignCell } from './_components/leads-assign-cell';
+export { TEAM_ASSIGN_VALUE } from './_components/leads-assign-cell';
 
 interface WorkspaceMember {
   id: string;

@@ -15,6 +15,7 @@ import { createClient } from '@/lib/supabase/client';
 import type { AuthResponse } from '@supabase/supabase-js';
 import { getApiUrl } from '@/lib/api-helper';
 import { buildColumns } from '../columns';
+import { TEAM_ASSIGN_VALUE } from './leads-assign-cell';
 import { DataTable } from '../data-table';
 import { LeadsHeader } from './leads-header';
 import { LeadsFilters } from './leads-filters';
@@ -66,10 +67,10 @@ export function LeadsRoot() {
 
   useEffect(() => { fetchMembers(); }, [fetchMembers]);
 
-  // Apply "Assigné à moi" pre-filter
+  // Apply "Assigné à moi" pre-filter — includes team-wide assignments too
   const visibleLeads =
     showAssignedToMe && myUserId
-      ? leads.filter(l => l.assignedTo === myUserId)
+      ? leads.filter(l => l.assignedTo === myUserId || l.assignedTo === TEAM_ASSIGN_VALUE)
       : leads;
 
   const columns = buildColumns(workspaceMembers);
