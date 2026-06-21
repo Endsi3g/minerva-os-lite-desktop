@@ -330,8 +330,27 @@ function OnboardingPageContent() {
   }, [photoTab, step]);
 
   const handleCreateWorkspace = async () => {
+    const name = workspaceName.trim() || 'Mon Workspace';
     setCreatingWorkspace(true);
-    await new Promise((r) => setTimeout(r, 2200));
+    try {
+      // Create the workspace in Supabase
+      const res = await fetch('/api/workspaces', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        // Set it as active workspace immediately
+        if (data.workspace?.id) {
+          await fetch('/api/workspaces', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ activeWorkspaceId: data.workspace.id }),
+          });
+        }
+      }
+    } catch { /* network error — workspace will be created on demand */ }
     setCreatingWorkspace(false);
     goToStep('pricing', 'forward');
   };

@@ -5,7 +5,6 @@ import { Check, Users, UserPlus, X } from 'lucide-react';
 import { useReach } from '@/lib/reach-context';
 import { Lead } from '@/lib/mock-data';
 
-// Special sentinel value for "assigned to whole team"
 export const TEAM_ASSIGN_VALUE = '__team__';
 
 interface WorkspaceMember {
@@ -35,14 +34,16 @@ export function LeadsAssignCell({ lead, workspaceMembers }: LeadsAssignCellProps
     ? active.find(m => m.member_user_id === lead.assignedTo)
     : null;
 
-  const assignedLabel = isTeam
-    ? 'Équipe'
-    : assignedMember
-    ? displayName(assignedMember)
-    : null;
+  const isAssigned = isTeam || !!assignedMember;
+
+  const handleClear = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    updateLead(lead.id, { assignedTo: undefined });
+  };
 
   return (
-    <div className="relative">
+    <div className="relative group/assign flex items-center gap-1">
+      {/* Trigger — always visible when assigned, hover-only when not */}
       <button
         onClick={e => { e.stopPropagation(); setOpen(o => !o); }}
         className={[
@@ -51,7 +52,7 @@ export function LeadsAssignCell({ lead, workspaceMembers }: LeadsAssignCellProps
             ? 'bg-[#059669]/10 text-[#059669] hover:bg-[#059669]/15'
             : assignedMember
             ? 'bg-[#f54e00]/8 text-[#f54e00] hover:bg-[#f54e00]/15'
-            : 'text-neutral-400 hover:text-[#f54e00] hover:bg-neutral-100',
+            : 'text-neutral-300 hover:text-[#f54e00] hover:bg-neutral-100 opacity-0 group-hover/assign:opacity-100',
         ].join(' ')}
       >
         {isTeam ? (
@@ -64,7 +65,7 @@ export function LeadsAssignCell({ lead, workspaceMembers }: LeadsAssignCellProps
             <div className="w-4 h-4 rounded-full bg-[#26251e] text-white text-[8px] font-bold flex items-center justify-center shrink-0">
               {displayName(assignedMember).charAt(0).toUpperCase()}
             </div>
-            <span className="truncate max-w-[80px]">{displayName(assignedMember)}</span>
+            <span className="truncate max-w-[72px]">{displayName(assignedMember)}</span>
           </>
         ) : (
           <>
@@ -74,10 +75,22 @@ export function LeadsAssignCell({ lead, workspaceMembers }: LeadsAssignCellProps
         )}
       </button>
 
+      {/* Quick-clear × — only visible when assigned */}
+      {isAssigned && (
+        <button
+          onClick={handleClear}
+          className="opacity-0 group-hover/assign:opacity-100 text-neutral-300 hover:text-neutral-600 transition-opacity"
+          title="Retirer l'assignation"
+        >
+          <X className="w-3 h-3" />
+        </button>
+      )}
+
+      {/* Dropdown */}
       {open && (
         <>
           <div className="fixed inset-0 z-[80]" onClick={() => setOpen(false)} />
-          <div className="absolute left-0 top-8 z-[90] bg-white border border-neutral-200 rounded-xl shadow-lg py-1 min-w-[200px] max-h-56 overflow-y-auto">
+          <div className="absolute left-0 top-8 z-[90] bg-white border border-neutral-200 rounded-xl shadow-lg py-1 min-w-[210px] max-h-56 overflow-y-auto">
             <div className="px-3 py-1.5 flex items-center justify-between border-b border-neutral-100 mb-0.5">
               <span className="text-[9px] font-bold uppercase tracking-wider text-neutral-400">Assigner à</span>
               <button onClick={() => setOpen(false)} className="text-neutral-400 hover:text-neutral-600">
@@ -118,7 +131,7 @@ export function LeadsAssignCell({ lead, workspaceMembers }: LeadsAssignCellProps
             {/* Individual members */}
             {active.map(m => {
               const name = displayName(m);
-              const isAssigned = lead.assignedTo === m.member_user_id;
+              const isCurrent = lead.assignedTo === m.member_user_id;
               return (
                 <button
                   key={m.id}
@@ -139,7 +152,7 @@ export function LeadsAssignCell({ lead, workspaceMembers }: LeadsAssignCellProps
                       <p className="text-[9px] text-neutral-400 truncate">{m.email}</p>
                     </div>
                   </div>
-                  {isAssigned && <Check className="w-3 h-3 text-[#059669] shrink-0" />}
+                  {isCurrent && <Check className="w-3 h-3 text-[#059669] shrink-0" />}
                 </button>
               );
             })}

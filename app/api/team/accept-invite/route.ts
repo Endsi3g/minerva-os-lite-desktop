@@ -1,6 +1,15 @@
 import { NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
+import { createClient as createAdminClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
+
+function getAdminClient() {
+  return createAdminClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { autoRefreshToken: false, persistSession: false } }
+  );
+}
 
 export async function POST() {
   try {
@@ -36,12 +45,13 @@ export async function POST() {
       return NextResponse.json({ error: 'No pending invitation found' }, { status: 404 });
     }
 
+    const admin = getAdminClient();
     const results = [];
     for (const membership of memberships) {
       // If workspace_id is still null, resolve it now from the owner's workspace
       let workspaceId = membership.workspace_id;
       if (!workspaceId) {
-        const { data: ws } = await supabase
+        const { data: ws } = await admin
           .from('workspaces')
           .select('id')
           .eq('owner_id', membership.workspace_owner_id)
@@ -51,11 +61,12 @@ export async function POST() {
         workspaceId = ws?.id ?? null;
       }
 
-      const { error: updateErr } = await supabase
+      const { error: updateErr } = await admin
         .from('team_members')
         .update({
           member_user_id: user.id,
           status: 'active',
+          joined_at: new Date().toISOString(),
           workspace_id: workspaceId,
         })
         .eq('id', membership.id);
@@ -63,6 +74,13 @@ export async function POST() {
       if (updateErr) {
         console.error('Error activating membership:', updateErr);
         continue;
+      }
+
+      // Auto-switch invited user to the inviter's workspace
+      if (workspaceId) {
+        await admin
+          .from('settings')
+          .upsert({ user_id: user.id, active_workspace_id: workspaceId }, { onConflict: 'user_id' });
       }
 
       // Fetch workspace details for the response

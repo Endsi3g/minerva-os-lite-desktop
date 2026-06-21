@@ -20,7 +20,6 @@ interface Member {
   email: string;
   role: string;
   status: string;
-  custom_role_id?: string | null;
   profile?: { full_name?: string; company_name?: string } | null;
 }
 
@@ -69,7 +68,6 @@ export default function MemberRolePage() {
 
       setMember(found);
       setSelectedRole(found.role || 'editor');
-      setSelectedCustomRoleId(found.custom_role_id || null);
       setCustomRoles(rolesData.roles || []);
     } catch { setError('Erreur de chargement.'); }
     finally { setLoading(false); }
@@ -85,8 +83,7 @@ export default function MemberRolePage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           memberId,
-          role: selectedCustomRoleId ? selectedRole : selectedRole,
-          customRoleId: selectedCustomRoleId,
+          role: selectedRole,
         }),
       });
       if (res.ok) {

@@ -751,13 +751,44 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
         const list: Workspace[] = data.workspaces || [];
         setWorkspacesList(list);
 
-        // Active workspace comes from Supabase settings (no localStorage)
+        // Active workspace: prefer what Supabase settings says (set on invite accept / explicit switch)
         const savedId: string | null = data.activeWorkspaceId ?? null;
         let active = savedId ? list.find((w) => w.id === savedId) : null;
         if (!active && list.length > 0) {
-          // Prefer the workspace the user was invited to (non-owner) if they have one,
-          // otherwise fall back to their own workspace
+          // Prefer the workspace the user was invited into (member, not owner),
+          // then fall back to their own workspace
           active = list.find((w) => !w.isOwner) || list.find((w) => w.isOwner) || list[0];
+        }
+
+        if (!active && list.length === 0) {
+          // No workspace at all (edge case: onboarding skipped workspace creation)
+          // Auto-create a default one so the app doesn't break
+          try {
+            const createRes = await fetch(getApiUrl('/api/workspaces'), {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ name: 'Mon Workspace' }),
+            });
+            if (createRes.ok) {
+              const createData = await createRes.json();
+              if (createData.workspace) {
+                const ws: Workspace = {
+                  id: createData.workspace.id,
+                  name: createData.workspace.name,
+                  owner_id: createData.workspace.owner_id,
+                  description: '',
+                  tag: '',
+                  accent_color: '',
+                  logo_base64: '',
+                  created_at: createData.workspace.created_at,
+                  isOwner: true,
+                  ownerName: 'Vous',
+                };
+                setWorkspacesList([ws]);
+                active = ws;
+              }
+            }
+          } catch { /* network error */ }
         }
 
         if (active) {

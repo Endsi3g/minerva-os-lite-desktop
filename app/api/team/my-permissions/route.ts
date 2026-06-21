@@ -44,7 +44,7 @@ export async function GET(req: NextRequest) {
   // Look up this user's membership
   const { data: member } = await admin
     .from('team_members')
-    .select('role, custom_role_id')
+    .select('role')
     .eq('workspace_owner_id', workspaceOwnerId)
     .eq('member_user_id', user.id)
     .eq('status', 'active')
@@ -53,22 +53,6 @@ export async function GET(req: NextRequest) {
   if (!member) {
     // Not a member — grant viewer-like access
     return NextResponse.json({ role: 'viewer', permissions: DEFAULT_ROLE_PERMISSIONS['viewer'] });
-  }
-
-  // If they have a custom role, use its permissions
-  if (member.custom_role_id) {
-    const { data: customRole } = await admin
-      .from('workspace_roles')
-      .select('name, permissions')
-      .eq('id', member.custom_role_id)
-      .maybeSingle();
-
-    if (customRole) {
-      return NextResponse.json({
-        role: customRole.name,
-        permissions: (customRole.permissions as PermissionModule[]) || [],
-      });
-    }
   }
 
   const role = member.role || 'viewer';

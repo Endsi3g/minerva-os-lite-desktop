@@ -129,7 +129,7 @@ export async function PATCH(request: NextRequest) {
   }
 
   const body = await request.json();
-  const { memberId, role, plan, usageCount, customRoleId } = body;
+  const { memberId, role, plan, usageCount } = body;
 
   if (!memberId) {
     return NextResponse.json({ error: 'Member ID required' }, { status: 400 });
@@ -148,15 +148,11 @@ export async function PATCH(request: NextRequest) {
 
   // Construct updates map
   const updates: Record<string, string | number | null> = {};
-  if (role !== undefined && role !== 'custom') {
+  if (role !== undefined) {
     if (!['admin', 'editor', 'viewer'].includes(role)) {
       return NextResponse.json({ error: 'Invalid role' }, { status: 400 });
     }
     updates.role = role;
-  }
-  if (customRoleId !== undefined) {
-    updates.custom_role_id = customRoleId || null;
-    if (!role || role === 'custom') updates.role = 'editor';
   }
   if (plan !== undefined) {
     updates.plan = plan;
