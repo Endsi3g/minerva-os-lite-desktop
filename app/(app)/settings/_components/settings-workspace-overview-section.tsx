@@ -95,7 +95,7 @@ export function SettingsWorkspaceOverviewSection({ usage }: Props) {
       {usage && (
         <div className="border border-border rounded-xl p-5 bg-card">
           <h3 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-4">Utilisation</h3>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {[
               { label: 'Leads', value: usage.leadsCount },
               { label: 'Agents', value: usage.agentsCount },

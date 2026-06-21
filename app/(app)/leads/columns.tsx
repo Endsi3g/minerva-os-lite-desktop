@@ -12,6 +12,14 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { cn } from '@/lib/utils';
 import { getTemperatureStyle, getTemperatureLabel } from '@/lib/lead-badges';
 import { computeLeadScore } from '@/lib/lead-score';
+import { LeadsAssignCell } from './_components/leads-assign-cell';
+
+interface WorkspaceMember {
+  id: string;
+  email: string;
+  member_user_id: string | null;
+  profile?: { full_name: string | null; company_name: string | null } | null;
+}
 
 // Helper for status badge styling
 const getStatusStyle = (status: Lead['status']) => {
@@ -42,7 +50,7 @@ const getStatusLabel = (status: Lead['status']) => {
   }
 };
 
-export const columns: ColumnDef<Lead>[] = [
+export function buildColumns(workspaceMembers: WorkspaceMember[]): ColumnDef<Lead>[] { return [
   // Checkbox row select
   {
     id: 'select',
@@ -282,6 +290,15 @@ export const columns: ColumnDef<Lead>[] = [
     },
     enableSorting: true,
   },
+  // Assignment
+  {
+    id: 'assignedTo',
+    header: 'Assigné à',
+    cell: ({ row }) => (
+      <LeadsAssignCell lead={row.original} workspaceMembers={workspaceMembers} />
+    ),
+    enableSorting: false,
+  },
   // Actions
   {
     id: 'actions',
@@ -301,5 +318,5 @@ export const columns: ColumnDef<Lead>[] = [
     enableSorting: false,
     enableHiding: false,
   },
-];
+]; }
 

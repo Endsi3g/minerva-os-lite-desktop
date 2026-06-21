@@ -5,14 +5,17 @@ import { Table as TableType } from '@tanstack/react-table';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { Search, X } from 'lucide-react';
+import { Search, User, X } from 'lucide-react';
 import { useReach } from '@/lib/reach-context';
+import { cn } from '@/lib/utils';
 
 interface LeadsFiltersProps<TData> {
   table: TableType<TData>;
+  showAssignedToMe: boolean;
+  onToggleAssignedToMe: () => void;
 }
 
-export function LeadsFilters<TData>({ table }: LeadsFiltersProps<TData>) {
+export function LeadsFilters<TData>({ table, showAssignedToMe, onToggleAssignedToMe }: LeadsFiltersProps<TData>) {
   const { leads } = useReach();
   
   // Search query state
@@ -33,10 +36,11 @@ export function LeadsFilters<TData>({ table }: LeadsFiltersProps<TData>) {
   };
 
   // Check if filters are active
-  const hasActiveFilters = 
-    searchQuery !== '' || 
-    statusFilter !== 'all' || 
-    tempFilter !== 'all' || 
+  const hasActiveFilters =
+    showAssignedToMe ||
+    searchQuery !== '' ||
+    statusFilter !== 'all' ||
+    tempFilter !== 'all' ||
     nicheFilter !== 'all';
 
   // Clear all filters
@@ -134,11 +138,28 @@ export function LeadsFilters<TData>({ table }: LeadsFiltersProps<TData>) {
           </SelectContent>
         </Select>
 
+        {/* Assigned to me toggle */}
+        <button
+          onClick={onToggleAssignedToMe}
+          className={cn(
+            'flex items-center gap-1.5 h-8.5 px-3 text-xs font-semibold rounded-md border transition-colors',
+            showAssignedToMe
+              ? 'bg-[#f54e00] text-white border-[#f54e00] hover:bg-[#e04300]'
+              : 'bg-card border-border text-muted-foreground hover:text-foreground hover:bg-secondary'
+          )}
+        >
+          <User className="h-3.5 w-3.5" />
+          <span>Mes leads</span>
+        </button>
+
         {/* Reset Filters button */}
         {hasActiveFilters && (
           <Button
             variant="ghost"
-            onClick={handleClearFilters}
+            onClick={() => {
+              handleClearFilters();
+              if (showAssignedToMe) onToggleAssignedToMe();
+            }}
             className="h-8.5 px-3 text-xs gap-1.5 text-muted-foreground hover:text-foreground"
           >
             <X className="h-3.5 w-3.5" />

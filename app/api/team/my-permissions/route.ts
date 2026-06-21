@@ -8,6 +8,9 @@ import { createClient as createServerSupabase } from '@/lib/supabase/server';
 import { createClient as createAdminClient } from '@supabase/supabase-js';
 import { DEFAULT_ROLE_PERMISSIONS, ALL_MODULES, type PermissionModule } from '@/lib/permissions';
 
+// Accounts with unconditional full access across all workspaces
+const PRIVILEGED_EMAILS = ['theuprisingstudio@gmail.com', 'quebecsaas@gmail.com'];
+
 function adminClient() {
   return createAdminClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -20,6 +23,11 @@ export async function GET(req: NextRequest) {
   const supabase = await createServerSupabase();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  // Privileged accounts always get full owner access regardless of workspace membership
+  if (PRIVILEGED_EMAILS.includes((user.email ?? '').toLowerCase())) {
+    return NextResponse.json({ role: 'owner', permissions: ALL_MODULES });
+  }
 
   const workspaceOwnerId = req.nextUrl.searchParams.get('workspaceOwnerId');
   if (!workspaceOwnerId) {

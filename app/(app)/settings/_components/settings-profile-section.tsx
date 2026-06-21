@@ -145,7 +145,7 @@ export function SettingsProfileSection({ data, onChange, onSave, isSaving }: Set
         <CardContent className="p-5 space-y-4">
           <h3 className="text-xs font-bold text-foreground uppercase tracking-wider">Informations personnelles</h3>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="grid gap-1.5">
               <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Prénom</label>
               <Input
@@ -166,7 +166,7 @@ export function SettingsProfileSection({ data, onChange, onSave, isSaving }: Set
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="grid gap-1.5">
               <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Adresse e-mail</label>
               <Input
@@ -195,7 +195,7 @@ export function SettingsProfileSection({ data, onChange, onSave, isSaving }: Set
         <CardContent className="p-5 space-y-4">
           <h3 className="text-xs font-bold text-foreground uppercase tracking-wider">Préférences régionales</h3>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="grid gap-1.5">
               <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Langue de l&apos;interface</label>
               <Select

@@ -289,7 +289,7 @@ export function SettingsRoot() {
       <SettingsNav section={section} onSectionChange={setSection} />
 
       <div className="flex-1 overflow-y-auto min-h-0 scrollbar-thin">
-        <div className="mx-auto flex flex-col gap-6 p-6 max-w-2xl">
+        <div className="mx-auto flex flex-col gap-6 p-4 sm:p-6 max-w-2xl w-full">
           {section === 'profile' && (
             <SettingsProfileSection
               data={settings.profile}

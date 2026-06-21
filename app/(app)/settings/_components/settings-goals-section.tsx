@@ -49,7 +49,7 @@ export function SettingsGoalsSection() {
       {adding && (
         <div className="border border-border rounded-lg p-4 space-y-3 bg-muted/20">
           <p className="text-xs font-semibold text-foreground">Nouvel objectif</p>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block mb-1">Métrique</label>
               <select className={selectClass} value={newMetric} onChange={e => setNewMetric(e.target.value as Goal['metric'])}>

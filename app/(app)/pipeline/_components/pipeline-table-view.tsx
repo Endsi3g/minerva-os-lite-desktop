@@ -11,7 +11,7 @@ import {
   ColumnFiltersState,
 } from '@tanstack/react-table';
 import { Lead } from '@/lib/mock-data';
-import { columns } from '../../leads/columns';
+import { buildColumns } from '../../leads/columns';
 import { DataTable } from '../../leads/data-table';
 import { LeadsBulkActionsBar } from '../../leads/_components/leads-bulk-actions-bar';
 
@@ -25,6 +25,9 @@ export function PipelineTableView({ leads }: PipelineTableViewProps) {
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [globalFilter, setGlobalFilter] = useState('');
   const [rowSelection, setRowSelection] = useState({});
+
+  // Pipeline view uses no workspace members (assignment dropdown not shown in pipeline)
+  const columns = buildColumns([]);
 
   // Initialize TanStack Table with the filtered leads dataset passed from PipelineRoot
   const table = useReactTable({
