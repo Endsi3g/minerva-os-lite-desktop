@@ -267,7 +267,9 @@ export function MapRoot() {
   // Geolocation state
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
   const [geoLoading, setGeoLoading] = useState(false);
+  const [liveTracking, setLiveTracking] = useState(false);
   const mapRef = useRef<any>(null);
+  const geoWatchRef = useRef<number | null>(null);
 
   // Route planning state
   const [routeMode, setRouteMode] = useState(false);
@@ -350,6 +352,16 @@ export function MapRoot() {
     }
     return DEFAULT_COORDS;
   }, [departureType, userLocation, waypoints]);
+
+  // Badge "Le plus rapide" sur la variante la moins longue
+  const fastestVariant = useMemo<'commercial' | 'shortest' | 'custom' | null>(() => {
+    const candidates: { id: 'commercial' | 'shortest' | 'custom'; dur: number }[] = [];
+    if (commercialRoute) candidates.push({ id: 'commercial', dur: commercialRoute.durationMin });
+    if (shortestRoute) candidates.push({ id: 'shortest', dur: shortestRoute.durationMin });
+    if (customRoute) candidates.push({ id: 'custom', dur: customRoute.durationMin });
+    if (candidates.length < 2) return null;
+    return candidates.reduce((a, b) => (a.dur <= b.dur ? a : b)).id;
+  }, [commercialRoute, shortestRoute, customRoute]);
 
   // Toggle waypoint in route mode
   const toggleWaypoint = useCallback((lead: LeadWithCoords) => {
@@ -539,26 +551,58 @@ export function MapRoot() {
     }
   }, [selectedVariant, commercialRoute, shortestRoute, customRoute, activeWorkspace, router]);
 
+  // Cleanup watchPosition on unmount
+  useEffect(() => {
+    return () => {
+      if (geoWatchRef.current !== null) {
+        navigator.geolocation?.clearWatch(geoWatchRef.current);
+      }
+    };
+  }, []);
+
   const requestGeolocation = useCallback(() => {
     if (!navigator.geolocation) return;
+
+    // Toggle off: stop live tracking
+    if (geoWatchRef.current !== null) {
+      navigator.geolocation.clearWatch(geoWatchRef.current);
+      geoWatchRef.current = null;
+      setLiveTracking(false);
+      setUserLocation(null);
+      return;
+    }
+
     setGeoLoading(true);
+
+    // One-shot initial position (fast feedback + map fly-to)
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const { latitude, longitude } = pos.coords;
         setUserLocation([latitude, longitude]);
         setGeoLoading(false);
         if (mapRef.current) {
-          mapRef.current.flyTo({
-            center: [longitude, latitude],
-            zoom: 13,
-            speed: 1.2,
-            essential: true
-          });
+          mapRef.current.flyTo({ center: [longitude, latitude], zoom: 13, speed: 1.2, essential: true });
         }
       },
       () => setGeoLoading(false),
       { enableHighAccuracy: true, timeout: 10000 }
     );
+
+    // Continuous live tracking
+    const watchId = navigator.geolocation.watchPosition(
+      (pos) => {
+        setUserLocation([pos.coords.latitude, pos.coords.longitude]);
+        setLiveTracking(true);
+        setGeoLoading(false);
+      },
+      (err) => {
+        console.error('[GPS watchPosition]', err);
+        setGeoLoading(false);
+      },
+      { enableHighAccuracy: true }
+    );
+    geoWatchRef.current = watchId;
+    setLiveTracking(true);
   }, []);
 
   const temperatureOptions: { value: TemperatureFilter; label: string }[] = [
@@ -868,9 +912,16 @@ export function MapRoot() {
                     <div className="font-bold text-[#26251e] leading-snug">{item.title}</div>
                     <p className="text-[9px] text-[#7a7a76] mt-0.5 leading-normal">{item.desc}</p>
                     {item.value ? (
-                      <div className="mt-1.5 flex items-center justify-between text-[10px] font-bold text-[#059669] font-mono">
-                        <span>{item.value.distanceKm} km</span>
-                        <span>~{item.value.durationMin} min</span>
+                      <div className="mt-1.5 space-y-1">
+                        <div className="flex items-center justify-between text-[10px] font-bold text-[#059669] font-mono">
+                          <span className="flex items-center gap-1"><Clock className="h-2.5 w-2.5" />{item.value.durationMin} min</span>
+                          <span className="flex items-center gap-1"><Route className="h-2.5 w-2.5" />{item.value.distanceKm} km</span>
+                        </div>
+                        {fastestVariant === item.id && (
+                          <span className="inline-flex items-center text-[9px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 font-bold">
+                            Le plus rapide
+                          </span>
+                        )}
                       </div>
                     ) : (
                       <div className="mt-1.5 text-[9px] text-muted-foreground italic">Non calculé</div>
@@ -977,7 +1028,7 @@ export function MapRoot() {
                 ) : (
                   <MapPin className="h-3 w-3" />
                 )}
-                {userLocation ? 'Position localisée — Actualiser' : 'Afficher ma position + distances'}
+                {liveTracking ? '● GPS actif — Arrêter le suivi' : userLocation ? 'Position localisée — Réactiver GPS' : 'Afficher ma position + distances'}
               </Button>
 
               <div className="relative mb-3">

@@ -76,7 +76,7 @@ export default function OutcomeClient() {
     const visitedAt = new Date().toISOString();
 
     try {
-      const isElectron = false;
+      const isElectron = typeof window !== 'undefined' && !!(window as unknown as Record<string, unknown>).electron;
 
       if (isElectron) {
         const electron = (window as unknown as Record<string, unknown>).electron as {

@@ -18,6 +18,18 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v2.92.0',
+      date: '2026-06-21',
+      titleKey: 'changelog.v2_92_0_title' as TranslationKey,
+      descKey: 'changelog.v2_92_0_desc' as TranslationKey,
+      highlights: [
+        "GPS suivi continu (watchPosition) pendant la planification de route : le marqueur bleu se déplace en temps réel quand vous bougez. Bouton toggle pour activer/désactiver le suivi — label '● GPS actif — Arrêter le suivi'.",
+        "Badge 'Le plus rapide' affiché automatiquement sur la variante d'itinéraire (Commerciale / Plus court / Personnalisé) qui a la durée totale la plus faible après le calcul OSRM.",
+        "Icônes Clock et Route ajoutées aux données km/min sur les boutons de variantes (style inspiré de l'exemple OSRM multi-routes).",
+        "Fix critique : outcome-client.tsx avait isElectron hardcodé à false — corrigé avec la vraie détection window.electron pour que les outcomes terrain fonctionnent correctement en mode Electron.",
+      ],
+    },
+    {
       version: 'v2.91.0',
       date: '2026-06-20',
       titleKey: 'changelog.v2_91_0_title' as TranslationKey,
