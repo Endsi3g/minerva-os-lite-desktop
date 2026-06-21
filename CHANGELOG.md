@@ -5,6 +5,13 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [2.89.2] - 2026-06-21
+
+### Modifié — Refonte de la page prospection (Retrait de la carte) & Amélioration de l'affichage des leads
+- **Retrait de la carte géographique** — Suppression complète de la carte interactive MapLibre sur la page prospection pour permettre à la table de validation de s'afficher sur toute la largeur (layout pleine page).
+- **Aperçu enrichi des leads** — Fusion des colonnes d'information pour intégrer directement le nom de l'établissement, sa catégorie (niche), sa ville et une description textuelle autogénérée (présence web, note Google, avis, téléphone) au sein de la colonne principale, offrant un aperçu global en un coup d'œil.
+- **Correction de la compilation statique Next.js** — Déportation de la constante `PLAYBOOKS` et des styles de couleurs associés vers un fichier de données partagé non client (`playbooks/data.tsx`), résolvant le plantage de pré-rendu Turbopack de la route `/playbooks/[slug]/view`.
+
 ## [2.89.1] - 2026-06-20
 
 ### Corrigé — Alignement du schéma de base de données Supabase

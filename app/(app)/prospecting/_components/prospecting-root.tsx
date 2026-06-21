@@ -1714,11 +1714,9 @@ export function ProspectingRoot() {
           </div>
         )}
 
-        {/* Side-by-side Grid: Inbox & Map */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          <div className="lg:col-span-7">
-            {/* Validation Inbox UI Layer */}
-            <Card className="border border-border bg-card">
+        {/* Validation Inbox UI Layer */}
+        <div className="w-full">
+          <Card className="border border-border bg-card w-full">
           <CardHeader className="pb-3 border-b border-border/50 p-5">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
@@ -1831,8 +1829,7 @@ export function ProspectingRoot() {
                         onCheckedChange={c => setSelectedValidationIds(c ? sortedValidations.map(l => l.id) : [])}
                       />
                     </TableHead>
-                    <TableHead className="text-[10px] font-bold uppercase tracking-wider">Établissement</TableHead>
-                    <TableHead className="text-[10px] font-bold uppercase tracking-wider">Niche / Ville</TableHead>
+                    <TableHead className="text-[10px] font-bold uppercase tracking-wider">Établissement & Description</TableHead>
                     <TableHead className="text-[10px] font-bold uppercase tracking-wider">Coordonnées</TableHead>
                     <TableHead className="text-[10px] font-bold uppercase tracking-wider">Score Qualité</TableHead>
                     <TableHead className="text-[10px] font-bold uppercase tracking-wider pr-4 text-right">Actions</TableHead>
@@ -1861,8 +1858,8 @@ export function ProspectingRoot() {
                                 className="h-7 text-xs font-semibold py-0"
                               />
                             ) : (
-                              <div>
-                                <div className="font-semibold text-xs text-foreground truncate max-w-[200px] flex items-center gap-1.5">
+                              <div className="space-y-1 py-1">
+                                <div className="font-semibold text-xs text-foreground truncate max-w-[320px] flex items-center gap-1.5">
                                   {item.businessName}
                                   {duplicate && (
                                     <Badge variant="outline" className="bg-rose-50 text-rose-700 border-rose-200 text-[8px] font-extrabold flex items-center gap-0.5">
@@ -1871,16 +1868,17 @@ export function ProspectingRoot() {
                                     </Badge>
                                   )}
                                 </div>
-                                <div className="text-[9px] text-muted-foreground flex items-center gap-1">
+                                <div className="text-[10px] text-muted-foreground flex items-center gap-1.5 flex-wrap">
                                   <Badge variant="outline" className="text-[8px] font-mono uppercase px-1 py-0 scale-90 -translate-x-0.5">{item.source}</Badge>
-                                  {item.rating > 0 ? `${item.rating}★ (${item.reviewsCount} avis)` : 'Pas d\'avis'}
+                                  <span className="font-medium text-foreground bg-muted/60 px-1.5 py-0.5 rounded text-[9px]">{item.niche}</span>
+                                  <span>·</span>
+                                  <span>{item.city}</span>
                                 </div>
+                                <p className="text-[10px] text-slate-500 leading-normal max-w-xl">
+                                  {item.website ? `🌐 Site : ${item.website.replace(/https?:\/\/(www\.)?/, '')}` : '❌ Aucun site internet détecté'} · {item.rating > 0 ? `⭐ ${item.rating}★ (${item.reviewsCount} avis)` : '⭐ Aucun avis public'} · {item.phone ? `📞 ${item.phone}` : '📞 Pas de numéro de téléphone'}
+                                </p>
                               </div>
                             )}
-                          </TableCell>
-                          <TableCell className="text-xs">
-                            <div className="font-medium text-foreground truncate max-w-[120px]">{item.niche}</div>
-                            <div className="text-[9px] text-muted-foreground flex items-center gap-0.5"><MapPin className="h-2.5 w-2.5" />{item.city}</div>
                           </TableCell>
                           <TableCell className="text-xs space-y-0.5">
                             {isEditing ? (
@@ -1971,7 +1969,7 @@ export function ProspectingRoot() {
                         {/* Detailed expansion card */}
                         {isExpanded && (
                           <TableRow className="bg-muted/10 hover:bg-muted/10 border-b border-border/60">
-                            <TableCell colSpan={6} className="p-4 pl-12 pr-4">
+                            <TableCell colSpan={5} className="p-4 pl-12 pr-4">
                               <div className="grid grid-cols-1 md:grid-cols-12 gap-5">
                                 
                                 {/* Score Indicators (4 circular gauges) */}
@@ -2088,78 +2086,6 @@ export function ProspectingRoot() {
           </CardContent>
         </Card>
           </div>
-
-          <div className="lg:col-span-5 lg:sticky lg:top-6">
-            {/* Map view section */}
-            <Card className="border border-border bg-card">
-          <CardHeader className="pb-3 border-b border-border/50 flex flex-row items-center justify-between">
-            <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-              <MapIcon className="h-4 w-4 text-primary" />Carte des validation prospects ({filteredValidations.length} affichés)
-              {selectedPopupLead && (
-                <button type="button" onClick={() => setSelectedPopupLead(null)} className="ml-auto text-[10px] text-muted-foreground hover:text-foreground flex items-center gap-1">
-                  <X className="w-3 h-3" />Fermer popup
-                </button>
-              )}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
-            {filteredValidations.length > 0 ? (
-              <div className="rounded-b-2xl overflow-hidden" style={{ height: 440 }}>
-                <Map center={[-73.5674, 45.5019]} zoom={filteredValidations.some(l => l.latitude) ? 11 : 10} theme="light">
-                  {filteredValidations.map(item => (
-                    <MapMarker key={item.id}
-                      longitude={item.longitude ?? -73.5674 + (Math.random() - 0.5) * 0.1}
-                      latitude={item.latitude ?? 45.5019 + (Math.random() - 0.5) * 0.08}>
-                      <MarkerContent>
-                        <button type="button" onClick={() => setSelectedPopupLead(item)}
-                          className="flex items-center justify-center rounded-full border-2 border-white shadow-md text-white font-bold hover:scale-125 transition-transform"
-                          style={{ width: 22, height: 22, backgroundColor: getLeadMarkerColor(item), fontSize: 9 }}>
-                          {!item.website ? '!' : item.rating < 4 ? '~' : '✓'}
-                        </button>
-                      </MarkerContent>
-                      <MarkerPopup>
-                        <div className="text-xs p-1.5 space-y-0.5 min-w-[140px]">
-                          <p className="font-bold text-foreground leading-snug">{item.businessName}</p>
-                          <p className="text-muted-foreground text-[10px]">{item.niche}</p>
-                        </div>
-                      </MarkerPopup>
-                    </MapMarker>
-                  ))}
-                  {selectedPopupLead?.longitude && selectedPopupLead?.latitude && (
-                    <MapPopup longitude={selectedPopupLead.longitude} latitude={selectedPopupLead.latitude} onClose={() => setSelectedPopupLead(null)} closeButton>
-                      <div className="text-xs p-2 space-y-2 min-w-[220px] max-w-[260px]">
-                        <div className="flex items-start justify-between gap-2">
-                          <p className="font-bold text-foreground leading-snug">{selectedPopupLead.businessName}</p>
-                          <span className="shrink-0 w-2 h-2 mt-1 rounded-full" style={{ backgroundColor: getLeadMarkerColor(selectedPopupLead) }} />
-                        </div>
-                        <p className="text-[10px] text-muted-foreground">{selectedPopupLead.niche} — {selectedPopupLead.city}</p>
-                        {selectedPopupLead.address && <p className="text-[10px] text-muted-foreground flex items-start gap-1"><MapPin className="w-2.5 h-2.5 shrink-0 mt-0.5" />{selectedPopupLead.address}</p>}
-                        {selectedPopupLead.phone && <p className="text-[10px] text-muted-foreground flex items-center gap-1"><Phone className="w-2.5 h-2.5 shrink-0" />{selectedPopupLead.phone}</p>}
-                        <div className="flex items-center gap-1 text-[10px]">
-                          <Star className="w-2.5 h-2.5 text-amber-500 fill-amber-500" />
-                          <span>{selectedPopupLead.rating}★ ({selectedPopupLead.reviewsCount} avis)</span>
-                        </div>
-                        {selectedPopupLead.website
-                          ? <a href={selectedPopupLead.website} target="_blank" rel="noopener noreferrer" className="text-[10px] text-primary hover:underline flex items-center gap-1 truncate"><Globe className="w-2.5 h-2.5 shrink-0" />{selectedPopupLead.website.replace(/https?:\/\/(www\.)?/, '')}<ExternalLink className="w-2.5 h-2.5 shrink-0" /></a>
-                          : <span className="text-[10px] text-rose-500 font-semibold">Aucun site web</span>}
-                        {selectedPopupLead.status === 'to_verify' && (
-                          <div className="pt-2 flex gap-1">
-                            <Button size="sm" className="h-6 text-[9px] bg-emerald-600 text-white font-bold" onClick={() => { handleValidateLead(selectedPopupLead.id); setSelectedPopupLead(null); }}>Valider</Button>
-                            <Button size="sm" variant="outline" className="h-6 text-[9px] font-bold" onClick={() => { handleIgnoreLead(selectedPopupLead); setSelectedPopupLead(null); }}>Ignorer</Button>
-                          </div>
-                        )}
-                      </div>
-                    </MapPopup>
-                  )}
-                </Map>
-              </div>
-            ) : (
-              <div className="h-32 flex items-center justify-center text-xs text-muted-foreground">Aucun prospect actif à positionner sur la carte.</div>
-            )}
-          </CardContent>
-        </Card>
-          </div>
-        </div>
 
         {/* Import success success badge */}
         {importCount !== null && (

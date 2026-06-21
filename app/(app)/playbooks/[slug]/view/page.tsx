@@ -1,8 +1,8 @@
 import React from 'react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { PLAYBOOKS, CATEGORY_COLORS, CHANNEL_ICONS } from '../../data';
 import { ChevronLeft, Mail, Phone, FileText, User, Play } from 'lucide-react';
-import { PLAYBOOKS, CATEGORY_COLORS, CHANNEL_ICONS } from '../../_components/playbooks-root';
 
 interface Props {
   params: Promise<{ slug: string }>;

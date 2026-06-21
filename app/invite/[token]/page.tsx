@@ -1,4 +1,4 @@
-import React from "react";
+import React, { Suspense } from "react";
 import InviteTokenClient from "./invite-token-client";
 
 export const metadata = {
@@ -14,5 +14,13 @@ export function generateStaticParams() {
 }
 
 export default function InvitePage() {
-  return <InviteTokenClient />;
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-[#fdfdfc]">
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#10b981] border-t-transparent" />
+      </div>
+    }>
+      <InviteTokenClient />
+    </Suspense>
+  );
 }
