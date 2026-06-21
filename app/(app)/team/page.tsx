@@ -47,7 +47,10 @@ export default function TeamPage() {
   
   // Data State
   const [members, setMembers] = useState<TeamMember[]>([]);
+  const prevMembersRef = useRef<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
+  // Online presence — userIds of members currently in the app
+  const [onlineUserIds, setOnlineUserIds] = useState<Set<string>>(new Set());
   const [currentUser, setCurrentUser] = useState<{ id: string; email: string; name: string; avatar?: string } | null>(null);
   const [activeTab, setActiveTab] = useState<'members' | 'chat' | 'roles'>('members');
   const [chatMessage, setChatMessage] = useState('');
@@ -109,13 +112,13 @@ export default function TeamPage() {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const toastTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const triggerToast = (msg: string) => {
+  const triggerToast = useCallback((msg: string) => {
     if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
     setToastMessage(msg);
     toastTimeoutRef.current = setTimeout(() => {
       setToastMessage(null);
     }, 4000);
-  };
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -137,14 +140,29 @@ export default function TeamPage() {
       const res = await fetch(getApiUrl('/api/team/members'));
       if (res.ok) {
         const data = await res.json();
-        setMembers(data.members || []);
+        const newMembers: TeamMember[] = data.members || [];
+
+        // Detect pending → active transitions and toast
+        const prev = prevMembersRef.current;
+        newMembers.forEach(m => {
+          if (m.status === 'active' && m.member_user_id) {
+            const was = prev.find(p => p.id === m.id);
+            if (was && was.status === 'pending') {
+              const name = m.profile?.full_name || m.email.split('@')[0];
+              triggerToast(`🎉 ${name} a rejoint le workspace et a accès à l'application !`);
+            }
+          }
+        });
+
+        prevMembersRef.current = newMembers;
+        setMembers(newMembers);
       }
     } catch (err) {
       console.error('Failed to load team members:', err);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [triggerToast]);
 
   // Fetch custom roles
   const fetchCustomRoles = useCallback(async () => {
@@ -186,13 +204,46 @@ export default function TeamPage() {
     const supabase = createClient();
     const channel = supabase
       .channel('team_members_realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'team_members' }, () => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'team_members' }, (payload: any) => {
+        // Detect instant join event from the change payload (before full re-fetch)
+        if (payload.eventType === 'UPDATE') {
+          const newRow = payload.new as Record<string, unknown>;
+          const oldRow = payload.old as Record<string, unknown>;
+          if (oldRow?.status === 'pending' && newRow?.status === 'active') {
+            triggerToast(`🎉 Un membre vient de rejoindre le workspace et a maintenant accès à l'application !`);
+          }
+        }
         fetchMembers();
       })
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [fetchMembers]);
+  }, [fetchMembers, triggerToast]);
+
+  // Supabase Presence — track which members are currently online in the app
+  useEffect(() => {
+    if (!currentUser || !activeWorkspace) return;
+    const supabase = createClient();
+    const presenceKey = `team_presence_${activeWorkspace.owner_id ?? activeWorkspace.id}`;
+    const channel = supabase.channel(presenceKey);
+
+    channel
+      .on('presence', { event: 'sync' }, () => {
+        const state = channel.presenceState();
+        const ids = new Set<string>();
+        (Object.values(state) as any[][]).forEach((presences) => {
+          presences.forEach((p: any) => { if (p.userId) ids.add(p.userId as string); });
+        });
+        setOnlineUserIds(ids);
+      })
+      .subscribe(async (status: string) => {
+        if (status === 'SUBSCRIBED') {
+          await channel.track({ userId: currentUser.id });
+        }
+      });
+
+    return () => { supabase.removeChannel(channel); };
+  }, [currentUser, activeWorkspace]);
 
   // Handle Invite Form Submission
   const handleInviteSubmit = async (e: React.FormEvent) => {
@@ -1081,9 +1132,15 @@ export default function TeamPage() {
                       const isDropdownOpen = activeDropdown?.id === member.id;
                       const isUpdating = updatingMemberId === member.id;
 
+                      const hasAppAccess = !isInvited && !!member.member_user_id;
+                      const isOnline = hasAppAccess && onlineUserIds.has(member.member_user_id!);
+                      const joinedDate = member.joined_at
+                        ? new Date(member.joined_at).toLocaleDateString(locale, { month: 'short', day: 'numeric', year: 'numeric' })
+                        : null;
+
                       return (
                         <tr key={member.id} className="hover:bg-neutral-50/40 transition-colors group">
-                          
+
                           {/* Name/Email */}
                           <td className="py-3.5 px-4">
                             <div className="flex items-center gap-3">
@@ -1092,24 +1149,46 @@ export default function TeamPage() {
                                   <Mail className="w-3.5 h-3.5 text-neutral-400" />
                                 </div>
                               ) : (
-                                <div className="w-8 h-8 rounded-full bg-black text-white font-extrabold text-xs flex items-center justify-center shrink-0">
-                                  {(member.profile?.full_name || member.email).slice(0, 2).toUpperCase()}
+                                <div className="relative shrink-0">
+                                  <div className="w-8 h-8 rounded-full bg-[#26251e] text-white font-extrabold text-xs flex items-center justify-center">
+                                    {(member.profile?.full_name || member.email).slice(0, 2).toUpperCase()}
+                                  </div>
+                                  {/* Online presence dot */}
+                                  {isOnline && (
+                                    <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-[#059669] border-2 border-white" title="En ligne" />
+                                  )}
                                 </div>
                               )}
 
                               <div className="min-w-0">
-                                <div className="flex items-center gap-1.5">
+                                <div className="flex items-center gap-1.5 flex-wrap">
                                   <span className="text-xs font-bold text-neutral-900 truncate">
                                     {isInvited ? member.email : (member.profile?.full_name || member.email)}
                                   </span>
-                                  {isInvited && (
-                                    <span className="bg-neutral-100 text-neutral-500 border border-neutral-200/80 text-[9px] font-bold px-1.5 py-0.5 rounded select-none shrink-0">
-                                      {t('team.status_invited')}
+                                  {isInvited ? (
+                                    <span className="bg-amber-50 text-amber-600 border border-amber-200 text-[9px] font-bold px-1.5 py-0.5 rounded select-none shrink-0">
+                                      En attente
                                     </span>
+                                  ) : hasAppAccess ? (
+                                    <span className="bg-[#ecfdf5] text-[#059669] border border-[#6ee7b7]/60 text-[9px] font-bold px-1.5 py-0.5 rounded select-none shrink-0 flex items-center gap-0.5">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-[#059669] inline-block" />
+                                      Accès app
+                                    </span>
+                                  ) : (
+                                    <span className="bg-neutral-100 text-neutral-500 border border-neutral-200/80 text-[9px] font-bold px-1.5 py-0.5 rounded select-none shrink-0">
+                                      Actif
+                                    </span>
+                                  )}
+                                  {isOnline && (
+                                    <span className="text-[9px] font-bold text-[#059669]">• En ligne</span>
                                   )}
                                 </div>
                                 <p className="text-[10px] text-neutral-400 font-medium truncate mt-0.5">
-                                  {isInvited ? `${t('team.invited_on')} ${formattedDate}` : member.email}
+                                  {isInvited
+                                    ? `Invité le ${formattedDate}`
+                                    : joinedDate
+                                    ? `A rejoint le ${joinedDate} · ${member.email}`
+                                    : member.email}
                                 </p>
                               </div>
                             </div>

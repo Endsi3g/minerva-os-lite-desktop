@@ -18,6 +18,18 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v2.99.0',
+      date: '2026-06-21 · 23h59',
+      titleKey: 'changelog.v2_99_0_title' as TranslationKey,
+      descKey: 'changelog.v2_99_0_desc' as TranslationKey,
+      highlights: [
+        "Statuts membres enrichis — Distinction claire entre Invité (en attente), A rejoint (membre_user_id défini) et Accès app (badge vert). Badge 'En attente' ambré pour les invitations non acceptées.",
+        "Présence en ligne — Point vert sur l'avatar + label '• En ligne' pour les membres actuellement actifs dans l'application (Supabase Presence channel).",
+        "Toast de bienvenue — Notification toast en temps réel quand un membre accepte une invitation et rejoint le workspace (détection Supabase Realtime UPDATE pending → active).",
+        "Date d'arrivée — La date effective d'acceptation de l'invitation (joined_at) est affichée dans la liste des membres actifs.",
+      ],
+    },
+    {
       version: 'v2.98.0',
       date: '2026-06-21 · 23h40',
       titleKey: 'changelog.v2_98_0_title' as TranslationKey,
