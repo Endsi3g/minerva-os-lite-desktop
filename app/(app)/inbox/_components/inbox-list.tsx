@@ -136,9 +136,17 @@ export function InboxList({
             Chargement…
           </div>
         ) : filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 gap-2 text-[#78716c]">
+          <div className="flex flex-col items-center justify-center py-12 gap-3 text-[#78716c]">
             <Mail className="h-8 w-8 opacity-30" />
             <p className="text-xs">Aucun fil de discussion</p>
+            {!needsReauth && threads.length === 0 && (
+              <a
+                href="/settings?section=integrations"
+                className="text-[11px] text-[#059669] font-semibold hover:underline flex items-center gap-1"
+              >
+                Configurer votre e-mail →
+              </a>
+            )}
           </div>
         ) : (
           filtered.map(thread => {

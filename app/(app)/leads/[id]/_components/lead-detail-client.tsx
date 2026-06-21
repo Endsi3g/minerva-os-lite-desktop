@@ -46,6 +46,9 @@ import {
   Target,
   DollarSign,
   TrendingUp,
+  Star,
+  Phone,
+  Globe,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
@@ -898,6 +901,44 @@ export function LeadDetailClient({ id }: { id: string }) {
             </div>
 
             <div className="h-px bg-border" />
+
+            {/* Prospect data from OSM / Google Maps */}
+            {(lead.rating !== undefined || lead.reviewsCount !== undefined || lead.phone || lead.website || lead.mapsUrl) && (
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-2 px-3 py-2.5 rounded-lg border border-border/60 bg-muted/20 text-xs">
+                {lead.rating !== undefined && (
+                  <div className="flex items-center gap-1">
+                    {[1, 2, 3, 4, 5].map((i) => (
+                      <Star
+                        key={i}
+                        className={cn('h-3 w-3', i <= Math.round(lead.rating!) ? 'fill-amber-400 text-amber-400' : 'text-muted-foreground/30')}
+                      />
+                    ))}
+                    <span className="font-bold text-foreground ml-0.5">{lead.rating.toFixed(1)}</span>
+                    {lead.reviewsCount !== undefined && (
+                      <span className="text-muted-foreground">({lead.reviewsCount} avis)</span>
+                    )}
+                  </div>
+                )}
+                {lead.phone && (
+                  <a href={`tel:${lead.phone}`} className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors">
+                    <Phone className="h-3 w-3 shrink-0" />
+                    {lead.phone}
+                  </a>
+                )}
+                {lead.website && (
+                  <a href={lead.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-[#059669] hover:underline truncate max-w-[200px]">
+                    <Globe className="h-3 w-3 shrink-0" />
+                    {lead.website.replace(/^https?:\/\//, '').replace(/\/$/, '')}
+                  </a>
+                )}
+                {lead.mapsUrl && (
+                  <a href={lead.mapsUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-blue-600 hover:underline">
+                    <MapPin className="h-3 w-3 shrink-0" />
+                    Google Maps
+                  </a>
+                )}
+              </div>
+            )}
 
             {/* Tabs Selector for Notes vs AI Drafts */}
             <div className="space-y-6">

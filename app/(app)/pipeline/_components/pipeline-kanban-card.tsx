@@ -48,8 +48,17 @@ export function PipelineKanbanCard({ lead }: PipelineKanbanCardProps) {
 
   const isOverdue = lead.nextActionDate && lead.nextActionDate <= new Date().toISOString().split('T')[0];
 
+  const handleDragStart = (e: React.DragEvent) => {
+    e.dataTransfer.setData('leadId', lead.id);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
   return (
-    <Card className="border border-border bg-card shadow-xs hover:shadow-sm hover:border-border/80 transition-all group/card overflow-hidden">
+    <Card
+      draggable
+      onDragStart={handleDragStart}
+      className="border border-border bg-card shadow-xs hover:shadow-sm hover:border-border/80 transition-all group/card overflow-hidden cursor-grab active:cursor-grabbing active:opacity-70"
+    >
       <CardContent className="p-3.5 space-y-3">
         {/* Title & Detail Link */}
         <div className="flex items-start justify-between gap-2">

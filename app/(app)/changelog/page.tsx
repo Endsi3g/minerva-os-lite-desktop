@@ -18,6 +18,20 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v2.93.0',
+      date: '2026-06-21',
+      titleKey: 'changelog.v2_93_0_title' as TranslationKey,
+      descKey: 'changelog.v2_93_0_desc' as TranslationKey,
+      highlights: [
+        "Fiche lead enrichie : étoiles (rating), nombre d'avis, téléphone cliquable, lien site web et lien Google Maps maintenant visibles directement sous le titre, depuis les données importées OSM/Google.",
+        "Pipeline Kanban drag & drop : glisser-déposer natif (HTML5) pour déplacer les leads entre colonnes. La colonne cible se met en surbrillance pendant le survol. Les flèches ← → sont toujours disponibles.",
+        "Carte — Clic lead → FlyTo : cliquer sur un marqueur de lead (mode normal ou mode route) navigue directement vers ce lead sur la carte (zoom 15, flyTo animé).",
+        "Carte — Auto-route OSRM : dès que 2+ waypoints sont ajoutés (ou 1+ en mode GPS), les 3 variantes d'itinéraire sont calculées automatiquement sans appuyer sur 'Calculer'. Debounce 900ms pour les ajouts rapides.",
+        "Board/Today — Onglet Boîte de réception : nouvel onglet 'Boîte de réception' dans le Dashboard principal pour accéder à Gmail sans quitter la vue Today.",
+        "Inbox — Lien configuration : lien 'Configurer votre e-mail →' affiché sous le message 'Aucun fil de discussion' quand la boîte est vide et non connectée.",
+      ],
+    },
+    {
       version: 'v2.92.0',
       date: '2026-06-21',
       titleKey: 'changelog.v2_92_0_title' as TranslationKey,

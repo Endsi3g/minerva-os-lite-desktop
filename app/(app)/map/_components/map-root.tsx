@@ -353,6 +353,18 @@ export function MapRoot() {
     return DEFAULT_COORDS;
   }, [departureType, userLocation, waypoints]);
 
+  // Auto-calculate route whenever waypoints change (debounced 900ms to allow multiple rapid adds)
+  const autoRouteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (!routeMode) return;
+    const minWaypoints = departureType === 'gps' ? 1 : 2;
+    if (waypoints.length < minWaypoints) return;
+    if (autoRouteTimerRef.current) clearTimeout(autoRouteTimerRef.current);
+    autoRouteTimerRef.current = setTimeout(() => { fetchRoute(); }, 900);
+    return () => { if (autoRouteTimerRef.current) clearTimeout(autoRouteTimerRef.current); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [waypoints.length, routeMode, departureType]);
+
   // Badge "Le plus rapide" sur la variante la moins longue
   const fastestVariant = useMemo<'commercial' | 'shortest' | 'custom' | null>(() => {
     const candidates: { id: 'commercial' | 'shortest' | 'custom'; dur: number }[] = [];
@@ -363,7 +375,7 @@ export function MapRoot() {
     return candidates.reduce((a, b) => (a.dur <= b.dur ? a : b)).id;
   }, [commercialRoute, shortestRoute, customRoute]);
 
-  // Toggle waypoint in route mode
+  // Toggle waypoint in route mode + fly to the lead's location
   const toggleWaypoint = useCallback((lead: LeadWithCoords) => {
     setWaypoints((prev) => {
       const exists = prev.find((w) => w.id === lead.id);
@@ -375,6 +387,9 @@ export function MapRoot() {
     setShortestRoute(null);
     setCustomRoute(null);
     setRouteError(null);
+    if (mapRef.current) {
+      mapRef.current.flyTo({ center: [lead._lng, lead._lat], zoom: 15, speed: 1.4, essential: true });
+    }
   }, []);
 
   // Fetch OSRM routes for all 3 variants
@@ -1194,7 +1209,12 @@ export function MapRoot() {
                         )}
                         style={{ backgroundColor: color }}
                         title={lead.businessName}
-                        onClick={() => setSelectedLeadId(lead.id === selectedLeadId ? null : lead.id)}
+                        onClick={() => {
+                          setSelectedLeadId(lead.id === selectedLeadId ? null : lead.id);
+                          if (mapRef.current) {
+                            mapRef.current.flyTo({ center: [lead._lng, lead._lat], zoom: 15, speed: 1.4, essential: true });
+                          }
+                        }}
                       />
                     </MarkerContent>
 

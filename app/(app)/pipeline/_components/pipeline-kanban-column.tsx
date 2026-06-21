@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Lead } from '@/lib/mock-data';
 import { Badge } from '@/components/ui/badge';
 import { PipelineKanbanCard } from './pipeline-kanban-card';
@@ -12,9 +12,11 @@ interface PipelineKanbanColumnProps {
     title: string;
   };
   leads: Lead[];
+  onDrop: (leadId: string, status: Lead['status']) => void;
 }
 
-export function PipelineKanbanColumn({ column, leads }: PipelineKanbanColumnProps) {
+export function PipelineKanbanColumn({ column, leads, onDrop }: PipelineKanbanColumnProps) {
+  const [isDragOver, setIsDragOver] = useState(false);
   // Styles for column styling
   const getHeaderStyle = (id: Lead['status']) => {
     switch (id) {
@@ -50,11 +52,26 @@ export function PipelineKanbanColumn({ column, leads }: PipelineKanbanColumnProp
     }
   };
 
+  const handleDragOver = (e: React.DragEvent) => { e.preventDefault(); setIsDragOver(true); };
+  const handleDragLeave = (e: React.DragEvent) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setIsDragOver(false); };
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    const leadId = e.dataTransfer.getData('leadId');
+    if (leadId) onDrop(leadId, column.id);
+  };
+
   return (
-    <div className={cn(
-      "flex flex-col w-[280px] shrink-0 rounded-lg border border-border bg-card/40 overflow-hidden",
-      getHeaderStyle(column.id)
-    )}>
+    <div
+      className={cn(
+        "flex flex-col w-[280px] shrink-0 rounded-lg border bg-card/40 overflow-hidden transition-all",
+        getHeaderStyle(column.id),
+        isDragOver ? 'border-primary/60 ring-2 ring-primary/20 bg-primary/5' : 'border-border'
+      )}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
       {/* Column Header */}
       <div className="flex items-center justify-between p-3 border-b border-border/40 bg-card/60">
         <h3 className="text-xs font-bold text-foreground flex items-center gap-1.5 uppercase tracking-wider">
