@@ -137,7 +137,9 @@ export default function TeamPage() {
   const fetchMembers = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(getApiUrl('/api/team/members'));
+      // Pass the active workspace owner so members of shared workspaces see the right list
+      const ownerParam = activeWorkspace?.owner_id ? `?ownerUserId=${activeWorkspace.owner_id}` : '';
+      const res = await fetch(getApiUrl(`/api/team/members${ownerParam}`));
       if (res.ok) {
         const data = await res.json();
         const newMembers: TeamMember[] = data.members || [];
@@ -162,7 +164,7 @@ export default function TeamPage() {
     } finally {
       setLoading(false);
     }
-  }, [triggerToast]);
+  }, [triggerToast, activeWorkspace]);
 
   // Fetch custom roles
   const fetchCustomRoles = useCallback(async () => {

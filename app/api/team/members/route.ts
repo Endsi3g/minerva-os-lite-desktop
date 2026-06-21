@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
+import { createClient as createAdminClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 
 async function getAuthClient() {
@@ -16,8 +17,16 @@ async function getAuthClient() {
   );
 }
 
+function getServiceClient() {
+  return createAdminClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { autoRefreshToken: false, persistSession: false } }
+  );
+}
+
 // GET /api/team/members — List all members of the current user's workspace
-export async function GET() {
+export async function GET(request: NextRequest) {
   const supabase = await getAuthClient();
   const { data: { user }, error } = await supabase.auth.getUser();
 
@@ -25,10 +34,30 @@ export async function GET() {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { data: members, error: fetchError } = await supabase
+  // ownerUserId: who owns the workspace we're viewing (may differ from user.id for members)
+  const ownerUserId = request.nextUrl.searchParams.get('ownerUserId') || user.id;
+
+  // If the viewer is NOT the workspace owner, verify they're an active member via service role
+  const admin = getServiceClient();
+  if (ownerUserId !== user.id) {
+    const { data: membership } = await admin
+      .from('team_members')
+      .select('id')
+      .eq('workspace_owner_id', ownerUserId)
+      .eq('member_user_id', user.id)
+      .eq('status', 'active')
+      .maybeSingle();
+
+    if (!membership) {
+      return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
+    }
+  }
+
+  // Use service role to bypass RLS — members need to see the full list
+  const { data: members, error: fetchError } = await admin
     .from('team_members')
     .select('*')
-    .eq('workspace_owner_id', user.id)
+    .eq('workspace_owner_id', ownerUserId)
     .order('invited_at', { ascending: false });
 
   if (fetchError) {
@@ -45,7 +74,8 @@ export async function GET() {
         profile: null as { full_name: string | null; company_name: string | null } | null
       };
       if (m.member_user_id) {
-        const { data: profile } = await supabase
+        // Use admin client so members can see profiles of all workspace members
+        const { data: profile } = await admin
           .from('settings')
           .select('full_name, company_name')
           .eq('user_id', m.member_user_id)
