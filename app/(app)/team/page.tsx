@@ -5,18 +5,27 @@ import Link from 'next/link';
 import {
   Mail, Search, Download, Filter, Check, X,
   Loader2, ChevronDown, Info, Trash2, ArrowUpDown,
-  MessageSquare, Send, Link2, Copy
+  MessageSquare, Send, Link2, Copy, Shield, Star, Eye,
+  Plus, Pencil, LogOut, Palette, ChevronRight,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
 import { useLanguage } from '@/lib/language-context';
 import { getApiUrl } from '@/lib/api-helper';
 import { useReach } from '@/lib/reach-context';
+import { PERMISSION_MODULES, DEFAULT_ROLE_PERMISSIONS, type PermissionModule, ALL_MODULES } from '@/lib/permissions';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 type Role = 'admin' | 'editor' | 'viewer';
 type Status = 'active' | 'pending';
 type Plan = 'Business' | 'Pro' | 'Free';
+
+interface CustomRole {
+  id: string;
+  name: string;
+  color: string;
+  permissions: PermissionModule[];
+}
 
 interface TeamMember {
   id: string;
@@ -40,7 +49,7 @@ export default function TeamPage() {
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<{ id: string; email: string; name: string; avatar?: string } | null>(null);
-  const [activeTab, setActiveTab] = useState<'members' | 'chat'>('members');
+  const [activeTab, setActiveTab] = useState<'members' | 'chat' | 'roles'>('members');
   const [chatMessage, setChatMessage] = useState('');
   const chatEndRef = useRef<HTMLDivElement>(null);
   const chatInputRef = useRef<HTMLInputElement>(null);
@@ -81,6 +90,20 @@ export default function TeamPage() {
   // Action confirmations
   const [confirmRemoveId, setConfirmRemoveId] = useState<string | null>(null);
   const [removingId, setRemovingId] = useState<string | null>(null);
+
+  // Custom roles
+  const [customRoles, setCustomRoles] = useState<CustomRole[]>([]);
+  const [showRoleModal, setShowRoleModal] = useState(false);
+  const [editingRole, setEditingRole] = useState<CustomRole | null>(null);
+  const [roleName, setRoleName] = useState('');
+  const [roleColor, setRoleColor] = useState('#6366f1');
+  const [rolePerms, setRolePerms] = useState<Set<PermissionModule>>(new Set());
+  const [savingRole, setSavingRole] = useState(false);
+
+  // Leave team
+  const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
+  const [leavingTeam, setLeavingTeam] = useState(false);
+
 
   // Toast System
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -123,6 +146,17 @@ export default function TeamPage() {
     }
   }, []);
 
+  // Fetch custom roles
+  const fetchCustomRoles = useCallback(async () => {
+    try {
+      const res = await fetch(getApiUrl('/api/team/roles'));
+      if (res.ok) {
+        const data = await res.json();
+        setCustomRoles(data.roles || []);
+      }
+    } catch {}
+  }, []);
+
   // Init Data
   useEffect(() => {
     const init = async () => {
@@ -142,8 +176,22 @@ export default function TeamPage() {
         });
       }
       await fetchMembers();
+      await fetchCustomRoles();
     };
     init();
+  }, [fetchMembers, fetchCustomRoles]);
+
+  // Supabase realtime — refresh members when team_members changes
+  useEffect(() => {
+    const supabase = createClient();
+    const channel = supabase
+      .channel('team_members_realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'team_members' }, () => {
+        fetchMembers();
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
   }, [fetchMembers]);
 
   // Handle Invite Form Submission
@@ -274,6 +322,92 @@ export default function TeamPage() {
     }
   };
 
+  // Custom role CRUD
+  const openNewRole = () => {
+    setEditingRole(null);
+    setRoleName('');
+    setRoleColor('#6366f1');
+    setRolePerms(new Set());
+    setShowRoleModal(true);
+  };
+
+  const openEditRole = (role: CustomRole) => {
+    setEditingRole(role);
+    setRoleName(role.name);
+    setRoleColor(role.color);
+    setRolePerms(new Set(role.permissions));
+    setShowRoleModal(true);
+  };
+
+  const handleSaveRole = async () => {
+    if (!roleName.trim()) return;
+    setSavingRole(true);
+    try {
+      const permsArray = Array.from(rolePerms);
+      if (editingRole) {
+        const res = await fetch(getApiUrl(`/api/team/roles?id=${editingRole.id}`), {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: roleName.trim(), color: roleColor, permissions: permsArray }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setCustomRoles(prev => prev.map(r => r.id === editingRole.id ? data.role : r));
+          triggerToast('Rôle mis à jour.');
+        }
+      } else {
+        const res = await fetch(getApiUrl('/api/team/roles'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: roleName.trim(), color: roleColor, permissions: permsArray }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setCustomRoles(prev => [...prev, data.role]);
+          triggerToast('Rôle créé.');
+        }
+      }
+      setShowRoleModal(false);
+    } catch { triggerToast('Erreur réseau.'); }
+    finally { setSavingRole(false); }
+  };
+
+  const handleDeleteRole = async (roleId: string) => {
+    try {
+      const res = await fetch(getApiUrl(`/api/team/roles?id=${roleId}`), { method: 'DELETE' });
+      if (res.ok) {
+        setCustomRoles(prev => prev.filter(r => r.id !== roleId));
+        triggerToast('Rôle supprimé.');
+      }
+    } catch { triggerToast('Erreur réseau.'); }
+  };
+
+  // Leave team
+  const handleLeaveTeam = async () => {
+    if (!activeWorkspace) return;
+    setLeavingTeam(true);
+    try {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const res = await fetch(getApiUrl('/api/team/leave'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ workspaceOwnerId: activeWorkspace.owner_id ?? activeWorkspace.id }),
+      });
+      if (res.ok) {
+        triggerToast('Vous avez quitté l\'équipe.');
+        setShowLeaveConfirm(false);
+        window.location.href = '/today';
+      } else {
+        const data = await res.json();
+        triggerToast(data.error || 'Erreur lors de la sortie.');
+      }
+    } catch { triggerToast('Erreur réseau.'); }
+    finally { setLeavingTeam(false); }
+  };
+
   // CSV Export
   const handleExportCSV = () => {
     const headers = ['Name', 'Email', 'Role', 'Plan', 'Status', 'Invited At'];
@@ -384,13 +518,25 @@ export default function TeamPage() {
       <div className="max-w-5xl mx-auto px-8 py-10 space-y-6 relative z-10">
 
         {/* ── Header ── */}
-        <div className="space-y-1">
-          <h1 className="text-2xl font-bold text-[#26251e] tracking-tight">
-            {t('team.members_title')}
-          </h1>
-          <p className="text-xs text-neutral-500 font-medium">
-            {t('team.members_subtitle')}
-          </p>
+        <div className="flex items-start justify-between gap-4">
+          <div className="space-y-1">
+            <h1 className="text-2xl font-bold text-[#26251e] tracking-tight">
+              {t('team.members_title')}
+            </h1>
+            <p className="text-xs text-neutral-500 font-medium">
+              {t('team.members_subtitle')}
+            </p>
+          </div>
+          {/* Leave team button — shown only if user is NOT the owner */}
+          {currentUser && activeWorkspace && (activeWorkspace as { owner_id?: string }).owner_id !== currentUser.id && (
+            <button
+              onClick={() => setShowLeaveConfirm(true)}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-red-200 bg-red-50 text-red-600 text-xs font-bold hover:bg-red-100 transition-colors shrink-0"
+            >
+              <LogOut className="h-3.5 w-3.5" />
+              Quitter l&apos;équipe
+            </button>
+          )}
         </div>
 
         {/* ── Tab Bar ── */}
@@ -417,6 +563,23 @@ export default function TeamPage() {
           >
             <MessageSquare className="w-3.5 h-3.5" />
             Chat d&apos;équipe
+          </button>
+          <button
+            onClick={() => setActiveTab('roles')}
+            className={cn(
+              "px-4 py-2 text-xs font-bold rounded-t-lg border border-b-0 transition-colors flex items-center gap-1.5",
+              activeTab === 'roles'
+                ? 'bg-white border-[#e5e5e0] text-[#26251e]'
+                : 'bg-[#f4f4f3] border-transparent text-[#807d72] hover:text-[#26251e]'
+            )}
+          >
+            <Shield className="w-3.5 h-3.5" />
+            Rôles &amp; Permissions
+            {customRoles.length > 0 && (
+              <span className="bg-[#f54e00] text-white text-[9px] font-black px-1.5 py-0.5 rounded-full leading-none">
+                {customRoles.length}
+              </span>
+            )}
           </button>
         </div>
 
@@ -1097,6 +1260,130 @@ export default function TeamPage() {
         </div>
 
         </>}
+
+        {/* ── Roles Tab ── */}
+        {activeTab === 'roles' && (
+          <div className="space-y-5">
+            {/* Default roles reference */}
+            <div>
+              <h2 className="text-sm font-black text-[#26251e] mb-3 flex items-center gap-2">
+                <Shield className="h-4 w-4 text-[#807d72]" />
+                Rôles par défaut
+              </h2>
+              <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
+                {(['admin', 'editor', 'viewer'] as const).map(role => {
+                  const colors: Record<string, string> = { admin: '#f54e00', editor: '#059669', viewer: '#6366f1' };
+                  const icons: Record<string, React.ReactNode> = { admin: <Shield className="h-4 w-4" />, editor: <Star className="h-4 w-4" />, viewer: <Eye className="h-4 w-4" /> };
+                  const perms = DEFAULT_ROLE_PERMISSIONS[role] || [];
+                  const c = colors[role];
+                  return (
+                    <div key={role} className="border border-[#e5e5e0] rounded-xl p-4 bg-white space-y-3">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: `${c}15`, color: c }}>
+                          {icons[role]}
+                        </div>
+                        <div>
+                          <p className="text-xs font-black text-[#26251e] capitalize">{role === 'viewer' ? 'Observateur' : role === 'editor' ? 'Éditeur' : 'Administrateur'}</p>
+                          <p className="text-[10px] text-[#807d72]">{perms.length} modules</p>
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap gap-1">
+                        {perms.slice(0, 6).map(m => (
+                          <span key={m} className="text-[9px] font-bold px-1.5 py-0.5 rounded-full border" style={{ background: `${c}10`, borderColor: `${c}25`, color: c }}>
+                            {PERMISSION_MODULES[m]?.icon} {PERMISSION_MODULES[m]?.label ?? m}
+                          </span>
+                        ))}
+                        {perms.length > 6 && (
+                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full border border-[#e5e5e0] text-[#807d72]">
+                            +{perms.length - 6}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Custom roles */}
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-sm font-black text-[#26251e] flex items-center gap-2">
+                  <Palette className="h-4 w-4 text-[#807d72]" />
+                  Rôles personnalisés
+                  {customRoles.length > 0 && (
+                    <span className="text-[10px] font-bold px-1.5 py-0.5 bg-[#f54e00]/10 text-[#f54e00] rounded-full">{customRoles.length}</span>
+                  )}
+                </h2>
+                <button
+                  onClick={openNewRole}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#26251e] text-white text-xs font-bold hover:bg-[#3d3c35] transition-colors"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  Nouveau rôle
+                </button>
+              </div>
+
+              {customRoles.length === 0 ? (
+                <div className="border border-dashed border-[#e5e5e0] rounded-xl p-8 text-center space-y-2">
+                  <Shield className="h-8 w-8 text-[#d4d4d0] mx-auto" />
+                  <p className="text-sm font-bold text-[#807d72]">Aucun rôle personnalisé</p>
+                  <p className="text-xs text-[#b0b0a8]">Créez des rôles sur mesure avec des permissions spécifiques par module.</p>
+                  <button
+                    onClick={openNewRole}
+                    className="mt-2 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#26251e] text-white text-xs font-bold hover:bg-[#3d3c35] transition-colors"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    Créer un rôle
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-2.5">
+                  {customRoles.map(role => (
+                    <div key={role.id} className="border border-[#e5e5e0] rounded-xl p-4 bg-white flex items-start gap-4">
+                      <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 text-white font-black text-base" style={{ background: role.color }}>
+                        {role.name.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1.5">
+                          <p className="text-sm font-black text-[#26251e]">{role.name}</p>
+                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full text-white" style={{ background: role.color }}>
+                            {role.permissions.length} modules
+                          </span>
+                        </div>
+                        <div className="flex flex-wrap gap-1">
+                          {role.permissions.slice(0, 8).map(m => (
+                            <span key={m} className="text-[9px] font-bold px-1.5 py-0.5 rounded-full border border-[#e5e5e0] text-[#807d72] bg-[#f9f9f8]">
+                              {PERMISSION_MODULES[m]?.icon} {PERMISSION_MODULES[m]?.label ?? m}
+                            </span>
+                          ))}
+                          {role.permissions.length > 8 && (
+                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full border border-[#e5e5e0] text-[#807d72]">+{role.permissions.length - 8}</span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <button
+                          onClick={() => openEditRole(role)}
+                          className="p-2 rounded-lg border border-[#e5e5e0] hover:bg-[#f4f4f3] transition-colors text-[#807d72]"
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteRole(role.id)}
+                          className="p-2 rounded-lg border border-red-100 hover:bg-red-50 transition-colors text-red-500"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
       </div>
 
       {/* ── Invite User Modal Overlay ── */}
@@ -1275,6 +1562,135 @@ export default function TeamPage() {
               >
                 {generatingLink && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
                 {generatedLink ? 'Nouveau lien' : 'Générer le lien'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Leave Team Confirm Modal ── */}
+      {showLeaveConfirm && (
+        <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="bg-white border border-[#e5e5e0] rounded-2xl shadow-2xl p-6 w-full max-w-sm mx-4 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-red-50 border border-red-200 rounded-xl flex items-center justify-center">
+                <LogOut className="h-5 w-5 text-red-500" />
+              </div>
+              <div>
+                <h3 className="text-sm font-black text-[#26251e]">Quitter l&apos;équipe ?</h3>
+                <p className="text-[11px] text-[#807d72]">Vous perdrez l&apos;accès au workspace immédiatement.</p>
+              </div>
+            </div>
+            <div className="flex gap-2 pt-1">
+              <button
+                onClick={() => setShowLeaveConfirm(false)}
+                className="flex-1 py-2.5 text-xs font-bold border border-[#e5e5e0] rounded-xl hover:bg-[#f4f4f3] transition-colors"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={handleLeaveTeam}
+                disabled={leavingTeam}
+                className="flex-1 py-2.5 text-xs font-bold bg-red-600 hover:bg-red-700 text-white rounded-xl transition-colors flex items-center justify-center gap-1.5 disabled:opacity-60"
+              >
+                {leavingTeam ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <LogOut className="h-3.5 w-3.5" />}
+                Confirmer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Custom Role Modal ── */}
+      {showRoleModal && (
+        <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="bg-white border border-[#e5e5e0] rounded-2xl shadow-2xl p-6 w-full max-w-lg mx-4 space-y-5 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-black text-[#26251e] flex items-center gap-2">
+                <Shield className="h-4 w-4 text-[#807d72]" />
+                {editingRole ? 'Modifier le rôle' : 'Créer un rôle'}
+              </h3>
+              <button onClick={() => setShowRoleModal(false)} className="w-7 h-7 rounded-full hover:bg-[#f4f4f3] flex items-center justify-center">
+                <X className="h-4 w-4 text-[#807d72]" />
+              </button>
+            </div>
+
+            {/* Name + Color */}
+            <div className="grid grid-cols-3 gap-3">
+              <div className="col-span-2 space-y-1">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-[#807d72]">Nom du rôle</label>
+                <input
+                  value={roleName}
+                  onChange={e => setRoleName(e.target.value)}
+                  placeholder="ex: Commercial terrain"
+                  className="w-full h-9 border border-[#e5e5e0] rounded-xl px-3 text-xs font-semibold text-[#26251e] outline-none focus:ring-1 focus:ring-[#f54e00]"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-[#807d72]">Couleur</label>
+                <div className="flex items-center gap-2">
+                  <div className="w-9 h-9 rounded-xl border border-[#e5e5e0] overflow-hidden">
+                    <input type="color" value={roleColor} onChange={e => setRoleColor(e.target.value)} className="w-full h-full cursor-pointer border-none" />
+                  </div>
+                  {['#f54e00','#059669','#6366f1','#f59e0b','#ec4899'].map(c => (
+                    <button key={c} onClick={() => setRoleColor(c)} className="w-5 h-5 rounded-full border-2 transition-all" style={{ background: c, borderColor: roleColor === c ? c : 'transparent' }} />
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Permission toggles */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-[#807d72]">Modules ({rolePerms.size}/{ALL_MODULES.length})</label>
+                <div className="flex gap-2">
+                  <button onClick={() => setRolePerms(new Set(ALL_MODULES))} className="text-[10px] font-bold text-[#059669] hover:underline">Tout activer</button>
+                  <button onClick={() => setRolePerms(new Set())} className="text-[10px] font-bold text-[#807d72] hover:underline">Tout désactiver</button>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-1.5">
+                {ALL_MODULES.map(mod => {
+                  const cfg = PERMISSION_MODULES[mod];
+                  const enabled = rolePerms.has(mod);
+                  return (
+                    <button
+                      key={mod}
+                      onClick={() => {
+                        const next = new Set(rolePerms);
+                        enabled ? next.delete(mod) : next.add(mod);
+                        setRolePerms(next);
+                      }}
+                      className={cn(
+                        "flex items-center gap-2 px-3 py-2.5 rounded-xl border text-left transition-all",
+                        enabled
+                          ? 'border-[#26251e] bg-[#26251e]/5 text-[#26251e]'
+                          : 'border-[#e5e5e0] bg-white text-[#807d72] hover:border-[#c5c5c0]'
+                      )}
+                    >
+                      <div className={cn("w-4 h-4 rounded flex items-center justify-center shrink-0 transition-all", enabled ? 'bg-[#26251e]' : 'bg-[#e5e5e0]')}>
+                        {enabled && <Check className="h-2.5 w-2.5 text-white" />}
+                      </div>
+                      <span className="text-[9px] font-black leading-tight">
+                        {cfg?.icon} {cfg?.label ?? mod}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="flex gap-2 pt-1">
+              <button onClick={() => setShowRoleModal(false)} className="flex-1 py-2.5 text-xs font-bold border border-[#e5e5e0] rounded-xl hover:bg-[#f4f4f3] transition-colors">
+                Annuler
+              </button>
+              <button
+                onClick={handleSaveRole}
+                disabled={savingRole || !roleName.trim()}
+                className="flex-1 py-2.5 text-xs font-bold text-white rounded-xl transition-colors flex items-center justify-center gap-1.5 disabled:opacity-60"
+                style={{ background: roleColor }}
+              >
+                {savingRole ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+                {editingRole ? 'Enregistrer' : 'Créer le rôle'}
               </button>
             </div>
           </div>

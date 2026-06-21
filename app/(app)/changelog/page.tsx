@@ -18,6 +18,19 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v2.96.0',
+      date: '2026-06-21',
+      titleKey: 'changelog.v2_96_0_title' as TranslationKey,
+      descKey: 'changelog.v2_96_0_desc' as TranslationKey,
+      highlights: [
+        "Page /join redesignée — Animations CSS fluides, avatar workspace avec ring pulsant, confetti burst à l'acceptation, badge rôle avec icône + description, liste des modules accessibles par rôle. Mobile-first, support thème sombre via bg orbs.",
+        "Quitter une équipe — Bouton 'Quitter l'équipe' visible pour les non-propriétaires. API POST /api/team/leave supprime la ligne team_members et révoque l'accès workspace immédiatement. Le propriétaire ne peut pas quitter son propre workspace.",
+        "Realtime team pages — Supabase realtime subscription sur la table team_members : les deux pages d'équipe se rafraîchissent automatiquement quand un membre est invité ou rejoint.",
+        "Sidebar filtrée par rôle — GET /api/team/my-permissions résout les permissions effectives (rôle défaut ou rôle personnalisé). La sidebar masque les entrées de navigation auxquelles l'utilisateur n'a pas accès selon son rôle.",
+        "Rôles personnalisés — Onglet 'Rôles & Permissions' dans /team : visualisation des 3 rôles défaut (admin/editor/viewer) avec leurs modules. CRUD complet de rôles personnalisés (nom, couleur, 19 toggles modules). Stockés dans la table workspace_roles Supabase.",
+      ],
+    },
+    {
       version: 'v2.95.0',
       date: '2026-06-21',
       titleKey: 'changelog.v2_95_0_title' as TranslationKey,

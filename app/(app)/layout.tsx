@@ -74,6 +74,7 @@ import {
   onboardingTasks,
   toggleOnboardingTask
 } from '@/lib/onboarding-store';
+import { ALL_MODULES, routeToModule, type PermissionModule } from '@/lib/permissions';
 import {
   Breadcrumb,
   BreadcrumbList,
@@ -91,7 +92,7 @@ import {
 } from '@/app/(app)/assistant/_components/assistant-db';
 import { Pin, PinOff } from 'lucide-react';
 
-const CURRENT_VERSION = '2.95.0';
+const CURRENT_VERSION = '2.96.0';
 
 function UpdateBanner() {
   const [visible, setVisible] = useState(false);
@@ -381,6 +382,9 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
     return () => document.body.classList.remove('sidebar-collapsed');
   }, [isCollapsed]);
 
+  // Permissions
+  const [userPermissions, setUserPermissions] = useState<PermissionModule[] | null>(null);
+
   const [inviteError, setInviteError] = useState('');
 
   const handleInviteSubmit = async (e: React.FormEvent) => {
@@ -445,6 +449,19 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
     };
     checkUserAndSettings();
   }, [router]);
+
+  // Fetch user permissions for role-based sidebar filtering
+  useEffect(() => {
+    if (!contextUser || !activeWorkspace) return;
+    const ownerId = (activeWorkspace as { owner_id?: string }).owner_id ?? activeWorkspace.id;
+    fetch(getApiUrl(`/api/team/my-permissions?workspaceOwnerId=${ownerId}`))
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data?.permissions) setUserPermissions(data.permissions);
+        else setUserPermissions(ALL_MODULES);
+      })
+      .catch(() => setUserPermissions(ALL_MODULES));
+  }, [contextUser, activeWorkspace]);
 
   // Listen for avatar updates broadcasted from settings save
   useEffect(() => {
@@ -576,6 +593,21 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
       ],
     },
   ];
+
+  // Filter nav items based on user role permissions
+  const canShowNavItem = (href: string) => {
+    if (!userPermissions) return true; // show all while loading
+    const mod = routeToModule(href);
+    if (!mod) return true; // unknown route — always show
+    return userPermissions.includes(mod);
+  };
+
+  const filteredNavCategories = navCategories.map(cat => ({
+    ...cat,
+    items: cat.items.filter(item => canShowNavItem(item.href)),
+  })).filter(cat => cat.items.length > 0);
+
+  const filteredPinnedItems = pinnedItems.filter(item => canShowNavItem(item.href));
 
   // Flat list used for active-state detection across all items
   const allNavItems = [
@@ -964,7 +996,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
           
           {/* Pinned nav items */}
           <nav className={cn("space-y-[2px]", isCollapsed ? "px-2" : "px-3")}>
-            {pinnedItems.map((item) => {
+            {filteredPinnedItems.map((item) => {
               const isActive = pathname === item.href || (item.href !== '/today' && item.href !== '/welcome' && pathname.startsWith(item.href));
 
               const navLink = (
@@ -1000,7 +1032,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
           {/* Collapsible nav categories */}
           {!isCollapsed && (
             <div className="px-3 space-y-1">
-              {navCategories.map((cat) => {
+              {filteredNavCategories.map((cat) => {
                 const isCatCollapsed = collapsedCategories[cat.id] ?? false;
                 const hasCatActive = cat.items.some(item => pathname.startsWith(item.href));
                 return (
