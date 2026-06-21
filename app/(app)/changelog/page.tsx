@@ -18,6 +18,18 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v2.91.0',
+      date: '2026-06-20',
+      titleKey: 'changelog.v2_91_0_title' as TranslationKey,
+      descKey: 'changelog.v2_91_0_desc' as TranslationKey,
+      highlights: [
+        "Page /tasks : nouvelle page centrale pour toutes les tâches du workspace — vue liste triée (non-complétées en premier) + vue agenda calendrier avec indicateurs visuels par date.",
+        "Filtres tâches : Toutes / Aujourd'hui / En attente / Complétées + filtre par catégorie (Relance, Préparation, RDV, Général). Formulaire d'ajout intégré (titre + catégorie + date d'échéance).",
+        "Page /roadmap : cartographie produit en 4 onglets (Disponible / En cours / Prévu / Backlog) avec 22 fonctionnalités documentées, badges priorité et compteurs par statut.",
+        "Sidebar : liens 'Tâches' dans la section CRM & Prospection et 'Roadmap' dans la section Plateforme — visibles pour toute l'équipe.",
+      ],
+    },
+    {
       version: 'v2.90.0',
       date: '2026-06-20',
       titleKey: 'changelog.v2_90_0_title' as TranslationKey,

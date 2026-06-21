@@ -51,6 +51,8 @@ import {
   BookOpen,
   BarChart2,
   Zap,
+  ClipboardList,
+  Flag,
 } from 'lucide-react';
 import { BottomBlur } from '@/components/ui/edge-blur';
 import { cn } from '@/lib/utils';
@@ -89,7 +91,7 @@ import {
 } from '@/app/(app)/assistant/_components/assistant-db';
 import { Pin, PinOff } from 'lucide-react';
 
-const CURRENT_VERSION = '2.90.0';
+const CURRENT_VERSION = '2.91.0';
 
 function UpdateBanner() {
   const [visible, setVisible] = useState(false);
@@ -538,6 +540,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
         { name: 'Rapports clients', href: '/client-reports', icon: BarChart2 },
         { name: 'Profils cibles (ICP)', href: '/personas', icon: Target },
         { name: 'Activités', href: '/activities', icon: Activity },
+        { name: t('nav.tasks'), href: '/tasks', icon: ClipboardList },
       ],
     },
     {
@@ -569,6 +572,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
         { name: t('nav.integrations'), href: '/integrations', icon: Plug },
         { name: 'Webhooks', href: '/webhooks', icon: Zap },
         { name: t('nav.download'), href: '/download', icon: Download },
+        { name: t('nav.roadmap'), href: '/roadmap', icon: Flag },
       ],
     },
   ];
