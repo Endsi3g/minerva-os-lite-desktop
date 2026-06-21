@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useReach } from "@/lib/reach-context";
+import { useRouter } from "next/navigation";
 import { Plus, Zap, Trash2, Edit2, CheckCircle2, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { defaultAutomations, Automation } from "@/lib/automations-engine";
@@ -9,6 +10,7 @@ import { createClient } from "@/lib/supabase/client";
 
 export default function AutomationsSettingsPage() {
   const { activeWorkspace } = useReach();
+  const router = useRouter();
   const [automations, setAutomations] = useState<Automation[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -142,7 +144,8 @@ export default function AutomationsSettingsPage() {
             </p>
           </div>
           <Button
-            className="h-9 bg-[#10b981] hover:bg-[#059669] text-white text-xs font-bold rounded-xl gap-2 shrink-0"
+            onClick={() => router.push('/settings/automations/new')}
+            className="h-9 bg-[#f54e00] hover:bg-[#d94400] text-white text-xs font-bold rounded-xl gap-2 shrink-0"
           >
             <Plus className="h-3.5 w-3.5" />
             Nouvelle Règle
@@ -204,7 +207,7 @@ export default function AutomationsSettingsPage() {
                       </>
                     )}
                   </button>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground">
+                  <Button variant="ghost" size="icon" onClick={() => router.push('/settings/automations/new')} className="h-8 w-8 text-muted-foreground">
                     <Edit2 className="h-3.5 w-3.5" />
                   </Button>
                   <Button variant="ghost" size="icon" onClick={() => deleteAutomation(auto.id)} className="h-8 w-8 text-muted-foreground hover:text-red-600">

@@ -188,12 +188,20 @@ function LeadCard({
 
       {/* CTA: navigate to outcome page */}
       {!visitLog ? (
-        <button
-          onClick={() => router.push(`/field/${planId}/outcome/${lead.id}`)}
-          className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[#26251e] hover:bg-[#3a3930] text-white text-xs font-bold transition-colors"
-        >
-          Enregistrer le passage →
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => router.push(`/field/${planId}/prepare/${lead.id}`)}
+            className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl border-2 border-[#f54e00] text-[#f54e00] text-xs font-bold hover:bg-[#f54e00]/5 transition-colors"
+          >
+            Préparer →
+          </button>
+          <button
+            onClick={() => router.push(`/field/${planId}/outcome/${lead.id}`)}
+            className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[#26251e] hover:bg-[#3a3930] text-white text-xs font-bold transition-colors"
+          >
+            Enregistrer →
+          </button>
+        </div>
       ) : visitLog.notes && (
         <div className="flex items-start gap-1.5 text-[10px] text-[#7a7a76] bg-[#f7f7f4] rounded-lg p-2">
           <MessageSquare className="h-3 w-3 shrink-0 mt-0.5" />

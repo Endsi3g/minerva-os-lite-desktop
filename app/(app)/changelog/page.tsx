@@ -18,8 +18,35 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v2.98.0',
+      date: '2026-06-21 · 23h40',
+      titleKey: 'changelog.v2_98_0_title' as TranslationKey,
+      descKey: 'changelog.v2_98_0_desc' as TranslationKey,
+      highlights: [
+        "Fix map carte — Clic sur un lead dans la sidebar vole immédiatement vers le marqueur (flyTo) sans nécessiter de double-clic ou de dézoom.",
+        "Fix automation — Bouton 'Nouvelle Règle' redirige vers /settings/automations/new, un builder 4 étapes : déclencheur, conditions, actions, confirmation + sauvegarde.",
+        "Notifications desktop — Service lib/notification-service.ts : permission demandée au lancement, rappels quotidiens (tâches en retard, tâches du jour, pipeline vide). Electron : sendNotification via IPC. Web : window.Notification API. SMS stub codé (non configuré).",
+        "Terrain — Page /field/[plan]/prepare/[lead] : script de visite généré par IA (Claude Haiku), notes précédentes du lead, formulaire de pré-notes sauvegardé, bouton 'Notifier l'équipe'. Boutons Préparer → et Enregistrer → dans chaque carte lead.",
+        "Templates email — Page /settings/email-templates : CRUD complet, A/B test variante B, tags, tokens variables ({{prenom}} etc.), stats envois/ouvertures/clics. Table email_templates Supabase.",
+        "Google Contacts — lib/google/google-contacts-service.ts : listContacts, createContact, importContactsAsLeads. API /api/google/contacts (GET liste, POST import/create). Scope contacts.readonly ajouté au pack OAuth.",
+      ],
+    },
+    {
+      version: 'v2.97.0',
+      date: '2026-06-21 · 18h00',
+      titleKey: 'changelog.v2_97_0_title' as TranslationKey,
+      descKey: 'changelog.v2_97_0_desc' as TranslationKey,
+      highlights: [
+        "Page publique /book/[username] — calendrier sélection de date, grille de créneaux avec freebusy Google Calendar, formulaire nom/email/notes, confirmation animée.",
+        "APIs Booking — /api/booking/settings (GET/POST config), /api/booking/slots (créneaux + freebusy), /api/booking/appointments (POST public + GET auth).",
+        "Page /team/member/[id] — assigner rôle défaut (admin/éditeur/observateur) ou rôle custom, créer rôle inline avec 19 toggles, prévisualisation des accès.",
+        "Fixes Supabase — migration v296 : 8 colonnes/tables manquantes (email_sequences, booking_settings, workspace_roles, etc.). order by invited_at corrigé dans members API.",
+        "Services & Tarifs — badges type remplacés par hex literals (DESIGN.md compliance).",
+      ],
+    },
+    {
       version: 'v2.96.0',
-      date: '2026-06-21',
+      date: '2026-06-21 · 12h00',
       titleKey: 'changelog.v2_96_0_title' as TranslationKey,
       descKey: 'changelog.v2_96_0_desc' as TranslationKey,
       highlights: [

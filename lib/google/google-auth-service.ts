@@ -11,7 +11,8 @@ export const SCOPE_PACKS = {
     'https://www.googleapis.com/auth/gmail.send',
     'https://www.googleapis.com/auth/calendar.events',
     'https://www.googleapis.com/auth/calendar.freebusy',
-    'https://www.googleapis.com/auth/calendar.calendarlist.readonly'
+    'https://www.googleapis.com/auth/calendar.calendarlist.readonly',
+    'https://www.googleapis.com/auth/contacts.readonly',
   ],
   documents: [
     'https://www.googleapis.com/auth/drive.file',

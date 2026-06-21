@@ -65,13 +65,17 @@ const roadmapData: RoadmapItem[] = [
   { module: 'CRM', feature: 'Accounts / Entreprises', desc: 'Vue 360° par société regroupant contacts, deals, emails, meetings, notes et visites.', priority: 'high', status: 'planned' },
   { module: 'CRM', feature: 'Timeline unifiée par compte', desc: 'Flux chronologique unique par lead/compte : emails, calls, meetings, notes, visites.', priority: 'high', status: 'planned' },
 
+  // ─── Available (v2.98) ────────────────────────────────────────────────
+  { module: 'Terrain', feature: 'Page préparation de visite', desc: 'Page /field/[plan]/prepare/[lead] : script IA, notes passées, pré-notes, notification équipe avant départ.', priority: 'medium', status: 'available' },
+  { module: 'Automation', feature: 'Builder visuel d\'automations', desc: 'Page /settings/automations/new : builder 4 étapes — déclencheur, conditions, actions, confirmer. Enregistrement en base.', priority: 'medium', status: 'available' },
+  { module: 'Contenu', feature: 'Templates email versionnés', desc: 'Page /settings/email-templates : bibliothèque avec A/B tests, tags, snippets partagés et analytics par template.', priority: 'medium', status: 'available' },
+  { module: 'Google', feature: 'People / Contacts API', desc: "API /api/google/contacts : import Google Contacts → leads, création contact depuis leads. Scope contacts.readonly ajouté.", priority: 'low', status: 'available' },
+  { module: 'Plateforme', feature: 'Notifications desktop + rappels', desc: 'Service de notifications desktop (Electron + Web Notification API). Rappels quotidiens : tâches en retard, pipeline vide, tâches du jour.', priority: 'medium', status: 'available' },
+
   // ─── Backlog ──────────────────────────────────────────────────────────
   { module: 'Canvas', feature: 'IA ouvre le canvas automatiquement', desc: "L'IA détecte quand la réponse nécessite le canvas (long document, rapport, script) et l'ouvre automatiquement. Sidebar se réduit à l'ouverture.", priority: 'medium', status: 'backlog' },
   { module: 'Terrain', feature: 'Notifications équipe après visite', desc: "Après un compte-rendu de visite terrain, notifier les membres de l'équipe dans l'app avec le résultat et les prochaines étapes.", priority: 'medium', status: 'backlog' },
   { module: 'Plateforme', feature: 'Audit log admin', desc: "Journal d'audit des actions : qui a modifié quoi, quand. Visible uniquement par l'owner.", priority: 'medium', status: 'backlog' },
-  { module: 'Automation', feature: 'Builder visuel', desc: 'Builder trigger → conditions → actions (interface no-code drag & drop).', priority: 'medium', status: 'backlog' },
-  { module: 'Contenu', feature: 'Templates email versionnés', desc: 'Bibliothèque de templates email avec A/B tests, snippets partagés et analytics par template.', priority: 'medium', status: 'backlog' },
-  { module: 'Google', feature: 'People / Contacts API', desc: "Sync bidirectionnel Google Contacts — importer et enrichir depuis le carnet d'adresses Google.", priority: 'low', status: 'backlog' },
   { module: 'Analytics', feature: 'Reporting avancé', desc: 'Cohortes, velocity pipeline, source attribution, performance par playbook et séquence.', priority: 'low', status: 'backlog' },
 ];
 

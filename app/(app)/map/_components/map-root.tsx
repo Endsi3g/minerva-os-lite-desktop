@@ -1115,7 +1115,12 @@ export function MapRoot() {
                               <div
                                 key={lead.id}
                                 ref={(el) => { leadItemRefs.current[lead.id] = el; }}
-                                onClick={() => setSelectedLeadId(lead.id === selectedLeadId ? null : lead.id)}
+                                onClick={() => {
+                                  setSelectedLeadId(lead.id);
+                                  if (mapRef.current) {
+                                    mapRef.current.flyTo({ center: [lead._lng, lead._lat], zoom: 15, speed: 1.4, essential: true });
+                                  }
+                                }}
                                 className={cn(
                                   'flex items-center gap-2 px-2 py-2 rounded cursor-pointer transition-all text-left border border-transparent',
                                   isSelected ? 'bg-[#059669]/10 border-[#059669]/20' : 'hover:bg-[#e5e5e0]/40'

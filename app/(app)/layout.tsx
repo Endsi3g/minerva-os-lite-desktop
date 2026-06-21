@@ -75,6 +75,7 @@ import {
   toggleOnboardingTask
 } from '@/lib/onboarding-store';
 import { ALL_MODULES, routeToModule, type PermissionModule } from '@/lib/permissions';
+import { requestNotificationPermission, checkAndSendTaskReminders, checkAndSendLeadReminder } from '@/lib/notification-service';
 import {
   Breadcrumb,
   BreadcrumbList,
@@ -92,7 +93,7 @@ import {
 } from '@/app/(app)/assistant/_components/assistant-db';
 import { Pin, PinOff } from 'lucide-react';
 
-const CURRENT_VERSION = '2.97.0';
+const CURRENT_VERSION = '2.98.0';
 
 function UpdateBanner() {
   const [visible, setVisible] = useState(false);
@@ -143,7 +144,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
   const { t } = useLanguage();
   
   // Workspace Context
-  const { user: contextUser, activeWorkspace, workspacesList, switchWorkspace, leads, notifications, unreadCount, markNotificationRead, markAllNotificationsRead, projects, createProject } = useReach();
+  const { user: contextUser, activeWorkspace, workspacesList, switchWorkspace, leads, tasks, notifications, unreadCount, markNotificationRead, markAllNotificationsRead, projects, createProject } = useReach();
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [checkingWelcome, setCheckingWelcome] = useState(true);
@@ -200,6 +201,22 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
     const interval = setInterval(poll, 5000);
     return () => clearInterval(interval);
   }, []);
+
+  // Desktop notifications — request permission once, then run daily reminders
+  useEffect(() => {
+    requestNotificationPermission();
+  }, []);
+
+  useEffect(() => {
+    if (!leads?.length && !tasks?.length) return;
+    const NOTIF_KEY = 'minerva_last_daily_notif';
+    const last = localStorage.getItem(NOTIF_KEY);
+    const today = new Date().toDateString();
+    if (last === today) return;
+    localStorage.setItem(NOTIF_KEY, today);
+    checkAndSendTaskReminders(tasks ?? []);
+    checkAndSendLeadReminder(leads ?? []);
+  }, [leads, tasks]);
 
   // Relative time helper for notification timestamps
   function relativeTime(iso: string): string {
