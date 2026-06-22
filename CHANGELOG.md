@@ -5,6 +5,12 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [3.27.3] - 2026-06-22
+
+### Corrigé — Résolution du runtime de l'API Chat
+- **Bascule du runtime de l'API Chat** — Changement du runtime de `/api/chat` de `edge` à `nodejs` (Serverless Function) afin de supporter l'intégration de l'SDK Anthropic (`@anthropic-ai/sdk`) qui référence des modules Node.js natifs (`node:fs`, `node:path`) impossibles à charger dans l'environnement Edge strict de Vercel.
+- **Maintien du Streaming** — Le flux de complétion (ReadableStream SSE) reste pleinement opérationnel et fonctionnel sur les serveurs Node.js.
+
 ## [3.27.2] - 2026-06-22
 
 ### Modifié — Migration Next.js 16 Proxy & correctifs de build

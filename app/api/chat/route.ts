@@ -3,7 +3,7 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { generateStreamCompletion } from '@/lib/ai';
 
-export const runtime = 'edge';
+export const runtime = 'nodejs';
 
 async function getAuthClient() {
   const cookieStore = await cookies();

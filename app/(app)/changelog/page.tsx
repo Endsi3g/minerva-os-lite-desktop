@@ -18,6 +18,16 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v3.27.3',
+      date: '2026-06-22 · 19h30',
+      titleKey: 'changelog.v3_27_3_title' as TranslationKey,
+      descKey: 'changelog.v3_27_3_desc' as TranslationKey,
+      highlights: [
+        "Bascule du runtime de l'API Chat — Changement du runtime de l'endpoint api/chat d'Edge à Node.js (nodejs) pour résoudre les erreurs de bundle de l'SDK Anthropic.",
+        "Maintien de la compatibilité streaming — Le routeur d'API continue de diffuser en flux (ReadableStream SSE) sans interruption pour les utilisateurs finaux.",
+      ],
+    },
+    {
       version: 'v3.27.2',
       date: '2026-06-22 · 19h15',
       titleKey: 'changelog.v3_27_2_title' as TranslationKey,
