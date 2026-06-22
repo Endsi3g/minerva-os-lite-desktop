@@ -173,7 +173,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [todayCollapsed, setTodayCollapsed] = useState(false);
   const [collapsedCategories, setCollapsedCategories] = useState<Record<string, boolean>>({
-    ai: false, data: false, platform: true
+    crm: true, ai: true, data: true, platform: true
   });
 
   const toggleCategory = (id: string) => {
@@ -594,11 +594,11 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
     return crumbs;
   };
 
-  // Pinned nav items — always visible
-  // Pinned items — always visible, never collapsed (5 core destinations)
+  // Pinned nav items — always visible, never collapsed (6 core destinations)
   const pinnedItems = [
     { name: t('nav.today'), href: '/today', icon: LayoutDashboard },
     { name: t('nav.agenda'), href: '/agenda', icon: CalendarDays },
+    { name: t('nav.acquisition'), href: '/acquisition', icon: TrendingUp },
     { name: t('nav.prospect'), href: '/prospecting', icon: PenSquare },
     { name: t('nav.search'), href: '/leads', icon: Users },
     { name: t('nav.team'), href: '/team', icon: Users },
@@ -610,7 +610,6 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
       id: 'crm',
       label: 'CRM & Prospection',
       items: [
-        { name: t('nav.acquisition'), href: '/acquisition', icon: TrendingUp },
         { name: 'Boîte de réception', href: '/inbox', icon: Inbox },
         { name: 'Comptes', href: '/accounts', icon: Building2 },
         { name: 'Cockpit Ops', href: '/ops/prospecting', icon: Activity },
@@ -1098,7 +1097,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
           {!isCollapsed && (
             <div className="px-3 space-y-1">
               {filteredNavCategories.map((cat) => {
-                const isCatCollapsed = collapsedCategories[cat.id] ?? false;
+                const isCatCollapsed = collapsedCategories[cat.id] ?? true;
                 const hasCatActive = cat.items.some(item => pathname.startsWith(item.href));
                 return (
                   <div key={cat.id} className="space-y-[2px]">
