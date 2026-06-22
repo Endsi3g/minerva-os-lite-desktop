@@ -96,6 +96,19 @@ interface PhaseVerification {
 
 const VERIFICATIONS: PhaseVerification[] = [
   {
+    phase: 'Phase 12 — Compétences IA (Skills)',
+    version: 'v3.12.0',
+    date: '2026-06-22',
+    checks: [
+      "Ouvrir /skills (lien « Skills » dans la barre latérale, section Intelligence IA).",
+      'Naviguer entre les onglets Tout / Installées / Packs / Créées par vous ; la recherche filtre les compétences.',
+      'Activer/désactiver une compétence d\'un pack : elle apparaît/disparaît dans « Installées » (état conservé au rechargement).',
+      'Créer une compétence (Ajouter une compétence) : elle apparaît dans « Créées par vous » et est activée.',
+      "Dans l'Assistant IA, taper @ : le menu liste les compétences activées ; en choisir une affiche une puce et injecte ses instructions dans la réponse.",
+      'Retirer une puce de compétence (×) avant d\'envoyer.',
+    ],
+  },
+  {
     phase: 'Phase 11 — Titres de discussion IA & modèle',
     version: 'v3.11.0',
     date: '2026-06-22',

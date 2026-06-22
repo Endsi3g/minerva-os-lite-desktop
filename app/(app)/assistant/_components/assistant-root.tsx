@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useReach } from '@/lib/reach-context';
+import { useSkills } from '@/lib/use-skills';
 import { getApiUrl } from '@/lib/api-helper';
 import { 
   X, 
@@ -202,10 +203,14 @@ const generateUniqueId = () => {
 export function AssistantRoot() {
   const { user, leads, activeWorkspace } = useReach();
   const { t, locale } = useLanguage();
+  const { enabledSkills } = useSkills(activeWorkspace?.id);
 
   // State Management
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
+  // @ skills/context menu
+  const [showAtMenu, setShowAtMenu] = useState(false);
+  const [activeSkillIds, setActiveSkillIds] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedModel, setSelectedModel] = useState(AI_MODELS[0]);
   const [showModelDropdown, setShowModelDropdown] = useState(false);
@@ -549,6 +554,16 @@ export function AssistantRoot() {
         ? "Sie sind Minervas Assistent. Wenn Ihre Antwort ein umfangreiches, eigenständiges Dokument ist (Bericht, Angebot, lange E-Mail, Gesprächsskript, Aktionsplan, strukturierte Analyse…), geben Sie es INNERHALB eines Codeblocks dieser Form aus:\n```canvas:Dokumenttitel\n<das vollständige Dokument in Markdown>\n```\nSchreiben Sie davor einen kurzen Einleitungssatz. Für kurze Gesprächsantworten antworten Sie normal ohne Canvas-Block."
         : "Tu es l'assistant de Minerva. Lorsque ta réponse est un document substantiel et autonome (rapport, proposition, email long, script d'appel, plan d'action, analyse structurée…), produis-le À L'INTÉRIEUR d'un bloc de la forme :\n```canvas:Titre du document\n<le document complet en Markdown>\n```\nÉcris une courte phrase d'introduction avant le bloc. Pour les réponses conversationnelles courtes, réponds normalement sans bloc canvas.";
 
+    // Inject the instructions of any @-selected skills into the system prompt
+    const skillInstructions = activeSkillIds
+      .map(id => enabledSkills.find(s => s.id === id))
+      .filter(Boolean)
+      .map(s => `### Compétence : ${s!.name}\n${s!.instructions}`)
+      .join('\n\n');
+    const systemWithSkills = skillInstructions
+      ? `${canvasSystemPrompt}\n\n## Compétences activées\n${skillInstructions}`
+      : canvasSystemPrompt;
+
     try {
       const res = await fetch(getApiUrl('/api/chat'), {
         method: 'POST',
@@ -558,7 +573,7 @@ export function AssistantRoot() {
           model: selectedModel.id,
           provider: selectedModel.provider,
           activeTool: isCanvasOpen ? 'canvas' : undefined,
-          system: canvasSystemPrompt,
+          system: systemWithSkills,
         }),
       });
 
@@ -1509,10 +1524,66 @@ export function AssistantRoot() {
                   </div>
                 )}
 
+                {/* Active skill chips */}
+                {activeSkillIds.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 px-1">
+                    {activeSkillIds.map(id => {
+                      const sk = enabledSkills.find(s => s.id === id);
+                      if (!sk) return null;
+                      return (
+                        <span key={id} className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#f54e00]/10 text-[#f54e00] border border-[#f54e00]/20">
+                          <Sparkles className="h-2.5 w-2.5" />
+                          {sk.name}
+                          <button onClick={() => setActiveSkillIds(prev => prev.filter(x => x !== id))} className="hover:opacity-70">
+                            <X className="h-2.5 w-2.5" />
+                          </button>
+                        </span>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* @ skills menu */}
+                {showAtMenu && (
+                  <div className="absolute bottom-full left-3 right-3 mb-2 bg-white border border-[#e5e5e0] rounded-xl shadow-lg z-20 max-h-56 overflow-y-auto py-1">
+                    <div className="px-3 py-1.5 text-[9px] font-bold uppercase tracking-wider text-[#7a7a76] border-b border-[#e5e5e0]/60">
+                      Compétences activées
+                    </div>
+                    {enabledSkills.length === 0 ? (
+                      <div className="px-3 py-2 text-[11px] text-[#7a7a76]">
+                        Aucune compétence activée. Activez-en dans <span className="font-semibold">Skills</span>.
+                      </div>
+                    ) : enabledSkills.map(sk => (
+                      <button
+                        key={sk.id}
+                        type="button"
+                        onMouseDown={e => {
+                          e.preventDefault();
+                          setActiveSkillIds(prev => prev.includes(sk.id) ? prev : [...prev, sk.id]);
+                          setInput(prev => prev.replace(/@\S*$/, '').trimEnd());
+                          setShowAtMenu(false);
+                        }}
+                        className="w-full flex items-start gap-2.5 px-3 py-2 text-left hover:bg-[#f4f4f3] transition-colors"
+                      >
+                        <Sparkles className="h-3.5 w-3.5 text-[#f54e00] shrink-0 mt-0.5" />
+                        <div className="min-w-0">
+                          <p className="text-xs font-semibold text-[#26251e]">{sk.name}</p>
+                          <p className="text-[10px] text-[#7a7a76] truncate">{sk.description}</p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+
                 <textarea
                   value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setInput(v);
+                    const atIdx = v.lastIndexOf('@');
+                    setShowAtMenu(atIdx !== -1 && (atIdx === 0 || v[atIdx - 1] === ' ') && !/\s/.test(v.slice(atIdx + 1)));
+                  }}
+                  onKeyDown={(e) => { if (e.key === 'Escape') { setShowAtMenu(false); return; } if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); setShowAtMenu(false); handleSend(); } }}
                   placeholder={t('assistant.input_placeholder')}
                   rows={1}
                   className="w-full resize-none text-xs font-semibold text-[#26251e] bg-transparent outline-none placeholder:text-neutral-400 px-2 min-h-[24px] max-h-32 border-0 overflow-y-auto"

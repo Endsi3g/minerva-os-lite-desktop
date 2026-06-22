@@ -18,6 +18,18 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v3.12.0',
+      date: '2026-06-22 · 11h23',
+      titleKey: 'changelog.v3_12_0_title' as TranslationKey,
+      descKey: 'changelog.v3_12_0_desc' as TranslationKey,
+      highlights: [
+        "Nouvelle page Skills — Activez des compétences IA organisées en packs (Ventes, Marketing, Produit, Données, Opérations, Support) pour étendre les capacités de l'assistant.",
+        "Créateur de compétences — Créez vos propres compétences avec des instructions sur mesure ; elles s'ajoutent à vos compétences activées.",
+        "@ dans le chat IA — Tapez @ dans l'assistant pour insérer une compétence activée : ses instructions sont injectées dans la requête (puces de compétences affichées).",
+        "Barre latérale — Nouvel élément « Skills » dans la section Intelligence IA.",
+      ],
+    },
+    {
       version: 'v3.11.0',
       date: '2026-06-22 · 11h16',
       titleKey: 'changelog.v3_11_0_title' as TranslationKey,

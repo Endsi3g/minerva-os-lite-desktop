@@ -94,7 +94,7 @@ import {
 import { Pin, PinOff } from 'lucide-react';
 import { CalendarDays } from 'lucide-react';
 
-const CURRENT_VERSION = '3.11.0';
+const CURRENT_VERSION = '3.12.0';
 
 function UpdateBanner() {
   const [visible, setVisible] = useState(false);
@@ -624,6 +624,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
       label: 'Intelligence IA',
       items: [
         { name: t('nav.assistant'), href: '/assistant', icon: Brain },
+        { name: t('nav.skills'), href: '/skills', icon: Sparkles },
         { name: t('nav.agents'), href: '/agents', icon: Sparkles },
         { name: t('nav.analytics'), href: '/analytics', icon: BarChart3 },
         { name: t('nav.audit'), href: '/audit', icon: ShieldCheck },
