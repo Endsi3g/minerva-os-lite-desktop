@@ -18,6 +18,16 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v3.7.0',
+      date: '2026-06-22 · 01h14',
+      titleKey: 'changelog.v3_7_0_title' as TranslationKey,
+      descKey: 'changelog.v3_7_0_desc' as TranslationKey,
+      highlights: [
+        "Notifications de mention — Lorsqu'un membre vous @mentionne dans le chat d'équipe, vous recevez désormais une notification automatique.",
+        "Images en plein écran — Cliquez sur n'importe quelle image partagée dans le chat d'équipe pour l'ouvrir en grand (plein écran), accessible à tous les membres.",
+      ],
+    },
+    {
       version: 'v3.6.0',
       date: '2026-06-22 · 00h46',
       titleKey: 'changelog.v3_6_0_title' as TranslationKey,

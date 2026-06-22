@@ -63,6 +63,7 @@ export default function TeamPage() {
   const [showEmojis, setShowEmojis] = useState(false);
   const [sendingImage, setSendingImage] = useState(false);
   const imageInputRef = useRef<HTMLInputElement>(null);
+  const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
 
   // Search and Filter States
   const [searchQuery, setSearchQuery] = useState('');
@@ -619,6 +620,45 @@ export default function TeamPage() {
     }
   };
 
+  // Notify any @mentioned users (resolve @displayName → user id via members/owner)
+  const notifyMentions = async (message: string) => {
+    if (!activeWorkspace || !message.includes('@')) return;
+    const ownerId = (activeWorkspace as { owner_id?: string }).owner_id;
+    const candidates = [
+      ...(currentUser ? [{ name: currentUser.name, userId: currentUser.id }] : []),
+      ...members
+        .filter(m => m.member_user_id)
+        .map(m => ({ name: m.profile?.full_name || m.email.split('@')[0], userId: m.member_user_id as string })),
+    ];
+    const lower = message.toLowerCase();
+    const mentioned = candidates
+      .filter(c => c.userId !== currentUser?.id && lower.includes(`@${c.name.toLowerCase()}`))
+      .map(c => c.userId);
+    const unique = Array.from(new Set(mentioned));
+    if (unique.length === 0) return;
+    try {
+      await fetch(getApiUrl('/api/notifications/team'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          workspaceId: activeWorkspace.id,
+          workspaceOwnerId: ownerId,
+          title: `${currentUser?.name || 'Un membre'} vous a mentionné`,
+          body: message.slice(0, 200),
+          type: 'mention',
+          link: '/team',
+          recipientUserIds: unique,
+        }),
+      });
+    } catch { /* ignore */ }
+  };
+
+  // Send a chat message + fire mention notifications
+  const sendChat = async (msg: string) => {
+    await sendTeamMessage(msg);
+    notifyMentions(msg);
+  };
+
   return (
     <div className="h-full overflow-y-auto bg-white text-[#26251e] font-sans selection:bg-[#059669]/10 relative">
       <div className="absolute inset-0 opacity-[0.25] pointer-events-none bg-grid-pattern-20 z-0" />
@@ -753,7 +793,8 @@ export default function TeamPage() {
                           <img
                             src={imageSrc}
                             alt="image partagée"
-                            className="max-w-[220px] max-h-[220px] rounded-2xl border border-[#e5e5e0] object-cover"
+                            onClick={() => setLightboxSrc(imageSrc)}
+                            className="max-w-[220px] max-h-[220px] rounded-2xl border border-[#e5e5e0] object-cover cursor-zoom-in hover:opacity-90 transition-opacity"
                           />
                         ) : (
                           <div className={cn(
@@ -896,7 +937,7 @@ export default function TeamPage() {
                     const msg = chatMessage.trim();
                     setChatMessage('');
                     setShowMentions(false);
-                    await sendTeamMessage(msg);
+                    await sendChat(msg);
                   }
                 }}
                 onBlur={() => setTimeout(() => setShowMentions(false), 150)}
@@ -909,7 +950,7 @@ export default function TeamPage() {
                   const msg = chatMessage.trim();
                   setChatMessage('');
                   setShowMentions(false);
-                  await sendTeamMessage(msg);
+                  await sendChat(msg);
                 }}
                 disabled={!chatMessage.trim()}
                 className="h-8 w-8 flex items-center justify-center rounded-xl bg-[#10b981] text-white hover:bg-[#059669] transition-colors disabled:opacity-50 shrink-0"
@@ -917,6 +958,29 @@ export default function TeamPage() {
                 <Send className="w-3.5 h-3.5" />
               </button>
             </div>
+          </div>
+        )}
+
+        {/* Fullscreen image lightbox — clickable by everyone in the chat */}
+        {lightboxSrc && (
+          <div
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-6 animate-in fade-in duration-150"
+            onClick={() => setLightboxSrc(null)}
+          >
+            <button
+              onClick={() => setLightboxSrc(null)}
+              className="absolute top-4 right-4 h-9 w-9 flex items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors"
+              aria-label="Fermer"
+            >
+              <X className="h-5 w-5" />
+            </button>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={lightboxSrc}
+              alt="aperçu plein écran"
+              onClick={e => e.stopPropagation()}
+              className="max-w-full max-h-full rounded-xl object-contain shadow-2xl"
+            />
           </div>
         )}
 

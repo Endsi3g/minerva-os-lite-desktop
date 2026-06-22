@@ -96,6 +96,18 @@ interface PhaseVerification {
 
 const VERIFICATIONS: PhaseVerification[] = [
   {
+    phase: 'Phase 7 — Mentions notifiées & images plein écran',
+    version: 'v3.7.0',
+    date: '2026-06-22',
+    checks: [
+      'Dans le chat d\'équipe, @mentionner un autre membre : ce membre reçoit une notification (cloche).',
+      'Se mentionner soi-même ne crée pas de notification.',
+      'Envoyer une image dans le chat, puis cliquer dessus : elle s\'ouvre en plein écran.',
+      'Un autre membre peut aussi cliquer la même image pour l\'agrandir.',
+      'Fermer le plein écran via le bouton X ou en cliquant à l\'extérieur.',
+    ],
+  },
+  {
     phase: 'Phase 6 — Intelligence comportementale',
     version: 'v3.6.0',
     date: '2026-06-22',

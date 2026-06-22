@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { workspaceId, workspaceOwnerId, title, body, type, link } = await request.json();
+    const { workspaceId, workspaceOwnerId, title, body, type, link, recipientUserIds } = await request.json();
     if (!workspaceOwnerId || !title) {
       return NextResponse.json({ error: 'workspaceOwnerId and title are required' }, { status: 400 });
     }
@@ -53,18 +53,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // Collect recipients: workspace owner + all active members with a user id
-    const { data: members } = await admin
-      .from('team_members')
-      .select('member_user_id')
-      .eq('workspace_owner_id', workspaceOwnerId)
-      .eq('status', 'active');
-
     const recipientIds = new Set<string>();
-    recipientIds.add(workspaceOwnerId);
-    (members || []).forEach((m: { member_user_id: string | null }) => {
-      if (m.member_user_id) recipientIds.add(m.member_user_id);
-    });
+
+    if (Array.isArray(recipientUserIds) && recipientUserIds.length > 0) {
+      // Targeted recipients (e.g. @mentions) — only notify these users
+      recipientUserIds.forEach((id: string) => { if (id) recipientIds.add(id); });
+    } else {
+      // Broadcast: workspace owner + all active members with a user id
+      const { data: members } = await admin
+        .from('team_members')
+        .select('member_user_id')
+        .eq('workspace_owner_id', workspaceOwnerId)
+        .eq('status', 'active');
+      recipientIds.add(workspaceOwnerId);
+      (members || []).forEach((m: { member_user_id: string | null }) => {
+        if (m.member_user_id) recipientIds.add(m.member_user_id);
+      });
+    }
     // Don't notify the sender
     recipientIds.delete(user.id);
 
