@@ -80,7 +80,7 @@ const roadmapData: RoadmapItem[] = [
   { module: 'Intégrations', feature: 'Webhooks Website', desc: 'Réception des formulaires de site web entrants comme leads taggés (déjà en partie via /integrations/forms).', priority: 'medium', status: 'planned' },
 
   // ─── Planned ─────────────────────────────────────────────────────────
-  { module: 'CRM', feature: 'Accounts / Entreprises', desc: 'Vue 360° par société regroupant contacts, deals, emails, meetings, notes et visites.', priority: 'high', status: 'planned' },
+  { module: 'CRM', feature: 'Accounts / Entreprises', desc: 'Page /accounts : vue 360° par société regroupant contacts, pipeline cumulé, visites terrain et notes.', priority: 'high', status: 'available' },
   { module: 'CRM', feature: 'Timeline unifiée par compte', desc: 'Flux chronologique unique par lead/compte : emails, calls, meetings, notes, visites.', priority: 'high', status: 'planned' },
 
   // ─── Available (v2.98) ────────────────────────────────────────────────
@@ -110,6 +110,18 @@ interface PhaseVerification {
 }
 
 const VERIFICATIONS: PhaseVerification[] = [
+  {
+    phase: 'Phase 22 — Comptes / Entreprises (360°)',
+    version: 'v3.22.0',
+    date: '2026-06-22',
+    checks: [
+      'Ouvrir /accounts (lien « Comptes » dans la sidebar CRM).',
+      'Les leads sont regroupés par entreprise (domaine du site, sinon nom).',
+      'Sélectionner un compte : la vue 360° affiche contacts, pipeline cumulé, visites terrain et notes.',
+      'Les leads partageant le même domaine sont regroupés sous un seul compte.',
+      'Cliquer un contact ouvre la fiche lead.',
+    ],
+  },
   {
     phase: 'Phase 21 — Galerie des preuves de visite',
     version: 'v3.21.0',

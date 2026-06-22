@@ -18,6 +18,16 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v3.22.0',
+      date: '2026-06-22 · 12h56',
+      titleKey: 'changelog.v3_22_0_title' as TranslationKey,
+      descKey: 'changelog.v3_22_0_desc' as TranslationKey,
+      highlights: [
+        "Comptes / Entreprises (vue 360°) — Nouvelle page /accounts qui regroupe les leads par entreprise (domaine ou nom). Vue détaillée par compte : contacts, pipeline cumulé, visites terrain et notes.",
+        "Accès rapide — Lien « Comptes » dans la section CRM & Prospection de la barre latérale.",
+      ],
+    },
+    {
       version: 'v3.21.0',
       date: '2026-06-22 · 12h52',
       titleKey: 'changelog.v3_21_0_title' as TranslationKey,

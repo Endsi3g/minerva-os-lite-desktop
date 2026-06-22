@@ -44,6 +44,7 @@ import {
   Mail,
   Activity,
   Kanban,
+  Building2,
   RefreshCw,
   Inbox,
   ListChecks,
@@ -94,7 +95,7 @@ import {
 import { Pin, PinOff } from 'lucide-react';
 import { CalendarDays } from 'lucide-react';
 
-const CURRENT_VERSION = '3.21.0';
+const CURRENT_VERSION = '3.22.0';
 
 function UpdateBanner() {
   const [visible, setVisible] = useState(false);
@@ -609,6 +610,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
       label: 'CRM & Prospection',
       items: [
         { name: 'Boîte de réception', href: '/inbox', icon: Inbox },
+        { name: 'Comptes', href: '/accounts', icon: Building2 },
         { name: 'Cockpit Ops', href: '/ops/prospecting', icon: Activity },
         { name: 'Campagnes', href: '/campaigns', icon: Megaphone },
         { name: 'Playbooks', href: '/playbooks', icon: BookOpen },
