@@ -95,7 +95,7 @@ const roadmapData: RoadmapItem[] = [
   { module: 'Analytics', feature: 'Reporting avancé', desc: 'Cohortes, velocity pipeline, source attribution, performance par playbook et séquence.', priority: 'low', status: 'backlog' },
   { module: 'IA', feature: 'Skills partagées par workspace', desc: "Compétences activées et personnalisées partagées au niveau du workspace (toute l'équipe).", priority: 'medium', status: 'available' },
   { module: 'IA', feature: '@ contexte CRM dans le chat', desc: "Menu @ injectant du contexte CRM réel (leads, pipeline, leads chauds, tâches) en plus des compétences.", priority: 'medium', status: 'available' },
-  { module: 'Agenda', feature: 'Vue semaine / jour + créneaux', desc: 'Vues hebdomadaire et journalière avec créneaux horaires, glisser-déposer des RDV.', priority: 'medium', status: 'backlog' },
+  { module: 'Agenda', feature: 'Vues Semaine / Jour + créneaux', desc: 'Vues hebdomadaire et journalière avec grille horaire (7h–20h) ; clic sur un créneau pour planifier.', priority: 'medium', status: 'available' },
   { module: 'Terrain', feature: 'Galerie des preuves de visite', desc: 'Regrouper les photos preuves par lead/tournée et les rendre consultables par l\'équipe.', priority: 'low', status: 'backlog' },
   { module: 'Qualité', feature: 'Réécriture des refs React Compiler', desc: 'Corriger réellement les ~220 avertissements react-hooks/refs (actuellement désactivés) plutôt que de les masquer.', priority: 'low', status: 'backlog' },
   { module: 'Tests', feature: 'QA E2E automatisée', desc: 'Couvrir les flux critiques (invitation, booking, chat, terrain) par des tests Playwright.', priority: 'medium', status: 'backlog' },
@@ -110,6 +110,18 @@ interface PhaseVerification {
 }
 
 const VERIFICATIONS: PhaseVerification[] = [
+  {
+    phase: 'Phase 20 — Agenda Semaine / Jour',
+    version: 'v3.20.0',
+    date: '2026-06-22',
+    checks: [
+      'Sur /agenda, basculer entre Mois / Semaine / Jour via le sélecteur.',
+      'Vue Semaine : 7 colonnes + grille horaire ; les RDV apparaissent à leur heure.',
+      'Vue Jour : grille horaire 7h–20h ; cliquer un créneau ouvre la création de RDV.',
+      'Les flèches précédent/suivant décalent d\'un mois / semaine / jour selon la vue.',
+      'Cliquer un jour dans la vue Semaine bascule en vue Jour.',
+    ],
+  },
   {
     phase: 'Phase 19 — Skills d\'équipe & @ contexte CRM',
     version: 'v3.19.0',

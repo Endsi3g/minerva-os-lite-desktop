@@ -26,6 +26,7 @@ export function AgendaRoot() {
   const [viewYear, setViewYear] = useState(today.getFullYear());
   const [viewMonth, setViewMonth] = useState(today.getMonth());
   const [selectedDate, setSelectedDate] = useState<string>(ymd(today));
+  const [view, setView] = useState<'month' | 'week' | 'day'>('month');
 
   // Booking modal
   const [showBook, setShowBook] = useState(false);
@@ -71,6 +72,36 @@ export function AgendaRoot() {
   };
 
   const selectedTasks = tasksByDay[selectedDate] || [];
+
+  // Meeting time is embedded in the task title as "HH:MM — ...". Parse it for placement.
+  const parseHour = (title: string): number | null => {
+    const m = title.match(/^(\d{1,2}):(\d{2})/);
+    return m ? parseInt(m[1], 10) : null;
+  };
+  const DAY_HOURS = Array.from({ length: 14 }, (_, i) => i + 7); // 7h → 20h
+
+  // Days of the week containing selectedDate (Mon-first)
+  const weekDays = useMemo(() => {
+    const d = new Date(`${selectedDate}T00:00`);
+    const offset = (d.getDay() + 6) % 7;
+    const monday = new Date(d);
+    monday.setDate(d.getDate() - offset);
+    return Array.from({ length: 7 }, (_, i) => {
+      const day = new Date(monday);
+      day.setDate(monday.getDate() + i);
+      return day;
+    });
+  }, [selectedDate]);
+
+  // Navigate prev/next according to the active view
+  const shiftSelected = (dir: number) => {
+    if (view === 'month') { dir < 0 ? prevMonth() : nextMonth(); return; }
+    const d = new Date(`${selectedDate}T00:00`);
+    d.setDate(d.getDate() + dir * (view === 'week' ? 7 : 1));
+    setSelectedDate(ymd(d));
+    setViewYear(d.getFullYear());
+    setViewMonth(d.getMonth());
+  };
 
   const openBooking = (date: string) => {
     setSelectedDate(date);
@@ -169,25 +200,44 @@ export function AgendaRoot() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Calendar */}
           <div className="lg:col-span-2 rounded-xl border border-border bg-card p-4">
-            {/* Month nav */}
-            <div className="flex items-center justify-between mb-4">
-              <button onClick={prevMonth} className="h-8 w-8 flex items-center justify-center rounded-lg border border-border hover:bg-muted transition-colors">
-                <ChevronLeft className="h-4 w-4" />
-              </button>
-              <p className="text-sm font-bold text-foreground">{MONTHS[viewMonth]} {viewYear}</p>
-              <button onClick={nextMonth} className="h-8 w-8 flex items-center justify-center rounded-lg border border-border hover:bg-muted transition-colors">
-                <ChevronRight className="h-4 w-4" />
-              </button>
+            {/* Nav + view switcher */}
+            <div className="flex items-center justify-between mb-4 gap-2">
+              <div className="flex items-center gap-2">
+                <button onClick={() => shiftSelected(-1)} className="h-8 w-8 flex items-center justify-center rounded-lg border border-border hover:bg-muted transition-colors">
+                  <ChevronLeft className="h-4 w-4" />
+                </button>
+                <button onClick={() => shiftSelected(1)} className="h-8 w-8 flex items-center justify-center rounded-lg border border-border hover:bg-muted transition-colors">
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+                <p className="text-sm font-bold text-foreground ml-1">
+                  {view === 'month'
+                    ? `${MONTHS[viewMonth]} ${viewYear}`
+                    : view === 'week'
+                    ? `${weekDays[0].getDate()} – ${weekDays[6].getDate()} ${MONTHS[weekDays[6].getMonth()]}`
+                    : new Date(`${selectedDate}T00:00`).toLocaleDateString('fr-CA', { weekday: 'long', day: 'numeric', month: 'long' })}
+                </p>
+              </div>
+              <div className="flex items-center gap-0.5 bg-muted/50 rounded-lg p-0.5">
+                {(['month', 'week', 'day'] as const).map(v => (
+                  <button
+                    key={v}
+                    onClick={() => setView(v)}
+                    className={cn('px-2.5 h-7 rounded-md text-[11px] font-semibold transition-colors',
+                      view === v ? 'bg-white text-[#26251e] shadow-sm' : 'text-muted-foreground hover:text-foreground')}
+                  >
+                    {v === 'month' ? 'Mois' : v === 'week' ? 'Semaine' : 'Jour'}
+                  </button>
+                ))}
+              </div>
             </div>
 
-            {/* Weekday header */}
+            {/* ── Month view ── */}
+            {view === 'month' && (<>
             <div className="grid grid-cols-7 gap-1 mb-1">
               {WEEKDAYS.map(d => (
                 <div key={d} className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground text-center py-1">{d}</div>
               ))}
             </div>
-
-            {/* Day cells */}
             <div className="grid grid-cols-7 gap-1">
               {grid.map((date, i) => {
                 if (!date) return <div key={i} className="aspect-square" />;
@@ -214,7 +264,7 @@ export function AgendaRoot() {
                     {dayTasks.length > 0 && (
                       <div className="flex gap-0.5 flex-wrap justify-center">
                         {dayTasks.slice(0, 3).map((t, j) => (
-                          <span key={j} className={cn('h-1.5 w-1.5 rounded-full', t.category === 'Meeting' ? 'bg-[#059669]' : 'bg-[#059669]')} />
+                          <span key={j} className="h-1.5 w-1.5 rounded-full bg-[#059669]" />
                         ))}
                       </div>
                     )}
@@ -222,6 +272,63 @@ export function AgendaRoot() {
                 );
               })}
             </div>
+            </>)}
+
+            {/* ── Week view ── */}
+            {view === 'week' && (
+              <div className="overflow-x-auto">
+                <div className="grid grid-cols-[40px_repeat(7,minmax(0,1fr))] gap-px min-w-[560px]">
+                  <div />
+                  {weekDays.map((d, i) => {
+                    const key = ymd(d);
+                    const isToday = key === ymd(today);
+                    return (
+                      <button key={i} onClick={() => { setSelectedDate(key); setView('day'); }}
+                        className={cn('text-center py-1.5 rounded-md', isToday ? 'bg-[#059669]/10' : 'hover:bg-muted/40')}>
+                        <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{WEEKDAYS[i]}</div>
+                        <div className={cn('text-xs font-bold', isToday ? 'text-[#059669]' : 'text-foreground')}>{d.getDate()}</div>
+                      </button>
+                    );
+                  })}
+                  {DAY_HOURS.map(hour => (
+                    <React.Fragment key={hour}>
+                      <div className="text-[9px] text-muted-foreground text-right pr-1 py-1 border-t border-border">{hour}h</div>
+                      {weekDays.map((d, di) => {
+                        const key = ymd(d);
+                        const slotTasks = (tasksByDay[key] || []).filter(t => parseHour(t.title) === hour);
+                        return (
+                          <div key={di} onClick={() => openBooking(key)}
+                            className="min-h-[34px] border-t border-l border-border p-0.5 space-y-0.5 cursor-pointer hover:bg-muted/30">
+                            {slotTasks.map(t => (
+                              <div key={t.id} className="text-[9px] font-semibold text-white bg-[#059669] rounded px-1 py-0.5 truncate">{t.title}</div>
+                            ))}
+                          </div>
+                        );
+                      })}
+                    </React.Fragment>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* ── Day view ── */}
+            {view === 'day' && (
+              <div className="space-y-px">
+                {DAY_HOURS.map(hour => {
+                  const slotTasks = (tasksByDay[selectedDate] || []).filter(t => parseHour(t.title) === hour);
+                  return (
+                    <div key={hour} className="grid grid-cols-[48px_minmax(0,1fr)] gap-2 border-t border-border">
+                      <div className="text-[10px] text-muted-foreground text-right pr-1 py-2">{hour}h</div>
+                      <div onClick={() => openBooking(selectedDate)} className="min-h-[40px] py-1 space-y-1 cursor-pointer hover:bg-muted/30 rounded">
+                        {slotTasks.map(t => (
+                          <div key={t.id} className="text-[11px] font-semibold text-white bg-[#059669] rounded-md px-2 py-1">{t.title}</div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {/* Selected day detail */}

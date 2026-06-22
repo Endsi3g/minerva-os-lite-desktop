@@ -18,6 +18,16 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v3.20.0',
+      date: '2026-06-22 · 12h48',
+      titleKey: 'changelog.v3_20_0_title' as TranslationKey,
+      descKey: 'changelog.v3_20_0_desc' as TranslationKey,
+      highlights: [
+        "Agenda — Vues Semaine et Jour — Basculez entre Mois / Semaine / Jour. Les vues Semaine et Jour affichent une grille horaire (7h–20h) avec les rendez-vous placés à leur heure.",
+        "Création rapide par créneau — Cliquez sur un créneau horaire pour planifier un rendez-vous à cette heure.",
+      ],
+    },
+    {
       version: 'v3.19.0',
       date: '2026-06-22 · 12h45',
       titleKey: 'changelog.v3_19_0_title' as TranslationKey,
