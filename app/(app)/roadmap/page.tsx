@@ -96,6 +96,17 @@ interface PhaseVerification {
 
 const VERIFICATIONS: PhaseVerification[] = [
   {
+    phase: 'Phase 11 — Titres de discussion IA & modèle',
+    version: 'v3.11.0',
+    date: '2026-06-22',
+    checks: [
+      "Démarrer une nouvelle conversation dans l'Assistant et envoyer un message : après la réponse, le titre dans l'historique devient un résumé généré par l'IA (3-5 mots).",
+      "Vérifier que l'assistant répond bien via le modèle (Minerva AI / Llama 3.3 70B) — réponses réelles, pas génériques.",
+      "Sélectionner un autre modèle OpenRouter et confirmer qu'il répond.",
+      "Note : le @ contexte/compétences est livré en Phase 12 avec la page Skills.",
+    ],
+  },
+  {
     phase: 'Phase 10 — Connexion Google & OAuth',
     version: 'v3.10.0',
     date: '2026-06-22',

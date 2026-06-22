@@ -18,6 +18,16 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v3.11.0',
+      date: '2026-06-22 · 11h16',
+      titleKey: 'changelog.v3_11_0_title' as TranslationKey,
+      descKey: 'changelog.v3_11_0_desc' as TranslationKey,
+      highlights: [
+        "Titres de discussion par l'IA — Le titre de chaque nouvelle conversation de l'assistant est désormais généré automatiquement par l'IA à partir du premier échange.",
+        "Modèle IA confirmé — L'assistant utilise le modèle « Minerva AI (Llama 3.3 70B) » via OpenRouter ; le fournisseur est transmis explicitement à chaque requête pour garantir la connexion.",
+      ],
+    },
+    {
       version: 'v3.10.0',
       date: '2026-06-22 · 11h11',
       titleKey: 'changelog.v3_10_0_title' as TranslationKey,

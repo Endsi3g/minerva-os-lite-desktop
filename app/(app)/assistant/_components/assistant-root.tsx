@@ -500,7 +500,9 @@ export function AssistantRoot() {
 
     // Load or create discussion session
     let activeSess = currentSession;
+    let isNewSession = false;
     if (!activeSess) {
+      isNewSession = true;
       const words = trimmed
         .replace(/[^\w\sÀ-ɏ'-]/g, '')
         .split(/\s+/)
@@ -595,6 +597,46 @@ export function AssistantRoot() {
         await dbSaveMessage(activeSess.id, userId, 'assistant', assistantContent);
         const sessList = await dbGetSessions(userId, workspaceId);
         setSessions(sessList);
+
+        // For a brand-new session, let the AI craft a concise discussion title
+        if (isNewSession && assistantContent.trim()) {
+          try {
+            const titleRes = await fetch(getApiUrl('/api/chat'), {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                messages: [{
+                  role: 'user',
+                  content: `Génère un titre court (3 à 5 mots, sans guillemets ni ponctuation finale) résumant cette conversation.\n\nUtilisateur : ${trimmed}\nAssistant : ${assistantContent.slice(0, 400)}\n\nRéponds uniquement par le titre.`,
+                }],
+                model: selectedModel.id,
+                provider: selectedModel.provider,
+              }),
+            });
+            if (titleRes.ok && titleRes.body) {
+              const tReader = titleRes.body.getReader();
+              const tDec = new TextDecoder();
+              let titleText = '';
+              while (true) {
+                const { done, value } = await tReader.read();
+                if (done) break;
+                const chunk = tDec.decode(value, { stream: true });
+                for (const line of chunk.split('\n').filter(l => l.startsWith('data: '))) {
+                  const d = line.slice(6);
+                  if (d === '[DONE]') continue;
+                  try { titleText += JSON.parse(d).choices?.[0]?.delta?.content ?? ''; } catch {}
+                }
+              }
+              const cleanTitle = titleText.replace(/["'\n]/g, '').replace(/[.!?]+$/, '').trim().slice(0, 60);
+              if (cleanTitle && activeSess) {
+                await dbUpdateSessionTitle(workspaceId, activeSess.id, cleanTitle);
+                setCurrentSession(prev => prev ? { ...prev, title: cleanTitle } : prev);
+                setSessions(await dbGetSessions(userId, workspaceId));
+                window.dispatchEvent(new CustomEvent('minerva_assistant_sync'));
+              }
+            }
+          } catch { /* keep fallback title */ }
+        }
       }
 
       // Handle embedded canvas document
