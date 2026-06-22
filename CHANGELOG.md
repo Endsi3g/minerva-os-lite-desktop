@@ -5,6 +5,13 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [3.27.2] - 2026-06-22
+
+### Modifié — Migration Next.js 16 Proxy & correctifs de build
+- **Migration Next.js 16 Proxy** — Renommage de `middleware.ts` en `proxy.ts` et de sa fonction exportée `middleware` en `proxy` pour se conformer aux conventions de Next.js 16.
+- **Compatibilité runtime Node.js** — Utilisation automatique du runtime Node.js par défaut pour le routeur/proxy, évitant les erreurs de bundle Vercel sur les dépendances internes (`node:fs`, `node:path`).
+- **Nettoyage de configuration** — Suppression de la configuration de secours Webpack obsolète dans `next.config.ts`.
+
 ## [3.27.1] - 2026-06-22
 
 ### Ajouté — Configuration globale de la clé OpenRouter & validation Vercel

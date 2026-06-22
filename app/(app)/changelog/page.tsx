@@ -18,6 +18,17 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v3.27.2',
+      date: '2026-06-22 · 19h15',
+      titleKey: 'changelog.v3_27_2_title' as TranslationKey,
+      descKey: 'changelog.v3_27_2_desc' as TranslationKey,
+      highlights: [
+        "Migration Next.js 16 Proxy — Migration de middleware.ts vers la nouvelle convention proxy.ts de Next.js 16 pour résoudre les erreurs de bundle sur Vercel.",
+        "Compatibilité runtime Node.js — Bascule automatique de la logique de routage et de session sur le runtime Node.js natif pour la compatibilité avec toutes les dépendances.",
+        "Nettoyage de configuration — Suppression de la configuration de secours Webpack obsolète dans next.config.ts.",
+      ],
+    },
+    {
       version: 'v3.27.1',
       date: '2026-06-22 · 18h50',
       titleKey: 'changelog.v3_27_1_title' as TranslationKey,
