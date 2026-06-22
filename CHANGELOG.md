@@ -5,6 +5,13 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [3.27.1] - 2026-06-22
+
+### Ajouté — Configuration globale de la clé OpenRouter & validation Vercel
+- **Configuration globale sur Vercel** — Déploiement et enregistrement de la clé globale `OPENROUTER_API_KEY` sur les environnements de Production, Preview, et Development pour assurer la connectivité de toutes les fonctionnalités IA.
+- **Environnement local mis à jour** — Ajout de la clé OpenRouter globale dans le fichier `.env.production.local` pour les tests et exécutions locales.
+- **Connexion IA confirmée** — Liaison et validation complète du flux de requêtes entre l'application et OpenRouter.
+
 ## [3.27.0] - 2026-06-22
 
 ### Ajouté — Modèle IA unifié OpenRouter & correctifs de compilation

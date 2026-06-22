@@ -18,6 +18,17 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v3.27.1',
+      date: '2026-06-22 · 18h50',
+      titleKey: 'changelog.v3_27_1_title' as TranslationKey,
+      descKey: 'changelog.v3_27_1_desc' as TranslationKey,
+      highlights: [
+        "Configuration globale sur Vercel — Enregistrement et écriture de la variable d'environnement OPENROUTER_API_KEY sur les environnements de Production, Preview, et Development.",
+        "Environnement local à jour — Ajout de la clé OpenRouter globale dans le fichier .env.production.local pour les tests et exécutions locales.",
+        "Connexion IA opérationnelle — Validation de la liaison dynamique de la clé OpenRouter avec les fonctionnalités d'intelligence artificielle de l'application.",
+      ],
+    },
+    {
       version: 'v3.27.0',
       date: '2026-06-22 · 22h45',
       titleKey: 'changelog.v3_27_0_title' as TranslationKey,
