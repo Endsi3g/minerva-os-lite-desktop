@@ -1531,7 +1531,7 @@ export function AssistantRoot() {
                       const sk = enabledSkills.find(s => s.id === id);
                       if (!sk) return null;
                       return (
-                        <span key={id} className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#f54e00]/10 text-[#f54e00] border border-[#f54e00]/20">
+                        <span key={id} className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#059669]/10 text-[#059669] border border-[#059669]/20">
                           <Sparkles className="h-2.5 w-2.5" />
                           {sk.name}
                           <button onClick={() => setActiveSkillIds(prev => prev.filter(x => x !== id))} className="hover:opacity-70">
@@ -1565,7 +1565,7 @@ export function AssistantRoot() {
                         }}
                         className="w-full flex items-start gap-2.5 px-3 py-2 text-left hover:bg-[#f4f4f3] transition-colors"
                       >
-                        <Sparkles className="h-3.5 w-3.5 text-[#f54e00] shrink-0 mt-0.5" />
+                        <Sparkles className="h-3.5 w-3.5 text-[#059669] shrink-0 mt-0.5" />
                         <div className="min-w-0">
                           <p className="text-xs font-semibold text-[#26251e]">{sk.name}</p>
                           <p className="text-[10px] text-[#7a7a76] truncate">{sk.description}</p>

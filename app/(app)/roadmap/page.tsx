@@ -96,6 +96,16 @@ interface PhaseVerification {
 
 const VERIFICATIONS: PhaseVerification[] = [
   {
+    phase: 'Phase 14 — Page Skills en vert (DESIGN.md)',
+    version: 'v3.14.0',
+    date: '2026-06-22',
+    checks: [
+      "Sur /skills, l'accent (boutons, icônes, toggles actifs, focus) est vert #059669 — plus d'orange.",
+      "Dans l'Assistant, les puces de compétences (@) sont vertes.",
+      'Vérifier la cohérence avec la charte (Tasks/Roadmap/Skills = vert).',
+    ],
+  },
+  {
     phase: 'Phase 13 — Skills dans Supabase',
     version: 'v3.13.0',
     date: '2026-06-22',

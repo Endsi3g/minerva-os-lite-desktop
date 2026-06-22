@@ -18,6 +18,16 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v3.14.0',
+      date: '2026-06-22 · 11h41',
+      titleKey: 'changelog.v3_14_0_title' as TranslationKey,
+      descKey: 'changelog.v3_14_0_desc' as TranslationKey,
+      highlights: [
+        "Page Skills en vert — L'accent de la page Skills passe du orange au vert de marque, conformément à la charte graphique (DESIGN.md).",
+        "Puces de compétences cohérentes — Les compétences sélectionnées via @ dans le chat affichent désormais l'accent vert.",
+      ],
+    },
+    {
       version: 'v3.13.0',
       date: '2026-06-22 · 11h35',
       titleKey: 'changelog.v3_13_0_title' as TranslationKey,

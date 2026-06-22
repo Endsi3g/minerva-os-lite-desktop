@@ -59,7 +59,7 @@ export function SkillsRoot() {
     return (
       <div className="rounded-xl border border-[#e5e5e0] bg-card p-4 flex flex-col gap-2">
         <div className="flex items-start justify-between gap-2">
-          <div className="h-8 w-8 rounded-lg bg-[#f54e00]/10 text-[#f54e00] flex items-center justify-center shrink-0">
+          <div className="h-8 w-8 rounded-lg bg-[#059669]/10 text-[#059669] flex items-center justify-center shrink-0">
             <Sparkles className="h-4 w-4" />
           </div>
           <button
@@ -103,8 +103,8 @@ export function SkillsRoot() {
         {/* Header */}
         <div className="flex items-start justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-[#f54e00]/10 flex items-center justify-center">
-              <Sparkles className="h-5 w-5 text-[#f54e00]" />
+            <div className="h-10 w-10 rounded-xl bg-[#059669]/10 flex items-center justify-center">
+              <Sparkles className="h-5 w-5 text-[#059669]" />
             </div>
             <div>
               <h1 className="text-xl font-bold text-foreground tracking-tight">Skills</h1>
@@ -113,7 +113,7 @@ export function SkillsRoot() {
           </div>
           <button
             onClick={() => setShowCreate(true)}
-            className="flex items-center gap-1.5 px-4 h-9 rounded-lg bg-[#f54e00] hover:bg-[#d94400] text-white text-xs font-bold transition-colors"
+            className="flex items-center gap-1.5 px-4 h-9 rounded-lg bg-[#059669] hover:bg-[#047857] text-white text-xs font-bold transition-colors"
           >
             <Plus className="h-3.5 w-3.5" />
             Ajouter une compétence
@@ -142,7 +142,7 @@ export function SkillsRoot() {
               value={query}
               onChange={e => setQuery(e.target.value)}
               placeholder="Rechercher une compétence…"
-              className="h-9 w-56 pl-8 pr-3 text-xs bg-card border border-border rounded-lg focus:outline-none focus:ring-1 focus:ring-[#f54e00]"
+              className="h-9 w-56 pl-8 pr-3 text-xs bg-card border border-border rounded-lg focus:outline-none focus:ring-1 focus:ring-[#059669]"
             />
           </div>
         </div>
@@ -171,7 +171,7 @@ export function SkillsRoot() {
                 <Wand2 className="h-6 w-6 text-muted-foreground mx-auto mb-2" />
                 <p className="text-sm font-semibold text-foreground">Aucune compétence personnalisée</p>
                 <p className="text-xs text-muted-foreground mt-1">Créez une compétence pour donner des instructions sur mesure à l&apos;assistant.</p>
-                <button onClick={() => setShowCreate(true)} className="mt-3 inline-flex items-center gap-1.5 px-3 h-8 rounded-lg bg-[#f54e00] text-white text-xs font-bold">
+                <button onClick={() => setShowCreate(true)} className="mt-3 inline-flex items-center gap-1.5 px-3 h-8 rounded-lg bg-[#059669] text-white text-xs font-bold">
                   <Plus className="h-3.5 w-3.5" /> Créer
                 </button>
               </div>
@@ -217,27 +217,27 @@ export function SkillsRoot() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={() => setShowCreate(false)}>
           <div className="bg-white rounded-2xl shadow-xl w-[480px] max-w-[95vw] p-6 space-y-4 animate-in zoom-in-95 duration-150" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between">
-              <h2 className="text-base font-bold text-[#26251e] flex items-center gap-2"><Wand2 className="h-4 w-4 text-[#f54e00]" /> Créer une compétence</h2>
+              <h2 className="text-base font-bold text-[#26251e] flex items-center gap-2"><Wand2 className="h-4 w-4 text-[#059669]" /> Créer une compétence</h2>
               <button onClick={() => setShowCreate(false)} className="text-[#7a7a76] hover:text-[#26251e]"><X className="h-4 w-4" /></button>
             </div>
             <div className="space-y-3">
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Nom</label>
-                <input value={name} onChange={e => setName(e.target.value)} placeholder="Ex : Auditeur SEO local" className="w-full h-9 text-xs border border-[#e5e5e0] rounded-lg px-3 focus:outline-none focus:ring-1 focus:ring-[#f54e00]" />
+                <input value={name} onChange={e => setName(e.target.value)} placeholder="Ex : Auditeur SEO local" className="w-full h-9 text-xs border border-[#e5e5e0] rounded-lg px-3 focus:outline-none focus:ring-1 focus:ring-[#059669]" />
               </div>
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Description courte</label>
-                <input value={description} onChange={e => setDescription(e.target.value)} placeholder="À quoi sert cette compétence ?" className="w-full h-9 text-xs border border-[#e5e5e0] rounded-lg px-3 focus:outline-none focus:ring-1 focus:ring-[#f54e00]" />
+                <input value={description} onChange={e => setDescription(e.target.value)} placeholder="À quoi sert cette compétence ?" className="w-full h-9 text-xs border border-[#e5e5e0] rounded-lg px-3 focus:outline-none focus:ring-1 focus:ring-[#059669]" />
               </div>
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Instructions (injectées dans l&apos;IA)</label>
-                <textarea value={instructions} onChange={e => setInstructions(e.target.value)} rows={5} placeholder="Tu es un expert en… Quand on te le demande, tu…" className="w-full text-xs border border-[#e5e5e0] rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-[#f54e00] resize-none" />
+                <textarea value={instructions} onChange={e => setInstructions(e.target.value)} rows={5} placeholder="Tu es un expert en… Quand on te le demande, tu…" className="w-full text-xs border border-[#e5e5e0] rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-[#059669] resize-none" />
               </div>
             </div>
             <button
               onClick={handleCreate}
               disabled={!name.trim() || !instructions.trim() || saving}
-              className="w-full h-10 rounded-lg bg-[#f54e00] hover:bg-[#d94400] text-white text-sm font-bold flex items-center justify-center gap-2 transition-colors disabled:opacity-60"
+              className="w-full h-10 rounded-lg bg-[#059669] hover:bg-[#047857] text-white text-sm font-bold flex items-center justify-center gap-2 transition-colors disabled:opacity-60"
             >
               {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
               Créer et activer
