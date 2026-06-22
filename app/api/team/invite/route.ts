@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
 
     // 2. Parse request body — needed before authorization since the target
     // workspace (ownerId) determines who is allowed to invite into it.
-    const { email, role, workspaceOwnerId } = await request.json();
+    const { email, role, workspaceOwnerId, workspaceId: requestedWorkspaceId } = await request.json();
 
     if (!email || !role || !['admin', 'editor', 'viewer'].includes(role)) {
       return NextResponse.json({ error: 'Invalid parameters' }, { status: 400 });
@@ -89,7 +89,6 @@ export async function POST(request: NextRequest) {
     let actionLink = `${baseUrl}/login`;
     let inviteData: any = null;
     let inviteError: any = null;
-    let existingUserId: string | null = null;
 
     try {
       const genResult = await adminClient.auth.admin.generateLink({
@@ -121,16 +120,8 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: inviteError.message }, { status: 500 });
       }
 
-      // User already exists in Supabase Auth — look up their ID so we can
-      // immediately activate the membership instead of leaving member_user_id null.
-      try {
-        const { data: listData } = await adminClient.auth.admin.listUsers({ page: 1, perPage: 1000 });
-        const found = (listData?.users ?? []).find((u: any) => u.email?.toLowerCase() === email.toLowerCase());
-        if (found?.id) existingUserId = found.id;
-      } catch (lookupErr) {
-        console.warn('Could not look up existing user ID:', lookupErr);
-      }
-
+      // User already exists in Supabase Auth — they'll accept by logging in;
+      // the accept-invite catch-all on first load activates their pending membership.
       actionLink = `${baseUrl}/login`;
     } else if (inviteData?.properties?.action_link) {
       const rawLink = inviteData.properties.action_link;
@@ -197,28 +188,44 @@ export async function POST(request: NextRequest) {
       console.warn('RESEND_API_KEY is not set. Email dispatch skipped.');
     }
 
-    // 6. Resolve workspace_id for the invitee membership
-    const { data: ownerWorkspace } = await supabase
-      .from('workspaces')
-      .select('id')
-      .eq('owner_id', ownerId)
-      .order('created_at', { ascending: true })
-      .limit(1)
-      .maybeSingle();
-    const workspaceId = ownerWorkspace?.id ?? null;
+    // 6. Resolve workspace_id for the invitee membership.
+    // Prefer the explicitly requested workspace (verifying the owner owns it);
+    // otherwise fall back to the owner's first workspace.
+    let workspaceId: string | null = null;
+    if (requestedWorkspaceId) {
+      const { data: requestedWs } = await supabase
+        .from('workspaces')
+        .select('id')
+        .eq('id', requestedWorkspaceId)
+        .eq('owner_id', ownerId)
+        .maybeSingle();
+      workspaceId = requestedWs?.id ?? null;
+    }
+    if (!workspaceId) {
+      const { data: ownerWorkspace } = await supabase
+        .from('workspaces')
+        .select('id')
+        .eq('owner_id', ownerId)
+        .order('created_at', { ascending: true })
+        .limit(1)
+        .maybeSingle();
+      workspaceId = ownerWorkspace?.id ?? null;
+    }
 
-    // Insert team member record
-    const resolvedMemberId = existingUserId ?? inviteData?.user?.id ?? null;
-    const resolvedStatus = resolvedMemberId ? 'active' : 'pending';
-
+    // Insert team member record.
+    // Always create as 'pending' — the membership only becomes 'active' once the
+    // invitee actually accepts (via /invite/[token] → accept-invite, or on first
+    // login → accept-invite catch-all). This keeps the invited/joined distinction
+    // correct AND ensures accept-invite can find & activate the row (which is what
+    // sets the invitee's active_workspace_id to the inviter's workspace).
     const { data: member, error: insertError } = await supabase
       .from('team_members')
       .insert({
         workspace_owner_id: ownerId,
-        member_user_id: resolvedMemberId,
+        member_user_id: null,
         email: email.toLowerCase(),
         role,
-        status: resolvedStatus,
+        status: 'pending',
         invited_by: user.id,
         plan: 'Business',
         usage_count: 0,

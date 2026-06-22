@@ -6,7 +6,6 @@ import { User as SupabaseUser, AuthChangeEvent, Session } from '@supabase/supaba
 import { Lead, Task, Note, AiSuggestion, initialLeads, initialTasks } from './mock-data';
 import { computeLeadScore } from './lead-scoring';
 import { createClient } from './supabase/client';
-import { useRouter } from 'next/navigation';
 
 export interface Workspace {
   id: string;
@@ -485,7 +484,6 @@ function mapDbSuggestionToUi(s: DbSuggestion, leads: Lead[]): AiSuggestion {
 }
 
 export function ReachProvider({ children }: { children: React.ReactNode }) {
-  const router = useRouter();
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -766,6 +764,13 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
     }
 
     try {
+      // Catch-all: activate any pending team invitations matching this user's email
+      // before loading workspaces. Handles existing users who accept via the /login
+      // link (no token flow). Idempotent — returns 404 if nothing pending.
+      try {
+        await fetch(getApiUrl('/api/team/accept-invite'), { method: 'POST' });
+      } catch { /* non-blocking */ }
+
       const res = await fetch(getApiUrl('/api/workspaces'));
       if (res.ok) {
         const data = await res.json();
@@ -829,60 +834,42 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  // Workspace Switcher actions — persists to Supabase, no localStorage
+  // Workspace Switcher — switches active workspace in-place (data reloads via the
+  // activeWorkspace effect) and persists the preference. No forced navigation:
+  // the caller decides whether to redirect.
   const switchWorkspace = async (workspaceId: string, wsObject?: Workspace) => {
-    console.log("[switchWorkspace] Called with workspaceId:", workspaceId, "wsObject:", wsObject);
-    console.log("[switchWorkspace] Current workspacesList:", workspacesList);
     const ws = wsObject || workspacesList.find(w => w.id === workspaceId);
-    console.log("[switchWorkspace] Resolved workspace:", ws);
-    if (ws) {
-      setActiveWorkspace(ws);
-      console.log("[switchWorkspace] Set active workspace to:", ws.name);
-      window.dispatchEvent(new Event('minerva_workspace_changed'));
-
-      // Redirect to workspaces list page
-      try {
-        console.log("[switchWorkspace] Redirecting to /workspaces...");
-        router.push('/workspaces');
-      } catch (routerErr) {
-        console.error("[switchWorkspace] Router redirect failed:", routerErr);
-      }
-
-      const electronObj = typeof window !== 'undefined' && (window as any).electron ? (window as any).electron : null;
-      console.log("[switchWorkspace] Electron detected:", !!electronObj, "User:", user);
-      if (electronObj && user) {
-        try {
-          const nowStr = new Date().toISOString();
-          console.log("[switchWorkspace] Updating SQLite settings active_workspace_id to:", ws.id, "for user:", user.id);
-          await electronObj.dbRun(
-            `INSERT INTO settings (user_id, active_workspace_id, updated_at, sync_status) 
-             VALUES (?, ?, ?, 'pending_update') 
-             ON CONFLICT(user_id) DO UPDATE SET active_workspace_id = excluded.active_workspace_id, updated_at = excluded.updated_at, sync_status = 'pending_update'`,
-            [user.id, ws.id, nowStr]
-          );
-          console.log("[switchWorkspace] SQLite settings updated successfully.");
-          if (electronObj.triggerSync) {
-            console.log("[switchWorkspace] Triggering sync...");
-            electronObj.triggerSync();
-          }
-        } catch (e) {
-          console.error("Failed to switch workspace in SQLite settings:", e);
-        }
-        return;
-      }
-
-      // Persist preference to Supabase settings
-      console.log("[switchWorkspace] Persisting preference to Supabase settings for activeWorkspaceId:", ws.id);
-      fetch(getApiUrl('/api/workspaces'), {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ activeWorkspaceId: ws.id }),
-      })
-        .then(res => console.log("[switchWorkspace] Supabase PATCH response status:", res.status))
-        .catch(err => console.error("[switchWorkspace] Supabase PATCH fetch failed:", err));
-    } else {
+    if (!ws) {
       console.warn("[switchWorkspace] Workspace not found for ID:", workspaceId);
+      return;
     }
+
+    setActiveWorkspace(ws);
+    window.dispatchEvent(new Event('minerva_workspace_changed'));
+
+    const electronObj = typeof window !== 'undefined' && (window as any).electron ? (window as any).electron : null;
+    if (electronObj && user) {
+      try {
+        const nowStr = new Date().toISOString();
+        await electronObj.dbRun(
+          `INSERT INTO settings (user_id, active_workspace_id, updated_at, sync_status)
+           VALUES (?, ?, ?, 'pending_update')
+           ON CONFLICT(user_id) DO UPDATE SET active_workspace_id = excluded.active_workspace_id, updated_at = excluded.updated_at, sync_status = 'pending_update'`,
+          [user.id, ws.id, nowStr]
+        );
+        if (electronObj.triggerSync) electronObj.triggerSync();
+      } catch (e) {
+        console.error("Failed to switch workspace in SQLite settings:", e);
+      }
+      return;
+    }
+
+    // Persist preference to Supabase settings (fire-and-forget)
+    fetch(getApiUrl('/api/workspaces'), {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ activeWorkspaceId: ws.id }),
+    }).catch(() => {});
   };
 
   const createWorkspace = async (name: string): Promise<Workspace | null> => {

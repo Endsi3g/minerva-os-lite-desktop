@@ -71,7 +71,7 @@ export async function GET(request: NextRequest) {
         ...m,
         plan: m.plan || 'Business',
         usage_count: m.usage_count !== undefined && m.usage_count !== null ? m.usage_count : 0,
-        profile: null as { full_name: string | null; company_name: string | null } | null
+        profile: null as { full_name: string | null; company_name: string | null; avatar_base64: string | null } | null
       };
       if (m.member_user_id) {
         // Use admin client so members can see profiles of all workspace members

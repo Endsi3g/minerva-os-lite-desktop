@@ -9,6 +9,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { useReach } from '@/lib/reach-context';
 import { useLanguage } from '@/lib/language-context';
+import { getApiUrl } from '@/lib/api-helper';
 
 export default function NewWorkspacePage() {
   const router = useRouter();
@@ -65,6 +66,24 @@ export default function NewWorkspacePage() {
     try {
       const newWs = await createWorkspace(name.trim());
       if (newWs) {
+        // Shared workspace: send invitations to every collected email
+        if (workspaceType === 'shared' && invitedEmails.length > 0) {
+          await Promise.all(
+            invitedEmails.map((email) =>
+              fetch(getApiUrl('/api/team/invite'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  email,
+                  role: 'editor',
+                  workspaceOwnerId: newWs.owner_id,
+                  workspaceId: newWs.id,
+                }),
+              }).catch((err) => console.error('Invite failed for', email, err))
+            )
+          );
+        }
+
         // If import demo is checked, we can seed some local mock data for this workspace
         const electronObj = typeof window !== 'undefined' && (window as any).electron;
         if (importDemo && electronObj) {
