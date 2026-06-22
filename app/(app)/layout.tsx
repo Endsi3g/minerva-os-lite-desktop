@@ -289,6 +289,13 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
               avatars[m.member_user_id] = m.profile.avatar_base64;
             }
           });
+
+          // Prefer local cached avatar for the current user for instant sync
+          const cachedAvatar = typeof window !== 'undefined' ? localStorage.getItem('minerva_avatar') : null;
+          if (contextUser && cachedAvatar) {
+            avatars[contextUser.id] = cachedAvatar;
+          }
+
           setMemberAvatars(avatars);
         }
       } catch (err) {
@@ -296,7 +303,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
       }
     };
     loadWorkspaceAvatars();
-  }, [activeWorkspace]);
+  }, [activeWorkspace, contextUser]);
 
   useEffect(() => {
     if (!activeWorkspace || !userProfile) return;
@@ -1424,7 +1431,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                   else if (u.activePage === '/settings') pageLabel = 'Paramètres';
                   else if (u.activePage === '/team') pageLabel = 'Équipe';
 
-                  const avatar = memberAvatars[u.userId] || u.avatarBase64;
+                  const avatar = (u.userId === contextUser?.id ? (userProfile?.avatarBase64 || memberAvatars[u.userId]) : memberAvatars[u.userId]) || u.avatarBase64;
 
                   return (
                     <Tooltip key={u.userId}>

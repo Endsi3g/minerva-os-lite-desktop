@@ -18,6 +18,17 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v3.0.0',
+      date: '2026-06-21 · 23h19',
+      titleKey: 'changelog.v3_0_0_title' as TranslationKey,
+      descKey: 'changelog.v3_0_0_desc' as TranslationKey,
+      highlights: [
+        "Localisation de l'Assistant IA — Traduction complète de l'interface en français, anglais et allemand, sélectionnable de façon fluide et dynamique par l'utilisateur.",
+        "Messagerie d'Équipe — Alignement et synchronisation du schéma de la base de données pour assurer le bon fonctionnement du chat interne.",
+        "Avatars de Présence corrigés — Intégration du cache local pour afficher les photos des utilisateurs actifs en haut à droite, évitant l'affichage par défaut de simples initiales de texte.",
+      ],
+    },
+    {
       version: 'v2.99.0',
       date: '2026-06-21 · 23h59',
       titleKey: 'changelog.v2_99_0_title' as TranslationKey,

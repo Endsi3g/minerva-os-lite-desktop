@@ -5,6 +5,13 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [3.0.0] - 2026-06-21 à 23:19
+
+### Ajouté — Localisation de l'Assistant IA, Messagerie d'Équipe & Correctif des Avatars de Présence
+- **Localisation Dynamique de l'Assistant IA** — L'ensemble de la page de l'Assistant AI est désormais entièrement traduit et s'adapte automatiquement à la langue configurée par l'utilisateur (français, anglais, allemand), remplaçant les textes qui étaient figés en anglais.
+- **Messagerie d'Équipe (Chat) Opérationnelle** — Résolution d'un problème de structure de base de données. La messagerie interne de l'équipe fonctionne désormais de manière fluide pour tous les membres.
+- **Affichage des Avatars en Temps Réel** — Correction du bug d'affichage des photos de profil dans les indicateurs de présence en haut à droite. Les utilisateurs s'affichent maintenant avec leur photo de profil configurée plutôt que de simples initiales de texte (`KT`, `UM`).
+
 ## [2.89.2] - 2026-06-21
 
 ### Modifié — Refonte de la page prospection (Retrait de la carte) & Amélioration de l'affichage des leads
