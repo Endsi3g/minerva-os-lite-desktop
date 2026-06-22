@@ -105,8 +105,8 @@ export function AgendaNewRoot() {
             <ArrowLeft className="h-4 w-4 text-foreground" />
           </button>
           <div className="flex items-center gap-2.5">
-            <div className="h-9 w-9 rounded-xl bg-[#f54e00]/10 flex items-center justify-center">
-              <CalendarDays className="h-4.5 w-4.5 text-[#f54e00]" />
+            <div className="h-9 w-9 rounded-xl bg-[#059669]/10 flex items-center justify-center">
+              <CalendarDays className="h-4.5 w-4.5 text-[#059669]" />
             </div>
             <div>
               <h1 className="text-xl font-bold text-foreground tracking-tight">Nouveau rendez-vous</h1>
@@ -124,22 +124,22 @@ export function AgendaNewRoot() {
               onChange={e => setTitle(e.target.value)}
               placeholder="Ex : Présentation offre SEO"
               autoFocus
-              className="w-full h-9 text-xs bg-background border border-border rounded-lg px-3 focus:outline-none focus:ring-1 focus:ring-[#f54e00]"
+              className="w-full h-9 text-xs bg-background border border-border rounded-lg px-3 focus:outline-none focus:ring-1 focus:ring-[#059669]"
             />
           </div>
 
           <div className="grid grid-cols-3 gap-3">
             <div className="space-y-1.5">
               <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Date</label>
-              <input type="date" value={date} onChange={e => setDate(e.target.value)} className="w-full h-9 text-xs bg-background border border-border rounded-lg px-2 focus:outline-none focus:ring-1 focus:ring-[#f54e00]" />
+              <input type="date" value={date} onChange={e => setDate(e.target.value)} className="w-full h-9 text-xs bg-background border border-border rounded-lg px-2 focus:outline-none focus:ring-1 focus:ring-[#059669]" />
             </div>
             <div className="space-y-1.5">
               <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Heure</label>
-              <input type="time" value={time} onChange={e => setTime(e.target.value)} className="w-full h-9 text-xs bg-background border border-border rounded-lg px-2 focus:outline-none focus:ring-1 focus:ring-[#f54e00]" />
+              <input type="time" value={time} onChange={e => setTime(e.target.value)} className="w-full h-9 text-xs bg-background border border-border rounded-lg px-2 focus:outline-none focus:ring-1 focus:ring-[#059669]" />
             </div>
             <div className="space-y-1.5">
               <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Durée</label>
-              <select value={duration} onChange={e => setDuration(Number(e.target.value))} className="w-full h-9 text-xs bg-background border border-border rounded-lg px-2 focus:outline-none focus:ring-1 focus:ring-[#f54e00]">
+              <select value={duration} onChange={e => setDuration(Number(e.target.value))} className="w-full h-9 text-xs bg-background border border-border rounded-lg px-2 focus:outline-none focus:ring-1 focus:ring-[#059669]">
                 <option value={30}>30 min</option>
                 <option value={60}>1 h</option>
                 <option value={90}>1 h 30</option>
@@ -150,7 +150,7 @@ export function AgendaNewRoot() {
 
           <div className="space-y-1.5">
             <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Lead associé (optionnel)</label>
-            <select value={leadId} onChange={e => setLeadId(e.target.value)} className="w-full h-9 text-xs bg-background border border-border rounded-lg px-2 focus:outline-none focus:ring-1 focus:ring-[#f54e00]">
+            <select value={leadId} onChange={e => setLeadId(e.target.value)} className="w-full h-9 text-xs bg-background border border-border rounded-lg px-2 focus:outline-none focus:ring-1 focus:ring-[#059669]">
               <option value="">Aucun</option>
               {leads.slice(0, 200).map(l => (
                 <option key={l.id} value={l.id}>{l.businessName}</option>
@@ -165,7 +165,7 @@ export function AgendaNewRoot() {
               onChange={e => setNotes(e.target.value)}
               rows={3}
               placeholder="Ordre du jour, contexte, points à aborder…"
-              className="w-full text-xs bg-background border border-border rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-[#f54e00] resize-none"
+              className="w-full text-xs bg-background border border-border rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-[#059669] resize-none"
             />
           </div>
         </div>
@@ -187,7 +187,7 @@ export function AgendaNewRoot() {
               >
                 <Icon className="h-3.5 w-3.5 text-muted-foreground" />
                 <span className="text-xs font-semibold text-foreground flex-1">{opt.label}</span>
-                <span className={cn('h-4 w-4 rounded border flex items-center justify-center shrink-0', opt.value ? 'bg-[#f54e00] border-[#f54e00]' : 'border-border')}>
+                <span className={cn('h-4 w-4 rounded border flex items-center justify-center shrink-0', opt.value ? 'bg-[#059669] border-[#059669]' : 'border-border')}>
                   {opt.value && <Check className="h-3 w-3 text-white" />}
                 </span>
               </button>
@@ -205,7 +205,7 @@ export function AgendaNewRoot() {
           <button
             onClick={handleBook}
             disabled={!title.trim() || booking}
-            className="flex-1 h-10 rounded-lg bg-[#f54e00] hover:bg-[#d94400] text-white text-sm font-bold flex items-center justify-center gap-2 transition-colors disabled:opacity-60"
+            className="flex-1 h-10 rounded-lg bg-[#059669] hover:bg-[#047857] text-white text-sm font-bold flex items-center justify-center gap-2 transition-colors disabled:opacity-60"
           >
             {booking ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
             Confirmer le rendez-vous

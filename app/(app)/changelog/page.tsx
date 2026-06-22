@@ -18,6 +18,15 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v3.15.0',
+      date: '2026-06-22 · 11h44',
+      titleKey: 'changelog.v3_15_0_title' as TranslationKey,
+      descKey: 'changelog.v3_15_0_desc' as TranslationKey,
+      highlights: [
+        "Accent vert harmonisé — Les pages Aujourd'hui, Agenda, Services & Tarifs, Configuration et Automatisations passent de l'orange au vert de marque, conformément à la charte graphique.",
+      ],
+    },
+    {
       version: 'v3.14.0',
       date: '2026-06-22 · 11h41',
       titleKey: 'changelog.v3_14_0_title' as TranslationKey,

@@ -127,7 +127,7 @@ export function TodayAiSuggestionsCard() {
     <Card className="border border-[#e5e5e0] bg-white shadow-sm overflow-hidden">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <div className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#f54e00]/10 text-[#f54e00]">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#059669]/10 text-[#059669]">
             <Brain className="h-4 w-4" />
           </div>
           <div>
@@ -139,7 +139,7 @@ export function TodayAiSuggestionsCard() {
           <button
             onClick={generateInsights}
             disabled={reportLoading}
-            className="flex items-center gap-1.5 text-[11px] font-bold text-[#f54e00] hover:underline disabled:opacity-50"
+            className="flex items-center gap-1.5 text-[11px] font-bold text-[#059669] hover:underline disabled:opacity-50"
           >
             {reportLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
             Bilan
@@ -180,7 +180,7 @@ export function TodayAiSuggestionsCard() {
                     </div>
                     <button
                       onClick={() => handleAct(s)}
-                      className="text-[10px] font-bold text-[#f54e00] hover:underline shrink-0"
+                      className="text-[10px] font-bold text-[#059669] hover:underline shrink-0"
                     >
                       Créer
                     </button>

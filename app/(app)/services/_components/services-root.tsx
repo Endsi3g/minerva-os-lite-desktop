@@ -150,7 +150,7 @@ function generateQuoteHtml(client: QuoteClient, selectedServices: Service[], dis
   th{padding:10px 12px;text-align:left;border-bottom:2px solid #e6e5e0}
   .total-row td{padding:12px;background:#26251e;color:#fff;font-weight:700;font-size:16px}
   .footer{margin-top:48px;padding-top:16px;border-top:1px solid #e6e5e0;font-size:11px;color:#807d72}
-  .badge{display:inline-block;background:#f54e00;color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:999px;margin-left:8px}
+  .badge{display:inline-block;background:#059669;color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:999px;margin-left:8px}
 </style>
 </head>
 <body>
@@ -461,14 +461,14 @@ export default function ServicesRoot() {
           <div className="flex flex-col gap-5">
             <div className="flex items-center justify-between">
               <h2 className="text-sm font-bold text-[#26251e]">Mes services ({services.length})</h2>
-              <Button size="sm" className="gap-1.5 bg-[#f54e00] hover:bg-[#d94200] text-white text-xs" onClick={() => { setShowAddForm(true); setEditingId(null); }}>
+              <Button size="sm" className="gap-1.5 bg-[#059669] hover:bg-[#d94200] text-white text-xs" onClick={() => { setShowAddForm(true); setEditingId(null); }}>
                 <Plus className="h-3.5 w-3.5" /> Ajouter
               </Button>
             </div>
 
             {/* Add form */}
             {showAddForm && (
-              <form onSubmit={handleAddSubmit} className="bg-white border border-[#f54e00]/30 rounded-xl p-5 space-y-4 shadow-sm">
+              <form onSubmit={handleAddSubmit} className="bg-white border border-[#059669]/30 rounded-xl p-5 space-y-4 shadow-sm">
                 <h3 className="text-sm font-bold text-[#26251e]">Nouveau service</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1">
@@ -495,7 +495,7 @@ export default function ServicesRoot() {
                 </div>
                 <div className="flex justify-end gap-2">
                   <Button type="button" variant="ghost" size="sm" onClick={() => { setShowAddForm(false); setAddForm(EMPTY_FORM); }}>Annuler</Button>
-                  <Button type="submit" size="sm" className="bg-[#f54e00] hover:bg-[#d94200] text-white" disabled={addSaving}>
+                  <Button type="submit" size="sm" className="bg-[#059669] hover:bg-[#d94200] text-white" disabled={addSaving}>
                     {addSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Enregistrer'}
                   </Button>
                 </div>
@@ -505,17 +505,17 @@ export default function ServicesRoot() {
             {/* Templates */}
             <div className="space-y-2">
               <button onClick={() => setShowTemplates(p => !p)} className="flex items-center gap-2 text-xs font-bold text-[#807d72] hover:text-[#26251e] transition-colors">
-                <Sparkles className="h-3.5 w-3.5 text-[#f54e00]" />
+                <Sparkles className="h-3.5 w-3.5 text-[#059669]" />
                 Templates suggérés
                 {showTemplates ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
               </button>
               {showTemplates && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                   {getTemplatesForNiches(userNiches).map(tpl => (
-                    <button key={tpl.name} type="button" onClick={() => importTemplate(tpl)} className="text-left border border-dashed border-[#f54e00]/30 hover:border-[#f54e00] hover:bg-[#f54e00]/5 rounded-xl p-3 space-y-1 transition-all group">
+                    <button key={tpl.name} type="button" onClick={() => importTemplate(tpl)} className="text-left border border-dashed border-[#059669]/30 hover:border-[#059669] hover:bg-[#059669]/5 rounded-xl p-3 space-y-1 transition-all group">
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-semibold text-[#26251e] leading-snug">{tpl.name}</span>
-                        <Plus className="h-3 w-3 text-[#f54e00] opacity-0 group-hover:opacity-100 transition-opacity" />
+                        <Plus className="h-3 w-3 text-[#059669] opacity-0 group-hover:opacity-100 transition-opacity" />
                       </div>
                       <div className="flex items-center gap-1.5">
                         <span className={cn('text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full border', TYPE_COLORS[tpl.type])}>{TYPE_LABELS[tpl.type]}</span>
@@ -541,7 +541,7 @@ export default function ServicesRoot() {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {services.map(service =>
                   editingId === service.id ? (
-                    <div key={service.id} className="bg-white border border-[#f54e00]/30 rounded-xl p-4 space-y-3 shadow-sm">
+                    <div key={service.id} className="bg-white border border-[#059669]/30 rounded-xl p-4 space-y-3 shadow-sm">
                       <Input value={editForm.name} onChange={e => setEditForm(p => ({ ...p, name: e.target.value }))} className="h-8 text-xs" placeholder="Nom" />
                       <Input type="number" min="0" step="0.01" value={editForm.price} onChange={e => setEditForm(p => ({ ...p, price: e.target.value }))} className="h-8 text-xs" placeholder="Prix ($)" />
                       <Select value={editForm.type} onValueChange={(v: ServiceType) => setEditForm(p => ({ ...p, type: v }))}>
@@ -551,7 +551,7 @@ export default function ServicesRoot() {
                       <Textarea value={editForm.description} onChange={e => setEditForm(p => ({ ...p, description: e.target.value }))} rows={2} className="text-xs" placeholder="Description" />
                       <div className="flex justify-end gap-1.5">
                         <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => setEditingId(null)}><X className="h-3.5 w-3.5" /></Button>
-                        <Button type="button" size="sm" className="h-7 text-xs bg-[#f54e00] hover:bg-[#d94200] text-white" onClick={() => handleEditSave(service.id)} disabled={editSaving}>
+                        <Button type="button" size="sm" className="h-7 text-xs bg-[#059669] hover:bg-[#d94200] text-white" onClick={() => handleEditSave(service.id)} disabled={editSaving}>
                           {editSaving ? <Loader2 className="h-3 w-3 animate-spin" /> : <><Check className="h-3 w-3 mr-1" />Sauver</>}
                         </Button>
                       </div>
@@ -596,13 +596,13 @@ export default function ServicesRoot() {
           <div className="flex flex-col gap-5">
             <div className="flex items-center justify-between">
               <h2 className="text-sm font-bold text-[#26251e]">Forfaits ({packages.length})</h2>
-              <Button size="sm" className="gap-1.5 bg-[#f54e00] hover:bg-[#d94200] text-white text-xs" onClick={() => { setShowPkgForm(true); setEditingPkgId(null); setPkgForm({ name: '', description: '', serviceIds: [], discountedPrice: '', highlight: false }); }}>
+              <Button size="sm" className="gap-1.5 bg-[#059669] hover:bg-[#d94200] text-white text-xs" onClick={() => { setShowPkgForm(true); setEditingPkgId(null); setPkgForm({ name: '', description: '', serviceIds: [], discountedPrice: '', highlight: false }); }}>
                 <Plus className="h-3.5 w-3.5" /> Nouveau forfait
               </Button>
             </div>
 
             {showPkgForm && (
-              <div className="bg-white border border-[#f54e00]/30 rounded-xl p-5 space-y-4 shadow-sm">
+              <div className="bg-white border border-[#059669]/30 rounded-xl p-5 space-y-4 shadow-sm">
                 <h3 className="text-sm font-bold text-[#26251e]">{editingPkgId ? 'Modifier le forfait' : 'Nouveau forfait'}</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1">
@@ -637,7 +637,7 @@ export default function ServicesRoot() {
                 </label>
                 <div className="flex justify-end gap-2">
                   <Button type="button" variant="ghost" size="sm" onClick={() => { setShowPkgForm(false); setEditingPkgId(null); }}>Annuler</Button>
-                  <Button type="button" size="sm" className="bg-[#f54e00] hover:bg-[#d94200] text-white" onClick={handleSavePackage}>Enregistrer</Button>
+                  <Button type="button" size="sm" className="bg-[#059669] hover:bg-[#d94200] text-white" onClick={handleSavePackage}>Enregistrer</Button>
                 </div>
               </div>
             )}
@@ -655,8 +655,8 @@ export default function ServicesRoot() {
                   const originalTotal = pkgTotal(pkg);
                   const savings = pkg.discountedPrice !== null ? originalTotal - pkg.discountedPrice : 0;
                   return (
-                    <div key={pkg.id} className={cn('bg-white border rounded-xl p-5 flex flex-col gap-3 relative', pkg.highlight ? 'border-[#f54e00] shadow-md' : 'border-[#e6e5e0]')}>
-                      {pkg.highlight && <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-[#f54e00] text-white text-[9px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full">Recommandé</span>}
+                    <div key={pkg.id} className={cn('bg-white border rounded-xl p-5 flex flex-col gap-3 relative', pkg.highlight ? 'border-[#059669] shadow-md' : 'border-[#e6e5e0]')}>
+                      {pkg.highlight && <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-[#059669] text-white text-[9px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full">Recommandé</span>}
                       <div className="flex items-start justify-between">
                         <div>
                           <h3 className="text-sm font-extrabold text-[#26251e]">{pkg.name}</h3>

@@ -96,6 +96,18 @@ interface PhaseVerification {
 
 const VERIFICATIONS: PhaseVerification[] = [
   {
+    phase: 'Phase 15 — Accent vert harmonisé (5 pages)',
+    version: 'v3.15.0',
+    date: '2026-06-22',
+    checks: [
+      "Aujourd'hui : onglets actifs, icônes et boutons d'accent sont verts (plus d'orange).",
+      'Agenda + Nouveau RDV : boutons, focus et icônes en vert.',
+      'Services & Tarifs : accents en vert.',
+      'Configuration (/setup) : accents en vert.',
+      'Automatisations : boutons et états actifs en vert.',
+    ],
+  },
+  {
     phase: 'Phase 14 — Page Skills en vert (DESIGN.md)',
     version: 'v3.14.0',
     date: '2026-06-22',

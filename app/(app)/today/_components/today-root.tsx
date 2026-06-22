@@ -30,7 +30,7 @@ export function TodayRoot() {
           onClick={() => setActiveTab('dashboard')}
           className={`flex items-center gap-1.5 px-3 py-2 text-xs font-semibold border-b-2 transition-all mr-1 ${
             activeTab === 'dashboard'
-              ? 'border-[#f54e00] text-foreground'
+              ? 'border-[#059669] text-foreground'
               : 'border-transparent text-muted-foreground hover:text-foreground'
           }`}
         >
@@ -41,7 +41,7 @@ export function TodayRoot() {
           onClick={() => setActiveTab('inbox')}
           className={`flex items-center gap-1.5 px-3 py-2 text-xs font-semibold border-b-2 transition-all ${
             activeTab === 'inbox'
-              ? 'border-[#f54e00] text-foreground'
+              ? 'border-[#059669] text-foreground'
               : 'border-transparent text-muted-foreground hover:text-foreground'
           }`}
         >

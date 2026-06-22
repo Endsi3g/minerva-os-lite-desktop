@@ -46,7 +46,7 @@ export function TodayTeamActivityCard() {
         out.push({
           id: `new-${l.id}`,
           icon: UserPlus,
-          color: '#f54e00',
+          color: '#059669',
           text: `Nouveau lead : ${l.businessName}${l.city ? ` (${l.city})` : ''}`,
           ts: new Date(l.createdAt).getTime(),
         });
@@ -75,7 +75,7 @@ export function TodayTeamActivityCard() {
     <Card className="border border-[#e5e5e0] bg-white shadow-sm overflow-hidden">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <div className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#f54e00]/10 text-[#f54e00]">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#059669]/10 text-[#059669]">
             <Users className="h-4 w-4" />
           </div>
           <div>

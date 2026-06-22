@@ -207,26 +207,26 @@ export default function NewAutomationPage() {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-sm font-black">Conditions (optionnel)</h2>
-              <button onClick={addCondition} className="flex items-center gap-1 text-xs font-bold text-[#f54e00] hover:underline">
+              <button onClick={addCondition} className="flex items-center gap-1 text-xs font-bold text-[#059669] hover:underline">
                 <Plus className="h-3 w-3" /> Ajouter
               </button>
             </div>
             {conditions.length === 0 && (
               <div className="text-center py-8 border-2 border-dashed border-[#e5e5e0] rounded-xl">
                 <p className="text-xs text-[#7a7a76]">Aucune condition — la règle s&apos;applique à tous les leads.</p>
-                <button onClick={addCondition} className="mt-2 text-xs font-bold text-[#f54e00] hover:underline">Ajouter une condition</button>
+                <button onClick={addCondition} className="mt-2 text-xs font-bold text-[#059669] hover:underline">Ajouter une condition</button>
               </div>
             )}
             {conditions.map((c, i) => (
               <div key={i} className="flex items-start gap-2 p-3 border border-[#e5e5e0] rounded-xl bg-white">
-                <select value={c.field} onChange={e => updateCondition(i, { field: e.target.value })} className="flex-1 h-8 border border-[#e5e5e0] rounded-lg px-2 text-xs font-semibold outline-none focus:ring-1 focus:ring-[#f54e00]">
+                <select value={c.field} onChange={e => updateCondition(i, { field: e.target.value })} className="flex-1 h-8 border border-[#e5e5e0] rounded-lg px-2 text-xs font-semibold outline-none focus:ring-1 focus:ring-[#059669]">
                   {CONDITION_FIELDS.map(f => <option key={f.key} value={f.key}>{f.label}</option>)}
                 </select>
-                <select value={c.operator} onChange={e => updateCondition(i, { operator: e.target.value as any })} className="flex-1 h-8 border border-[#e5e5e0] rounded-lg px-2 text-xs font-semibold outline-none focus:ring-1 focus:ring-[#f54e00]">
+                <select value={c.operator} onChange={e => updateCondition(i, { operator: e.target.value as any })} className="flex-1 h-8 border border-[#e5e5e0] rounded-lg px-2 text-xs font-semibold outline-none focus:ring-1 focus:ring-[#059669]">
                   {CONDITION_OPERATORS.map(o => <option key={o.key} value={o.key}>{o.label}</option>)}
                 </select>
                 {!['is_empty', 'is_not_empty'].includes(c.operator) && (
-                  <input value={c.value ?? ''} onChange={e => updateCondition(i, { value: e.target.value })} placeholder="valeur" className="flex-1 h-8 border border-[#e5e5e0] rounded-lg px-2 text-xs font-semibold outline-none focus:ring-1 focus:ring-[#f54e00]" />
+                  <input value={c.value ?? ''} onChange={e => updateCondition(i, { value: e.target.value })} placeholder="valeur" className="flex-1 h-8 border border-[#e5e5e0] rounded-lg px-2 text-xs font-semibold outline-none focus:ring-1 focus:ring-[#059669]" />
                 )}
                 <button onClick={() => removeCondition(i)} className="p-1.5 rounded-lg hover:bg-red-50 text-[#7a7a76] hover:text-red-600 transition-colors">
                   <Trash2 className="h-3.5 w-3.5" />
@@ -374,7 +374,7 @@ export default function NewAutomationPage() {
               onClick={handleSave}
               disabled={saving || saved || !name.trim()}
               className="flex items-center gap-1.5 px-6 py-2.5 rounded-xl font-bold text-sm text-white disabled:opacity-50 transition-all"
-              style={{ background: '#f54e00' }}
+              style={{ background: '#059669' }}
             >
               {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : saved ? <Check className="h-4 w-4" /> : <Zap className="h-4 w-4" />}
               {saved ? 'Enregistrée !' : 'Créer la règle'}

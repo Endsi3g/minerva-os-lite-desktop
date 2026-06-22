@@ -153,7 +153,7 @@ export function SetupRoot() {
         {/* Header */}
         <div>
           <div className="flex items-center gap-3 mb-1">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#f54e00]/10 text-[#f54e00]">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#059669]/10 text-[#059669]">
               <Layers className="h-5 w-5" />
             </div>
             <h1 className="text-xl font-bold text-[#26251e]">Configuration initiale</h1>
@@ -171,7 +171,7 @@ export function SetupRoot() {
           </div>
           <div className="h-2 w-full overflow-hidden rounded-full bg-[#e5e5e0]">
             <div
-              className="h-full rounded-full bg-[#f54e00] transition-all duration-700"
+              className="h-full rounded-full bg-[#059669] transition-all duration-700"
               style={{ width: `${pct}%` }}
             />
           </div>
@@ -202,7 +202,7 @@ export function SetupRoot() {
                 'flex items-start gap-4 rounded-xl border bg-white px-5 py-4 transition-all',
                 item.completed
                   ? 'border-[#059669]/20 opacity-70'
-                  : 'border-[#e5e5e0] hover:border-[#f54e00]/30 hover:shadow-sm'
+                  : 'border-[#e5e5e0] hover:border-[#059669]/30 hover:shadow-sm'
               )}
             >
               {/* Status icon */}
@@ -239,7 +239,7 @@ export function SetupRoot() {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="h-7 text-xs gap-1 border-[#e5e5e0] hover:border-[#f54e00]/40 hover:text-[#f54e00]"
+                      className="h-7 text-xs gap-1 border-[#e5e5e0] hover:border-[#059669]/40 hover:text-[#059669]"
                     >
                       Commencer
                       <ArrowRight className="h-3 w-3" />

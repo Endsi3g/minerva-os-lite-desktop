@@ -126,7 +126,7 @@ export default function AutomationsSettingsPage() {
 
   const renderTriggerIcon = (t: string) => {
     if (t === 'time_passed') return <Hourglass className="h-4 w-4 text-[#7a7a76]" />;
-    if (t === 'intent_increased') return <Flame className="h-4 w-4 text-[#f54e00]" />;
+    if (t === 'intent_increased') return <Flame className="h-4 w-4 text-[#059669]" />;
     if (t === 'lead_replied') return <MessageCircle className="h-4 w-4 text-[#059669]" />;
     return <Zap className="h-4 w-4 text-[#7a7a76]" />;
   };
@@ -145,7 +145,7 @@ export default function AutomationsSettingsPage() {
           </div>
           <Button
             onClick={() => router.push('/settings/automations/new')}
-            className="h-9 bg-[#f54e00] hover:bg-[#d94400] text-white text-xs font-bold rounded-xl gap-2 shrink-0"
+            className="h-9 bg-[#059669] hover:bg-[#047857] text-white text-xs font-bold rounded-xl gap-2 shrink-0"
           >
             <Plus className="h-3.5 w-3.5" />
             Nouvelle Règle
