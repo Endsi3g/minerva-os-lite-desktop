@@ -24,8 +24,10 @@ export default function ChangelogPage() {
       descKey: 'changelog.v3_0_0_desc' as TranslationKey,
       highlights: [
         "Localisation de l'Assistant IA — Traduction complète de l'interface en français, anglais et allemand, sélectionnable de façon fluide et dynamique par l'utilisateur.",
-        "Messagerie d'Équipe — Alignement et synchronisation du schéma de la base de données pour assurer le bon fonctionnement du chat interne.",
-        "Avatars de Présence corrigés — Intégration du cache local pour afficher les photos des utilisateurs actifs en haut à droite, évitant l'affichage par défaut de simples initiales de texte.",
+        "Messagerie d'Équipe — Alignement et synchronisation du schéma de la base de données (table team_messages) et activation du temps réel (Realtime).",
+        "Avatars de Présence corrigés — Intégration du cache local pour afficher les photos des utilisateurs en ligne en haut à droite au lieu de simples initiales de texte.",
+        "Sélecteur d'Espace de Travail — Modification du menu pour s'activer uniquement lors d'un clic de souris, résolvant tout conflit lié au survol par défaut.",
+        "Correction de Pureté React Compiler — Déportation de la fonction relativeTime hors du layout pour corriger une erreur de compilation stricte liée à l'impureté de Date.now().",
       ],
     },
     {
