@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-require-imports */
+ 
 const { app, protocol, net, BrowserWindow, Menu, Tray, nativeImage, dialog, ipcMain, Notification, globalShortcut, clipboard, powerMonitor } = require('electron');
 
 // Prevent JIT-related crashes on macOS by restarting the main process with V8 JIT disabled if not already done.

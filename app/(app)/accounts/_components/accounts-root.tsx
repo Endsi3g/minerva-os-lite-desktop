@@ -10,6 +10,7 @@ import {
   Building2, Search, Users, BarChart3, FileText, MapPin, Globe, Phone,
   Star, ArrowUpRight, Loader2,
 } from 'lucide-react';
+import { useLanguage } from '@/lib/language-context';
 
 interface Account {
   key: string;
@@ -32,13 +33,19 @@ function domainOf(website?: string): string | undefined {
   } catch { return undefined; }
 }
 
-const OUTCOME_LABEL: Record<string, string> = {
-  visited: 'Visité', absent: 'Absent', meeting_booked: 'RDV pris', not_interested: 'Non intéressé',
-};
+// outcome labels are now resolved via t() inside the component
 
 export function AccountsRoot() {
   const router = useRouter();
   const { leads, activeWorkspace } = useReach();
+  const { t } = useLanguage();
+
+  const OUTCOME_LABEL: Record<string, string> = {
+    visited: t('accounts.outcome_visited'),
+    absent: t('accounts.outcome_absent'),
+    meeting_booked: t('accounts.outcome_meeting_booked'),
+    not_interested: t('accounts.outcome_not_interested'),
+  };
   const [query, setQuery] = useState('');
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [visits, setVisits] = useState<VisitRow[]>([]);
@@ -104,8 +111,8 @@ export function AccountsRoot() {
           <Building2 className="h-4.5 w-4.5 text-[#059669]" />
         </div>
         <div className="flex-1">
-          <h1 className="text-lg font-bold text-foreground tracking-tight">Comptes / Entreprises</h1>
-          <p className="text-xs text-muted-foreground">{accounts.length} comptes · vue 360° par entreprise</p>
+          <h1 className="text-lg font-bold text-foreground tracking-tight">{t('accounts.title')}</h1>
+          <p className="text-xs text-muted-foreground">{accounts.length} {t('accounts.subtitle_suffix')}</p>
         </div>
       </div>
 
@@ -115,7 +122,7 @@ export function AccountsRoot() {
           <div className="p-3 border-b border-border">
             <div className="relative">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-              <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Rechercher une entreprise…"
+              <input value={query} onChange={e => setQuery(e.target.value)} placeholder={t('accounts.search_placeholder')}
                 className="w-full h-9 pl-8 pr-3 text-xs bg-card border border-border rounded-lg focus:outline-none focus:ring-1 focus:ring-[#059669]" />
             </div>
           </div>
@@ -128,14 +135,14 @@ export function AccountsRoot() {
                 <p className="text-[10px] text-muted-foreground truncate">{a.domain || `${a.leads.length} contact${a.leads.length > 1 ? 's' : ''}`}</p>
               </button>
             ))}
-            {filtered.length === 0 && <p className="p-4 text-xs text-muted-foreground text-center">Aucun compte.</p>}
+            {filtered.length === 0 && <p className="p-4 text-xs text-muted-foreground text-center">{t('accounts.no_accounts')}</p>}
           </div>
         </div>
 
         {/* 360° detail */}
         <div className="overflow-y-auto p-4 md:p-6">
           {!selected || !agg ? (
-            <div className="h-full flex items-center justify-center text-sm text-muted-foreground">Sélectionnez un compte.</div>
+            <div className="h-full flex items-center justify-center text-sm text-muted-foreground">{t('accounts.select_prompt')}</div>
           ) : (
             <div className="max-w-3xl space-y-5">
               {/* Account header */}
@@ -154,7 +161,7 @@ export function AccountsRoot() {
                   <div className="rounded-lg bg-background border border-border p-3 text-center">
                     <Users className="h-4 w-4 text-muted-foreground mx-auto mb-1" />
                     <div className="text-base font-bold text-foreground">{agg.count}</div>
-                    <div className="text-[10px] text-muted-foreground">Contacts</div>
+                    <div className="text-[10px] text-muted-foreground">{t('accounts.contacts_section')}</div>
                   </div>
                   <div className="rounded-lg bg-background border border-border p-3 text-center">
                     <BarChart3 className="h-4 w-4 text-muted-foreground mx-auto mb-1" />
@@ -164,7 +171,7 @@ export function AccountsRoot() {
                   <div className="rounded-lg bg-background border border-border p-3 text-center">
                     <MapPin className="h-4 w-4 text-muted-foreground mx-auto mb-1" />
                     <div className="text-base font-bold text-foreground">{visits.length}</div>
-                    <div className="text-[10px] text-muted-foreground">Visites</div>
+                    <div className="text-[10px] text-muted-foreground">{t('accounts.visits_section')}</div>
                   </div>
                 </div>
                 {/* Status breakdown */}
@@ -177,7 +184,7 @@ export function AccountsRoot() {
 
               {/* Contacts */}
               <div className="space-y-2">
-                <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5"><Users className="h-3.5 w-3.5" />Contacts</div>
+                <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5"><Users className="h-3.5 w-3.5" />{t('accounts.contacts_section')}</div>
                 {selected.leads.map(l => (
                   <div key={l.id} className="flex items-center gap-3 rounded-lg border border-border bg-card p-3">
                     <div className="flex-1 min-w-0">
@@ -197,11 +204,11 @@ export function AccountsRoot() {
 
               {/* Field visits */}
               <div className="space-y-2">
-                <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5" />Visites terrain</div>
+                <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5" />{t('accounts.visits_section')}</div>
                 {visitsLoading ? (
                   <div className="py-4 flex justify-center"><Loader2 className="h-4 w-4 animate-spin text-[#059669]" /></div>
                 ) : visits.length === 0 ? (
-                  <p className="text-xs text-muted-foreground">Aucune visite enregistrée.</p>
+                  <p className="text-xs text-muted-foreground">{t('accounts.no_visits')}</p>
                 ) : visits.map((v, i) => (
                   <div key={i} className="rounded-lg border border-border bg-card p-3 text-xs">
                     <div className="flex items-center justify-between">
@@ -215,9 +222,9 @@ export function AccountsRoot() {
 
               {/* Notes */}
               <div className="space-y-2">
-                <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5"><FileText className="h-3.5 w-3.5" />Notes</div>
+                <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5"><FileText className="h-3.5 w-3.5" />{t('accounts.notes_section')}</div>
                 {agg.notes.length === 0 ? (
-                  <p className="text-xs text-muted-foreground">Aucune note.</p>
+                  <p className="text-xs text-muted-foreground">{t('accounts.no_notes')}</p>
                 ) : agg.notes.slice(0, 20).map((n, i) => (
                   <div key={i} className="rounded-lg border border-border bg-card p-3 text-[11px] text-foreground leading-relaxed">
                     {n.content}

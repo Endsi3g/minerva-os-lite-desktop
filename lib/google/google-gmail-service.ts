@@ -156,7 +156,7 @@ export async function syncGmailThreads(
       const emailsInThread = new Set<string>();
       let lastMsgAt = new Date().toISOString();
       let lastMsgFrom = '';
-      let snippet = details.messages[0].snippet || '';
+      const snippet = details.messages[0].snippet || '';
       let unread = false;
 
       messages.forEach((msg: any) => {

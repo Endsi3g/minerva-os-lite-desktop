@@ -1229,7 +1229,7 @@ export function AssistantRoot() {
         user_id: user.id,
         workspace_id: activeWorkspace.id,
         type: 'markdown',
-        title: editorTitle || 'Document sans titre',
+        title: editorTitle || t('assistant.untitled_doc'),
         content,
         is_shared: false,
         folder_name: libraryFolderName || null,
@@ -1492,10 +1492,10 @@ export function AssistantRoot() {
                         <FileText className="h-4 w-4 text-[#10b981] shrink-0" />
                         <span className="font-bold text-[#26251e] truncate">{attachedFile.name}</span>
                         <span className="text-[10px] text-neutral-400 uppercase font-semibold shrink-0">
-                          {attachedFile.content ? 'Contenu extrait' : 'Document'}
+                          {attachedFile.content ? t('assistant.extracted_content') : t('assistant.document')}
                         </span>
                       </div>
-                      <button 
+                      <button
                         onClick={() => setAttachedFile(null)}
                         className="text-neutral-400 hover:text-[#26251e] p-0.5"
                       >
@@ -1503,7 +1503,7 @@ export function AssistantRoot() {
                       </button>
                     </div>
                   )}
-                  
+
                   <textarea
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
@@ -1630,12 +1630,12 @@ export function AssistantRoot() {
                         <div className="flex-1 border-t border-dashed border-[#059669]/40" />
                         <div className="flex items-center gap-1.5 px-2 py-1 bg-emerald-50 border border-emerald-200 rounded-full">
                           <Bookmark className="h-3 w-3 text-[#059669]" />
-                          <span className="text-[9px] font-bold text-[#059669]">Point de contrôle</span>
+                          <span className="text-[9px] font-bold text-[#059669]">{t('assistant.checkpoint_label')}</span>
                           <button
                             onClick={() => setMessages(prev => prev.slice(0, i))}
                             className="text-[9px] font-bold text-[#059669] underline hover:no-underline ml-1"
                           >
-                            Restaurer
+                            {t('assistant.checkpoint_restore')}
                           </button>
                         </div>
                         <div className="flex-1 border-t border-dashed border-[#059669]/40" />
@@ -1668,7 +1668,7 @@ export function AssistantRoot() {
                         <button
                           onClick={() => setCheckpoints(prev => prev.includes(i) ? prev.filter(x => x !== i) : [...prev, i])}
                           className="absolute -right-8 top-1 opacity-0 group-hover:opacity-100 h-6 w-6 rounded-full bg-white border border-neutral-200 hover:border-[#059669] hover:text-[#059669] text-neutral-400 flex items-center justify-center transition-all"
-                          title="Créer un point de contrôle"
+                          title={t('assistant.checkpoint_title')}
                         >
                           <Bookmark className="h-3 w-3" />
                         </button>
@@ -1690,7 +1690,7 @@ export function AssistantRoot() {
                           WebkitBackgroundClip: 'text',
                           WebkitTextFillColor: 'transparent',
                           animation: 'shimmer 1.5s linear infinite',
-                        }}>Minerva réfléchit...</span>
+                        }}>{t('assistant.thinking')}</span>
                       </div>
                     </div>
                   </div>
@@ -1710,10 +1710,10 @@ export function AssistantRoot() {
                       <FileText className="h-3.5 w-3.5 text-[#10b981] shrink-0" />
                       <span className="font-bold text-[#26251e] truncate">{attachedFile.name}</span>
                       <span className="text-[10px] text-neutral-400 uppercase font-semibold shrink-0">
-                        {attachedFile.content ? 'Contenu extrait' : 'Document'}
+                        {attachedFile.content ? t('assistant.extracted_content') : t('assistant.document')}
                       </span>
                     </div>
-                    <button 
+                    <button
                       onClick={() => setAttachedFile(null)}
                       className="text-neutral-400 hover:text-[#26251e] p-0.5"
                     >
@@ -1758,11 +1758,11 @@ export function AssistantRoot() {
                 {showAtMenu && (
                   <div className="absolute bottom-full left-3 right-3 mb-2 bg-white border border-[#e5e5e0] rounded-xl shadow-lg z-20 max-h-56 overflow-y-auto py-1">
                     <div className="px-3 py-1.5 text-[9px] font-bold uppercase tracking-wider text-[#7a7a76] border-b border-[#e5e5e0]/60">
-                      Compétences activées
+                      {t('assistant.skills_active_header')}
                     </div>
                     {enabledSkills.length === 0 ? (
                       <div className="px-3 py-2 text-[11px] text-[#7a7a76]">
-                        Aucune compétence activée. Activez-en dans <span className="font-semibold">Skills</span>.
+                        {t('assistant.skills_none')}
                       </div>
                     ) : enabledSkills.map(sk => (
                       <button
@@ -1784,7 +1784,7 @@ export function AssistantRoot() {
                       </button>
                     ))}
                     <div className="px-3 py-1.5 text-[9px] font-bold uppercase tracking-wider text-[#7a7a76] border-y border-[#e5e5e0]/60 mt-1">
-                      Contexte CRM
+                      {t('assistant.crm_context_header')}
                     </div>
                     {CRM_CONTEXTS.map(ctx => (
                       <button
@@ -1970,10 +1970,10 @@ export function AssistantRoot() {
               <button
                 onClick={() => setIsCanvasFloating(f => !f)}
                 className="h-7 px-2.5 rounded-full bg-neutral-50 hover:bg-neutral-100 text-[#555552] text-[10px] font-bold flex items-center gap-1.5 transition-all border border-neutral-100/60"
-                title={isCanvasFloating ? 'Ancrer' : 'Détacher'}
+                title={isCanvasFloating ? t('assistant.canvas_dock') : t('assistant.canvas_float')}
               >
                 <Maximize2 className="h-3.5 w-3.5" />
-                <span>{isCanvasFloating ? 'Ancrer' : 'Détacher'}</span>
+                <span>{isCanvasFloating ? t('assistant.canvas_dock') : t('assistant.canvas_float')}</span>
               </button>
 
               {/* Bibliothèque button with folder dropdown */}
@@ -1981,26 +1981,26 @@ export function AssistantRoot() {
                 <button
                   onClick={() => setShowLibraryDropdown(d => !d)}
                   className="h-7 px-2.5 rounded-full bg-neutral-50 hover:bg-neutral-100 text-[#555552] text-[10px] font-bold flex items-center gap-1.5 transition-all border border-neutral-100/60"
-                  title="Sauvegarder dans la Bibliothèque"
+                  title={t('assistant.canvas_library_tooltip')}
                 >
                   <Bookmark className="h-3.5 w-3.5" />
-                  <span>Bibliothèque</span>
+                  <span>{t('assistant.canvas_library_btn')}</span>
                 </button>
                 {showLibraryDropdown && (
                   <div className="absolute right-0 top-8 z-50 bg-white border border-[#e6e5e0] rounded-xl p-3 shadow-lg w-56 animate-scale-up">
-                    <p className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground mb-2">Dossier (optionnel)</p>
+                    <p className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground mb-2">{t('assistant.canvas_library_save_title')}</p>
                     <input
                       type="text"
                       value={libraryFolderName}
                       onChange={e => setLibraryFolderName(e.target.value)}
-                      placeholder="Sans dossier"
+                      placeholder={t('assistant.canvas_library_no_folder')}
                       className="w-full text-[11px] border border-neutral-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-[#059669] mb-2"
                     />
                     <button
                       onClick={handleDirectSaveToLibrary}
                       className="w-full py-1.5 text-[11px] font-bold bg-[#059669] text-white rounded-lg hover:bg-[#047857] transition-colors"
                     >
-                      Sauvegarder
+                      {t('assistant.canvas_library_save')}
                     </button>
                   </div>
                 )}
