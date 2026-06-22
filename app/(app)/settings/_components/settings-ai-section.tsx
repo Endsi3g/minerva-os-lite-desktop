@@ -160,7 +160,7 @@ export function SettingsAiSection({ data, onChange, onSaveKey, onDeleteKey, isSa
     { id: 'meta-llama/llama-3.3-70b-instruct:free', name: 'Minerva AI (Llama 3.3 70B) — Recommandé' },
     { id: 'google/gemini-2.5-flash:free', name: 'Gemini 2.5 Flash (Free)' },
     { id: 'deepseek/deepseek-r1:free', name: 'DeepSeek R1 — Raisonnement (Free)' },
-    { id: 'meta-llama/llama-3-8b-instruct:free', name: 'Llama 3 8B (Free)' },
+    { id: 'openrouter/free', name: 'Auto-Routeur Libre (Sélection automatique)' },
     { id: 'mistralai/mistral-7b-instruct:free', name: 'Mistral 7B (Free)' },
     { id: 'qwen/qwen-2-7b-instruct:free', name: 'Qwen 2 7B (Free)' },
   ];

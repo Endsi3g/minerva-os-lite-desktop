@@ -31,7 +31,7 @@ export function SettingsPreferencesSection({ data, onChange, isSaving }: Setting
     { id: 'None', name: 'None' },
     { id: 'anthropic/claude-3.5-sonnet', name: 'Anthropic Claude 3.5 Sonnet' },
     { id: 'openai/gpt-4o', name: 'GPT-4o' },
-    { id: 'meta-llama/llama-3-8b-instruct:free', name: 'Llama 3 8B (Free)' },
+    { id: 'openrouter/free', name: 'OpenRouter Auto Free Router' },
     { id: 'mistralai/mistral-7b-instruct:free', name: 'Mistral 7B (Free)' }
   ];
 

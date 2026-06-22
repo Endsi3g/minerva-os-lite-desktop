@@ -31,7 +31,7 @@ function initDb() {
       active_workspace_id TEXT DEFAULT NULL,
       openrouter_key TEXT DEFAULT NULL,
       ai_provider TEXT DEFAULT 'anthropic',
-      ai_model TEXT DEFAULT 'meta-llama/llama-3-8b-instruct:free',
+      ai_model TEXT DEFAULT 'openrouter/free',
       updated_at TEXT,
       sync_status TEXT DEFAULT 'synced'
     )`);
@@ -188,7 +188,7 @@ function initDb() {
     // OpenRouter and AI configuration migrations (replicated from Supabase settings schema)
     db.run(`ALTER TABLE settings ADD COLUMN openrouter_key TEXT DEFAULT NULL`, () => {});
     db.run(`ALTER TABLE settings ADD COLUMN ai_provider TEXT DEFAULT 'anthropic'`, () => {});
-    db.run(`ALTER TABLE settings ADD COLUMN ai_model TEXT DEFAULT 'meta-llama/llama-3-8b-instruct:free'`, () => {});
+    db.run(`ALTER TABLE settings ADD COLUMN ai_model TEXT DEFAULT 'openrouter/free'`, () => {});
 
     // v2.12.0 lead enrichment migrations
     db.run(`ALTER TABLE leads ADD COLUMN website TEXT DEFAULT NULL`, () => {});

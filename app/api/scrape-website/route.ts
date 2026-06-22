@@ -56,6 +56,15 @@ async function scrapePlain(url: string): Promise<string | null> {
   }
 }
 
+function cleanFallbackDescription(text: string): string {
+  return text
+    .replace(/!\[.*?\]\(.*?\)/g, '') // remove markdown images
+    .replace(/\[(.*?)\]\(.*?\)/g, '$1') // replace markdown links with text
+    .replace(/\s+/g, ' ') // normalize whitespace
+    .trim()
+    .slice(0, 400);
+}
+
 export async function POST(req: NextRequest) {
   try {
     const { website, businessName, niche } = await req.json();
@@ -93,10 +102,10 @@ export async function POST(req: NextRequest) {
         maxTokens: 400,
       });
 
-      return NextResponse.json({ description: description || content.slice(0, 600) });
+      return NextResponse.json({ description: description || cleanFallbackDescription(content) });
     } catch (err) {
-      console.warn('[scrape-website] AI generation failed, using raw slice:', err);
-      return NextResponse.json({ description: content.slice(0, 600) });
+      console.warn('[scrape-website] AI generation failed, using clean slice:', err);
+      return NextResponse.json({ description: cleanFallbackDescription(content) });
     }
   } catch (err) {
     console.error('[scrape-website]', err);

@@ -18,6 +18,17 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v3.27.4',
+      date: '2026-06-22 · 19h45',
+      titleKey: 'changelog.v3_27_4_title' as TranslationKey,
+      descKey: 'changelog.v3_27_4_desc' as TranslationKey,
+      highlights: [
+        "Résolution des modèles retirés d'OpenRouter — Liaison et redirection automatique du modèle obsolète llama-3-8b-instruct:free vers le modèle de routage dynamique openrouter/free pour éviter les erreurs 404.",
+        "Nettoyage du scraping de site web — Correction de l'affichage en cas de fallback (échec de l'IA) : élimination automatique des balises d'images et liens Markdown bruts du contenu textuel.",
+        "Mise à jour des sélections de paramètres — Les menus de préférences et de configuration de l'IA proposent désormais le routeur automatique libre d'OpenRouter par défaut.",
+      ],
+    },
+    {
       version: 'v3.27.3',
       date: '2026-06-22 · 19h30',
       titleKey: 'changelog.v3_27_3_title' as TranslationKey,

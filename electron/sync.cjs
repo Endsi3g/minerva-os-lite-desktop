@@ -333,7 +333,7 @@ async function syncPush() {
       together_api_key: together_api_key || null,
       openrouter_key: openrouter_key || null,
       ai_provider: ai_provider || 'anthropic',
-      ai_model: ai_model || 'meta-llama/llama-3-8b-instruct:free',
+      ai_model: ai_model || 'openrouter/free',
       avatar_base64: avatar_base64 || null,
       user_role: user_role || null,
       bio: bio || null,
@@ -738,7 +738,7 @@ async function syncPull() {
           active_workspace_id = excluded.active_workspace_id,
           updated_at = excluded.updated_at,
           sync_status = 'synced'`,
-        [user_id, full_name, last_name, phone, email, company_name, timezone, JSON.stringify(niches || []), JSON.stringify(cities || []), ai_tone, ai_density, quick_note, focus_title, JSON.stringify(focus_items || []), smtp_config || null, groq_api_key || null, together_api_key || null, openrouter_key || null, ai_provider || 'anthropic', ai_model || 'meta-llama/llama-3-8b-instruct:free', avatar_base64 || null, user_role || null, bio || null, email_signature || null, active_workspace_id || null, updated_at]
+        [user_id, full_name, last_name, phone, email, company_name, timezone, JSON.stringify(niches || []), JSON.stringify(cities || []), ai_tone, ai_density, quick_note, focus_title, JSON.stringify(focus_items || []), smtp_config || null, groq_api_key || null, together_api_key || null, openrouter_key || null, ai_provider || 'anthropic', ai_model || 'openrouter/free', avatar_base64 || null, user_role || null, bio || null, email_signature || null, active_workspace_id || null, updated_at]
       );
     }
   }

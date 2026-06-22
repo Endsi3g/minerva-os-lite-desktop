@@ -47,12 +47,17 @@ export function resolveAIProvider(settings?: AISettings | null) {
     return 'anthropic';
   })();
 
-  const model = settings?.ai_model || (
-    provider === 'openrouter' ? 'meta-llama/llama-3.3-70b-instruct:free' :
+  let model = settings?.ai_model || (
+    provider === 'openrouter' ? 'openrouter/free' :
     provider === 'groq' ? 'llama-3.1-70b-versatile' :
     provider === 'together' ? 'meta-llama/Llama-3-70b-chat-hf' :
     'claude-3-5-sonnet-20241022'
   );
+
+  // Map retired free models to generic auto-router
+  if (model === 'meta-llama/llama-3-8b-instruct:free' || model === 'google/gemma-2-9b-it:free') {
+    model = 'openrouter/free';
+  }
 
   const apiKey = (() => {
     if (provider === 'openrouter') return openrouterKey;

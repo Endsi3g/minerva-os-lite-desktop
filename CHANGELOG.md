@@ -5,6 +5,13 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [3.27.4] - 2026-06-22
+
+### Corrigé — Résolution des modèles OpenRouter obsolètes & nettoyage du scraping
+- **Résolution des modèles retirés d'OpenRouter** — Redirection automatique et transparente des modèles free obsolètes (comme `meta-llama/llama-3-8b-instruct:free` et `google/gemma-2-9b-it:free` qui renvoyaient des erreurs 404) vers `openrouter/free` (auto-routeur libre).
+- **Nettoyage du Scraping de Site Web** — Ajout d'une fonction de filtrage `cleanFallbackDescription` pour éliminer les images Markdown (`![alt](url)`) et les liens (`[texte](url)`) du texte brut retourné en cas d'échec de la complétion IA.
+- **Mise à jour des Paramètres et de la DB** — Remplacement des valeurs par défaut de configuration d'IA par le modèle `openrouter/free` dans les préférences utilisateurs et dans l'initialisation de la DB SQLite locale.
+
 ## [3.27.3] - 2026-06-22
 
 ### Corrigé — Résolution du runtime de l'API Chat

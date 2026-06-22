@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
       .eq('user_id', user.id)
       .maybeSingle();
 
-    const selectedModel = model || dbSettings?.ai_model || 'meta-llama/llama-3-8b-instruct:free';
+    const selectedModel = model || dbSettings?.ai_model || 'openrouter/free';
     const lastMessage = messages[messages.length - 1]?.content || '';
     const lastMessageLower = lastMessage.toLowerCase();
 
