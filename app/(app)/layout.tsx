@@ -269,6 +269,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
     fullName: string;
     activePage: string;
     color: string;
+    avatarBase64?: string | null;
   }>>([]);
 
   useEffect(() => {
@@ -311,7 +312,8 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
             userId: contextUser.id,
             fullName: userProfile.fullName,
             activePage: pathname,
-            color: myColor
+            color: myColor,
+            avatarBase64: userProfile.avatarBase64 || null
           });
         }
       });
@@ -1397,10 +1399,15 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                     <Tooltip key={u.userId}>
                       <TooltipTrigger asChild>
                         <div className={cn(
-                          "w-6 h-6 rounded-full border-2 border-white flex items-center justify-center text-[9px] font-bold shrink-0 shadow-xs cursor-default select-none transition-transform hover:scale-105",
-                          u.color
+                          "w-6 h-6 rounded-full border-2 border-white flex items-center justify-center text-[9px] font-bold shrink-0 shadow-xs cursor-default select-none transition-transform hover:scale-105 overflow-hidden",
+                          u.avatarBase64 ? "bg-transparent" : u.color
                         )}>
-                          {initials}
+                          {u.avatarBase64 ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={u.avatarBase64} alt={u.fullName} className="w-full h-full object-cover" />
+                          ) : (
+                            initials
+                          )}
                         </div>
                       </TooltipTrigger>
                       <TooltipContent className="text-xs bg-[#26251e] text-white p-2 rounded-lg font-sans border border-neutral-800 shadow-lg">
