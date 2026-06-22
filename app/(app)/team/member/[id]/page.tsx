@@ -23,7 +23,7 @@ interface Member {
 
 // Default role catalogue — DESIGN.md accent colours, lucide icons (no emoji).
 const DEFAULT_ROLE_CONFIG = [
-  { key: 'admin',  label: 'Administrateur', icon: Shield, color: '#f54e00', desc: 'Accès complet sauf facturation et configuration avancée.' },
+  { key: 'admin',  label: 'Administrateur', icon: Shield, color: '#059669', desc: 'Accès complet sauf facturation et configuration avancée.' },
   { key: 'editor', label: 'Éditeur',        icon: Star,   color: '#059669', desc: 'Leads, pipeline, campagnes, IA et carte terrain.' },
   { key: 'viewer', label: 'Observateur',    icon: Eye,    color: '#6366f1', desc: 'Lecture seule — leads, pipeline et carte.' },
 ] as const;
@@ -139,7 +139,7 @@ export default function MemberRolePage() {
             </div>
             <div className="ml-auto flex items-center gap-2">
               {member.isOwner && (
-                <span className="text-[9px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full border bg-[#f54e00]/8 text-[#f54e00] border-[#f54e00]/20">
+                <span className="text-[9px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full border bg-[#059669]/8 text-[#059669] border-[#059669]/20">
                   Propriétaire
                 </span>
               )}
@@ -237,7 +237,7 @@ export default function MemberRolePage() {
           <button
             onClick={handleSave}
             disabled={saving || saved || member?.isOwner}
-            className="flex-1 py-2.5 text-sm font-bold text-white rounded-lg flex items-center justify-center gap-2 transition-all disabled:opacity-60 bg-[#f54e00] hover:bg-[#d94400]"
+            className="flex-1 py-2.5 text-sm font-bold text-white rounded-lg flex items-center justify-center gap-2 transition-all disabled:opacity-60 bg-[#059669] hover:bg-[#047857]"
           >
             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : saved ? <Check className="h-4 w-4" /> : null}
             {member?.isOwner ? 'Propriétaire (non modifiable)' : saved ? 'Enregistré' : 'Enregistrer le rôle'}

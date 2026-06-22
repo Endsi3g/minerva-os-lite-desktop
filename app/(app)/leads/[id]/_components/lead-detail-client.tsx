@@ -234,7 +234,7 @@ function ScriptPanel({ lead }: { lead: Lead }) {
         <button
           onClick={handleGenerate}
           disabled={loading}
-          className="flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold border border-[#f54e00]/30 text-[#f54e00] bg-[#f54e00]/5 hover:bg-[#f54e00]/10 transition-colors disabled:opacity-50"
+          className="flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold border border-[#059669]/30 text-[#059669] bg-[#059669]/5 hover:bg-[#059669]/10 transition-colors disabled:opacity-50"
         >
           {loading ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : <Zap className="w-2.5 h-2.5" />}
           Générer

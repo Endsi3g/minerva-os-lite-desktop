@@ -262,7 +262,7 @@ export function InboxDetail({
             <div key={msg.id} className={`flex ${msg.isFromUser ? 'justify-end' : 'justify-start'}`}>
               <div
                 className={`max-w-[75%] rounded-xl px-4 py-3 text-xs ${
-                  msg.isFromUser ? 'bg-[#f54e00]/10 text-[#26251e]' : 'bg-[#f4f4f3] text-[#26251e]'
+                  msg.isFromUser ? 'bg-[#059669]/10 text-[#26251e]' : 'bg-[#f4f4f3] text-[#26251e]'
                 }`}
               >
                 <div className="flex items-center gap-2 mb-1.5">
@@ -282,7 +282,7 @@ export function InboxDetail({
       <div className="px-5 pt-3 pb-1">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-1.5 text-xs font-medium text-[#26251e]">
-            <Sparkles className="h-3.5 w-3.5 text-[#f54e00]" />
+            <Sparkles className="h-3.5 w-3.5 text-[#059669]" />
             Suggestions IA
           </div>
           {suggestions.length === 0 && !suggestionsLoading && (
@@ -302,7 +302,7 @@ export function InboxDetail({
               <button
                 key={i}
                 onClick={() => onReplyTextChange(s)}
-                className="rounded-md border border-[#e5e5e0] bg-white px-2.5 py-1 text-[10px] text-[#26251e] hover:border-[#f54e00]/40 hover:bg-[#f54e00]/5 transition-colors text-left max-w-[280px] line-clamp-2"
+                className="rounded-md border border-[#e5e5e0] bg-white px-2.5 py-1 text-[10px] text-[#26251e] hover:border-[#059669]/40 hover:bg-[#059669]/5 transition-colors text-left max-w-[280px] line-clamp-2"
               >
                 {s}
               </button>
@@ -318,7 +318,7 @@ export function InboxDetail({
             <button
               key={preset.label}
               onClick={() => onReplyTextChange(preset.text)}
-              className="rounded-full border border-[#e5e5e0] bg-white px-2.5 py-0.5 text-[10px] text-[#26251e] hover:border-[#f54e00]/40 hover:bg-[#f54e00]/5 transition-colors"
+              className="rounded-full border border-[#e5e5e0] bg-white px-2.5 py-0.5 text-[10px] text-[#26251e] hover:border-[#059669]/40 hover:bg-[#059669]/5 transition-colors"
             >
               {preset.label}
             </button>
@@ -328,14 +328,14 @@ export function InboxDetail({
           value={replyText}
           onChange={e => onReplyTextChange(e.target.value)}
           placeholder="Rédigez votre réponse…"
-          className="min-h-[90px] text-xs resize-none border-[#e5e5e0] focus:border-[#f54e00] focus:ring-[#f54e00]/20"
+          className="min-h-[90px] text-xs resize-none border-[#e5e5e0] focus:border-[#059669] focus:ring-[#059669]/20"
         />
         <div className="flex justify-end">
           <Button
             size="sm"
             onClick={onSendReply}
             disabled={!replyText.trim() || sending}
-            className="h-8 gap-1.5 bg-[#f54e00] hover:bg-[#e04500] text-white text-xs"
+            className="h-8 gap-1.5 bg-[#059669] hover:bg-[#e04500] text-white text-xs"
           >
             {sending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
             Envoyer

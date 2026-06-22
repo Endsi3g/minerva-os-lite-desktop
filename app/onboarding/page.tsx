@@ -1002,7 +1002,7 @@ function OnboardingPageContent() {
                 <div className="space-y-2">
                   <label className="text-[10px] font-bold uppercase tracking-wider text-[#807d72] flex items-center gap-1">
                     <Briefcase className="w-3.5 h-3.5 text-[#10b981]" />
-                    <span>Rôle <span className="text-[#f54e00] normal-case font-semibold">*</span></span>
+                    <span>Rôle <span className="text-[#059669] normal-case font-semibold">*</span></span>
                   </label>
                   <div className="relative">
                     <select

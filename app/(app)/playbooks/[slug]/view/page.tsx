@@ -71,7 +71,7 @@ export default async function PlaybookViewPage({ params }: Props) {
             <div className="space-y-1.5">
               {playbook.icp.painPoints.map((p, i) => (
                 <div key={i} className="flex items-start gap-2 text-xs text-[#555552]">
-                  <span className="text-[#f54e00] shrink-0 font-bold mt-0.5">✗</span>
+                  <span className="text-[#059669] shrink-0 font-bold mt-0.5">✗</span>
                   <span>{p}</span>
                 </div>
               ))}

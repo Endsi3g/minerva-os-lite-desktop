@@ -134,7 +134,7 @@ export function GoogleConnectModal({ open, onClose, pack = 'communication', redi
                   </div>
                   <div>
                     <p className="text-xs font-bold text-[#26251e]">Intégration Google</p>
-                    <p className="text-[10px] text-[#f54e00]">En attente de permission…</p>
+                    <p className="text-[10px] text-[#059669]">En attente de permission…</p>
                   </div>
                 </div>
                 {[

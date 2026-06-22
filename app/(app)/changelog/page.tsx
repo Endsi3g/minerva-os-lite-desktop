@@ -18,6 +18,16 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v3.16.0',
+      date: '2026-06-22 · 11h51',
+      titleKey: 'changelog.v3_16_0_title' as TranslationKey,
+      descKey: 'changelog.v3_16_0_desc' as TranslationKey,
+      highlights: [
+        "Vert partout — Balayage global : tout l'orange de l'application (28 fichiers) a été remplacé par le vert de marque. Plus aucune page n'utilise d'orange.",
+        "Charte mise à jour — DESIGN.md et CLAUDE.md définissent désormais le vert #059669 comme unique accent par défaut de l'application.",
+      ],
+    },
+    {
       version: 'v3.15.0',
       date: '2026-06-22 · 11h44',
       titleKey: 'changelog.v3_15_0_title' as TranslationKey,

@@ -27,7 +27,7 @@ const ROLE_ICONS: Record<string, React.ReactNode> = {
 };
 
 const ROLE_COLORS: Record<string, string> = {
-  admin: '#f54e00',
+  admin: '#059669',
   editor: '#059669',
   viewer: '#6366f1',
 };
@@ -49,7 +49,7 @@ function Particles() {
     size: 3 + Math.random() * 5,
     delay: Math.random() * 3,
     duration: 3 + Math.random() * 4,
-    color: ['#f54e00', '#059669', '#6366f1', '#f59e0b', '#ec4899'][Math.floor(Math.random() * 5)],
+    color: ['#059669', '#059669', '#6366f1', '#f59e0b', '#ec4899'][Math.floor(Math.random() * 5)],
   }));
 
   return (
@@ -99,7 +99,7 @@ function ConfettiBurst() {
   const pieces = Array.from({ length: 30 }, (_, i) => ({
     id: i,
     x: 30 + Math.random() * 40,
-    color: ['#f54e00', '#059669', '#6366f1', '#f59e0b', '#ec4899', '#26251e'][Math.floor(Math.random() * 6)],
+    color: ['#059669', '#059669', '#6366f1', '#f59e0b', '#ec4899', '#26251e'][Math.floor(Math.random() * 6)],
     delay: Math.random() * 0.8,
     duration: 1.5 + Math.random() * 1.5,
     size: 6 + Math.random() * 8,

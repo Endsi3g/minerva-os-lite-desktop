@@ -144,7 +144,7 @@ export function LeadsFilters<TData>({ table, showAssignedToMe, onToggleAssignedT
           className={cn(
             'flex items-center gap-1.5 h-8.5 px-3 text-xs font-semibold rounded-md border transition-colors',
             showAssignedToMe
-              ? 'bg-[#f54e00] text-white border-[#f54e00] hover:bg-[#e04300]'
+              ? 'bg-[#059669] text-white border-[#059669] hover:bg-[#e04300]'
               : 'bg-card border-border text-muted-foreground hover:text-foreground hover:bg-secondary'
           )}
         >

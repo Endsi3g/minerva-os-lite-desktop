@@ -103,7 +103,7 @@ export default function LeadPreviewPage() {
           {/* Main card */}
           <div className="bg-white border border-[#e5e5e0] rounded-2xl overflow-hidden shadow-sm">
             {/* Color band */}
-            <div className="h-1.5 bg-[#f54e00]" />
+            <div className="h-1.5 bg-[#059669]" />
 
             <div className="p-6 space-y-5">
               {/* Name + score */}
@@ -141,7 +141,7 @@ export default function LeadPreviewPage() {
                     <div className="w-6 h-6 rounded-lg bg-[#f4f4f3] flex items-center justify-center shrink-0">
                       <Mail className="h-3 w-3 text-[#7a7a76]" />
                     </div>
-                    <a href={`mailto:${lead.email}`} className="text-[#f54e00] font-semibold hover:underline truncate">
+                    <a href={`mailto:${lead.email}`} className="text-[#059669] font-semibold hover:underline truncate">
                       {lead.email}
                     </a>
                   </div>
@@ -175,7 +175,7 @@ export default function LeadPreviewPage() {
                       href={lead.website.startsWith('http') ? lead.website : `https://${lead.website}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-[#f54e00] font-semibold hover:underline flex items-center gap-1 truncate"
+                      className="text-[#059669] font-semibold hover:underline flex items-center gap-1 truncate"
                     >
                       {lead.website}
                       <ExternalLink className="h-2.5 w-2.5 shrink-0" />
@@ -206,7 +206,7 @@ export default function LeadPreviewPage() {
             </p>
             <Link
               href="/login"
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#f54e00] hover:bg-[#d94200] text-white text-xs font-bold rounded-xl transition-colors"
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#059669] hover:bg-[#d94200] text-white text-xs font-bold rounded-xl transition-colors"
             >
               Créer un compte gratuit
             </Link>

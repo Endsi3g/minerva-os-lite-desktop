@@ -3,7 +3,7 @@ import type { SeoAuditResult } from '@/app/api/audit-seo/route';
 
 function scoreColor(score: number): string {
   if (score >= 70) return '#059669';
-  if (score >= 40) return '#f54e00';
+  if (score >= 40) return '#059669';
   return '#ef4444';
 }
 

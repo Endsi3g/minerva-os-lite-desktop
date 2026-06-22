@@ -96,6 +96,17 @@ interface PhaseVerification {
 
 const VERIFICATIONS: PhaseVerification[] = [
   {
+    phase: 'Phase 16 — Vert partout (balayage global)',
+    version: 'v3.16.0',
+    date: '2026-06-22',
+    checks: [
+      'Parcourir toutes les pages (Leads, Pipeline, Prospection, Field, Onboarding, Booking, Paramètres, etc.) : aucun accent orange ne subsiste.',
+      'Les CTA, icônes d\'accent, états actifs et focus sont verts partout.',
+      'Les couleurs sémantiques non-orange (rouge erreur, amber étoiles, bleu) sont conservées.',
+      'DESIGN.md et CLAUDE.md indiquent le vert #059669 comme unique accent.',
+    ],
+  },
+  {
     phase: 'Phase 15 — Accent vert harmonisé (5 pages)',
     version: 'v3.15.0',
     date: '2026-06-22',

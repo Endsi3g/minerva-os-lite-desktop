@@ -46,7 +46,7 @@ export function DetailedUsageTable({
   const getPercentageBar = (percentage: number) => {
     let bgColor = "bg-emerald-500";
     if (percentage >= 90) bgColor = "bg-destructive";
-    else if (percentage >= 75) bgColor = "bg-orange-500";
+    else if (percentage >= 75) bgColor = "bg-emerald-500";
 
     return (
       <div className="flex min-w-[120px] items-center gap-2">

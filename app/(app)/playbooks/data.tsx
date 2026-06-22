@@ -210,7 +210,7 @@ export const PLAYBOOKS: Playbook[] = [
 
 export const CATEGORY_COLORS: Record<string, string> = {
   'Santé': 'bg-blue-50 text-blue-700 border-blue-200',
-  'Restauration': 'bg-orange-50 text-orange-700 border-orange-200',
+  'Restauration': 'bg-emerald-50 text-emerald-700 border-emerald-200',
   'Artisans': 'bg-stone-100 text-stone-700 border-stone-200',
   'Beauté': 'bg-pink-50 text-pink-700 border-pink-200',
   'Immobilier': 'bg-emerald-50 text-emerald-700 border-emerald-200',

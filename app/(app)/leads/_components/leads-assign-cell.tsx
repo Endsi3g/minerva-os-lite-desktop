@@ -51,8 +51,8 @@ export function LeadsAssignCell({ lead, workspaceMembers }: LeadsAssignCellProps
           isTeam
             ? 'bg-[#059669]/10 text-[#059669] hover:bg-[#059669]/15'
             : assignedMember
-            ? 'bg-[#f54e00]/8 text-[#f54e00] hover:bg-[#f54e00]/15'
-            : 'text-neutral-300 hover:text-[#f54e00] hover:bg-neutral-100 opacity-0 group-hover/assign:opacity-100',
+            ? 'bg-[#059669]/8 text-[#059669] hover:bg-[#059669]/15'
+            : 'text-neutral-300 hover:text-[#059669] hover:bg-neutral-100 opacity-0 group-hover/assign:opacity-100',
         ].join(' ')}
       >
         {isTeam ? (

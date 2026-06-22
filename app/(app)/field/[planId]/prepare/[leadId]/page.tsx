@@ -145,12 +145,12 @@ export default function FieldPreparePage() {
               <span className="flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5" />{lead.city}</span>
             )}
             {lead.phone && (
-              <a href={`tel:${lead.phone}`} className="flex items-center gap-1.5 hover:text-[#f54e00] transition-colors">
+              <a href={`tel:${lead.phone}`} className="flex items-center gap-1.5 hover:text-[#059669] transition-colors">
                 <Phone className="h-3.5 w-3.5" />{lead.phone}
               </a>
             )}
             {lead.website && (
-              <a href={lead.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 hover:text-[#f54e00] transition-colors">
+              <a href={lead.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 hover:text-[#059669] transition-colors">
                 <Globe className="h-3.5 w-3.5" />Site web
               </a>
             )}
@@ -192,7 +192,7 @@ export default function FieldPreparePage() {
             <button
               onClick={generateScript}
               disabled={loadingScript}
-              className="flex items-center gap-1 text-xs font-bold text-[#f54e00] hover:underline disabled:opacity-50"
+              className="flex items-center gap-1 text-xs font-bold text-[#059669] hover:underline disabled:opacity-50"
             >
               <RefreshCw className={cn('h-3 w-3', loadingScript && 'animate-spin')} />
               Regénérer
@@ -209,7 +209,7 @@ export default function FieldPreparePage() {
           {script && (
             <div className="text-xs text-[#26251e] leading-relaxed whitespace-pre-line bg-[#fafaf8] border border-[#e5e5e0] rounded-xl p-4">
               {script}
-              {loadingScript && <span className="inline-block w-1 h-3 bg-[#f54e00] animate-pulse ml-0.5" />}
+              {loadingScript && <span className="inline-block w-1 h-3 bg-[#059669] animate-pulse ml-0.5" />}
             </div>
           )}
         </div>
@@ -225,13 +225,13 @@ export default function FieldPreparePage() {
             onChange={(e) => setPreNotes(e.target.value)}
             placeholder="Objectif de la visite, produit à présenter, point de contact…"
             rows={4}
-            className="w-full border border-[#e5e5e0] rounded-xl px-4 py-3 text-xs font-semibold text-[#26251e] outline-none focus:ring-1 focus:ring-[#f54e00] resize-none bg-[#fafaf8]"
+            className="w-full border border-[#e5e5e0] rounded-xl px-4 py-3 text-xs font-semibold text-[#26251e] outline-none focus:ring-1 focus:ring-[#059669] resize-none bg-[#fafaf8]"
           />
           <button
             onClick={handleSaveNotes}
             disabled={!preNotes.trim()}
             className="flex items-center gap-1.5 text-xs font-bold text-white px-4 py-2 rounded-xl disabled:opacity-50 transition-all"
-            style={{ background: '#f54e00' }}
+            style={{ background: '#059669' }}
           >
             {savedNotes ? <Check className="h-3.5 w-3.5" /> : null}
             {savedNotes ? 'Sauvegardées !' : 'Sauvegarder les notes'}

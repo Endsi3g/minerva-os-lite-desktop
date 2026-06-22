@@ -8,10 +8,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 | Page | Accent |
 |---|---|
-| Tasks (`/tasks`) | `#059669` (Brand Green) — completion/success |
-| Roadmap (`/roadmap`) | `#059669` (Brand Green) — completion/success |
-| Skills (`/skills`) | `#059669` (Brand Green) — AI capabilities |
-| All others (default) | `#f54e00` (Primary Orange) unless DESIGN.md specifies otherwise |
+| **All pages (default)** | `#059669` (Brand Green, hover `#047857`) — **green is the only accent, app-wide** |
+
+> There is **no orange** in the app. Never use `#f54e00`/`#d94400` or Tailwind `orange-*` classes — the single accent is brand green `#059669`.
 
 ## Commands
 

@@ -161,8 +161,8 @@ export default function ClientReportDetail() {
           {kpiCard(<Users className="h-4 w-4" />, 'Leads contactés', contacted, `${total > 0 ? ((contacted / total) * 100).toFixed(0) : 0}% du total`, '#2563eb')}
           {kpiCard(<CalendarCheck className="h-4 w-4" />, 'Rendez-vous', meetingBooked, 'Meeting Booked', '#7c3aed')}
           {kpiCard(<Trophy className="h-4 w-4" />, 'Deals gagnés', won, `${convRate}% de conversion`, '#059669')}
-          {kpiCard(<DollarSign className="h-4 w-4" />, 'MRR estimé', `${mrr.toLocaleString('fr-CA')} $`, '× 1 500 $/deal gagné', '#f54e00')}
-          {kpiCard(<TrendingUp className="h-4 w-4" />, 'ARR estimé', `${arr.toLocaleString('fr-CA')} $`, 'MRR × 12', '#f54e00')}
+          {kpiCard(<DollarSign className="h-4 w-4" />, 'MRR estimé', `${mrr.toLocaleString('fr-CA')} $`, '× 1 500 $/deal gagné', '#059669')}
+          {kpiCard(<TrendingUp className="h-4 w-4" />, 'ARR estimé', `${arr.toLocaleString('fr-CA')} $`, 'MRR × 12', '#059669')}
           {kpiCard(<Percent className="h-4 w-4" />, 'Taux de conversion', `${convRate}%`, 'Deals gagnés / total', '#059669')}
           {kpiCard(<Tag className="h-4 w-4" />, 'Meilleure niche', bestNiche, 'Niche la plus gagnante', '#7c3aed')}
           {kpiCard(<Globe className="h-4 w-4" />, 'Audits SEO réalisés', auditsCount, 'Leads avec un site web', '#2563eb')}

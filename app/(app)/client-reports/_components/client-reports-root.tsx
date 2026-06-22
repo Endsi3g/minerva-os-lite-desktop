@@ -91,7 +91,7 @@ export function ClientReportsRoot() {
     if (won >= 31) return { name: "Platine", style: "from-blue-400 to-indigo-600 text-white border-blue-300 shadow-[0_0_12px_rgba(99,102,241,0.2)]", badge: "Platine ✨" };
     if (won >= 16) return { name: "Or", style: "from-amber-300 to-yellow-500 text-white border-amber-200 shadow-[0_0_10px_rgba(245,158,11,0.2)]", badge: "Or 🏆" };
     if (won >= 6) return { name: "Argent", style: "from-slate-300 to-slate-400 text-white border-slate-200", badge: "Argent 🥈" };
-    return { name: "Bronze", style: "from-orange-400 to-amber-600 text-white border-orange-300", badge: "Bronze 🥉" };
+    return { name: "Bronze", style: "from-emerald-400 to-amber-600 text-white border-emerald-300", badge: "Bronze 🥉" };
   };
 
   // Calculate statistics for a user
@@ -312,7 +312,7 @@ export function ClientReportsRoot() {
                           ) : rank === 2 ? (
                             <span className="inline-flex w-7 h-7 rounded-full bg-slate-100 border border-slate-300 text-slate-800 items-center justify-center text-xs">🥈</span>
                           ) : rank === 3 ? (
-                            <span className="inline-flex w-7 h-7 rounded-full bg-orange-100 border border-orange-300 text-orange-800 items-center justify-center text-xs">🥉</span>
+                            <span className="inline-flex w-7 h-7 rounded-full bg-emerald-100 border border-emerald-300 text-emerald-800 items-center justify-center text-xs">🥉</span>
                           ) : (
                             <span className="text-[#807d72]">{rank}</span>
                           )}

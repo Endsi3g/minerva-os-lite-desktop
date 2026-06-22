@@ -128,12 +128,12 @@ function LeadCard({
       visitLog
         ? 'border-[#e5e5e0] opacity-70'
         : isNextStop
-        ? 'border-[#f54e00] shadow-sm ring-1 ring-[#f54e00]/20'
+        ? 'border-[#059669] shadow-sm ring-1 ring-[#059669]/20'
         : 'border-[#e5e5e0] shadow-sm',
     )}>
       {/* Next-stop marker */}
       {isNextStop && !visitLog && (
-        <div className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-wider text-[#f54e00]">
+        <div className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-wider text-[#059669]">
           <Navigation className="h-3 w-3" />
           Prochain arrêt
         </div>
@@ -212,7 +212,7 @@ function LeadCard({
         <div className="flex gap-2">
           <button
             onClick={() => router.push(`/field/${planId}/prepare/${lead.id}`)}
-            className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg border border-[#f54e00] text-[#f54e00] text-xs font-bold hover:bg-[#f54e00]/5 transition-colors"
+            className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg border border-[#059669] text-[#059669] text-xs font-bold hover:bg-[#059669]/5 transition-colors"
           >
             Préparer →
           </button>
@@ -514,7 +514,7 @@ export function FieldRoot({ planId }: { planId: string }) {
           </button>
           <div className="flex-1 min-w-0">
             <p className="text-xs font-bold text-[#26251e] flex items-center gap-1.5">
-              <MapPin className="h-3.5 w-3.5 text-[#f54e00]" />
+              <MapPin className="h-3.5 w-3.5 text-[#059669]" />
               Mode Terrain
             </p>
             <p className="text-[10px] text-[#7a7a76]">

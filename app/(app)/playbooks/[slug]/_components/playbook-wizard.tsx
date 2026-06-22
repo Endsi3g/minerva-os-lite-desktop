@@ -203,7 +203,7 @@ export function PlaybookWizard({ slug }: { slug: string }) {
     return (
       <div className="h-full flex items-center justify-center">
         <div className="text-center space-y-2">
-          <AlertCircle className="h-8 w-8 text-[#f54e00] mx-auto" />
+          <AlertCircle className="h-8 w-8 text-[#059669] mx-auto" />
           <p className="text-sm font-bold text-[#26251e]">Playbook introuvable</p>
           <button onClick={() => router.push('/playbooks')} className="text-xs text-[#059669] underline">← Retour aux playbooks</button>
         </div>
@@ -352,7 +352,7 @@ export function PlaybookWizard({ slug }: { slug: string }) {
                   <div className="mt-3 space-y-1.5">
                     {pb.icp.painPoints.map((pt, i) => (
                       <div key={i} className="flex items-start gap-2 text-xs text-[#555552]">
-                        <span className="text-[#f54e00] shrink-0 font-bold mt-0.5">✗</span>
+                        <span className="text-[#059669] shrink-0 font-bold mt-0.5">✗</span>
                         <span>{pt}</span>
                       </div>
                     ))}

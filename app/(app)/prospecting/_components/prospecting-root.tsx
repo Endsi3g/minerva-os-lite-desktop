@@ -1628,7 +1628,7 @@ export function ProspectingRoot() {
               <div className="space-y-2">
                 <p>Chaque prospect détecté passe dans un pipeline de qualification et de notation :</p>
                 <div className="flex items-center gap-2"><span className="w-3.5 h-3.5 rounded bg-emerald-500 text-[9px] text-white flex items-center justify-center font-bold">Q</span> <strong>Score de Qualité :</strong> Pondération globale (complétude, fit, note).</div>
-                <div className="flex items-center gap-2"><span className="w-3.5 h-3.5 rounded bg-orange-500 text-[9px] text-white flex items-center justify-center font-bold">O</span> <strong>Opportunité :</strong> Haute priorité commerciale (ex. sans site web).</div>
+                <div className="flex items-center gap-2"><span className="w-3.5 h-3.5 rounded bg-emerald-500 text-[9px] text-white flex items-center justify-center font-bold">O</span> <strong>Opportunité :</strong> Haute priorité commerciale (ex. sans site web).</div>
                 <div className="flex items-center gap-2"><span className="w-3.5 h-3.5 rounded bg-indigo-500 text-[9px] text-white flex items-center justify-center font-bold">P</span> <strong>Proximité GPS :</strong> Indice de distance locale.</div>
               </div>
               <div className="h-px bg-border/60" />
@@ -1956,7 +1956,7 @@ export function ProspectingRoot() {
                                     {item.qualityScore} / 100
                                   </Badge>
                                   {item.opportunityScore >= 70 && (
-                                    <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200 text-[8px] font-bold animate-pulse">
+                                    <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[8px] font-bold animate-pulse">
                                       Haut Potentiel
                                     </Badge>
                                   )}
@@ -2015,7 +2015,7 @@ export function ProspectingRoot() {
                                       <div className="grid grid-cols-2 gap-2">
                                         <ScoreGauge value={item.completenessScore} label="Complétude" color="stroke-emerald-500" />
                                         <ScoreGauge value={item.localFitScore} label="Alignement" color="stroke-sky-500" />
-                                        <ScoreGauge value={item.opportunityScore} label="Opportunité" color="stroke-orange-500" />
+                                        <ScoreGauge value={item.opportunityScore} label="Opportunité" color="stroke-emerald-500" />
                                         <ScoreGauge value={item.qualityScore} label="Qualité Globale" color="stroke-primary" />
                                       </div>
                                     </div>
@@ -2208,7 +2208,7 @@ export function ProspectingRoot() {
                                   {item.qualityScore} / 100
                                 </Badge>
                                 {item.opportunityScore >= 70 && (
-                                  <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200 text-[8px] font-bold">
+                                  <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[8px] font-bold">
                                     Haut Potentiel
                                   </Badge>
                                 )}
@@ -2282,7 +2282,7 @@ export function ProspectingRoot() {
                                   <div className="grid grid-cols-2 xs:grid-cols-4 gap-2">
                                     <ScoreGauge value={item.completenessScore} label="Complétude" color="stroke-emerald-500" />
                                     <ScoreGauge value={item.localFitScore} label="Alignement" color="stroke-sky-500" />
-                                    <ScoreGauge value={item.opportunityScore} label="Opportunité" color="stroke-orange-500" />
+                                    <ScoreGauge value={item.opportunityScore} label="Opportunité" color="stroke-emerald-500" />
                                     <ScoreGauge value={item.qualityScore} label="Qualité Globale" color="stroke-primary" />
                                   </div>
                                 </div>

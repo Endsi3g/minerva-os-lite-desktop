@@ -54,7 +54,7 @@ const OUTCOME_CONFIG: Record<
 
 const INTEREST_CONFIG: Record<InterestLevel, { label: string; color: string }> = {
   Hot: { label: 'Chaud', color: '#ef4444' },
-  Warm: { label: 'Tiède', color: '#f54e00' },
+  Warm: { label: 'Tiède', color: '#059669' },
   Cold: { label: 'Froid', color: '#3b82f6' },
 };
 
@@ -337,7 +337,7 @@ export default function OutcomeClient() {
             {/* Interest level */}
             <div className="bg-white rounded-xl border border-[#e5e5e0] p-4 space-y-3">
               <label className="text-xs font-bold text-[#26251e] block">
-                <Flame className="h-3.5 w-3.5 inline mr-1.5 text-[#f54e00]" />
+                <Flame className="h-3.5 w-3.5 inline mr-1.5 text-[#059669]" />
                 Niveau d&apos;intérêt perçu
               </label>
               <div className="grid grid-cols-3 gap-2">

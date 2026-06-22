@@ -139,7 +139,7 @@ export default function BookPage() {
     );
   }
 
-  const accentColor = '#f54e00';
+  const accentColor = '#059669';
   const hostInitials = settings.host?.full_name?.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase() ?? '?';
 
   return (
@@ -271,7 +271,7 @@ export default function BookPage() {
                     <button
                       key={slot}
                       onClick={() => handleSlotSelect(slot)}
-                      className="py-2.5 px-3 rounded-xl border border-[#e5e5e0] text-xs font-bold text-[#26251e] hover:border-[#f54e00] hover:text-[#f54e00] hover:bg-[#fff4f0] transition-all"
+                      className="py-2.5 px-3 rounded-xl border border-[#e5e5e0] text-xs font-bold text-[#26251e] hover:border-[#059669] hover:text-[#059669] hover:bg-[#fff4f0] transition-all"
                     >
                       {formatTime(slot, settings.timezone)}
                     </button>
@@ -306,7 +306,7 @@ export default function BookPage() {
                     value={form.name}
                     onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
                     placeholder="Jean Dupont"
-                    className="w-full h-9 border border-[#e5e5e0] rounded-xl px-3 text-xs font-semibold text-[#26251e] outline-none focus:ring-1 focus:ring-[#f54e00] bg-white"
+                    className="w-full h-9 border border-[#e5e5e0] rounded-xl px-3 text-xs font-semibold text-[#26251e] outline-none focus:ring-1 focus:ring-[#059669] bg-white"
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -317,7 +317,7 @@ export default function BookPage() {
                     value={form.email}
                     onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
                     placeholder="jean@example.com"
-                    className="w-full h-9 border border-[#e5e5e0] rounded-xl px-3 text-xs font-semibold text-[#26251e] outline-none focus:ring-1 focus:ring-[#f54e00] bg-white"
+                    className="w-full h-9 border border-[#e5e5e0] rounded-xl px-3 text-xs font-semibold text-[#26251e] outline-none focus:ring-1 focus:ring-[#059669] bg-white"
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -327,7 +327,7 @@ export default function BookPage() {
                     onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
                     placeholder="Sujet de l'appel, questions..."
                     rows={3}
-                    className="w-full border border-[#e5e5e0] rounded-xl px-3 py-2 text-xs font-semibold text-[#26251e] outline-none focus:ring-1 focus:ring-[#f54e00] bg-white resize-none"
+                    className="w-full border border-[#e5e5e0] rounded-xl px-3 py-2 text-xs font-semibold text-[#26251e] outline-none focus:ring-1 focus:ring-[#059669] bg-white resize-none"
                   />
                 </div>
 

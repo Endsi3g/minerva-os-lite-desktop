@@ -17,7 +17,7 @@ All brand colors are hard-coded as hex literals (not Tailwind color names) for p
 | `--border` | `#e5e5e0` | All borders, dividers |
 | `--background` | `#fafaf8` | Page background |
 | `--card` / sidebar bg | `#f4f4f3` | Cards, sidebar |
-| Accent / Primary | `#f54e00` | CTA buttons, highlights (Electron/settings) |
+| Accent / Primary | `#059669` (hover `#047857`) | CTA buttons, highlights, all accents — **green is the only accent color, app-wide** |
 | Brand Green | `#059669` / `#10b981` | Success states, prospecting, chat bubbles |
 | Warm Dark | `#26251e` | Headers, nav items |
 | Warm Tan | `#e5e5e2` | Hover states, dividers |
@@ -59,7 +59,7 @@ app/(app)/<feature>/_components/<feature>-root.tsx  ← client component (all st
 
 ### Buttons
 - **Primary CTA**: `bg-[#059669] hover:bg-[#047857] text-white font-bold rounded-lg` (green for prospecting/chat actions)
-- **Accent CTA**: `bg-primary text-primary-foreground` (uses CSS variable, orange in settings)
+- **Accent CTA**: `bg-primary text-primary-foreground` (uses CSS variable, green `#059669` app-wide)
 - **Secondary/outline**: `border border-[#e5e5e0] bg-white text-[#555552] hover:bg-[#f4f4f3]`
 - **Destructive**: `bg-destructive text-destructive-foreground`
 - **Ghost**: `hover:bg-muted text-muted-foreground`
@@ -158,7 +158,7 @@ When replicating this design system for other Minerva-family products:
 
 1. Keep the **`#26251e` warm dark** as foreground — it's distinctly warmer than pure black and reads better on the `#fafaf8` background
 2. Keep **`#e5e5e0`** for all borders — it's warm enough to feel "paper-like" without being gray
-3. **`#059669`** (Tailwind `emerald-600`) is the action color for success/prospecting; **`#f54e00`** is the brand accent used in the `--primary` token
+3. **`#059669`** (Tailwind `emerald-600`, hover `#047857`) is the single brand accent — used in the `--primary` token and for all CTAs/highlights app-wide. **There is no orange in the app**; never introduce `#f54e00` or Tailwind `orange-*` classes.
 4. The `font-sans` stack + `text-xs` body creates the "dense UI" feel — resist going to `text-sm` for UI chrome
 5. All section labels use `text-[10px] font-bold uppercase tracking-wider` — this small-caps pattern creates visual hierarchy without weight changes
 6. Cards never have drop shadows in the default state — only `shadow-sm` for modals/popovers that float above the surface

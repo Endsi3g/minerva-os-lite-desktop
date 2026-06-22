@@ -48,7 +48,7 @@ export function PipelineRevenueBar({ leads }: PipelineRevenueBarProps) {
       <div className="flex flex-wrap gap-5 mb-3">
         <KpiChip
           icon={<DollarSign className="h-3.5 w-3.5" />}
-          iconBg="bg-[#f54e00]/10 text-[#f54e00]"
+          iconBg="bg-[#059669]/10 text-[#059669]"
           label="Pipeline brut"
           value={formatAmount(stats.pipeline)}
         />

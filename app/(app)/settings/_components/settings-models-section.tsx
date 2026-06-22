@@ -24,7 +24,7 @@ const CHAT_MODELS = [
 ];
 
 const PROVIDERS = [
-  { name: 'Anthropic', models: ['claude-haiku-4-5-20251001', 'claude-sonnet-4-6', 'claude-opus-4-8'], color: 'bg-orange-50 border-orange-200' },
+  { name: 'Anthropic', models: ['claude-haiku-4-5-20251001', 'claude-sonnet-4-6', 'claude-opus-4-8'], color: 'bg-emerald-50 border-emerald-200' },
   { name: 'OpenAI', models: ['gpt-4o'], color: 'bg-emerald-50 border-emerald-200' },
   { name: 'Groq', models: ['llama-3.3-70b-versatile'], color: 'bg-blue-50 border-blue-200' },
   { name: 'Mistral', models: ['mistral-7b'], color: 'bg-purple-50 border-purple-200' },

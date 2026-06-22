@@ -740,7 +740,7 @@ export default function TeamPage() {
             <Shield className="w-3.5 h-3.5" />
             Rôles &amp; Permissions
             {customRoles.length > 0 && (
-              <span className="bg-[#f54e00] text-white text-[9px] font-black px-1.5 py-0.5 rounded-full leading-none">
+              <span className="bg-[#059669] text-white text-[9px] font-black px-1.5 py-0.5 rounded-full leading-none">
                 {customRoles.length}
               </span>
             )}
@@ -1583,7 +1583,7 @@ export default function TeamPage() {
               </h2>
               <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
                 {(['admin', 'editor', 'viewer'] as const).map(role => {
-                  const colors: Record<string, string> = { admin: '#f54e00', editor: '#059669', viewer: '#6366f1' };
+                  const colors: Record<string, string> = { admin: '#059669', editor: '#059669', viewer: '#6366f1' };
                   const icons: Record<string, React.ReactNode> = { admin: <Shield className="h-4 w-4" />, editor: <Star className="h-4 w-4" />, viewer: <Eye className="h-4 w-4" /> };
                   const perms = DEFAULT_ROLE_PERMISSIONS[role] || [];
                   const c = colors[role];
@@ -1623,7 +1623,7 @@ export default function TeamPage() {
                   <Palette className="h-4 w-4 text-[#807d72]" />
                   Rôles personnalisés
                   {customRoles.length > 0 && (
-                    <span className="text-[10px] font-bold px-1.5 py-0.5 bg-[#f54e00]/10 text-[#f54e00] rounded-full">{customRoles.length}</span>
+                    <span className="text-[10px] font-bold px-1.5 py-0.5 bg-[#059669]/10 text-[#059669] rounded-full">{customRoles.length}</span>
                   )}
                 </h2>
                 <button
@@ -1934,7 +1934,7 @@ export default function TeamPage() {
                   value={roleName}
                   onChange={e => setRoleName(e.target.value)}
                   placeholder="ex: Commercial terrain"
-                  className="w-full h-9 border border-[#e5e5e0] rounded-xl px-3 text-xs font-semibold text-[#26251e] outline-none focus:ring-1 focus:ring-[#f54e00]"
+                  className="w-full h-9 border border-[#e5e5e0] rounded-xl px-3 text-xs font-semibold text-[#26251e] outline-none focus:ring-1 focus:ring-[#059669]"
                 />
               </div>
               <div className="space-y-1">
@@ -1943,7 +1943,7 @@ export default function TeamPage() {
                   <div className="w-9 h-9 rounded-xl border border-[#e5e5e0] overflow-hidden">
                     <input type="color" value={roleColor} onChange={e => setRoleColor(e.target.value)} className="w-full h-full cursor-pointer border-none" />
                   </div>
-                  {['#f54e00','#059669','#6366f1','#f59e0b','#ec4899'].map(c => (
+                  {['#059669','#059669','#6366f1','#f59e0b','#ec4899'].map(c => (
                     <button key={c} onClick={() => setRoleColor(c)} className="w-5 h-5 rounded-full border-2 transition-all" style={{ background: c, borderColor: roleColor === c ? c : 'transparent' }} />
                   ))}
                 </div>

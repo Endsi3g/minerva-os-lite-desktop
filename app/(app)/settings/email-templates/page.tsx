@@ -163,7 +163,7 @@ export default function EmailTemplatesPage() {
           <button
             onClick={openNew}
             className="flex items-center gap-2 h-9 px-4 rounded-xl text-xs font-bold text-white shrink-0 transition-all hover:opacity-90"
-            style={{ background: '#f54e00' }}
+            style={{ background: '#059669' }}
           >
             <Plus className="h-3.5 w-3.5" />
             Nouveau template
@@ -178,7 +178,7 @@ export default function EmailTemplatesPage() {
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Rechercher un template…"
-              className="w-full h-9 border border-[#e5e5e0] rounded-xl pl-9 pr-3 text-xs font-semibold outline-none focus:ring-1 focus:ring-[#f54e00] bg-white"
+              className="w-full h-9 border border-[#e5e5e0] rounded-xl pl-9 pr-3 text-xs font-semibold outline-none focus:ring-1 focus:ring-[#059669] bg-white"
             />
           </div>
           <div className="flex items-center gap-1.5 flex-wrap">
@@ -205,7 +205,7 @@ export default function EmailTemplatesPage() {
               <p className="text-sm font-black text-[#7a7a76]">Aucun template</p>
               <p className="text-xs text-[#b0b0a8] mt-1">Créez votre premier template email ci-dessus.</p>
             </div>
-            <button onClick={openNew} className="text-xs font-bold text-[#f54e00] hover:underline">Créer un template</button>
+            <button onClick={openNew} className="text-xs font-bold text-[#059669] hover:underline">Créer un template</button>
           </div>
         ) : (
           <div className="space-y-3">
@@ -286,20 +286,20 @@ export default function EmailTemplatesPage() {
 
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Nom *</label>
-                <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="ex: Prospection cold — dentiste" className="w-full h-9 border border-[#e5e5e0] rounded-xl px-3 text-xs font-semibold outline-none focus:ring-1 focus:ring-[#f54e00]" />
+                <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="ex: Prospection cold — dentiste" className="w-full h-9 border border-[#e5e5e0] rounded-xl px-3 text-xs font-semibold outline-none focus:ring-1 focus:ring-[#059669]" />
               </div>
 
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Sujet (Variante A) *</label>
-                <input value={form.subject} onChange={e => setForm(f => ({ ...f, subject: e.target.value }))} placeholder="ex: {{prenom}}, j'ai analysé votre fiche Google" className="w-full h-9 border border-[#e5e5e0] rounded-xl px-3 text-xs font-semibold outline-none focus:ring-1 focus:ring-[#f54e00]" />
+                <input value={form.subject} onChange={e => setForm(f => ({ ...f, subject: e.target.value }))} placeholder="ex: {{prenom}}, j'ai analysé votre fiche Google" className="w-full h-9 border border-[#e5e5e0] rounded-xl px-3 text-xs font-semibold outline-none focus:ring-1 focus:ring-[#059669]" />
               </div>
 
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Corps (Variante A) *</label>
-                <textarea value={form.body} onChange={e => setForm(f => ({ ...f, body: e.target.value }))} rows={5} placeholder="Bonjour {{prenom}},…" className="w-full border border-[#e5e5e0] rounded-xl px-3 py-2 text-xs font-semibold outline-none focus:ring-1 focus:ring-[#f54e00] resize-none" />
+                <textarea value={form.body} onChange={e => setForm(f => ({ ...f, body: e.target.value }))} rows={5} placeholder="Bonjour {{prenom}},…" className="w-full border border-[#e5e5e0] rounded-xl px-3 py-2 text-xs font-semibold outline-none focus:ring-1 focus:ring-[#059669] resize-none" />
                 <div className="flex flex-wrap gap-1">
                   {VARIABLE_TOKENS.map(v => (
-                    <button key={v} type="button" onClick={() => setForm(f => ({ ...f, body: f.body + v }))} className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded border border-[#e5e5e0] hover:border-[#f54e00] hover:text-[#f54e00] transition-colors bg-[#f4f4f3]">
+                    <button key={v} type="button" onClick={() => setForm(f => ({ ...f, body: f.body + v }))} className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded border border-[#e5e5e0] hover:border-[#059669] hover:text-[#059669] transition-colors bg-[#f4f4f3]">
                       {v}
                     </button>
                   ))}
@@ -353,7 +353,7 @@ export default function EmailTemplatesPage() {
               <button onClick={() => setShowModal(false)} className="px-4 py-2 text-xs font-bold border border-[#e5e5e0] rounded-xl hover:bg-[#f4f4f3] transition-colors">
                 Annuler
               </button>
-              <button onClick={handleSave} disabled={saving || !form.name.trim() || !form.subject.trim()} className="px-5 py-2 text-xs font-bold text-white rounded-xl disabled:opacity-50 transition-all flex items-center gap-1.5" style={{ background: '#f54e00' }}>
+              <button onClick={handleSave} disabled={saving || !form.name.trim() || !form.subject.trim()} className="px-5 py-2 text-xs font-bold text-white rounded-xl disabled:opacity-50 transition-all flex items-center gap-1.5" style={{ background: '#059669' }}>
                 {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
                 {editing ? 'Sauvegarder' : 'Créer le template'}
               </button>

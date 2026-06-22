@@ -240,7 +240,7 @@ export function buildColumns(workspaceMembers: WorkspaceMember[]): ColumnDef<Lea
       const colorClass = intent >= 80
         ? 'bg-rose-100 text-rose-700 border-rose-200'
         : intent >= 50
-        ? 'bg-orange-100 text-orange-700 border-orange-200'
+        ? 'bg-emerald-100 text-emerald-700 border-emerald-200'
         : 'bg-slate-100 text-slate-500 border-slate-200';
       if (!intent) return <span className="text-[10px] text-muted-foreground/40">—</span>;
       return (
@@ -270,7 +270,7 @@ export function buildColumns(workspaceMembers: WorkspaceMember[]): ColumnDef<Lea
         oppScore >= 70
           ? { bg: '#059669' + '1a', text: '#059669', border: '#059669' + '33' }
           : oppScore >= 40
-          ? { bg: '#f54e00' + '1a', text: '#f54e00', border: '#f54e00' + '33' }
+          ? { bg: '#059669' + '1a', text: '#059669', border: '#059669' + '33' }
           : { bg: '#7a7a76' + '1a', text: '#7a7a76', border: '#7a7a76' + '33' };
       if (oppScore === 0) return <span className="text-[10px] text-muted-foreground/40">—</span>;
       return (

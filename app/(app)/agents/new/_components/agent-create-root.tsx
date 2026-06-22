@@ -52,7 +52,7 @@ const FIELD_TYPE_LABELS: Record<AgentInputField['type'], string> = {
 const FIELD_TYPE_COLORS: Record<AgentInputField['type'], string> = {
   text: 'bg-[#f7f7f4] text-[#555552] border-[#e5e5e0]',
   multiline: 'bg-blue-50 text-blue-600 border-blue-200',
-  number: 'bg-orange-50 text-orange-600 border-orange-200',
+  number: 'bg-emerald-50 text-emerald-600 border-emerald-200',
   select: 'bg-purple-50 text-purple-600 border-purple-200',
   file: 'bg-emerald-50 text-emerald-600 border-emerald-200',
   email: 'bg-teal-50 text-teal-600 border-teal-200',
@@ -628,7 +628,7 @@ export function AgentCreateRoot() {
                           <span className={`text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded border ${
                             m.badgeColor === 'green' ? 'bg-[#059669]/10 text-[#059669] border-[#059669]/20' :
                             m.badgeColor === 'blue' ? 'bg-blue-50 text-blue-600 border-blue-200' :
-                            m.badgeColor === 'orange' ? 'bg-orange-50 text-orange-600 border-orange-200' :
+                            m.badgeColor === 'orange' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' :
                             'bg-[#f7f7f4] text-[#7a7a76] border-[#e5e5e0]'
                           }`}>{m.badge}</span>
                         )}
@@ -886,8 +886,8 @@ export function AgentCreateRoot() {
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 backdrop-blur-xs">
           <div className="w-full max-w-sm bg-white rounded-2xl shadow-2xl border border-[#e5e5e0] p-6 space-y-4 animate-in fade-in zoom-in-95 duration-150 mx-4">
             <div className="flex items-start gap-3">
-              <div className="w-9 h-9 rounded-xl bg-orange-50 border border-orange-200 flex items-center justify-center shrink-0 mt-0.5">
-                <Star className="w-4.5 h-4.5 text-orange-500" />
+              <div className="w-9 h-9 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center shrink-0 mt-0.5">
+                <Star className="w-4.5 h-4.5 text-emerald-500" />
               </div>
               <div>
                 <h3 className="text-sm font-bold text-[#26251e]">Clé API requise</h3>
