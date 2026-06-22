@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
 import {
   MapPin, Phone, Globe, CheckCircle2, Clock, X, ChevronRight,
   Loader2, ArrowLeft, Navigation, RefreshCw, Star, Calendar,
-  AlertCircle, MessageSquare, Route, Users, PartyPopper,
+  AlertCircle, MessageSquare, Route, Users, PartyPopper, Camera,
 } from 'lucide-react';
 
 // Build a turn-by-turn directions deep link (opens native maps app on mobile)
@@ -529,6 +529,14 @@ export function FieldRoot({ planId }: { planId: string }) {
               )}
             </p>
           </div>
+          <button
+            onClick={() => router.push('/field/gallery')}
+            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold border border-[#e5e5e0] text-[#555552] hover:bg-[#f4f4f3] transition-colors"
+            title="Galerie des preuves de visite"
+          >
+            <Camera className="h-3 w-3" />
+            Preuves
+          </button>
           <button
             onClick={handleNotifyDeparture}
             disabled={notifyingTeam || teamNotified || totalCount === 0}

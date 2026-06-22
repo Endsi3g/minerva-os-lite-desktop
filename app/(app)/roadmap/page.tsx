@@ -96,7 +96,7 @@ const roadmapData: RoadmapItem[] = [
   { module: 'IA', feature: 'Skills partagées par workspace', desc: "Compétences activées et personnalisées partagées au niveau du workspace (toute l'équipe).", priority: 'medium', status: 'available' },
   { module: 'IA', feature: '@ contexte CRM dans le chat', desc: "Menu @ injectant du contexte CRM réel (leads, pipeline, leads chauds, tâches) en plus des compétences.", priority: 'medium', status: 'available' },
   { module: 'Agenda', feature: 'Vues Semaine / Jour + créneaux', desc: 'Vues hebdomadaire et journalière avec grille horaire (7h–20h) ; clic sur un créneau pour planifier.', priority: 'medium', status: 'available' },
-  { module: 'Terrain', feature: 'Galerie des preuves de visite', desc: 'Regrouper les photos preuves par lead/tournée et les rendre consultables par l\'équipe.', priority: 'low', status: 'backlog' },
+  { module: 'Terrain', feature: 'Galerie des preuves de visite', desc: 'Page /field/gallery : photos preuves regroupées par mois, consultables par toute l\'équipe.', priority: 'low', status: 'available' },
   { module: 'Qualité', feature: 'Réécriture des refs React Compiler', desc: 'Corriger réellement les ~220 avertissements react-hooks/refs (actuellement désactivés) plutôt que de les masquer.', priority: 'low', status: 'backlog' },
   { module: 'Tests', feature: 'QA E2E automatisée', desc: 'Couvrir les flux critiques (invitation, booking, chat, terrain) par des tests Playwright.', priority: 'medium', status: 'backlog' },
 ];
@@ -110,6 +110,17 @@ interface PhaseVerification {
 }
 
 const VERIFICATIONS: PhaseVerification[] = [
+  {
+    phase: 'Phase 21 — Galerie des preuves de visite',
+    version: 'v3.21.0',
+    date: '2026-06-22',
+    checks: [
+      "Enregistrer un passage terrain avec une photo preuve, puis ouvrir /field/gallery (bouton « Preuves » dans le Mode Terrain).",
+      'Les photos sont regroupées par mois, avec nom du lead, résultat, contact, intérêt et date.',
+      'Cliquer une photo l\'ouvre en plein écran.',
+      'Un autre membre du workspace voit aussi les preuves (données partagées).',
+    ],
+  },
   {
     phase: 'Phase 20 — Agenda Semaine / Jour',
     version: 'v3.20.0',

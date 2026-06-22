@@ -18,6 +18,16 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v3.21.0',
+      date: '2026-06-22 · 12h52',
+      titleKey: 'changelog.v3_21_0_title' as TranslationKey,
+      descKey: 'changelog.v3_21_0_desc' as TranslationKey,
+      highlights: [
+        "Galerie des preuves de visite — Nouvelle page /field/gallery : toutes les photos jointes aux comptes-rendus terrain, regroupées par mois, avec résultat, contact, niveau d'intérêt et aperçu plein écran.",
+        "Accès depuis le Mode Terrain — Bouton « Preuves » dans l'en-tête de la tournée. Visible par toute l'équipe (données du workspace).",
+      ],
+    },
+    {
       version: 'v3.20.0',
       date: '2026-06-22 · 12h48',
       titleKey: 'changelog.v3_20_0_title' as TranslationKey,
