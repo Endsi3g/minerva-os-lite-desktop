@@ -277,6 +277,52 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // 4. Auto-fallback to OpenRouter when Claude key is missing
+    if (openrouterKey && openrouterKey.trim() !== '') {
+      const fallbackModel = selectedModel && !selectedModel.startsWith('claude') && !selectedModel.includes('anthropic')
+        ? selectedModel
+        : 'meta-llama/llama-3.3-70b-instruct:free';
+      try {
+        const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${openrouterKey.trim()}`,
+            'Content-Type': 'application/json',
+            'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
+            'X-Title': 'Minerva OS Reach Lite',
+          },
+          body: JSON.stringify({
+            model: fallbackModel,
+            messages: [
+              ...(system ? [{ role: 'system', content: system }] : []),
+              ...messages.map((m: { role: string; content: string }) => ({ role: m.role, content: m.content })),
+            ],
+            stream: true,
+          }),
+        });
+        if (response.ok && response.body) {
+          const stream = new ReadableStream({
+            async start(controller) {
+              const reader = response.body!.getReader();
+              try {
+                while (true) {
+                  const { done, value } = await reader.read();
+                  if (done) break;
+                  controller.enqueue(value);
+                }
+              } catch (e) { controller.error(e); }
+              finally { controller.close(); }
+            },
+          });
+          return new NextResponse(stream, {
+            headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', 'Connection': 'keep-alive' },
+          });
+        }
+      } catch (err) {
+        console.error('OpenRouter auto-fallback failed:', err);
+      }
+    }
+
     // High fidelity simulation stream fallback
     const simulatedResponse = (() => {
       if (selectedModel === 'nousresearch/hermes-3-llama-3-8b') {
