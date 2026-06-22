@@ -731,6 +731,11 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                   onMouseLeave={() => setIsSwitchWorkspaceOpen(false)}
                 >
                   <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setIsSwitchWorkspaceOpen(!isSwitchWorkspaceOpen);
+                    }}
                     className={cn(
                       "w-full flex items-center justify-between px-3 py-2 text-xs font-semibold text-[#555552] hover:text-[#26251e] hover:bg-[#e5e5e2]/60 transition-colors text-left",
                       isSwitchWorkspaceOpen && "bg-[#e5e5e2]/60 text-[#26251e]"
