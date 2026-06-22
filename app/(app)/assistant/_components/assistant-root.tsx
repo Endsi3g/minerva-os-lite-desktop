@@ -189,6 +189,7 @@ interface CanvasDocument {
 
 const AI_MODELS = [
   { id: 'meta-llama/llama-3.3-70b-instruct:free', name: 'Minerva AI (Llama 3.3 70B)', provider: 'openrouter' },
+  { id: 'meta-llama/llama-3.2-11b-vision-instruct:free', name: 'Vision (texte + image)', provider: 'openrouter' },
   { id: 'google/gemini-2.5-flash:free', name: 'Gemini 2.5 Flash', provider: 'openrouter' },
   { id: 'deepseek/deepseek-r1:free', name: 'DeepSeek R1 — Raisonnement', provider: 'openrouter' },
   { id: 'nousresearch/hermes-3-llama-3-8b', name: 'Hermes Agent ⚡', provider: 'openrouter' },
@@ -535,14 +536,27 @@ export function AssistantRoot() {
       { role: 'user' as const, content: contentToSend }
     ];
 
+    // Canvas-aware system prompt: lets the AI decide to open & write in the Canvas
+    // automatically. When it produces a substantial document (report, long email,
+    // proposal, script, plan…), it wraps it in a ```canvas:Titre block, which the
+    // client detects (extractCanvasBlock) and opens in the Canvas editor.
+    const canvasSystemPrompt =
+      locale === 'en'
+        ? "You are Minerva's assistant. When your answer is a substantial, self-contained document (report, proposal, long email, call script, action plan, structured analysis…), output it INSIDE a fenced block of the form:\n```canvas:Document Title\n<the full document in Markdown>\n```\nWrite a short one-sentence intro before the block. For quick conversational answers, reply normally without a canvas block."
+        : locale === 'de'
+        ? "Sie sind Minervas Assistent. Wenn Ihre Antwort ein umfangreiches, eigenständiges Dokument ist (Bericht, Angebot, lange E-Mail, Gesprächsskript, Aktionsplan, strukturierte Analyse…), geben Sie es INNERHALB eines Codeblocks dieser Form aus:\n```canvas:Dokumenttitel\n<das vollständige Dokument in Markdown>\n```\nSchreiben Sie davor einen kurzen Einleitungssatz. Für kurze Gesprächsantworten antworten Sie normal ohne Canvas-Block."
+        : "Tu es l'assistant de Minerva. Lorsque ta réponse est un document substantiel et autonome (rapport, proposition, email long, script d'appel, plan d'action, analyse structurée…), produis-le À L'INTÉRIEUR d'un bloc de la forme :\n```canvas:Titre du document\n<le document complet en Markdown>\n```\nÉcris une courte phrase d'introduction avant le bloc. Pour les réponses conversationnelles courtes, réponds normalement sans bloc canvas.";
+
     try {
       const res = await fetch(getApiUrl('/api/chat'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           messages: apiHistory,
           model: selectedModel.id,
-          activeTool: isCanvasOpen ? 'canvas' : undefined
+          provider: selectedModel.provider,
+          activeTool: isCanvasOpen ? 'canvas' : undefined,
+          system: canvasSystemPrompt,
         }),
       });
 
@@ -688,6 +702,7 @@ export function AssistantRoot() {
             }
           ],
           model: selectedModel.id,
+          provider: selectedModel.provider,
           system: systemPrompt
         }),
       });

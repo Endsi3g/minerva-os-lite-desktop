@@ -89,6 +89,19 @@ interface PhaseVerification {
 
 const VERIFICATIONS: PhaseVerification[] = [
   {
+    phase: 'Phase 4 — Canvas automatique & OpenRouter',
+    version: 'v3.4.0',
+    date: '2026-06-22',
+    checks: [
+      "Dans l'Assistant IA, demander un document long (ex : « Rédige une proposition commerciale complète pour … ») : le Canvas s'ouvre automatiquement et contient le document.",
+      'Pour une question courte, l\'assistant répond normalement sans ouvrir le Canvas.',
+      'Vérifier que les modèles OpenRouter (Llama, Gemini, Vision…) répondent dans l\'assistant.',
+      'Vérifier que les scripts de visite terrain et brouillons d\'emails (basés sur Claude) fonctionnent toujours.',
+      'Confirmer dans Vercel que OPENROUTER_API_KEY est présent (Production + Development).',
+      'Sélectionner le modèle « Vision (texte + image) » et confirmer une réponse.',
+    ],
+  },
+  {
     phase: 'Phase 3 — Boîte de réception',
     version: 'v3.3.0',
     date: '2026-06-22',

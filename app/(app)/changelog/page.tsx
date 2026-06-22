@@ -18,6 +18,18 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v3.4.0',
+      date: '2026-06-22 · 00h35',
+      titleKey: 'changelog.v3_4_0_title' as TranslationKey,
+      descKey: 'changelog.v3_4_0_desc' as TranslationKey,
+      highlights: [
+        "Canvas automatique — L'assistant IA ouvre désormais le Canvas tout seul lorsqu'il rédige un document substantiel (rapport, proposition, email long, script, plan d'action) et y écrit directement.",
+        "OpenRouter intégré — Clé OpenRouter ajoutée à l'environnement : l'app peut utiliser les modèles OpenRouter de façon fiable, sans remplacer le moteur IA par défaut.",
+        "Modèle Vision (texte + image) — Nouveau modèle « Vision » sélectionnable dans l'assistant pour traiter texte et images.",
+        "Stabilité IA — Le choix du fournisseur est désormais explicite : les scripts et brouillons basés sur Claude continuent de fonctionner sans interférence.",
+      ],
+    },
+    {
       version: 'v3.3.0',
       date: '2026-06-22 · 00h29',
       titleKey: 'changelog.v3_3_0_title' as TranslationKey,

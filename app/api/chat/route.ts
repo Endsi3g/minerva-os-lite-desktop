@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { messages, model, activeTool, system } = await req.json();
+    const { messages, model, activeTool, system, provider: requestProvider } = await req.json();
 
     if (!messages || !Array.isArray(messages)) {
       return NextResponse.json({ error: 'Messages are required and must be an array' }, { status: 400 });
@@ -41,19 +41,26 @@ export async function POST(req: NextRequest) {
       .eq('user_id', user.id)
       .maybeSingle();
 
-    const openrouterKey = dbSettings?.openrouter_key || process.env.OPENROUTER_API_KEY || '';
+    // Per-user key (drives the default-provider decision) vs the global env key
+    // (only used when openrouter is explicitly requested — e.g. canvas vision).
+    const userOpenrouterKey = dbSettings?.openrouter_key || '';
+    const openrouterKey = userOpenrouterKey || process.env.OPENROUTER_API_KEY || '';
     const groqKey = dbSettings?.groq_api_key || process.env.GROQ_API_KEY || '';
     const togetherKey = dbSettings?.together_api_key || process.env.TOGETHER_API_KEY || '';
     const anthropicKey = process.env.ANTHROPIC_API_KEY || '';
     const selectedModel = model || dbSettings?.ai_model || 'meta-llama/llama-3-8b-instruct:free';
 
-    // Cascade: respect explicit provider selection; fall back to any configured key
+    // Cascade: an explicit request/setting wins; otherwise only a *per-user* key
+    // changes the default — the global OPENROUTER_API_KEY never silently overrides
+    // Anthropic (which would break Claude-model calls like field scripts).
     const explicitProvider = dbSettings?.ai_provider;
     const provider = (() => {
+      if (requestProvider === 'openrouter' && openrouterKey) return 'openrouter';
+      if (requestProvider === 'anthropic') return 'anthropic';
       if (explicitProvider === 'groq' && groqKey) return 'groq';
       if (explicitProvider === 'together' && togetherKey) return 'together';
       if (explicitProvider === 'openrouter' && openrouterKey) return 'openrouter';
-      if (openrouterKey) return 'openrouter';
+      if (userOpenrouterKey) return 'openrouter';
       if (groqKey) return 'groq';
       if (togetherKey) return 'together';
       return 'anthropic';
