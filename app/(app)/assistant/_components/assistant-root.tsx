@@ -1,35 +1,42 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import { useEditor, EditorContent } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
+import Underline from '@tiptap/extension-underline';
+import TextAlign from '@tiptap/extension-text-align';
+import Placeholder from '@tiptap/extension-placeholder';
+import CharacterCount from '@tiptap/extension-character-count';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useReach } from '@/lib/reach-context';
 import { useSkills } from '@/lib/use-skills';
 import { getApiUrl } from '@/lib/api-helper';
 import { 
-  X, 
-  Sparkles, 
-  Send, 
-  Plus, 
-  Mic, 
-  FileText, 
-  Copy, 
-  Check, 
-  ChevronDown, 
-  Undo2, 
-  Redo2, 
-  Bold, 
-  Italic, 
-  Download, 
-  Settings, 
-  History, 
-  MessageSquare, 
-  Globe, 
-  Trash2, 
+  X,
+  Sparkles,
+  Send,
+  Plus,
+  Mic,
+  FileText,
+  Copy,
+  Check,
+  ChevronDown,
+  Undo2,
+  Redo2,
+  Bold,
+  Italic,
+  Download,
+  Settings,
+  History,
+  MessageSquare,
+  Globe,
+  Trash2,
   ArrowUp,
   Paperclip,
   Maximize2,
-  Database
+  Database,
+  Bookmark
 } from 'lucide-react';
 import { MinervaIcon } from '@/components/icons';
 import { useLanguage } from '@/lib/language-context';
@@ -203,6 +210,24 @@ const generateUniqueId = () => {
   return Math.random().toString(36).substring(2) + Date.now().toString(36);
 };
 
+function mdToHtml(md: string): string {
+  if (!md || md.trim().startsWith('<')) return md;
+  return md
+    .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+    .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+    .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/^[-*]\s+(.+)$/gm, '<li>$1</li>')
+    .replace(/(<li>.*<\/li>\n?)+/g, (m) => `<ul>${m}</ul>`)
+    .replace(/^\d+\.\s+(.+)$/gm, '<li>$1</li>')
+    .replace(/^---+$/gm, '<hr/>')
+    .replace(/\n\n+/g, '</p><p>')
+    .replace(/\n/g, '<br/>')
+    .replace(/^(.+)$/, '<p>$1</p>');
+}
+
 export function AssistantRoot() {
   const { user, leads, tasks, activeWorkspace } = useReach();
   const { t, locale } = useLanguage();
@@ -271,10 +296,53 @@ export function AssistantRoot() {
   const [showSaveToLibraryPrompt, setShowSaveToLibraryPrompt] = useState(false);
   const [lastExportedContent, setLastExportedContent] = useState<{ title: string; content: string } | null>(null);
 
+  // Canvas float state
+  const [isCanvasFloating, setIsCanvasFloating] = useState(false);
+  const [canvasFloatPos, setCanvasFloatPos] = useState({ x: 80, y: 60 });
+  const dragOffsetRef = useRef<{ x: number; y: number } | null>(null);
+
+  // Checkpoint state
+  const [checkpoints, setCheckpoints] = useState<number[]>([]);
+
+  // Library save state
+  const [showLibraryDropdown, setShowLibraryDropdown] = useState(false);
+  const [libraryFolderName, setLibraryFolderName] = useState('');
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const userId = user?.id || 'anonymous';
   const workspaceId = activeWorkspace?.id || 'default_ws';
+
+  // TipTap WYSIWYG editor
+  const editor = useEditor({
+    extensions: [
+      StarterKit,
+      Underline,
+      TextAlign.configure({ types: ['heading', 'paragraph'] }),
+      Placeholder.configure({ placeholder: t('assistant.editor_placeholder') }),
+      CharacterCount,
+    ],
+    content: editorContent || '',
+    onUpdate: ({ editor }) => {
+      handleContentChange(editor.getHTML());
+    },
+    editorProps: {
+      attributes: {
+        class: 'prose prose-sm max-w-none outline-none min-h-[400px] focus:outline-none text-[#26251e] leading-relaxed',
+      },
+    },
+  });
+
+  // Sync external content (e.g. from canvas block) into TipTap editor
+  useEffect(() => {
+    if (editor && editorContent !== undefined) {
+      const currentHtml = editor.getHTML();
+      if (currentHtml !== editorContent) {
+        const html = editorContent.trim().startsWith('<') ? editorContent : mdToHtml(editorContent);
+        editor.commands.setContent(html, { emitUpdate: false });
+      }
+    }
+  }, [editorContent, editor]);
 
   // Load database sessions and documents on mount or workspace change
   useEffect(() => {
@@ -343,6 +411,29 @@ export function AssistantRoot() {
       localStorage.removeItem(`minerva_active_canvas_${workspaceId}`);
     }
   }, [canvasDoc, workspaceId]);
+
+  // Canvas drag handlers for floating mode
+  const handleCanvasPointerDown = (e: React.PointerEvent<HTMLElement>) => {
+    if (!isCanvasFloating) return;
+    const target = e.currentTarget;
+    dragOffsetRef.current = {
+      x: e.clientX - canvasFloatPos.x,
+      y: e.clientY - canvasFloatPos.y,
+    };
+    target.setPointerCapture(e.pointerId);
+  };
+
+  const handleCanvasPointerMove = (e: React.PointerEvent<HTMLElement>) => {
+    if (!isCanvasFloating || !dragOffsetRef.current) return;
+    setCanvasFloatPos({
+      x: e.clientX - dragOffsetRef.current.x,
+      y: e.clientY - dragOffsetRef.current.y,
+    });
+  };
+
+  const handleCanvasPointerUp = () => {
+    dragOffsetRef.current = null;
+  };
 
   // Auto-save logic
   const saveDoc = async (id: string, title: string, content: string) => {
@@ -745,13 +836,11 @@ export function AssistantRoot() {
   // Canvas AI rewrite commands helper
   const handleAiCommand = async (command: string, extra?: string) => {
     setShowAiDropdown(false);
-    const textarea = document.getElementById('canvas-textarea') as HTMLTextAreaElement;
-    if (!textarea) return;
 
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const selection = editorContent.substring(start, end);
-    const targetText = selection || editorContent;
+    // Get selected text from TipTap editor
+    const { from, to, empty } = editor?.state.selection ?? { from: 0, to: 0, empty: true };
+    const selection = empty ? '' : (editor?.state.doc.textBetween(from, to, ' ') ?? '');
+    const targetText = selection || editor?.getText() || editorContent;
 
     if (!targetText.trim()) return;
 
@@ -842,10 +931,13 @@ export function AssistantRoot() {
         }
       }
 
-      if (selection) {
-        replaceSelectedText(replacement.trim(), start, end);
+      if (selection && editor) {
+        editor.chain().focus().deleteSelection().insertContent(replacement.trim()).run();
+        handleContentChange(editor.getHTML());
       } else {
-        handleContentChange(replacement.trim());
+        const html = mdToHtml(replacement.trim());
+        editor?.commands.setContent(html);
+        handleContentChange(html);
       }
 
     } catch (err) {
@@ -855,11 +947,6 @@ export function AssistantRoot() {
       setIsAiWorking(false);
       setIsSavedIndicator("assistant.saved");
     }
-  };
-
-  const replaceSelectedText = (replacement: string, start: number, end: number) => {
-    const newVal = editorContent.substring(0, start) + replacement + editorContent.substring(end);
-    handleContentChange(newVal);
   };
 
   // Simulated Quick Actions
@@ -1051,42 +1138,32 @@ export function AssistantRoot() {
 
   // Copy document text
   const copyToClipboard = () => {
-    navigator.clipboard.writeText(editorContent);
+    navigator.clipboard.writeText(editor?.getText() || editorContent);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
   // Formatting helpers
   const wrapSelectedText = (tag: 'b' | 'i') => {
-    const textarea = document.getElementById('canvas-textarea') as HTMLTextAreaElement;
-    if (!textarea) return;
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const text = textarea.value;
-    const selected = text.substring(start, end);
-    
-    let replacement = '';
-    if (tag === 'b') replacement = `**${selected}**`;
-    if (tag === 'i') replacement = `*${selected}*`;
-
-    const newVal = text.substring(0, start) + replacement + text.substring(end);
-    handleContentChange(newVal);
+    if (!editor) return;
+    if (tag === 'b') editor.chain().focus().toggleBold().run();
+    if (tag === 'i') editor.chain().focus().toggleItalic().run();
+    handleContentChange(editor.getHTML());
   };
 
   const insertHeading = (level: string) => {
-    const textarea = document.getElementById('canvas-textarea') as HTMLTextAreaElement;
-    if (!textarea) return;
-    const start = textarea.selectionStart;
-    const text = textarea.value;
-    
-    let prefix = '';
-    if (level === 'h1') prefix = '\n# ';
-    if (level === 'h2') prefix = '\n## ';
-    if (level === 'h3') prefix = '\n### ';
-
-    const newVal = text.substring(0, start) + prefix + text.substring(start);
-    handleContentChange(newVal);
+    if (!editor) return;
+    if (level === 'normal') {
+      editor.chain().focus().setParagraph().run();
+    } else if (level === 'h1') {
+      editor.chain().focus().toggleHeading({ level: 1 }).run();
+    } else if (level === 'h2') {
+      editor.chain().focus().toggleHeading({ level: 2 }).run();
+    } else if (level === 'h3') {
+      editor.chain().focus().toggleHeading({ level: 3 }).run();
+    }
     setHeadingFormat(level);
+    handleContentChange(editor.getHTML());
   };
 
   // Export functions
@@ -1100,10 +1177,16 @@ export function AssistantRoot() {
     if (format === 'markdown') {
       mime = 'text/markdown';
       ext = 'md';
+      data = editorContent;
+    } else if (format === 'txt') {
+      mime = 'text/plain';
+      ext = 'txt';
+      data = editor?.getText() || editorContent;
     } else if (format === 'html') {
       mime = 'text/html';
       ext = 'html';
-      data = `<html><head><meta charset="UTF-8"><title>${editorTitle}</title><style>body{font-family:system-ui,sans-serif;max-width:800px;margin:40px auto;padding:0 20px;line-height:1.7;color:#26251e}h1,h2,h3{font-weight:700}</style></head><body><h1>${editorTitle}</h1>${editorContent.replace(/\n/g, '<br/>')}</body></html>`;
+      const htmlBody = editor?.getHTML() || editorContent;
+      data = `<html><head><meta charset="UTF-8"><title>${editorTitle}</title><style>body{font-family:system-ui,sans-serif;max-width:800px;margin:40px auto;padding:0 20px;line-height:1.7;color:#26251e}h1,h2,h3{font-weight:700}</style></head><body><h1>${editorTitle}</h1>${htmlBody}</body></html>`;
     }
 
     const blob = new Blob([data], { type: mime });
@@ -1121,18 +1204,40 @@ export function AssistantRoot() {
     try {
       const { createClient } = await import('@/lib/supabase/client');
       const supabase = createClient();
-      await supabase.from('library_assets').insert({
+      await supabase.from('library_documents').insert({
         user_id: user.id,
         workspace_id: activeWorkspace.id,
-        type: 'document',
+        type: 'markdown',
         title: lastExportedContent.title,
         content: lastExportedContent.content,
-        created_at: new Date().toISOString(),
+        is_shared: false,
+        folder_name: libraryFolderName || null,
       });
     } catch {
       // Library table may not exist yet — silent fail
     }
     setShowSaveToLibraryPrompt(false);
+  };
+
+  const handleDirectSaveToLibrary = async () => {
+    if (!user?.id || !activeWorkspace?.id) return;
+    const content = editor?.getHTML() || editorContent;
+    try {
+      const { createClient } = await import('@/lib/supabase/client');
+      const supabase = createClient();
+      await supabase.from('library_documents').insert({
+        user_id: user.id,
+        workspace_id: activeWorkspace.id,
+        type: 'markdown',
+        title: editorTitle || 'Document sans titre',
+        content,
+        is_shared: false,
+        folder_name: libraryFolderName || null,
+      });
+    } catch {
+      // silent fail
+    }
+    setShowLibraryDropdown(false);
   };
 
   return (
@@ -1170,6 +1275,10 @@ export function AssistantRoot() {
         }
         .animate-scale-up {
           animation: scaleUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+        @keyframes shimmer {
+          0% { background-position: 200% center; }
+          100% { background-position: -200% center; }
         }
       `}</style>
       
@@ -1515,42 +1624,73 @@ export function AssistantRoot() {
               /* Active message feed container */
               <div className="p-4 space-y-6">
                 {messages.map((msg, i) => (
-                  <div 
-                    key={i} 
-                    className={`flex gap-3 max-w-[85%] animate-fade-in-up ${
-                      msg.role === 'user' ? 'ml-auto flex-row-reverse' : 'mr-auto'
-                    }`}
-                  >
-                    {msg.role === 'assistant' ? (
-                      <div className="h-7 w-7 rounded-lg bg-neutral-100 border border-neutral-200 text-[#10b981] flex items-center justify-center shrink-0 mt-0.5">
-                        <MinervaIcon size={16} />
-                      </div>
-                    ) : (
-                      <div className="h-7 w-7 rounded-full bg-[#26251e] text-white flex items-center justify-center shrink-0 text-[10px] font-bold mt-0.5 select-none">
-                        U
+                  <React.Fragment key={i}>
+                    {checkpoints.includes(i) && (
+                      <div className="flex items-center gap-2 py-2">
+                        <div className="flex-1 border-t border-dashed border-[#059669]/40" />
+                        <div className="flex items-center gap-1.5 px-2 py-1 bg-emerald-50 border border-emerald-200 rounded-full">
+                          <Bookmark className="h-3 w-3 text-[#059669]" />
+                          <span className="text-[9px] font-bold text-[#059669]">Point de contrôle</span>
+                          <button
+                            onClick={() => setMessages(prev => prev.slice(0, i))}
+                            className="text-[9px] font-bold text-[#059669] underline hover:no-underline ml-1"
+                          >
+                            Restaurer
+                          </button>
+                        </div>
+                        <div className="flex-1 border-t border-dashed border-[#059669]/40" />
                       </div>
                     )}
+                    <div
+                      className={`group relative flex gap-3 max-w-[85%] animate-fade-in-up ${
+                        msg.role === 'user' ? 'ml-auto flex-row-reverse' : 'mr-auto'
+                      }`}
+                    >
+                      {msg.role === 'assistant' ? (
+                        <div className="h-7 w-7 rounded-lg bg-neutral-100 border border-neutral-200 text-[#10b981] flex items-center justify-center shrink-0 mt-0.5">
+                          <MinervaIcon size={16} />
+                        </div>
+                      ) : (
+                        <div className="h-7 w-7 rounded-full bg-[#26251e] text-white flex items-center justify-center shrink-0 text-[10px] font-bold mt-0.5 select-none">
+                          U
+                        </div>
+                      )}
 
-                    <div className={`rounded-2xl px-4 py-2.5 shadow-none ${
-                      msg.role === 'user'
-                        ? 'bg-neutral-50 text-[#26251e] border border-[#e6e5e0] rounded-tr-none'
-                        : 'bg-white text-foreground rounded-tl-none border-0'
-                    }`}>
-                      {renderMessageContent(msg, i)}
+                      <div className={`rounded-2xl px-4 py-2.5 shadow-none ${
+                        msg.role === 'user'
+                          ? 'bg-neutral-50 text-[#26251e] border border-[#e6e5e0] rounded-tr-none'
+                          : 'bg-white text-foreground rounded-tl-none border-0'
+                      }`}>
+                        {renderMessageContent(msg, i)}
+                      </div>
+
+                      {msg.role === 'assistant' && (
+                        <button
+                          onClick={() => setCheckpoints(prev => prev.includes(i) ? prev.filter(x => x !== i) : [...prev, i])}
+                          className="absolute -right-8 top-1 opacity-0 group-hover:opacity-100 h-6 w-6 rounded-full bg-white border border-neutral-200 hover:border-[#059669] hover:text-[#059669] text-neutral-400 flex items-center justify-center transition-all"
+                          title="Créer un point de contrôle"
+                        >
+                          <Bookmark className="h-3 w-3" />
+                        </button>
+                      )}
                     </div>
-                  </div>
+                  </React.Fragment>
                 ))}
 
                 {isLoading && (
                   <div className="flex gap-3 max-w-[85%] mr-auto items-center">
-                    <div className="h-7 w-7 rounded-lg bg-neutral-100 border border-neutral-200 text-[#10b981] flex items-center justify-center shrink-0 animate-pulse">
+                    <div className="h-7 w-7 rounded-lg bg-emerald-50 border border-emerald-200 text-[#059669] flex items-center justify-center shrink-0 animate-pulse">
                       <MinervaIcon size={16} />
                     </div>
                     <div className="bg-white border-0 rounded-2xl rounded-tl-none px-4 py-2.5">
-                      <div className="flex items-center gap-1.5">
-                        <span className="w-1.5 h-1.5 rounded-full bg-neutral-400 animate-bounce" />
-                        <span className="w-1.5 h-1.5 rounded-full bg-neutral-400 animate-bounce delay-100" />
-                        <span className="w-1.5 h-1.5 rounded-full bg-neutral-400 animate-bounce delay-200" />
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-semibold text-muted-foreground" style={{
+                          background: 'linear-gradient(90deg, #059669 0%, #10b981 50%, #059669 100%)',
+                          backgroundSize: '200% auto',
+                          WebkitBackgroundClip: 'text',
+                          WebkitTextFillColor: 'transparent',
+                          animation: 'shimmer 1.5s linear infinite',
+                        }}>Minerva réfléchit...</span>
                       </div>
                     </div>
                   </div>
@@ -1772,12 +1912,34 @@ export function AssistantRoot() {
 
       {/* ── RIGHT PANEL: CANVAS DOCUMENT EDITOR (SPLIT VIEW) ── */}
       {isCanvasOpen && (
-        <div className={`h-full bg-white flex flex-col z-50 transition-all duration-300 animate-scale-up ${
-          'fixed inset-0 md:relative md:flex-grow md:flex md:w-[60%] border-t border-[#e6e5e0] md:border-t-0'
-        }`}>
+        <div
+          className={`bg-white flex flex-col z-50 transition-all duration-300 animate-scale-up ${
+            isCanvasFloating
+              ? ''
+              : 'h-full fixed inset-0 md:relative md:flex-grow md:flex md:w-[60%] border-t border-[#e6e5e0] md:border-t-0'
+          }`}
+          style={isCanvasFloating ? {
+            position: 'fixed',
+            top: canvasFloatPos.y,
+            left: canvasFloatPos.x,
+            width: 720,
+            maxHeight: '90vh',
+            borderRadius: 16,
+            boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)',
+            zIndex: 200,
+            border: '1px solid #e6e5e0',
+            overflow: 'hidden',
+          } : undefined}
+        >
           
           {/* Canvas editor Header toolbar */}
-          <header className="h-14 border-b border-[#e6e5e0]/60 px-4 flex items-center justify-between bg-white shrink-0">
+          <header
+            className="h-14 border-b border-[#e6e5e0]/60 px-4 flex items-center justify-between bg-white shrink-0"
+            style={isCanvasFloating ? { cursor: 'move', userSelect: 'none' } : undefined}
+            onPointerDown={isCanvasFloating ? handleCanvasPointerDown : undefined}
+            onPointerMove={isCanvasFloating ? handleCanvasPointerMove : undefined}
+            onPointerUp={isCanvasFloating ? handleCanvasPointerUp : undefined}
+          >
             <div className="flex items-center gap-3 min-w-0">
               <button 
                 onClick={() => setIsCanvasOpen(false)}
@@ -1803,7 +1965,47 @@ export function AssistantRoot() {
 
             {/* Canvas Action Bar */}
             <div className="flex items-center gap-1.5 shrink-0">
-              
+
+              {/* Détacher / Ancrer button */}
+              <button
+                onClick={() => setIsCanvasFloating(f => !f)}
+                className="h-7 px-2.5 rounded-full bg-neutral-50 hover:bg-neutral-100 text-[#555552] text-[10px] font-bold flex items-center gap-1.5 transition-all border border-neutral-100/60"
+                title={isCanvasFloating ? 'Ancrer' : 'Détacher'}
+              >
+                <Maximize2 className="h-3.5 w-3.5" />
+                <span>{isCanvasFloating ? 'Ancrer' : 'Détacher'}</span>
+              </button>
+
+              {/* Bibliothèque button with folder dropdown */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowLibraryDropdown(d => !d)}
+                  className="h-7 px-2.5 rounded-full bg-neutral-50 hover:bg-neutral-100 text-[#555552] text-[10px] font-bold flex items-center gap-1.5 transition-all border border-neutral-100/60"
+                  title="Sauvegarder dans la Bibliothèque"
+                >
+                  <Bookmark className="h-3.5 w-3.5" />
+                  <span>Bibliothèque</span>
+                </button>
+                {showLibraryDropdown && (
+                  <div className="absolute right-0 top-8 z-50 bg-white border border-[#e6e5e0] rounded-xl p-3 shadow-lg w-56 animate-scale-up">
+                    <p className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground mb-2">Dossier (optionnel)</p>
+                    <input
+                      type="text"
+                      value={libraryFolderName}
+                      onChange={e => setLibraryFolderName(e.target.value)}
+                      placeholder="Sans dossier"
+                      className="w-full text-[11px] border border-neutral-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-[#059669] mb-2"
+                    />
+                    <button
+                      onClick={handleDirectSaveToLibrary}
+                      className="w-full py-1.5 text-[11px] font-bold bg-[#059669] text-white rounded-lg hover:bg-[#047857] transition-colors"
+                    >
+                      Sauvegarder
+                    </button>
+                  </div>
+                )}
+              </div>
+
               {/* Actions IA */}
               <div className="relative">
                 <button
@@ -1974,12 +2176,28 @@ export function AssistantRoot() {
           <div className="flex-grow overflow-y-auto p-8 md:p-12 min-h-0 bg-white flex flex-row">
             {/* Editor Textarea styled like a premium doc page */}
             <div className="max-w-2xl mx-auto w-full h-full flex flex-col">
-              <textarea
-                id="canvas-textarea"
-                value={editorContent}
-                onChange={(e) => handleContentChange(e.target.value)}
-                placeholder={t('assistant.editor_placeholder')}
-                className={`w-full flex-1 border-0 resize-none outline-none focus:outline-none focus:ring-0 leading-relaxed text-[#26251e] font-sans placeholder:text-neutral-300 ${canvasFontSize === 'sm' ? 'text-xs' : canvasFontSize === 'lg' ? 'text-base' : 'text-sm'}`}
+              <style>{`
+                .ProseMirror { outline: none; min-height: 400px; }
+                .ProseMirror p.is-editor-empty:first-child::before {
+                  content: attr(data-placeholder);
+                  color: #d4d4d4;
+                  float: left;
+                  height: 0;
+                  pointer-events: none;
+                }
+                .ProseMirror h1 { font-size: 1.5rem; font-weight: 800; margin: 1rem 0 0.5rem; }
+                .ProseMirror h2 { font-size: 1.25rem; font-weight: 700; margin: 0.875rem 0 0.4rem; }
+                .ProseMirror h3 { font-size: 1rem; font-weight: 700; margin: 0.75rem 0 0.3rem; }
+                .ProseMirror ul { list-style: disc; padding-left: 1.5rem; margin: 0.5rem 0; }
+                .ProseMirror ol { list-style: decimal; padding-left: 1.5rem; margin: 0.5rem 0; }
+                .ProseMirror code { background: #f3f4f6; color: #cf2d56; padding: 0.1rem 0.3rem; border-radius: 4px; font-size: 0.85em; }
+                .ProseMirror strong { font-weight: 700; }
+                .ProseMirror em { font-style: italic; }
+                .ProseMirror hr { border: none; border-top: 1px solid #e5e5e0; margin: 1rem 0; }
+              `}</style>
+              <EditorContent
+                editor={editor}
+                className={`w-full flex-1 text-[#26251e] ${canvasFontSize === 'sm' ? 'text-xs' : canvasFontSize === 'lg' ? 'text-base' : 'text-sm'}`}
               />
             </div>
 

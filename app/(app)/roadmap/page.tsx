@@ -48,7 +48,7 @@ const roadmapData: RoadmapItem[] = [
   { module: 'IA', feature: 'Script de pitch IA (Firecrawl)', desc: "Le panel Script dans la fiche lead scrape le site web du prospect et génère un pitch script de 60s personnalisé.", priority: 'high', status: 'available' },
   { module: 'IA', feature: 'Action pills contextuelles', desc: "7 pills d'action dans l'assistant déclenchent de vraies analyses CRM : pipeline, email, priorités, script, recherche, plan du jour, rapport.", priority: 'medium', status: 'available' },
 
-  { module: 'Canvas', feature: 'Éditeur riche TipTap + Export', desc: 'Canvas en éditeur WYSIWYG (style Word) avec export PDF, HTML et Markdown. Après export, proposition de déposer dans la Bibliothèque.', priority: 'high', status: 'available' },
+  { module: 'Canvas', feature: 'Éditeur WYSIWYG TipTap + fenêtre flottante + Bibliothèque', desc: 'Canvas en éditeur WYSIWYG (style Word/Notion) : boutons Gras/Italique/Titres, pas de Markdown visible. Fenêtre flottante déplaçable (Détacher/Ancrer). Sauvegarde directe dans la Bibliothèque avec dossier. Points de contrôle de conversation.', priority: 'high', status: 'available' },
   { module: 'Services', feature: 'Page Services & Tarifs', desc: 'Catalogue de prestations, packages, grilles tarifaires et devis. Conforme à la charte (vert).', priority: 'medium', status: 'available' },
   { module: 'Équipes', feature: 'Invitations via lien (sans SMTP)', desc: "Lien d'invitation sécurisé, sans configuration email requise.", priority: 'high', status: 'available' },
   { module: 'Équipes', feature: 'Quitter une équipe', desc: "Un membre peut quitter un workspace ; accès révoqué immédiatement.", priority: 'medium', status: 'available' },
@@ -112,6 +112,19 @@ interface PhaseVerification {
 }
 
 const VERIFICATIONS: PhaseVerification[] = [
+  {
+    phase: 'Phase 24 — Canvas WYSIWYG + fenêtre flottante + Bibliothèque + IA améliorée',
+    version: 'v3.24.0',
+    date: '2026-06-22',
+    checks: [
+      'Ouvrir /assistant — demander à l\'IA de générer un document (ex: « écris un email de prospection »). Le Canvas s\'ouvre avec du texte mis en forme (pas de symboles ## ou **).',
+      'Dans le Canvas : sélectionner du texte et cliquer Gras (B) → le texte est en gras. Cliquer Italique → italique. Choisir un format de titre → titre appliqué.',
+      'Cliquer « Détacher » dans l\'en-tête du Canvas → la fenêtre devient un overlay flottant. La faire glisser par son en-tête → elle se déplace. Cliquer « Ancrer » → retour au panneau latéral.',
+      'Cliquer « Bibliothèque » dans l\'en-tête du Canvas → entrer un nom de dossier (ou laisser vide) → sauvegarder. Aller sur /library → le document est visible.',
+      'Durant la génération IA : l\'indicateur affiche le logo Minerva pulsant + texte « Minerva réfléchit… » avec effet shimmer (plus de simples points).',
+      'Survoler un message assistant → icône marque-page apparaît → cliquer → un séparateur checkpoint s\'affiche. Cliquer « Restaurer » → la conversation revient à cet état.',
+    ],
+  },
   {
     phase: 'Phase 23 — Intégrations Slack & Notion',
     version: 'v3.23.0',

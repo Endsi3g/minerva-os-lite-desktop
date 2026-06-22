@@ -18,6 +18,19 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v3.24.0',
+      date: '2026-06-22 · 16h00',
+      titleKey: 'changelog.v3_24_0_title' as TranslationKey,
+      descKey: 'changelog.v3_24_0_desc' as TranslationKey,
+      highlights: [
+        "Canvas WYSIWYG (TipTap) — L'éditeur Canvas est maintenant un vrai éditeur de texte riche style Word/Notion : boutons Gras, Italique, Titres fonctionnent sans écrire une seule ligne de Markdown. Le Markdown généré par l'IA est converti automatiquement en mise en forme.",
+        "Fenêtre flottante — Bouton « Détacher » dans l'en-tête du Canvas : la fenêtre devient un overlay flottant déplaçable par glisser-déposer. « Ancrer » la ramène à sa position initiale.",
+        "Sauvegarde directe dans la Bibliothèque — Bouton « Bibliothèque » dans l'en-tête : enregistre le document dans /library avec choix du dossier, sans avoir à exporter d'abord.",
+        "Indicateur de réflexion animé — L'icône Minerva pulse et un texte shimmer « Minerva réfléchit… » remplace les simples points pendant la génération IA.",
+        "Points de contrôle — Icône marque-page sur chaque message assistant : créer un checkpoint et restaurer la conversation à cet état en un clic.",
+      ],
+    },
+    {
       version: 'v3.23.0',
       date: '2026-06-22 · 14h30',
       titleKey: 'changelog.v3_23_0_title' as TranslationKey,
