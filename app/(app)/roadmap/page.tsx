@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useCallback } from 'react';
-import { Flag, CheckCircle2, Clock, Lightbulb, Archive, Copy, Check } from 'lucide-react';
+import { Flag, CheckCircle2, Clock, Lightbulb, Archive, Copy, Check, ClipboardCheck, Square } from 'lucide-react';
 import { useLanguage } from '@/lib/language-context';
 import { TranslationKey } from '@/lib/translations';
 import { Badge } from '@/components/ui/badge';
@@ -77,6 +77,30 @@ const roadmapData: RoadmapItem[] = [
   { module: 'Terrain', feature: 'Notifications équipe après visite', desc: "Après un compte-rendu de visite terrain, notifier les membres de l'équipe dans l'app avec le résultat et les prochaines étapes.", priority: 'medium', status: 'backlog' },
   { module: 'Plateforme', feature: 'Audit log admin', desc: "Journal d'audit des actions : qui a modifié quoi, quand. Visible uniquement par l'owner.", priority: 'medium', status: 'backlog' },
   { module: 'Analytics', feature: 'Reporting avancé', desc: 'Cohortes, velocity pipeline, source attribution, performance par playbook et séquence.', priority: 'low', status: 'backlog' },
+];
+
+// ── Manual verification checklist, accumulated per release phase ──────────────
+interface PhaseVerification {
+  phase: string;
+  version: string;
+  date: string;
+  checks: string[];
+}
+
+const VERIFICATIONS: PhaseVerification[] = [
+  {
+    phase: 'Phase 1 — Mode Terrain : compte-rendu enrichi',
+    version: 'v3.1.0',
+    date: '2026-06-22',
+    checks: [
+      "Ouvrir une tournée terrain → un lead → « Enregistrer » : la page défile jusqu'en bas et le bouton Confirmer est atteignable.",
+      'Choisir un résultat (Visité / Absent / RDV / Non intéressé) : les champs de contexte apparaissent.',
+      'Remplir « Contact rencontré », choisir un niveau d\'intérêt (Chaud/Tiède/Froid).',
+      'Ajouter une photo preuve (caméra ou fichier) : l\'aperçu s\'affiche et peut être supprimé.',
+      'Confirmer : retour à la tournée, et les autres membres reçoivent une notification avec le résultat + contexte.',
+      "Exécuter supabase_migration_v310.sql dans Supabase pour activer contact_met / interest_level / proof_image.",
+    ],
+  },
 ];
 
 const PRIORITY_STYLES: Record<Priority, string> = {
@@ -224,7 +248,7 @@ export default function RoadmapPage() {
 
         {/* Tabs */}
         <Tabs defaultValue="in_progress">
-          <TabsList className="w-full h-9 bg-muted/50 grid grid-cols-4">
+          <TabsList className="w-full h-9 bg-muted/50 grid grid-cols-5">
             {tabs.map(tab => {
               const { icon: Icon, label } = STATUS_CONFIG[tab.key];
               return (
@@ -237,6 +261,13 @@ export default function RoadmapPage() {
                 </TabsTrigger>
               );
             })}
+            <TabsTrigger value="verification" className="text-xs gap-1.5">
+              <ClipboardCheck className="h-3 w-3" />
+              <span className="hidden sm:inline">Vérification</span>
+              <Badge variant="secondary" className="text-[9px] px-1.5 py-0 h-4 font-bold">
+                {VERIFICATIONS.length}
+              </Badge>
+            </TabsTrigger>
           </TabsList>
 
           {tabs.map(tab => (
@@ -250,6 +281,34 @@ export default function RoadmapPage() {
               )}
             </TabsContent>
           ))}
+
+          {/* Manual verification checklist per release phase */}
+          <TabsContent value="verification" className="mt-4 space-y-4">
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Vérifications manuelles à effectuer après chaque phase déployée. Cochez mentalement chaque point pour valider la release.
+            </p>
+            {VERIFICATIONS.map((v, i) => (
+              <Card key={i} className="p-4 border-border bg-card/60 space-y-3">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <p className="text-sm font-semibold text-foreground">{v.phase}</p>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="text-[9px] font-bold px-2 py-0.5 border-[#059669]/30 bg-[#059669]/10 text-[#059669]">
+                      {v.version}
+                    </Badge>
+                    <span className="text-[10px] text-muted-foreground">{v.date}</span>
+                  </div>
+                </div>
+                <ul className="space-y-2">
+                  {v.checks.map((c, j) => (
+                    <li key={j} className="flex items-start gap-2 text-xs text-muted-foreground leading-relaxed">
+                      <Square className="h-3.5 w-3.5 shrink-0 mt-0.5 text-[#7a7a76]" />
+                      <span>{c}</span>
+                    </li>
+                  ))}
+                </ul>
+              </Card>
+            ))}
+          </TabsContent>
         </Tabs>
       </div>
     </div>

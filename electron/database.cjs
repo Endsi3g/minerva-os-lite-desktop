@@ -395,6 +395,10 @@ function initDb() {
     db.run(`CREATE INDEX IF NOT EXISTS idx_field_visits_route_plan_id ON field_visits(route_plan_id)`);
     db.run(`CREATE INDEX IF NOT EXISTS idx_field_visits_lead_id ON field_visits(lead_id)`);
     db.run(`CREATE INDEX IF NOT EXISTS idx_field_visits_sync_status ON field_visits(sync_status)`);
+    // v3.1.0 — richer field-visit context (Phase 1)
+    db.run(`ALTER TABLE field_visits ADD COLUMN contact_met TEXT DEFAULT NULL`, () => {});
+    db.run(`ALTER TABLE field_visits ADD COLUMN interest_level TEXT DEFAULT NULL`, () => {});
+    db.run(`ALTER TABLE field_visits ADD COLUMN proof_image TEXT DEFAULT NULL`, () => {});
 
     // v3.0.0 — campaigns enrichment (persona, sequence_config, goals, playbook_run_id)
     db.run(`ALTER TABLE campaigns ADD COLUMN persona_id TEXT DEFAULT NULL`, () => {});

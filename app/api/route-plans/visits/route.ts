@@ -14,6 +14,9 @@ export async function POST(request: NextRequest) {
       workspace_id,
       outcome,
       notes,
+      contact_met,
+      interest_level,
+      proof_image,
       visited_at,
       meeting_datetime,
     } = body;
@@ -22,22 +25,31 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    // 1. Insert the field visit
-    const { data: visit, error: visitErr } = await supabase
+    // 1. Insert the field visit (gracefully degrade if the richer columns are not migrated yet)
+    const baseRow: Record<string, unknown> = {
+      route_plan_id,
+      lead_id,
+      workspace_id: workspace_id || null,
+      outcome,
+      notes: notes || null,
+      visited_at: visited_at || new Date().toISOString(),
+      meeting_datetime: meeting_datetime || null,
+      deal_created: false,
+      follow_up_added: false,
+    };
+    let { data: visit, error: visitErr } = await supabase
       .from('field_visits')
-      .insert({
-        route_plan_id,
-        lead_id,
-        workspace_id: workspace_id || null,
-        outcome,
-        notes: notes || null,
-        visited_at: visited_at || new Date().toISOString(),
-        meeting_datetime: meeting_datetime || null,
-        deal_created: false,
-        follow_up_added: false,
-      })
+      .insert({ ...baseRow, contact_met: contact_met || null, interest_level: interest_level || null, proof_image: proof_image || null })
       .select()
       .single();
+    if (visitErr) {
+      // Columns may not exist yet (migration pending) — retry with base fields only
+      ({ data: visit, error: visitErr } = await supabase
+        .from('field_visits')
+        .insert(baseRow)
+        .select()
+        .single());
+    }
 
     if (visitErr) {
       return NextResponse.json({ error: visitErr.message }, { status: 500 });

@@ -18,6 +18,19 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v3.1.0',
+      date: '2026-06-22 · 00h16',
+      titleKey: 'changelog.v3_1_0_title' as TranslationKey,
+      descKey: 'changelog.v3_1_0_desc' as TranslationKey,
+      highlights: [
+        "Compte-rendu de visite (Mode Terrain) — La page « Enregistrer le passage » défile désormais entièrement : le bouton Confirmer est toujours atteignable (correctif du blocage de scroll).",
+        "Plus de contexte pour l'équipe — Ajout des champs « Contact rencontré » et « Niveau d'intérêt » (Chaud / Tiède / Froid) pour que chaque membre comprenne le résultat d'un passage.",
+        "Photo preuve — Possibilité de joindre une photo (devanture, carte de visite, contact) prise depuis la caméra ou importée, comme preuve de la visite.",
+        "Notification automatique de l'équipe — À la confirmation d'un passage, tous les membres reçoivent une notification résumant le résultat, le contact et la note.",
+        "Onglet Vérification dans la Roadmap — Nouvelle section listant les vérifications manuelles à faire après chaque phase de mise à jour.",
+      ],
+    },
+    {
       version: 'v3.0.0',
       date: '2026-06-22 · 00h08',
       titleKey: 'changelog.v3_0_0_title' as TranslationKey,
