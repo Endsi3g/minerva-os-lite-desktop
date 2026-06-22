@@ -44,3 +44,6 @@ dist/
 # hermes agent external repo
 /hermes-agent/
 
+
+# Local debug scratch files
+scratch-*.cjs
