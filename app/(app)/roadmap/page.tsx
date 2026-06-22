@@ -76,6 +76,12 @@ const roadmapData: RoadmapItem[] = [
   { module: 'Intégrations', feature: 'Slack (Webhook entrant)', desc: 'Notifications CRM poussées dans un canal Slack via un webhook entrant — configurable dans Paramètres → Intégrations.', priority: 'medium', status: 'available' },
   { module: 'Intégrations', feature: 'Notion (token + base)', desc: 'Connexion Notion par token d\'intégration + ID de base de données, pour exporter des documents Canvas vers Notion.', priority: 'medium', status: 'available' },
 
+  // ─── Available (v3.25.0) — Realtime, Edge & Push ─────────────────────
+  { module: 'Plateforme', feature: 'Supabase Realtime — Leads & Tâches', desc: 'Synchronisation live des leads et tâches via Supabase Realtime (INSERT/UPDATE/DELETE propagés instantanément sans rechargement).', priority: 'high', status: 'available' },
+  { module: 'Plateforme', feature: 'Présence en ligne des membres', desc: 'PresenceProvider + OnlineIndicator : détection des membres connectés au workspace avec page active et avatar.', priority: 'medium', status: 'available' },
+  { module: 'Plateforme', feature: 'Edge Runtime — Chat & Intégrations', desc: 'Routes /api/chat, /api/integrations/slack et /api/integrations/notion migrées en Edge Runtime Vercel (latence globale réduite).', priority: 'medium', status: 'available' },
+  { module: 'Plateforme', feature: 'Web Push Notifications', desc: 'Service worker sw.js + endpoint /api/push/subscribe (table push_subscriptions). Infrastructure prête pour envoyer des push system.', priority: 'medium', status: 'available' },
+
   // ─── Planned : Intégrations à activer (lourdes, planifiées) ───────────
   { module: 'Intégrations', feature: 'Microsoft SharePoint', desc: 'Export et stockage des documents et rapports clients sur SharePoint.', priority: 'low', status: 'planned' },
   { module: 'Intégrations', feature: 'Meeting recorder', desc: 'Capture et transcription automatique des réunions, liées aux fiches leads.', priority: 'low', status: 'planned' },
@@ -112,6 +118,21 @@ interface PhaseVerification {
 }
 
 const VERIFICATIONS: PhaseVerification[] = [
+  {
+    phase: 'Phase 25 — Temps Réel, Edge Functions & Notifications Push',
+    version: 'v3.25.0',
+    date: '2026-06-22',
+    checks: [
+      'Ouvrir deux onglets sur /leads. Dans l\'onglet A, créer un nouveau lead. L\'onglet B doit afficher le lead sans rechargement.',
+      'Dans l\'onglet A, modifier le statut d\'un lead. L\'onglet B doit refléter le changement instantanément.',
+      'Supprimer un lead depuis l\'onglet A : il disparaît de l\'onglet B sans rechargement.',
+      'Même test sur /tasks : créer, modifier, supprimer une tâche → propagation immédiate dans les autres onglets.',
+      'Vérifier dans Supabase Dashboard → Realtime → Inspector que les événements leads et tasks sont bien reçus.',
+      'Sur /api/chat (Vercel dashboard), vérifier que le runtime est "Edge" dans les détails de la fonction.',
+      'Sur /api/integrations/slack et /api/integrations/notion, confirmer le runtime Edge.',
+      'Executer supabase_migration_v3250.sql dans l\'éditeur SQL Supabase : table push_subscriptions créée, RLS actif, REPLICA IDENTITY FULL sur leads + tasks.',
+    ],
+  },
   {
     phase: 'Phase 24 — Canvas WYSIWYG + fenêtre flottante + Bibliothèque + IA améliorée',
     version: 'v3.24.0',

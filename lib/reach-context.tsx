@@ -1925,6 +1925,74 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
     return () => { channel.unsubscribe(); };
   }, [user]);
 
+  // Supabase Realtime subscription for leads (web only)
+  useEffect(() => {
+    const electronObj = typeof window !== 'undefined' && (window as any).electron ? (window as any).electron : null;
+    if (electronObj || !activeWorkspace?.id) return;
+    const supabase = createClient();
+    const channel = supabase.channel(`leads_rt_${activeWorkspace.id}`)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'leads',
+        filter: `workspace_id=eq.${activeWorkspace.id}`
+      }, (payload: { new: DbLead }) => {
+        setLeads(prev => [mapDbLeadToUi(payload.new as DbLead), ...prev]);
+      })
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'leads',
+        filter: `workspace_id=eq.${activeWorkspace.id}`
+      }, (payload: { new: DbLead }) => {
+        setLeads(prev => prev.map(l => l.id === (payload.new as DbLead).id ? mapDbLeadToUi(payload.new as DbLead) : l));
+      })
+      .on('postgres_changes', {
+        event: 'DELETE',
+        schema: 'public',
+        table: 'leads',
+        filter: `workspace_id=eq.${activeWorkspace.id}`
+      }, (payload: { old: { id: string } }) => {
+        setLeads(prev => prev.filter(l => l.id !== (payload.old as { id: string }).id));
+      })
+      .subscribe();
+    return () => { channel.unsubscribe(); };
+  }, [activeWorkspace?.id]);
+
+  // Supabase Realtime subscription for tasks (web only)
+  useEffect(() => {
+    const electronObj = typeof window !== 'undefined' && (window as any).electron ? (window as any).electron : null;
+    if (electronObj || !activeWorkspace?.id) return;
+    const supabase = createClient();
+    const channel = supabase.channel(`tasks_rt_${activeWorkspace.id}`)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'tasks',
+        filter: `workspace_id=eq.${activeWorkspace.id}`
+      }, (payload: { new: DbTask }) => {
+        setTasks(prev => [mapDbTaskToUi(payload.new as DbTask), ...prev]);
+      })
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'tasks',
+        filter: `workspace_id=eq.${activeWorkspace.id}`
+      }, (payload: { new: DbTask }) => {
+        setTasks(prev => prev.map(t => t.id === (payload.new as DbTask).id ? mapDbTaskToUi(payload.new as DbTask) : t));
+      })
+      .on('postgres_changes', {
+        event: 'DELETE',
+        schema: 'public',
+        table: 'tasks',
+        filter: `workspace_id=eq.${activeWorkspace.id}`
+      }, (payload: { old: { id: string } }) => {
+        setTasks(prev => prev.filter(t => t.id !== (payload.old as { id: string }).id));
+      })
+      .subscribe();
+    return () => { channel.unsubscribe(); };
+  }, [activeWorkspace?.id]);
+
   const addNotification = async (notif: Omit<AppNotification, 'id' | 'isRead' | 'createdAt' | 'updatedAt'>) => {
     if (!user) return;
     const id = crypto.randomUUID();

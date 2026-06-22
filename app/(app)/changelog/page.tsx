@@ -18,6 +18,19 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v3.25.0',
+      date: '2026-06-22 · 18h00',
+      titleKey: 'changelog.v3_25_0_title' as TranslationKey,
+      descKey: 'changelog.v3_25_0_desc' as TranslationKey,
+      highlights: [
+        "Leads & Tâches en temps réel — Supabase Realtime déclenche des mises à jour immédiates de vos leads et tâches sans rechargement de page : INSERT, UPDATE et DELETE propagés instantanément à tous les onglets ouverts (mode web uniquement).",
+        "Présence en ligne — Contexte PresenceProvider prêt à l'emploi : détection des membres connectés au workspace, avec page active et avatar. Le composant OnlineIndicator affiche les collègues en ligne dans la barre latérale.",
+        "Edge Runtime sur les routes clés — /api/chat, /api/integrations/slack et /api/integrations/notion tournent maintenant en Edge Runtime Vercel pour une latence globale réduite.",
+        "Web Push (Service Worker) — sw.js enregistré dans /public : gestion des événements push et notificationclick. L'endpoint /api/push/subscribe stocke les abonnements avec upsert (pas de doublons).",
+        "Migration SQL v3.25.0 — Nouvelle table push_subscriptions (RLS activé), REPLICA IDENTITY FULL sur leads et tasks pour activer les DELETE en Realtime.",
+      ],
+    },
+    {
       version: 'v3.24.0',
       date: '2026-06-22 · 16h00',
       titleKey: 'changelog.v3_24_0_title' as TranslationKey,
