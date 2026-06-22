@@ -18,6 +18,17 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v3.8.0',
+      date: '2026-06-22 · 01h19',
+      titleKey: 'changelog.v3_8_0_title' as TranslationKey,
+      descKey: 'changelog.v3_8_0_desc' as TranslationKey,
+      highlights: [
+        "Vérifications cochables — Dans la Roadmap, chaque vérification manuelle peut être marquée comme faite ; un compteur d'avancement s'affiche par phase (état sauvegardé).",
+        "Notifications relances IA — Une notification quotidienne signale les relances suggérées par l'intelligence comportementale (en plus du bilan hebdomadaire déjà notifié).",
+        "Documentation — CLAUDE.md mis à jour avec les nouvelles pages (Agenda, Skills, Inbox, Field) et le fonctionnement des jetons Google / fournisseurs IA.",
+      ],
+    },
+    {
       version: 'v3.7.0',
       date: '2026-06-22 · 01h14',
       titleKey: 'changelog.v3_7_0_title' as TranslationKey,

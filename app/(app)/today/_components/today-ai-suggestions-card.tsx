@@ -34,7 +34,7 @@ function suggestFor(lead: Lead): Suggestion | null {
 }
 
 export function TodayAiSuggestionsCard() {
-  const { leads, addTask, activeWorkspace } = useReach();
+  const { leads, addTask, addNotification, activeWorkspace } = useReach();
   const router = useRouter();
 
   const [autoInsights, setAutoInsights] = useState(false);
@@ -97,6 +97,22 @@ export function TodayAiSuggestionsCard() {
       .filter((s): s is Suggestion => s !== null)
       .slice(0, 5);
   }, [leads, autoFollowUps]);
+
+  // Notify the user once per day when follow-up suggestions are available
+  useEffect(() => {
+    if (!autoFollowUps || !activeWorkspace || suggestions.length === 0) return;
+    const dayKey = `minerva_followup_notif_${activeWorkspace.id}_${new Date().toISOString().slice(0, 10)}`;
+    if (localStorage.getItem(dayKey)) return;
+    localStorage.setItem(dayKey, '1');
+    addNotification({
+      userId: '',
+      workspaceId: activeWorkspace.id,
+      type: 'report',
+      title: 'Relances suggérées par l\'IA',
+      body: `${suggestions.length} prospect${suggestions.length > 1 ? 's' : ''} tiède/froid à relancer aujourd'hui.`,
+      link: '/today',
+    });
+  }, [autoFollowUps, activeWorkspace, suggestions, addNotification]);
 
   // Nothing enabled → render nothing
   if (!autoInsights && !autoFollowUps) return null;

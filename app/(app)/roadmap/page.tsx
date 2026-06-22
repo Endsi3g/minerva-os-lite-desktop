@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
-import { Flag, CheckCircle2, Clock, Lightbulb, Archive, Copy, Check, ClipboardCheck, Square } from 'lucide-react';
+import React, { useState, useCallback, useEffect } from 'react';
+import { Flag, CheckCircle2, Clock, Lightbulb, Archive, Copy, Check, ClipboardCheck, Square, CheckSquare } from 'lucide-react';
 import { useLanguage } from '@/lib/language-context';
 import { TranslationKey } from '@/lib/translations';
 import { Badge } from '@/components/ui/badge';
@@ -95,6 +95,17 @@ interface PhaseVerification {
 }
 
 const VERIFICATIONS: PhaseVerification[] = [
+  {
+    phase: 'Phase 8 — Vérifications cochables & notifications IA',
+    version: 'v3.8.0',
+    date: '2026-06-22',
+    checks: [
+      'Dans cet onglet, cliquer une vérification la coche (texte barré) ; le compteur N/Total se met à jour.',
+      'Recharger la page : les cases cochées restent cochées (persistées).',
+      'Avec « Suggérer des relances » actif et des leads tièdes/froids : une notification quotidienne apparaît dans la cloche.',
+      'Vérifier que CLAUDE.md liste les pages Agenda, Skills, Inbox, Field et les deux flux de jetons Google.',
+    ],
+  },
   {
     phase: 'Phase 7 — Mentions notifiées & images plein écran',
     version: 'v3.7.0',
@@ -266,6 +277,22 @@ export default function RoadmapPage() {
   const { t } = useLanguage();
   const [copied, setCopied] = useState(false);
 
+  // Persisted "done" state for manual verification checks (keyed by stable string)
+  const [checkedVerifs, setCheckedVerifs] = useState<Record<string, boolean>>({});
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('minerva_verif_checks');
+      if (stored) setCheckedVerifs(JSON.parse(stored));
+    } catch { /* ignore */ }
+  }, []);
+  const toggleVerif = useCallback((key: string) => {
+    setCheckedVerifs(prev => {
+      const next = { ...prev, [key]: !prev[key] };
+      try { localStorage.setItem('minerva_verif_checks', JSON.stringify(next)); } catch { /* ignore */ }
+      return next;
+    });
+  }, []);
+
   const byStatus = (status: RoadmapStatus) => roadmapData.filter(i => i.status === status);
 
   const handleCopyForAi = useCallback(async () => {
@@ -369,27 +396,50 @@ export default function RoadmapPage() {
             <p className="text-xs text-muted-foreground leading-relaxed">
               Vérifications manuelles à effectuer après chaque phase déployée. Cochez mentalement chaque point pour valider la release.
             </p>
-            {VERIFICATIONS.map((v, i) => (
-              <Card key={i} className="p-4 border-border bg-card/60 space-y-3">
-                <div className="flex items-center justify-between gap-2 flex-wrap">
-                  <p className="text-sm font-semibold text-foreground">{v.phase}</p>
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="text-[9px] font-bold px-2 py-0.5 border-[#059669]/30 bg-[#059669]/10 text-[#059669]">
-                      {v.version}
-                    </Badge>
-                    <span className="text-[10px] text-muted-foreground">{v.date}</span>
+            {VERIFICATIONS.map((v, i) => {
+              const total = v.checks.length;
+              const doneCount = v.checks.filter((_, j) => checkedVerifs[`${v.version}-${j}`]).length;
+              return (
+                <Card key={i} className="p-4 border-border bg-card/60 space-y-3">
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <p className="text-sm font-semibold text-foreground">{v.phase}</p>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className={cn(
+                        'text-[9px] font-bold px-2 py-0.5 border',
+                        doneCount === total
+                          ? 'border-[#059669]/30 bg-[#059669]/10 text-[#059669]'
+                          : 'border-border bg-muted text-muted-foreground',
+                      )}>
+                        {doneCount}/{total}
+                      </Badge>
+                      <Badge variant="outline" className="text-[9px] font-bold px-2 py-0.5 border-[#059669]/30 bg-[#059669]/10 text-[#059669]">
+                        {v.version}
+                      </Badge>
+                      <span className="text-[10px] text-muted-foreground">{v.date}</span>
+                    </div>
                   </div>
-                </div>
-                <ul className="space-y-2">
-                  {v.checks.map((c, j) => (
-                    <li key={j} className="flex items-start gap-2 text-xs text-muted-foreground leading-relaxed">
-                      <Square className="h-3.5 w-3.5 shrink-0 mt-0.5 text-[#7a7a76]" />
-                      <span>{c}</span>
-                    </li>
-                  ))}
-                </ul>
-              </Card>
-            ))}
+                  <ul className="space-y-1">
+                    {v.checks.map((c, j) => {
+                      const key = `${v.version}-${j}`;
+                      const done = !!checkedVerifs[key];
+                      return (
+                        <li key={j}>
+                          <button
+                            onClick={() => toggleVerif(key)}
+                            className="w-full flex items-start gap-2 text-xs leading-relaxed text-left rounded-md p-1 hover:bg-muted/40 transition-colors"
+                          >
+                            {done
+                              ? <CheckSquare className="h-3.5 w-3.5 shrink-0 mt-0.5 text-[#059669]" />
+                              : <Square className="h-3.5 w-3.5 shrink-0 mt-0.5 text-[#7a7a76]" />}
+                            <span className={cn(done ? 'text-muted-foreground line-through' : 'text-foreground')}>{c}</span>
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </Card>
+              );
+            })}
           </TabsContent>
         </Tabs>
       </div>

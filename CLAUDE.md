@@ -92,32 +92,42 @@ app/
   update-password/            # Password reset flow
   (app)/                      # Authenticated shell with sidebar layout
     layout.tsx                # Sidebar + topbar + ReachProvider + TooltipProvider
-    today/                    # Daily dashboard
-    leads/                    # Lead list (TanStack Table) + [id] detail
+    today/                    # Daily dashboard (incl. team activity feed + behavioral-intelligence card)
+    agenda/                   # Full calendar + appointment booking (pinned sidebar item)
+    leads/                    # Lead list (TanStack Table) + [id] detail (incl. website scraper)
     prospecting/              # Lead scraping UI
     pipeline/                 # Kanban + table views
+    inbox/                    # Gmail threads tied to leads (reads google_accounts/settings tokens)
+    field/                    # Field (terrain) mode: route → prepare → outcome
     intelligence/             # AI insights & summaries
-    settings/                 # Sectioned settings pages
-    team/                     # Team member management
+    assistant/                # AI chat + Canvas editor (canvas auto-opens via ```canvas: blocks)
+    skills/                   # AI Skills surface (packs + creator), wired into chat @ menu
+    settings/                 # Sectioned settings pages (incl. automations, AI provider)
+    team/                     # Team member management + team chat (mentions, images, lightbox)
     workspaces/               # Workspace CRUD
     agents/                   # Custom AI agents
     analytics/                # Analytics dashboard
-    chat/                     # AI chat interface
     integrations/             # Third-party connectors
     library/                  # Asset library
-    download/                 # App download page
+    roadmap/                  # Product roadmap + manual Verification checklist tab
     changelog/                # Release notes
   api/
-    auth/google/(login|callback)/   # Google OAuth for Gmail/Drive
-    auth/confirm-reset/             # Supabase PKCE password reset
-    chat/                           # AI chat (Anthropic SDK streaming)
-    generate-draft/                 # AI prospecting email draft generation
-    scrape-maps/                    # Lead scraping from Google Maps / OSM
-    send-email/                     # Gmail API send
-    export-drive/                   # Google Drive export
+    auth/google/(login|callback)/   # Google OAuth (settings.google_* token store)
+    google/auth/(start|callback)/   # Google OAuth (google_accounts/google_tokens store) — canonical for inbox/agenda
+    chat/                           # AI chat — provider cascade (anthropic | openrouter | groq | together); accepts `provider`, `system`
+    generate-draft/ generate-script/  # AI email/script generation (uses lead website_description)
+    scrape-maps/ scrape-website/    # Lead scraping (OSM) + website → AI description
+    send-email/ export-drive/       # Gmail send / Drive export
+    agenda/book/                    # Appointment side-effects (Google Calendar + Todoist)
+    notifications/team/             # Fan-out notifications to workspace (or specific recipientUserIds for @mentions)
+    insights/weekly/                # Weekly AI opportunity report (behavioral intelligence)
     team/(invite|members|role)/     # Team management (uses SUPABASE_SERVICE_ROLE_KEY)
     workspaces/                     # Workspace CRUD
 ```
+
+> **Google token stores (two flows):** `settings.google_*` (older, written by `app/api/auth/google/callback`) and `google_accounts`/`google_tokens` (newer, written by `lib/google/google-auth-service.exchangeCodeForTokens`, used by the connect button). Inbox routes read `settings.*` first then fall back to `getFreshAccessToken`/`getAuthStatus`. OAuth redirect URI on Vercel is `https://minerva-os-lite-desktop.vercel.app/api/google/auth/callback` (must be registered in Google Cloud Console).
+
+> **AI provider:** default is Anthropic. The global `OPENROUTER_API_KEY` env only activates OpenRouter when explicitly requested (`provider: 'openrouter'` or a per-user key), so Claude-model calls (field scripts, drafts) keep working. The assistant passes `selectedModel.provider`. Migrations live in `supabase_migration_v3*.sql` (run them in the Supabase SQL editor).
 
 ### Global State: ReachContext
 
