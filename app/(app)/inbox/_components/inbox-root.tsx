@@ -8,7 +8,7 @@ import { InboxDetail } from './inbox-detail';
 import type { InboxThread, ThreadMessage } from '@/lib/inbox-types';
 import type { Lead } from '@/lib/mock-data';
 import { createClient } from '@/lib/supabase/client';
-import { Mail } from 'lucide-react';
+import { Mail, Check } from 'lucide-react';
 
 type Filter = 'all' | 'positive' | 'followup' | 'negative';
 type ReplyStatus = 'positive' | 'followup' | 'negative' | null;
@@ -176,19 +176,19 @@ export function InboxRoot() {
               Planifiez des séquences d&apos;emails personnalisées et répondez en un clic via votre propre adresse.
             </p>
           </div>
-          <div className="bg-[#fafaf7] border border-[#e6e5e0] rounded-xl p-4 text-left space-y-2.5">
-            <div className="flex items-center gap-2.5 text-xs text-[#26251e]">
-              <span className="h-4.5 w-4.5 rounded-full bg-[#10b981]/15 text-[#10b981] flex items-center justify-center text-[10px] font-bold">✓</span>
-              <span>Synchronisation automatique des échanges</span>
-            </div>
-            <div className="flex items-center gap-2.5 text-xs text-[#26251e]">
-              <span className="h-4.5 w-4.5 rounded-full bg-[#10b981]/15 text-[#10b981] flex items-center justify-center text-[10px] font-bold">✓</span>
-              <span>Détection intelligente des réponses (Positif, À relancer, Négatif)</span>
-            </div>
-            <div className="flex items-center gap-2.5 text-xs text-[#26251e]">
-              <span className="h-4.5 w-4.5 rounded-full bg-[#10b981]/15 text-[#10b981] flex items-center justify-center text-[10px] font-bold">✓</span>
-              <span>Rédaction assistée par IA pour vos réponses</span>
-            </div>
+          <div className="bg-[#fafaf8] border border-[#e5e5e0] rounded-xl p-4 text-left space-y-2.5">
+            {[
+              'Synchronisation automatique des échanges',
+              'Détection intelligente des réponses (Positif, À relancer, Négatif)',
+              'Rédaction assistée par IA pour vos réponses',
+            ].map((line) => (
+              <div key={line} className="flex items-center gap-2.5 text-xs text-[#26251e]">
+                <span className="h-4.5 w-4.5 rounded-full bg-[#10b981]/15 text-[#10b981] flex items-center justify-center shrink-0">
+                  <Check className="h-2.5 w-2.5" />
+                </span>
+                <span>{line}</span>
+              </div>
+            ))}
           </div>
           <button
             onClick={() => {

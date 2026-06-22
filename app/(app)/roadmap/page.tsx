@@ -89,6 +89,18 @@ interface PhaseVerification {
 
 const VERIFICATIONS: PhaseVerification[] = [
   {
+    phase: 'Phase 3 — Boîte de réception',
+    version: 'v3.3.0',
+    date: '2026-06-22',
+    checks: [
+      'Connecter Google via le bouton de la boîte de réception (pack communication).',
+      'Recharger /inbox : la liste des fils Gmail liés à des leads s\'affiche (plus d\'écran « non connecté » alors que Google est connecté).',
+      'Ouvrir un fil : les messages se chargent et « Suggestions IA » propose des réponses.',
+      'Envoyer une réponse depuis l\'inbox : elle part via votre adresse Gmail.',
+      'Vérifier que l\'écran de connexion affiche des icônes (pas d\'emojis) et les bonnes couleurs.',
+    ],
+  },
+  {
     phase: 'Phase 2 — Agenda & prise de rendez-vous',
     version: 'v3.2.0',
     date: '2026-06-22',

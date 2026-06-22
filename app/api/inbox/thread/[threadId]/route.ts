@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { getFreshAccessToken, getAuthStatus } from '@/lib/google/google-auth-service';
 export type { ThreadMessage } from '@/lib/inbox-types';
 import type { ThreadMessage } from '@/lib/inbox-types';
 
@@ -79,18 +80,33 @@ export async function GET(
       .eq('user_id', user.id)
       .single();
 
-    if (!settings?.google_refresh_token) {
-      return NextResponse.json({ error: 'Gmail non connecté' }, { status: 400 });
+    let accessToken: string | null = settings?.google_access_token ?? null;
+    let userEmailResolved: string = settings?.google_email ?? '';
+
+    if (settings?.google_refresh_token) {
+      if (!accessToken || (settings.google_token_expires_at && new Date(settings.google_token_expires_at).getTime() - Date.now() < 300_000)) {
+        const refreshed = await refreshAccessToken(settings.google_refresh_token);
+        accessToken = refreshed.accessToken;
+        await supabase.from('settings').update({
+          google_access_token: refreshed.accessToken,
+          google_token_expires_at: refreshed.expiresAt,
+        }).eq('user_id', user.id);
+      }
+    } else {
+      try {
+        const status = await getAuthStatus(supabase, user.id);
+        if (!status.connected) {
+          return NextResponse.json({ error: 'Gmail non connecté' }, { status: 400 });
+        }
+        accessToken = await getFreshAccessToken(supabase, user.id);
+        userEmailResolved = status.email || userEmailResolved;
+      } catch {
+        return NextResponse.json({ error: 'Gmail non connecté' }, { status: 400 });
+      }
     }
 
-    let accessToken = settings.google_access_token;
-    if (!accessToken || (settings.google_token_expires_at && new Date(settings.google_token_expires_at).getTime() - Date.now() < 300_000)) {
-      const refreshed = await refreshAccessToken(settings.google_refresh_token);
-      accessToken = refreshed.accessToken;
-      await supabase.from('settings').update({
-        google_access_token: refreshed.accessToken,
-        google_token_expires_at: refreshed.expiresAt,
-      }).eq('user_id', user.id);
+    if (!accessToken) {
+      return NextResponse.json({ error: 'Gmail non connecté' }, { status: 400 });
     }
 
     const res = await fetch(
@@ -106,7 +122,7 @@ export async function GET(
     }
 
     const thread = await res.json();
-    const userEmail = settings.google_email || '';
+    const userEmail = userEmailResolved;
 
     const messages: ThreadMessage[] = (thread.messages || []).map((msg: any) => {
       const headers: { name: string; value: string }[] = msg.payload?.headers || [];

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { getFreshAccessToken, getAuthStatus } from '@/lib/google/google-auth-service';
 export type { InboxThread } from '@/lib/inbox-types';
 import type { InboxThread } from '@/lib/inbox-types';
 
@@ -93,19 +94,35 @@ export async function GET(req: NextRequest) {
       .eq('user_id', user.id)
       .single();
 
-    if (!settings?.google_refresh_token) {
-      return NextResponse.json({ threads: [], needsReauth: false, isConnected: false });
+    let accessToken: string | null = settings?.google_access_token ?? null;
+    let googleEmail: string = settings?.google_email ?? '';
+
+    if (settings?.google_refresh_token) {
+      // Legacy settings-based flow — refresh if expiring within 5 minutes
+      if (!accessToken || (settings.google_token_expires_at && new Date(settings.google_token_expires_at).getTime() - Date.now() < 300_000)) {
+        const refreshed = await refreshAccessToken(settings.google_refresh_token);
+        accessToken = refreshed.accessToken;
+        await supabase.from('settings').update({
+          google_access_token: refreshed.accessToken,
+          google_token_expires_at: refreshed.expiresAt,
+        }).eq('user_id', user.id);
+      }
+    } else {
+      // Newer google_accounts/google_tokens flow (used by the connect button)
+      try {
+        const status = await getAuthStatus(supabase, user.id);
+        if (!status.connected) {
+          return NextResponse.json({ threads: [], needsReauth: false, isConnected: false });
+        }
+        accessToken = await getFreshAccessToken(supabase, user.id);
+        googleEmail = status.email || googleEmail;
+      } catch {
+        return NextResponse.json({ threads: [], needsReauth: false, isConnected: false });
+      }
     }
 
-    // Refresh token if expiring within 5 minutes
-    let accessToken = settings.google_access_token;
-    if (!accessToken || (settings.google_token_expires_at && new Date(settings.google_token_expires_at).getTime() - Date.now() < 300_000)) {
-      const refreshed = await refreshAccessToken(settings.google_refresh_token);
-      accessToken = refreshed.accessToken;
-      await supabase.from('settings').update({
-        google_access_token: refreshed.accessToken,
-        google_token_expires_at: refreshed.expiresAt,
-      }).eq('user_id', user.id);
+    if (!accessToken) {
+      return NextResponse.json({ threads: [], needsReauth: false, isConnected: false });
     }
 
     const { data: leads } = await supabase
@@ -140,7 +157,7 @@ export async function GET(req: NextRequest) {
         if (messages.length < 2) return null; // No replies at all
 
         // Validate if at least one reply is a business message
-        const senderEmail = settings.google_email;
+        const senderEmail = googleEmail;
         const hasBusinessReply = messages.some((msg: any, idx: number) => {
           if (idx === 0) return false;
           const headers = msg.payload?.headers || [];

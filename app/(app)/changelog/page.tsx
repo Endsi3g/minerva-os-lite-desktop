@@ -18,6 +18,17 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v3.3.0',
+      date: '2026-06-22 · 00h29',
+      titleKey: 'changelog.v3_3_0_title' as TranslationKey,
+      descKey: 'changelog.v3_3_0_desc' as TranslationKey,
+      highlights: [
+        "Boîte de réception réparée — La page détectait mal la connexion Google : elle reconnaît maintenant les deux méthodes de connexion (ancienne et nouvelle), donc vos fils Gmail s'affichent dès que Google est connecté.",
+        "Lecture des fils — Le détail d'une conversation et les suggestions de réponse IA fonctionnent quel que soit le mode de connexion Google.",
+        "Conformité design — L'écran de connexion de la boîte de réception suit DESIGN.md (icônes au lieu d'emojis, jetons de couleurs unifiés).",
+      ],
+    },
+    {
       version: 'v3.2.0',
       date: '2026-06-22 · 00h22',
       titleKey: 'changelog.v3_2_0_title' as TranslationKey,
