@@ -18,6 +18,16 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v3.9.0',
+      date: '2026-06-22 · 01h23',
+      titleKey: 'changelog.v3_9_0_title' as TranslationKey,
+      descKey: 'changelog.v3_9_0_desc' as TranslationKey,
+      highlights: [
+        "Page dédiée de prise de rendez-vous — Le bouton « Nouveau RDV » ouvre désormais une page complète (/agenda/new) avec titre, date, heure, durée, lead associé, notes et options de synchronisation.",
+        "Conformité design — La page Agenda respecte la charte graphique (tokens de couleurs, rayons, typographie).",
+      ],
+    },
+    {
       version: 'v3.8.0',
       date: '2026-06-22 · 01h19',
       titleKey: 'changelog.v3_8_0_title' as TranslationKey,

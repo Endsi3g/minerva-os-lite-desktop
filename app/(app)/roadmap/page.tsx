@@ -96,6 +96,18 @@ interface PhaseVerification {
 
 const VERIFICATIONS: PhaseVerification[] = [
   {
+    phase: 'Phase 9 — Page de rendez-vous dédiée',
+    version: 'v3.9.0',
+    date: '2026-06-22',
+    checks: [
+      'Sur /agenda, cliquer « Nouveau RDV » ouvre la page dédiée /agenda/new (et non plus seulement la modale).',
+      'La date sélectionnée dans le calendrier est pré-remplie sur la page (paramètre ?date=).',
+      'Créer un RDV depuis la page : retour à /agenda, le RDV apparaît dans le jour concerné.',
+      'Les options Notifier l\'équipe / Google Agenda / Todoist fonctionnent comme dans la modale.',
+      'Vérifier que /agenda et /agenda/new respectent la charte (couleurs, rayons, typographie).',
+    ],
+  },
+  {
     phase: 'Phase 8 — Vérifications cochables & notifications IA',
     version: 'v3.8.0',
     date: '2026-06-22',

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import { useReach } from '@/lib/reach-context';
 import { getApiUrl } from '@/lib/api-helper';
 import { cn } from '@/lib/utils';
@@ -19,6 +20,7 @@ function ymd(d: Date): string {
 
 export function AgendaRoot() {
   const { tasks, addTask, leads, activeWorkspace } = useReach();
+  const router = useRouter();
 
   const today = new Date();
   const [viewYear, setViewYear] = useState(today.getFullYear());
@@ -156,7 +158,7 @@ export function AgendaRoot() {
             </div>
           </div>
           <button
-            onClick={() => openBooking(selectedDate)}
+            onClick={() => router.push(`/agenda/new?date=${selectedDate}`)}
             className="flex items-center gap-1.5 px-4 h-9 rounded-lg bg-[#f54e00] hover:bg-[#d94400] text-white text-xs font-bold transition-colors"
           >
             <Plus className="h-3.5 w-3.5" />
