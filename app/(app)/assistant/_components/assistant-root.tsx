@@ -28,7 +28,8 @@ import {
   Trash2, 
   ArrowUp,
   Paperclip,
-  Maximize2
+  Maximize2,
+  Database
 } from 'lucide-react';
 import { MinervaIcon } from '@/components/icons';
 import { useLanguage } from '@/lib/language-context';
@@ -201,9 +202,17 @@ const generateUniqueId = () => {
 };
 
 export function AssistantRoot() {
-  const { user, leads, activeWorkspace } = useReach();
+  const { user, leads, tasks, activeWorkspace } = useReach();
   const { t, locale } = useLanguage();
   const { enabledSkills } = useSkills(activeWorkspace?.id);
+
+  // CRM context options available in the @ menu
+  const CRM_CONTEXTS: { id: string; label: string }[] = [
+    { id: 'leads', label: 'Tous les leads' },
+    { id: 'pipeline', label: 'Pipeline (par statut)' },
+    { id: 'hot', label: 'Leads chauds' },
+    { id: 'tasks', label: 'Tâches en cours' },
+  ];
 
   // State Management
   const [messages, setMessages] = useState<Message[]>([]);
@@ -211,6 +220,7 @@ export function AssistantRoot() {
   // @ skills/context menu
   const [showAtMenu, setShowAtMenu] = useState(false);
   const [activeSkillIds, setActiveSkillIds] = useState<string[]>([]);
+  const [activeContextIds, setActiveContextIds] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedModel, setSelectedModel] = useState(AI_MODELS[0]);
   const [showModelDropdown, setShowModelDropdown] = useState(false);
@@ -572,9 +582,35 @@ export function AssistantRoot() {
       .filter(Boolean)
       .map(s => `### Compétence : ${s!.name}\n${s!.instructions}`)
       .join('\n\n');
-    const systemWithSkills = skillInstructions
-      ? `${canvasSystemPrompt}\n\n## Compétences activées\n${skillInstructions}`
-      : canvasSystemPrompt;
+
+    // Inject real CRM context (leads/pipeline/hot/tasks) for any @-selected context items
+    const buildContext = (id: string): string => {
+      if (id === 'leads') {
+        const sample = leads.slice(0, 30).map(l => `- ${l.businessName}${l.city ? ` (${l.city})` : ''} — ${l.status}${l.temperature ? `, ${l.temperature}` : ''}`).join('\n');
+        return `Leads (${leads.length} au total) :\n${sample}`;
+      }
+      if (id === 'pipeline') {
+        const byStatus: Record<string, number> = {};
+        leads.forEach(l => { byStatus[l.status] = (byStatus[l.status] || 0) + 1; });
+        return `Pipeline par statut : ${Object.entries(byStatus).map(([k, v]) => `${k}: ${v}`).join(', ')}.`;
+      }
+      if (id === 'hot') {
+        const hot = leads.filter(l => l.temperature === 'Hot');
+        return `Leads chauds (${hot.length}) :\n${hot.slice(0, 20).map(l => `- ${l.businessName}${l.city ? ` (${l.city})` : ''}`).join('\n') || 'aucun'}`;
+      }
+      if (id === 'tasks') {
+        const open = tasks.filter(t => !t.completed);
+        return `Tâches en cours (${open.length}) :\n${open.slice(0, 20).map(t => `- ${t.title}${t.dueDate ? ` (échéance ${t.dueDate})` : ''}`).join('\n') || 'aucune'}`;
+      }
+      return '';
+    };
+    const contextText = activeContextIds.map(buildContext).filter(Boolean).join('\n\n');
+
+    const systemWithSkills = [
+      canvasSystemPrompt,
+      skillInstructions ? `## Compétences activées\n${skillInstructions}` : '',
+      contextText ? `## Contexte CRM (données réelles du workspace)\n${contextText}` : '',
+    ].filter(Boolean).join('\n\n');
 
     try {
       // An attached image requires a vision-capable model — auto-use the vision
@@ -1544,8 +1580,8 @@ export function AssistantRoot() {
                   </div>
                 )}
 
-                {/* Active skill chips */}
-                {activeSkillIds.length > 0 && (
+                {/* Active skill + context chips */}
+                {(activeSkillIds.length > 0 || activeContextIds.length > 0) && (
                   <div className="flex flex-wrap gap-1.5 px-1">
                     {activeSkillIds.map(id => {
                       const sk = enabledSkills.find(s => s.id === id);
@@ -1555,6 +1591,19 @@ export function AssistantRoot() {
                           <Sparkles className="h-2.5 w-2.5" />
                           {sk.name}
                           <button onClick={() => setActiveSkillIds(prev => prev.filter(x => x !== id))} className="hover:opacity-70">
+                            <X className="h-2.5 w-2.5" />
+                          </button>
+                        </span>
+                      );
+                    })}
+                    {activeContextIds.map(id => {
+                      const ctx = CRM_CONTEXTS.find(c => c.id === id);
+                      if (!ctx) return null;
+                      return (
+                        <span key={id} className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#26251e]/8 text-[#26251e] border border-[#26251e]/15">
+                          <Database className="h-2.5 w-2.5" />
+                          {ctx.label}
+                          <button onClick={() => setActiveContextIds(prev => prev.filter(x => x !== id))} className="hover:opacity-70">
                             <X className="h-2.5 w-2.5" />
                           </button>
                         </span>
@@ -1590,6 +1639,25 @@ export function AssistantRoot() {
                           <p className="text-xs font-semibold text-[#26251e]">{sk.name}</p>
                           <p className="text-[10px] text-[#7a7a76] truncate">{sk.description}</p>
                         </div>
+                      </button>
+                    ))}
+                    <div className="px-3 py-1.5 text-[9px] font-bold uppercase tracking-wider text-[#7a7a76] border-y border-[#e5e5e0]/60 mt-1">
+                      Contexte CRM
+                    </div>
+                    {CRM_CONTEXTS.map(ctx => (
+                      <button
+                        key={ctx.id}
+                        type="button"
+                        onMouseDown={e => {
+                          e.preventDefault();
+                          setActiveContextIds(prev => prev.includes(ctx.id) ? prev : [...prev, ctx.id]);
+                          setInput(prev => prev.replace(/@\S*$/, '').trimEnd());
+                          setShowAtMenu(false);
+                        }}
+                        className="w-full flex items-start gap-2.5 px-3 py-2 text-left hover:bg-[#f4f4f3] transition-colors"
+                      >
+                        <Database className="h-3.5 w-3.5 text-[#26251e] shrink-0 mt-0.5" />
+                        <p className="text-xs font-semibold text-[#26251e]">{ctx.label}</p>
                       </button>
                     ))}
                   </div>

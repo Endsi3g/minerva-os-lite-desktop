@@ -93,8 +93,8 @@ const roadmapData: RoadmapItem[] = [
   // ─── Backlog ──────────────────────────────────────────────────────────
   { module: 'Plateforme', feature: 'Audit log admin', desc: "Journal d'audit des actions : qui a modifié quoi, quand. Visible uniquement par l'owner.", priority: 'medium', status: 'backlog' },
   { module: 'Analytics', feature: 'Reporting avancé', desc: 'Cohortes, velocity pipeline, source attribution, performance par playbook et séquence.', priority: 'low', status: 'backlog' },
-  { module: 'IA', feature: 'Skills partagées par workspace', desc: "Aujourd'hui les Skills sont par utilisateur ; permettre de les partager à toute l'équipe (vs personnelles).", priority: 'medium', status: 'backlog' },
-  { module: 'IA', feature: '@ contexte CRM dans le chat', desc: "Étendre le menu @ pour injecter du contexte CRM réel (leads, pipeline, leads chauds) en plus des compétences.", priority: 'medium', status: 'backlog' },
+  { module: 'IA', feature: 'Skills partagées par workspace', desc: "Compétences activées et personnalisées partagées au niveau du workspace (toute l'équipe).", priority: 'medium', status: 'available' },
+  { module: 'IA', feature: '@ contexte CRM dans le chat', desc: "Menu @ injectant du contexte CRM réel (leads, pipeline, leads chauds, tâches) en plus des compétences.", priority: 'medium', status: 'available' },
   { module: 'Agenda', feature: 'Vue semaine / jour + créneaux', desc: 'Vues hebdomadaire et journalière avec créneaux horaires, glisser-déposer des RDV.', priority: 'medium', status: 'backlog' },
   { module: 'Terrain', feature: 'Galerie des preuves de visite', desc: 'Regrouper les photos preuves par lead/tournée et les rendre consultables par l\'équipe.', priority: 'low', status: 'backlog' },
   { module: 'Qualité', feature: 'Réécriture des refs React Compiler', desc: 'Corriger réellement les ~220 avertissements react-hooks/refs (actuellement désactivés) plutôt que de les masquer.', priority: 'low', status: 'backlog' },
@@ -110,6 +110,18 @@ interface PhaseVerification {
 }
 
 const VERIFICATIONS: PhaseVerification[] = [
+  {
+    phase: 'Phase 19 — Skills d\'équipe & @ contexte CRM',
+    version: 'v3.19.0',
+    date: '2026-06-22',
+    checks: [
+      'Exécuter supabase_migration_v380.sql (RLS workspace + unicité workspace+skill).',
+      'Activer une compétence depuis le compte A ; depuis le compte B (même workspace), elle apparaît activée.',
+      "Dans l'Assistant, taper @ : le menu affiche aussi une section « Contexte CRM ».",
+      'Sélectionner « Pipeline » ou « Leads chauds » : une puce apparaît et la réponse IA tient compte des données réelles.',
+      'Retirer une puce de contexte (×) avant d\'envoyer.',
+    ],
+  },
   {
     phase: 'Phase 18 — Roadmap à jour',
     version: 'v3.18.0',

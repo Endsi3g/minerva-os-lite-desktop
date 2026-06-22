@@ -36,11 +36,12 @@ export function useSkills(workspaceId?: string) {
         if (!user) { setLoaded(true); return; }
         userIdRef.current = user.id;
 
+        // Shared by workspace: read all rows for this workspace (any member),
+        // not just the current user's rows.
         let query = supabase
           .from('workspace_skills')
-          .select('skill_id, name, description, instructions, is_custom, enabled')
-          .eq('user_id', user.id);
-        query = workspaceId ? query.eq('workspace_id', workspaceId) : query.is('workspace_id', null);
+          .select('skill_id, name, description, instructions, is_custom, enabled');
+        query = workspaceId ? query.eq('workspace_id', workspaceId) : query.is('workspace_id', null).eq('user_id', user.id);
         const { data } = await query;
         const rows = (data as SkillRow[] | null) ?? [];
 
@@ -55,7 +56,7 @@ export function useSkills(workspaceId?: string) {
             is_custom: false,
             enabled: true,
           }));
-          await supabase.from('workspace_skills').upsert(seed, { onConflict: 'user_id,workspace_id,skill_id' });
+          await supabase.from('workspace_skills').upsert(seed, { onConflict: 'workspace_id,skill_id' });
           setEnabledIds(DEFAULT_ENABLED);
           setCustomSkills([]);
         } else {
@@ -98,7 +99,7 @@ export function useSkills(workspaceId?: string) {
         enabled: willEnable,
         ...(builtIn ? { name: builtIn.name, description: builtIn.description, instructions: builtIn.instructions } : {}),
         updated_at: new Date().toISOString(),
-      }, { onConflict: 'user_id,workspace_id,skill_id' });
+      }, { onConflict: 'workspace_id,skill_id' });
     } catch { /* ignore */ }
   }, [enabledIds, workspaceId]);
 
@@ -120,25 +121,23 @@ export function useSkills(workspaceId?: string) {
           instructions: skill.instructions,
           is_custom: true,
           enabled: true,
-        }, { onConflict: 'user_id,workspace_id,skill_id' });
+        }, { onConflict: 'workspace_id,skill_id' });
       } catch { /* ignore */ }
     }
     return newSkill;
   }, [workspaceId]);
 
   const deleteCustomSkill = useCallback(async (id: string) => {
-    const uid = userIdRef.current;
     setCustomSkills(prev => prev.filter(s => s.id !== id));
     setEnabledIds(prev => prev.filter(x => x !== id));
-    if (uid) {
-      try {
-        const supabase = createClient();
-        await supabase.from('workspace_skills').delete()
-          .eq('user_id', uid)
-          .eq('skill_id', id);
-      } catch { /* ignore */ }
-    }
-  }, []);
+    try {
+      const supabase = createClient();
+      // Shared: delete by workspace + skill so any member can remove it
+      let del = supabase.from('workspace_skills').delete().eq('skill_id', id);
+      del = workspaceId ? del.eq('workspace_id', workspaceId) : del.is('workspace_id', null);
+      await del;
+    } catch { /* ignore */ }
+  }, [workspaceId]);
 
   return {
     state: { enabledIds, customSkills },

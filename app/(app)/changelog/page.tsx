@@ -18,6 +18,16 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v3.19.0',
+      date: '2026-06-22 · 12h45',
+      titleKey: 'changelog.v3_19_0_title' as TranslationKey,
+      descKey: 'changelog.v3_19_0_desc' as TranslationKey,
+      highlights: [
+        "Skills partagées par équipe — Les compétences activées et personnalisées sont désormais partagées au niveau du workspace : toute l'équipe voit et utilise les mêmes.",
+        "@ contexte CRM dans le chat — Tapez @ dans l'Assistant pour injecter des données réelles : tous les leads, le pipeline par statut, les leads chauds ou les tâches en cours.",
+      ],
+    },
+    {
       version: 'v3.18.0',
       date: '2026-06-22 · 12h37',
       titleKey: 'changelog.v3_18_0_title' as TranslationKey,
