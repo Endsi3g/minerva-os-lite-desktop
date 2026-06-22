@@ -92,8 +92,9 @@ import {
   AssistantSession
 } from '@/app/(app)/assistant/_components/assistant-db';
 import { Pin, PinOff } from 'lucide-react';
+import { CalendarDays } from 'lucide-react';
 
-const CURRENT_VERSION = '3.1.0';
+const CURRENT_VERSION = '3.2.0';
 
 function UpdateBanner() {
   const [visible, setVisible] = useState(false);
@@ -592,9 +593,10 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
   };
 
   // Pinned nav items — always visible
+  // Pinned items — always visible, never collapsed (5 core destinations)
   const pinnedItems = [
-    { name: t('nav.get_started'), href: '/welcome', icon: Gift },
     { name: t('nav.today'), href: '/today', icon: LayoutDashboard },
+    { name: t('nav.agenda'), href: '/agenda', icon: CalendarDays },
     { name: t('nav.prospect'), href: '/prospecting', icon: PenSquare },
     { name: t('nav.search'), href: '/leads', icon: Users },
     { name: t('nav.team'), href: '/team', icon: Users },

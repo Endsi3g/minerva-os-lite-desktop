@@ -89,6 +89,20 @@ interface PhaseVerification {
 
 const VERIFICATIONS: PhaseVerification[] = [
   {
+    phase: 'Phase 2 — Agenda & prise de rendez-vous',
+    version: 'v3.2.0',
+    date: '2026-06-22',
+    checks: [
+      "« Agenda » apparaît dans la barre latérale (élément épinglé, visible même barre réduite).",
+      'Ouvrir /agenda : le calendrier mensuel s\'affiche, navigation mois précédent/suivant fonctionne.',
+      'Cliquer une date la sélectionne ; double-clic (ou bouton +) ouvre la fenêtre de rendez-vous.',
+      'Créer un RDV (titre + heure + durée + lead) : il apparaît dans le panneau du jour et le point du calendrier.',
+      'Cocher « Notifier l\'équipe » : les autres membres reçoivent une notification.',
+      'Avec Google connecté + « Ajouter à Google Agenda » : l\'événement apparaît dans Google Calendar.',
+      'Avec un token Todoist dans Paramètres + « Créer une tâche Todoist » : la tâche apparaît dans Todoist à l\'heure du RDV.',
+    ],
+  },
+  {
     phase: 'Phase 1 — Mode Terrain : compte-rendu enrichi',
     version: 'v3.1.0',
     date: '2026-06-22',

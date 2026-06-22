@@ -18,6 +18,20 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v3.2.0',
+      date: '2026-06-22 · 00h22',
+      titleKey: 'changelog.v3_2_0_title' as TranslationKey,
+      descKey: 'changelog.v3_2_0_desc' as TranslationKey,
+      highlights: [
+        "Nouvelle page Agenda — Un calendrier mensuel complet accessible en permanence depuis la barre latérale (élément épinglé, jamais masqué).",
+        "Prise de rendez-vous — Cliquez sur une date pour créer un rendez-vous : titre, heure, durée et lead associé.",
+        "Notification d'équipe — Chaque rendez-vous créé notifie automatiquement les membres de l'équipe.",
+        "Synchronisation Google Agenda — Option pour ajouter le rendez-vous directement à votre Google Calendar (si Google est connecté).",
+        "Tâche Todoist automatique — Option pour créer une tâche Todoist à l'heure du rendez-vous (si Todoist est configuré).",
+        "Barre latérale — Les 5 destinations principales (Aujourd'hui, Agenda, Prospection, Leads, Équipe) restent toujours visibles.",
+      ],
+    },
+    {
       version: 'v3.1.0',
       date: '2026-06-22 · 00h16',
       titleKey: 'changelog.v3_1_0_title' as TranslationKey,
