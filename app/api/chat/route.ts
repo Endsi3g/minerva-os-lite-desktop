@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import { generateStreamCompletion } from '@/lib/ai';
 
 export const runtime = 'edge';
 
@@ -43,286 +44,32 @@ export async function POST(req: NextRequest) {
       .eq('user_id', user.id)
       .maybeSingle();
 
-    // Per-user key (drives the default-provider decision) vs the global env key
-    // (only used when openrouter is explicitly requested — e.g. canvas vision).
-    const userOpenrouterKey = dbSettings?.openrouter_key || '';
-    const openrouterKey = userOpenrouterKey || process.env.OPENROUTER_API_KEY || '';
-    const groqKey = dbSettings?.groq_api_key || process.env.GROQ_API_KEY || '';
-    const togetherKey = dbSettings?.together_api_key || process.env.TOGETHER_API_KEY || '';
-    const anthropicKey = process.env.ANTHROPIC_API_KEY || '';
     const selectedModel = model || dbSettings?.ai_model || 'meta-llama/llama-3-8b-instruct:free';
-
-    // Cascade: an explicit request/setting wins; otherwise only a *per-user* key
-    // changes the default — the global OPENROUTER_API_KEY never silently overrides
-    // Anthropic (which would break Claude-model calls like field scripts).
-    const explicitProvider = dbSettings?.ai_provider;
-    const provider = (() => {
-      if (requestProvider === 'openrouter' && openrouterKey) return 'openrouter';
-      if (requestProvider === 'anthropic') return 'anthropic';
-      if (explicitProvider === 'groq' && groqKey) return 'groq';
-      if (explicitProvider === 'together' && togetherKey) return 'together';
-      if (explicitProvider === 'openrouter' && openrouterKey) return 'openrouter';
-      if (userOpenrouterKey) return 'openrouter';
-      if (groqKey) return 'groq';
-      if (togetherKey) return 'together';
-      return 'anthropic';
-    })();
-
     const lastMessage = messages[messages.length - 1]?.content || '';
     const lastMessageLower = lastMessage.toLowerCase();
 
-    // 1. Groq / Together.ai (OpenAI-compatible)
-    if ((provider === 'groq' || provider === 'together') ) {
-      const apiKey = provider === 'groq' ? groqKey : togetherKey;
-      const baseURL = provider === 'groq'
-        ? 'https://api.groq.com/openai/v1'
-        : 'https://api.together.xyz/v1';
-      const defaultModel = provider === 'groq' ? 'llama-3.1-70b-versatile' : 'meta-llama/Llama-3-70b-chat-hf';
+    try {
+      const stream = await generateStreamCompletion({
+        system,
+        messages,
+        settings: {
+          ai_provider: requestProvider || dbSettings?.ai_provider,
+          ai_model: model || dbSettings?.ai_model,
+          openrouter_key: dbSettings?.openrouter_key,
+          groq_api_key: dbSettings?.groq_api_key,
+          together_api_key: dbSettings?.together_api_key,
+        },
+      });
 
-      if (apiKey && apiKey.trim() !== '') {
-        try {
-          const response = await fetch(`${baseURL}/chat/completions`, {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${apiKey.trim()}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              model: selectedModel || defaultModel,
-              messages: [
-                ...(system ? [{ role: 'system', content: system }] : []),
-                ...messages.map((m: { role: string; content: string }) => ({
-                  role: m.role,
-                  content: m.content
-                }))
-              ],
-              stream: true
-            })
-          });
-
-          if (response.ok && response.body) {
-            const stream = new ReadableStream({
-              async start(controller) {
-                const reader = response.body!.getReader();
-                try {
-                  while (true) {
-                    const { done, value } = await reader.read();
-                    if (done) break;
-                    controller.enqueue(value);
-                  }
-                } catch (e) {
-                  controller.error(e);
-                } finally {
-                  controller.close();
-                }
-              }
-            });
-            return new NextResponse(stream, {
-              headers: {
-                'Content-Type': 'text/event-stream',
-                'Cache-Control': 'no-cache',
-                'Connection': 'keep-alive',
-              }
-            });
-          } else {
-            console.warn(`${provider} API returned error:`, await response.text());
-          }
-        } catch (err) {
-          console.error(`Failed to connect to ${provider}, falling back to simulated stream:`, err);
+      return new NextResponse(stream, {
+        headers: {
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache',
+          'Connection': 'keep-alive',
         }
-      }
-    }
-
-    // 2. OpenRouter Integration (Real OpenRouter API)
-    if (provider === 'openrouter' && openrouterKey && openrouterKey.trim() !== '') {
-      try {
-        const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${openrouterKey.trim()}`,
-            'Content-Type': 'application/json',
-            'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
-            'X-Title': 'Minerva OS Reach Lite',
-          },
-          body: JSON.stringify({
-            model: selectedModel,
-            messages: [
-              ...(system ? [{ role: 'system', content: system }] : []),
-              ...messages.map((m: { role: string; content: string }) => ({
-                role: m.role,
-                content: m.content
-              }))
-            ],
-            stream: true
-          })
-        });
-
-        if (response.ok && response.body) {
-          const stream = new ReadableStream({
-            async start(controller) {
-              const reader = response.body!.getReader();
-              try {
-                while (true) {
-                  const { done, value } = await reader.read();
-                  if (done) break;
-                  controller.enqueue(value);
-                }
-              } catch (e) {
-                controller.error(e);
-              } finally {
-                controller.close();
-              }
-            }
-          });
-          return new NextResponse(stream, {
-            headers: {
-              'Content-Type': 'text/event-stream',
-              'Cache-Control': 'no-cache',
-              'Connection': 'keep-alive',
-            }
-          });
-        } else {
-          console.warn("OpenRouter API returned error:", await response.text());
-        }
-      } catch (err) {
-        console.error("Failed to connect to OpenRouter, falling back to simulated stream:", err);
-      }
-    }
-
-    // 3. Native Anthropic Integration
-    if (provider === 'anthropic' && anthropicKey && anthropicKey.trim() !== '') {
-      try {
-        let anthropicModel = 'claude-3-5-sonnet-20241022';
-        if (selectedModel && (selectedModel.startsWith('claude') || selectedModel.includes('anthropic'))) {
-          anthropicModel = selectedModel;
-        }
-
-        const response = await fetch('https://api.anthropic.com/v1/messages', {
-          method: 'POST',
-          headers: {
-            'x-api-key': anthropicKey.trim(),
-            'anthropic-version': '2023-06-01',
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            model: anthropicModel,
-            ...(system ? { system } : {}),
-            messages: messages.map((m: { role: string; content: string }) => ({
-              role: m.role,
-              content: m.content
-            })),
-            stream: true,
-            max_tokens: 1500
-          })
-        });
-
-        if (response.ok && response.body) {
-          const stream = new ReadableStream({
-            async start(controller) {
-              const reader = response.body!.getReader();
-              const decoder = new TextDecoder();
-              let buffer = '';
-
-              try {
-                while (true) {
-                  const { done, value } = await reader.read();
-                  if (done) break;
-
-                  buffer += decoder.decode(value, { stream: true });
-                  const lines = buffer.split('\n');
-                  buffer = lines.pop() || '';
-
-                  for (const line of lines) {
-                    if (line.startsWith('data: ')) {
-                      const dataStr = line.slice(6).trim();
-                      if (dataStr === '[DONE]') continue;
-                      try {
-                        const parsed = JSON.parse(dataStr);
-                        if (parsed.type === 'content_block_delta' && parsed.delta?.text) {
-                          const text = parsed.delta.text;
-                          const sseFormat = `data: ${JSON.stringify({
-                            choices: [{
-                              delta: {
-                                content: text
-                              }
-                            }]
-                          })}\n\n`;
-                          controller.enqueue(encoder.encode(sseFormat));
-                        }
-                      } catch {
-                        // ignore parsing error
-                      }
-                    }
-                  }
-                }
-                controller.enqueue(encoder.encode('data: [DONE]\n\n'));
-              } catch (e) {
-                controller.error(e);
-              } finally {
-                controller.close();
-              }
-            }
-          });
-
-          return new NextResponse(stream, {
-            headers: {
-              'Content-Type': 'text/event-stream',
-              'Cache-Control': 'no-cache',
-              'Connection': 'keep-alive',
-            }
-          });
-        } else {
-          console.warn("Anthropic API returned error:", await response.text());
-        }
-      } catch (err) {
-        console.error("Failed to connect to Anthropic, falling back to simulated stream:", err);
-      }
-    }
-
-    // 4. Auto-fallback to OpenRouter when Claude key is missing
-    if (openrouterKey && openrouterKey.trim() !== '') {
-      const fallbackModel = selectedModel && !selectedModel.startsWith('claude') && !selectedModel.includes('anthropic')
-        ? selectedModel
-        : 'meta-llama/llama-3.3-70b-instruct:free';
-      try {
-        const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${openrouterKey.trim()}`,
-            'Content-Type': 'application/json',
-            'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
-            'X-Title': 'Minerva OS Reach Lite',
-          },
-          body: JSON.stringify({
-            model: fallbackModel,
-            messages: [
-              ...(system ? [{ role: 'system', content: system }] : []),
-              ...messages.map((m: { role: string; content: string }) => ({ role: m.role, content: m.content })),
-            ],
-            stream: true,
-          }),
-        });
-        if (response.ok && response.body) {
-          const stream = new ReadableStream({
-            async start(controller) {
-              const reader = response.body!.getReader();
-              try {
-                while (true) {
-                  const { done, value } = await reader.read();
-                  if (done) break;
-                  controller.enqueue(value);
-                }
-              } catch (e) { controller.error(e); }
-              finally { controller.close(); }
-            },
-          });
-          return new NextResponse(stream, {
-            headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', 'Connection': 'keep-alive' },
-          });
-        }
-      } catch (err) {
-        console.error('OpenRouter auto-fallback failed:', err);
-      }
+      });
+    } catch (err) {
+      console.warn("Failed calling AI provider, falling back to simulated stream:", err);
     }
 
     // High fidelity simulation stream fallback

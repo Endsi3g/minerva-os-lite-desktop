@@ -29,6 +29,9 @@ function initDb() {
       todoist_token TEXT,
       todoist_project_id TEXT,
       active_workspace_id TEXT DEFAULT NULL,
+      openrouter_key TEXT DEFAULT NULL,
+      ai_provider TEXT DEFAULT 'anthropic',
+      ai_model TEXT DEFAULT 'meta-llama/llama-3-8b-instruct:free',
       updated_at TEXT,
       sync_status TEXT DEFAULT 'synced'
     )`);
@@ -181,6 +184,11 @@ function initDb() {
 
     // v2.63.0 Firecrawl API key migration
     db.run(`ALTER TABLE settings ADD COLUMN firecrawl_api_key TEXT DEFAULT NULL`, () => {});
+
+    // OpenRouter and AI configuration migrations (replicated from Supabase settings schema)
+    db.run(`ALTER TABLE settings ADD COLUMN openrouter_key TEXT DEFAULT NULL`, () => {});
+    db.run(`ALTER TABLE settings ADD COLUMN ai_provider TEXT DEFAULT 'anthropic'`, () => {});
+    db.run(`ALTER TABLE settings ADD COLUMN ai_model TEXT DEFAULT 'meta-llama/llama-3-8b-instruct:free'`, () => {});
 
     // v2.12.0 lead enrichment migrations
     db.run(`ALTER TABLE leads ADD COLUMN website TEXT DEFAULT NULL`, () => {});
@@ -555,6 +563,33 @@ function initDb() {
       created_at TEXT NOT NULL,
       sync_status TEXT DEFAULT 'pending_insert'
     )`, () => {});
+
+    // v4.2.0 — Outreach: sequence_templates, sequence_enrollments, email_queue
+    db.run(`CREATE TABLE IF NOT EXISTS sequence_templates (
+      id TEXT PRIMARY KEY, workspace_id TEXT NOT NULL,
+      name TEXT NOT NULL, description TEXT,
+      steps TEXT DEFAULT '[]', status TEXT DEFAULT 'active', tags TEXT DEFAULT '[]',
+      created_by TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL,
+      sync_status TEXT DEFAULT 'pending_insert'
+    )`, () => {});
+    db.run(`CREATE TABLE IF NOT EXISTS sequence_enrollments (
+      id TEXT PRIMARY KEY, template_id TEXT, lead_id TEXT NOT NULL, workspace_id TEXT NOT NULL,
+      current_step INTEGER DEFAULT 0, status TEXT DEFAULT 'active',
+      next_action_at TEXT, enrolled_at TEXT NOT NULL, completed_at TEXT,
+      enrolled_by TEXT, metadata TEXT DEFAULT '{}', sync_status TEXT DEFAULT 'pending_insert'
+    )`, () => {});
+    db.run(`CREATE TABLE IF NOT EXISTS email_queue (
+      id TEXT PRIMARY KEY, workspace_id TEXT NOT NULL, lead_id TEXT, enrollment_id TEXT,
+      to_email TEXT NOT NULL, to_name TEXT, subject TEXT NOT NULL, body_html TEXT NOT NULL,
+      body_text TEXT, status TEXT DEFAULT 'pending', scheduled_at TEXT, sent_at TEXT,
+      error_message TEXT, gmail_message_id TEXT, gmail_thread_id TEXT,
+      created_at TEXT NOT NULL, updated_at TEXT NOT NULL, sync_status TEXT DEFAULT 'pending_insert'
+    )`, () => {});
+    db.run(`ALTER TABLE settings ADD COLUMN outreach_daily_quota INTEGER DEFAULT 50`, () => {});
+    db.run(`ALTER TABLE settings ADD COLUMN outreach_window_start TEXT DEFAULT '09:00'`, () => {});
+    db.run(`ALTER TABLE settings ADD COLUMN outreach_window_end TEXT DEFAULT '18:00'`, () => {});
+    db.run(`ALTER TABLE settings ADD COLUMN outreach_window_days TEXT DEFAULT 'mon,tue,wed,thu,fri'`, () => {});
+    db.run(`ALTER TABLE settings ADD COLUMN outreach_warmup_delay INTEGER DEFAULT 30`, () => {});
 
     // v5.1.0 — AI Assistant sessions, messages, and canvas
     db.run(`CREATE TABLE IF NOT EXISTS assistant_sessions (

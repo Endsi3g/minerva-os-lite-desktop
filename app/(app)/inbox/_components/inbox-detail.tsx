@@ -5,7 +5,7 @@ import Link from 'next/link';
 import {
   Send, Sparkles, Loader2, Mail, ChevronDown,
   CheckCircle2, XCircle, Calendar, Briefcase,
-  ClipboardList, ExternalLink, DollarSign
+  ClipboardList, ExternalLink, DollarSign, Bot, Info
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -28,6 +28,7 @@ import {
 } from '@/components/ui/dialog';
 import type { ThreadMessage, InboxThread } from '@/lib/inbox-types';
 import type { Lead } from '@/lib/mock-data';
+import { getApiUrl } from '@/lib/api-helper';
 
 type ReplyStatus = 'positive' | 'followup' | 'negative' | null;
 type LeadStatus = Lead['status'];
@@ -103,6 +104,15 @@ export function InboxDetail({
   const [taskTitle, setTaskTitle] = useState('');
   const [taskDate, setTaskDate] = useState(tomorrowDate());
 
+  // AI Reply Classifier state
+  const [classifying, setClassifying] = useState(false);
+  const [classifyResult, setClassifyResult] = useState<{
+    intent: 'interested' | 'not_interested' | 'info_request' | 'scheduling' | 'other';
+    confidence: number;
+    summary: string;
+    suggestedAction: string;
+  } | null>(null);
+
   const handleOpenDeal = () => {
     setDealAmount('');
     setDealProbability('50');
@@ -122,6 +132,33 @@ export function InboxDetail({
     setTaskTitle(thread ? `Follow-up : ${thread.leadName}` : '');
     setTaskDate(tomorrowDate());
     setTaskOpen(true);
+  };
+
+  const handleClassify = async () => {
+    if (!thread || !messages.length || classifying) return;
+    setClassifying(true);
+    setClassifyResult(null);
+    try {
+      const latestReply = [...messages].reverse().find(m => !m.isFromUser);
+      if (!latestReply) { setClassifying(false); return; }
+      const snippet = latestReply.body?.slice(0, 300) || '';
+      const subject = latestReply.subject || '';
+      const res = await fetch(getApiUrl('/api/outreach/reply-classify'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          subject,
+          snippet,
+          threadId: thread.gmailThreadId,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setClassifyResult(data);
+      }
+    } finally {
+      setClassifying(false);
+    }
   };
 
   const handleConfirmTask = () => {
@@ -247,7 +284,106 @@ export function InboxDetail({
           <ClipboardList className="h-3 w-3 text-[#d97706]" />
           Ajouter tâche
         </Button>
+
+        {/* Classifier IA */}
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-6 text-[10px] gap-1 px-2 border-[#059669]/30 text-[#059669] bg-white hover:bg-[#059669]/5 ml-auto"
+          onClick={handleClassify}
+          disabled={classifying || !messages.length}
+          title="Classifier la réponse avec l'IA"
+        >
+          {classifying ? (
+            <Loader2 className="h-3 w-3 animate-spin" />
+          ) : (
+            <Bot className="h-3 w-3" />
+          )}
+          Classifier IA
+        </Button>
       </div>
+
+      {/* ── AI Classifier Result ── */}
+      {classifyResult && (
+        <div className="flex flex-col gap-2 border-b border-[#e5e5e0] bg-[#f4f4f3]/60 px-5 py-3">
+          <div className="flex items-center gap-2 flex-wrap">
+            <Bot className="h-3.5 w-3.5 text-[#059669] shrink-0" />
+            <span className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Analyse IA</span>
+            {{
+              interested: <span className="text-[9px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full border bg-[#059669]/10 text-[#059669] border-[#059669]/20">Intéressé</span>,
+              not_interested: <span className="text-[9px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full border bg-slate-100 text-slate-600 border-slate-200">Pas intéressé</span>,
+              info_request: <span className="text-[9px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full border bg-blue-50 text-blue-700 border-blue-200">Demande info</span>,
+              scheduling: <span className="text-[9px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full border bg-teal-50 text-teal-700 border-teal-200">Demande RDV</span>,
+              other: <span className="text-[9px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full border bg-slate-100 text-slate-500 border-slate-200">Autre</span>,
+            }[classifyResult.intent]}
+            <span className="text-[10px] text-[#7a7a76]">{classifyResult.confidence}% confiance</span>
+            <button onClick={() => setClassifyResult(null)} className="ml-auto p-0.5 rounded hover:bg-[#e5e5e0] text-[#7a7a76]">
+              <XCircle className="h-3 w-3" />
+            </button>
+          </div>
+          <p className="text-xs text-[#26251e]">{classifyResult.summary}</p>
+          <div className="flex items-center gap-2 flex-wrap">
+            <Info className="h-3 w-3 text-[#7a7a76] shrink-0" />
+            <span className="text-[10px] text-[#7a7a76]">{classifyResult.suggestedAction}</span>
+          </div>
+          {/* Context-sensitive action buttons */}
+          {classifyResult.intent === 'interested' && (
+            <Button
+              size="sm"
+              className="h-6 text-[10px] bg-[#059669] hover:bg-[#047857] text-white font-bold gap-1 px-2 self-start"
+              onClick={() => {
+                handleOpenTask();
+                setClassifyResult(null);
+              }}
+            >
+              <ClipboardList className="h-3 w-3" />
+              Créer tâche de suivi
+            </Button>
+          )}
+          {classifyResult.intent === 'not_interested' && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-6 text-[10px] border-red-200 text-red-600 hover:bg-red-50 gap-1 px-2 self-start"
+              onClick={() => {
+                onLeadStatusChange('Lost');
+                setClassifyResult(null);
+              }}
+            >
+              <XCircle className="h-3 w-3" />
+              Disqualifier ce lead
+            </Button>
+          )}
+          {classifyResult.intent === 'info_request' && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-6 text-[10px] border-blue-200 text-blue-700 hover:bg-blue-50 gap-1 px-2 self-start"
+              onClick={() => {
+                onLoadSuggestions();
+                setClassifyResult(null);
+              }}
+            >
+              <Sparkles className="h-3 w-3" />
+              Générer une réponse IA
+            </Button>
+          )}
+          {classifyResult.intent === 'scheduling' && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-6 text-[10px] border-teal-200 text-teal-700 hover:bg-teal-50 gap-1 px-2 self-start"
+              onClick={() => {
+                onLeadStatusChange('Meeting Booked');
+                setClassifyResult(null);
+              }}
+            >
+              <Calendar className="h-3 w-3" />
+              Marquer RDV booké
+            </Button>
+          )}
+        </div>
+      )}
 
       {/* ── Messages ── */}
       <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">

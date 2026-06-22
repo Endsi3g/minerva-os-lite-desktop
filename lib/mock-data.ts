@@ -77,6 +77,62 @@ export interface LeadEvent {
   createdAt: string;
 }
 
+export interface SequenceStep {
+  id: string;
+  type: 'email' | 'delay' | 'task' | 'condition';
+  subject?: string;
+  bodyHtml?: string;
+  delayDays?: number;
+  taskTitle?: string;
+  taskCategory?: string;
+  condition?: {
+    on: 'reply' | 'open' | 'click';
+    then: 'stop' | 'next';
+    else: 'next' | 'stop' | string;
+  };
+}
+
+export interface SequenceTemplate {
+  id: string;
+  workspaceId: string;
+  name: string;
+  description?: string;
+  steps: SequenceStep[];
+  status: 'active' | 'archived';
+  tags: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SequenceEnrollment {
+  id: string;
+  templateId?: string;
+  leadId: string;
+  workspaceId: string;
+  currentStep: number;
+  status: 'active' | 'paused' | 'completed' | 'stopped' | 'replied';
+  nextActionAt?: string;
+  enrolledAt: string;
+  completedAt?: string;
+}
+
+export interface EmailQueueItem {
+  id: string;
+  workspaceId: string;
+  leadId?: string;
+  enrollmentId?: string;
+  toEmail: string;
+  toName?: string;
+  subject: string;
+  bodyHtml: string;
+  bodyText?: string;
+  status: 'pending' | 'sending' | 'sent' | 'failed' | 'cancelled';
+  scheduledAt?: string;
+  sentAt?: string;
+  errorMessage?: string;
+  createdAt: string;
+}
+
 export interface Task {
   id: string;
   title: string;

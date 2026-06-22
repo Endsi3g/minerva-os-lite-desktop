@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import Anthropic from '@anthropic-ai/sdk';
+import { createClient } from '@/lib/supabase/server';
+import { generateCompletion } from '@/lib/ai';
 
 function extractDomain(website: string): string | null {
   try {
@@ -87,10 +88,24 @@ export async function POST(req: NextRequest) {
     let decisionMakerName = '';
     let decisionMakerRole = '';
 
-    const apiKey = process.env.ANTHROPIC_API_KEY;
-    if (apiKey && businessName) {
+    let settings = null;
+    try {
+      const supabase = await createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: dbSettings } = await supabase
+          .from('settings')
+          .select('ai_provider, ai_model, openrouter_key, groq_api_key, together_api_key')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        settings = dbSettings;
+      }
+    } catch (err) {
+      console.warn('[enrich-contact] Failed loading user settings:', err);
+    }
+
+    if (businessName) {
       try {
-        const client = new Anthropic({ apiKey });
         const prompt = `Tu es un expert en prospection B2B locale.
 Business: "${businessName}" — Niche: "${niche || 'non précisé'}" — Ville: "${city || 'non précisée'}"
 ${website ? `Site: ${website}` : ''}
@@ -100,16 +115,17 @@ Génère en JSON strict (sans markdown) le décideur probable de ce business loc
 
 Réponds UNIQUEMENT avec le JSON.`;
 
-        const msg = await client.messages.create({
-          model: 'claude-haiku-4-5-20251001',
-          max_tokens: 100,
+        const text = await generateCompletion({
           messages: [{ role: 'user', content: prompt }],
+          settings: settings || undefined,
+          jsonMode: true,
+          maxTokens: 100,
         });
-        const text = msg.content[0].type === 'text' ? msg.content[0].text.trim() : '';
         const parsed = JSON.parse(text);
         decisionMakerName = parsed.name || '';
         decisionMakerRole = parsed.role || 'Propriétaire';
-      } catch {
+      } catch (err) {
+        console.warn('[enrich-contact] AI call failed, falling back to defaults:', err);
         decisionMakerRole = 'Propriétaire';
       }
     } else {

@@ -5,9 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import Anthropic from '@anthropic-ai/sdk';
-
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+import { generateCompletion } from '@/lib/ai';
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
@@ -17,12 +15,13 @@ export async function POST(request: NextRequest) {
   const { workspaceId } = await request.json();
   if (!workspaceId) return NextResponse.json({ error: 'workspaceId required' }, { status: 400 });
 
-  // Confirm the toggle is enabled
+  // Confirm the toggle is enabled and fetch AI configuration settings
   const { data: settings } = await supabase
     .from('settings')
-    .select('auto_insights')
+    .select('auto_insights, ai_provider, ai_model, openrouter_key, groq_api_key, together_api_key')
     .eq('user_id', user.id)
     .maybeSingle();
+
   if (settings && settings.auto_insights === false) {
     return NextResponse.json({ error: 'auto_insights disabled' }, { status: 403 });
   }
@@ -54,25 +53,14 @@ export async function POST(request: NextRequest) {
     .map(l => `- ${l.business_name} (${l.niche || '?'}, ${l.city || '?'}) — statut ${l.status}, ${l.rating ? `note ${l.rating}` : 'pas de note'}${l.website ? '' : ', SANS site web'}`)
     .join('\n');
 
-  if (!process.env.ANTHROPIC_API_KEY) {
-    // Fallback heuristic report without AI
-    const report = `## Bilan hebdomadaire d'opportunités\n\n- **${total}** leads au portefeuille.\n- Répartition statut : ${Object.entries(byStatus).map(([k, v]) => `${k}: ${v}`).join(', ')}.\n- Températures : ${Object.entries(byTemp).map(([k, v]) => `${k}: ${v}`).join(', ')}.\n- **${noWebsite}** prospects sans site web (opportunité d'audit/refonte).\n\nPriorisez les leads chauds et contactés cette semaine.`;
-    return NextResponse.json({ report });
-  }
-
   const prompt = `Tu es analyste commercial. Voici l'état du portefeuille de prospection cette semaine :\n\nTotal : ${total} leads\nStatuts : ${JSON.stringify(byStatus)}\nTempératures : ${JSON.stringify(byTemp)}\nSans site web : ${noWebsite}\n\nÉchantillon de leads prioritaires :\n${hotSample}\n\nRédige un bilan hebdomadaire d'opportunités concis (Markdown, ~150 mots) : 3 opportunités concrètes à saisir cette semaine, les leads à relancer en priorité, et 1 recommandation stratégique. Sois actionnable et direct, en français.`;
 
   try {
-    const completion = await client.messages.create({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 600,
+    const report = await generateCompletion({
       messages: [{ role: 'user', content: prompt }],
+      settings: settings || undefined,
+      maxTokens: 600,
     });
-    const report = completion.content
-      .filter((b): b is Anthropic.TextBlock => b.type === 'text')
-      .map(b => b.text)
-      .join('')
-      .trim();
 
     // Persist as a notification so it surfaces in the bell
     await supabase.from('notifications').insert({
@@ -89,7 +77,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ report });
   } catch (e) {
-    console.error('[insights/weekly]', e);
-    return NextResponse.json({ error: 'AI error' }, { status: 500 });
+    console.error('[insights/weekly] AI error, falling back to heuristic report:', e);
+    // Fallback heuristic report without AI
+    const report = `## Bilan hebdomadaire d'opportunités\n\n- **${total}** leads au portefeuille.\n- Répartition statut : ${Object.entries(byStatus).map(([k, v]) => `${k}: ${v}`).join(', ')}.\n- Températures : ${Object.entries(byTemp).map(([k, v]) => `${k}: ${v}`).join(', ')}.\n- **${noWebsite}** prospects sans site web (opportunité d'audit/refonte).\n\nPriorisez les leads chauds et contactés cette semaine.`;
+    return NextResponse.json({ report });
   }
 }

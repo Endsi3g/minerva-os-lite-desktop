@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import Anthropic from '@anthropic-ai/sdk';
-
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+import { createClient } from '@/lib/supabase/server';
+import { generateCompletion } from '@/lib/ai';
 
 async function scrapeWebsite(url: string): Promise<string | null> {
   const apiKey = process.env.FIRECRAWL_API_KEY;
@@ -25,6 +24,10 @@ async function scrapeWebsite(url: string): Promise<string | null> {
 
 export async function POST(req: NextRequest) {
   try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
     const body = await req.json();
     const { businessName, niche, city, website, websiteDescription, phone, rating, reviewsCount, temperature, contactName, notes } = body;
 
@@ -54,14 +57,18 @@ Le script doit:
 
 Format de sortie: 3 sections distinctes avec titres (🎯 Accroche, 💡 Valeur, ❓ Question de clôture)`;
 
-    const response = await client.messages.create({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 600,
+    const { data: settings } = await supabase
+      .from('settings')
+      .select('ai_provider, ai_model, openrouter_key, groq_api_key, together_api_key')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    const script = await generateCompletion({
       system: systemPrompt,
       messages: [{ role: 'user', content: `Génère un script de pitch pour ce prospect:\n\n${contextParts.join('\n')}` }],
+      settings: settings || undefined,
+      maxTokens: 600,
     });
-
-    const script = (response.content[0] as { text: string }).text;
 
     return NextResponse.json({
       script,

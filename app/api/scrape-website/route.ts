@@ -4,9 +4,8 @@
 // fetch + HTML-to-text extraction. The text is summarised by Claude Haiku.
 
 import { NextRequest, NextResponse } from 'next/server';
-import Anthropic from '@anthropic-ai/sdk';
-
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+import { createClient } from '@/lib/supabase/server';
+import { generateCompletion } from '@/lib/ai';
 
 function normalizeUrl(url: string): string {
   return url.startsWith('http') ? url : `https://${url}`;
@@ -69,26 +68,36 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Impossible d'accéder au site web." }, { status: 502 });
     }
 
-    if (!process.env.ANTHROPIC_API_KEY) {
-      // No AI key — return the truncated raw text as a best-effort description
-      return NextResponse.json({ description: content.slice(0, 600) });
+    let settings = null;
+    try {
+      const supabase = await createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: dbSettings } = await supabase
+          .from('settings')
+          .select('ai_provider, ai_model, openrouter_key, groq_api_key, together_api_key')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        settings = dbSettings;
+      }
+    } catch (err) {
+      console.warn('[scrape-website] Failed loading settings:', err);
     }
 
     const prompt = `Voici le contenu extrait du site web de l'entreprise "${businessName || 'cette entreprise'}"${niche ? ` (secteur : ${niche})` : ''} :\n\n"""${content}"""\n\nRédige une description commerciale concise (3-4 phrases max) de cette entreprise : ce qu'elle fait, ses services/produits principaux, sa clientèle cible et tout angle d'approche commercial pertinent. Sois factuel et direct, en français. Ne mentionne pas que tu analyses un site web.`;
 
-    const completion = await client.messages.create({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 400,
-      messages: [{ role: 'user', content: prompt }],
-    });
+    try {
+      const description = await generateCompletion({
+        messages: [{ role: 'user', content: prompt }],
+        settings: settings || undefined,
+        maxTokens: 400,
+      });
 
-    const description = completion.content
-      .filter((b): b is Anthropic.TextBlock => b.type === 'text')
-      .map((b) => b.text)
-      .join('')
-      .trim();
-
-    return NextResponse.json({ description: description || content.slice(0, 600) });
+      return NextResponse.json({ description: description || content.slice(0, 600) });
+    } catch (err) {
+      console.warn('[scrape-website] AI generation failed, using raw slice:', err);
+      return NextResponse.json({ description: content.slice(0, 600) });
+    }
   } catch (err) {
     console.error('[scrape-website]', err);
     return NextResponse.json({ error: 'Erreur lors du scraping du site.' }, { status: 500 });

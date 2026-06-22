@@ -312,7 +312,7 @@ async function syncPush() {
   // 5. Settings
   const pendingSettings = await db.all("SELECT * FROM settings WHERE sync_status != 'synced'");
   for (const setting of pendingSettings) {
-    const { user_id, full_name, last_name, phone, email, company_name, timezone, niches, cities, ai_tone, ai_density, quick_note, focus_title, focus_items, smtp_config, groq_api_key, together_api_key, avatar_base64, user_role, bio, email_signature, active_workspace_id } = setting;
+    const { user_id, full_name, last_name, phone, email, company_name, timezone, niches, cities, ai_tone, ai_density, quick_note, focus_title, focus_items, smtp_config, groq_api_key, together_api_key, openrouter_key, ai_provider, ai_model, avatar_base64, user_role, bio, email_signature, active_workspace_id } = setting;
     const { error } = await supabase.from('settings').upsert({
       user_id,
       full_name,
@@ -331,6 +331,9 @@ async function syncPush() {
       smtp_config: smtp_config || null,
       groq_api_key: groq_api_key || null,
       together_api_key: together_api_key || null,
+      openrouter_key: openrouter_key || null,
+      ai_provider: ai_provider || 'anthropic',
+      ai_model: ai_model || 'meta-llama/llama-3-8b-instruct:free',
       avatar_base64: avatar_base64 || null,
       user_role: user_role || null,
       bio: bio || null,
@@ -705,9 +708,9 @@ async function syncPull() {
                          (localSetting.sync_status === 'synced' && 
                           new Date(remoteSettings.updated_at) > new Date(localSetting.updated_at || 0));
     if (shouldUpdate) {
-      const { user_id, full_name, last_name, phone, email, company_name, timezone, niches, cities, ai_tone, ai_density, quick_note, focus_title, focus_items, smtp_config, groq_api_key, together_api_key, avatar_base64, user_role, bio, email_signature, active_workspace_id, updated_at } = remoteSettings;
-      await db.run(`INSERT INTO settings (user_id, full_name, last_name, phone, email, company_name, timezone, niches, cities, ai_tone, ai_density, quick_note, focus_title, focus_items, smtp_config, groq_api_key, together_api_key, avatar_base64, user_role, bio, email_signature, active_workspace_id, updated_at, sync_status)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced')
+      const { user_id, full_name, last_name, phone, email, company_name, timezone, niches, cities, ai_tone, ai_density, quick_note, focus_title, focus_items, smtp_config, groq_api_key, together_api_key, openrouter_key, ai_provider, ai_model, avatar_base64, user_role, bio, email_signature, active_workspace_id, updated_at } = remoteSettings;
+      await db.run(`INSERT INTO settings (user_id, full_name, last_name, phone, email, company_name, timezone, niches, cities, ai_tone, ai_density, quick_note, focus_title, focus_items, smtp_config, groq_api_key, together_api_key, openrouter_key, ai_provider, ai_model, avatar_base64, user_role, bio, email_signature, active_workspace_id, updated_at, sync_status)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced')
         ON CONFLICT(user_id) DO UPDATE SET
           full_name = excluded.full_name,
           last_name = excluded.last_name,
@@ -725,6 +728,9 @@ async function syncPull() {
           smtp_config = excluded.smtp_config,
           groq_api_key = excluded.groq_api_key,
           together_api_key = excluded.together_api_key,
+          openrouter_key = excluded.openrouter_key,
+          ai_provider = excluded.ai_provider,
+          ai_model = excluded.ai_model,
           avatar_base64 = excluded.avatar_base64,
           user_role = excluded.user_role,
           bio = excluded.bio,
@@ -732,7 +738,7 @@ async function syncPull() {
           active_workspace_id = excluded.active_workspace_id,
           updated_at = excluded.updated_at,
           sync_status = 'synced'`,
-        [user_id, full_name, last_name, phone, email, company_name, timezone, JSON.stringify(niches || []), JSON.stringify(cities || []), ai_tone, ai_density, quick_note, focus_title, JSON.stringify(focus_items || []), smtp_config || null, groq_api_key || null, together_api_key || null, avatar_base64 || null, user_role || null, bio || null, email_signature || null, active_workspace_id || null, updated_at]
+        [user_id, full_name, last_name, phone, email, company_name, timezone, JSON.stringify(niches || []), JSON.stringify(cities || []), ai_tone, ai_density, quick_note, focus_title, JSON.stringify(focus_items || []), smtp_config || null, groq_api_key || null, together_api_key || null, openrouter_key || null, ai_provider || 'anthropic', ai_model || 'meta-llama/llama-3-8b-instruct:free', avatar_base64 || null, user_role || null, bio || null, email_signature || null, active_workspace_id || null, updated_at]
       );
     }
   }

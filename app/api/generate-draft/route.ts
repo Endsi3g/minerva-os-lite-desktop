@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import Anthropic from '@anthropic-ai/sdk';
+import { generateCompletion } from '@/lib/ai';
 
 interface LeadData {
   business_name: string;
@@ -83,14 +83,7 @@ export async function POST(req: NextRequest) {
     const aiTone = tone || settings?.ai_tone || 'Calme & Conseil';
     const emailSignature = settings?.email_signature || null;
 
-    const aiProvider = settings?.ai_provider || 'anthropic';
-    const openrouterKey = settings?.openrouter_key || process.env.OPENROUTER_API_KEY;
-    const groqKey = settings?.groq_api_key || process.env.GROQ_API_KEY;
-    const togetherKey = settings?.together_api_key || process.env.TOGETHER_API_KEY;
-    const aiModel = settings?.ai_model || 'meta-llama/llama-3-8b-instruct:free';
-    const apiKey = process.env.ANTHROPIC_API_KEY;
     let draftContent = '';
-
     const notesText = (notes || []).map(n => `- [${n.type}] : ${n.content}`).join('\n');
 
     const systemPrompt = `Tu es un copilote de prospection pour ${fullName} de l'agence "${companyName}".
@@ -118,92 +111,21 @@ ${instructions}
 
 Rédige uniquement le corps du message final en français :`;
 
-    if ((aiProvider === 'groq' || aiProvider === 'together')) {
-      const providerKey = aiProvider === 'groq' ? groqKey : togetherKey;
-      const baseURL = aiProvider === 'groq'
-        ? 'https://api.groq.com/openai/v1'
-        : 'https://api.together.xyz/v1';
-      const defaultModel = aiProvider === 'groq' ? 'llama-3.1-70b-versatile' : 'meta-llama/Llama-3-70b-chat-hf';
-
-      if (providerKey && !providerKey.includes('placeholder')) {
-        try {
-          const response = await fetch(`${baseURL}/chat/completions`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${providerKey}`,
-            },
-            body: JSON.stringify({
-              model: aiModel || defaultModel,
-              messages: [
-                { role: 'system', content: systemPrompt },
-                { role: 'user', content: userPrompt }
-              ]
-            })
-          });
-
-          if (!response.ok) {
-            const errData = await response.json();
-            throw new Error(errData.error?.message || `Erreur ${aiProvider}`);
-          }
-
-          const data = await response.json();
-          draftContent = data.choices?.[0]?.message?.content?.trim() || '';
-        } catch (err) {
-          console.warn(`Failed calling ${aiProvider} API, falling back:`, err);
-          draftContent = generateMockDraft(lead, notes || [], channel, aiTone, companyName, fullName);
-        }
-      } else {
-        draftContent = generateMockDraft(lead, notes || [], channel, aiTone, companyName, fullName);
-      }
-    } else if (aiProvider === 'openrouter' && openrouterKey && !openrouterKey.includes('placeholder')) {
-      try {
-        const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${openrouterKey}`,
-            'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
-            'X-Title': 'Minerva Reach'
-          },
-          body: JSON.stringify({
-            model: aiModel,
-            messages: [
-              { role: 'system', content: systemPrompt },
-              { role: 'user', content: userPrompt }
-            ]
-          })
-        });
-
-        if (!response.ok) {
-          const errData = await response.json();
-          throw new Error(errData.error?.message || "Erreur OpenRouter");
-        }
-
-        const data = await response.json();
-        draftContent = data.choices?.[0]?.message?.content?.trim() || '';
-      } catch (err) {
-        console.warn("Failed calling OpenRouter API, falling back to local generator:", err);
-        draftContent = generateMockDraft(lead, notes || [], channel, aiTone, companyName, fullName);
-      }
-    } else if (aiProvider === 'anthropic' && apiKey && !apiKey.includes('placeholder') && draftContent === '') {
-      try {
-        const anthropic = new Anthropic({ apiKey });
-        const msg = await anthropic.messages.create({
-          model: 'claude-3-5-sonnet-20241022',
-          max_tokens: 1024,
-          system: systemPrompt,
-          messages: [{ role: 'user', content: userPrompt }],
-        });
-
-        const textOutput = msg.content[0].type === 'text' ? msg.content[0].text : '';
-        draftContent = textOutput.trim();
-      } catch (err) {
-        console.warn("Failed calling Anthropic API, falling back to local generator:", err);
-        draftContent = generateMockDraft(lead, notes || [], channel, aiTone, companyName, fullName);
-      }
-    } else if (draftContent === '') {
-      // Offline/Test fallback mode
+    try {
+      draftContent = await generateCompletion({
+        system: systemPrompt,
+        messages: [{ role: 'user', content: userPrompt }],
+        settings: {
+          ai_provider: settings?.ai_provider,
+          ai_model: settings?.ai_model,
+          openrouter_key: settings?.openrouter_key,
+          groq_api_key: settings?.groq_api_key,
+          together_api_key: settings?.together_api_key,
+        },
+        maxTokens: 1024,
+      });
+    } catch (err) {
+      console.warn("Failed calling AI provider, falling back to simulated draft:", err);
       draftContent = generateMockDraft(lead, notes || [], channel, aiTone, companyName, fullName);
     }
 

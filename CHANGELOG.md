@@ -5,6 +5,14 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [3.27.0] - 2026-06-22
+
+### Ajouté — Modèle IA unifié OpenRouter & correctifs de compilation
+- **Moteur IA unifié (`lib/ai.ts`)** — Intégration d'un service d'appel IA unifié prenant en charge OpenRouter, Anthropic, Groq et Together.ai. Il gère la cascade intelligente des clés API (clé utilisateur dans l'application > variables d'environnement) et standardise le format des flux streaming SSE (Server-Sent Events) pour le client frontend.
+- **Réplication locale SQLite & Sync** — Ajout des colonnes de configuration `openrouter_key`, `ai_provider` et `ai_model` dans SQLite local (`database.cjs`) et configuration de la synchronisation bidirectionnelle Supabase (`sync.cjs`) pour le fonctionnement offline-first natif d'Electron.
+- **Refactoring des endpoints** — Mise à jour de 10 routes d'API (chat, brouillon de relance, exécution d'agent, script, séquence, qualification, enrichissement de lead, etc.) pour utiliser la nouvelle interface IA.
+- **Correctifs de typecheck et compilation** — Résolution des erreurs TypeScript dans `outreach-root.tsx` (déstructuration de contextUser) et `language-context.tsx` (typage de l'indexation de traduction). Le projet compile maintenant avec succès pour le build de production.
+
 ## [3.0.0] - 2026-06-21 à 23:19
 
 ### Ajouté — Localisation de l'Assistant, Chat d'Équipe, Avatars de Présence, Sélecteur d'Espace & Stabilité

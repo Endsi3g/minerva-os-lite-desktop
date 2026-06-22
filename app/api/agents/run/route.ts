@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import Anthropic from '@anthropic-ai/sdk';
+import { generateCompletion } from '@/lib/ai';
 
 interface LeadContext {
   businessName: string;
@@ -19,7 +19,7 @@ function buildPrompt(agentId: string, lead: LeadContext, params: Record<string, 
     return {
       system: `Tu es un expert SEO local spécialisé dans les fiches Google My Business pour les commerces québécois.
 Tu génères des rapports d'audit précis, actionables et localisés pour le marché de ${city}.
-Ton rapport doit être structuré en Markdown, avec un score GMB sur 100, et des recommandations prioritaires concrètes.
+Le rapport doit être structuré en Markdown, avec un score GMB sur 100, et des recommandations prioritaires concrètes.
 Utilise des données réalistes basées sur le secteur « ${niche} » à ${city}.
 Ne dis jamais que tu n'as pas accès aux données — génère un rapport simulé basé sur les patterns typiques du secteur.`,
       user: `Génère un rapport d'audit GMB en mode « ${mode} » pour :
@@ -102,75 +102,19 @@ Agent : ${agentName}`,
   };
 }
 
-async function callAI(system: string, user: string, settings: Record<string, string>): Promise<string> {
-  const aiProvider = settings.ai_provider || 'anthropic';
-  const openrouterKey = settings.openrouter_key || process.env.OPENROUTER_API_KEY || '';
-  const groqKey = settings.groq_api_key || process.env.GROQ_API_KEY || '';
-  const togetherKey = settings.together_api_key || process.env.TOGETHER_API_KEY || '';
-  const anthropicKey = process.env.ANTHROPIC_API_KEY || '';
-  const aiModel = settings.ai_model || '';
-
-  const provider = (() => {
-    if (aiProvider === 'groq' && groqKey) return 'groq';
-    if (aiProvider === 'together' && togetherKey) return 'together';
-    if (aiProvider === 'openrouter' && openrouterKey) return 'openrouter';
-    if (openrouterKey) return 'openrouter';
-    if (groqKey) return 'groq';
-    if (togetherKey) return 'together';
-    return 'anthropic';
-  })();
-
-  if ((provider === 'groq' || provider === 'together') && (groqKey || togetherKey)) {
-    const apiKey = provider === 'groq' ? groqKey : togetherKey;
-    const baseURL = provider === 'groq' ? 'https://api.groq.com/openai/v1' : 'https://api.together.xyz/v1';
-    const defaultModel = provider === 'groq' ? 'llama-3.1-70b-versatile' : 'meta-llama/Llama-3-70b-chat-hf';
-    const resp = await fetch(`${baseURL}/chat/completions`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
-      body: JSON.stringify({
-        model: aiModel || defaultModel,
-        messages: [{ role: 'system', content: system }, { role: 'user', content: user }],
-        max_tokens: 1500,
-      }),
-    });
-    if (!resp.ok) throw new Error(`${provider} error: ${resp.status}`);
-    const data = await resp.json();
-    return data.choices?.[0]?.message?.content?.trim() || '';
-  }
-
-  if (provider === 'openrouter' && openrouterKey) {
-    const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${openrouterKey}`,
-        'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
-        'X-Title': 'Minerva Reach',
-      },
-      body: JSON.stringify({
-        model: aiModel || 'meta-llama/llama-3-8b-instruct:free',
-        messages: [{ role: 'system', content: system }, { role: 'user', content: user }],
-        max_tokens: 1500,
-      }),
-    });
-    if (!resp.ok) throw new Error(`OpenRouter error: ${resp.status}`);
-    const data = await resp.json();
-    return data.choices?.[0]?.message?.content?.trim() || '';
-  }
-
-  // Anthropic fallback
-  if (anthropicKey) {
-    const anthropic = new Anthropic({ apiKey: anthropicKey });
-    const msg = await anthropic.messages.create({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 1500,
-      system,
-      messages: [{ role: 'user', content: user }],
-    });
-    return msg.content[0].type === 'text' ? msg.content[0].text.trim() : '';
-  }
-
-  throw new Error('No AI provider configured');
+async function callAI(system: string, userPrompt: string, settings: Record<string, string>): Promise<string> {
+  return generateCompletion({
+    system,
+    messages: [{ role: 'user', content: userPrompt }],
+    settings: {
+      ai_provider: settings.ai_provider,
+      ai_model: settings.ai_model,
+      openrouter_key: settings.openrouter_key,
+      groq_api_key: settings.groq_api_key,
+      together_api_key: settings.together_api_key,
+    },
+    maxTokens: 1500,
+  });
 }
 
 export async function POST(req: NextRequest) {

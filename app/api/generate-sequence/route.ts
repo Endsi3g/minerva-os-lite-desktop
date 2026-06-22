@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import Anthropic from '@anthropic-ai/sdk';
 import { createClient } from '@/lib/supabase/server';
-
-const client = new Anthropic();
+import { generateCompletion } from '@/lib/ai';
 
 interface SequenceStep {
   day: number;
@@ -82,25 +80,14 @@ export async function POST(request: NextRequest) {
       intensity = 'standard',
     } = body;
 
-    // Get user's AI key if available
+    // Get user's AI settings
     const { data: settings } = await supabase
       .from('settings')
-      .select('anthropic_api_key')
+      .select('ai_provider, ai_model, openrouter_key, groq_api_key, together_api_key')
       .eq('user_id', user.id)
-      .single();
+      .maybeSingle();
 
-    const apiKey = (settings as { anthropic_api_key?: string } | null)?.anthropic_api_key || process.env.ANTHROPIC_API_KEY;
-    if (!apiKey) {
-      return NextResponse.json({ error: 'Aucune clé Anthropic configurée. Ajoutez votre clé dans les paramètres IA.' }, { status: 400 });
-    }
-
-    const anthropicClient = apiKey !== process.env.ANTHROPIC_API_KEY
-      ? new Anthropic({ apiKey })
-      : client;
-
-    const message = await anthropicClient.messages.create({
-      model: 'claude-haiku-4-5',
-      max_tokens: 2000,
+    const rawText = await generateCompletion({
       system: buildSystemPrompt(),
       messages: [
         {
@@ -108,9 +95,10 @@ export async function POST(request: NextRequest) {
           content: buildUserPrompt(persona_description, campaign_type, duration_days, intensity),
         },
       ],
+      settings: settings || undefined,
+      jsonMode: true,
+      maxTokens: 2000,
     });
-
-    const rawText = message.content[0].type === 'text' ? message.content[0].text : '';
 
     let parsed: { steps: SequenceStep[] };
     try {

@@ -18,6 +18,19 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v3.27.0',
+      date: '2026-06-22 · 22h45',
+      titleKey: 'changelog.v3_27_0_title' as TranslationKey,
+      descKey: 'changelog.v3_27_0_desc' as TranslationKey,
+      highlights: [
+        "Moteur IA unifié — Création de lib/ai.ts prenant en charge OpenRouter, Anthropic, Groq et Together.ai avec cascade intelligente des clés API (Settings utilisateur > Variables d'environnement).",
+        "Streaming SSE standardisé — Conversion des flux Anthropic vers le format de delta OpenAI (choices[0].delta.content) pour assurer la compatibilité avec le client frontend.",
+        "Refactoring complet des endpoints — 10 routes d'API réécrites pour appeler le helper unifié (chat, brouillons d'e-mails, exécution d'agents, scripts de vente, qualification, enrichissement de contacts, etc.).",
+        "Replication locale native Electron — Ajout des colonnes de configuration openrouter_key, ai_provider et ai_model dans SQLite (database.cjs) et synchronisation bidirectionnelle Supabase (sync.cjs).",
+        "Correctifs TypeScript & compilation — Correction de la déstructuration de contextUser dans outreach-root.tsx et typage de l'index de traduction dans language-context.tsx. Projet compilé avec succès.",
+      ],
+    },
+    {
       version: 'v3.26.0',
       date: '2026-06-22 · 20h00',
       titleKey: 'changelog.v3_26_0_title' as TranslationKey,

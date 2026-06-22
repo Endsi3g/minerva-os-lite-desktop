@@ -80,7 +80,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   };
 
   const t = (key: TranslationKey, fallback?: string): string => {
-    const trans = translations[locale];
+    const trans = translations[locale] as Record<string, any>;
     if (trans && key in trans) {
       return trans[key] as string;
     }
