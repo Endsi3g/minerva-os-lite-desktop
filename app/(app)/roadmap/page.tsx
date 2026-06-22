@@ -82,14 +82,54 @@ const roadmapData: RoadmapItem[] = [
   { module: 'Plateforme', feature: 'Edge Runtime — Chat & Intégrations', desc: 'Routes /api/chat, /api/integrations/slack et /api/integrations/notion migrées en Edge Runtime Vercel (latence globale réduite).', priority: 'medium', status: 'available' },
   { module: 'Plateforme', feature: 'Web Push Notifications', desc: 'Service worker sw.js + endpoint /api/push/subscribe (table push_subscriptions). Infrastructure prête pour envoyer des push system.', priority: 'medium', status: 'available' },
 
-  // ─── Planned : Intégrations à activer (lourdes, planifiées) ───────────
+  // ─── Available (Intégrations) ─────────────────────────────────────────
+  { module: 'Intégrations', feature: 'Webhooks Website', desc: 'Réception des formulaires de site web entrants comme leads taggés (déjà en partie via /integrations/forms).', priority: 'medium', status: 'available' },
+  { module: 'CRM', feature: 'Accounts / Entreprises', desc: 'Page /accounts : vue 360° par société regroupant contacts, pipeline cumulé, visites terrain et notes.', priority: 'high', status: 'available' },
+
+  // ─── v4 Phase 1 — Lead Engine unifié ─────────────────────────────────
+  { module: 'v4 · Acquisition', feature: 'Lead Source Hub — page /acquisition', desc: 'Tour de contrôle unifiée regroupant toutes les sources de leads : prospection locale, CSV, formulaires, Facebook Lead Ads, Google Ads. Vue « nouveaux leads à traiter » avec timeline d\'acquisition par lead.', priority: 'high', status: 'planned' },
+  { module: 'v4 · Acquisition', feature: 'Timeline unifiée par lead', desc: 'Flux chronologique unique par lead/compte : création, source, enrichissements, emails envoyés, ouvertures/clics, replies, appels, tâches, visites terrain, RDV, notes, automations, changements de statut. Colonne vertébrale du produit.', priority: 'high', status: 'planned' },
+  { module: 'v4 · Acquisition', feature: 'Scoring v2 — ICP + urgence + revenu + fraîcheur', desc: 'Score multidimensionnel : fit ICP, probabilité de réponse, urgence, potentiel revenu, fraîcheur de la donnée, source quality score. Remplace le scoring v1 par un modèle actionnable.', priority: 'high', status: 'planned' },
+  { module: 'v4 · Acquisition', feature: 'Déduplication & fusion multi-source', desc: 'Détection automatique des doublons par domaine + téléphone + nom business. Règles de fusion intelligentes. Source primaire + source assistée. Normalisation email / téléphone / domaine.', priority: 'high', status: 'planned' },
+  { module: 'v4 · Acquisition', feature: 'Enrichissement automatique avancé', desc: 'Logo, taille entreprise, catégories, stack tech estimée, présence web, avis, historique compte. Enrichissement firme/compte en plus de l\'individu.', priority: 'medium', status: 'planned' },
+
+  // ─── v4 Phase 2 — Outreach complet natif ─────────────────────────────
+  { module: 'v4 · Outreach', feature: 'Séquences multicanales natives', desc: 'Exécution de l\'outreach complet depuis l\'app : email, appel, tâche terrain, note vocale. Plus de dépendance à un outil externe pour l\'exécution quotidienne.', priority: 'high', status: 'planned' },
+  { module: 'v4 · Outreach', feature: 'Cadences intelligentes + branchements conditionnels', desc: 'Pause automatique si reply détectée, relance conditionnelle selon ouverture / clic / réponse, branchement différent selon statut du lead (chaud / tiède / froid). A/B test de séquence. Score « fatigue de contact ».', priority: 'high', status: 'planned' },
+  { module: 'v4 · Outreach', feature: 'Reply Classifier v2', desc: 'Classification automatique des réponses : positif, négatif, hors sujet, out-of-office, bounce, « recontacter plus tard », « pas la bonne personne ». Next Best Action automatique déclenché selon la classification.', priority: 'high', status: 'planned' },
+  { module: 'v4 · Outreach', feature: 'Composer unifié par lead', desc: 'Écran unique par lead pour voir et envoyer : email, appel, note vocale, task, RDV. Zéro friction pour l\'outreach quotidien.', priority: 'high', status: 'planned' },
+  { module: 'v4 · Outreach', feature: 'Queue d\'envoi + délivrabilité', desc: 'Boîte d\'envoi avec file d\'attente, statut de délivrabilité, warm-up / throttling / send windows, détection des doublons de messages. Health score mailbox. SPF/DKIM/DMARC check. Bounce monitor.', priority: 'medium', status: 'planned' },
+
+  // ─── v4 Phase 3 — Ads & Inbound ──────────────────────────────────────
+  { module: 'v4 · Ads', feature: 'Facebook Lead Ads — ingestion en temps réel', desc: 'Connexion compte Meta Ads, sélection page + formulaire, ingestion temps réel des leads, mapping des champs, création auto de lead avec source / campaign / adset / ad IDs.', priority: 'high', status: 'planned' },
+  { module: 'v4 · Ads', feature: 'Google Ads — import conversions & formulaires', desc: 'Import des conversions, campagnes, groupes d\'annonces, mots-clés. Si lead forms : ingestion directe. Si formulaires site : attribution UTM/GCLID vers le lead. Pages /ads, /ads/leads, /ads/attribution, /ads/campaigns/[id].', priority: 'high', status: 'planned' },
+  { module: 'v4 · Ads', feature: 'Attribution marketing complète', desc: 'Source, medium, campaign, adset, ad, keyword, landing page, first touch / last touch. KPIs : CPL, coût par réponse, coût par RDV, coût par deal, ROAS pipeline, ROAS deals won, délai lead → contact, délai lead → RDV.', priority: 'high', status: 'planned' },
+  { module: 'v4 · Ads', feature: 'Inbound Speed-to-Lead (SLA < 5 min)', desc: 'Pour les leads Facebook / Google : auto-assignation instantanée, notification push/Slack, email ou SMS auto, booking link immédiat, timer « first contact SLA ». Opérateur Hermes dédié.', priority: 'high', status: 'planned' },
+
+  // ─── v4 Phase 4 — Agents Hermes opérationnels ─────────────────────────
+  { module: 'v4 · Hermes', feature: 'Agent Lead Intake Operator', desc: 'Surveille les nouveaux leads, détecte la source, applique les règles de normalisation/fusion, déclenche le bon playbook, notifie l\'owner. Agit via tool endpoints contrôlés (audit, sécurité, prévisibilité).', priority: 'high', status: 'backlog' },
+  { module: 'v4 · Hermes', feature: 'Agent Outbound Operator', desc: 'Rédige les premiers messages, déclenche les séquences, analyse les replies, propose ou exécute le next step, crée les tâches de relance, prépare les bilans journaliers.', priority: 'high', status: 'backlog' },
+  { module: 'v4 · Hermes', feature: 'Agent Inbound Speed-to-Lead', desc: 'Détecte les leads chauds (< 5 min), envoie une réponse immédiate personnalisée, crée la tâche d\'appel, déclenche le booking link et alerte l\'équipe en temps réel.', priority: 'high', status: 'backlog' },
+  { module: 'v4 · Hermes', feature: 'Agent No-show Recovery', desc: 'Détecte les absences aux RDV, déclenche automatiquement une séquence de récupération adaptée (relance douce + rebooking + tâche suivi).', priority: 'medium', status: 'backlog' },
+  { module: 'v4 · Hermes', feature: 'Agent Ads Optimizer', desc: 'Analyse les performances des campagnes, identifie les annonces avec meilleur CPL / taux de RDV, recommande les ajustements de budget et de ciblage.', priority: 'medium', status: 'backlog' },
+  { module: 'v4 · Hermes', feature: 'Agent Account Expansion', desc: 'Surveille les comptes existants pour détecter des signaux d\'upsell / expansion. Prépare les meeting packets, identifie les contacts secondaires et propose les next steps de croissance.', priority: 'medium', status: 'backlog' },
+
+  // ─── v4 Phase 5 — Closing & Revenue ──────────────────────────────────
+  { module: 'v4 · Closing', feature: 'Call Intelligence', desc: 'Résumé d\'appel automatique, extraction d\'objections, next steps détectés, tonalité et intention. Lié à la fiche lead et l\'historique du compte.', priority: 'medium', status: 'backlog' },
+  { module: 'v4 · Closing', feature: 'Meeting Packet automatique', desc: 'Avant chaque RDV : résumé du lead, historique des interactions, objections passées, script de closing personnalisé, météo locale. Généré 1h avant le meeting.', priority: 'medium', status: 'backlog' },
+  { module: 'v4 · Closing', feature: 'Deal Risk Score + Forecast pondéré', desc: 'Score de risque par deal basé sur signaux réels (temps sans activité, objections non traitées, nb de contacts). Forecast pondéré par probabilité réelle vs pipeline nominal.', priority: 'medium', status: 'backlog' },
+  { module: 'v4 · Closing', feature: 'Sequence Builder visuel v2', desc: 'Builder orienté revenu avec blocs : attendre, envoyer email, appeler, tâche terrain, notifier équipe, condition if/else, si réponse positive/négative, si booking cliqué, si bounce, si inbound chaud.', priority: 'high', status: 'backlog' },
+
+  // ─── v4 Intelligence & Optimisation ──────────────────────────────────
+  { module: 'v4 · Intelligence', feature: 'Lead Rescue Center', desc: 'Dashboard des leads bloqués : oubliés, non relancés, sans réponse depuis X jours. Re-séquencement automatique (45 jours sans réponse → nouvelle campagne adaptée).', priority: 'medium', status: 'backlog' },
+  { module: 'v4 · Intelligence', feature: 'AI Copy Lab', desc: 'Générer 5 variantes d\'objet, intro, CTA et angle pour chaque email. A/B test intégré. Conversation Intelligence : résumé auto des réponses, objections, tonalité, intention.', priority: 'medium', status: 'backlog' },
+  { module: 'v4 · Intelligence', feature: 'Performance by rep / workspace / source', desc: 'Comparaison des performances par représentant, workspace, source de lead et séquence. Identification des patterns gagnants pour les propager à l\'équipe.', priority: 'medium', status: 'backlog' },
+  { module: 'v4 · Intelligence', feature: 'Trust & Compliance Center', desc: 'Consentement par lead, opt-out global, journal d\'envoi, historique des permissions. RGPD-ready. Auto-QA des automations : règles cassées, doublons, conflits, boucles.', priority: 'medium', status: 'backlog' },
+  { module: 'v4 · Intelligence', feature: 'Client Portal Acquisition', desc: 'Portail client agence : montrer aux clients les leads générés, réponses obtenues, RDV bookés, deals et coût réel d\'acquisition. Branding personnalisable.', priority: 'low', status: 'backlog' },
+
+  // ─── Intégrations planifiées ─────────────────────────────────────────
   { module: 'Intégrations', feature: 'Microsoft SharePoint', desc: 'Export et stockage des documents et rapports clients sur SharePoint.', priority: 'low', status: 'planned' },
   { module: 'Intégrations', feature: 'Meeting recorder', desc: 'Capture et transcription automatique des réunions, liées aux fiches leads.', priority: 'low', status: 'planned' },
-  { module: 'Intégrations', feature: 'Webhooks Website', desc: 'Réception des formulaires de site web entrants comme leads taggés (déjà en partie via /integrations/forms).', priority: 'medium', status: 'available' },
-
-  // ─── Planned ─────────────────────────────────────────────────────────
-  { module: 'CRM', feature: 'Accounts / Entreprises', desc: 'Page /accounts : vue 360° par société regroupant contacts, pipeline cumulé, visites terrain et notes.', priority: 'high', status: 'available' },
-  { module: 'CRM', feature: 'Timeline unifiée par compte', desc: 'Flux chronologique unique par lead/compte : emails, calls, meetings, notes, visites.', priority: 'high', status: 'planned' },
 
   // ─── Available (v2.98) ────────────────────────────────────────────────
   { module: 'Terrain', feature: 'Page préparation de visite', desc: 'Page /field/[plan]/prepare/[lead] : script IA, notes passées, pré-notes, notification équipe avant départ.', priority: 'medium', status: 'available' },
@@ -450,7 +490,20 @@ function buildAiPrompt(items: RoadmapItem[]): string {
 
   return `# Minerva OS Reach Lite — World Map (Roadmap)
 Date: ${new Date().toLocaleDateString('fr-CA')}
-Stack: Next.js 16 App Router • TypeScript • TailwindCSS v4 • Supabase • SQLite (Electron) • MapLibre GL • shadcn/ui • Anthropic SDK
+Version: v3.25.0
+Stack: Next.js 16 App Router • TypeScript • TailwindCSS v4 • Supabase (Realtime + Auth + DB) • SQLite (Electron) • MapLibre GL • shadcn/ui • TipTap • Anthropic SDK • Edge Runtime (Vercel)
+
+## VISION v4 — OS d'acquisition et d'outreach local-first, exécution quasi autonome
+La v4 recompose tout autour d'un moteur central lead-to-revenue :
+  1. Lead entre (prospection locale / CSV / formulaire / Facebook Ads / Google Ads)
+  2. Minerva normalise, fusionne si doublon, enrichit automatiquement
+  3. Scoring + routage → bon owner / bonne séquence / bon canal
+  4. Hermes déclenche le playbook approprié
+  5. Outreach natif exécuté dans Minerva avec suivi de réponse
+  6. Reply / booking / task se créent automatiquement selon comportement
+  7. Lead devient compte / deal / visite / RDV selon le cas
+  8. Attribution complète remonte jusqu'à la campagne et au coût d'acquisition
+  9. Reporting et optimisation réinjectent les apprentissages dans scoring, ads et playbooks
 
 ## ✅ Disponible (${byStatus('available').length} éléments)
 ${formatItems(byStatus('available'))}
@@ -458,24 +511,32 @@ ${formatItems(byStatus('available'))}
 ## 🔵 En cours (${byStatus('in_progress').length} éléments)
 ${formatItems(byStatus('in_progress'))}
 
-## 🟡 Prévu (${byStatus('planned').length} éléments)
+## 🟡 Prévu v4 (${byStatus('planned').length} éléments)
 ${formatItems(byStatus('planned'))}
 
-## 📦 Backlog (${byStatus('backlog').length} éléments)
+## 📦 Backlog v4 (${byStatus('backlog').length} éléments)
 ${formatItems(byStatus('backlog'))}
 
 ---
+## ARCHITECTURE TECHNIQUE
+
+- **Pattern dual-store** : SQLite (Electron via window.electron IPC) OU Supabase directement (web). Toutes les mutations passent par ReachContext (lib/reach-context.tsx).
+- **Pages** : pattern *-root.tsx (server wrapper → client component). Composants privés dans _components/.
+- **Traductions** : lib/translations.ts avec 3 locales FR/EN/DE identiques. useLanguage().t() partout.
+- **Realtime** : Supabase postgres_changes sur leads, tasks, notifications, team_messages. Presence sur workspace channel.
+- **Edge Runtime** : /api/chat, /api/integrations/* → export const runtime = 'edge'.
+- **Migrations SQL** : fichiers supabase_migration_v*.sql, exécutés manuellement dans Supabase SQL editor.
+- **Electron SQLite** : ALTER TABLE avec callback vide pour les re-runs. Tables : settings, leads, drafts, notes, tasks, workspaces, team_messages, notifications.
+- **Design** : Tailwind v4 + hex literals. Vert #059669 (hover #047857) comme SEUL accent. ZÉRO orange.
+
 ## INSTRUCTIONS POUR L'IA
 
-Tu es un développeur senior expert sur ce projet. Le codebase suit un pattern dual-store : SQLite (Electron via window.electron IPC) ou Supabase directement (web). Toutes les mutations passent par ReachContext (lib/reach-context.tsx). Les pages utilisent le pattern *-root.tsx (server wrapper → client component). Les traductions (FR/EN/DE) doivent être mises à jour dans lib/translations.ts avec les 3 locales identiques.
-
-Avant de commencer l'implémentation des éléments "En cours", pose à l'utilisateur toutes les questions nécessaires pour clarifier :
-1. Le scope exact et l'ordre de priorité des features à implémenter cette session
-2. Les contraintes UX spécifiques (comportements attendus, cas limites)
-3. Les intégrations existantes à respecter ou modifier
-4. Les contraintes de temps ou de crédits IA disponibles
-
-Une fois les réponses obtenues, implémente les fonctionnalités dans l'ordre de priorité, en commitant et pushant à chaque étape significative.`;
+Tu es un développeur senior expert sur ce projet. Avant de commencer l'implémentation :
+1. Pose toutes les questions nécessaires pour clarifier le scope, l'ordre de priorité et les contraintes UX
+2. Identifie les dépendances entre les éléments "Prévu" (ex: Lead Source Hub avant Scoring v2)
+3. Vérifie toujours si la feature touche Electron (dual-store) et prévois les deux chemins
+4. Commit + push à chaque étape significative avec --no-verify
+5. Typecheck systématique (pnpm typecheck) avant chaque commit`;
 }
 
 function RoadmapCard({ item, t }: { item: RoadmapItem; t: (k: TranslationKey, fallback?: string) => string }) {
@@ -581,6 +642,32 @@ export default function RoadmapPage() {
               </div>
             );
           })}
+        </div>
+
+        {/* v4 Vision Banner */}
+        <div className="rounded-xl border border-[#059669]/20 bg-[#059669]/5 p-4 space-y-3">
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#059669]/15 text-[#059669] text-[10px] font-bold uppercase tracking-wider">
+              <Lightbulb className="h-3 w-3" /> Vision v4
+            </span>
+            <h2 className="text-sm font-bold text-foreground">OS d&apos;acquisition et d&apos;outreach local-first, exécution quasi autonome</h2>
+          </div>
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            La v4 ne rajoute pas des fonctionnalités isolées — elle <strong>recompose</strong> tout ce qui est déjà livré autour d&apos;un moteur central <em>lead-to-revenue</em> : trouver un lead, l&apos;enrichir, le scorer, l&apos;engager, convertir en RDV, fermer, mesurer. Ads en entrée. Outreach natif dans l&apos;app. Hermes comme opérateur autonome. Attribution complète jusqu&apos;au deal gagné.
+          </p>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[10px]">
+            {[
+              { label: 'P1 · Lead Engine', desc: 'Source Hub, timeline, scoring v2, dédup & fusion' },
+              { label: 'P2 · Outreach natif', desc: 'Séquences multicanal, cadences, reply classifier, composer' },
+              { label: 'P3 · Ads & Inbound', desc: 'Facebook Ads, Google Ads, attribution, speed-to-lead' },
+              { label: 'P4 · Hermes Ops', desc: '6 agents autonomes sur tool endpoints contrôlés' },
+            ].map((p) => (
+              <div key={p.label} className="rounded-lg border border-[#059669]/15 bg-background/60 p-2.5">
+                <div className="font-bold text-[#059669] mb-0.5">{p.label}</div>
+                <div className="text-muted-foreground leading-snug">{p.desc}</div>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Tabs */}
