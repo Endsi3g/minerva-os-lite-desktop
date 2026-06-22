@@ -18,6 +18,18 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v3.26.0',
+      date: '2026-06-22 · 20h00',
+      titleKey: 'changelog.v3_26_0_title' as TranslationKey,
+      descKey: 'changelog.v3_26_0_desc' as TranslationKey,
+      highlights: [
+        "Centre d'Acquisition (/acquisition) — Tour de contrôle de tous les leads entrants, filtrables par source (OSM / Maps, CSV, Manuel, Formulaire). Badge SLA coloré (vert < 2h, ambre < 24h, rouge > 24h) pour piloter la vitesse de traitement.",
+        "Actions rapides sur la liste — Bouton « Qualifier » pour passer un lead de New → Contacted sans ouvrir la fiche. Accès direct au détail via « Voir ».",
+        "Timeline unifiée par lead — Nouvel onglet « Timeline » dans la fiche lead : historique chronologique mixant les événements Supabase (lead_events) et les événements synthétiques (création, notes). Icônes codées par couleur par type d'événement.",
+        "Colonnes DB — lead_source_type (osm/csv/manual/form/facebook/google/import), utm_source, utm_medium, utm_campaign, utm_content ajoutés sur leads. Table lead_events créée (Supabase + SQLite). Migration SQL v4.1 incluse.",
+      ],
+    },
+    {
       version: 'v3.25.0',
       date: '2026-06-22 · 18h00',
       titleKey: 'changelog.v3_25_0_title' as TranslationKey,

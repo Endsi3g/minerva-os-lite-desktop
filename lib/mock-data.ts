@@ -57,6 +57,24 @@ export interface Lead {
   replyDetectedAt?: string;
   gmailThreadId?: string;
   replyStatus?: 'positive' | 'followup' | 'negative' | null;
+  // Acquisition v4.1
+  leadSourceType?: 'osm' | 'csv' | 'manual' | 'form' | 'facebook' | 'google' | 'import';
+  utmSource?: string;
+  utmMedium?: string;
+  utmCampaign?: string;
+  utmContent?: string;
+}
+
+export interface LeadEvent {
+  id: string;
+  leadId: string;
+  workspaceId: string;
+  userId?: string;
+  eventType: 'created' | 'status_changed' | 'email_sent' | 'reply' | 'call' | 'visit' | 'note' | 'meeting' | 'task' | 'enrichment' | 'score_updated' | 'campaign_step' | 'booking';
+  title?: string;
+  body?: string;
+  metadata?: Record<string, unknown>;
+  createdAt: string;
 }
 
 export interface Task {

@@ -51,6 +51,10 @@ import {
   Globe,
   Share2,
   Link as LinkIcon,
+  UserPlus,
+  Reply,
+  CheckSquare,
+  CalendarCheck,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
@@ -534,7 +538,7 @@ export function LeadDetailClient({ id }: { id: string }) {
   }
 
   // AI draft states
-  const [activeTab, setActiveTab] = useState<'notes' | 'drafts'>('notes');
+  const [activeTab, setActiveTab] = useState<'notes' | 'drafts' | 'timeline'>('notes');
   const [drafts, setDrafts] = useState<Draft[]>([]);
   const [loadingDrafts, setLoadingDrafts] = useState(false);
   const [generating, setGenerating] = useState(false);
@@ -563,6 +567,83 @@ export function LeadDetailClient({ id }: { id: string }) {
     };
   }, [generating]);
   
+  // Timeline states
+  const [timelineEvents, setTimelineEvents] = useState<Array<{
+    id: string;
+    eventType: string;
+    title?: string;
+    body?: string;
+    createdAt: string;
+    synthetic?: boolean;
+  }>>([]);
+  const [timelineLoading, setTimelineLoading] = useState(false);
+
+  useEffect(() => {
+    if (activeTab !== 'timeline') return;
+    if (!lead) return;
+    let cancelled = false;
+    setTimelineLoading(true);
+
+    const buildTimeline = async () => {
+      const synthetic: typeof timelineEvents = [];
+
+      // Lead creation event
+      synthetic.push({
+        id: `synthetic-created-${lead.id}`,
+        eventType: 'created',
+        title: 'Lead créé',
+        body: `Source: ${lead.source || lead.leadSourceType || 'Manuel'}`,
+        createdAt: lead.createdAt,
+        synthetic: true,
+      });
+
+      // Notes as events
+      for (const note of lead.notes || []) {
+        synthetic.push({
+          id: `synthetic-note-${note.id}`,
+          eventType: 'note',
+          title: 'Note ajoutée',
+          body: note.content,
+          createdAt: note.createdAt,
+          synthetic: true,
+        });
+      }
+
+      // Fetch DB events from Supabase
+      let dbEvents: typeof timelineEvents = [];
+      try {
+        const supabase = createClient();
+        const { data } = await supabase
+          .from('lead_events')
+          .select('*')
+          .eq('lead_id', lead.id)
+          .order('created_at', { ascending: false });
+        if (data) {
+          dbEvents = data.map((e: { id: string; event_type: string; title?: string; body?: string; created_at: string }) => ({
+            id: e.id,
+            eventType: e.event_type,
+            title: e.title,
+            body: e.body,
+            createdAt: e.created_at,
+          }));
+        }
+      } catch {
+        // table may not exist yet — ignore
+      }
+
+      if (cancelled) return;
+
+      const merged = [...dbEvents, ...synthetic].sort(
+        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+      setTimelineEvents(merged);
+      setTimelineLoading(false);
+    };
+
+    buildTimeline();
+    return () => { cancelled = true; };
+  }, [activeTab, lead]);
+
   // Composer states
   const [draftChannel, setDraftChannel] = useState<'Email' | 'DM' | 'Call'>('Email');
   const [draftTone, setDraftTone] = useState<string>('Calme & Conseil');
@@ -1191,6 +1272,18 @@ export function LeadDetailClient({ id }: { id: string }) {
                 >
                   {t('lead.ai_writer_tab')} ({drafts.length})
                 </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('timeline')}
+                  className={cn(
+                    "pb-3 text-xs font-bold uppercase tracking-wider border-b-2 px-1 transition-all cursor-pointer",
+                    activeTab === 'timeline'
+                      ? "border-primary text-foreground font-extrabold"
+                      : "border-transparent text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  {t('lead.timeline')}
+                </button>
               </div>
 
               {activeTab === 'notes' ? (
@@ -1278,7 +1371,7 @@ export function LeadDetailClient({ id }: { id: string }) {
                     )}
                   </div>
                 </div>
-              ) : (
+              ) : activeTab === 'drafts' ? (
                 <div className="space-y-6">
                   {/* AI Draft Form */}
                   <div className="space-y-4 bg-secondary/15 border border-border/80 p-5 rounded-lg">
@@ -1668,6 +1761,82 @@ export function LeadDetailClient({ id }: { id: string }) {
                       </div>
                     )}
                   </div>
+                </div>
+              ) : (
+                /* Timeline Panel */
+                <div className="space-y-4">
+                  {timelineLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                    </div>
+                  ) : timelineEvents.length === 0 ? (
+                    <p className="text-xs text-muted-foreground text-center py-6">{t('lead.timeline_empty')}</p>
+                  ) : (
+                    <div className="relative">
+                      <div className="space-y-0">
+                        {timelineEvents.map((event, idx) => {
+                          const iconMap: Record<string, React.ReactNode> = {
+                            created: <UserPlus className="h-3.5 w-3.5" />,
+                            note: <FileText className="h-3.5 w-3.5" />,
+                            email_sent: <Mail className="h-3.5 w-3.5" />,
+                            reply: <Reply className="h-3.5 w-3.5" />,
+                            call: <Phone className="h-3.5 w-3.5" />,
+                            visit: <MapPin className="h-3.5 w-3.5" />,
+                            task: <CheckSquare className="h-3.5 w-3.5" />,
+                            meeting: <Calendar className="h-3.5 w-3.5" />,
+                            status_changed: <ArrowRight className="h-3.5 w-3.5" />,
+                            enrichment: <Sparkles className="h-3.5 w-3.5" />,
+                            booking: <CalendarCheck className="h-3.5 w-3.5" />,
+                          };
+                          const colorMap: Record<string, string> = {
+                            created: 'bg-[#059669]/10 text-[#059669]',
+                            note: 'bg-blue-100 text-blue-700',
+                            email_sent: 'bg-indigo-100 text-indigo-700',
+                            reply: 'bg-purple-100 text-purple-700',
+                            call: 'bg-[#059669]/10 text-[#059669]',
+                            visit: 'bg-amber-100 text-amber-700',
+                            task: 'bg-slate-100 text-slate-600',
+                            meeting: 'bg-teal-100 text-teal-700',
+                            status_changed: 'bg-purple-100 text-purple-700',
+                            enrichment: 'bg-[#059669]/10 text-[#059669]',
+                            booking: 'bg-teal-100 text-teal-700',
+                          };
+                          const icon = iconMap[event.eventType] || <Activity className="h-3.5 w-3.5" />;
+                          const color = colorMap[event.eventType] || 'bg-slate-100 text-slate-600';
+                          const relTime = (() => {
+                            const ms = Date.now() - new Date(event.createdAt).getTime();
+                            const mins = Math.floor(ms / 60000);
+                            const hours = Math.floor(mins / 60);
+                            const days = Math.floor(hours / 24);
+                            if (days > 0) return `Il y a ${days}j`;
+                            if (hours > 0) return `Il y a ${hours}h`;
+                            return `Il y a ${mins}min`;
+                          })();
+                          return (
+                            <div key={event.id} className="flex gap-3">
+                              <div className="flex flex-col items-center">
+                                <div className={cn('flex items-center justify-center w-7 h-7 rounded-full shrink-0', color)}>
+                                  {icon}
+                                </div>
+                                {idx < timelineEvents.length - 1 && (
+                                  <div className="w-px flex-1 bg-border/60 my-1" />
+                                )}
+                              </div>
+                              <div className="pb-4 flex-1 min-w-0">
+                                <div className="flex items-center justify-between gap-2">
+                                  <p className="text-xs font-semibold text-foreground">{event.title || event.eventType}</p>
+                                  <span className="text-[10px] text-muted-foreground shrink-0">{relTime}</span>
+                                </div>
+                                {event.body && (
+                                  <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-2">{event.body}</p>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

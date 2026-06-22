@@ -537,6 +537,25 @@ function initDb() {
     db.run(`CREATE INDEX IF NOT EXISTS idx_osm_feedback_workspace_id ON osm_feedback(workspace_id)`);
     db.run(`CREATE INDEX IF NOT EXISTS idx_osm_feedback_sync_status ON osm_feedback(sync_status)`);
 
+    // v4.1.0 — Acquisition: lead_source_type + UTM + lead_events
+    db.run(`ALTER TABLE leads ADD COLUMN lead_source_type TEXT DEFAULT 'manual'`, () => {});
+    db.run(`ALTER TABLE leads ADD COLUMN utm_source TEXT`, () => {});
+    db.run(`ALTER TABLE leads ADD COLUMN utm_medium TEXT`, () => {});
+    db.run(`ALTER TABLE leads ADD COLUMN utm_campaign TEXT`, () => {});
+    db.run(`ALTER TABLE leads ADD COLUMN utm_content TEXT`, () => {});
+    db.run(`CREATE TABLE IF NOT EXISTS lead_events (
+      id TEXT PRIMARY KEY,
+      lead_id TEXT NOT NULL,
+      workspace_id TEXT NOT NULL,
+      user_id TEXT,
+      event_type TEXT NOT NULL,
+      title TEXT,
+      body TEXT,
+      metadata TEXT DEFAULT '{}',
+      created_at TEXT NOT NULL,
+      sync_status TEXT DEFAULT 'pending_insert'
+    )`, () => {});
+
     // v5.1.0 — AI Assistant sessions, messages, and canvas
     db.run(`CREATE TABLE IF NOT EXISTS assistant_sessions (
       id TEXT PRIMARY KEY,

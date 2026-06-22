@@ -244,6 +244,12 @@ interface DbLead {
   reply_detected_at?: string | null;
   gmail_thread_id?: string | null;
   reply_status?: 'positive' | 'followup' | 'negative' | null;
+  // Acquisition v4.1
+  lead_source_type?: string | null;
+  utm_source?: string | null;
+  utm_medium?: string | null;
+  utm_campaign?: string | null;
+  utm_content?: string | null;
 }
 
 interface DbNote {
@@ -323,6 +329,11 @@ function mapDbLeadToUi(dbLead: DbLead, dbNotes: DbNote[] = []): Lead {
     replyDetectedAt: dbLead.reply_detected_at || undefined,
     gmailThreadId: dbLead.gmail_thread_id || undefined,
     replyStatus: (dbLead.reply_status as Lead['replyStatus']) ?? null,
+    leadSourceType: (dbLead.lead_source_type || 'manual') as Lead['leadSourceType'],
+    utmSource: dbLead.utm_source || undefined,
+    utmMedium: dbLead.utm_medium || undefined,
+    utmCampaign: dbLead.utm_campaign || undefined,
+    utmContent: dbLead.utm_content || undefined,
     notes: dbNotes
       .filter(n => n.lead_id === dbLead.id)
       .map(n => ({

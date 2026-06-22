@@ -54,6 +54,7 @@ import {
   Zap,
   ClipboardList,
   Flag,
+  TrendingUp,
 } from 'lucide-react';
 import { BottomBlur } from '@/components/ui/edge-blur';
 import { cn } from '@/lib/utils';
@@ -95,7 +96,7 @@ import {
 import { Pin, PinOff } from 'lucide-react';
 import { CalendarDays } from 'lucide-react';
 
-const CURRENT_VERSION = '3.25.0';
+const CURRENT_VERSION = '3.26.0';
 
 function UpdateBanner() {
   const [visible, setVisible] = useState(false);
@@ -609,6 +610,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
       id: 'crm',
       label: 'CRM & Prospection',
       items: [
+        { name: t('nav.acquisition'), href: '/acquisition', icon: TrendingUp },
         { name: 'Boîte de réception', href: '/inbox', icon: Inbox },
         { name: 'Comptes', href: '/accounts', icon: Building2 },
         { name: 'Cockpit Ops', href: '/ops/prospecting', icon: Activity },
