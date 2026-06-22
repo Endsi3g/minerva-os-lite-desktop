@@ -725,11 +725,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                 <div className="h-px bg-[#e5e5e0] my-1" />
 
                 {/* Switch workspace parent item */}
-                <div 
-                  className="relative"
-                  onMouseEnter={() => setIsSwitchWorkspaceOpen(true)}
-                  onMouseLeave={() => setIsSwitchWorkspaceOpen(false)}
-                >
+                <div className="relative">
                   <button
                     onClick={(e) => {
                       e.preventDefault();
