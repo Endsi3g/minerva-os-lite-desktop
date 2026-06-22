@@ -177,7 +177,7 @@ function renderInline(text: string): React.ReactNode {
 interface Message {
   role: 'user' | 'assistant';
   content: string;
-  attachedFile?: { name: string; type: string };
+  attachedFile?: { name: string; type: string; dataUrl?: string };
   isSimulated?: boolean;
 }
 
@@ -216,7 +216,7 @@ export function AssistantRoot() {
   const [showModelDropdown, setShowModelDropdown] = useState(false);
 
   // File Attachment
-  const [attachedFile, setAttachedFile] = useState<{ name: string; type: string; content?: string } | null>(null);
+  const [attachedFile, setAttachedFile] = useState<{ name: string; type: string; content?: string; dataUrl?: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Voice Interaction Simulation
@@ -469,7 +469,10 @@ export function AssistantRoot() {
     // Plain user message
     return (
       <div className="space-y-2">
-        {msg.attachedFile && (
+        {msg.attachedFile?.dataUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={msg.attachedFile.dataUrl} alt={msg.attachedFile.name} className="max-w-[220px] max-h-[220px] rounded-lg border border-border object-cover" />
+        ) : msg.attachedFile && (
           <div className="inline-flex items-center gap-2 bg-neutral-100 dark:bg-neutral-800 border border-border px-3 py-1.5 rounded-lg text-[11px] font-bold">
             <FileText className="h-3.5 w-3.5 text-[#10b981]" />
             <span className="truncate max-w-[150px]">{msg.attachedFile.name}</span>
@@ -525,12 +528,12 @@ export function AssistantRoot() {
       window.dispatchEvent(new CustomEvent('minerva_assistant_sync'));
     }
 
-    const userMsg: Message = { 
-      role: 'user', 
+    const userMsg: Message = {
+      role: 'user',
       content: trimmed,
-      attachedFile: fileToAttach ? { name: fileToAttach.name, type: fileToAttach.type } : undefined
+      attachedFile: fileToAttach ? { name: fileToAttach.name, type: fileToAttach.type, dataUrl: fileToAttach.dataUrl } : undefined
     };
-    
+
     // Save to local database
     await dbSaveMessage(activeSess.id, userId, 'user', trimmed, fileToAttach ? { name: fileToAttach.name, type: fileToAttach.type } : undefined);
 
@@ -538,9 +541,18 @@ export function AssistantRoot() {
     setMessages(history);
     setIsLoading(true);
 
+    // Last user message: send multimodal content (text + image) when an image is
+    // attached, so vision-capable models actually receive the image.
+    const lastUserContent: unknown = (fileToAttach && fileToAttach.dataUrl)
+      ? [
+          { type: 'text', text: contentToSend || "Décris cette image." },
+          { type: 'image_url', image_url: { url: fileToAttach.dataUrl } },
+        ]
+      : contentToSend;
+
     const apiHistory = [
       ...messages.map(m => ({ role: m.role, content: m.content })),
-      { role: 'user' as const, content: contentToSend }
+      { role: 'user' as const, content: lastUserContent }
     ];
 
     // Canvas-aware system prompt: lets the AI decide to open & write in the Canvas
@@ -565,13 +577,19 @@ export function AssistantRoot() {
       : canvasSystemPrompt;
 
     try {
+      // An attached image requires a vision-capable model — auto-use the vision
+      // model so the request doesn't fail on a text-only model.
+      const hasImage = !!(fileToAttach && fileToAttach.dataUrl);
+      const requestModel = hasImage ? 'meta-llama/llama-3.2-11b-vision-instruct:free' : selectedModel.id;
+      const requestProviderName = hasImage ? 'openrouter' : selectedModel.provider;
+
       const res = await fetch(getApiUrl('/api/chat'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           messages: apiHistory,
-          model: selectedModel.id,
-          provider: selectedModel.provider,
+          model: requestModel,
+          provider: requestProviderName,
           activeTool: isCanvasOpen ? 'canvas' : undefined,
           system: systemWithSkills,
         }),
@@ -958,15 +976,17 @@ export function AssistantRoot() {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
+    if (!file) return;
+    const reader = new FileReader();
+    if (file.type.startsWith('image/')) {
+      // Image → data URL, sent to vision-capable models
       reader.onload = (event) => {
-        const textContent = event.target?.result as string || '';
-        setAttachedFile({
-          name: file.name,
-          type: file.type || 'text/plain',
-          content: textContent
-        });
+        setAttachedFile({ name: file.name, type: file.type, dataUrl: (event.target?.result as string) || '' });
+      };
+      reader.readAsDataURL(file);
+    } else {
+      reader.onload = (event) => {
+        setAttachedFile({ name: file.name, type: file.type || 'text/plain', content: (event.target?.result as string) || '' });
       };
       reader.readAsText(file);
     }
@@ -1355,7 +1375,7 @@ export function AssistantRoot() {
                         ref={fileInputRef} 
                         onChange={handleFileChange} 
                         className="hidden" 
-                        accept=".txt,.md,.json,.csv,.js,.ts"
+                        accept=".txt,.md,.json,.csv,.js,.ts,image/*"
                       />
                       <button 
                         onClick={triggerFileUpload}
@@ -1597,7 +1617,7 @@ export function AssistantRoot() {
                       ref={fileInputRef} 
                       onChange={handleFileChange} 
                       className="hidden" 
-                      accept=".txt,.md,.json,.csv,.js,.ts"
+                      accept=".txt,.md,.json,.csv,.js,.ts,image/*"
                     />
                     <button 
                       onClick={triggerFileUpload}

@@ -48,6 +48,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useLanguage } from '@/lib/language-context';
+import { GoogleConnectModal } from '@/components/google-connect-modal';
 import { useReach } from '@/lib/reach-context';
 import { TranslationKey } from '@/lib/translations';
 import { toast } from 'sonner';
@@ -440,6 +441,7 @@ export default function IntegrationsPage() {
   // Selection state for connect modal
   const [selectedIntegration, setSelectedIntegration] = useState<IntegrationItem | null>(null);
   const [showConnectModal, setShowConnectModal] = useState(false);
+  const [googleModal, setGoogleModal] = useState<{ open: boolean; pack: 'identity' | 'communication' | 'documents' }>({ open: false, pack: 'communication' });
 
   // Add Custom Integration states
   const [showAddScratchModal, setShowAddScratchModal] = useState(false);
@@ -1694,7 +1696,11 @@ export default function IntegrationsPage() {
                 onClick={() => {
                   if (selectedIntegration.id.startsWith('google-') && selectedIntegration.id !== 'google-places') {
                     const pack = selectedIntegration.id === 'google-drive' ? 'documents' : 'communication';
-                    window.location.href = `/api/google/auth/start?pack=${pack}&redirect=/integrations`;
+                    // Show the polished, reusable Google permission modal
+                    setShowConnectModal(false);
+                    setSelectedIntegration(null);
+                    setGoogleModal({ open: true, pack });
+                    return;
                   } else {
                     connectIntegration(selectedIntegration.id);
                     setConnectedIds(prev => Array.from(new Set([...prev, selectedIntegration.id])));
@@ -1710,6 +1716,14 @@ export default function IntegrationsPage() {
           </div>
         </div>
       )}
+
+      {/* Polished, reusable Google permission modal */}
+      <GoogleConnectModal
+        open={googleModal.open}
+        pack={googleModal.pack}
+        redirect="/integrations"
+        onClose={() => setGoogleModal(prev => ({ ...prev, open: false }))}
+      />
 
       {/* Start From Scratch / Add Integration Dialog */}
       {showAddScratchModal && (

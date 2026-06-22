@@ -12,7 +12,7 @@ function createServiceClient() {
   }
 
   // Use the raw JS client for admin operations
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
+   
   const { createClient } = require('@supabase/supabase-js');
   return createClient(supabaseUrl, serviceRoleKey, {
     auth: { autoRefreshToken: false, persistSession: false },

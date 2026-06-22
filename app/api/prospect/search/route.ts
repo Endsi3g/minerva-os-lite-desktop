@@ -171,7 +171,7 @@ function cleanPhone(raw: string): string {
 
 function cleanWebsite(url: string): string {
   if (!url) return '';
-  let cleaned = url.trim();
+  const cleaned = url.trim();
   if (!cleaned) return '';
   try {
     const parsed = new URL(cleaned.startsWith('http') ? cleaned : `http://${cleaned}`);

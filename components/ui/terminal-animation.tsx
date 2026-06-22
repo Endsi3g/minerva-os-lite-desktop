@@ -30,7 +30,7 @@ function useControllableState<T>({
 
   const setValue = useCallback(
     (next: T | ((prev: T) => T)) => {
-      const nextValue = typeof next === "function" ? (next as Function)(value) : next
+      const nextValue = typeof next === "function" ? (next as (prev: T) => T)(value as T) : next
       if (!isControlled) {
         setUncontrolledState(nextValue)
       }

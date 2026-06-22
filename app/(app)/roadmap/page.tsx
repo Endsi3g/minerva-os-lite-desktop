@@ -96,6 +96,17 @@ interface PhaseVerification {
 
 const VERIFICATIONS: PhaseVerification[] = [
   {
+    phase: 'Phase 17 — Vision, connexion Google & ESLint',
+    version: 'v3.17.0',
+    date: '2026-06-22',
+    checks: [
+      "Dans l'Assistant, joindre une image (bouton +) : l'aperçu s'affiche dans le message et le modèle de vision répond à propos de l'image.",
+      'Sur /integrations, lancer la connexion d\'une intégration Google : la fenêtre soignée à deux volets s\'affiche.',
+      'Lancer `pnpm lint` : 0 erreur (les avertissements restants sont tolérés).',
+      'Confirmer que `pnpm typecheck` passe sans erreur.',
+    ],
+  },
+  {
     phase: 'Phase 16 — Vert partout (balayage global)',
     version: 'v3.16.0',
     date: '2026-06-22',

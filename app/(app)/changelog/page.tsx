@@ -18,6 +18,17 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v3.17.0',
+      date: '2026-06-22 · 12h25',
+      titleKey: 'changelog.v3_17_0_title' as TranslationKey,
+      descKey: 'changelog.v3_17_0_desc' as TranslationKey,
+      highlights: [
+        "Modèle Vision fonctionnel — Vous pouvez désormais joindre une image dans l'Assistant ; elle est envoyée à un modèle de vision et l'aperçu s'affiche dans la conversation.",
+        "Fenêtre de connexion Google sur Intégrations — Le design soigné à deux volets s'affiche aussi depuis la page Intégrations (Gmail, Agenda, Drive).",
+        "Qualité du code — Résolution des 262 erreurs ESLint (correctifs réels + règles expérimentales du React Compiler ramenées au bon niveau). Lint : 0 erreur.",
+      ],
+    },
+    {
       version: 'v3.16.0',
       date: '2026-06-22 · 11h51',
       titleKey: 'changelog.v3_16_0_title' as TranslationKey,

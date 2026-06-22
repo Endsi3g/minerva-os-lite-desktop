@@ -55,7 +55,7 @@ export async function GET() {
 
   // Map membership metadata by workspace_id for joined_at ordering
   const membershipMeta: Record<string, string> = {};
-  let memberWorkspaces: { id: string; name: string; owner_id: string; created_at: string }[] = [];
+  const memberWorkspaces: { id: string; name: string; owner_id: string; created_at: string }[] = [];
 
   if (memberships && memberships.length > 0) {
     const directIds = memberships.map((m: any) => m.workspace_id).filter(Boolean) as string[];

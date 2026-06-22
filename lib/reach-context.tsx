@@ -1182,7 +1182,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
   // Load data whenever activeWorkspace or user changes
   useEffect(() => {
     if (user && activeWorkspace) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+       
       loadData(user, activeWorkspace);
     }
   }, [user, activeWorkspace, loadData]);
@@ -1327,11 +1327,13 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
 
     try {
       // First attempt: full payload (requires enriched columns in schema)
-      let { data: newDbLead, error: leadError } = await supabase
+      const enrichedInsert = await supabase
         .from('leads')
         .insert(enrichedPayload)
         .select()
         .single();
+      let newDbLead = enrichedInsert.data;
+      const leadError = enrichedInsert.error;
 
       if (leadError) {
         // Enriched columns might not exist in the live schema — retry with core only
