@@ -18,7 +18,10 @@ export async function GET(req: NextRequest) {
     const status = await getAuthStatus(supabase, user.id);
     const existingScopes = status.scopes || [];
 
-    const redirectUri = `${new URL(req.url).origin}/api/google/auth/callback`;
+    // Use the canonical app URL when configured so the redirect_uri always matches
+    // the one registered in Google Cloud Console (avoids preview-domain mismatches).
+    const origin = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || new URL(req.url).origin;
+    const redirectUri = `${origin}/api/google/auth/callback`;
     const oauthUrl = getAuthorizationUrl(redirectUri, user.id, redirectPath, pack, existingScopes);
 
     if (json) {

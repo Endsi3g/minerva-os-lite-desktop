@@ -96,6 +96,18 @@ interface PhaseVerification {
 
 const VERIFICATIONS: PhaseVerification[] = [
   {
+    phase: 'Phase 10 — Connexion Google & OAuth',
+    version: 'v3.10.0',
+    date: '2026-06-22',
+    checks: [
+      'Sur /inbox (non connecté), cliquer « Connecter mon compte Gmail » : la nouvelle fenêtre à deux volets s\'affiche.',
+      'Cliquer « Connecter Google » lance le flux OAuth Google.',
+      'IMPORTANT : enregistrer https://minerva-os-lite-desktop.vercel.app/api/google/auth/callback ET /api/auth/google/callback dans Google Cloud Console (Identifiants OAuth → URI de redirection autorisés).',
+      'Vérifier que NEXT_PUBLIC_APP_URL = https://minerva-os-lite-desktop.vercel.app dans Vercel.',
+      'Après connexion, l\'erreur redirect_uri_mismatch ne doit plus apparaître et les fils Gmail se chargent.',
+    ],
+  },
+  {
     phase: 'Phase 9 — Page de rendez-vous dédiée',
     version: 'v3.9.0',
     date: '2026-06-22',

@@ -9,6 +9,7 @@ import type { InboxThread, ThreadMessage } from '@/lib/inbox-types';
 import type { Lead } from '@/lib/mock-data';
 import { createClient } from '@/lib/supabase/client';
 import { Mail, Check } from 'lucide-react';
+import { GoogleConnectModal } from '@/components/google-connect-modal';
 
 type Filter = 'all' | 'positive' | 'followup' | 'negative';
 type ReplyStatus = 'positive' | 'followup' | 'negative' | null;
@@ -23,6 +24,7 @@ export function InboxRoot() {
   const [needsReauth, setNeedsReauth] = useState(false);
   const [isConnected, setIsConnected] = useState(true);
 
+  const [showConnect, setShowConnect] = useState(false);
   const [selectedThread, setSelectedThread] = useState<InboxThread | null>(null);
   const [detailMessages, setDetailMessages] = useState<ThreadMessage[]>([]);
   const [detailLoading, setDetailLoading] = useState(false);
@@ -191,16 +193,13 @@ export function InboxRoot() {
             ))}
           </div>
           <button
-            onClick={() => {
-              if (typeof window !== 'undefined') {
-                window.location.href = `/api/google/auth/start?pack=communication&redirect=${encodeURIComponent('/inbox')}`;
-              }
-            }}
+            onClick={() => setShowConnect(true)}
             className="w-full py-2.5 px-4 bg-[#10b981] hover:bg-[#059669] text-white font-bold rounded-lg text-xs transition-colors flex items-center justify-center gap-2 shadow-xs cursor-pointer border-0"
           >
             <span>Connecter mon compte Gmail</span>
           </button>
         </div>
+        <GoogleConnectModal open={showConnect} onClose={() => setShowConnect(false)} pack="communication" redirect="/inbox" />
       </div>
     );
   }

@@ -18,6 +18,16 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v3.10.0',
+      date: '2026-06-22 · 11h11',
+      titleKey: 'changelog.v3_10_0_title' as TranslationKey,
+      descKey: 'changelog.v3_10_0_desc' as TranslationKey,
+      highlights: [
+        "Nouvelle fenêtre de connexion Google — Design soigné en deux volets (avantages + aperçu d'intégration) réutilisable, affichée depuis la boîte de réception.",
+        "Connexion Google fiabilisée — L'URI de redirection OAuth utilise désormais le domaine canonique de l'application, évitant les erreurs « redirect_uri_mismatch » liées aux domaines de prévisualisation.",
+      ],
+    },
+    {
       version: 'v3.9.0',
       date: '2026-06-22 · 01h23',
       titleKey: 'changelog.v3_9_0_title' as TranslationKey,

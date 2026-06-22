@@ -47,7 +47,8 @@ export async function GET(req: NextRequest) {
     
     const workspaceId = workspaces?.[0]?.id;
 
-    const redirectUri = `${new URL(req.url).origin}/api/google/auth/callback`;
+    const origin = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || new URL(req.url).origin;
+    const redirectUri = `${origin}/api/google/auth/callback`;
     await exchangeCodeForTokens(supabase, code, redirectUri, userId, pack, workspaceId);
 
     return NextResponse.redirect(`${redirectTarget}google_connected`);
