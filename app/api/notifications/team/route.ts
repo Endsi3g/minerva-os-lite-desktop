@@ -95,6 +95,22 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: insertError.message }, { status: 500 });
     }
 
+    // Fan-out to Slack if the workspace owner has a webhook configured
+    try {
+      const { data: ownerSettings } = await admin
+        .from('settings')
+        .select('slack_webhook_url')
+        .eq('user_id', workspaceOwnerId)
+        .maybeSingle();
+      if (ownerSettings?.slack_webhook_url) {
+        await fetch(ownerSettings.slack_webhook_url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: `🔔 *${title}*${body ? `\n${body}` : ''}` }),
+        }).catch(() => {});
+      }
+    } catch { /* Slack fan-out is best-effort */ }
+
     return NextResponse.json({ success: true, delivered: rows.length });
   } catch (err) {
     console.error('[notifications/team]', err);

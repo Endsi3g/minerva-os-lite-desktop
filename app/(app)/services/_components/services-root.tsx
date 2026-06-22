@@ -461,7 +461,7 @@ export default function ServicesRoot() {
           <div className="flex flex-col gap-5">
             <div className="flex items-center justify-between">
               <h2 className="text-sm font-bold text-[#26251e]">Mes services ({services.length})</h2>
-              <Button size="sm" className="gap-1.5 bg-[#059669] hover:bg-[#d94200] text-white text-xs" onClick={() => { setShowAddForm(true); setEditingId(null); }}>
+              <Button size="sm" className="gap-1.5 bg-[#059669] hover:bg-[#047857] text-white text-xs" onClick={() => { setShowAddForm(true); setEditingId(null); }}>
                 <Plus className="h-3.5 w-3.5" /> Ajouter
               </Button>
             </div>
@@ -495,7 +495,7 @@ export default function ServicesRoot() {
                 </div>
                 <div className="flex justify-end gap-2">
                   <Button type="button" variant="ghost" size="sm" onClick={() => { setShowAddForm(false); setAddForm(EMPTY_FORM); }}>Annuler</Button>
-                  <Button type="submit" size="sm" className="bg-[#059669] hover:bg-[#d94200] text-white" disabled={addSaving}>
+                  <Button type="submit" size="sm" className="bg-[#059669] hover:bg-[#047857] text-white" disabled={addSaving}>
                     {addSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Enregistrer'}
                   </Button>
                 </div>
@@ -551,7 +551,7 @@ export default function ServicesRoot() {
                       <Textarea value={editForm.description} onChange={e => setEditForm(p => ({ ...p, description: e.target.value }))} rows={2} className="text-xs" placeholder="Description" />
                       <div className="flex justify-end gap-1.5">
                         <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => setEditingId(null)}><X className="h-3.5 w-3.5" /></Button>
-                        <Button type="button" size="sm" className="h-7 text-xs bg-[#059669] hover:bg-[#d94200] text-white" onClick={() => handleEditSave(service.id)} disabled={editSaving}>
+                        <Button type="button" size="sm" className="h-7 text-xs bg-[#059669] hover:bg-[#047857] text-white" onClick={() => handleEditSave(service.id)} disabled={editSaving}>
                           {editSaving ? <Loader2 className="h-3 w-3 animate-spin" /> : <><Check className="h-3 w-3 mr-1" />Sauver</>}
                         </Button>
                       </div>
@@ -596,7 +596,7 @@ export default function ServicesRoot() {
           <div className="flex flex-col gap-5">
             <div className="flex items-center justify-between">
               <h2 className="text-sm font-bold text-[#26251e]">Forfaits ({packages.length})</h2>
-              <Button size="sm" className="gap-1.5 bg-[#059669] hover:bg-[#d94200] text-white text-xs" onClick={() => { setShowPkgForm(true); setEditingPkgId(null); setPkgForm({ name: '', description: '', serviceIds: [], discountedPrice: '', highlight: false }); }}>
+              <Button size="sm" className="gap-1.5 bg-[#059669] hover:bg-[#047857] text-white text-xs" onClick={() => { setShowPkgForm(true); setEditingPkgId(null); setPkgForm({ name: '', description: '', serviceIds: [], discountedPrice: '', highlight: false }); }}>
                 <Plus className="h-3.5 w-3.5" /> Nouveau forfait
               </Button>
             </div>
@@ -637,7 +637,7 @@ export default function ServicesRoot() {
                 </label>
                 <div className="flex justify-end gap-2">
                   <Button type="button" variant="ghost" size="sm" onClick={() => { setShowPkgForm(false); setEditingPkgId(null); }}>Annuler</Button>
-                  <Button type="button" size="sm" className="bg-[#059669] hover:bg-[#d94200] text-white" onClick={handleSavePackage}>Enregistrer</Button>
+                  <Button type="button" size="sm" className="bg-[#059669] hover:bg-[#047857] text-white" onClick={handleSavePackage}>Enregistrer</Button>
                 </div>
               </div>
             )}

@@ -190,7 +190,9 @@ interface CanvasDocument {
 }
 
 const AI_MODELS = [
-  { id: 'meta-llama/llama-3.3-70b-instruct:free', name: 'Minerva AI (Llama 3.3 70B)', provider: 'openrouter' },
+  { id: 'claude-sonnet-4-6', name: 'Claude Sonnet (Anthropic)', provider: 'anthropic' },
+  { id: 'claude-haiku-4-5-20251001', name: 'Claude Haiku — Rapide', provider: 'anthropic' },
+  { id: 'meta-llama/llama-3.3-70b-instruct:free', name: 'Llama 3.3 70B (OpenRouter)', provider: 'openrouter' },
   { id: 'meta-llama/llama-3.2-11b-vision-instruct:free', name: 'Vision (texte + image)', provider: 'openrouter' },
   { id: 'google/gemini-2.5-flash:free', name: 'Gemini 2.5 Flash', provider: 'openrouter' },
   { id: 'deepseek/deepseek-r1:free', name: 'DeepSeek R1 — Raisonnement', provider: 'openrouter' },

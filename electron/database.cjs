@@ -54,6 +54,10 @@ function initDb() {
     db.run(`ALTER TABLE settings ADD COLUMN active_workspace_id TEXT DEFAULT NULL`, () => {
       // Ignore if column already exists
     });
+    // v3.23.0 — Slack + Notion integration columns
+    db.run(`ALTER TABLE settings ADD COLUMN slack_webhook_url TEXT`, () => {});
+    db.run(`ALTER TABLE settings ADD COLUMN notion_token TEXT`, () => {});
+    db.run(`ALTER TABLE settings ADD COLUMN notion_database_id TEXT`, () => {});
 
     // 2. Leads table
     db.run(`CREATE TABLE IF NOT EXISTS leads (

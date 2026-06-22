@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { SettingsSectionWrapper } from './settings-section-wrapper';
-import { Mail, Search, Globe, RefreshCw, Check, Key, Server, ChevronDown, ChevronUp } from 'lucide-react';
+import { Mail, Search, Globe, RefreshCw, Check, Key, Server, ChevronDown, ChevronUp, MessageSquare, Layers, Send, AlertCircle } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
 
@@ -29,6 +29,17 @@ export function SettingsIntegrationsSection() {
   const [savingYelp, setSavingYelp] = useState(false);
   const [firecrawlApiKey, setFirecrawlApiKey] = useState('');
   const [savingFirecrawl, setSavingFirecrawl] = useState(false);
+
+  // Slack + Notion
+  const [slackWebhookUrl, setSlackWebhookUrl] = useState('');
+  const [savingSlack, setSavingSlack] = useState(false);
+  const [testingSlack, setTestingSlack] = useState(false);
+  const [slackSaved, setSlackSaved] = useState(false);
+  const [notionToken, setNotionToken] = useState('');
+  const [notionDatabaseId, setNotionDatabaseId] = useState('');
+  const [savingNotion, setSavingNotion] = useState(false);
+  const [testingNotion, setTestingNotion] = useState(false);
+  const [notionSaved, setNotionSaved] = useState(false);
 
   // Real integration states
   const [gmailConnected, setGmailConnected] = useState(false);
@@ -75,7 +86,7 @@ export function SettingsIntegrationsSection() {
         if (user) {
           const { data } = await supabase
             .from('settings')
-            .select('apify_token, smtp_config, here_api_key, yelp_api_key, firecrawl_api_key')
+            .select('apify_token, smtp_config, here_api_key, yelp_api_key, firecrawl_api_key, slack_webhook_url, notion_token, notion_database_id')
             .eq('user_id', user.id)
             .maybeSingle();
 
@@ -101,6 +112,9 @@ export function SettingsIntegrationsSection() {
             if ((data as any).here_api_key) setHereApiKey((data as any).here_api_key);
             if ((data as any).yelp_api_key) setYelpApiKey((data as any).yelp_api_key);
             if ((data as any).firecrawl_api_key) setFirecrawlApiKey((data as any).firecrawl_api_key);
+            if ((data as any).slack_webhook_url) setSlackWebhookUrl((data as any).slack_webhook_url);
+            if ((data as any).notion_token) setNotionToken((data as any).notion_token);
+            if ((data as any).notion_database_id) setNotionDatabaseId((data as any).notion_database_id);
           }
         }
       } catch (e) {
@@ -246,6 +260,70 @@ export function SettingsIntegrationsSection() {
       toast.error("Erreur : " + e.message);
     }
     setTestingSmtp(false);
+  };
+
+  const handleSaveSlack = async () => {
+    setSavingSlack(true);
+    try {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase.from('settings').update({ slack_webhook_url: slackWebhookUrl.trim() || null, updated_at: new Date().toISOString() }).eq('user_id', user.id);
+        setSlackSaved(true);
+        toast.success('URL Slack enregistrée !');
+        setTimeout(() => setSlackSaved(false), 2000);
+      }
+    } catch { toast.error('Erreur sauvegarde Slack'); }
+    setSavingSlack(false);
+  };
+
+  const handleTestSlack = async () => {
+    if (!slackWebhookUrl) { toast.error('Entrez d\'abord une URL de webhook Slack.'); return; }
+    setTestingSlack(true);
+    try {
+      const res = await fetch('/api/integrations/slack', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'test', webhookUrl: slackWebhookUrl }),
+      });
+      if (res.ok) toast.success('Message test envoyé dans Slack !');
+      else { const d = await res.json(); toast.error(d.error || 'Échec du test Slack.'); }
+    } catch { toast.error('Erreur test Slack'); }
+    setTestingSlack(false);
+  };
+
+  const handleSaveNotion = async () => {
+    setSavingNotion(true);
+    try {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase.from('settings').update({
+          notion_token: notionToken.trim() || null,
+          notion_database_id: notionDatabaseId.trim() || null,
+          updated_at: new Date().toISOString(),
+        }).eq('user_id', user.id);
+        setNotionSaved(true);
+        toast.success('Connexion Notion enregistrée !');
+        setTimeout(() => setNotionSaved(false), 2000);
+      }
+    } catch { toast.error('Erreur sauvegarde Notion'); }
+    setSavingNotion(false);
+  };
+
+  const handleTestNotion = async () => {
+    if (!notionToken) { toast.error('Entrez d\'abord un token d\'intégration Notion.'); return; }
+    setTestingNotion(true);
+    try {
+      const res = await fetch('/api/integrations/notion', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'test', token: notionToken }),
+      });
+      if (res.ok) { const d = await res.json(); toast.success(`Notion connecté${d.name ? ` (${d.name})` : ''} !`); }
+      else { const d = await res.json(); toast.error(d.error || 'Token Notion invalide.'); }
+    } catch { toast.error('Erreur test Notion'); }
+    setTestingNotion(false);
   };
 
   if (loading) {
@@ -707,6 +785,119 @@ export function SettingsIntegrationsSection() {
               >
                 {savingFirecrawl ? 'Sauvegarde...' : 'Enregistrer'}
               </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Slack Card */}
+        <Card className="border border-border bg-card">
+          <CardContent className="p-5 space-y-4">
+            <div className="flex gap-4 min-w-0">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary shrink-0">
+                <MessageSquare className="h-5 w-5" />
+              </div>
+              <div className="space-y-1 min-w-0 flex-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-xs font-bold text-foreground">Slack</span>
+                  {slackWebhookUrl ? (
+                    <Badge variant="outline" className="text-[9px] font-bold rounded px-1.5 py-0 bg-emerald-50 text-emerald-700 border-emerald-200">Configuré</Badge>
+                  ) : (
+                    <Badge variant="outline" className="text-[9px] font-bold rounded px-1.5 py-0 bg-slate-50 text-slate-500 border-slate-200">Non configuré</Badge>
+                  )}
+                </div>
+                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                  Recevez les notifications Minerva (nouveaux leads, visites terrain, mentions) dans un canal Slack via un <strong>Webhook entrant</strong>.{' '}
+                  Créez le vôtre sur <a href="https://api.slack.com/apps" target="_blank" rel="noopener noreferrer" className="text-primary underline">api.slack.com/apps →</a>
+                </p>
+                <div className="flex gap-2 items-center pt-1">
+                  <div className="relative flex-1">
+                    <MessageSquare className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+                    <input
+                      type="url"
+                      placeholder="https://hooks.slack.com/services/…"
+                      value={slackWebhookUrl}
+                      onChange={e => setSlackWebhookUrl(e.target.value)}
+                      className="w-full pl-8 pr-3 h-8 text-xs border border-input rounded-md bg-card focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    />
+                  </div>
+                  <Button type="button" size="sm" variant="outline" onClick={handleTestSlack} disabled={testingSlack} className="h-8 text-xs shrink-0 gap-1">
+                    {testingSlack ? <RefreshCw className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
+                    Tester
+                  </Button>
+                  <Button type="button" size="sm" onClick={handleSaveSlack} disabled={savingSlack} className="h-8 text-xs font-bold px-3 bg-primary hover:bg-primary/95 text-primary-foreground shrink-0 gap-1">
+                    {savingSlack ? <RefreshCw className="h-3 w-3 animate-spin" /> : slackSaved ? <Check className="h-3 w-3" /> : null}
+                    {slackSaved ? 'Enregistré' : 'Enregistrer'}
+                  </Button>
+                </div>
+                <div className="flex items-start gap-1.5 text-[10px] text-muted-foreground bg-muted/40 rounded-lg px-3 py-2">
+                  <AlertCircle className="h-3 w-3 mt-0.5 shrink-0 text-primary" />
+                  <span>Collez l'URL du Webhook entrant — pas votre token bot. Les notifications sont envoyées automatiquement lors des événements CRM importants.</span>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Notion Card */}
+        <Card className="border border-border bg-card">
+          <CardContent className="p-5 space-y-4">
+            <div className="flex gap-4 min-w-0">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary shrink-0">
+                <Layers className="h-5 w-5" />
+              </div>
+              <div className="space-y-1 min-w-0 flex-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-xs font-bold text-foreground">Notion</span>
+                  {notionToken ? (
+                    <Badge variant="outline" className="text-[9px] font-bold rounded px-1.5 py-0 bg-emerald-50 text-emerald-700 border-emerald-200">Configuré</Badge>
+                  ) : (
+                    <Badge variant="outline" className="text-[9px] font-bold rounded px-1.5 py-0 bg-slate-50 text-slate-500 border-slate-200">Non configuré</Badge>
+                  )}
+                </div>
+                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                  Exportez vos documents Canvas vers une base de données Notion. Créez une intégration sur{' '}
+                  <a href="https://www.notion.so/my-integrations" target="_blank" rel="noopener noreferrer" className="text-primary underline">notion.so/my-integrations →</a>
+                </p>
+                <div className="space-y-2 pt-1">
+                  <div className="flex gap-2 items-center">
+                    <div className="relative flex-1">
+                      <Key className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+                      <input
+                        type="password"
+                        placeholder={notionToken ? 'secret_****' : "Token d'intégration (secret_…)"}
+                        value={notionToken}
+                        onChange={e => setNotionToken(e.target.value)}
+                        className="w-full pl-8 pr-3 h-8 text-xs border border-input rounded-md bg-card focus:outline-none focus:ring-2 focus:ring-primary/30"
+                        autoComplete="off"
+                      />
+                    </div>
+                    <Button type="button" size="sm" variant="outline" onClick={handleTestNotion} disabled={testingNotion} className="h-8 text-xs shrink-0 gap-1">
+                      {testingNotion ? <RefreshCw className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
+                      Vérifier
+                    </Button>
+                  </div>
+                  <div className="flex gap-2 items-center">
+                    <div className="relative flex-1">
+                      <Layers className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+                      <input
+                        type="text"
+                        placeholder="ID de la base de données Notion (optionnel)"
+                        value={notionDatabaseId}
+                        onChange={e => setNotionDatabaseId(e.target.value)}
+                        className="w-full pl-8 pr-3 h-8 text-xs border border-input rounded-md bg-card focus:outline-none focus:ring-2 focus:ring-primary/30"
+                      />
+                    </div>
+                    <Button type="button" size="sm" onClick={handleSaveNotion} disabled={savingNotion} className="h-8 text-xs font-bold px-3 bg-primary hover:bg-primary/95 text-primary-foreground shrink-0 gap-1">
+                      {savingNotion ? <RefreshCw className="h-3 w-3 animate-spin" /> : notionSaved ? <Check className="h-3 w-3" /> : null}
+                      {notionSaved ? 'Enregistré' : 'Enregistrer'}
+                    </Button>
+                  </div>
+                </div>
+                <div className="flex items-start gap-1.5 text-[10px] text-muted-foreground bg-muted/40 rounded-lg px-3 py-2">
+                  <AlertCircle className="h-3 w-3 mt-0.5 shrink-0 text-primary" />
+                  <span>Partagez votre base de données avec l'intégration dans Notion (bouton Partager → Inviter), puis copiez son ID depuis l'URL (32 caractères hexadécimaux).</span>
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>

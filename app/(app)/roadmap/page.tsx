@@ -72,12 +72,14 @@ const roadmapData: RoadmapItem[] = [
   { module: 'Design', feature: 'Thème 100% vert', desc: 'Accent de marque vert unique app-wide (plus aucun orange) ; DESIGN.md/CLAUDE.md mis à jour.', priority: 'low', status: 'available' },
   { module: 'Qualité', feature: 'Lint propre (0 erreur)', desc: '262 erreurs ESLint résolues ; typecheck vert à chaque release.', priority: 'low', status: 'available' },
 
+  // ─── Available (v3.23.0) — Intégrations Slack + Notion ────────────────
+  { module: 'Intégrations', feature: 'Slack (Webhook entrant)', desc: 'Notifications CRM poussées dans un canal Slack via un webhook entrant — configurable dans Paramètres → Intégrations.', priority: 'medium', status: 'available' },
+  { module: 'Intégrations', feature: 'Notion (token + base)', desc: 'Connexion Notion par token d\'intégration + ID de base de données, pour exporter des documents Canvas vers Notion.', priority: 'medium', status: 'available' },
+
   // ─── Planned : Intégrations à activer (lourdes, planifiées) ───────────
-  { module: 'Intégrations', feature: 'Slack', desc: 'Notifications et alertes CRM poussées dans des canaux Slack (nouveaux leads, deals gagnés, réponses).', priority: 'medium', status: 'planned' },
-  { module: 'Intégrations', feature: 'Notion', desc: 'Synchronisation bidirectionnelle des leads et notes vers des bases de données Notion.', priority: 'medium', status: 'planned' },
   { module: 'Intégrations', feature: 'Microsoft SharePoint', desc: 'Export et stockage des documents et rapports clients sur SharePoint.', priority: 'low', status: 'planned' },
   { module: 'Intégrations', feature: 'Meeting recorder', desc: 'Capture et transcription automatique des réunions, liées aux fiches leads.', priority: 'low', status: 'planned' },
-  { module: 'Intégrations', feature: 'Webhooks Website', desc: 'Réception des formulaires de site web entrants comme leads taggés (déjà en partie via /integrations/forms).', priority: 'medium', status: 'planned' },
+  { module: 'Intégrations', feature: 'Webhooks Website', desc: 'Réception des formulaires de site web entrants comme leads taggés (déjà en partie via /integrations/forms).', priority: 'medium', status: 'available' },
 
   // ─── Planned ─────────────────────────────────────────────────────────
   { module: 'CRM', feature: 'Accounts / Entreprises', desc: 'Page /accounts : vue 360° par société regroupant contacts, pipeline cumulé, visites terrain et notes.', priority: 'high', status: 'available' },
@@ -110,6 +112,21 @@ interface PhaseVerification {
 }
 
 const VERIFICATIONS: PhaseVerification[] = [
+  {
+    phase: 'Phase 23 — Intégrations Slack & Notion',
+    version: 'v3.23.0',
+    date: '2026-06-22',
+    checks: [
+      'Aller dans Paramètres → Intégrations : les cartes Slack et Notion apparaissent.',
+      'Slack — Coller une URL de webhook (https://hooks.slack.com/services/…) et cliquer Tester : un message de test arrive dans le canal Slack.',
+      'Slack — Cliquer Enregistrer : l\'URL est persistée. Recharger la page : l\'URL est toujours là (badge « Configuré »).',
+      'Notion — Coller un token d\'intégration (secret_…) et cliquer Vérifier : la connexion est confirmée.',
+      'Notion — Enregistrer token + ID de base : persistés et affichés au rechargement.',
+      'Notifications équipe → Slack : créer un lead ou enregistrer un passage terrain ; si Slack est configuré, la notification arrive dans le canal.',
+      'Chat IA — Modèle par défaut est « Claude Sonnet (Anthropic) » ; envoyer un message : réponse réelle (pas simulée) si ANTHROPIC_API_KEY est défini.',
+      'Page Services — Aucun bouton n\'a un hover orange ; tous sont verts (#047857).',
+    ],
+  },
   {
     phase: 'Phase 22 — Comptes / Entreprises (360°)',
     version: 'v3.22.0',

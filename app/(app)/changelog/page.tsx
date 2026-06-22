@@ -18,6 +18,18 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v3.23.0',
+      date: '2026-06-22 · 14h30',
+      titleKey: 'changelog.v3_23_0_title' as TranslationKey,
+      descKey: 'changelog.v3_23_0_desc' as TranslationKey,
+      highlights: [
+        "Slack connector — Collez un Webhook entrant Slack dans Paramètres → Intégrations ; toutes les notifications Minerva (leads, visites, mentions) sont poussées dans votre canal automatiquement.",
+        "Notion connector — Collez un token d'intégration Notion + ID de base de données pour pouvoir exporter vos documents Canvas vers Notion.",
+        "Claude Sonnet par défaut — Le modèle Claude Sonnet (Anthropic) est maintenant le modèle par défaut dans le chat IA. Plus de réponses simulées si ANTHROPIC_API_KEY est configuré.",
+        "Boutons verts partout — Les derniers boutons oranges sur la page Services ont été corrigés en vert (#047857).",
+      ],
+    },
+    {
       version: 'v3.22.0',
       date: '2026-06-22 · 12h56',
       titleKey: 'changelog.v3_22_0_title' as TranslationKey,
