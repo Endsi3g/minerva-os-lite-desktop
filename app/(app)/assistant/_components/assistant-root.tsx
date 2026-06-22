@@ -30,6 +30,7 @@ import {
   Maximize2
 } from 'lucide-react';
 import { MinervaIcon } from '@/components/icons';
+import { useLanguage } from '@/lib/language-context';
 import {
   dbGetSessions,
   dbCreateSession,
@@ -47,7 +48,7 @@ import {
 } from './assistant-db';
 import { Pin, PinOff } from 'lucide-react';
 
-function MarkdownRenderer({ content }: { content: string }) {
+function MarkdownRenderer({ content, t }: { content: string; t: any }) {
   const [copiedBlock, setCopiedBlock] = React.useState<number | null>(null);
 
   const copyCode = (code: string, idx: number) => {
@@ -77,7 +78,7 @@ function MarkdownRenderer({ content }: { content: string }) {
                   className="text-[10px] text-neutral-400 hover:text-white transition-colors flex items-center gap-1"
                 >
                   {copiedBlock === blockIdx ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
-                  <span>{copiedBlock === blockIdx ? 'Copié' : 'Copier'}</span>
+                  <span>{copiedBlock === blockIdx ? t('assistant.copied') : t('assistant.copy')}</span>
                 </button>
               </div>
               <pre className="p-3 overflow-x-auto whitespace-pre text-xs leading-relaxed">{code}</pre>
@@ -193,8 +194,13 @@ const AI_MODELS = [
   { id: 'nousresearch/hermes-3-llama-3-8b', name: 'Hermes Agent ⚡', provider: 'openrouter' },
 ];
 
+const generateUniqueId = () => {
+  return Math.random().toString(36).substring(2) + Date.now().toString(36);
+};
+
 export function AssistantRoot() {
   const { user, leads, activeWorkspace } = useReach();
+  const { t, locale } = useLanguage();
 
   // State Management
   const [messages, setMessages] = useState<Message[]>([]);
@@ -217,12 +223,19 @@ export function AssistantRoot() {
   const [editorDocId, setEditorDocId] = useState<string>('');
 
   // Editor states
-  const [editorTitle, setEditorTitle] = useState("Document sans titre");
+  const [editorTitle, setEditorTitle] = useState("");
   const [editorContent, setEditorContent] = useState("");
-  const [isSavedIndicator, setIsSavedIndicator] = useState("Modifications enregistrées");
+  const [isSavedIndicator, setIsSavedIndicator] = useState("assistant.saved");
   const [headingFormat, setHeadingFormat] = useState("normal");
   const [copied, setCopied] = useState(false);
   const [showExportDropdown, setShowExportDropdown] = useState(false);
+
+  // Synchroniser le titre par défaut du Canvas selon la langue
+  useEffect(() => {
+    if (!editorDocId && (!editorTitle || editorTitle === "Document sans titre" || editorTitle === "Untitled Document" || editorTitle === "Unbenanntes Dokument")) {
+      setEditorTitle(t('assistant.untitled_doc'));
+    }
+  }, [locale, editorDocId]);
 
   // History panel states
   const [isHistoryOpen, setIsHistoryOpen] = useState(true);
@@ -273,7 +286,7 @@ export function AssistantRoot() {
           id: activeDoc.id,
           title: activeDoc.title,
           content: activeDoc.content,
-          lastSaved: "Modifications enregistrées"
+          lastSaved: t('assistant.saved')
         });
         setEditorTitle(activeDoc.title);
         setEditorContent(activeDoc.content);
@@ -281,7 +294,7 @@ export function AssistantRoot() {
       } else {
         setEditorDocId('');
         setCanvasDoc(null);
-        setEditorTitle("Document sans titre");
+        setEditorTitle("");
         setEditorContent("");
       }
     }
@@ -315,25 +328,25 @@ export function AssistantRoot() {
 
   // Auto-save logic
   const saveDoc = async (id: string, title: string, content: string) => {
-    setIsSavedIndicator("Enregistrement...");
+    setIsSavedIndicator("assistant.saving");
     await dbSaveCanvasDoc(id, userId, workspaceId, title, content);
     
     // Refresh document list
     const list = await dbGetCanvasDocs(userId, workspaceId);
     setCanvasDocs(list);
-    setIsSavedIndicator("Modifications enregistrées");
+    setIsSavedIndicator("assistant.saved");
   };
 
   const handleContentChange = (newVal: string) => {
     setEditorContent(newVal);
-    const docId = editorDocId || Math.random().toString(36).substring(2) + Date.now().toString(36);
+    const docId = editorDocId || generateUniqueId();
     if (!editorDocId) {
       setEditorDocId(docId);
       setCanvasDoc({
         id: docId,
         title: editorTitle,
         content: newVal,
-        lastSaved: "À l'instant"
+        lastSaved: t('assistant.just_now')
       });
     } else if (canvasDoc) {
       setCanvasDoc({
@@ -351,14 +364,14 @@ export function AssistantRoot() {
 
   const handleTitleChange = (newTitle: string) => {
     setEditorTitle(newTitle);
-    const docId = editorDocId || Math.random().toString(36).substring(2) + Date.now().toString(36);
+    const docId = editorDocId || generateUniqueId();
     if (!editorDocId) {
       setEditorDocId(docId);
       setCanvasDoc({
         id: docId,
         title: newTitle,
         content: editorContent,
-        lastSaved: "À l'instant"
+        lastSaved: t('assistant.just_now')
       });
     } else if (canvasDoc) {
       setCanvasDoc({
@@ -401,20 +414,20 @@ export function AssistantRoot() {
               </div>
               <div className="min-w-0">
                 <p className="text-xs font-bold text-foreground truncate">{canvasData.title}</p>
-                <p className="text-[10px] text-muted-foreground">Document prêt dans le Canvas</p>
+                <p className="text-[10px] text-muted-foreground">{t('assistant.doc_ready_canvas')}</p>
               </div>
             </div>
             <Button
               size="sm"
               variant="outline"
               onClick={async () => {
-                const docId = Math.random().toString(36).substring(2) + Date.now().toString(36);
+                const docId = generateUniqueId();
                 setEditorDocId(docId);
                 const doc = {
                   id: docId,
                   title: canvasData.title,
                   content: canvasData.content,
-                  lastSaved: "À l'instant"
+                  lastSaved: t('assistant.just_now')
                 };
                 setCanvasDoc(doc);
                 await dbSaveCanvasDoc(docId, userId, workspaceId, canvasData.title, canvasData.content);
@@ -425,7 +438,7 @@ export function AssistantRoot() {
               className="text-xs font-bold h-8 border-emerald-200 hover:bg-emerald-50 text-emerald-700 hover:text-emerald-800 shrink-0"
             >
               <Maximize2 className="h-3 w-3 mr-1" />
-              Ouvrir le Canvas
+              {t('assistant.open_canvas')}
             </Button>
           </div>
         </div>
@@ -442,7 +455,7 @@ export function AssistantRoot() {
               <span className="truncate max-w-[150px]">{msg.attachedFile.name}</span>
             </div>
           )}
-          <MarkdownRenderer content={msg.content} />
+          <MarkdownRenderer content={msg.content} t={t} />
         </div>
       );
     }
@@ -494,7 +507,7 @@ export function AssistantRoot() {
         .slice(0, 6);
       const sessTitle = words.length > 0
         ? words.join(' ')
-        : (fileToAttach ? `Fichier : ${fileToAttach.name}` : 'Discussion');
+        : (fileToAttach ? (locale === 'en' ? 'File: ' : locale === 'de' ? 'Datei: ' : 'Fichier : ') + fileToAttach.name : t('assistant.new_chat'));
       activeSess = await dbCreateSession(userId, workspaceId, sessTitle);
       setCurrentSession(activeSess);
       localStorage.setItem(`minerva_active_sess_${workspaceId}`, activeSess.id);
@@ -552,10 +565,11 @@ export function AssistantRoot() {
           try {
             const parsed = JSON.parse(data);
             const delta = parsed.choices?.[0]?.delta?.content ?? '';
-            assistantContent += delta;
+            assistantContent = assistantContent + delta;
+            const contentSnapshot = assistantContent;
             setMessages(prev => {
               const updated = [...prev];
-              updated[updated.length - 1] = { role: 'assistant', content: assistantContent };
+              updated[updated.length - 1] = { role: 'assistant', content: contentSnapshot };
               return updated;
             });
           } catch {}
@@ -572,13 +586,13 @@ export function AssistantRoot() {
       // Handle embedded canvas document
       const canvasData = extractCanvasBlock(assistantContent);
       if (canvasData) {
-        const docId = Math.random().toString(36).substring(2) + Date.now().toString(36);
+        const docId = generateUniqueId();
         setEditorDocId(docId);
         setCanvasDoc({
           id: docId,
           title: canvasData.title,
           content: canvasData.content,
-          lastSaved: "À l'instant"
+          lastSaved: t('assistant.just_now')
         });
         await dbSaveCanvasDoc(docId, userId, workspaceId, canvasData.title, canvasData.content);
         const list = await dbGetCanvasDocs(userId, workspaceId);
@@ -588,7 +602,14 @@ export function AssistantRoot() {
 
     } catch (err) {
       console.error(err);
-      setMessages(prev => [...prev, { role: 'assistant', content: 'Une erreur de communication est survenue. Veuillez réessayer.' }]);
+      setMessages(prev => [...prev, { 
+        role: 'assistant', 
+        content: locale === 'en' 
+          ? 'A communication error occurred. Please try again.' 
+          : locale === 'de' 
+            ? 'Ein Kommunikationsfehler ist aufgetreten. Bitte versuchen Sie es erneut.' 
+            : 'Une erreur de communication est survenue. Veuillez réessayer.' 
+      }]);
     } finally {
       setIsLoading(false);
     }
@@ -608,14 +629,52 @@ export function AssistantRoot() {
     if (!targetText.trim()) return;
 
     setIsAiWorking(true);
-    setIsSavedIndicator("L'IA travaille...");
+    setIsSavedIndicator("assistant.ai_working");
 
     let instruction = "";
-    if (command === 'summarize') instruction = "Résume le texte de façon synthétique et structurée.";
-    if (command === 'rephrase') instruction = "Reformule le texte pour améliorer le style et la clarté.";
-    if (command === 'longer') instruction = "Développe et enrichis le texte avec plus de détails et d'arguments.";
-    if (command === 'shorter') instruction = "Condense le texte pour le rendre plus concis.";
-    if (command === 'tone') instruction = `Réécris le texte en adoptant un ton ${extra}.`;
+    let systemPrompt = "";
+
+    if (locale === 'en') {
+      systemPrompt = "You are an AI-assisted writing tool integrated into a prospecting Canvas. Rewrite or modify the provided text following the received instruction. Do NOT return any introduction, conclusion, explanation, or code blocks. Return ONLY the modified text ready to be inserted.";
+      if (command === 'summarize') instruction = "Summarize the text synthetically and structurally.";
+      else if (command === 'rephrase') instruction = "Rephrase the text to improve style and clarity.";
+      else if (command === 'longer') instruction = "Develop and enrich the text with more details and arguments.";
+      else if (command === 'shorter') instruction = "Condense the text to make it more concise.";
+      else if (command === 'tone') {
+        const toneKey = extra || 'professional';
+        let toneName = 'professional';
+        if (toneKey === 'professional' || toneKey === 'Professionnel' || toneKey === 'Professional') toneName = 'professional';
+        else if (toneKey === 'persuasive' || toneKey === 'Persuasif' || toneKey === 'Persuasive') toneName = 'persuasive';
+        else if (toneKey === 'friendly' || toneKey === 'Amical' || toneKey === 'Friendly') toneName = 'friendly';
+        instruction = `Rewrite the text adopting a ${toneName} tone.`;
+      }
+    } else if (locale === 'de') {
+      systemPrompt = "Sie sind ein KI-gestütztes Schreibwerkzeug, das in ein Akquisitions-Canvas integriert ist. Schreiben Sie den bereitgestellten Text gemäß der erhaltenen Anweisung neu oder ändern Sie ihn. Geben Sie KEINE Einleitung, keinen Schluss, keine Erklärung oder Code-Blöcke zurück. Geben Sie NUR den geänderten Text zurück, der direkt eingefügt werden kann.";
+      if (command === 'summarize') instruction = "Fassen Sie den Text synthetisch und strukturiert zusammen.";
+      else if (command === 'rephrase') instruction = "Formulieren Sie den Text um, um Stil und Klarheit zu verbessern.";
+      else if (command === 'longer') instruction = "Entwickeln und bereichern Sie den Text mit mehr Details und Argumenten.";
+      else if (command === 'shorter') instruction = "Kondensieren Sie den Text, um ihn prägnanter zu machen.";
+      else if (command === 'tone') {
+        const toneKey = extra || 'professional';
+        let toneNameDe = 'professionell';
+        if (toneKey === 'persuasive' || toneKey === 'Persuasif' || toneKey === 'Persuasive') toneNameDe = 'überzeugend';
+        else if (toneKey === 'friendly' || toneKey === 'Amical' || toneKey === 'Friendly') toneNameDe = 'freundlich';
+        instruction = `Schreiben Sie den Text neu und nehmen Sie einen ${toneNameDe} Ton an.`;
+      }
+    } else {
+      systemPrompt = "Tu es un outil d'écriture assistée par IA intégré dans un Canvas de prospection. Réécris ou modifie le texte fourni en suivant l'instruction reçue. Ne renvoie AUCUNE introduction, conclusion, explication, ni de balises de code. Renvoie UNIQUEMENT le texte modifié prêt à être inséré.";
+      if (command === 'summarize') instruction = "Résume le texte de façon synthétique et structurée.";
+      else if (command === 'rephrase') instruction = "Reformule le texte pour améliorer le style et la clarté.";
+      else if (command === 'longer') instruction = "Développe et enrichis le texte avec plus de détails et d'arguments.";
+      else if (command === 'shorter') instruction = "Condense le texte pour le rendre plus concis.";
+      else if (command === 'tone') {
+        const toneKey = extra || 'professional';
+        let toneNameFr = 'professionnel';
+        if (toneKey === 'persuasive' || toneKey === 'Persuasif' || toneKey === 'Persuasive') toneNameFr = 'persuasif';
+        else if (toneKey === 'friendly' || toneKey === 'Amical' || toneKey === 'Friendly') toneNameFr = 'amical';
+        instruction = `Réécris le texte en adoptant un ton ${toneNameFr}.`;
+      }
+    }
 
     try {
       const res = await fetch(getApiUrl('/api/chat'), {
@@ -629,7 +688,7 @@ export function AssistantRoot() {
             }
           ],
           model: selectedModel.id,
-          system: "Tu es un outil d'écriture assistée par IA intégré dans un Canvas de prospection. Réécris ou modifie le texte fourni en suivant l'instruction reçue. Ne renvoie AUCUNE introduction, conclusion, explication, ni de balises de code. Renvoie UNIQUEMENT le texte modifié prêt à être inséré."
+          system: systemPrompt
         }),
       });
 
@@ -663,10 +722,10 @@ export function AssistantRoot() {
 
     } catch (err) {
       console.error(err);
-      setIsSavedIndicator("Erreur d'IA");
+      setIsSavedIndicator("assistant.ai_error");
     } finally {
       setIsAiWorking(false);
-      setIsSavedIndicator("Modifications enregistrées");
+      setIsSavedIndicator("assistant.saved");
     }
   };
 
@@ -677,13 +736,13 @@ export function AssistantRoot() {
 
   // Simulated Quick Actions
   const QUICK_PROMPTS = [
-    { label: '📊 Analyser pipeline', key: 'pipeline' },
-    { label: '📧 Rédiger un email', key: 'email' },
-    { label: '🎯 Leads prioritaires', key: 'priority' },
-    { label: '📝 Script de pitch', key: 'script' },
-    { label: '🔍 Recherche secteur', key: 'research' },
-    { label: '📅 Priorités du jour', key: 'today' },
-    { label: '📈 Rapport activité', key: 'report' },
+    { label: t('assistant.chip.pipeline'), key: 'pipeline' },
+    { label: t('assistant.chip.email'), key: 'email' },
+    { label: t('assistant.chip.priority'), key: 'priority' },
+    { label: t('assistant.chip.script'), key: 'script' },
+    { label: t('assistant.chip.research'), key: 'research' },
+    { label: t('assistant.chip.today'), key: 'today' },
+    { label: t('assistant.chip.report'), key: 'report' },
   ];
 
   const handleQuickPromptClick = (chip: { label: string; key: string }) => {
@@ -696,45 +755,126 @@ export function AssistantRoot() {
     const topHot = hotLeads[0];
     const niches = (leads || []).map(l => l.niche).filter(Boolean);
     const cities = (leads || []).map(l => l.city).filter(Boolean);
-    const topNiche = niches.sort((a, b) => niches.filter(v => v === a).length - niches.filter(v => v === b).length).pop() || 'votre secteur';
-    const topCity = cities.sort((a, b) => cities.filter(v => v === a).length - cities.filter(v => v === b).length).pop() || 'votre ville';
-    const wsName = activeWorkspace?.name || 'ce workspace';
+    
+    const topNiche = niches.sort((a, b) => niches.filter(v => v === a).length - niches.filter(v => v === b).length).pop() || 
+      (locale === 'en' ? 'your industry' : locale === 'de' ? 'Ihre Branche' : 'votre secteur');
+    const topCity = cities.sort((a, b) => cities.filter(v => v === a).length - cities.filter(v => v === b).length).pop() || 
+      (locale === 'en' ? 'your city' : locale === 'de' ? 'Ihre Stadt' : 'votre ville');
+    const wsName = activeWorkspace?.name || 
+      (locale === 'en' ? 'this workspace' : locale === 'de' ? 'dieser Workspace' : 'ce workspace');
+    
     const overdueLeads = (leads || []).filter(l => l.nextActionDate && l.nextActionDate <= new Date().toISOString().split('T')[0] && l.status !== 'Won' && l.status !== 'Lost');
     const breakdown = Object.entries(statusCounts).map(([s, c]) => `${s}: ${c}`).join(', ');
+    const breakdownStr = breakdown || (locale === 'en' ? 'no data' : locale === 'de' ? 'keine Daten' : 'aucune donnée');
+
+    const dateOptions: Intl.DateTimeFormatOptions = { weekday: 'long', day: 'numeric', month: 'long' };
+    const dateLoc = locale === 'de' ? 'de-DE' : locale === 'en' ? 'en-US' : 'fr-CA';
+    const dateStr = new Date().toLocaleDateString(dateLoc, dateOptions);
 
     let finalPrompt = '';
-    switch (chip.key) {
-      case 'pipeline':
-        finalPrompt = `Analyse mon pipeline de vente pour le workspace "${wsName}". J'ai ${totalLeads} prospects au total (${breakdown || 'aucune donnée'}). ${hotLeads.length} leads sont "Hot". Donne-moi un diagnostic en 5 points et 3 actions prioritaires pour améliorer mon taux de conversion.`;
-        break;
-      case 'email':
-        if (topHot) {
-          finalPrompt = `Rédige un email de relance personnalisé pour ${topHot.businessName} (${topHot.niche}, ${topHot.city}). Contact: ${topHot.contactName || 'non précisé'}. Prochaine action: "${topHot.nextAction || 'aucune'}". Ton: professionnel mais chaleureux. Longueur: 3 paragraphes max.`;
-        } else {
-          finalPrompt = `Rédige un email de prospection à froid pour un prospect dans le secteur "${topNiche}" à ${topCity}. Ton: professionnel, direct, orienté valeur. Max 200 mots.`;
-        }
-        break;
-      case 'priority':
-        finalPrompt = `Voici mes ${totalLeads} prospects CRM (répartition: ${breakdown}). ${hotLeads.length} sont "Hot". ${overdueLeads.length} ont une action en retard. Identifie les 5 leads à contacter en priorité aujourd'hui et explique pourquoi chacun mérite attention.`;
-        break;
-      case 'script':
-        if (topHot) {
-          finalPrompt = `Génère un script de pitch terrain de 60 secondes pour ${topHot.businessName} (${topHot.niche}, ${topHot.city}). Note Google: ${topHot.rating ?? 'non connue'}/5. Inclus: accroche personnalisée → valeur proposée → question pour prendre RDV.`;
-        } else {
-          finalPrompt = `Génère un script de pitch terrain de 60 secondes pour un prospect dans le secteur "${topNiche}" à ${topCity}. Inclus: accroche → valeur → question pour prendre RDV.`;
-        }
-        break;
-      case 'research':
-        finalPrompt = `Fais une analyse approfondie du marché "${topNiche}" à ${topCity}. Identifie: tendances actuelles, points de douleur fréquents, opportunités digitales, objections typiques, et comment positionner notre offre face à la concurrence locale.`;
-        break;
-      case 'today':
-        finalPrompt = `C'est le ${new Date().toLocaleDateString('fr-CA', { weekday: 'long', day: 'numeric', month: 'long' })}. J'ai ${overdueLeads.length} actions en retard et ${hotLeads.length} leads chauds dans le CRM "${wsName}". Propose-moi un plan d'action pour aujourd'hui: matin / après-midi / fin de journée avec les 3 tâches les plus importantes.`;
-        break;
-      case 'report':
-        finalPrompt = `Génère un rapport d'activité hebdomadaire pour le workspace "${wsName}". Données: ${totalLeads} prospects (${breakdown}), ${hotLeads.length} leads Hot, ${overdueLeads.length} actions en retard. Format: résumé exécutif → analyse → recommandations → objectifs semaine prochaine.`;
-        break;
-      default:
-        finalPrompt = chip.label;
+    if (locale === 'en') {
+      switch (chip.key) {
+        case 'pipeline':
+          finalPrompt = `Analyze my sales pipeline for the workspace "${wsName}". I have ${totalLeads} total prospects (${breakdownStr}). ${hotLeads.length} leads are "Hot". Give me a 5-point diagnosis and 3 priority actions to improve my conversion rate.`;
+          break;
+        case 'email':
+          if (topHot) {
+            finalPrompt = `Write a personalized follow-up email for ${topHot.businessName} (${topHot.niche}, ${topHot.city}). Contact: ${topHot.contactName || 'not specified'}. Next action: "${topHot.nextAction || 'none'}". Tone: professional but warm. Length: max 3 paragraphs.`;
+          } else {
+            finalPrompt = `Write a cold outreach email for a prospect in the "${topNiche}" industry in ${topCity}. Tone: professional, direct, value-oriented. Max 200 words.`;
+          }
+          break;
+        case 'priority':
+          finalPrompt = `Here are my ${totalLeads} CRM prospects (breakdown: ${breakdownStr}). ${hotLeads.length} are "Hot". ${overdueLeads.length} have overdue actions. Identify the top 5 leads to contact first today and explain why each deserves attention.`;
+          break;
+        case 'script':
+          if (topHot) {
+            finalPrompt = `Generate a 60-second field pitch script for ${topHot.businessName} (${topHot.niche}, ${topHot.city}). Google rating: ${topHot.rating ?? 'not known'}/5. Include: personalized hook → proposed value → call-to-action question.`;
+          } else {
+            finalPrompt = `Generate a 60-second field pitch script for a prospect in the "${topNiche}" industry in ${topCity}. Include: hook → value → call-to-action question.`;
+          }
+          break;
+        case 'research':
+          finalPrompt = `Do a deep market analysis for "${topNiche}" in ${topCity}. Identify: current trends, common pain points, digital opportunities, typical objections, and how to position our offer against local competition.`;
+          break;
+        case 'today':
+          finalPrompt = `It is ${dateStr}. I have ${overdueLeads.length} overdue actions and ${hotLeads.length} hot leads in the CRM "${wsName}". Suggest an action plan for today: morning / afternoon / end of day with the 3 most important tasks.`;
+          break;
+        case 'report':
+          finalPrompt = `Generate a weekly activity report for the workspace "${wsName}". Data: ${totalLeads} prospects (${breakdownStr}), ${hotLeads.length} Hot leads, ${overdueLeads.length} overdue actions. Format: executive summary → analysis → recommendations → next week's goals.`;
+          break;
+        default:
+          finalPrompt = chip.label;
+      }
+    } else if (locale === 'de') {
+      switch (chip.key) {
+        case 'pipeline':
+          finalPrompt = `Analysiere meine Vertriebspipeline für den Workspace "${wsName}". Ich habe insgesamt ${totalLeads} Interessenten (${breakdownStr}). ${hotLeads.length} Leads sind "Hot". Gib mir eine 5-Punkte-Diagnose und 3 vorrangige Maßnahmen zur Verbesserung meiner Konversionsrate.`;
+          break;
+        case 'email':
+          if (topHot) {
+            finalPrompt = `Schreibe eine personalisierte Follow-up-E-Mail für ${topHot.businessName} (${topHot.niche}, ${topHot.city}). Kontakt: ${topHot.contactName || 'nicht angegeben'}. Nächste Aktion: "${topHot.nextAction || 'keine'}". Ton: professionell, aber warm. Länge: max. 3 Absätze.`;
+          } else {
+            finalPrompt = `Schreibe eine Kaltakquise-E-Mail für einen Interessenten in der Branche "${topNiche}" in ${topCity}. Ton: professionell, direkt, wertorientiert. Max. 200 Wörter.`;
+          }
+          break;
+        case 'priority':
+          finalPrompt = `Hier sind meine ${totalLeads} CRM-Interessenten (Verteilung: ${breakdownStr}). ${hotLeads.length} sind "Hot". ${overdueLeads.length} haben überfällige Aktionen. Identifizieren Sie die 5 wichtigsten Leads, die heute vorrangig kontaktiert werden sollten, und erklären Sie, warum jeder Aufmerksamkeit verdient.`;
+          break;
+        case 'script':
+          if (topHot) {
+            finalPrompt = `Erstelle ein 60-Sekunden-Pitch-Skript für {topHot.businessName} (${topHot.niche}, ${topHot.city}). Google-Bewertung: ${topHot.rating ?? 'nicht bekannt'}/5. Enthalten: personalisierter Aufhänger → Mehrwert → Frage zur Terminvereinbarung.`;
+          } else {
+            finalPrompt = `Erstelle ein 60-Sekunden-Pitch-Skript für einen Interessenten in der Branche "${topNiche}" in ${topCity}. Enthalten: Aufhänger → Mehrwert → Frage zur Terminvereinbarung.`;
+          }
+          break;
+        case 'research':
+          finalPrompt = `Erstelle eine eingehende Marktanalyse für "${topNiche}" in ${topCity}. Identifizieren Sie: aktuelle Trends, häufige Schwachstellen, digitale Möglichkeiten, typische Einwände und wie wir unser Angebot gegenüber der lokalen Konkurrenz positionieren können.`;
+          break;
+        case 'today':
+          finalPrompt = `Es ist ${dateStr}. Ich habe ${overdueLeads.length} überfällige Aktionen und ${hotLeads.length} heiße Leads im CRM "${wsName}". Schlagen Sie einen Aktionsplan für heute vor: Vormittag / Nachmittag / Ende des Tages mit den 3 wichtigsten Aufgaben.`;
+          break;
+        case 'report':
+          finalPrompt = `Erstellen Sie einen wöchentlichen Aktivitätsbericht für den Workspace "${wsName}". Daten: ${totalLeads} Interessenten (${breakdownStr}), ${hotLeads.length} Hot-Leads, ${overdueLeads.length} überfällige Aktionen. Format: Executive Summary → Analyse → Empfehlungen → Ziele für die nächste Woche.`;
+          break;
+        default:
+          finalPrompt = chip.label;
+      }
+    } else {
+      // Default (French)
+      switch (chip.key) {
+        case 'pipeline':
+          finalPrompt = `Analyse mon pipeline de vente pour le workspace "${wsName}". J'ai ${totalLeads} prospects au total (${breakdownStr}). ${hotLeads.length} leads sont "Hot". Donne-moi un diagnostic en 5 points et 3 actions prioritaires pour améliorer mon taux de conversion.`;
+          break;
+        case 'email':
+          if (topHot) {
+            finalPrompt = `Rédige un email de relance personnalisé pour ${topHot.businessName} (${topHot.niche}, ${topHot.city}). Contact: ${topHot.contactName || 'non précisé'}. Prochaine action: "${topHot.nextAction || 'aucune'}". Ton: professionnel mais chaleureux. Longueur: 3 paragraphes max.`;
+          } else {
+            finalPrompt = `Rédige un email de prospection à froid pour un prospect dans le secteur "${topNiche}" à ${topCity}. Ton: professionnel, direct, orienté valeur. Max 200 mots.`;
+          }
+          break;
+        case 'priority':
+          finalPrompt = `Voici mes ${totalLeads} prospects CRM (répartition: ${breakdownStr}). ${hotLeads.length} sont "Hot". ${overdueLeads.length} ont une action en retard. Identifie les 5 leads à contacter en priorité aujourd'hui et explique pourquoi chacun mérite attention.`;
+          break;
+        case 'script':
+          if (topHot) {
+            finalPrompt = `Génère un script de pitch terrain de 60 secondes pour ${topHot.businessName} (${topHot.niche}, ${topHot.city}). Note Google: ${topHot.rating ?? 'non connue'}/5. Inclus: accroche personnalisée → valeur proposée → question pour prendre RDV.`;
+          } else {
+            finalPrompt = `Génère un script de pitch terrain de 60 secondes pour un prospect dans le secteur "${topNiche}" à ${topCity}. Inclus: accroche → valeur → question pour prendre RDV.`;
+          }
+          break;
+        case 'research':
+          finalPrompt = `Fais une analyse approfondie du marché "${topNiche}" à ${topCity}. Identifie: tendances actuelles, points de douleur fréquents, opportunités digitales, objections typiques, et comment positionner notre offre face à la concurrence locale.`;
+          break;
+        case 'today':
+          finalPrompt = `C'est le ${dateStr}. J'ai ${overdueLeads.length} actions en retard et ${hotLeads.length} leads chauds dans le CRM "${wsName}". Propose-moi un plan d'action pour aujourd'hui: matin / après-midi / fin de journée avec les 3 tâches les plus importantes.`;
+          break;
+        case 'report':
+          finalPrompt = `Génère un rapport d'activité hebdomadaire pour le workspace "${wsName}". Données: ${totalLeads} prospects (${breakdownStr}), ${hotLeads.length} leads Hot, ${overdueLeads.length} actions en retard. Format: résumé exécutif → analyse → recommandations → objectifs semaine prochaine.`;
+          break;
+        default:
+          finalPrompt = chip.label;
+      }
     }
     handleSend(finalPrompt);
   };
@@ -764,9 +904,10 @@ export function AssistantRoot() {
   const startRecording = () => {
     setIsRecording(true);
     let dots = '';
+    const baseText = t('assistant.recording_in_progress').replace(/\.*$/, '');
     recordingIntervalRef.current = setInterval(() => {
       dots = dots.length >= 3 ? '' : dots + '.';
-      setInput(`Enregistrement vocal en cours${dots}`);
+      setInput(`${baseText}${dots}`);
     }, 500);
   };
 
@@ -775,7 +916,7 @@ export function AssistantRoot() {
     if (recordingIntervalRef.current) {
       clearInterval(recordingIntervalRef.current);
     }
-    setInput("Je souhaite analyser nos performances de prospection et générer un rapport.");
+    setInput(t('assistant.recorded_value_placeholder'));
   };
 
   // Copy document text
@@ -912,13 +1053,13 @@ export function AssistantRoot() {
           <div className="w-56 bg-[#fafaf9] border-r border-[#e6e5e0]/60 flex flex-col h-full shrink-0 select-none animate-fade-in">
             {/* Sidebar header */}
             <div className="h-14 border-b border-[#e6e5e0]/60 px-4 flex items-center justify-between shrink-0 bg-[#fafaf9]">
-              <span className="text-[10px] font-extrabold text-[#26251e] tracking-wider uppercase">Historique</span>
+              <span className="text-[10px] font-extrabold text-[#26251e] tracking-wider uppercase">{t('assistant.history')}</span>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={handleClearChat}
                 className="h-7 w-7 rounded-full p-0 text-muted-foreground hover:text-[#10b981] transition-colors border border-transparent hover:border-neutral-200"
-                title="Nouvelle discussion"
+                title={t('assistant.new_chat')}
               >
                 <Plus className="h-3.5 w-3.5" />
               </Button>
@@ -928,9 +1069,9 @@ export function AssistantRoot() {
             <div className="flex-1 overflow-y-auto p-2 space-y-4">
               {/* Discussions list */}
               <div className="space-y-1">
-                <div className="px-2 text-[8px] font-bold text-muted-foreground uppercase tracking-wider">Discussions</div>
+                <div className="px-2 text-[8px] font-bold text-muted-foreground uppercase tracking-wider">{t('assistant.discussions')}</div>
                 {sessions.length === 0 ? (
-                  <div className="px-2 py-1.5 text-[9px] text-[#807d72] italic font-semibold">Aucune discussion</div>
+                  <div className="px-2 py-1.5 text-[9px] text-[#807d72] italic font-semibold">{t('assistant.no_discussions')}</div>
                 ) : (
                   sessions.map((sess) => (
                     <div
@@ -962,7 +1103,7 @@ export function AssistantRoot() {
                           window.dispatchEvent(new CustomEvent('minerva_assistant_sync'));
                         }}
                         className="opacity-0 group-hover:opacity-100 text-neutral-400 hover:text-amber-500 transition-opacity p-0.5"
-                        title={sess.pinned ? "Désépingler" : "Épingler"}
+                        title={sess.pinned ? t('assistant.unpin') : t('assistant.pin')}
                       >
                         {sess.pinned ? <PinOff className="h-2.5 w-2.5" /> : <Pin className="h-2.5 w-2.5" />}
                       </button>
@@ -990,9 +1131,9 @@ export function AssistantRoot() {
 
               {/* Documents list */}
               <div className="space-y-1">
-                <div className="px-2 text-[8px] font-bold text-muted-foreground uppercase tracking-wider">Documents Canvas</div>
+                <div className="px-2 text-[8px] font-bold text-muted-foreground uppercase tracking-wider">{t('assistant.canvas_docs')}</div>
                 {canvasDocs.length === 0 ? (
-                  <div className="px-2 py-1.5 text-[9px] text-[#807d72] italic font-semibold">Aucun document</div>
+                  <div className="px-2 py-1.5 text-[9px] text-[#807d72] italic font-semibold">{t('assistant.no_docs')}</div>
                 ) : (
                   canvasDocs.map((doc) => (
                     <div
@@ -1009,7 +1150,7 @@ export function AssistantRoot() {
                             id: doc.id,
                             title: doc.title,
                             content: doc.content,
-                            lastSaved: "Modifications enregistrées"
+                            lastSaved: t('assistant.saved')
                           });
                           setEditorTitle(doc.title);
                           setEditorContent(doc.content);
@@ -1030,7 +1171,7 @@ export function AssistantRoot() {
                           if (canvasDoc?.id === doc.id) {
                             setCanvasDoc(null);
                             setEditorDocId('');
-                            setEditorTitle("Document sans titre");
+                            setEditorTitle("");
                             setEditorContent("");
                             localStorage.removeItem(`minerva_active_canvas_${workspaceId}`);
                           }
@@ -1060,7 +1201,7 @@ export function AssistantRoot() {
                 className={`h-7 w-7 rounded-full p-0 transition-colors border border-transparent ${
                   isHistoryOpen ? 'text-[#10b981] bg-emerald-50/70 border-emerald-100' : 'text-muted-foreground hover:text-primary hover:border-neutral-200'
                 }`}
-                title="Afficher/Masquer l'historique"
+                title={t('assistant.history')}
               >
                 <History className="w-3.5 h-3.5" />
               </Button>
@@ -1081,10 +1222,10 @@ export function AssistantRoot() {
                 size="sm"
                 onClick={handleClearChat}
                 className="text-[10px] h-7 font-bold text-muted-foreground hover:text-[#10b981] gap-1 rounded-full px-2.5 transition-colors border border-transparent hover:border-neutral-100"
-                title="Nouvelle discussion"
+                title={t('assistant.new_chat')}
               >
                 <Plus className="w-3.5 h-3.5" />
-                <span>Nouveau</span>
+                <span>{t('assistant.new')}</span>
               </Button>
             </div>
           </header>
@@ -1100,7 +1241,7 @@ export function AssistantRoot() {
                     <MinervaIcon size={24} />
                   </div>
                   <h1 className="text-3xl tracking-tight text-[#26251e] font-serif font-light font-georgia leading-tight">
-                    Still at it! What can I help with?
+                    {t('assistant.still_at_it')}
                   </h1>
                 </div>
 
@@ -1128,7 +1269,7 @@ export function AssistantRoot() {
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-                    placeholder="Ask anything, format recommandés : .txt, .md, .csv, .json..."
+                    placeholder={t('assistant.input_placeholder_formats')}
                     rows={3}
                     className="w-full resize-none text-xs font-semibold text-[#26251e] bg-transparent outline-none placeholder:text-neutral-400 px-1 border-0"
                   />
@@ -1147,7 +1288,7 @@ export function AssistantRoot() {
                       <button 
                         onClick={triggerFileUpload}
                         className="h-7 w-7 rounded-full bg-neutral-50 hover:bg-neutral-100 text-[#555552] flex items-center justify-center cursor-pointer transition-colors border border-transparent active:scale-95"
-                        title="Joindre un fichier texte (.txt, .md, .csv, .json)"
+                        title={t('assistant.attach_file')}
                       >
                         <Plus className="h-4 w-4" />
                       </button>
@@ -1180,7 +1321,7 @@ export function AssistantRoot() {
 
                         {showModelDropdown && (
                           <div className="absolute right-0 bottom-8 z-50 bg-white border border-[#e6e5e0] rounded-xl py-1 shadow-lg w-52 text-left animate-scale-up">
-                            <div className="px-3 py-1 text-[8px] font-bold text-muted-foreground uppercase tracking-wider">Modèles Disponibles</div>
+                            <div className="px-3 py-1 text-[8px] font-bold text-muted-foreground uppercase tracking-wider">{t('assistant.models_title')}</div>
                             {AI_MODELS.map((model) => (
                               <button
                                 key={model.id}
@@ -1208,7 +1349,7 @@ export function AssistantRoot() {
                             ? 'bg-red-500 text-white border-red-500 animate-pulse' 
                             : 'bg-neutral-50 hover:bg-neutral-100 text-[#555552] border-transparent'
                         }`}
-                        title={isRecording ? "Arrêter l'enregistrement" : "Message vocal"}
+                        title={isRecording ? t('assistant.stop_recording') : t('assistant.voice_msg')}
                       >
                         <Mic className="h-3.5 w-3.5" />
                       </button>
@@ -1218,7 +1359,7 @@ export function AssistantRoot() {
                         onClick={() => handleSend()}
                         disabled={isLoading}
                         className="h-7 w-7 rounded-full bg-[#10b981] hover:bg-[#059669] text-white flex items-center justify-center cursor-pointer transition-all shadow-sm active:scale-95 disabled:opacity-50"
-                        title="Envoyer"
+                        title={t('assistant.send')}
                       >
                         <ArrowUp className="h-4 w-4" />
                       </button>
@@ -1315,7 +1456,7 @@ export function AssistantRoot() {
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-                  placeholder="Ask anything, @ for context and skills..."
+                  placeholder={t('assistant.input_placeholder')}
                   rows={1}
                   className="w-full resize-none text-xs font-semibold text-[#26251e] bg-transparent outline-none placeholder:text-neutral-400 px-2 min-h-[24px] max-h-32 border-0 overflow-y-auto"
                 />
@@ -1333,7 +1474,7 @@ export function AssistantRoot() {
                     <button 
                       onClick={triggerFileUpload}
                       className="h-6 w-6 rounded-full bg-neutral-50 hover:bg-neutral-100 text-[#555552] flex items-center justify-center cursor-pointer transition-colors border border-transparent"
-                      title="Joindre un fichier texte (.txt, .md, .csv, .json)"
+                      title={t('assistant.attach_file')}
                     >
                       <Plus className="h-3.5 w-3.5" />
                     </button>
@@ -1390,6 +1531,7 @@ export function AssistantRoot() {
                           ? 'bg-red-500 text-white border-red-500 animate-pulse' 
                           : 'bg-neutral-50 hover:bg-neutral-100 text-[#555552] border-transparent'
                       }`}
+                      title={isRecording ? t('assistant.stop_recording') : t('assistant.voice_msg')}
                     >
                       <Mic className="h-3 w-3" />
                     </button>
@@ -1398,6 +1540,7 @@ export function AssistantRoot() {
                       onClick={() => handleSend()}
                       disabled={isLoading}
                       className="h-6 w-6 rounded-full bg-[#10b981] hover:bg-[#059669] text-white flex items-center justify-center cursor-pointer transition-all shadow-sm disabled:opacity-50"
+                      title={t('assistant.send')}
                     >
                       <ArrowUp className="h-3.5 w-3.5" />
                     </button>
@@ -1421,7 +1564,7 @@ export function AssistantRoot() {
               <button 
                 onClick={() => setIsCanvasOpen(false)}
                 className="h-7 w-7 rounded-full hover:bg-neutral-100 flex items-center justify-center border border-transparent text-[#555552] hover:text-[#26251e]"
-                title="Fermer le Canvas"
+                title={t('assistant.canvas_close')}
               >
                 <X className="h-4 w-4" />
               </button>
@@ -1432,10 +1575,10 @@ export function AssistantRoot() {
                   value={editorTitle}
                   onChange={(e) => handleTitleChange(e.target.value)}
                   className="font-serif font-bold text-sm tracking-tight text-[#26251e] bg-transparent border-0 outline-none w-full p-0 leading-tight focus:ring-0 focus:border-0 focus:outline-none"
-                  placeholder="Health App Research Summary and Design Plan"
+                  placeholder={t('assistant.untitled_doc')}
                 />
                 <p className="text-[9px] text-[#807d72] font-semibold tracking-wide">
-                  {isSavedIndicator}
+                  {isSavedIndicator.startsWith('assistant.') ? t(isSavedIndicator as any) : isSavedIndicator}
                 </p>
               </div>
             </div>
@@ -1451,7 +1594,7 @@ export function AssistantRoot() {
                   className="h-7 px-2.5 rounded-full bg-emerald-50 hover:bg-emerald-100 text-emerald-700 disabled:opacity-50 text-[10px] font-bold flex items-center gap-1.5 transition-all border border-emerald-200 cursor-pointer"
                 >
                   <Sparkles className="h-3.5 w-3.5 text-[#10b981]" />
-                  <span>IA Canvas</span>
+                  <span>{t('assistant.ia_canvas')}</span>
                   <ChevronDown className="h-3 w-3" />
                 </button>
 
@@ -1462,38 +1605,44 @@ export function AssistantRoot() {
                       className="w-full text-left px-3 py-1.5 text-[10px] font-bold text-[#26251e] hover:bg-neutral-50 flex items-center gap-2"
                     >
                       <Sparkles className="h-3.5 w-3.5 text-[#10b981]" />
-                      <span>Résumer</span>
+                      <span>{t('assistant.summarize')}</span>
                     </button>
                     <button
                       onClick={() => handleAiCommand('rephrase')}
                       className="w-full text-left px-3 py-1.5 text-[10px] font-bold text-[#26251e] hover:bg-neutral-50 flex items-center gap-2"
                     >
                       <Sparkles className="h-3.5 w-3.5 text-[#10b981]" />
-                      <span>Reformuler</span>
+                      <span>{t('assistant.rephrase')}</span>
                     </button>
                     <button
                       onClick={() => handleAiCommand('longer')}
                       className="w-full text-left px-3 py-1.5 text-[10px] font-bold text-[#26251e] hover:bg-neutral-50 flex items-center gap-2"
                     >
                       <Sparkles className="h-3.5 w-3.5 text-[#10b981]" />
-                      <span>Allonger</span>
+                      <span>{t('assistant.longer')}</span>
                     </button>
                     <button
                       onClick={() => handleAiCommand('shorter')}
                       className="w-full text-left px-3 py-1.5 text-[10px] font-bold text-[#26251e] hover:bg-neutral-50 flex items-center gap-2"
                     >
                       <Sparkles className="h-3.5 w-3.5 text-[#10b981]" />
-                      <span>Raccourcir</span>
+                      <span>{t('assistant.shorter')}</span>
                     </button>
                     <div className="border-t border-neutral-100 my-1" />
-                    <div className="px-3 py-1 text-[8px] font-bold text-muted-foreground uppercase">Ton de réécriture</div>
-                    {['Professionnel', 'Persuasif', 'Amical'].map(tone => (
+                    <div className="px-3 py-1 text-[8px] font-bold text-muted-foreground uppercase">{t('assistant.tone_header')}</div>
+                    {['professional', 'persuasive', 'friendly'].map(toneKey => (
                       <button
-                        key={tone}
-                        onClick={() => handleAiCommand('tone', tone)}
+                        key={toneKey}
+                        onClick={() => handleAiCommand('tone', toneKey)}
                         className="w-full text-left px-3 py-1.5 text-[9.5px] font-semibold text-[#555552] hover:bg-neutral-50 pl-5"
                       >
-                        <span>{tone}</span>
+                        <span>
+                          {toneKey === 'professional' 
+                            ? t('assistant.tone_professional') 
+                            : toneKey === 'persuasive' 
+                              ? t('assistant.tone_persuasive') 
+                              : t('assistant.tone_friendly')}
+                        </span>
                       </button>
                     ))}
                   </div>
@@ -1510,10 +1659,10 @@ export function AssistantRoot() {
                   }}
                   className="h-7 text-[10px] font-bold bg-neutral-50 hover:bg-neutral-100 border border-neutral-100/60 rounded-full px-2.5 pr-6 outline-none text-[#555552] cursor-pointer appearance-none relative"
                 >
-                  <option value="normal">Normal text</option>
-                  <option value="h1">Heading 1</option>
-                  <option value="h2">Heading 2</option>
-                  <option value="h3">Heading 3</option>
+                  <option value="normal">{t('assistant.normal_text')}</option>
+                  <option value="h1">{t('assistant.heading_1')}</option>
+                  <option value="h2">{t('assistant.heading_2')}</option>
+                  <option value="h3">{t('assistant.heading_3')}</option>
                 </select>
                 <ChevronDown className="h-2.5 w-2.5 text-neutral-400 absolute right-2 top-2.5 pointer-events-none" />
               </div>
@@ -1522,7 +1671,7 @@ export function AssistantRoot() {
               <button
                 onClick={() => wrapSelectedText('b')}
                 className="h-7 w-7 rounded-full hover:bg-neutral-50 text-[#555552] border border-transparent flex items-center justify-center font-bold"
-                title="Gras"
+                title={t('assistant.bold')}
               >
                 <Bold className="h-3.5 w-3.5" />
               </button>
@@ -1531,7 +1680,7 @@ export function AssistantRoot() {
               <button
                 onClick={() => wrapSelectedText('i')}
                 className="h-7 w-7 rounded-full hover:bg-neutral-50 text-[#555552] border border-transparent flex items-center justify-center italic"
-                title="Italique"
+                title={t('assistant.italic')}
               >
                 <Italic className="h-3.5 w-3.5" />
               </button>
@@ -1543,13 +1692,13 @@ export function AssistantRoot() {
               <button 
                 onClick={() => insertHeading('normal')}
                 className="h-7 w-7 rounded-full hover:bg-neutral-50 text-[#555552] flex items-center justify-center"
-                title="Annuler"
+                title={t('assistant.undo')}
               >
                 <Undo2 className="h-3.5 w-3.5" />
               </button>
               <button 
                 className="h-7 w-7 rounded-full hover:bg-neutral-50 text-[#555552] flex items-center justify-center opacity-40 cursor-not-allowed"
-                title="Rétablir"
+                title={t('assistant.redo')}
                 disabled
               >
                 <Redo2 className="h-3.5 w-3.5" />
@@ -1559,7 +1708,7 @@ export function AssistantRoot() {
               <button
                 onClick={copyToClipboard}
                 className="h-7 w-7 rounded-full hover:bg-neutral-50 text-[#555552] flex items-center justify-center relative active:scale-95 transition-all"
-                title="Copier le document"
+                title={t('assistant.copy_doc')}
               >
                 {copied ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
               </button>
@@ -1570,7 +1719,7 @@ export function AssistantRoot() {
                   onClick={() => setShowExportDropdown(!showExportDropdown)}
                   className="h-7 px-3 rounded-full bg-[#26251e] hover:bg-[#1a1a19] text-white text-[10px] font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
                 >
-                  <span>Export</span>
+                  <span>{t('assistant.export')}</span>
                   <ChevronDown className="h-3 w-3" />
                 </button>
 
@@ -1581,21 +1730,21 @@ export function AssistantRoot() {
                       className="w-full text-left px-3 py-1.5 text-[10px] font-bold text-[#26251e] hover:bg-neutral-50 flex items-center gap-2"
                     >
                       <FileText className="h-3.5 w-3.5 text-neutral-400" />
-                      <span>Markdown (.md)</span>
+                      <span>{t('assistant.markdown')}</span>
                     </button>
                     <button
                       onClick={() => handleExport('html')}
                       className="w-full text-left px-3 py-1.5 text-[10px] font-bold text-[#26251e] hover:bg-neutral-50 flex items-center gap-2"
                     >
                       <Globe className="h-3.5 w-3.5 text-neutral-400" />
-                      <span>Page HTML (.html)</span>
+                      <span>{t('assistant.html_page')}</span>
                     </button>
                     <button
                       onClick={() => handleExport('txt')}
                       className="w-full text-left px-3 py-1.5 text-[10px] font-bold text-[#26251e] hover:bg-neutral-50 flex items-center gap-2"
                     >
                       <FileText className="h-3.5 w-3.5 text-neutral-400" />
-                      <span>Texte Brut (.txt)</span>
+                      <span>{t('assistant.raw_text')}</span>
                     </button>
                   </div>
                 )}
@@ -1611,7 +1760,7 @@ export function AssistantRoot() {
                 id="canvas-textarea"
                 value={editorContent}
                 onChange={(e) => handleContentChange(e.target.value)}
-                placeholder="Commencez à rédiger ou posez une question à l'assistant pour générer du contenu..."
+                placeholder={t('assistant.editor_placeholder')}
                 className={`w-full flex-1 border-0 resize-none outline-none focus:outline-none focus:ring-0 leading-relaxed text-[#26251e] font-sans placeholder:text-neutral-300 ${canvasFontSize === 'sm' ? 'text-xs' : canvasFontSize === 'lg' ? 'text-base' : 'text-sm'}`}
               />
             </div>
@@ -1621,21 +1770,21 @@ export function AssistantRoot() {
               <button
                 onClick={() => setCanvasRightPanel(p => p === 'comments' ? 'none' : 'comments')}
                 className={`h-8 w-8 rounded-lg flex items-center justify-center transition-colors ${canvasRightPanel === 'comments' ? 'bg-emerald-50 text-emerald-700' : 'hover:bg-neutral-50 text-[#807d72] hover:text-[#26251e]'}`}
-                title="Notes & commentaires"
+                title={t('assistant.comments')}
               >
                 <MessageSquare className="h-4 w-4" />
               </button>
               <button
                 onClick={() => setCanvasRightPanel(p => p === 'history' ? 'none' : 'history')}
                 className={`h-8 w-8 rounded-lg flex items-center justify-center transition-colors ${canvasRightPanel === 'history' ? 'bg-emerald-50 text-emerald-700' : 'hover:bg-neutral-50 text-[#807d72] hover:text-[#26251e]'}`}
-                title="Documents récents"
+                title={t('assistant.recent_docs')}
               >
                 <History className="h-4 w-4" />
               </button>
               <button
                 onClick={() => setCanvasRightPanel(p => p === 'settings' ? 'none' : 'settings')}
                 className={`h-8 w-8 rounded-lg flex items-center justify-center transition-colors ${canvasRightPanel === 'settings' ? 'bg-emerald-50 text-emerald-700' : 'hover:bg-neutral-50 text-[#807d72] hover:text-[#26251e]'}`}
-                title="Taille du texte"
+                title={t('assistant.text_size')}
               >
                 <Settings className="h-4 w-4" />
               </button>
@@ -1646,30 +1795,30 @@ export function AssistantRoot() {
               <div className="hidden lg:flex flex-col w-[200px] shrink-0 border-l border-neutral-100 ml-4 pl-4 gap-3">
                 {canvasRightPanel === 'comments' && (
                   <>
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-[#807d72]">Notes</p>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-[#807d72]">{t('assistant.notes_header')}</p>
                     <div className="flex-1 space-y-2 overflow-y-auto max-h-64">
                       {canvasComments.map((c, i) => (
                         <div key={i} className="p-2 bg-amber-50 border border-amber-200 rounded text-[10px]">
-                          <p className="text-[#807d72] mb-1 font-mono">{new Date(c.ts).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</p>
+                          <p className="text-[#807d72] mb-1 font-mono">{new Date(c.ts).toLocaleTimeString(locale === 'de' ? 'de-DE' : locale === 'en' ? 'en-US' : 'fr-FR', { hour: '2-digit', minute: '2-digit' })}</p>
                           <p>{c.text}</p>
                         </div>
                       ))}
                     </div>
                     <div className="flex gap-1">
-                      <input value={canvasComment} onChange={e => setCanvasComment(e.target.value)} placeholder="Ajouter une note…" className="flex-1 text-[10px] border border-neutral-200 rounded px-2 py-1 focus:outline-none" onKeyDown={e => { if (e.key === 'Enter' && canvasComment.trim()) { setCanvasComments(c => [...c, { text: canvasComment.trim(), ts: new Date().toISOString() }]); setCanvasComment(''); }}} />
+                      <input value={canvasComment} onChange={e => setCanvasComment(e.target.value)} placeholder={t('assistant.add_note_placeholder')} className="flex-1 text-[10px] border border-neutral-200 rounded px-2 py-1 focus:outline-none" onKeyDown={e => { if (e.key === 'Enter' && canvasComment.trim()) { setCanvasComments(c => [...c, { text: canvasComment.trim(), ts: new Date().toISOString() }]); setCanvasComment(''); }}} />
                       <button onClick={() => { if (canvasComment.trim()) { setCanvasComments(c => [...c, { text: canvasComment.trim(), ts: new Date().toISOString() }]); setCanvasComment(''); }}} className="text-[10px] bg-neutral-100 hover:bg-neutral-200 rounded px-2 py-1">+</button>
                     </div>
                   </>
                 )}
                 {canvasRightPanel === 'history' && (
                   <>
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-[#807d72]">Documents</p>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-[#807d72]">{t('assistant.canvas_docs')}</p>
                     <div className="flex-1 space-y-1.5 overflow-y-auto max-h-64">
-                      {canvasDocs.length === 0 && <p className="text-[10px] text-muted-foreground italic">Aucun document</p>}
+                      {canvasDocs.length === 0 && <p className="text-[10px] text-muted-foreground italic">{t('assistant.no_docs')}</p>}
                       {canvasDocs.map(doc => (
                         <button key={doc.id} onClick={() => { setCanvasDoc({ id: doc.id, title: doc.title, content: doc.content, lastSaved: doc.updatedAt }); setCanvasRightPanel('none'); }} className="w-full text-left p-2 rounded hover:bg-neutral-50 text-[10px] border border-neutral-100 transition-colors">
-                          <p className="font-bold truncate">{doc.title || 'Sans titre'}</p>
-                          <p className="text-muted-foreground font-mono">{new Date(doc.updatedAt).toLocaleDateString('fr-FR')}</p>
+                          <p className="font-bold truncate">{doc.title || t('assistant.untitled_doc')}</p>
+                          <p className="text-muted-foreground font-mono">{new Date(doc.updatedAt).toLocaleDateString(locale === 'de' ? 'de-DE' : locale === 'en' ? 'en-US' : 'fr-FR')}</p>
                         </button>
                       ))}
                     </div>
@@ -1677,7 +1826,7 @@ export function AssistantRoot() {
                 )}
                 {canvasRightPanel === 'settings' && (
                   <>
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-[#807d72]">Taille texte</p>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-[#807d72]">{t('assistant.text_size')}</p>
                     <div className="flex gap-2">
                       {(['sm', 'base', 'lg'] as const).map(size => (
                         <button key={size} onClick={() => setCanvasFontSize(size)} className={`flex-1 py-1 text-[10px] font-bold rounded border transition-colors ${canvasFontSize === size ? 'bg-[#26251e] text-white border-[#26251e]' : 'border-neutral-200 hover:bg-neutral-50'}`}>
@@ -1694,11 +1843,11 @@ export function AssistantRoot() {
           {/* Save to Library prompt */}
           {showSaveToLibraryPrompt && (
             <div className="absolute bottom-4 right-4 z-50 bg-white border border-border shadow-lg rounded-xl p-4 w-72 animate-scale-up">
-              <p className="text-sm font-bold text-foreground mb-1">Sauvegarder dans la Bibliothèque ?</p>
-              <p className="text-[11px] text-muted-foreground mb-3">Ajouter « {editorTitle} » à votre Bibliothèque de ressources.</p>
+              <p className="text-sm font-bold text-foreground mb-1">{t('assistant.library_save_title')}</p>
+              <p className="text-[11px] text-muted-foreground mb-3">{t('assistant.library_save_desc').replace('{title}', editorTitle)}</p>
               <div className="flex gap-2">
-                <button onClick={handleSaveToLibrary} className="flex-1 py-1.5 text-[11px] font-bold bg-[#059669] text-white rounded-lg hover:bg-[#047857] transition-colors">Oui, ajouter</button>
-                <button onClick={() => setShowSaveToLibraryPrompt(false)} className="flex-1 py-1.5 text-[11px] font-bold border border-border rounded-lg hover:bg-muted/50 transition-colors">Non merci</button>
+                <button onClick={handleSaveToLibrary} className="flex-1 py-1.5 text-[11px] font-bold bg-[#059669] text-white rounded-lg hover:bg-[#047857] transition-colors">{t('assistant.yes_add')}</button>
+                <button onClick={() => setShowSaveToLibraryPrompt(false)} className="flex-1 py-1.5 text-[11px] font-bold border border-border rounded-lg hover:bg-muted/50 transition-colors">{t('assistant.no_thanks')}</button>
               </div>
             </div>
           )}

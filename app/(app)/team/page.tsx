@@ -39,7 +39,7 @@ interface TeamMember {
   invited_by: string | null;
   plan?: Plan;
   usage_count?: number;
-  profile?: { full_name: string | null; company_name: string | null } | null;
+  profile?: { full_name: string | null; company_name: string | null; avatar_base64?: string | null } | null;
 }
 
 export default function TeamPage() {
@@ -1025,8 +1025,14 @@ export default function TeamPage() {
                       {/* Name/Email */}
                       <td className="py-3.5 px-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-black text-white font-extrabold text-xs flex items-center justify-center shrink-0">
-                            {currentUser.name.slice(0, 2).toUpperCase()}
+                          <div className="w-8 h-8 rounded-full overflow-hidden bg-neutral-100 flex items-center justify-center shrink-0 border border-neutral-200">
+                            {currentUser.avatar ? (
+                              <img src={currentUser.avatar} alt="" className="w-full h-full object-cover" />
+                            ) : (
+                              <span className="font-extrabold text-xs text-neutral-600">
+                                {currentUser.name.slice(0, 2).toUpperCase()}
+                              </span>
+                            )}
                           </div>
                           <div className="min-w-0">
                             <p className="text-xs font-bold text-neutral-900 truncate">
@@ -1163,6 +1169,7 @@ export default function TeamPage() {
                         ? new Date(member.joined_at).toLocaleDateString(locale, { month: 'short', day: 'numeric', year: 'numeric' })
                         : null;
 
+                      const memberAvatar = member.profile?.avatar_base64;
                       return (
                         <tr key={member.id} className="hover:bg-neutral-50/40 transition-colors group">
 
@@ -1175,12 +1182,18 @@ export default function TeamPage() {
                                 </div>
                               ) : (
                                 <div className="relative shrink-0">
-                                  <div className="w-8 h-8 rounded-full bg-[#26251e] text-white font-extrabold text-xs flex items-center justify-center">
-                                    {(member.profile?.full_name || member.email.split('@')[0]).slice(0, 2).toUpperCase()}
+                                  <div className="w-8 h-8 rounded-full overflow-hidden bg-neutral-100 flex items-center justify-center border border-neutral-200">
+                                    {memberAvatar ? (
+                                      <img src={memberAvatar} alt="" className="w-full h-full object-cover" />
+                                    ) : (
+                                      <span className="font-extrabold text-xs text-neutral-600">
+                                        {(member.profile?.full_name || member.email.split('@')[0]).slice(0, 2).toUpperCase()}
+                                      </span>
+                                    )}
                                   </div>
                                   {/* Online presence dot */}
                                   {isOnline && (
-                                    <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-[#059669] border-2 border-white" title="En ligne" />
+                                    <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-[#059669] border-2 border-white z-10" title="En ligne" />
                                   )}
                                 </div>
                               )}

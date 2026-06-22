@@ -77,7 +77,7 @@ export async function GET(request: NextRequest) {
         // Use admin client so members can see profiles of all workspace members
         const { data: profile } = await admin
           .from('settings')
-          .select('full_name, company_name')
+          .select('full_name, company_name, avatar_base64')
           .eq('user_id', m.member_user_id)
           .maybeSingle();
         enrichedMember.profile = profile;
@@ -88,7 +88,7 @@ export async function GET(request: NextRequest) {
 
   // Prepend the workspace owner as an assignable person (they're not in team_members)
   const [ownerProfile, ownerAuth] = await Promise.all([
-    admin.from('settings').select('full_name, company_name').eq('user_id', ownerUserId).maybeSingle(),
+    admin.from('settings').select('full_name, company_name, avatar_base64').eq('user_id', ownerUserId).maybeSingle(),
     admin.auth.admin.getUserById(ownerUserId),
   ]);
   const ownerEntry = {

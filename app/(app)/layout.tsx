@@ -272,6 +272,32 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
     avatarBase64?: string | null;
   }>>([]);
 
+  const [memberAvatars, setMemberAvatars] = useState<Record<string, string>>({});
+
+  // Load workspace members' avatars from DB to display them in the presence indicators
+  useEffect(() => {
+    if (!activeWorkspace) return;
+    const loadWorkspaceAvatars = async () => {
+      try {
+        const ownerParam = activeWorkspace.owner_id ? `?ownerUserId=${activeWorkspace.owner_id}` : '';
+        const res = await fetch(getApiUrl(`/api/team/members${ownerParam}`));
+        if (res.ok) {
+          const data = await res.json();
+          const avatars: Record<string, string> = {};
+          (data.members || []).forEach((m: any) => {
+            if (m.member_user_id && m.profile?.avatar_base64) {
+              avatars[m.member_user_id] = m.profile.avatar_base64;
+            }
+          });
+          setMemberAvatars(avatars);
+        }
+      } catch (err) {
+        console.error('Failed to load workspace avatars:', err);
+      }
+    };
+    loadWorkspaceAvatars();
+  }, [activeWorkspace]);
+
   useEffect(() => {
     if (!activeWorkspace || !userProfile) return;
 
@@ -313,7 +339,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
             fullName: userProfile.fullName,
             activePage: pathname,
             color: myColor,
-            avatarBase64: userProfile.avatarBase64 || null
+            avatarBase64: null // No longer sending heavy base64 over presence to respect payload limits
           });
         }
       });
@@ -487,11 +513,14 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'minerva_avatar' && e.newValue !== null) {
         setUserProfile((prev) => prev ? { ...prev, avatarBase64: e.newValue } : prev);
+        if (contextUser) {
+          setMemberAvatars((prev) => ({ ...prev, [contextUser.id]: e.newValue! }));
+        }
       }
     };
     window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);
-  }, []);
+  }, [contextUser]);
 
   if (checkingWelcome) {
     return (
@@ -1395,16 +1424,18 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                   else if (u.activePage === '/settings') pageLabel = 'Paramètres';
                   else if (u.activePage === '/team') pageLabel = 'Équipe';
 
+                  const avatar = memberAvatars[u.userId] || u.avatarBase64;
+
                   return (
                     <Tooltip key={u.userId}>
                       <TooltipTrigger asChild>
                         <div className={cn(
                           "w-6 h-6 rounded-full border-2 border-white flex items-center justify-center text-[9px] font-bold shrink-0 shadow-xs cursor-default select-none transition-transform hover:scale-105 overflow-hidden",
-                          u.avatarBase64 ? "bg-transparent" : u.color
+                          avatar ? "bg-transparent" : u.color
                         )}>
-                          {u.avatarBase64 ? (
+                          {avatar ? (
                             // eslint-disable-next-line @next/next/no-img-element
-                            <img src={u.avatarBase64} alt={u.fullName} className="w-full h-full object-cover" />
+                            <img src={avatar} alt={u.fullName} className="w-full h-full object-cover" />
                           ) : (
                             initials
                           )}
