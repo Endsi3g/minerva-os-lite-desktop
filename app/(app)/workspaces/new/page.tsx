@@ -89,8 +89,8 @@ export default function NewWorkspacePage() {
           }
         }
 
-        // Redirect to welcome checklist or dashboard
-        router.push('/welcome');
+        // Redirect to workspaces list
+        router.push('/workspaces');
       } else {
         setCreateError("Impossible de créer l'espace de travail. Veuillez réessayer.");
         setCreationStep(null);

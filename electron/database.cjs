@@ -28,6 +28,7 @@ function initDb() {
       last_scrape_at TEXT,
       todoist_token TEXT,
       todoist_project_id TEXT,
+      active_workspace_id TEXT DEFAULT NULL,
       updated_at TEXT,
       sync_status TEXT DEFAULT 'synced'
     )`);
@@ -45,6 +46,9 @@ function initDb() {
       // Ignore if column already exists
     });
     db.run(`ALTER TABLE settings ADD COLUMN todoist_project_id TEXT`, () => {
+      // Ignore if column already exists
+    });
+    db.run(`ALTER TABLE settings ADD COLUMN active_workspace_id TEXT DEFAULT NULL`, () => {
       // Ignore if column already exists
     });
 
