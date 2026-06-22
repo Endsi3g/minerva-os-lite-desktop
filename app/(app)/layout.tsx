@@ -94,7 +94,7 @@ import {
 import { Pin, PinOff } from 'lucide-react';
 import { CalendarDays } from 'lucide-react';
 
-const CURRENT_VERSION = '3.12.0';
+const CURRENT_VERSION = '3.13.0';
 
 function UpdateBanner() {
   const [visible, setVisible] = useState(false);

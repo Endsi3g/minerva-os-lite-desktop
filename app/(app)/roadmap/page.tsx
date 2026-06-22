@@ -96,6 +96,18 @@ interface PhaseVerification {
 
 const VERIFICATIONS: PhaseVerification[] = [
   {
+    phase: 'Phase 13 — Skills dans Supabase',
+    version: 'v3.13.0',
+    date: '2026-06-22',
+    checks: [
+      'Exécuter supabase_migration_v370.sql (table workspace_skills + RLS).',
+      'Activer/créer une compétence sur /skills, puis recharger : l\'état est conservé (lu depuis Supabase).',
+      'Se connecter depuis un autre appareil/navigateur : les compétences activées et personnalisées suivent.',
+      'Vérifier dans Supabase que la table workspace_skills contient les lignes (enabled, is_custom).',
+      "Dans l'Assistant, le menu @ liste bien les compétences activées (chargées depuis Supabase).",
+    ],
+  },
+  {
     phase: 'Phase 12 — Compétences IA (Skills)',
     version: 'v3.12.0',
     date: '2026-06-22',

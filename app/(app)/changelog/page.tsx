@@ -18,6 +18,16 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v3.13.0',
+      date: '2026-06-22 · 11h35',
+      titleKey: 'changelog.v3_13_0_title' as TranslationKey,
+      descKey: 'changelog.v3_13_0_desc' as TranslationKey,
+      highlights: [
+        "Skills synchronisées dans le cloud — Vos compétences activées et personnalisées sont désormais stockées dans Supabase (et non plus localement), donc disponibles sur tous vos appareils.",
+        "Compétences par défaut conservées — Les compétences de démarrage sont automatiquement initialisées à la première utilisation.",
+      ],
+    },
+    {
       version: 'v3.12.0',
       date: '2026-06-22 · 11h23',
       titleKey: 'changelog.v3_12_0_title' as TranslationKey,

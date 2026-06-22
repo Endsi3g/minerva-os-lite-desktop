@@ -1,80 +1,153 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { createClient } from '@/lib/supabase/client';
 import { ALL_BUILTIN_SKILLS, type Skill } from './skills-data';
 
-interface SkillsState {
-  enabledIds: string[];
-  customSkills: Skill[];
+// Built-in skills enabled by default for a fresh workspace
+const DEFAULT_ENABLED = ['sales-cold-email', 'sales-followup', 'cs-reply'];
+
+interface SkillRow {
+  skill_id: string;
+  name: string | null;
+  description: string | null;
+  instructions: string | null;
+  is_custom: boolean;
+  enabled: boolean;
 }
 
-function storageKey(workspaceId?: string) {
-  return `minerva_skills_${workspaceId || 'default'}`;
-}
-
-function load(workspaceId?: string): SkillsState {
-  if (typeof window === 'undefined') return { enabledIds: [], customSkills: [] };
-  try {
-    const raw = localStorage.getItem(storageKey(workspaceId));
-    if (raw) return JSON.parse(raw);
-  } catch { /* ignore */ }
-  // Default: enable the Sales + Support starter skills
-  return { enabledIds: ['sales-cold-email', 'sales-followup', 'cs-reply'], customSkills: [] };
-}
-
+/**
+ * Skills persistence backed by Supabase (table `workspace_skills`), per user + workspace.
+ * Keeps the same surface as before so callers don't change.
+ */
 export function useSkills(workspaceId?: string) {
-  const [state, setState] = useState<SkillsState>({ enabledIds: [], customSkills: [] });
+  const [enabledIds, setEnabledIds] = useState<string[]>([]);
+  const [customSkills, setCustomSkills] = useState<Skill[]>([]);
+  const [loaded, setLoaded] = useState(false);
+  const userIdRef = useRef<string | null>(null);
 
+  // Load rows from Supabase (and seed defaults the first time)
   useEffect(() => {
-    setState(load(workspaceId));
+    let cancelled = false;
+    const run = async () => {
+      try {
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) { setLoaded(true); return; }
+        userIdRef.current = user.id;
+
+        let query = supabase
+          .from('workspace_skills')
+          .select('skill_id, name, description, instructions, is_custom, enabled')
+          .eq('user_id', user.id);
+        query = workspaceId ? query.eq('workspace_id', workspaceId) : query.is('workspace_id', null);
+        const { data } = await query;
+        const rows = (data as SkillRow[] | null) ?? [];
+
+        if (cancelled) return;
+
+        if (rows.length === 0) {
+          // Seed default-enabled built-ins on first use
+          const seed = DEFAULT_ENABLED.map(id => ({
+            user_id: user.id,
+            workspace_id: workspaceId ?? null,
+            skill_id: id,
+            is_custom: false,
+            enabled: true,
+          }));
+          await supabase.from('workspace_skills').upsert(seed, { onConflict: 'user_id,workspace_id,skill_id' });
+          setEnabledIds(DEFAULT_ENABLED);
+          setCustomSkills([]);
+        } else {
+          setEnabledIds(rows.filter(r => r.enabled).map(r => r.skill_id));
+          setCustomSkills(
+            rows.filter(r => r.is_custom).map(r => ({
+              id: r.skill_id,
+              name: r.name || 'Compétence',
+              description: r.description || '',
+              instructions: r.instructions || '',
+              pack: 'Créées par vous',
+              builtIn: false,
+            }))
+          );
+        }
+      } catch { /* ignore — offline */ }
+      finally { if (!cancelled) setLoaded(true); }
+    };
+    run();
+    return () => { cancelled = true; };
   }, [workspaceId]);
 
-  const persist = useCallback((next: SkillsState) => {
-    setState(next);
-    try { localStorage.setItem(storageKey(workspaceId), JSON.stringify(next)); } catch { /* ignore */ }
-  }, [workspaceId]);
+  const allSkills: Skill[] = [...ALL_BUILTIN_SKILLS, ...customSkills];
+  const isEnabled = (id: string) => enabledIds.includes(id);
+  const enabledSkills = allSkills.filter(s => enabledIds.includes(s.id));
 
-  const allSkills: Skill[] = [...ALL_BUILTIN_SKILLS, ...state.customSkills];
+  const toggleSkill = useCallback(async (id: string) => {
+    const uid = userIdRef.current;
+    const willEnable = !enabledIds.includes(id);
+    setEnabledIds(prev => willEnable ? [...prev, id] : prev.filter(x => x !== id));
+    if (!uid) return;
+    const builtIn = ALL_BUILTIN_SKILLS.find(s => s.id === id);
+    try {
+      const supabase = createClient();
+      await supabase.from('workspace_skills').upsert({
+        user_id: uid,
+        workspace_id: workspaceId ?? null,
+        skill_id: id,
+        is_custom: !builtIn,
+        enabled: willEnable,
+        ...(builtIn ? { name: builtIn.name, description: builtIn.description, instructions: builtIn.instructions } : {}),
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'user_id,workspace_id,skill_id' });
+    } catch { /* ignore */ }
+  }, [enabledIds, workspaceId]);
 
-  const isEnabled = (id: string) => state.enabledIds.includes(id);
-
-  const toggleSkill = useCallback((id: string) => {
-    setState(prev => {
-      const enabledIds = prev.enabledIds.includes(id)
-        ? prev.enabledIds.filter(x => x !== id)
-        : [...prev.enabledIds, id];
-      const next = { ...prev, enabledIds };
-      try { localStorage.setItem(storageKey(workspaceId), JSON.stringify(next)); } catch { /* ignore */ }
-      return next;
-    });
-  }, [workspaceId]);
-
-  const addCustomSkill = useCallback((skill: Omit<Skill, 'id' | 'builtIn'>) => {
+  const addCustomSkill = useCallback(async (skill: Omit<Skill, 'id' | 'builtIn'>) => {
+    const uid = userIdRef.current;
     const id = `custom-${Date.now().toString(36)}`;
     const newSkill: Skill = { ...skill, id, builtIn: false };
-    setState(prev => {
-      const next = {
-        customSkills: [...prev.customSkills, newSkill],
-        enabledIds: [...prev.enabledIds, id],
-      };
-      try { localStorage.setItem(storageKey(workspaceId), JSON.stringify(next)); } catch { /* ignore */ }
-      return next;
-    });
+    setCustomSkills(prev => [...prev, newSkill]);
+    setEnabledIds(prev => [...prev, id]);
+    if (uid) {
+      try {
+        const supabase = createClient();
+        await supabase.from('workspace_skills').upsert({
+          user_id: uid,
+          workspace_id: workspaceId ?? null,
+          skill_id: id,
+          name: skill.name,
+          description: skill.description,
+          instructions: skill.instructions,
+          is_custom: true,
+          enabled: true,
+        }, { onConflict: 'user_id,workspace_id,skill_id' });
+      } catch { /* ignore */ }
+    }
     return newSkill;
   }, [workspaceId]);
 
-  const deleteCustomSkill = useCallback((id: string) => {
-    setState(prev => {
-      const next = {
-        customSkills: prev.customSkills.filter(s => s.id !== id),
-        enabledIds: prev.enabledIds.filter(x => x !== id),
-      };
-      try { localStorage.setItem(storageKey(workspaceId), JSON.stringify(next)); } catch { /* ignore */ }
-      return next;
-    });
-  }, [workspaceId]);
+  const deleteCustomSkill = useCallback(async (id: string) => {
+    const uid = userIdRef.current;
+    setCustomSkills(prev => prev.filter(s => s.id !== id));
+    setEnabledIds(prev => prev.filter(x => x !== id));
+    if (uid) {
+      try {
+        const supabase = createClient();
+        await supabase.from('workspace_skills').delete()
+          .eq('user_id', uid)
+          .eq('skill_id', id);
+      } catch { /* ignore */ }
+    }
+  }, []);
 
-  const enabledSkills = allSkills.filter(s => state.enabledIds.includes(s.id));
-
-  return { state, allSkills, enabledSkills, isEnabled, toggleSkill, addCustomSkill, deleteCustomSkill, persist };
+  return {
+    state: { enabledIds, customSkills },
+    allSkills,
+    enabledSkills,
+    isEnabled,
+    toggleSkill,
+    addCustomSkill,
+    deleteCustomSkill,
+    loaded,
+  };
 }
