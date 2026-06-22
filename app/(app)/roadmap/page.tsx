@@ -61,6 +61,13 @@ const roadmapData: RoadmapItem[] = [
   { module: 'Booking', feature: 'Scheduling public / Booking Links', desc: 'Page publique /book/[username] avec Google Calendar freebusy, slots disponibles et lien partageable. APIs créées, page publique live.', priority: 'high', status: 'in_progress' },
   { module: 'Équipes', feature: 'Page dédiée gestion de rôle membre', desc: 'Page /team/member/[id] : assigner un rôle prédéfini ou personnalisé à un membre, créer un rôle inline.', priority: 'medium', status: 'available' },
 
+  // ─── Planned : Intégrations à activer (lourdes, planifiées) ───────────
+  { module: 'Intégrations', feature: 'Slack', desc: 'Notifications et alertes CRM poussées dans des canaux Slack (nouveaux leads, deals gagnés, réponses).', priority: 'medium', status: 'planned' },
+  { module: 'Intégrations', feature: 'Notion', desc: 'Synchronisation bidirectionnelle des leads et notes vers des bases de données Notion.', priority: 'medium', status: 'planned' },
+  { module: 'Intégrations', feature: 'Microsoft SharePoint', desc: 'Export et stockage des documents et rapports clients sur SharePoint.', priority: 'low', status: 'planned' },
+  { module: 'Intégrations', feature: 'Meeting recorder', desc: 'Capture et transcription automatique des réunions, liées aux fiches leads.', priority: 'low', status: 'planned' },
+  { module: 'Intégrations', feature: 'Webhooks Website', desc: 'Réception des formulaires de site web entrants comme leads taggés (déjà en partie via /integrations/forms).', priority: 'medium', status: 'planned' },
+
   // ─── Planned ─────────────────────────────────────────────────────────
   { module: 'CRM', feature: 'Accounts / Entreprises', desc: 'Vue 360° par société regroupant contacts, deals, emails, meetings, notes et visites.', priority: 'high', status: 'planned' },
   { module: 'CRM', feature: 'Timeline unifiée par compte', desc: 'Flux chronologique unique par lead/compte : emails, calls, meetings, notes, visites.', priority: 'high', status: 'planned' },
@@ -88,6 +95,17 @@ interface PhaseVerification {
 }
 
 const VERIFICATIONS: PhaseVerification[] = [
+  {
+    phase: 'Phase 5 — Activité d\'équipe & conformité design',
+    version: 'v3.5.0',
+    date: '2026-06-22',
+    checks: [
+      'Sur /today, le widget « Activité de l\'équipe » liste les événements réels (leads créés, deals gagnés, tâches terminées) triés par date.',
+      'Sur /services, vérifier la typographie (plus de font-black) conforme à la charte.',
+      'Sur /settings/automations, les déclencheurs affichent des icônes (sablier, flamme, message) au lieu d\'emojis.',
+      'Dans /roadmap onglet « Prévu », les intégrations Slack, Notion, SharePoint, Meeting recorder, Webhooks site web sont listées.',
+    ],
+  },
   {
     phase: 'Phase 4 — Canvas automatique & OpenRouter',
     version: 'v3.4.0',

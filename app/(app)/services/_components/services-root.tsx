@@ -399,7 +399,7 @@ export default function ServicesRoot() {
         {/* Header */}
         <div className="flex items-start justify-between">
           <div>
-            <h1 className="text-2xl font-black tracking-tight text-[#26251e]">Services & Tarifs</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-[#26251e]">Services & Tarifs</h1>
             <p className="text-xs text-[#807d72] mt-0.5">Catalogue, forfaits et génération de devis.</p>
           </div>
         </div>
@@ -580,7 +580,7 @@ export default function ServicesRoot() {
                         </div>
                       </div>
                       {service.price !== null && (
-                        <p className="text-xl font-black text-[#26251e]">{service.price.toLocaleString('fr-CA', { style: 'currency', currency: 'CAD', maximumFractionDigits: 0 })}</p>
+                        <p className="text-xl font-bold text-[#26251e]">{service.price.toLocaleString('fr-CA', { style: 'currency', currency: 'CAD', maximumFractionDigits: 0 })}</p>
                       )}
                       {service.description && <p className="text-xs text-[#807d72] leading-relaxed line-clamp-3">{service.description}</p>}
                     </div>
@@ -656,7 +656,7 @@ export default function ServicesRoot() {
                   const savings = pkg.discountedPrice !== null ? originalTotal - pkg.discountedPrice : 0;
                   return (
                     <div key={pkg.id} className={cn('bg-white border rounded-xl p-5 flex flex-col gap-3 relative', pkg.highlight ? 'border-[#f54e00] shadow-md' : 'border-[#e6e5e0]')}>
-                      {pkg.highlight && <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-[#f54e00] text-white text-[9px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full">Recommandé</span>}
+                      {pkg.highlight && <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-[#f54e00] text-white text-[9px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full">Recommandé</span>}
                       <div className="flex items-start justify-between">
                         <div>
                           <h3 className="text-sm font-extrabold text-[#26251e]">{pkg.name}</h3>
@@ -678,11 +678,11 @@ export default function ServicesRoot() {
                       <div className="mt-auto pt-3 border-t border-[#f0efe9]">
                         {pkg.discountedPrice !== null ? (
                           <>
-                            <p className="text-xl font-black text-[#26251e]">{pkg.discountedPrice.toLocaleString('fr-CA', { style: 'currency', currency: 'CAD', maximumFractionDigits: 0 })}</p>
+                            <p className="text-xl font-bold text-[#26251e]">{pkg.discountedPrice.toLocaleString('fr-CA', { style: 'currency', currency: 'CAD', maximumFractionDigits: 0 })}</p>
                             {savings > 0 && <p className="text-[10px] text-[#059669] font-bold">Économie de {savings.toLocaleString('fr-CA', { maximumFractionDigits: 0 })} $</p>}
                           </>
                         ) : (
-                          <p className="text-xl font-black text-[#26251e]">{originalTotal.toLocaleString('fr-CA', { style: 'currency', currency: 'CAD', maximumFractionDigits: 0 })}</p>
+                          <p className="text-xl font-bold text-[#26251e]">{originalTotal.toLocaleString('fr-CA', { style: 'currency', currency: 'CAD', maximumFractionDigits: 0 })}</p>
                         )}
                       </div>
                     </div>
@@ -780,7 +780,7 @@ export default function ServicesRoot() {
                       <div className="flex gap-8 text-[#059669]"><span>Remise ({quoteDiscount}%)</span><span className="font-mono">-{quoteDiscountAmt.toLocaleString('fr-CA')} $</span></div>
                     </>
                   )}
-                  <div className="flex gap-8 font-black text-base text-[#26251e] border-t border-[#f0efe9] pt-2 mt-1 w-full justify-end">
+                  <div className="flex gap-8 font-bold text-base text-[#26251e] border-t border-[#f0efe9] pt-2 mt-1 w-full justify-end">
                     <span>TOTAL</span>
                     <span className="font-mono">{quoteTotal.toLocaleString('fr-CA', { style: 'currency', currency: 'CAD', maximumFractionDigits: 0 })}</span>
                   </div>

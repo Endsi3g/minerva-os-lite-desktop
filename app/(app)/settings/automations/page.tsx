@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useReach } from "@/lib/reach-context";
 import { useRouter } from "next/navigation";
-import { Plus, Zap, Trash2, Edit2, CheckCircle2, XCircle } from "lucide-react";
+import { Plus, Zap, Trash2, Edit2, CheckCircle2, XCircle, Hourglass, Flame, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { defaultAutomations, Automation } from "@/lib/automations-engine";
 import { createClient } from "@/lib/supabase/client";
@@ -125,10 +125,10 @@ export default function AutomationsSettingsPage() {
   };
 
   const renderTriggerIcon = (t: string) => {
-    if (t === 'time_passed') return "⏳";
-    if (t === 'intent_increased') return "🔥";
-    if (t === 'lead_replied') return "💬";
-    return "⚡";
+    if (t === 'time_passed') return <Hourglass className="h-4 w-4 text-[#7a7a76]" />;
+    if (t === 'intent_increased') return <Flame className="h-4 w-4 text-[#f54e00]" />;
+    if (t === 'lead_replied') return <MessageCircle className="h-4 w-4 text-[#059669]" />;
+    return <Zap className="h-4 w-4 text-[#7a7a76]" />;
   };
 
   return (
@@ -164,7 +164,7 @@ export default function AutomationsSettingsPage() {
             {automations.map(auto => (
               <div key={auto.id} className="border border-[#e5e5e0] bg-white rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm hover:border-[#10b981]/40 transition-colors">
                 <div className="flex gap-4 items-start">
-                  <div className="mt-1 h-8 w-8 rounded-lg bg-slate-100 flex items-center justify-center text-lg">
+                  <div className="mt-1 h-8 w-8 rounded-lg bg-[#f4f4f3] flex items-center justify-center">
                     {renderTriggerIcon(auto.triggerType)}
                   </div>
                   <div>
@@ -197,8 +197,8 @@ export default function AutomationsSettingsPage() {
                   >
                     {auto.isActive ? (
                       <>
-                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
-                        <span className="text-emerald-700">Actif</span>
+                        <CheckCircle2 className="h-3.5 w-3.5 text-[#059669]" />
+                        <span className="text-[#059669]">Actif</span>
                       </>
                     ) : (
                       <>

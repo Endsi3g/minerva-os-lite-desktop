@@ -9,6 +9,7 @@ import { FollowUpListCard } from './follow-up-list-card';
 import { TodayTasksCard } from './today-tasks-card';
 import { TodayFocusCard } from './today-focus-card';
 import { TodayActivityFeedCard } from './today-activity-feed-card';
+import { TodayTeamActivityCard } from './today-team-activity-card';
 import { TodayProjectsCard } from './today-projects-card';
 import { TodayStatsCard } from './today-stats-card';
 import { TodaySetupBanner } from './today-setup-banner';
@@ -99,6 +100,9 @@ export function TodayRoot() {
 
             {/* Activité récente des leads */}
             <TodayActivityFeedCard />
+
+            {/* Activité de l'équipe (flux d'événements réels du workspace) */}
+            <TodayTeamActivityCard />
 
             {/* Stats funnel + séquences */}
             <TodayStatsCard />

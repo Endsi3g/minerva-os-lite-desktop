@@ -18,6 +18,18 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v3.5.0',
+      date: '2026-06-22 · 00h41',
+      titleKey: 'changelog.v3_5_0_title' as TranslationKey,
+      descKey: 'changelog.v3_5_0_desc' as TranslationKey,
+      highlights: [
+        "Activité de l'équipe — Nouveau widget sur le tableau de bord qui liste en temps réel les vrais événements du workspace (nouveaux leads, deals gagnés, tâches terminées).",
+        "Services & Tarifs — Mise en conformité avec la charte graphique (typographie unifiée).",
+        "Automatisations — Icônes de déclencheurs remplacées par des icônes propres (au lieu d'emojis), couleurs alignées à la charte.",
+        "Intégrations planifiées — Slack, Notion, SharePoint, Meeting recorder et Webhooks site web sont désormais listés dans la Roadmap (onglet Prévu) en attendant leur activation.",
+      ],
+    },
+    {
       version: 'v3.4.0',
       date: '2026-06-22 · 00h35',
       titleKey: 'changelog.v3_4_0_title' as TranslationKey,
