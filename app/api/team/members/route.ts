@@ -86,6 +86,23 @@ export async function GET(request: NextRequest) {
     })
   );
 
+  // Deduplicate: a user can end up with several team_members rows (e.g. invited by
+  // email AND via link, or re-invited). Collapse by member_user_id (fallback email),
+  // keeping the active row over a pending one. Also drop any row that is actually the
+  // workspace owner — the owner is rendered separately below.
+  const seen = new Map<string, typeof enriched[number]>();
+  for (const m of enriched) {
+    if (m.member_user_id && m.member_user_id === ownerUserId) continue; // owner handled separately
+    const key = m.member_user_id || `email:${(m.email || '').toLowerCase()}`;
+    const existing = seen.get(key);
+    if (!existing) {
+      seen.set(key, m);
+    } else if (existing.status !== 'active' && m.status === 'active') {
+      seen.set(key, m); // prefer the active membership over pending
+    }
+  }
+  const deduped = Array.from(seen.values());
+
   // Prepend the workspace owner as an assignable person (they're not in team_members)
   const [ownerProfile, ownerAuth] = await Promise.all([
     admin.from('settings').select('full_name, company_name, avatar_base64').eq('user_id', ownerUserId).maybeSingle(),
@@ -106,7 +123,7 @@ export async function GET(request: NextRequest) {
     isOwner: true,
   };
 
-  return NextResponse.json({ members: [ownerEntry, ...enriched] });
+  return NextResponse.json({ members: [ownerEntry, ...deduped] });
 }
 
 // PATCH /api/team/members — Update a member's role, plan, or usage_count (owner only)

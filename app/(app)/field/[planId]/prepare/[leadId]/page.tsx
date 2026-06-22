@@ -18,7 +18,7 @@ export default function FieldPreparePage() {
   const planId = params.planId as string;
   const leadId = params.leadId as string;
 
-  const { leads } = useReach();
+  const { leads, activeWorkspace } = useReach();
   const lead = leads.find((l) => l.id === leadId);
 
   const [script, setScript] = useState('');
@@ -39,7 +39,7 @@ export default function FieldPreparePage() {
         body: JSON.stringify({
           messages: [{
             role: 'user',
-            content: `Tu es un assistant de vente expert. Génère un script de visite terrain court (5-7 points) pour rendre visite à ce prospect :\n\nEntreprise : ${lead.businessName}\nSecteur : ${lead.niche || 'non précisé'}\nSite web : ${lead.website || 'aucun'}\nNote Google : ${lead.rating || 'inconnue'}\nStatut actuel : ${lead.status || 'Nouveau'}\nNotes précédentes : ${lead.notes?.map(n => n.content).join(' | ') || 'aucune'}\n\nFormat : liste numérotée avec accroche, valeur proposée, objections probables et call-to-action. Sois direct, professionnel et adapté au terrain. Réponds en français.`,
+            content: `Tu es un assistant de vente expert. Génère un script de visite terrain court (5-7 points) pour rendre visite à ce prospect :\n\nEntreprise : ${lead.businessName}\nSecteur : ${lead.niche || 'non précisé'}\nSite web : ${lead.website || 'aucun'}\nDescription de l'entreprise : ${lead.websiteDescription || 'non disponible'}\nNote Google : ${lead.rating || 'inconnue'}\nStatut actuel : ${lead.status || 'Nouveau'}\nNotes précédentes : ${lead.notes?.map(n => n.content).join(' | ') || 'aucune'}\n\nFormat : liste numérotée avec accroche, valeur proposée, objections probables et call-to-action. Sois direct, professionnel et adapté au terrain. Réponds en français.`,
           }],
           model: 'claude-haiku-4-5-20251001',
         }),
@@ -91,21 +91,24 @@ export default function FieldPreparePage() {
   };
 
   const handleNotifyTeam = async () => {
-    if (!lead) return;
+    if (!lead || !activeWorkspace) return;
     setNotifying(true);
     try {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      // Insert a team notification record
-      await supabase.from('notifications').insert({
-        user_id: user.id,
-        title: `Visite terrain — ${lead.businessName}`,
-        body: `Départ en visite chez ${lead.businessName}${lead.city ? ` (${lead.city})` : ''}. Notes : ${preNotes || 'aucune'}`,
-        type: 'field_visit',
-        is_read: false,
+      // Fan out to every active team member (not just self) via the service-role API
+      const ownerId = (activeWorkspace as { owner_id?: string }).owner_id;
+      const res = await fetch(getApiUrl('/api/notifications/team'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          workspaceId: activeWorkspace.id,
+          workspaceOwnerId: ownerId,
+          title: `Visite terrain — ${lead.businessName}`,
+          body: `Départ en visite chez ${lead.businessName}${lead.city ? ` (${lead.city})` : ''}. Notes : ${preNotes || 'aucune'}`,
+          type: 'field_visit',
+          link: `/leads/${lead.id}`,
+        }),
       });
-      setNotified(true);
+      if (res.ok) setNotified(true);
     } catch { /* ignore */ }
     finally { setNotifying(false); }
   };
@@ -129,14 +132,14 @@ export default function FieldPreparePage() {
             <ArrowLeft className="h-4 w-4" />
           </button>
           <div>
-            <h1 className="text-xl font-black">Préparer la visite</h1>
+            <h1 className="text-xl font-bold">Préparer la visite</h1>
             <p className="text-xs text-[#7a7a76] mt-0.5">{lead.businessName}</p>
           </div>
         </div>
 
         {/* Lead info card */}
-        <div className="border border-[#e5e5e0] rounded-2xl p-5 bg-white space-y-3">
-          <h2 className="text-base font-black">{lead.businessName}</h2>
+        <div className="border border-[#e5e5e0] rounded-xl p-5 bg-white space-y-3">
+          <h2 className="text-base font-bold">{lead.businessName}</h2>
           <div className="flex flex-wrap gap-3 text-xs text-[#7a7a76]">
             {lead.city && (
               <span className="flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5" />{lead.city}</span>
@@ -166,7 +169,7 @@ export default function FieldPreparePage() {
 
         {/* Past notes */}
         {lead.notes && lead.notes.length > 0 && (
-          <div className="border border-[#e5e5e0] rounded-2xl p-5 bg-white space-y-2">
+          <div className="border border-[#e5e5e0] rounded-xl p-5 bg-white space-y-2">
             <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">
               <ClipboardList className="h-3.5 w-3.5" />
               Notes précédentes ({lead.notes.length})
@@ -180,7 +183,7 @@ export default function FieldPreparePage() {
         )}
 
         {/* AI Script */}
-        <div className="border border-[#e5e5e0] rounded-2xl p-5 bg-white space-y-4">
+        <div className="border border-[#e5e5e0] rounded-xl p-5 bg-white space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">
               <Sparkles className="h-3.5 w-3.5" />
@@ -212,7 +215,7 @@ export default function FieldPreparePage() {
         </div>
 
         {/* Pre-visit notes */}
-        <div className="border border-[#e5e5e0] rounded-2xl p-5 bg-white space-y-4">
+        <div className="border border-[#e5e5e0] rounded-xl p-5 bg-white space-y-4">
           <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">
             <MessageSquare className="h-3.5 w-3.5" />
             Notes avant visite
@@ -236,7 +239,7 @@ export default function FieldPreparePage() {
         </div>
 
         {/* Team notification */}
-        <div className="border border-[#e5e5e0] rounded-2xl p-5 bg-white space-y-4">
+        <div className="border border-[#e5e5e0] rounded-xl p-5 bg-white space-y-4">
           <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">
             <Users className="h-3.5 w-3.5" />
             Notification équipe
@@ -260,7 +263,7 @@ export default function FieldPreparePage() {
         {/* Go button */}
         <button
           onClick={() => router.push(`/field/${planId}/outcome/${leadId}`)}
-          className="w-full py-4 rounded-2xl bg-[#26251e] text-white font-black text-sm hover:bg-[#3d3c35] transition-colors"
+          className="w-full py-4 rounded-xl bg-[#26251e] text-white font-bold text-sm hover:bg-[#3d3c35] transition-colors"
         >
           Démarrer la visite →
         </button>

@@ -63,9 +63,9 @@ CREATE POLICY "team_messages_insert"
 do $$
 begin
   if not exists (
-    select 1 from pg_publication_tables 
-    where pubname = 'supabase_realtime' 
-    and schemaname = 'public' 
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime'
+    and schemaname = 'public'
     and tablename = 'team_messages'
   ) then
     alter publication supabase_realtime add table public.team_messages;
@@ -73,5 +73,25 @@ begin
 exception
   when others then
     raise notice 'Could not add team_messages to supabase_realtime publication';
+end;
+$$;
+
+-- 5. Website scraper — AI-generated business description on leads
+ALTER TABLE public.leads ADD COLUMN IF NOT EXISTS website_description text;
+
+-- 6. Ensure notifications realtime is enabled (team field-visit fan-out)
+do $$
+begin
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime'
+    and schemaname = 'public'
+    and tablename = 'notifications'
+  ) then
+    alter publication supabase_realtime add table public.notifications;
+  end if;
+exception
+  when others then
+    raise notice 'Could not add notifications to supabase_realtime publication';
 end;
 $$;

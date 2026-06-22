@@ -217,6 +217,7 @@ interface DbLead {
   updated_at: string;
   // Enrichment fields
   website?: string | null;
+  website_description?: string | null;
   rating?: number | null;
   reviews_count?: number | null;
   maps_url?: string | null;
@@ -295,6 +296,7 @@ function mapDbLeadToUi(dbLead: DbLead, dbNotes: DbNote[] = []): Lead {
     createdAt: dbLead.created_at,
     updatedAt: dbLead.updated_at,
     website: dbLead.website || undefined,
+    websiteDescription: dbLead.website_description || undefined,
     rating: dbLead.rating ?? undefined,
     reviewsCount: dbLead.reviews_count ?? undefined,
     mapsUrl: dbLead.maps_url || undefined,
@@ -1642,6 +1644,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
         if (fields.nextActionDate !== undefined) { dbFields.push("next_action_date = ?"); params.push(fields.nextActionDate || null); }
         if (fields.imageUrl !== undefined) { dbFields.push("image_url = ?"); params.push(fields.imageUrl || null); }
         if (fields.website !== undefined) { dbFields.push("website = ?"); params.push(fields.website || null); }
+        if (fields.websiteDescription !== undefined) { dbFields.push("website_description = ?"); params.push(fields.websiteDescription || null); }
         if (fields.rating !== undefined) { dbFields.push("rating = ?"); params.push(fields.rating ?? null); }
         if (fields.reviewsCount !== undefined) { dbFields.push("reviews_count = ?"); params.push(fields.reviewsCount ?? null); }
         if (fields.mapsUrl !== undefined) { dbFields.push("maps_url = ?"); params.push(fields.mapsUrl || null); }
@@ -1702,6 +1705,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
     if (fields.nextActionDate !== undefined) dbFields.next_action_date = fields.nextActionDate || null;
     if (fields.imageUrl !== undefined) dbFields.image_url = fields.imageUrl || null;
     if (fields.website !== undefined) dbFields.website = fields.website || null;
+    if (fields.websiteDescription !== undefined) dbFields.website_description = fields.websiteDescription || null;
     if (fields.rating !== undefined) dbFields.rating = fields.rating ?? null;
     if (fields.reviewsCount !== undefined) dbFields.reviews_count = fields.reviewsCount ?? null;
     if (fields.mapsUrl !== undefined) dbFields.maps_url = fields.mapsUrl || null;

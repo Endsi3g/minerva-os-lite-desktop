@@ -9,8 +9,17 @@ import { cn } from '@/lib/utils';
 import {
   MapPin, Phone, Globe, CheckCircle2, Clock, X, ChevronRight,
   Loader2, ArrowLeft, Navigation, RefreshCw, Star, Calendar,
-  AlertCircle, MessageSquare,
+  AlertCircle, MessageSquare, Route, Users, PartyPopper,
 } from 'lucide-react';
+
+// Build a turn-by-turn directions deep link (opens native maps app on mobile)
+function directionsUrl(lead: { latitude?: number; longitude?: number; businessName: string; city?: string; _lat?: number; _lng?: number }): string {
+  const lat = lead._lat ?? lead.latitude;
+  const lng = lead._lng ?? lead.longitude;
+  if (lat && lng) return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
+  const q = encodeURIComponent(`${lead.businessName} ${lead.city || ''}`.trim());
+  return `https://www.google.com/maps/dir/?api=1&destination=${q}`;
+}
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -95,6 +104,7 @@ function LeadCard({
   userLat,
   userLng,
   eta,
+  isNextStop,
 }: {
   lead: ReturnType<typeof useReach>['leads'][number];
   index: number;
@@ -103,6 +113,7 @@ function LeadCard({
   userLat: number | null;
   userLng: number | null;
   eta?: string;
+  isNextStop?: boolean;
 }) {
   const router = useRouter();
   const distance = userLat && userLng
@@ -113,13 +124,25 @@ function LeadCard({
 
   return (
     <div className={cn(
-      'bg-white rounded-2xl border p-4 space-y-3 transition-all',
-      visitLog ? 'border-[#e5e5e0] opacity-70' : 'border-[#e5e5e0] shadow-sm',
+      'bg-white rounded-xl border p-4 space-y-3 transition-all',
+      visitLog
+        ? 'border-[#e5e5e0] opacity-70'
+        : isNextStop
+        ? 'border-[#f54e00] shadow-sm ring-1 ring-[#f54e00]/20'
+        : 'border-[#e5e5e0] shadow-sm',
     )}>
+      {/* Next-stop marker */}
+      {isNextStop && !visitLog && (
+        <div className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-wider text-[#f54e00]">
+          <Navigation className="h-3 w-3" />
+          Prochain arrêt
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-start gap-3">
         <div className={cn(
-          'h-9 w-9 rounded-full flex items-center justify-center text-sm font-black shrink-0',
+          'h-9 w-9 rounded-full flex items-center justify-center text-sm font-bold shrink-0',
           visitLog ? 'bg-[#e5e5e0] text-[#7a7a76]' : 'bg-[#26251e] text-white',
         )}>
           {index + 1}
@@ -178,12 +201,10 @@ function LeadCard({
             Site
           </a>
         )}
-        {lead.mapsUrl && (
-          <a href={lead.mapsUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-[10px] text-[#7a7a76] hover:underline">
-            <MapPin className="h-3 w-3" />
-            Maps
-          </a>
-        )}
+        <a href={directionsUrl(lead)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-[10px] text-[#059669] font-semibold hover:underline">
+          <Route className="h-3 w-3" />
+          Itinéraire
+        </a>
       </div>
 
       {/* CTA: navigate to outcome page */}
@@ -191,13 +212,13 @@ function LeadCard({
         <div className="flex gap-2">
           <button
             onClick={() => router.push(`/field/${planId}/prepare/${lead.id}`)}
-            className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl border-2 border-[#f54e00] text-[#f54e00] text-xs font-bold hover:bg-[#f54e00]/5 transition-colors"
+            className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg border border-[#f54e00] text-[#f54e00] text-xs font-bold hover:bg-[#f54e00]/5 transition-colors"
           >
             Préparer →
           </button>
           <button
             onClick={() => router.push(`/field/${planId}/outcome/${lead.id}`)}
-            className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[#26251e] hover:bg-[#3a3930] text-white text-xs font-bold transition-colors"
+            className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg bg-[#26251e] hover:bg-[#3a3930] text-white text-xs font-bold transition-colors"
           >
             Enregistrer →
           </button>
@@ -235,8 +256,10 @@ const OUTCOME_ICONS: Record<VisitOutcome, React.ReactNode> = {
 
 export function FieldRoot({ planId }: { planId: string }) {
   const router = useRouter();
-  const { leads } = useReach();
+  const { leads, activeWorkspace } = useReach();
 
+  const [notifyingTeam, setNotifyingTeam] = useState(false);
+  const [teamNotified, setTeamNotified] = useState(false);
   const [routePlan, setRoutePlan] = useState<RoutePlan | null>(null);
   const [orderedLeads, setOrderedLeads] = useState<typeof leads>([]);
   const [visitLogs, setVisitLogs] = useState<Record<string, VisitLog>>({});
@@ -420,6 +443,31 @@ export function FieldRoot({ planId }: { planId: string }) {
     };
   }, [userLat, userLng, orderedLeadsWithCoords, visitLogs]);
 
+  const handleNotifyDeparture = async () => {
+    if (!activeWorkspace || teamNotified) return;
+    setNotifyingTeam(true);
+    try {
+      const ownerId = (activeWorkspace as { owner_id?: string }).owner_id;
+      const res = await fetch(getApiUrl('/api/notifications/team'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          workspaceId: activeWorkspace.id,
+          workspaceOwnerId: ownerId,
+          title: 'Départ en tournée terrain',
+          body: `Une tournée de ${totalCount} visite${totalCount > 1 ? 's' : ''} vient de démarrer.`,
+          type: 'field_visit',
+          link: `/field/${planId}`,
+        }),
+      });
+      if (res.ok) {
+        setTeamNotified(true);
+        setTimeout(() => setTeamNotified(false), 4000);
+      }
+    } catch { /* ignore */ }
+    finally { setNotifyingTeam(false); }
+  };
+
   const handleSync = async () => {
     setSyncing(true);
     try {
@@ -435,6 +483,8 @@ export function FieldRoot({ planId }: { planId: string }) {
   const visitedCount = Object.keys(visitLogs).length;
   const totalCount = orderedLeadsWithCoords.length;
   const progress = totalCount > 0 ? (visitedCount / totalCount) * 100 : 0;
+  // First unvisited lead = the next stop to highlight
+  const nextStopId = orderedLeadsWithCoords.find((l) => !visitLogs[l.id])?.id;
 
   // Outcome counts for summary
   const outcomeCount = (Object.keys(OUTCOME_BADGE) as VisitOutcome[]).map((key) => ({
@@ -463,7 +513,10 @@ export function FieldRoot({ planId }: { planId: string }) {
             <ArrowLeft className="h-4 w-4" />
           </button>
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-black text-[#26251e]">Mode Terrain 📍</p>
+            <p className="text-xs font-bold text-[#26251e] flex items-center gap-1.5">
+              <MapPin className="h-3.5 w-3.5 text-[#f54e00]" />
+              Mode Terrain
+            </p>
             <p className="text-[10px] text-[#7a7a76]">
               {visitedCount}/{totalCount} visites
               {remainingDistanceKm !== null ? (
@@ -476,6 +529,19 @@ export function FieldRoot({ planId }: { planId: string }) {
               )}
             </p>
           </div>
+          <button
+            onClick={handleNotifyDeparture}
+            disabled={notifyingTeam || teamNotified || totalCount === 0}
+            className={cn(
+              'hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold transition-colors disabled:opacity-70',
+              teamNotified
+                ? 'bg-[#059669]/10 text-[#059669] border border-[#059669]/20'
+                : 'border border-[#e5e5e0] text-[#555552] hover:bg-[#f4f4f3]',
+            )}
+          >
+            {notifyingTeam ? <Loader2 className="h-3 w-3 animate-spin" /> : <Users className="h-3 w-3" />}
+            {teamNotified ? 'Équipe prévenue' : 'Prévenir l\'équipe'}
+          </button>
           <button
             onClick={handleSync}
             disabled={syncing}
@@ -538,13 +604,14 @@ export function FieldRoot({ planId }: { planId: string }) {
                 userLat={userLat}
                 userLng={userLng}
                 eta={remainingEtas[lead.id]}
+                isNextStop={lead.id === nextStopId}
               />
             ))}
 
             {visitedCount === totalCount && totalCount > 0 && (
-              <div className="bg-[#059669] rounded-2xl p-5 text-white text-center space-y-2">
-                <p className="text-2xl">🎉</p>
-                <p className="text-sm font-black">Tournée terminée !</p>
+              <div className="bg-[#059669] rounded-xl p-5 text-white text-center space-y-2">
+                <PartyPopper className="h-7 w-7 mx-auto" />
+                <p className="text-sm font-bold">Tournée terminée !</p>
                 <p className="text-xs opacity-80">{visitedCount} établissements visités.</p>
                 <button
                   onClick={handleSync}

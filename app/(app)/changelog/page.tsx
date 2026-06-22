@@ -19,15 +19,20 @@ export default function ChangelogPage() {
   const versions: ChangelogVersion[] = [
     {
       version: 'v3.0.0',
-      date: '2026-06-21 · 23h19',
+      date: '2026-06-22 · 00h08',
       titleKey: 'changelog.v3_0_0_title' as TranslationKey,
       descKey: 'changelog.v3_0_0_desc' as TranslationKey,
       highlights: [
-        "Localisation de l'Assistant IA — Traduction complète de l'interface en français, anglais et allemand, sélectionnable de façon fluide et dynamique par l'utilisateur.",
-        "Messagerie d'Équipe — Alignement et synchronisation du schéma de la base de données (table team_messages) et activation du temps réel (Realtime).",
-        "Avatars de Présence corrigés — Intégration du cache local pour afficher les photos des utilisateurs en ligne en haut à droite au lieu de simples initiales de texte.",
-        "Sélecteur d'Espace de Travail — Modification du menu pour s'activer uniquement lors d'un clic de souris, résolvant tout conflit lié au survol par défaut.",
-        "Correction de Pureté React Compiler — Déportation de la fonction relativeTime hors du layout pour corriger une erreur de compilation stricte liée à l'impureté de Date.now().",
+        "Correctif date changelog — La date de publication s'affichait « Invalid Date » : le parseur normalise désormais les formats personnalisés (« · » et « 23h19 ») avant l'affichage.",
+        "Page Gérer le rôle refondue — Look premium conforme à DESIGN.md : carte membre avec photo, 3 niveaux d'accès (Administrateur / Éditeur / Observateur), aperçu des modules avec icônes lucide, accent orange.",
+        "Mode Terrain approfondi — Mise en avant du « Prochain arrêt », lien d'itinéraire (directions Google Maps) par lead, bouton « Prévenir l'équipe » du départ en tournée, et conformité DESIGN.md (icônes lucide, rounded-xl, font-bold).",
+        "Website Scraper IA — Bouton « Scraper le site » sur la fiche lead : extraction du contenu (Firecrawl + fallback HTML), génération d'une description commerciale par IA, stockée et réinjectée dans les scripts de visite et brouillons d'emails.",
+        "Notifications d'équipe fonctionnelles — Nouvel endpoint service-role /api/notifications/team : « Notifier l'équipe » diffuse réellement la notification à tous les membres actifs (et plus seulement à l'expéditeur).",
+        "Membres en double corrigés — Déduplication des lignes team_members par utilisateur (l'actif prime sur l'invité en attente), le propriétaire n'apparaît plus deux fois.",
+        "Chat d'équipe enrichi — Le menu de mention @ s'ancre au-dessus du champ (ne masque plus le texte saisi), ajout d'un sélecteur d'emojis et de l'envoi d'images / GIF, et les avatars des messages reflètent la vraie photo de chaque membre.",
+        "Localisation de l'Assistant IA — Traduction complète de l'interface en français, anglais et allemand, sélectionnable dynamiquement.",
+        "Messagerie d'Équipe — Synchronisation du schéma team_messages et activation du temps réel (Realtime).",
+        "Avatars de Présence — Photos des utilisateurs en ligne affichées en haut à droite au lieu de simples initiales.",
       ],
     },
     {
@@ -1273,14 +1278,20 @@ export default function ChangelogPage() {
         {/* ── Timeline Timeline ── */}
         <div className="relative border-l border-neutral-200/80 ml-5 pl-8 space-y-8 py-2">
           {versions.map((ver) => {
-            const dateObj = new Date(ver.date);
-            const formattedDate = dateObj.toLocaleDateString(undefined, {
-              month: 'long',
-              day: 'numeric',
-              year: 'numeric'
-            });
-            const hasTime = ver.date.includes(' ') || ver.date.includes(':') || ver.date.includes('T');
-            const formattedTime = hasTime
+            // Normalize custom date formats so Date can parse them:
+            //   "2026-06-21 · 23h19" → "2026-06-21 23:19"
+            //   "2026-06-20 10:15"   → unchanged (already parseable)
+            const normalizedDate = ver.date
+              .replace(/\s*·\s*/, ' ')
+              .replace(/(\d{1,2})h(\d{2})/, '$1:$2')
+              .trim();
+            const dateObj = new Date(normalizedDate);
+            const isValid = !Number.isNaN(dateObj.getTime());
+            const formattedDate = isValid
+              ? dateObj.toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })
+              : ver.date;
+            const hasTime = /\d{1,2}[:h]\d{2}/.test(ver.date) || ver.date.includes('T');
+            const formattedTime = isValid && hasTime
               ? dateObj.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
               : '';
 

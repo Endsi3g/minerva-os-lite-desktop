@@ -26,10 +26,10 @@ async function scrapeWebsite(url: string): Promise<string | null> {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { businessName, niche, city, website, phone, rating, reviewsCount, temperature, contactName, notes } = body;
+    const { businessName, niche, city, website, websiteDescription, phone, rating, reviewsCount, temperature, contactName, notes } = body;
 
-    // Try to scrape website for extra context
-    const siteContent = website ? await scrapeWebsite(website) : null;
+    // Prefer a previously-scraped description; only re-scrape if none was provided
+    const siteContent = websiteDescription || (website ? await scrapeWebsite(website) : null);
 
     const contextParts: string[] = [
       `Prospect: ${businessName}`,
@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
       phone ? `Téléphone: ${phone}` : '',
       website ? `Site web: ${website}` : '',
       notes?.length ? `Notes CRM: ${notes.slice(-2).map((n: { content: string }) => n.content).join(' | ')}` : '',
-      siteContent ? `\n\nContenu du site web:\n${siteContent}` : '',
+      siteContent ? `\n\nContexte entreprise (site web):\n${siteContent}` : '',
     ].filter(Boolean);
 
     const systemPrompt = `Tu es un expert en vente B2B locale. Tu génères des scripts de pitch courts et percutants pour des visites terrain ou des appels à froid.

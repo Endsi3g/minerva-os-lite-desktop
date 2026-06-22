@@ -177,6 +177,7 @@ function initDb() {
 
     // v2.12.0 lead enrichment migrations
     db.run(`ALTER TABLE leads ADD COLUMN website TEXT DEFAULT NULL`, () => {});
+    db.run(`ALTER TABLE leads ADD COLUMN website_description TEXT DEFAULT NULL`, () => {});
     db.run(`ALTER TABLE leads ADD COLUMN rating REAL DEFAULT NULL`, () => {});
     db.run(`ALTER TABLE leads ADD COLUMN reviews_count INTEGER DEFAULT NULL`, () => {});
     db.run(`ALTER TABLE leads ADD COLUMN maps_url TEXT DEFAULT NULL`, () => {});

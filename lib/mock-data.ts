@@ -26,6 +26,7 @@ export interface Lead {
   updatedAt: string;
   // Enrichment fields (Phase 3)
   website?: string;
+  websiteDescription?: string;
   rating?: number;
   reviewsCount?: number;
   mapsUrl?: string;

@@ -196,6 +196,7 @@ function ScriptPanel({ lead }: { lead: Lead }) {
           niche: lead.niche,
           city: lead.city,
           website: lead.website,
+          websiteDescription: lead.websiteDescription,
           phone: lead.phone,
           rating: lead.rating,
           reviewsCount: lead.reviewsCount,
@@ -412,6 +413,10 @@ export function LeadDetailClient({ id }: { id: string }) {
   // States for new note form
   const [noteType, setNoteType] = useState<Note['type']>('general');
   const [noteContent, setNoteContent] = useState('');
+
+  // Website scraper state
+  const [scrapingSite, setScrapingSite] = useState(false);
+  const [scrapeError, setScrapeError] = useState('');
 
   // Load workspace and user profile for realtime collaboration
   const [currentUser, setCurrentUser] = useState<any>(null);
@@ -941,6 +946,30 @@ export function LeadDetailClient({ id }: { id: string }) {
     updateLead(lead.id, { [field]: value });
   };
 
+  const handleScrapeWebsite = async () => {
+    if (!lead.website) return;
+    setScrapingSite(true);
+    setScrapeError('');
+    try {
+      const res = await fetch(getApiUrl('/api/scrape-website'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ website: lead.website, businessName: lead.businessName, niche: lead.niche }),
+      });
+      const data = await res.json();
+      if (res.ok && data.description) {
+        updateLead(lead.id, { websiteDescription: data.description });
+        toast.success('Description du site générée');
+      } else {
+        setScrapeError(data.error || "Impossible d'analyser le site.");
+      }
+    } catch {
+      setScrapeError('Erreur réseau lors du scraping.');
+    } finally {
+      setScrapingSite(false);
+    }
+  };
+
   const handleCapturePhoto = async () => {
     const photoBase64 = await takePhoto();
     if (photoBase64) {
@@ -1096,6 +1125,41 @@ export function LeadDetailClient({ id }: { id: string }) {
                     <MapPin className="h-3 w-3 shrink-0" />
                     Google Maps
                   </a>
+                )}
+              </div>
+            )}
+
+            {/* Website scraper — AI business description (fed to the AI script + drafts) */}
+            {lead.website && (
+              <div className="rounded-lg border border-border/60 bg-muted/20 p-3.5 space-y-2.5">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                    <FileText className="h-3.5 w-3.5" />
+                    Description du site (IA)
+                  </div>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={handleScrapeWebsite}
+                    disabled={scrapingSite || isLocked}
+                    className="h-7 text-[11px] font-semibold gap-1.5"
+                  >
+                    {scrapingSite
+                      ? <Loader2 className="h-3 w-3 animate-spin" />
+                      : <Sparkles className="h-3 w-3 text-[#059669]" />}
+                    {scrapingSite ? 'Analyse…' : lead.websiteDescription ? 'Régénérer' : 'Scraper le site'}
+                  </Button>
+                </div>
+                {scrapeError && (
+                  <p className="text-[11px] text-red-600 font-medium">{scrapeError}</p>
+                )}
+                {lead.websiteDescription ? (
+                  <p className="text-xs text-foreground leading-relaxed">{lead.websiteDescription}</p>
+                ) : !scrapingSite && (
+                  <p className="text-[11px] text-muted-foreground italic">
+                    Analysez le site web pour générer une description commerciale, utilisée ensuite par l&apos;IA (script de visite, brouillons d&apos;emails).
+                  </p>
                 )}
               </div>
             )}
