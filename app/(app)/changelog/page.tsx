@@ -18,6 +18,17 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v3.18.0',
+      date: '2026-06-22 · 12h37',
+      titleKey: 'changelog.v3_18_0_title' as TranslationKey,
+      descKey: 'changelog.v3_18_0_desc' as TranslationKey,
+      highlights: [
+        "Roadmap à jour — Tout ce qui a été livré (v3.0 → v3.17) est désormais marqué « Disponible » : Agenda, Skills, Canvas auto, Vision, scraper site, intelligence comportementale, chat enrichi, connexion Google, thème vert, etc.",
+        "Reste à faire — Onglet « Prévu » : intégrations Slack/Notion/SharePoint, Comptes/Entreprises, timeline unifiée.",
+        "Backlog rafraîchi — Skills partagées, @ contexte CRM, vues semaine/jour de l'agenda, galerie de preuves, QA E2E, réécriture des refs React.",
+      ],
+    },
+    {
       version: 'v3.17.0',
       date: '2026-06-22 · 12h25',
       titleKey: 'changelog.v3_17_0_title' as TranslationKey,

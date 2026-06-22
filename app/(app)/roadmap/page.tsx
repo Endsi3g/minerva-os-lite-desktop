@@ -48,18 +48,29 @@ const roadmapData: RoadmapItem[] = [
   { module: 'IA', feature: 'Script de pitch IA (Firecrawl)', desc: "Le panel Script dans la fiche lead scrape le site web du prospect et génère un pitch script de 60s personnalisé.", priority: 'high', status: 'available' },
   { module: 'IA', feature: 'Action pills contextuelles', desc: "7 pills d'action dans l'assistant déclenchent de vraies analyses CRM : pipeline, email, priorités, script, recherche, plan du jour, rapport.", priority: 'medium', status: 'available' },
 
-  // ─── In Progress (v2.94.0 scope) ─────────────────────────────────────
-  { module: 'Canvas', feature: 'Éditeur riche TipTap + Export', desc: 'Canvas en éditeur WYSIWYG (style Word) avec export PDF, HTML et Markdown. Après export, proposition de déposer dans la Bibliothèque.', priority: 'high', status: 'in_progress' },
-  { module: 'Terrain', feature: 'Page visite terrain dédiée', desc: "Page de préparation de visite : script IA, notes passées, compte-rendu. Notification équipe après visite.", priority: 'high', status: 'in_progress' },
-  { module: 'Services', feature: 'Page Services & Tarifs', desc: 'Refonte complète avec catalogue de prestations, packages, grilles tarifaires et devis PDF.', priority: 'medium', status: 'in_progress' },
-  { module: 'Équipes', feature: 'Invitations via lien (sans SMTP)', desc: "Remplacement du système SMTP par un lien d'invitation sécurisé, sans configuration email requise.", priority: 'high', status: 'available' },
-  { module: 'Équipes', feature: 'Quitter une équipe', desc: "Un membre peut quitter un workspace. Son accès est révoqué immédiatement et la table team_members est nettoyée.", priority: 'medium', status: 'available' },
-  { module: 'Équipes', feature: 'Rôles personnalisés & Permissions', desc: "Onglet Rôles dans /team : création de rôles custom avec 19 toggles de modules. Sidebar filtrée selon le rôle effectif (défaut ou custom).", priority: 'high', status: 'available' },
-  { module: 'Équipes', feature: 'Page invitation redesignée', desc: "Page /join animée : avatar workspace, confetti à l'acceptation, badge rôle avec description, preview des modules accessibles.", priority: 'medium', status: 'available' },
+  { module: 'Canvas', feature: 'Éditeur riche TipTap + Export', desc: 'Canvas en éditeur WYSIWYG (style Word) avec export PDF, HTML et Markdown. Après export, proposition de déposer dans la Bibliothèque.', priority: 'high', status: 'available' },
+  { module: 'Services', feature: 'Page Services & Tarifs', desc: 'Catalogue de prestations, packages, grilles tarifaires et devis. Conforme à la charte (vert).', priority: 'medium', status: 'available' },
+  { module: 'Équipes', feature: 'Invitations via lien (sans SMTP)', desc: "Lien d'invitation sécurisé, sans configuration email requise.", priority: 'high', status: 'available' },
+  { module: 'Équipes', feature: 'Quitter une équipe', desc: "Un membre peut quitter un workspace ; accès révoqué immédiatement.", priority: 'medium', status: 'available' },
+  { module: 'Équipes', feature: 'Rôles personnalisés & Permissions', desc: "Onglet Rôles dans /team + sidebar filtrée selon le rôle effectif.", priority: 'high', status: 'available' },
+  { module: 'Équipes', feature: 'Page invitation redesignée', desc: "Page /join animée : avatar workspace, confetti, badge rôle, preview des modules.", priority: 'medium', status: 'available' },
+  { module: 'Booking', feature: 'Scheduling public / Booking Links', desc: 'Page publique /book/[username] avec Google Calendar freebusy, slots et lien partageable.', priority: 'high', status: 'available' },
+  { module: 'Équipes', feature: 'Page dédiée gestion de rôle membre', desc: 'Page /team/member/[id] premium : assigner un rôle, aperçu des modules, photo membre.', priority: 'medium', status: 'available' },
 
-  // ─── In Progress ─────────────────────────────────────────────────────
-  { module: 'Booking', feature: 'Scheduling public / Booking Links', desc: 'Page publique /book/[username] avec Google Calendar freebusy, slots disponibles et lien partageable. APIs créées, page publique live.', priority: 'high', status: 'in_progress' },
-  { module: 'Équipes', feature: 'Page dédiée gestion de rôle membre', desc: 'Page /team/member/[id] : assigner un rôle prédéfini ou personnalisé à un membre, créer un rôle inline.', priority: 'medium', status: 'available' },
+  // ─── Available (shipped v3.0 → v3.17) ─────────────────────────────────
+  { module: 'Agenda', feature: 'Agenda complet + prise de RDV', desc: "Page /agenda épinglée : calendrier mensuel, page dédiée /agenda/new, RDV qui notifient l'équipe + Google Agenda + tâche Todoist.", priority: 'high', status: 'available' },
+  { module: 'IA', feature: 'Skills (compétences)', desc: 'Page /skills : packs par département, activation, créateur de compétences (Supabase), @ dans le chat pour injecter les instructions.', priority: 'high', status: 'available' },
+  { module: 'IA', feature: 'Canvas automatique + titres IA', desc: "L'assistant ouvre le Canvas pour les documents longs et génère le titre de discussion automatiquement.", priority: 'medium', status: 'available' },
+  { module: 'IA', feature: 'OpenRouter + modèle Vision', desc: 'Fournisseur OpenRouter câblé (sans casser Claude) ; modèle Vision avec pièce jointe image multimodale dans le chat.', priority: 'medium', status: 'available' },
+  { module: 'IA', feature: 'Website scraper → description', desc: 'Bouton « Scraper le site » sur la fiche lead : description commerciale IA réinjectée dans scripts et brouillons.', priority: 'medium', status: 'available' },
+  { module: 'IA', feature: 'Intelligence comportementale', desc: 'Bilans hebdomadaires auto (week-end) + relances suggérées sur prospects tièdes/froids, avec notifications.', priority: 'medium', status: 'available' },
+  { module: 'Terrain', feature: 'Compte-rendu enrichi + preuve photo', desc: 'Page « Enregistrer le passage » : contact rencontré, niveau d\'intérêt, photo preuve, notification équipe.', priority: 'high', status: 'available' },
+  { module: 'Équipes', feature: 'Chat enrichi (mentions, images, emojis)', desc: 'Mentions @ notifiées, images cliquables en plein écran, emojis, avatars réels des membres.', priority: 'medium', status: 'available' },
+  { module: 'Équipes', feature: 'Notifications d\'équipe (service-role)', desc: 'API de diffusion : visites terrain, RDV, mentions et bilans IA notifiés aux bons membres.', priority: 'high', status: 'available' },
+  { module: 'Plateforme', feature: 'Connexion Google soignée + OAuth fiable', desc: 'Modal de permission réutilisable (inbox + intégrations) ; redirect_uri canonique pour éviter redirect_uri_mismatch.', priority: 'high', status: 'available' },
+  { module: 'Plateforme', feature: 'Roadmap — vérifications cochables', desc: 'Onglet Vérification avec checklist manuelle par phase, cochable et persistée.', priority: 'low', status: 'available' },
+  { module: 'Design', feature: 'Thème 100% vert', desc: 'Accent de marque vert unique app-wide (plus aucun orange) ; DESIGN.md/CLAUDE.md mis à jour.', priority: 'low', status: 'available' },
+  { module: 'Qualité', feature: 'Lint propre (0 erreur)', desc: '262 erreurs ESLint résolues ; typecheck vert à chaque release.', priority: 'low', status: 'available' },
 
   // ─── Planned : Intégrations à activer (lourdes, planifiées) ───────────
   { module: 'Intégrations', feature: 'Slack', desc: 'Notifications et alertes CRM poussées dans des canaux Slack (nouveaux leads, deals gagnés, réponses).', priority: 'medium', status: 'planned' },
@@ -80,10 +91,14 @@ const roadmapData: RoadmapItem[] = [
   { module: 'Plateforme', feature: 'Notifications desktop + rappels', desc: 'Service de notifications desktop (Electron + Web Notification API). Rappels quotidiens : tâches en retard, pipeline vide, tâches du jour.', priority: 'medium', status: 'available' },
 
   // ─── Backlog ──────────────────────────────────────────────────────────
-  { module: 'Canvas', feature: 'IA ouvre le canvas automatiquement', desc: "L'IA détecte quand la réponse nécessite le canvas (long document, rapport, script) et l'ouvre automatiquement. Sidebar se réduit à l'ouverture.", priority: 'medium', status: 'backlog' },
-  { module: 'Terrain', feature: 'Notifications équipe après visite', desc: "Après un compte-rendu de visite terrain, notifier les membres de l'équipe dans l'app avec le résultat et les prochaines étapes.", priority: 'medium', status: 'backlog' },
   { module: 'Plateforme', feature: 'Audit log admin', desc: "Journal d'audit des actions : qui a modifié quoi, quand. Visible uniquement par l'owner.", priority: 'medium', status: 'backlog' },
   { module: 'Analytics', feature: 'Reporting avancé', desc: 'Cohortes, velocity pipeline, source attribution, performance par playbook et séquence.', priority: 'low', status: 'backlog' },
+  { module: 'IA', feature: 'Skills partagées par workspace', desc: "Aujourd'hui les Skills sont par utilisateur ; permettre de les partager à toute l'équipe (vs personnelles).", priority: 'medium', status: 'backlog' },
+  { module: 'IA', feature: '@ contexte CRM dans le chat', desc: "Étendre le menu @ pour injecter du contexte CRM réel (leads, pipeline, leads chauds) en plus des compétences.", priority: 'medium', status: 'backlog' },
+  { module: 'Agenda', feature: 'Vue semaine / jour + créneaux', desc: 'Vues hebdomadaire et journalière avec créneaux horaires, glisser-déposer des RDV.', priority: 'medium', status: 'backlog' },
+  { module: 'Terrain', feature: 'Galerie des preuves de visite', desc: 'Regrouper les photos preuves par lead/tournée et les rendre consultables par l\'équipe.', priority: 'low', status: 'backlog' },
+  { module: 'Qualité', feature: 'Réécriture des refs React Compiler', desc: 'Corriger réellement les ~220 avertissements react-hooks/refs (actuellement désactivés) plutôt que de les masquer.', priority: 'low', status: 'backlog' },
+  { module: 'Tests', feature: 'QA E2E automatisée', desc: 'Couvrir les flux critiques (invitation, booking, chat, terrain) par des tests Playwright.', priority: 'medium', status: 'backlog' },
 ];
 
 // ── Manual verification checklist, accumulated per release phase ──────────────
@@ -95,6 +110,17 @@ interface PhaseVerification {
 }
 
 const VERIFICATIONS: PhaseVerification[] = [
+  {
+    phase: 'Phase 18 — Roadmap à jour',
+    version: 'v3.18.0',
+    date: '2026-06-22',
+    checks: [
+      'Onglet « Disponible » : les fonctionnalités v3.0→v3.17 (Agenda, Skills, Vision, scraper, etc.) y figurent.',
+      'Onglet « Prévu » : intégrations Slack/Notion/SharePoint, Comptes/Entreprises, timeline unifiée.',
+      'Onglet « Backlog » : items rafraîchis (Skills partagées, @ contexte CRM, vues agenda, QA E2E…).',
+      'Les compteurs par statut en haut reflètent les nouveaux totaux.',
+    ],
+  },
   {
     phase: 'Phase 17 — Vision, connexion Google & ESLint',
     version: 'v3.17.0',
