@@ -138,6 +138,18 @@ function UpdateBanner() {
   );
 }
 
+// Relative time helper for notification timestamps (declared outside render to remain pure)
+function relativeTime(iso: string): string {
+  if (!iso) return '';
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "À l'instant";
+  if (mins < 60) return `Il y a ${mins} min`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `Il y a ${hours} heure${hours > 1 ? 's' : ''}`;
+  return new Date(iso).toLocaleDateString('fr-CA', { day: 'numeric', month: 'short' });
+}
+
 function AppLayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -218,17 +230,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
     checkAndSendLeadReminder(leads ?? []);
   }, [leads, tasks]);
 
-  // Relative time helper for notification timestamps
-  function relativeTime(iso: string): string {
-    if (!iso) return '';
-    const diff = Date.now() - new Date(iso).getTime();
-    const mins = Math.floor(diff / 60000);
-    if (mins < 1) return "À l'instant";
-    if (mins < 60) return `Il y a ${mins} min`;
-    const hours = Math.floor(mins / 60);
-    if (hours < 24) return `Il y a ${hours} heure${hours > 1 ? 's' : ''}`;
-    return new Date(iso).toLocaleDateString('fr-CA', { day: 'numeric', month: 'short' });
-  }
+
 
   // Dynamic Workspace Accent Color injection
   useEffect(() => {
@@ -354,7 +356,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
     return () => {
       presenceChannel.unsubscribe();
     };
-  }, [activeWorkspace, userProfile, pathname]);
+  }, [activeWorkspace, userProfile, pathname, contextUser]);
 
   // Invite Users modal states
   const [showInviteModal, setShowInviteModal] = useState(false);
