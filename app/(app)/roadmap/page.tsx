@@ -96,6 +96,19 @@ interface PhaseVerification {
 
 const VERIFICATIONS: PhaseVerification[] = [
   {
+    phase: 'Phase 6 — Intelligence comportementale',
+    version: 'v3.6.0',
+    date: '2026-06-22',
+    checks: [
+      'Exécuter supabase_migration_v360.sql (colonnes auto_insights / auto_follow_ups).',
+      'Paramètres → IA → activer « Générer automatiquement des analyses hebdomadaires » et « Suggérer des relances » ; recharger : les toggles restent activés (persistés).',
+      'Sur /today, le widget « Intelligence comportementale » apparaît quand au moins un toggle est actif.',
+      'Cliquer « Bilan » : un bilan d\'opportunités IA s\'affiche et une notification est créée.',
+      'Avec « Suggérer des relances » actif : des actions préconfigurées apparaissent pour les leads tièdes/froids ; « Créer » génère une tâche de relance.',
+      'Le week-end, le bilan se génère automatiquement une fois (vérifiable via la notification).',
+    ],
+  },
+  {
     phase: 'Phase 5 — Activité d\'équipe & conformité design',
     version: 'v3.5.0',
     date: '2026-06-22',

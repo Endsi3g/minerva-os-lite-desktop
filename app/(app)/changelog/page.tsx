@@ -18,6 +18,17 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v3.6.0',
+      date: '2026-06-22 · 00h46',
+      titleKey: 'changelog.v3_6_0_title' as TranslationKey,
+      descKey: 'changelog.v3_6_0_desc' as TranslationKey,
+      highlights: [
+        "Intelligence comportementale activée — Les deux options des paramètres IA sont désormais pleinement fonctionnelles et persistées.",
+        "Bilans hebdomadaires automatiques — L'IA scanne votre portefeuille le week-end et génère un bilan d'opportunités (leads à relancer, recommandations), visible sur le tableau de bord et dans les notifications.",
+        "Relances suggérées — Le tableau de bord propose des actions préconfigurées pour vos prospects tièdes et froids (email de réactivation, appel, audit de site) avec création de tâche en un clic.",
+      ],
+    },
+    {
       version: 'v3.5.0',
       date: '2026-06-22 · 00h41',
       titleKey: 'changelog.v3_5_0_title' as TranslationKey,

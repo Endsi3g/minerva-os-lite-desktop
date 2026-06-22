@@ -120,8 +120,8 @@ export function SettingsRoot() {
               ai: {
                 tone: dbSettings.ai_tone === 'Direct & Closer' ? 'professional' : dbSettings.ai_tone === 'Storytelling' ? 'storytelling' : 'casual',
                 customization: dbSettings.ai_density === 'Standard' ? 'low' : dbSettings.ai_density === 'Profond' ? 'high' : 'medium',
-                autoInsights: true,
-                autoFollowUps: false,
+                autoInsights: dbSettings.auto_insights ?? true,
+                autoFollowUps: dbSettings.auto_follow_ups ?? false,
                 aiProvider: dbSettings.ai_provider || 'anthropic',
                 openrouterKeyMasked: null,
                 groqKeyMasked: null,
@@ -225,6 +225,8 @@ export function SettingsRoot() {
               ai_density: nextSettings.ai.customization === 'low' ? 'Standard' : nextSettings.ai.customization === 'medium' ? 'Personnalisé' : 'Profond',
               ai_provider: nextSettings.ai.aiProvider,
               ai_model: nextSettings.ai.aiModel,
+              auto_insights: nextSettings.ai.autoInsights,
+              auto_follow_ups: nextSettings.ai.autoFollowUps,
             });
             if (baseError) console.error('Error saving base settings:', baseError.message);
 

@@ -10,6 +10,7 @@ import { TodayTasksCard } from './today-tasks-card';
 import { TodayFocusCard } from './today-focus-card';
 import { TodayActivityFeedCard } from './today-activity-feed-card';
 import { TodayTeamActivityCard } from './today-team-activity-card';
+import { TodayAiSuggestionsCard } from './today-ai-suggestions-card';
 import { TodayProjectsCard } from './today-projects-card';
 import { TodayStatsCard } from './today-stats-card';
 import { TodaySetupBanner } from './today-setup-banner';
@@ -97,6 +98,9 @@ export function TodayRoot() {
           <div className="flex flex-col gap-5">
             {/* Focus du jour */}
             <TodayFocusCard />
+
+            {/* Intelligence comportementale (bilans IA + relances suggérées) */}
+            <TodayAiSuggestionsCard />
 
             {/* Activité récente des leads */}
             <TodayActivityFeedCard />

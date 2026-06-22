@@ -45,6 +45,9 @@ function initDb() {
     db.run(`ALTER TABLE settings ADD COLUMN todoist_token TEXT`, () => {
       // Ignore if column already exists
     });
+    // v3.6.0 — behavioral intelligence toggles
+    db.run(`ALTER TABLE settings ADD COLUMN auto_insights INTEGER DEFAULT 1`, () => {});
+    db.run(`ALTER TABLE settings ADD COLUMN auto_follow_ups INTEGER DEFAULT 0`, () => {});
     db.run(`ALTER TABLE settings ADD COLUMN todoist_project_id TEXT`, () => {
       // Ignore if column already exists
     });
