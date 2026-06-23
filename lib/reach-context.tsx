@@ -1664,6 +1664,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
         if (fields.photos !== undefined) { dbFields.push("photos = ?"); params.push(fields.photos ? JSON.stringify(fields.photos) : null); }
         if (fields.socialLinks !== undefined) { dbFields.push("social_links = ?"); params.push(fields.socialLinks ? JSON.stringify(fields.socialLinks) : null); }
         if (fields.assignedTo !== undefined) { dbFields.push("assigned_to = ?"); params.push(fields.assignedTo || null); }
+        if (fields.score !== undefined) { dbFields.push("score = ?"); params.push(fields.score ?? null); }
         if (fields.fitScore !== undefined) { dbFields.push("fit_score = ?"); params.push(fields.fitScore ?? null); }
         if (fields.intentScore !== undefined) { dbFields.push("intent_score = ?"); params.push(fields.intentScore ?? null); }
         if (fields.bantBudget !== undefined) { dbFields.push("bant_budget = ?"); params.push(fields.bantBudget ? 1 : 0); }
@@ -1725,6 +1726,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
     if (fields.photos !== undefined) dbFields.photos = (fields.photos ?? null) as any;
     if (fields.socialLinks !== undefined) dbFields.social_links = (fields.socialLinks ?? null) as any;
     if (fields.assignedTo !== undefined) dbFields.assigned_to = fields.assignedTo || null;
+    if (fields.score !== undefined) dbFields.score = fields.score ?? null;
     if (fields.fitScore !== undefined) dbFields.fit_score = fields.fitScore ?? null;
     if (fields.intentScore !== undefined) dbFields.intent_score = fields.intentScore ?? null;
     if (fields.bantBudget !== undefined) dbFields.bant_budget = fields.bantBudget;

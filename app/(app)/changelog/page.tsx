@@ -18,6 +18,21 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v3.28.0',
+      date: '2026-06-23 · 00h05',
+      titleKey: 'changelog.v3_28_0_title' as TranslationKey,
+      descKey: 'changelog.v3_28_0_desc' as TranslationKey,
+      highlights: [
+        "Générateur de proposition interactif — Création d'une interface de configuration pour choisir les services, ajuster les prix et les descriptions en direct, et ajouter des lignes d'offres personnalisées.",
+        "Calculateur financier en temps réel — Calcul instantané du Total HT, du taux de taxes (entièrement ajustable, ex : 14,975% par défaut au Québec) et du montant TTC final.",
+        "Live Preview Papier S&W — Affichage d'un aperçu en temps réel au format A4 selon un style d'impression minimaliste noir & blanc haute fidélité.",
+        "Exportation PDF native Desktop — Liaison du générateur de proposition au service native Electron printToPdf pour archiver le document dans le CRM et générer le fichier localement.",
+        "Enrichissement B2B avancé & Pitch 2026 — Le bouton Enrichir déclenche maintenant le scraping du site web, identifie le décideur (nom, rôle, courriel) et rédige un pitch d'appel québécois court et pertinent.",
+        "Correctif du partage de leads — Résolution du message 'Lead not found' lors de la création d'un lien de partage de prospect en corrigeant la requête d'attributs de la base de données.",
+        "Nettoyage automatique du Markdown — Suppression des astérisques et balises de titre brutes dans les aperçus des brouillons et des scripts générés pour une meilleure lisibilité."
+      ],
+    },
+    {
       version: 'v3.27.4',
       date: '2026-06-22 · 19h45',
       titleKey: 'changelog.v3_27_4_title' as TranslationKey,

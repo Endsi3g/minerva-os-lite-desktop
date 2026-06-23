@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
 
   const { data: share, error } = await admin
     .from('lead_shares')
-    .select('lead_id, expires_at, leads(id, name, company, email, phone, category, city, address, website, score)')
+    .select('lead_id, expires_at, leads(id, contact_name, business_name, contact_email, phone, niche, city, address, website, score)')
     .eq('share_token', token)
     .maybeSingle();
 
@@ -31,17 +31,21 @@ export async function GET(req: NextRequest) {
 
   // Supabase returns related rows as array or object depending on join type
   const leadRaw = share.leads;
-  const lead = (Array.isArray(leadRaw) ? leadRaw[0] : leadRaw) as Record<string, unknown>;
+  const lead = (Array.isArray(leadRaw) ? leadRaw[0] : leadRaw) as Record<string, any>;
+
+  if (!lead) {
+    return NextResponse.json({ valid: false, error: 'Prospect introuvable dans le partage.' }, { status: 404 });
+  }
 
   return NextResponse.json({
     valid: true,
     lead: {
       id: lead.id,
-      name: lead.name,
-      company: lead.company,
-      email: lead.email,
+      name: lead.contact_name,
+      company: lead.business_name,
+      email: lead.contact_email,
       phone: lead.phone,
-      category: lead.category,
+      category: lead.niche,
       city: lead.city,
       address: lead.address,
       website: lead.website,

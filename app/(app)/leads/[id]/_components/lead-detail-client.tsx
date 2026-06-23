@@ -61,6 +61,16 @@ import { createClient } from '@/lib/supabase/client';
 import type { REALTIME_SUBSCRIBE_STATES } from '@supabase/supabase-js';
 import { toast } from 'sonner';
 
+function cleanMarkdownForPreview(text: string | null | undefined): string {
+  if (!text) return '';
+  return text
+    .replace(/\*\*\*/g, '')
+    .replace(/\*\*/g, '')
+    .replace(/\*/g, '')
+    .replace(/^#+\s+/gm, '')
+    .trim();
+}
+
 
 // Helper inline edit component for text properties
 interface InlineTextEditProps {
@@ -71,6 +81,41 @@ interface InlineTextEditProps {
   inputClassName?: string;
   disabled?: boolean;
   onEditStateChange?: (isEditing: boolean) => void;
+}
+
+const DEFAULT_SERVICES = [
+  { name: "Création de Site Web Adapté", description: "Design et développement d'un site web moderne, optimisé pour les mobiles et le référencement local.", price: 1500, selected: true },
+  { name: "Optimisation Fiche Google Maps (GMB)", description: "Revendication, configuration des services, photos, mots-clés et automatisation des avis clients.", price: 450, selected: true },
+  { name: "Gestion de Réputation (Avis Clients)", description: "Système automatisé de collecte et relance des avis clients par SMS/Email pour améliorer la note moyenne.", price: 350, selected: false },
+  { name: "Campagne de Prospection Locale (Outreach)", description: "Mise en place de campagnes d'emails personnalisés ciblant vos clients idéaux pour générer des rendez-vous.", price: 800, selected: false },
+];
+
+function buildExecutiveSummary(lead: Lead): string {
+  const hasNoWebsite = !lead.website;
+  const hasBadRating = lead.rating !== undefined && lead.rating < 4.0;
+  const parts: string[] = [];
+  
+  parts.push(
+    `Analyse de la présence numérique de ${lead.businessName} située à ${lead.city || 'votre région'}.`
+  );
+  if (hasNoWebsite) {
+    parts.push(
+      `L'absence de site web constitue un frein majeur pour capter la clientèle locale qui recherche activement vos services en ligne.`
+    );
+  } else {
+    parts.push(
+      `Le site web actuel présente d'importantes opportunités d'optimisation technique pour améliorer le positionnement local.`
+    );
+  }
+  if (hasBadRating) {
+    parts.push(
+      `La e-réputation (note Google Maps de ${lead.rating?.toFixed(1)}/5) est un axe prioritaire pour restaurer la confiance des clients.`
+    );
+  }
+  parts.push(
+    `Cette proposition contient un plan d'action clé en main et transparent pour accélérer votre croissance.`
+  );
+  return parts.join(' ');
 }
 
 function InlineTextEdit({ value, onSave, placeholder = 'Non spécifié', className, inputClassName, disabled, onEditStateChange }: InlineTextEditProps) {
@@ -260,7 +305,7 @@ function ScriptPanel({ lead }: { lead: Lead }) {
                   Basé sur le site web
                 </p>
               )}
-              <div className="text-[11px] text-foreground leading-relaxed whitespace-pre-wrap">{script}</div>
+              <div className="text-[11px] text-foreground leading-relaxed whitespace-pre-wrap">{cleanMarkdownForPreview(script)}</div>
               <button
                 onClick={handleCopy}
                 className="flex items-center gap-1 text-[9px] text-muted-foreground hover:text-foreground transition-colors"
@@ -291,6 +336,7 @@ function QualificationPanel({ lead, onSave }: { lead: Lead; onSave: (fields: Par
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          leadId: lead.id,
           website: lead.website,
           businessName: lead.businessName,
           contactName: lead.contactName,
@@ -311,9 +357,16 @@ function QualificationPanel({ lead, onSave }: { lead: Lead; onSave: (fields: Par
         if (data.suggestedEmails?.length) fields.suggestedEmails = data.suggestedEmails;
         if (data.decisionMakerName) { fields.decisionMakerName = data.decisionMakerName; setDmName(data.decisionMakerName); }
         if (data.decisionMakerRole) { fields.decisionMakerRole = data.decisionMakerRole; setDmRole(data.decisionMakerRole); }
+        if (data.websiteDescription) fields.websiteDescription = data.websiteDescription;
+        if (data.opportunityScore !== undefined) fields.score = data.opportunityScore;
         onSave(fields);
+        toast.success("Enrichissement réussi ! Pitch d'appel disponible.");
+      } else {
+        toast.error("Échec de l'enrichissement.");
       }
-    } catch {}
+    } catch {
+      toast.error("Erreur réseau lors de l'enrichissement.");
+    }
     setLoading(false);
   };
 
@@ -661,6 +714,325 @@ export function LeadDetailClient({ id }: { id: string }) {
   const [shareLink, setShareLink] = useState<string | null>(null);
   const [sharingLead, setSharingLead] = useState(false);
   const [shareLinkCopied, setShareLinkCopied] = useState(false);
+
+  // Proposal Builder state
+  const [showProposalBuilder, setShowProposalBuilder] = useState(false);
+  const [loadingProposalData, setLoadingProposalData] = useState(false);
+  const [exportingProposal, setExportingProposal] = useState(false);
+  const [proposalTitle, setProposalTitle] = useState('PROPOSITION COMMERCIALE');
+  const [proposalSenderCompany, setProposalSenderCompany] = useState('');
+  const [proposalSenderName, setProposalSenderName] = useState('');
+  const [proposalRecipientName, setProposalRecipientName] = useState('');
+  const [proposalDate, setProposalDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [proposalValidDays, setProposalValidDays] = useState(30);
+  const [proposalSummary, setProposalSummary] = useState('');
+  const [proposalTaxRate, setProposalTaxRate] = useState(14.975); // combined default for QC
+  const [proposalPaymentTerms, setProposalPaymentTerms] = useState('50% à la commande, solde à la livraison. Virement Interac ou bancaire.');
+  const [proposalCallToAction, setProposalCallToAction] = useState("Pour accepter cette proposition, répondez directement à ce document ou contactez-nous par courriel.");
+  
+  interface ProposalService {
+    name: string;
+    description: string;
+    price: number;
+    selected: boolean;
+  }
+  const [proposalServices, setProposalServices] = useState<ProposalService[]>([]);
+  const [customServices, setCustomServices] = useState<Omit<ProposalService, 'selected'>[]>([]);
+  const [newSvcName, setNewSvcName] = useState('');
+  const [newSvcDesc, setNewSvcDesc] = useState('');
+  const [newSvcPrice, setNewSvcPrice] = useState('');
+
+  const handleExportProposalPdf = async () => {
+    if (!lead) return;
+    setExportingProposal(true);
+    try {
+      const fileName = `${lead.businessName.toLowerCase().replace(/[^a-z0-9]/g, '_')}_proposition.pdf`;
+      
+      const dateObj = new Date(proposalDate);
+      const dateStr = dateObj.toLocaleDateString('fr-CA', { day: '2-digit', month: 'long', year: 'numeric' });
+      const validUntil = new Date(dateObj);
+      validUntil.setDate(validUntil.getDate() + Number(proposalValidDays));
+      const validUntilStr = validUntil.toLocaleDateString('fr-CA', { day: '2-digit', month: 'long', year: 'numeric' });
+
+      const allSelected = [
+        ...proposalServices.filter(s => s.selected),
+        ...customServices
+      ];
+      const totalHT = allSelected.reduce((sum, s) => sum + Number(s.price || 0), 0);
+      const taxes = totalHT * (Number(proposalTaxRate) / 100);
+      const totalTTC = totalHT + taxes;
+
+      const serviceRows = allSelected.map(s => `
+        <tr>
+          <td style="padding:10px 0; border-bottom:1px solid #e5e5e0; font-weight:600; font-family:sans-serif; text-align:left;">${s.name}</td>
+          <td style="padding:10px 0; border-bottom:1px solid #e5e5e0; color:#4a4a45; font-size:12px; font-family:sans-serif; text-align:left;">${s.description || '—'}</td>
+          <td style="padding:10px 0; border-bottom:1px solid #e5e5e0; text-align:right; font-weight:700; font-family:sans-serif;">${Number(s.price || 0).toLocaleString('fr-CA', {style:'currency', currency:'CAD'})}</td>
+        </tr>
+      `).join('');
+
+      const formattedHtml = `
+        <!DOCTYPE html>
+        <html lang="fr">
+        <head>
+          <meta charset="utf-8" />
+          <title>${proposalTitle} — ${lead.businessName}</title>
+          <style>
+            @page {
+              size: A4;
+              margin: 20mm 15mm;
+            }
+            body {
+              font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+              color: #000000;
+              background: #ffffff;
+              font-size: 13px;
+              line-height: 1.6;
+            }
+            .header-bar {
+              border-bottom: 2px solid #000000;
+              padding-bottom: 15px;
+              margin-bottom: 30px;
+            }
+            .doc-title {
+              font-size: 24px;
+              font-weight: 800;
+              letter-spacing: -0.03em;
+              text-transform: uppercase;
+              margin-bottom: 5px;
+            }
+            .metadata {
+              font-size: 11px;
+              color: #4a4a45;
+              text-transform: uppercase;
+              letter-spacing: 0.05em;
+            }
+            .parties {
+              display: flex;
+              justify-content: space-between;
+              margin-bottom: 30px;
+              gap: 40px;
+            }
+            .party-box {
+              flex: 1;
+              border: 1px solid #000000;
+              padding: 15px;
+            }
+            .party-title {
+               font-size: 10px;
+               font-weight: 800;
+               text-transform: uppercase;
+               margin-bottom: 8px;
+               border-bottom: 1px solid #000000;
+               padding-bottom: 4px;
+            }
+            .party-name {
+              font-size: 14px;
+              font-weight: 700;
+              margin-bottom: 5px;
+            }
+            .section {
+              margin-bottom: 30px;
+            }
+            .section-title {
+              font-size: 12px;
+              font-weight: 800;
+              text-transform: uppercase;
+              border-bottom: 1.5px solid #000000;
+              padding-bottom: 5px;
+              margin-bottom: 12px;
+            }
+            .summary-box {
+              background: #fcfcfc;
+              border-left: 3px solid #000000;
+              padding: 12px 15px;
+              font-style: italic;
+            }
+            .services-table {
+              width: 100%;
+              border-collapse: collapse;
+              margin-top: 10px;
+            }
+            .services-table th {
+              font-size: 11px;
+              font-weight: 800;
+              text-transform: uppercase;
+              border-bottom: 1.5px solid #000000;
+              padding-bottom: 8px;
+              text-align: left;
+            }
+            .services-table th:last-child {
+              text-align: right;
+            }
+            .totals-box {
+              width: 250px;
+              margin-left: auto;
+              margin-top: 20px;
+              border-top: 2px solid #000000;
+              padding-top: 10px;
+            }
+            .total-row {
+              display: flex;
+              justify-content: space-between;
+              padding: 4px 0;
+            }
+            .total-row.grand-total {
+              font-weight: 800;
+              font-size: 14px;
+              border-top: 1px solid #000000;
+              padding-top: 6px;
+              margin-top: 6px;
+            }
+            .terms-box {
+              border: 1px solid #e5e5e0;
+              padding: 12px;
+              font-size: 11px;
+              color: #333;
+            }
+            .footer {
+              margin-top: 50px;
+              border-top: 1px solid #e5e5e0;
+              padding-top: 15px;
+              text-align: center;
+              font-size: 10px;
+              color: #7a7a76;
+            }
+            @media print {
+              .no-print { display: none !important; }
+            }
+            .print-btn {
+              position: fixed;
+              top: 15px;
+              right: 15px;
+              padding: 8px 16px;
+              background: #000000;
+              color: #ffffff;
+              border: none;
+              font-weight: 700;
+              cursor: pointer;
+              z-index: 10000;
+            }
+          </style>
+        </head>
+        <body>
+          <button class="print-btn no-print" onclick="window.print()">🖨️ Imprimer / PDF</button>
+
+          <div class="header-bar">
+            <div class="doc-title">${proposalTitle}</div>
+            <div class="metadata">Date : ${dateStr} · Valide : ${proposalValidDays} jours</div>
+          </div>
+
+          <div class="parties">
+            <div class="party-box">
+              <div class="party-title">Préparé pour</div>
+              <div class="party-name">${lead.businessName}</div>
+              <div style="font-size:11px; color:#4a4a45;">
+                ${lead.city ? `📍 ${lead.city}` : ''}
+                ${lead.niche ? `<br>🏢 Niche : ${lead.niche}` : ''}
+                ${proposalRecipientName ? `<br>👤 Contact : ${proposalRecipientName}` : ''}
+              </div>
+            </div>
+            <div class="party-box">
+              <div class="party-title">De la part de</div>
+              <div class="party-name">${proposalSenderCompany}</div>
+              <div style="font-size:11px; color:#4a4a45;">
+                👤 ${proposalSenderName}
+                ${lead.owner ? `<br>✉️ Responsable : ${lead.owner}` : ''}
+              </div>
+            </div>
+          </div>
+
+          ${proposalSummary ? `
+          <div class="section">
+            <div class="section-title">Résumé exécutif</div>
+            <div class="summary-box">${proposalSummary}</div>
+          </div>
+          ` : ''}
+
+          <div class="section">
+            <div class="section-title">Services et Tarifs</div>
+            <table class="services-table">
+              <thead>
+                <tr>
+                  <th style="width: 30%; text-align:left;">Service</th>
+                  <th style="width: 50%; text-align:left;">Description</th>
+                  <th style="width: 20%; text-align:right;">Prix (CAD)</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${serviceRows}
+              </tbody>
+            </table>
+
+            <div class="totals-box font-sans">
+              <div class="total-row">
+                <span>Total HT</span>
+                <span>${totalHT.toLocaleString('fr-CA', {style:'currency', currency:'CAD'})}</span>
+              </div>
+              <div class="total-row">
+                <span>Taxes (${proposalTaxRate}%)</span>
+                <span>${taxes.toLocaleString('fr-CA', {style:'currency', currency:'CAD'})}</span>
+              </div>
+              <div class="total-row grand-total">
+                <span>Total TTC</span>
+                <span>${totalTTC.toLocaleString('fr-CA', {style:'currency', currency:'CAD'})}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="section font-sans">
+            <div class="section-title">Conditions de règlement</div>
+            <div class="terms-box">
+              <p><strong>Modalités :</strong> ${proposalPaymentTerms}</p>
+              <p style="margin-top:5px;"><strong>Date d'échéance :</strong> Offre valable jusqu'au ${validUntilStr}.</p>
+            </div>
+          </div>
+
+          <div class="section font-sans" style="margin-top: 40px; page-break-inside: avoid;">
+            <div class="section-title">Acceptation de l'offre</div>
+            <div style="padding: 15px; border: 1px solid #000000; text-align: center;">
+              <p style="font-weight: 700; margin-bottom: 10px;">${proposalCallToAction}</p>
+              <div style="display: flex; justify-content: space-around; margin-top: 30px;">
+                <div style="border-top: 1px solid #000000; width: 150px; padding-top: 5px; font-size: 11px;">Signature du Client</div>
+                <div style="border-top: 1px solid #000000; width: 150px; padding-top: 5px; font-size: 11px;">Signature du Fournisseur</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="footer font-sans">
+            Proposition commerciale générée pour ${lead.businessName} - Minerva OS Reach Lite
+          </div>
+        </body>
+        </html>
+      `;
+
+      const electronObj = typeof window !== 'undefined' && (window as any).electron;
+      if (electronObj && electronObj.printToPdf) {
+        const result = await electronObj.printToPdf(fileName, formattedHtml);
+        if (result && result.success) {
+          toast.success(`Proposition PDF exportée avec succès !`);
+          addNoteToLead(lead.id, `[Desktop] Proposition commerciale PDF créée : ${result.filePath}`, 'general');
+          setShowProposalBuilder(false);
+        } else {
+          toast.error("Erreur lors de l'exportation PDF.");
+        }
+      } else {
+        const printWin = window.open('', '_blank');
+        if (printWin) {
+          printWin.document.write(formattedHtml);
+          printWin.document.close();
+          toast.success("Impression lancée dans un nouvel onglet.");
+          setShowProposalBuilder(false);
+        } else {
+          toast.error("Veuillez autoriser les popups pour imprimer.");
+        }
+      }
+    } catch (err) {
+      console.error("Error exporting proposal:", err);
+      toast.error("Erreur lors de la génération de l'offre.");
+    } finally {
+      setExportingProposal(false);
+    }
+  };
 
   const handleShareLead = async () => {
     if (!lead) return;
@@ -1749,7 +2121,7 @@ export function LeadDetailClient({ id }: { id: string }) {
                               </div>
                             </div>
                             <p className="text-xs text-foreground/95 whitespace-pre-wrap leading-relaxed">
-                              {draft.content}
+                              {cleanMarkdownForPreview(draft.content)}
                             </p>
                           </div>
                         ))}
@@ -1846,7 +2218,7 @@ export function LeadDetailClient({ id }: { id: string }) {
           <div className="border-t lg:border-t-0 lg:border-l border-border pt-6 lg:pt-0 lg:pl-6 space-y-6">
             {/* Opportunity Score */}
             {(() => {
-              const oppScore = computeLeadScore(lead);
+              const oppScore = lead.score || computeLeadScore(lead);
               const scoreColor =
                 oppScore >= 70 ? '#059669' : oppScore >= 40 ? '#f59e0b' : '#7a7a76';
               const scoreLabel =
@@ -1869,7 +2241,7 @@ export function LeadDetailClient({ id }: { id: string }) {
             })()}
 
             {/* Qualification & Enrichissement */}
-            <QualificationPanel lead={lead} onSave={(fields) => updateLead(lead.id, fields)} />
+            <QualificationPanel lead={lead} onSave={(fields) => { updateLead(lead.id, fields); fetchDrafts(); }} />
 
             <div>
               <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-4">{t('lead.properties_title')}</h4>
@@ -2185,7 +2557,9 @@ export function LeadDetailClient({ id }: { id: string }) {
                     variant="outline"
                     size="sm"
                     className="h-8 text-xs gap-1.5 justify-start bg-[#f0fdf4] border-[#059669]/30 hover:bg-[#dcfce7]"
+                    disabled={loadingProposalData}
                     onClick={async () => {
+                      setLoadingProposalData(true);
                       try {
                         const supabase = createClient();
                         const { data: { user } } = await supabase.auth.getUser();
@@ -2193,42 +2567,48 @@ export function LeadDetailClient({ id }: { id: string }) {
                           supabase.from('services').select('*').eq('user_id', user?.id ?? ''),
                           supabase.from('settings').select('full_name, company_name, phone').eq('user_id', user?.id ?? '').maybeSingle(),
                         ]);
-                        const services = svcRes.data ?? [];
-                        const settings = settRes.data;
-                        const res = await fetch(getApiUrl('/api/generate-proposal'), {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({
-                            lead,
-                            services,
-                            userInfo: {
-                              name: settings?.full_name ?? '',
-                              company: settings?.company_name ?? 'Minerva OS',
-                              email: user?.email ?? '',
-                              phone: settings?.phone ?? '',
-                            },
-                          }),
-                        });
-                        if (res.ok) {
-                          const { html } = await res.json();
-                          const blob = new Blob([html], { type: 'text/html' });
-                          const url = URL.createObjectURL(blob);
-                          const a = document.createElement('a');
-                          a.href = url;
-                          a.target = '_blank';
-                          a.rel = 'noopener noreferrer';
-                          document.body.appendChild(a);
-                          a.click();
-                          document.body.removeChild(a);
-                          setTimeout(() => URL.revokeObjectURL(url), 10000);
+                        const dbServices = svcRes.data ?? [];
+                        const userSettings = settRes.data;
+
+                        // Set values
+                        setProposalSenderCompany(userSettings?.company_name ?? 'Minerva OS');
+                        setProposalSenderName(userSettings?.full_name ?? 'Conseiller');
+                        setProposalRecipientName(lead.contactName || lead.businessName || '');
+                        
+                        // Set executive summary prefilled
+                        const defaultSummary = buildExecutiveSummary(lead);
+                        setProposalSummary(defaultSummary);
+
+                        // Merge DB services with defaults
+                        const mappedDbServices = dbServices.map((s: any) => ({
+                          name: s.name,
+                          description: s.description || '',
+                          price: Number(s.price || 0),
+                          selected: true
+                        }));
+                        if (mappedDbServices.length === 0) {
+                          setProposalServices(DEFAULT_SERVICES.map((s: any) => ({...s})));
+                        } else {
+                          setProposalServices(mappedDbServices);
                         }
+                        setCustomServices([]);
+
+                        // Open modal!
+                        setShowProposalBuilder(true);
                       } catch (err) {
-                        console.error('Proposal generation error:', err);
+                        console.error('Proposal builder prep error:', err);
+                        toast.error("Erreur lors de la préparation du générateur.");
+                      } finally {
+                        setLoadingProposalData(false);
                       }
                     }}
                   >
-                    <FileOutput className="h-3.5 w-3.5 text-[#059669]" />
-                    Générer une proposition PDF
+                    {loadingProposalData ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <FileOutput className="h-3.5 w-3.5 text-[#059669]" />
+                    )}
+                    {loadingProposalData ? 'Chargement…' : 'Générer une proposition PDF'}
                   </Button>
                 </div>
               </div>
@@ -2291,6 +2671,448 @@ export function LeadDetailClient({ id }: { id: string }) {
           </div>
         </div>
       </div>
+
+      {showProposalBuilder && (
+        <div className="fixed inset-0 bg-[#000000]/40 backdrop-blur-xs z-50 flex items-center justify-center p-4 md:p-6 overflow-hidden">
+          <div className="bg-background border border-border rounded-2xl w-full max-w-6xl h-[90vh] flex flex-col shadow-2xl animate-in fade-in zoom-in-95 duration-200 text-foreground">
+            
+            {/* Header */}
+            <div className="p-4 border-b border-border/80 flex items-center justify-between bg-card shrink-0">
+              <div>
+                <h3 className="text-sm font-black uppercase tracking-wider text-foreground flex items-center gap-2">
+                  <FileOutput className="h-4 w-4 text-[#059669]" />
+                  Générateur de Proposition Commerciale
+                </h3>
+                <p className="text-[10px] text-muted-foreground mt-0.5">Personnalisez votre proposition commerciale avant l'exportation PDF.</p>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowProposalBuilder(false)}
+                className="h-8 w-8 hover:bg-muted rounded-full"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+
+            {/* Split Panel Body */}
+            <div className="flex-1 overflow-hidden grid grid-cols-1 lg:grid-cols-[1.2fr_1fr] divide-y lg:divide-y-0 lg:divide-x divide-border">
+              
+              {/* Left Config Panel */}
+              <div className="overflow-y-auto p-5 space-y-6">
+                
+                {/* Section 1: Informations Générales */}
+                <div className="space-y-3">
+                  <h4 className="text-[10px] font-bold uppercase tracking-wider text-primary border-b border-border/60 pb-1">1. Informations Générales</h4>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-[9px] font-bold uppercase text-muted-foreground">Titre du document</label>
+                      <Input
+                        value={proposalTitle}
+                        onChange={(e) => setProposalTitle(e.target.value)}
+                        className="text-xs h-8 bg-card"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[9px] font-bold uppercase text-muted-foreground">Date d'émission</label>
+                      <Input
+                        type="date"
+                        value={proposalDate}
+                        onChange={(e) => setProposalDate(e.target.value)}
+                        className="text-xs h-8 bg-card"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[9px] font-bold uppercase text-muted-foreground">Validité (jours)</label>
+                      <Input
+                        type="number"
+                        value={proposalValidDays}
+                        onChange={(e) => setProposalValidDays(Number(e.target.value))}
+                        className="text-xs h-8 bg-card"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[9px] font-bold uppercase text-muted-foreground">Nom du destinataire</label>
+                      <Input
+                        value={proposalRecipientName}
+                        onChange={(e) => setProposalRecipientName(e.target.value)}
+                        className="text-xs h-8 bg-card"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[9px] font-bold uppercase text-muted-foreground">Votre entreprise (Expéditeur)</label>
+                      <Input
+                        value={proposalSenderCompany}
+                        onChange={(e) => setProposalSenderCompany(e.target.value)}
+                        className="text-xs h-8 bg-card"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[9px] font-bold uppercase text-muted-foreground">Votre nom</label>
+                      <Input
+                        value={proposalSenderName}
+                        onChange={(e) => setProposalSenderName(e.target.value)}
+                        className="text-xs h-8 bg-card"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Section 2: Résumé Exécutif */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-primary">2. Résumé exécutif</label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const autoSummary = buildExecutiveSummary(lead);
+                        setProposalSummary(autoSummary);
+                      }}
+                      className="text-[9px] font-semibold text-[#059669] hover:underline"
+                    >
+                      Réinitialiser le résumé
+                    </button>
+                  </div>
+                  <Textarea
+                    value={proposalSummary}
+                    onChange={(e) => setProposalSummary(e.target.value)}
+                    className="text-xs min-h-[70px] bg-card leading-relaxed resize-y"
+                    placeholder="Écrivez le résumé exécutif de la proposition..."
+                  />
+                </div>
+
+                {/* Section 3: Services et Tarifs */}
+                <div className="space-y-3">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-primary border-b border-border/60 pb-1 block">3. Choix des services & Tarifs</label>
+                  
+                  {/* Database/Preset Services List */}
+                  <div className="space-y-2.5">
+                    {proposalServices.map((svc, idx) => (
+                      <div key={idx} className="border border-border/80 rounded-lg p-3 bg-card flex items-start gap-3">
+                        <input
+                          type="checkbox"
+                          checked={svc.selected}
+                          onChange={(e) => {
+                            const copy = [...proposalServices];
+                            copy[idx].selected = e.target.checked;
+                            setProposalServices(copy);
+                          }}
+                          className="mt-1 shrink-0 rounded border-gray-300 text-[#059669] focus:ring-[#059669]"
+                        />
+                        <div className="flex-1 space-y-1.5 min-w-0">
+                          <div className="flex items-center justify-between gap-2">
+                            <input
+                              type="text"
+                              value={svc.name}
+                              onChange={(e) => {
+                                const copy = [...proposalServices];
+                                copy[idx].name = e.target.value;
+                                setProposalServices(copy);
+                              }}
+                              className="font-bold text-xs bg-transparent border-b border-transparent hover:border-border focus:border-primary focus:outline-none w-full px-1"
+                            />
+                            <div className="flex items-center gap-1 shrink-0 bg-background border border-border rounded px-1.5 py-0.5">
+                              <span className="text-[10px] text-muted-foreground">$</span>
+                              <input
+                                type="number"
+                                value={svc.price}
+                                onChange={(e) => {
+                                  const copy = [...proposalServices];
+                                  copy[idx].price = Number(e.target.value);
+                                  setProposalServices(copy);
+                                }}
+                                className="w-16 font-bold text-xs bg-transparent border-none text-right focus:outline-none focus:ring-0 p-0"
+                              />
+                            </div>
+                          </div>
+                          <Textarea
+                            value={svc.description}
+                            onChange={(e) => {
+                              const copy = [...proposalServices];
+                              copy[idx].description = e.target.value;
+                              setProposalServices(copy);
+                            }}
+                            className="text-[11px] text-muted-foreground bg-transparent border-none resize-none p-1 min-h-[40px] focus:bg-background focus:ring-0 w-full"
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Add Custom Service Line */}
+                  <div className="border border-dashed border-border/80 rounded-lg p-3 space-y-2 bg-muted/10">
+                    <span className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground block">Ajouter un service personnalisé</span>
+                    <div className="grid grid-cols-3 gap-2">
+                      <Input
+                        placeholder="Nom du service..."
+                        value={newSvcName}
+                        onChange={(e) => setNewSvcName(e.target.value)}
+                        className="text-xs h-8 col-span-2 bg-card"
+                      />
+                      <div className="relative">
+                        <Input
+                          type="number"
+                          placeholder="Prix ($)..."
+                          value={newSvcPrice}
+                          onChange={(e) => setNewSvcPrice(e.target.value)}
+                          className="text-xs h-8 pl-4 bg-card"
+                        />
+                        <span className="absolute left-1.5 top-2 text-[10px] text-muted-foreground">$</span>
+                      </div>
+                    </div>
+                    <Textarea
+                      placeholder="Description du service..."
+                      value={newSvcDesc}
+                      onChange={(e) => setNewSvcDesc(e.target.value)}
+                      className="text-xs min-h-[40px] bg-card"
+                    />
+                    <div className="flex justify-end">
+                      <Button
+                        type="button"
+                        size="xs"
+                        variant="outline"
+                        onClick={() => {
+                          if (!newSvcName) return;
+                          setCustomServices(prev => [
+                            ...prev,
+                            {
+                              name: newSvcName,
+                              description: newSvcDesc,
+                              price: Number(newSvcPrice || 0)
+                            }
+                          ]);
+                          setNewSvcName('');
+                          setNewSvcDesc('');
+                          setNewSvcPrice('');
+                        }}
+                        className="h-7 text-[10px] font-semibold"
+                      >
+                        + Ajouter à la liste
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Custom Services Added List */}
+                  {customServices.length > 0 && (
+                    <div className="space-y-1.5">
+                      <span className="text-[9px] font-bold uppercase text-muted-foreground block">Services personnalisés ajoutés</span>
+                      {customServices.map((cs, idx) => (
+                        <div key={idx} className="border border-border/80 rounded-lg p-2.5 bg-[#fbfbfb] flex items-center justify-between gap-3 text-xs text-foreground">
+                          <div>
+                            <span className="font-bold">{cs.name}</span>
+                            <span className="text-[10px] text-muted-foreground block truncate max-w-sm">{cs.description}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold">{cs.price} $</span>
+                            <button
+                              type="button"
+                              onClick={() => setCustomServices(prev => prev.filter((_, i) => i !== idx))}
+                              className="text-muted-foreground hover:text-destructive text-sm"
+                            >✕</button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Section 4: Taxes & Conditions */}
+                <div className="space-y-3">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-primary border-b border-border/60 pb-1 block">4. Taxes & Conditions</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-[9px] font-bold uppercase text-muted-foreground">Taux de Taxes (%)</label>
+                      <Input
+                        type="number"
+                        step="0.001"
+                        value={proposalTaxRate}
+                        onChange={(e) => setProposalTaxRate(Number(e.target.value))}
+                        className="text-xs h-8 bg-card"
+                      />
+                    </div>
+                    <div className="space-y-1 col-span-2">
+                      <label className="text-[9px] font-bold uppercase text-muted-foreground">Conditions de règlement</label>
+                      <Textarea
+                        value={proposalPaymentTerms}
+                        onChange={(e) => setProposalPaymentTerms(e.target.value)}
+                        className="text-xs min-h-[50px] bg-card resize-y"
+                      />
+                    </div>
+                    <div className="space-y-1 col-span-2">
+                      <label className="text-[9px] font-bold uppercase text-muted-foreground">Appel à l'action d'acceptation</label>
+                      <Textarea
+                        value={proposalCallToAction}
+                        onChange={(e) => setProposalCallToAction(e.target.value)}
+                        className="text-xs min-h-[50px] bg-card resize-y"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+
+              {/* Right Preview Panel (Minimalist Black & White Print Aesthetic) */}
+              <div className="overflow-y-auto p-5 bg-[#fafaf9] flex flex-col">
+                <div className="flex items-center justify-between mb-3 shrink-0">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Aperçu en temps réel</span>
+                  <span className="text-[9px] font-bold uppercase tracking-wider text-[#7a7a76] border border-[#e5e5e0] px-1.5 py-0.5 bg-white rounded">Format Papier A4</span>
+                </div>
+                
+                {/* Paper View */}
+                <div className="flex-1 bg-white border border-[#e5e5e0] shadow-sm p-6 text-black font-serif text-[11px] leading-relaxed max-w-2xl mx-auto w-full aspect-[1/1.414] overflow-y-auto">
+                  
+                  {/* Document Header */}
+                  <div className="border-b-2 border-black pb-3 mb-5 text-left">
+                    <h2 className="font-sans font-black text-xl tracking-tight uppercase">{proposalTitle}</h2>
+                    <div className="font-sans text-[9px] text-[#555] uppercase mt-1">
+                      Date : {new Date(proposalDate).toLocaleDateString('fr-CA', {day:'2-digit', month:'long', year:'numeric'})}
+                      &nbsp;·&nbsp; Valide : {proposalValidDays} jours
+                    </div>
+                  </div>
+
+                  {/* Parties Block */}
+                  <div className="grid grid-cols-2 gap-5 mb-5 font-sans text-left">
+                    <div className="border border-black p-3 bg-[#fafafa]">
+                      <div className="text-[8px] font-extrabold uppercase border-b border-black pb-1 mb-1.5 text-[#555]">Préparé pour</div>
+                      <div className="font-bold text-xs">{lead.businessName}</div>
+                      <div className="text-[10px] text-[#555] mt-1 space-y-0.5">
+                        {lead.city && <div>📍 {lead.city}</div>}
+                        {lead.niche && <div>🏢 Niche : {lead.niche}</div>}
+                        {proposalRecipientName && <div>👤 Contact : {proposalRecipientName}</div>}
+                      </div>
+                    </div>
+                    <div className="border border-black p-3 bg-[#fafafa]">
+                      <div className="text-[8px] font-extrabold uppercase border-b border-black pb-1 mb-1.5 text-[#555]">De la part de</div>
+                      <div className="font-bold text-xs">{proposalSenderCompany || 'Votre agence'}</div>
+                      <div className="text-[10px] text-[#555] mt-1 space-y-0.5">
+                        <div>👤 {proposalSenderName}</div>
+                        {lead.owner && <div>✉️ Responsable : {lead.owner}</div>}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Executive Summary */}
+                  {proposalSummary && (
+                    <div className="mb-5 text-left">
+                      <div className="font-sans font-bold text-[9px] uppercase border-b border-black pb-1 mb-2">Résumé exécutif</div>
+                      <p className="italic text-[#222] pl-3 border-l-2 border-black whitespace-pre-wrap">{proposalSummary}</p>
+                    </div>
+                  )}
+
+                  {/* Services and Prices Table */}
+                  <div className="mb-5">
+                    <div className="font-sans font-bold text-[9px] uppercase border-b border-black pb-1 mb-2 text-left">Services et Tarifs</div>
+                    <table className="w-full text-left font-sans text-[10px] border-collapse">
+                      <thead>
+                        <tr className="border-b border-black text-[#333]">
+                          <th className="pb-1.5 font-bold uppercase text-[9px] text-left">Service</th>
+                          <th className="pb-1.5 font-bold uppercase text-[9px] text-left">Description</th>
+                          <th className="pb-1.5 font-bold uppercase text-[9px] text-right">Prix</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {[
+                          ...proposalServices.filter(s => s.selected),
+                          ...customServices
+                        ].map((s, i) => (
+                          <tr key={i} className="border-b border-[#e5e5e0]">
+                            <td className="py-2 font-bold align-top text-left">{s.name}</td>
+                            <td className="py-2 text-[#4a4a45] align-top text-left whitespace-pre-wrap">{s.description || '—'}</td>
+                            <td className="py-2 text-right font-bold align-top whitespace-nowrap">{s.price.toLocaleString('fr-CA', {style:'currency', currency:'CAD'})}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+
+                    {/* Totals Box */}
+                    {(() => {
+                      const allSelected = [
+                        ...proposalServices.filter(s => s.selected),
+                        ...customServices
+                      ];
+                      const totalHT = allSelected.reduce((sum, s) => sum + Number(s.price || 0), 0);
+                      const taxes = totalHT * (proposalTaxRate / 100);
+                      const totalTTC = totalHT + taxes;
+
+                      return (
+                        <div className="w-[180px] ml-auto mt-4 border-t border-black pt-1.5 font-sans text-[10px] space-y-1">
+                          <div className="flex justify-between">
+                            <span>Total HT</span>
+                            <span>{totalHT.toLocaleString('fr-CA', {style:'currency', currency:'CAD'})}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Taxes ({proposalTaxRate}%)</span>
+                            <span>{taxes.toLocaleString('fr-CA', {style:'currency', currency:'CAD'})}</span>
+                          </div>
+                          <div className="flex justify-between font-black text-xs border-t border-black pt-1 mt-1">
+                            <span>TOTAL TTC</span>
+                            <span>{totalTTC.toLocaleString('fr-CA', {style:'currency', currency:'CAD'})}</span>
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </div>
+
+                  {/* Regulations Terms */}
+                  <div className="mb-5 font-sans text-[10px] text-left">
+                    <div className="font-bold text-[9px] uppercase border-b border-black pb-1 mb-2">Conditions de règlement</div>
+                    <div className="border border-[#e5e5e0] p-2.5 bg-[#fafaf9]">
+                      <p><strong>Modalités :</strong> {proposalPaymentTerms}</p>
+                      <p className="mt-1"><strong>Échéance de l'offre :</strong> Valable pour une période de {proposalValidDays} jours.</p>
+                    </div>
+                  </div>
+
+                  {/* CTA & Signatures */}
+                  <div className="font-sans text-[10px] mt-6 border border-black p-3 text-center">
+                    <p className="font-bold">{proposalCallToAction}</p>
+                    <div className="flex justify-around mt-8 text-[9px] text-[#555]">
+                      <div className="border-t border-black w-24 pt-1 mt-2">Signature Client</div>
+                      <div className="border-t border-black w-24 pt-1 mt-2">Signature Fournisseur</div>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+
+            </div>
+
+            {/* Footer / Actions Bar */}
+            <div className="p-4 border-t border-border/80 flex justify-end gap-3 bg-card shrink-0">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowProposalBuilder(false)}
+                className="text-xs h-9"
+              >
+                Annuler
+              </Button>
+              <Button
+                variant="default"
+                size="sm"
+                disabled={exportingProposal || [
+                  ...proposalServices.filter(s => s.selected),
+                  ...customServices
+                ].length === 0}
+                onClick={handleExportProposalPdf}
+                className="text-xs h-9 bg-primary hover:bg-primary/95 text-white gap-2 font-bold px-4"
+              >
+                {exportingProposal ? (
+                  <>
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    Génération du PDF…
+                  </>
+                ) : (
+                  <>
+                    <FileOutput className="h-3.5 w-3.5" />
+                    Exporter la Proposition en PDF
+                  </>
+                )}
+              </Button>
+            </div>
+
+          </div>
+        </div>
+      )}
     </div>
   );
 }

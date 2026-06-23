@@ -263,9 +263,9 @@ export function buildColumns(workspaceMembers: WorkspaceMember[]): ColumnDef<Lea
         <ArrowUpDown className="h-3 w-3" />
       </button>
     ),
-    accessorFn: (row) => computeLeadScore(row),
+    accessorFn: (row) => row.score || computeLeadScore(row),
     cell: ({ row }) => {
-      const oppScore = computeLeadScore(row.original);
+      const oppScore = row.original.score || computeLeadScore(row.original);
       const colorStyle =
         oppScore >= 70
           ? { bg: '#059669' + '1a', text: '#059669', border: '#059669' + '33' }

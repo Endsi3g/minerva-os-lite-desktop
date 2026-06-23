@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
   // Verify lead belongs to this user
   const { data: lead } = await admin
     .from('leads')
-    .select('id, name, company, email, phone, category, city')
+    .select('id, contact_name, business_name, contact_email, phone, niche, city')
     .eq('id', leadId)
     .eq('user_id', user.id)
     .maybeSingle();

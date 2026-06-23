@@ -5,6 +5,15 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [3.28.0] - 2026-06-23
+
+### Ajouté — Générateur de Proposition Interactif, Scraping Avancé & Script Pitch
+- **Générateur de proposition interactif** — Nouvelle interface pour choisir des services (avec presets inclus), modifier les descriptions & prix, ajouter des offres à la volée, et calculer dynamiquement le montant total et les taxes ajustables (GST/QST 14.975% par défaut).
+- **Live Preview & Impression PDF minimaliste** — Aperçu papier A4 en temps réel au style minimaliste noir & blanc haute fidélité. Exportation native PDF avec `electron.printToPdf` ou impression par navigateur (`window.print()`).
+- **Scraping de site web & Enrichissement lead** — Scraping approfondi de site web (Firecrawl + fallback) pour extraire le gérant (nom, rôle, email), la vibe d'entreprise, et mettre à jour le score d'opportunité global.
+- **Pitch de vente Québec 2026** — Génération automatique de script d'appel à froid québécois, conforme aux directives d'outreach direct et personnalisé. Enregistré sous forme de brouillon de type `Call`.
+- **Message previews & Correction partage** — Nettoyage automatique des astérisques markdown pour l'aperçu du texte des messages. Résolution de l'erreur `Lead not found` lors de la création d'un partage de lead.
+
 ## [3.27.4] - 2026-06-22
 
 ### Corrigé — Résolution des modèles OpenRouter obsolètes & nettoyage du scraping
