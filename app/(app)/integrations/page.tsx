@@ -34,6 +34,8 @@ import {
   SlackIcon,
   GmailIcon,
   GoogleMapsIcon,
+  GoogleTasksIcon,
+  GoogleContactsIcon,
 } from '@/components/icons';
 import {
   getConnectedIntegrations,
@@ -202,14 +204,7 @@ const DEFAULT_INTEGRATIONS: IntegrationItem[] = [
     email: 'alexsmith@minerva-os-lite.com',
     accEmail: 'contacts.readonly, contacts.other.readonly',
     accEmailKey: 'integrations.google_contacts.acc_email' as TranslationKey,
-    icon: () => (
-      <div className="w-7 h-7 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
-        <svg viewBox="0 0 24 24" className="w-4.5 h-4.5" fill="none">
-          <circle cx="12" cy="8" r="3.5" fill="#4285F4" />
-          <path d="M5 19c0-3.866 3.134-7 7-7s7 3.134 7 7" stroke="#34A853" strokeWidth="2" strokeLinecap="round" fill="none"/>
-        </svg>
-      </div>
-    ),
+    icon: GoogleContactsIcon,
     status: 'Inactive',
     statusKey: 'integrations.status.inactive' as TranslationKey,
     assets: '—',
@@ -232,14 +227,7 @@ const DEFAULT_INTEGRATIONS: IntegrationItem[] = [
     email: 'alexsmith@minerva-os-lite.com',
     accEmail: 'tasks',
     accEmailKey: 'integrations.google_tasks.acc_email' as TranslationKey,
-    icon: () => (
-      <div className="w-7 h-7 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
-        <svg viewBox="0 0 24 24" className="w-4.5 h-4.5" fill="none">
-          <rect x="4" y="4" width="16" height="16" rx="2" fill="#4285F4" />
-          <path d="M8 12l2.5 2.5L16 9" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-        </svg>
-      </div>
-    ),
+    icon: GoogleTasksIcon,
     status: 'Inactive',
     statusKey: 'integrations.status.inactive' as TranslationKey,
     assets: '—',

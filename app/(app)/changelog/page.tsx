@@ -18,6 +18,17 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v3.35.1',
+      date: '2026-06-23',
+      titleKey: 'changelog.v3_35_1_title' as TranslationKey,
+      descKey: 'changelog.v3_35_1_desc' as TranslationKey,
+      highlights: [
+        "Résolution des bugs visuels liés aux icônes géantes (comme Teams) qui brisaient la mise en page de l'application en s'assurant du bon dimensionnement des composants SVG.",
+        "Migration complète de la page Intégrations vers les logos officiels de @thesvg/react (Gmail, Drive, Maps, Zoom, SharePoint, Teams, Todoist, Notion, Slack, Tasks, Meet).",
+        "Création d'un composant d'icône premium haute fidélité pour Google Contacts."
+      ],
+    },
+    {
       version: 'v3.35.0',
       date: '2026-06-23',
       titleKey: 'changelog.v3_35_0_title' as TranslationKey,

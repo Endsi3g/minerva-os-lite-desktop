@@ -5,6 +5,13 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [3.35.1] - 2026-06-23
+
+### Corrigé — Résolution du bug d'affichage des icônes SVG sur la page Intégrations
+- **Bugs visuels résolus** — Résolution du problème d'icônes géantes (comme Microsoft Teams) qui chevauchaient et cassaient la mise en page de l'application en s'assurant que les props de dimensions (`width`, `height`) soient bien propagées.
+- **Intégration @thesvg/react complète** — Migration de l'ensemble des logos de la page Intégrations (Gmail, Google Drive, Google Maps, Zoom, SharePoint, Microsoft Teams, Todoist, Notion, Slack, Google Tasks, Google Meet) vers les composants officiels de `@thesvg/react`.
+- **Nouveau composant Google Contacts** — Ajout d'une icône personnalisée haute fidélité premium pour l'intégration Google Contacts.
+
 ## [3.35.0] - 2026-06-23
 
 ### Ajouté — Intégration globale des icônes SVG premium (@thesvg/react)
