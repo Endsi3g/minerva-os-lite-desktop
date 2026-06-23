@@ -8,7 +8,7 @@ import { usePersonas } from '@/lib/use-personas';
 import { takePhoto } from '@/lib/native-bridge';
 import { getApiUrl } from '@/lib/api-helper';
 import { Lead, Note } from '@/lib/mock-data';
-import { computeLeadScore } from '@/lib/lead-score';
+import { computeLeadScoreV2 } from '@/lib/lead-score';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -2216,26 +2216,48 @@ export function LeadDetailClient({ id }: { id: string }) {
 
           {/* Right Sidebar (Notion Properties Panel) */}
           <div className="border-t lg:border-t-0 lg:border-l border-border pt-6 lg:pt-0 lg:pl-6 space-y-6">
-            {/* Opportunity Score */}
+            {/* Score v2 — multidimensionnel */}
             {(() => {
-              const oppScore = lead.score || computeLeadScore(lead);
-              const scoreColor =
-                oppScore >= 70 ? '#059669' : oppScore >= 40 ? '#f59e0b' : '#7a7a76';
-              const scoreLabel =
-                oppScore >= 70 ? 'Forte opportunité' : oppScore >= 40 ? 'Opportunité moyenne' : 'Opportunité faible';
+              const computed = computeLeadScoreV2(lead);
+              const scoreIcp = lead.scoreIcp ?? computed.icp;
+              const scoreEng = lead.scoreEngagement ?? computed.engagement;
+              const scoreUrg = lead.scoreUrgency ?? computed.urgency;
+              const scoreRev = lead.scoreRevenue ?? computed.revenue;
+              const total = lead.score ?? computed.total;
+              const totalColor = total >= 70 ? '#059669' : total >= 40 ? '#f59e0b' : '#7a7a76';
+              const totalLabel = total >= 70 ? 'Forte opportunité' : total >= 40 ? 'Opportunité moyenne' : 'À qualifier';
+              const dims = [
+                { label: 'ICP', value: scoreIcp, max: 25, color: '#059669', tip: 'Complétude des données' },
+                { label: 'Engagement', value: scoreEng, max: 25, color: '#3b82f6', tip: 'Pipeline + température' },
+                { label: 'Urgence', value: scoreUrg, max: 25, color: '#f59e0b', tip: 'Prochaine action' },
+                { label: 'Revenu', value: scoreRev, max: 25, color: '#8b5cf6', tip: 'Potentiel business' },
+              ];
               return (
-                <div className="flex items-center gap-3 p-3 rounded-lg border border-[#e5e5e0] bg-[#fafaf8]">
-                  <div
-                    className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border-2 text-lg font-black"
-                    style={{ borderColor: scoreColor, color: scoreColor }}
-                  >
-                    {oppScore}
+                <div className="rounded-xl border border-[#e5e5e0] bg-[#fafaf8] p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Score v2</p>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xl font-black" style={{ color: totalColor }}>{total}</span>
+                      <span className="text-[10px] text-[#7a7a76]">/100</span>
+                    </div>
                   </div>
-                  <div className="min-w-0">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Score Opportunité</p>
-                    <p className="text-xs font-semibold mt-0.5" style={{ color: scoreColor }}>{scoreLabel}</p>
-                    <p className="text-[10px] text-[#7a7a76] mt-0.5">Basé sur site web, note, avis</p>
+                  <div className="space-y-2">
+                    {dims.map(({ label, value, max, color, tip }) => (
+                      <div key={label} title={tip}>
+                        <div className="flex items-center justify-between mb-0.5">
+                          <span className="text-[10px] font-medium text-[#7a7a76]">{label}</span>
+                          <span className="text-[10px] font-bold" style={{ color }}>{value}/{max}</span>
+                        </div>
+                        <div className="h-1.5 bg-[#e5e5e0] rounded-full overflow-hidden">
+                          <div
+                            className="h-full rounded-full transition-all duration-500"
+                            style={{ width: `${Math.round((value / max) * 100)}%`, backgroundColor: color }}
+                          />
+                        </div>
+                      </div>
+                    ))}
                   </div>
+                  <p className="text-[10px] font-semibold text-center mt-1" style={{ color: totalColor }}>{totalLabel}</p>
                 </div>
               );
             })()}

@@ -594,6 +594,12 @@ function initDb() {
     // v4.3.0 — Team DMs
     db.run(`ALTER TABLE team_messages ADD COLUMN recipient_id TEXT`, () => {});
 
+    // v4.4.0 — Scoring v2: sub-scores multidimensionnels
+    db.run(`ALTER TABLE leads ADD COLUMN score_icp INTEGER DEFAULT NULL`, () => {});
+    db.run(`ALTER TABLE leads ADD COLUMN score_engagement INTEGER DEFAULT NULL`, () => {});
+    db.run(`ALTER TABLE leads ADD COLUMN score_urgency INTEGER DEFAULT NULL`, () => {});
+    db.run(`ALTER TABLE leads ADD COLUMN score_revenue INTEGER DEFAULT NULL`, () => {});
+
     // v5.1.0 — AI Assistant sessions, messages, and canvas
     db.run(`CREATE TABLE IF NOT EXISTS assistant_sessions (
       id TEXT PRIMARY KEY,

@@ -63,6 +63,11 @@ export interface Lead {
   utmMedium?: string;
   utmCampaign?: string;
   utmContent?: string;
+  // Scoring v2 (v4.4)
+  scoreIcp?: number;        // 0-25 — data completeness + ICP match
+  scoreEngagement?: number; // 0-25 — pipeline stage + temperature
+  scoreUrgency?: number;    // 0-25 — next action recency + freshness
+  scoreRevenue?: number;    // 0-25 — business size + enrichment signals
 }
 
 export interface LeadEvent {

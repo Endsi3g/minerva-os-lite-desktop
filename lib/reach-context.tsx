@@ -250,6 +250,11 @@ interface DbLead {
   utm_medium?: string | null;
   utm_campaign?: string | null;
   utm_content?: string | null;
+  // Scoring v2
+  score_icp?: number | null;
+  score_engagement?: number | null;
+  score_urgency?: number | null;
+  score_revenue?: number | null;
 }
 
 interface DbNote {
@@ -334,6 +339,10 @@ function mapDbLeadToUi(dbLead: DbLead, dbNotes: DbNote[] = []): Lead {
     utmMedium: dbLead.utm_medium || undefined,
     utmCampaign: dbLead.utm_campaign || undefined,
     utmContent: dbLead.utm_content || undefined,
+    scoreIcp: dbLead.score_icp ?? undefined,
+    scoreEngagement: dbLead.score_engagement ?? undefined,
+    scoreUrgency: dbLead.score_urgency ?? undefined,
+    scoreRevenue: dbLead.score_revenue ?? undefined,
     notes: dbNotes
       .filter(n => n.lead_id === dbLead.id)
       .map(n => ({
@@ -1667,6 +1676,10 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
         if (fields.score !== undefined) { dbFields.push("score = ?"); params.push(fields.score ?? null); }
         if (fields.fitScore !== undefined) { dbFields.push("fit_score = ?"); params.push(fields.fitScore ?? null); }
         if (fields.intentScore !== undefined) { dbFields.push("intent_score = ?"); params.push(fields.intentScore ?? null); }
+        if (fields.scoreIcp !== undefined) { dbFields.push("score_icp = ?"); params.push(fields.scoreIcp ?? null); }
+        if (fields.scoreEngagement !== undefined) { dbFields.push("score_engagement = ?"); params.push(fields.scoreEngagement ?? null); }
+        if (fields.scoreUrgency !== undefined) { dbFields.push("score_urgency = ?"); params.push(fields.scoreUrgency ?? null); }
+        if (fields.scoreRevenue !== undefined) { dbFields.push("score_revenue = ?"); params.push(fields.scoreRevenue ?? null); }
         if (fields.bantBudget !== undefined) { dbFields.push("bant_budget = ?"); params.push(fields.bantBudget ? 1 : 0); }
         if (fields.bantAuthority !== undefined) { dbFields.push("bant_authority = ?"); params.push(fields.bantAuthority ? 1 : 0); }
         if (fields.bantNeed !== undefined) { dbFields.push("bant_need = ?"); params.push(fields.bantNeed ? 1 : 0); }
@@ -1729,6 +1742,10 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
     if (fields.score !== undefined) dbFields.score = fields.score ?? null;
     if (fields.fitScore !== undefined) dbFields.fit_score = fields.fitScore ?? null;
     if (fields.intentScore !== undefined) dbFields.intent_score = fields.intentScore ?? null;
+    if (fields.scoreIcp !== undefined) dbFields.score_icp = fields.scoreIcp ?? null;
+    if (fields.scoreEngagement !== undefined) dbFields.score_engagement = fields.scoreEngagement ?? null;
+    if (fields.scoreUrgency !== undefined) dbFields.score_urgency = fields.scoreUrgency ?? null;
+    if (fields.scoreRevenue !== undefined) dbFields.score_revenue = fields.scoreRevenue ?? null;
     if (fields.bantBudget !== undefined) dbFields.bant_budget = fields.bantBudget;
     if (fields.bantAuthority !== undefined) dbFields.bant_authority = fields.bantAuthority;
     if (fields.bantNeed !== undefined) dbFields.bant_need = fields.bantNeed;

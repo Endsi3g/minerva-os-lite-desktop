@@ -18,6 +18,21 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v3.30.0',
+      date: '2026-06-22 · 23h10',
+      titleKey: 'changelog.v3_30_0_title' as TranslationKey,
+      descKey: 'changelog.v3_30_0_desc' as TranslationKey,
+      highlights: [
+        "Scoring v2 multidimensionnel — Score total 0-100 décomposé en 4 axes : ICP Fit (données), Engagement (pipeline + température), Urgence (prochaine action + fraîcheur), Revenu (taille business + enrichissement).",
+        "Carte score dans la fiche lead — 4 barres de progression colorées (vert / bleu / amber / violet) avec valeurs individuelles /25 et score total /100.",
+        "API /api/leads/score — Calcule et sauvegarde les 4 sous-scores + log un événement score_updated dans lead_events.",
+        "Migration SQL (supabase_migration_v4_scoring_v2.sql) — 4 nouvelles colonnes : score_icp, score_engagement, score_urgency, score_revenue. Index sur score DESC.",
+        "Support Electron — ALTER TABLE automatique pour les 4 nouvelles colonnes dans database.cjs.",
+        "Backwards compatible — computeLeadScore() (v1) délègue maintenant à computeLeadScoreV2().total.",
+        "Roadmap — Scoring v2 passé de planned → available.",
+      ],
+    },
+    {
       version: 'v3.29.0',
       date: '2026-06-22 · 22h55',
       titleKey: 'changelog.v3_29_0_title' as TranslationKey,
