@@ -6,6 +6,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { SettingsSectionWrapper } from './settings-section-wrapper';
 import { useTheme } from 'next-themes';
 import { cn } from '@/lib/utils';
+import { useLanguage } from '@/lib/language-context';
+import { Globe } from 'lucide-react';
 
 interface AppearanceData {
   density: 'comfortable' | 'compact';
@@ -20,6 +22,7 @@ interface SettingsAppearanceSectionProps {
 
 export function SettingsAppearanceSection({ data, onChange, isSaving }: SettingsAppearanceSectionProps) {
   const { setTheme } = useTheme();
+  const { locale, setLocale } = useLanguage();
 
   // Local states for custom properties
   const [radius, setRadius] = useState('10px');
@@ -139,6 +142,34 @@ export function SettingsAppearanceSection({ data, onChange, isSaving }: Settings
                     <SelectItem value="system" className="text-xs">Identique au système (Automatique)</SelectItem>
                     <SelectItem value="light" className="text-xs">Clair (Light Mode)</SelectItem>
                     <SelectItem value="dark" className="text-xs">Sombre (Dark Mode)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Language Card */}
+        <Card className="border border-border bg-card">
+          <CardContent className="p-5 space-y-4">
+            <div className="flex items-center gap-2">
+              <Globe className="h-3.5 w-3.5 text-muted-foreground" />
+              <h3 className="text-xs font-bold text-foreground uppercase tracking-wider">Langue de l'application</h3>
+            </div>
+            <p className="text-[11px] text-muted-foreground leading-normal">
+              Change la langue de toute l'interface. Le choix est sauvegardé dans ton profil.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+              <div className="grid gap-1.5">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Langue / Language</label>
+                <Select value={locale} onValueChange={(val) => setLocale(val as 'fr' | 'en' | 'de')}>
+                  <SelectTrigger className="text-xs bg-card">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="fr" className="text-xs">🇫🇷 Français</SelectItem>
+                    <SelectItem value="en" className="text-xs">🇬🇧 English</SelectItem>
+                    <SelectItem value="de" className="text-xs">🇩🇪 Deutsch</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

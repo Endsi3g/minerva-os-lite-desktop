@@ -206,7 +206,7 @@ export default function LeadPreviewPage() {
             </p>
             <Link
               href="/login"
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#059669] hover:bg-[#d94200] text-white text-xs font-bold rounded-xl transition-colors"
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#059669] hover:bg-[#047857] text-white text-xs font-bold rounded-xl transition-colors"
             >
               Créer un compte gratuit
             </Link>

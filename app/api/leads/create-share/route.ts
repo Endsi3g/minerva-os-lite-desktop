@@ -20,18 +20,17 @@ export async function POST(req: NextRequest) {
   const { leadId } = body;
   if (!leadId) return NextResponse.json({ error: 'leadId required' }, { status: 400 });
 
-  const token = randomBytes(32).toString('hex');
-  const admin = adminClient();
-
-  // Verify lead belongs to this user
-  const { data: lead } = await admin
+  // Verify access via RLS (workspace-aware) — do NOT filter by user_id, leads are workspace-scoped
+  const { data: lead } = await supabase
     .from('leads')
-    .select('id, contact_name, business_name, contact_email, phone, niche, city')
+    .select('id')
     .eq('id', leadId)
-    .eq('user_id', user.id)
     .maybeSingle();
 
   if (!lead) return NextResponse.json({ error: 'Lead not found' }, { status: 404 });
+
+  const token = randomBytes(32).toString('hex');
+  const admin = adminClient();
 
   // Insert share token (expires in 7 days)
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
@@ -43,7 +42,6 @@ export async function POST(req: NextRequest) {
   });
 
   if (error) {
-    // Table may not exist yet — return graceful error
     if (error.code === '42P01') {
       return NextResponse.json({ error: 'lead_shares table missing. Run SQL migration.' }, { status: 500 });
     }
