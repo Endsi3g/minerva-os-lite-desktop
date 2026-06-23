@@ -5,6 +5,13 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [3.34.0] - 2026-06-23
+
+### Ajouté — Redesign Premium UI/UX du Dashboard (Today)
+- **Refonte UI/UX du Tableau de bord (Today)** — Suppression de toutes les ombres surélevées (`shadow-sm`, `shadow-md`, etc.) sur l'ensemble des 17 widgets du cockpit.
+- **Grille de fond Cult UI** — Remplacement du motif de points radiaux par l'overlay de grille Cult UI linéaire (`bg-grid-pattern-20`) et harmonisation de la couleur de fond en crème warm cream (`bg-[#fafaf8]`).
+- **Harmonisation des couleurs d'accentuation** — Remplacement de toutes les occurrences de vert clair `#10b981` ou styles non standard par le vert émeraude de marque officiel (#059669) pour les jauges, barres de progression et icônes.
+
 ## [3.33.0] - 2026-06-23
 
 ### Ajouté — Redesign Premium UI/UX de 5 Pages Clés & i18n

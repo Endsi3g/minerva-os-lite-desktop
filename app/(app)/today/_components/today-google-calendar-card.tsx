@@ -64,7 +64,7 @@ export function TodayGoogleCalendarCard() {
   }, []);
 
   return (
-    <Card className="border border-[#e5e5e0] bg-card shadow-sm">
+    <Card className="border border-[#e5e5e0] bg-white shadow-none">
       <CardHeader className="flex flex-row items-center gap-2.5 pb-3">
         <div className="flex h-8 w-8 items-center justify-center rounded-md bg-emerald-50 dark:bg-emerald-950/30 text-[#059669]">
           <CalendarDays className="h-4 w-4" />

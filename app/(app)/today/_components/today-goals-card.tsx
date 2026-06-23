@@ -37,11 +37,11 @@ export function TodayGoalsCard() {
   }
 
   return (
-    <Card className="border border-[#e5e5e0] bg-white shadow-sm">
+    <Card className="border border-[#e5e5e0] bg-white shadow-none">
       <CardContent className="px-4 py-3">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-1.5 text-xs font-semibold text-[#26251e]">
-            <Target className="h-3.5 w-3.5 text-[#10b981]" />
+            <Target className="h-3.5 w-3.5 text-[#059669]" />
             Objectifs du mois
           </div>
           <Link href="/settings" className="text-[10px] text-[#78716c] hover:text-[#059669] transition-colors">
@@ -65,7 +65,7 @@ export function TodayGoalsCard() {
                 </div>
                 <div className="h-1.5 w-full overflow-hidden rounded-full bg-[#f4f4f3]">
                   <div
-                    className={cn('h-full rounded-full transition-all duration-500', done ? 'bg-[#059669]' : 'bg-[#10b981]')}
+                    className={cn('h-full rounded-full transition-all duration-500', done ? 'bg-[#059669]' : 'bg-[#059669]/70')}
                     style={{ width: `${pct}%` }}
                   />
                 </div>

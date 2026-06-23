@@ -56,16 +56,9 @@ export function TodayRoot() {
           <InboxRoot />
         </div>
       ) : (
-      <div className="flex-1 overflow-y-auto relative">
-      {/* dot pattern background */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 z-0 opacity-30 dark:opacity-15"
-        style={{
-          backgroundImage: 'radial-gradient(circle, #a1a1aa 1px, transparent 1px)',
-          backgroundSize: '24px 24px',
-        }}
-      />
+      <div className="flex-1 overflow-y-auto relative bg-[#fafaf8]">
+      {/* grid background pattern overlay */}
+      <div className="absolute inset-0 opacity-[0.25] pointer-events-none bg-grid-pattern-20 z-0" />
 
       <div className="relative z-10 flex flex-col gap-4 p-3 sm:p-6 max-w-5xl mx-auto">
         {/* Setup checklist banner (hidden once dismissed or complete) */}

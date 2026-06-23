@@ -40,7 +40,7 @@ export function TodayAgendaCard() {
 
   if (totalItems === 0) {
     return (
-      <Card className="border border-border bg-card shadow-sm">
+      <Card className="border border-[#e5e5e0] bg-white shadow-none">
         <CardHeader className="flex flex-row items-center gap-2.5 pb-3">
           <div className="flex h-8 w-8 items-center justify-center rounded-md bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600">
             <CalendarCheck2 className="h-4 w-4" />
@@ -55,7 +55,7 @@ export function TodayAgendaCard() {
   }
 
   return (
-    <Card className="border border-border bg-card shadow-sm">
+    <Card className="border border-[#e5e5e0] bg-white shadow-none">
       <CardHeader className="flex flex-row items-center justify-between pb-3">
         <div className="flex items-center gap-2.5">
           <div className="flex h-8 w-8 items-center justify-center rounded-md bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600">

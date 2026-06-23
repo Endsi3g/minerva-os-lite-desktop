@@ -76,8 +76,8 @@ export function TodaySetupBanner() {
   const pct = Math.round((completedCount / total) * 100);
 
   return (
-    <div className="flex items-center gap-3 rounded-lg border border-[#10b981]/20 bg-[#10b981]/5 px-4 py-2.5">
-      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-[#10b981]/10 text-[#059669]">
+    <div className="flex items-center gap-3 rounded-lg border border-[#059669]/20 bg-[#059669]/5 px-4 py-2.5">
+      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-[#059669]/10 text-[#059669]">
         <Layers className="h-3.5 w-3.5" />
       </div>
  
@@ -90,7 +90,7 @@ export function TodaySetupBanner() {
         </div>
         <div className="h-1 w-full max-w-[200px] overflow-hidden rounded-full bg-[#e5e5e0]">
           <div
-            className="h-full rounded-full bg-[#10b981] transition-all duration-500"
+            className="h-full rounded-full bg-[#059669] transition-all duration-500"
             style={{ width: `${pct}%` }}
           />
         </div>

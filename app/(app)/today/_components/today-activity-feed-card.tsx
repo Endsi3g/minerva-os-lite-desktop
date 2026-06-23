@@ -53,10 +53,10 @@ export function TodayActivityFeedCard() {
   }, [leads]);
 
   return (
-    <Card className="border border-[#e5e5e0] bg-white shadow-sm overflow-hidden">
+    <Card className="border border-[#e5e5e0] bg-white shadow-none overflow-hidden">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <div className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#10b981]/10 text-[#059669]">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#059669]/10 text-[#059669]">
             <Activity className="h-4 w-4" />
           </div>
           <div>
@@ -90,7 +90,7 @@ export function TodayActivityFeedCard() {
                   borderRadius: "10px",
                   fontSize: "11px",
                   color: "#26251e",
-                  boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+                  boxShadow: "none",
                 }}
                 labelStyle={{ fontWeight: "bold", color: "#26251e" }}
               />
@@ -99,7 +99,7 @@ export function TodayActivityFeedCard() {
                 iconType="circle"
                 wrapperStyle={{ fontSize: "10px", paddingTop: "12px", color: "#807d72" }}
               />
-              <Bar dataKey="created" name="Leads créés" fill="#10b981" radius={[3, 3, 0, 0]} barSize={14} />
+              <Bar dataKey="created" name="Leads créés" fill="#a7f3d0" radius={[3, 3, 0, 0]} barSize={14} />
               <Bar dataKey="won" name="Leads gagnés" fill="#059669" radius={[3, 3, 0, 0]} barSize={14} />
             </BarChart>
           </ResponsiveContainer>

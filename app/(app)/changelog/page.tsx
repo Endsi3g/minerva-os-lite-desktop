@@ -18,6 +18,19 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v3.34.0',
+      date: '2026-06-23',
+      titleKey: 'changelog.v3_34_0_title' as TranslationKey,
+      descKey: 'changelog.v3_34_0_desc' as TranslationKey,
+      highlights: [
+        "Alignement esthétique du Dashboard (Today) sur la charte graphique premium de l'application.",
+        "Suppression complète des ombres surélevées (shadow-sm) au profit d'un design plat (flat styling) et de bordures hairline fines (#e5e5e0).",
+        "Remplacement du motif d'arrière-plan par la grille Cult UI linéaire (bg-grid-pattern-20).",
+        "Harmonisation des couleurs d'accentuation en vert émeraude (#059669) sur les widgets, cartes, et jauges de progression.",
+        "Mise à jour et nettoyage de l'ensemble des 17 widgets et cartes d'action du cockpit (objectifs, agenda, calendar, séquences, tâches, focus, suggestions IA, statistiques, etc.)."
+      ],
+    },
+    {
       version: 'v3.33.0',
       date: '2026-06-23',
       titleKey: 'changelog.v3_33_0_title' as TranslationKey,

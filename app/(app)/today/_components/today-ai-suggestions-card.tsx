@@ -124,7 +124,7 @@ export function TodayAiSuggestionsCard() {
   };
 
   return (
-    <Card className="border border-[#e5e5e0] bg-white shadow-sm overflow-hidden">
+    <Card className="border border-[#e5e5e0] bg-white shadow-none overflow-hidden">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <div className="flex items-center gap-2.5">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#059669]/10 text-[#059669]">

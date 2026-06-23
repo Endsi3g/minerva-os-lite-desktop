@@ -91,7 +91,7 @@ export function TodaySequenceStepsCard() {
   }, [user]);
 
   return (
-    <Card className="border border-border bg-card shadow-sm">
+    <Card className="border border-[#e5e5e0] bg-white shadow-none">
       <CardHeader className="flex flex-row items-center justify-between pb-3">
         <div className="flex items-center gap-2.5">
           <div className="flex h-8 w-8 items-center justify-center rounded-md bg-blue-50 text-blue-600">

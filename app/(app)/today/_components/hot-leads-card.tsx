@@ -21,7 +21,7 @@ export function HotLeadsCard() {
   );
 
   return (
-    <Card className="border border-border bg-card shadow-sm">
+    <Card className="border border-[#e5e5e0] bg-white shadow-none">
       <CardHeader className="flex flex-row items-center justify-between pb-3">
         <div className="flex items-center gap-2.5">
           <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/10 text-primary">
@@ -33,7 +33,7 @@ export function HotLeadsCard() {
           </div>
         </div>
         {hotLeads.length > 0 && (
-          <Badge className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#10b981] hover:bg-[#059669] text-white">
+          <Badge className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#059669] hover:bg-[#047857] text-white">
             {hotLeads.length}
           </Badge>
         )}
