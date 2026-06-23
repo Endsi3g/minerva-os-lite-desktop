@@ -3,7 +3,8 @@
 import React, { useEffect, useState } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { CalendarDays, Video, ExternalLink, Loader2 } from 'lucide-react';
+import { Video, ExternalLink, Loader2 } from 'lucide-react';
+import { GoogleCalendarIcon } from '@/components/icons';
 import { getApiUrl } from '@/lib/api-helper';
 
 interface CalendarEvent {
@@ -66,8 +67,8 @@ export function TodayGoogleCalendarCard() {
   return (
     <Card className="border border-[#e5e5e0] bg-white shadow-none">
       <CardHeader className="flex flex-row items-center gap-2.5 pb-3">
-        <div className="flex h-8 w-8 items-center justify-center rounded-md bg-emerald-50 dark:bg-emerald-950/30 text-[#059669]">
-          <CalendarDays className="h-4 w-4" />
+        <div className="flex h-8 w-8 items-center justify-center rounded-md">
+          <GoogleCalendarIcon size={22} />
         </div>
         <div>
           <CardTitle className="text-base font-semibold font-sans">Google Calendar</CardTitle>
@@ -94,7 +95,7 @@ export function TodayGoogleCalendarCard() {
                 );
               }}
             >
-              <CalendarDays className="h-3.5 w-3.5 text-[#059669]" />
+              <GoogleCalendarIcon size={14} className="mr-1.5" />
               Connecter Google Calendar
             </Button>
           </div>

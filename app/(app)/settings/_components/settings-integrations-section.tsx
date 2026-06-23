@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { SettingsSectionWrapper } from './settings-section-wrapper';
 import { Mail, Search, Globe, RefreshCw, Check, Key, Server, ChevronDown, ChevronUp, MessageSquare, Layers, Send, AlertCircle } from 'lucide-react';
+import { GmailIcon, SlackIcon, NotionIcon } from '@/components/icons';
 import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
 
@@ -351,8 +352,8 @@ export function SettingsIntegrationsSection() {
         <Card className="border border-border bg-card">
           <CardContent className="p-5 flex flex-col sm:flex-row items-start justify-between gap-4">
             <div className="flex gap-4 min-w-0">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary shrink-0">
-                <Mail className="h-5 w-5" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted/40 shrink-0">
+                <GmailIcon size={20} />
               </div>
               <div className="space-y-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
@@ -793,8 +794,8 @@ export function SettingsIntegrationsSection() {
         <Card className="border border-border bg-card">
           <CardContent className="p-5 space-y-4">
             <div className="flex gap-4 min-w-0">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary shrink-0">
-                <MessageSquare className="h-5 w-5" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted/40 shrink-0">
+                <SlackIcon size={20} />
               </div>
               <div className="space-y-1 min-w-0 flex-1">
                 <div className="flex items-center gap-2 flex-wrap">
@@ -811,7 +812,7 @@ export function SettingsIntegrationsSection() {
                 </p>
                 <div className="flex gap-2 items-center pt-1">
                   <div className="relative flex-1">
-                    <MessageSquare className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+                    <SlackIcon className="absolute left-2.5 top-2.5 text-muted-foreground" size={14} />
                     <input
                       type="url"
                       placeholder="https://hooks.slack.com/services/…"
@@ -842,8 +843,8 @@ export function SettingsIntegrationsSection() {
         <Card className="border border-border bg-card">
           <CardContent className="p-5 space-y-4">
             <div className="flex gap-4 min-w-0">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary shrink-0">
-                <Layers className="h-5 w-5" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted/40 shrink-0">
+                <NotionIcon size={20} />
               </div>
               <div className="space-y-1 min-w-0 flex-1">
                 <div className="flex items-center gap-2 flex-wrap">
@@ -878,7 +879,7 @@ export function SettingsIntegrationsSection() {
                   </div>
                   <div className="flex gap-2 items-center">
                     <div className="relative flex-1">
-                      <Layers className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+                      <NotionIcon className="absolute left-2.5 top-2.5 text-muted-foreground" size={14} />
                       <input
                         type="text"
                         placeholder="ID de la base de données Notion (optionnel)"

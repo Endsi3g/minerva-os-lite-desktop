@@ -47,6 +47,9 @@ importers:
       '@tanstack/react-table':
         specifier: ^8.21.3
         version: 8.21.3(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      '@thesvg/react':
+        specifier: ^3.0.17
+        version: 3.0.17(react@19.2.4)
       '@tiptap/extension-character-count':
         specifier: ^3.26.1
         version: 3.26.1(@tiptap/extensions@3.26.1(@tiptap/core@3.26.1(@tiptap/pm@3.26.1))(@tiptap/pm@3.26.1))
@@ -1778,6 +1781,12 @@ packages:
   '@tanstack/table-core@8.21.3':
     resolution: {integrity: sha512-ldZXEhOBb8Is7xLs01fR3YEc3DERiz5silj8tnGkFZytt1abEvl/GhUmCE0PMLaMPTa3Jk4HbKmRlHmu+gCftg==}
     engines: {node: '>=12'}
+
+  '@thesvg/react@3.0.17':
+    resolution: {integrity: sha512-DRUJEvInDZF/oANwojuoa/Ry+Wi9tu6ZQ1CXsEnxO1fCn3+oa9NkMC0mQnCuTyHYnzY7AhdFgFjnetb4wI6aMA==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      react: '>=18'
 
   '@tiptap/core@3.26.1':
     resolution: {integrity: sha512-TX9PyPqBoix0qDLjtok/bddtdSy54QhzLVha405C07V+WySOpH3s/pWYkywehZQY0SQtcrcY4MNSCeQjCbA28A==}
@@ -7241,6 +7250,10 @@ snapshots:
       react-dom: 19.2.4(react@19.2.4)
 
   '@tanstack/table-core@8.21.3': {}
+
+  '@thesvg/react@3.0.17(react@19.2.4)':
+    dependencies:
+      react: 19.2.4
 
   '@tiptap/core@3.26.1(@tiptap/pm@3.26.1)':
     dependencies:

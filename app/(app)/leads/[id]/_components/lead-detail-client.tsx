@@ -60,6 +60,7 @@ import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
 import type { REALTIME_SUBSCRIBE_STATES } from '@supabase/supabase-js';
 import { toast } from 'sonner';
+import { GmailIcon, GoogleCalendarIcon, GoogleMapsIcon } from '@/components/icons';
 
 function cleanMarkdownForPreview(text: string | null | undefined): string {
   if (!text) return '';
@@ -1686,7 +1687,7 @@ export function LeadDetailClient({ id }: { id: string }) {
                 )}
                 {lead.mapsUrl && (
                   <a href={lead.mapsUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-blue-600 hover:underline">
-                    <MapPin className="h-3 w-3 shrink-0" />
+                    <GoogleMapsIcon size={12} className="shrink-0" />
                     Google Maps
                   </a>
                 )}
@@ -1777,7 +1778,7 @@ export function LeadDetailClient({ id }: { id: string }) {
                       : "border-transparent text-muted-foreground hover:text-foreground"
                   )}
                 >
-                  <Mail className="h-3 w-3" />
+                  <GmailIcon size={12} />
                   Gmail
                 </button>
                 <button
@@ -1790,7 +1791,7 @@ export function LeadDetailClient({ id }: { id: string }) {
                       : "border-transparent text-muted-foreground hover:text-foreground"
                   )}
                 >
-                  <CalendarCheck className="h-3 w-3" />
+                  <GoogleCalendarIcon size={12} />
                   Agenda
                 </button>
               </div>
@@ -2435,7 +2436,7 @@ export function LeadDetailClient({ id }: { id: string }) {
                         }}
                         className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#e5e5e0] bg-white hover:bg-[#f4f4f3] text-[11px] font-bold text-[#26251e] transition-colors"
                       >
-                        <CalendarCheck className="h-3.5 w-3.5 text-[#059669]" />
+                        <GoogleCalendarIcon size={14} />
                         Connecter Google Calendar
                       </button>
                     </div>
@@ -2847,7 +2848,7 @@ export function LeadDetailClient({ id }: { id: string }) {
                       window.open(url, '_blank');
                     }}
                   >
-                    <MapPin className="h-3.5 w-3.5 text-rose-500" />
+                    <GoogleMapsIcon size={14} />
                     Voir sur Google Maps
                     <ExternalLink className="h-3 w-3 ml-auto text-muted-foreground" />
                   </Button>

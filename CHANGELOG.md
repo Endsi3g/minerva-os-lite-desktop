@@ -5,6 +5,14 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [3.35.0] - 2026-06-23
+
+### Ajouté — Intégration globale des icônes SVG premium (@thesvg/react)
+- **Bibliothèque d'icônes SVG** — Intégration de `@thesvg/react` et de composants d'icônes personnalisés haute fidélité pour Gmail, Google Maps, Google Chat, Google Drive, Google Calendar, Google Chrome, Slack, GitHub, Todoist et Microsoft Teams.
+- **Remplacement global** — Mise à niveau visuelle des indicateurs d'agenda sur le Dashboard principal et les fiches lead avec le nouveau logo Google Calendar circulaire.
+- **Paramètres épurés** — Remplacement systématique des icônes de boîte de dialogue et de configuration de service dans les Paramètres (Gmail, Slack, Notion) par leurs équivalents SVG premium, avec suppression des arrière-plans colorés au profit de boîtes neutres minimalistes.
+- **Actions d'engagement** — Intégration des logos Gmail et Google Maps sur les boutons d'action de la fiche lead et les onglets du panneau d'activité.
+
 ## [3.34.0] - 2026-06-23
 
 ### Ajouté — Redesign Premium UI/UX du Dashboard (Today)

@@ -1,58 +1,28 @@
 import React from 'react';
+import { 
+  GmailIcon, 
+  GoogleMapsIcon, 
+  GoogleChatIcon, 
+  GoogleChromeIcon, 
+  GitHubIcon, 
+  GoogleDriveIcon as CustomGoogleDriveIcon, 
+  GoogleCalendarIcon as CustomGoogleCalendarIcon, 
+  SlackIcon as CustomSlackIcon 
+} from './icons/custom-svgs';
 
-interface IconProps extends React.SVGProps<SVGSVGElement> {
+export { GmailIcon, GoogleMapsIcon, GoogleChatIcon, GoogleChromeIcon, GitHubIcon };
+
+export interface IconProps extends React.SVGProps<SVGSVGElement> {
   className?: string;
   size?: number;
 }
 
 export function GoogleDriveIcon({ className, size = 24, ...props }: IconProps) {
-  return (
-    <svg 
-      xmlns="http://www.w3.org/2000/svg" 
-      viewBox="0 0 87.3 78" 
-      width={size} 
-      height={size} 
-      className={className} 
-      {...props}
-    >
-      <path fill="#0066da" d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3L27.5 53H0c0 1.55.4 3.1 1.2 4.5z"/>
-      <path fill="#00ac47" d="M43.65 25 29.9 1.2c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44A9.06 9.06 0 0 0 0 53h27.5z"/>
-      <path fill="#ea4335" d="M73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75L86.1 57.5c.8-1.4 1.2-2.95 1.2-4.5H59.798l5.852 11.5z"/>
-      <path fill="#00832d" d="M43.65 25 57.4 1.2C56.05.4 54.5 0 52.9 0H34.4c-1.6 0-3.15.45-4.5 1.2z"/>
-      <path fill="#2684fc" d="M59.8 53H27.5L13.75 76.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z"/>
-      <path fill="#ffba00" d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3L43.65 25 59.8 53h27.45c0-1.55-.4-3.1-1.2-4.5z"/>
-    </svg>
-  );
+  return <CustomGoogleDriveIcon className={className} size={size} {...props} />;
 }
 
 export function GoogleCalendarIcon({ className, size = 24, ...props }: IconProps) {
-  return (
-    <svg 
-      viewBox="0 0 512 512" 
-      fill="none" 
-      xmlns="http://www.w3.org/2000/svg"
-      width={size}
-      height={size}
-      className={className}
-      {...props}
-    >
-      <g>
-        <path d="M390.736 121.264H121.264V390.736H390.736V121.264Z" fill="white"/>
-        <path d="M390.736 512L512 390.736L451.368 380.392L390.736 390.736L379.67 446.196L390.736 512Z" fill="#EA4335"/>
-        <path d="M0 390.736V471.578C0 493.912 18.088 512 40.42 512H121.264L133.714 451.368L121.264 390.736L55.198 380.392L0 390.736Z" fill="#188038"/>
-        <path d="M512 121.264V40.42C512 18.088 493.912 0 471.58 0H390.736C383.36 30.072 379.671 52.2027 379.67 66.392C379.67 80.58 383.359 98.8707 390.736 121.264C417.556 128.944 437.767 132.784 451.368 132.784C464.969 132.784 485.18 128.945 512 121.264Z" fill="#1967D2"/>
-        <path d="M512 121.264H390.736V390.736H512V121.264Z" fill="#FBBC04"/>
-        <path d="M390.736 390.736H121.264V512H390.736V390.736Z" fill="#34A853"/>
-        <path d="M390.736 0H40.422C18.088 0 0 18.088 0 40.42V390.736H121.264V121.264H390.736V0Z" fill="#4285F4"/>
-        <path d="M176.54 330.308C166.468 323.504 159.494 313.568 155.688 300.428L179.066 290.796C181.186 298.88 184.891 305.145 190.182 309.592C195.436 314.038 201.836 316.228 209.314 316.228C216.959 316.228 223.527 313.903 229.018 309.254C234.51 304.606 237.272 298.678 237.272 291.504C237.272 284.16 234.375 278.164 228.582 273.516C222.788 268.868 215.512 266.544 206.822 266.544H193.314V243.404H205.44C212.917 243.404 219.216 241.382 224.336 237.338C229.456 233.298 232.016 227.772 232.016 220.732C232.016 214.468 229.726 209.482 225.146 205.744C220.566 202.004 214.77 200.118 207.73 200.118C200.858 200.118 195.402 201.938 191.36 205.608C187.319 209.289 184.282 213.937 182.534 219.116L159.394 209.482C162.458 200.792 168.084 193.112 176.336 186.476C184.588 179.84 195.132 176.506 207.932 176.506C217.398 176.506 225.92 178.326 233.466 181.996C241.01 185.668 246.938 190.754 251.216 197.222C255.496 203.722 257.616 210.998 257.616 219.082C257.616 227.334 255.63 234.308 251.656 240.034C247.682 245.76 242.796 250.138 237.002 253.204V254.584C244.483 257.669 250.982 262.735 255.798 269.238C260.682 275.806 263.142 283.654 263.142 292.818C263.142 301.978 260.816 310.164 256.168 317.338C251.52 324.514 245.088 330.172 236.934 334.282C228.75 338.392 219.554 340.482 209.348 340.482C197.524 340.514 186.612 337.112 176.54 330.308ZM320.132 214.298L294.466 232.858L281.632 213.39L327.678 180.176H345.328V336.842H320.132V214.298Z" fill="#4285F4"/>
-      </g>
-      <defs>
-        <clipPath id="clip0_5072_3766">
-          <rect width="512" height="512" fill="white"/>
-        </clipPath>
-      </defs>
-    </svg>
-  );
+  return <CustomGoogleCalendarIcon className={className} size={size} {...props} />;
 }
 
 export function SharePointIcon({ className, size = 24, ...props }: IconProps) {
@@ -146,70 +116,9 @@ export function ZoomIcon({ className, size = 24, ...props }: IconProps) {
   );
 }
 
+import { MicrosoftTeamsIcon } from './icons/microsoft-teams';
 export function TeamsIcon({ className, size = 24, ...props }: IconProps) {
-  return (
-    <svg 
-      xmlns="http://www.w3.org/2000/svg" 
-      fill="none" 
-      viewBox="4 4 36 38"
-      width={size}
-      height={size}
-      className={className}
-      {...props}
-    >
-      <path fill="url(#teams_a)" d="M22 20h12a6 6 0 0 1 6 6v10a6 6 0 0 1-12 0V26a6 6 0 0 0-6-6Z"/>
-      <path fill="url(#teams_b)" d="M8 24a6 6 0 0 1 6-6h8a6 6 0 0 1 6 6v12a6 6 0 0 0 6 6H18c-5.523 0-10-4.477-10-10v-8Z"/>
-      <path fill="url(#teams_c)" fillOpacity=".7" d="M8 24a6 6 0 0 1 6-6h8a6 6 0 0 1 6 6v12a6 6 0 0 0 6 6H18c-5.523 0-10-4.477-10-10v-8Z"/>
-      <path fill="url(#teams_d)" fillOpacity=".7" d="M8 24a6 6 0 0 1 6-6h8a6 6 0 0 1 6 6v12a6 6 0 0 0 6 6H18c-5.523 0-10-4.477-10-10v-8Z"/>
-      <path fill="url(#teams_e)" d="M33 18a5 5 0 1 0 0-10 5 5 0 0 0 0 10Z"/>
-      <path fill="url(#teams_f)" fillOpacity=".46" d="M33 18a5 5 0 1 0 0-10 5 5 0 0 0 0 10Z"/>
-      <path fill="url(#teams_g)" fillOpacity=".4" d="M33 18a5 5 0 1 0 0-10 5 5 0 0 0 0 10Z"/>
-      <path fill="url(#teams_h)" d="M18 16a6 6 0 1 0 0-12 6 6 0 0 0 0 12Z"/>
-      <path fill="url(#teams_i)" fillOpacity=".6" d="M18 16a6 6 0 1 0 0-12 6 6 0 0 0 0 12Z"/>
-      <path fill="url(#teams_j)" fillOpacity=".5" d="M18 16a6 6 0 1 0 0-12 6 6 0 0 0 0 12Z"/>
-      <rect width="16" height="16" x="4" y="23" fill="url(#teams_k)" rx="3.25"/>
-      <rect width="16" height="16" x="4" y="23" fill="url(#teams_l)" fillOpacity=".7" rx="3.25"/>
-      <path fill="#fff" d="M15.48 28.105h-2.448v7.466h-2.065v-7.466H8.52V26.43h6.96v1.676Z"/>
-      <defs>
-        <radialGradient id="teams_a" cx="0" cy="0" r="1" gradientTransform="matrix(13.4784 0 0 33.2694 39.797 22.174)" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#A98AFF"/><stop offset=".14" stopColor="#8C75FF"/><stop offset=".565" stopColor="#5F50E2"/><stop offset=".9" stopColor="#3C2CB8"/>
-        </radialGradient>
-        <radialGradient id="teams_b" cx="0" cy="0" r="1" gradientTransform="matrix(12.1875 30.39997 -30.74442 12.3256 8.812 16.4)" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#85C2FF"/><stop offset=".69" stopColor="#7588FF"/><stop offset="1" stopColor="#6459FE"/>
-        </radialGradient>
-        <radialGradient id="teams_d" cx="0" cy="0" r="1" gradientTransform="rotate(113.326 8.093 17.645) scale(19.2186 15.4273)" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#BD96FF"/><stop offset=".687" stopColor="#BD96FF" stopOpacity="0"/>
-        </radialGradient>
-        <radialGradient id="teams_e" cx="0" cy="0" r="1" gradientTransform="matrix(0 -10 12.6216 0 33 11.571)" gradientUnits="userSpaceOnUse">
-          <stop offset=".268" stopColor="#6868F7"/><stop offset="1" stopColor="#3923B1"/>
-        </radialGradient>
-        <radialGradient id="teams_f" cx="0" cy="0" r="1" gradientTransform="matrix(5.47024 4.59847 -6.65117 7.91208 28.867 10.544)" gradientUnits="userSpaceOnUse">
-          <stop offset=".271" stopColor="#A1D3FF"/><stop offset=".813" stopColor="#A1D3FF" stopOpacity="0"/>
-        </radialGradient>
-        <radialGradient id="teams_g" cx="0" cy="0" r="1" gradientTransform="rotate(-41.658 32.118 -43.42) scale(8.51275 20.8824)" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#E3ACFD"/><stop offset=".816" stopColor="#9FA2FF" stopOpacity="0"/>
-        </radialGradient>
-        <radialGradient id="teams_h" cx="0" cy="0" r="1" gradientTransform="matrix(0 -12 15.146 0 18 8.286)" gradientUnits="userSpaceOnUse">
-          <stop offset=".268" stopColor="#8282FF"/><stop offset="1" stopColor="#3923B1"/>
-        </radialGradient>
-        <radialGradient id="teams_i" cx="0" cy="0" r="1" gradientTransform="rotate(40.052 -3.155 21.416) scale(8.57554 12.4035)" gradientUnits="userSpaceOnUse">
-          <stop offset=".271" stopColor="#A1D3FF"/><stop offset=".813" stopColor="#A1D3FF" stopOpacity="0"/>
-        </radialGradient>
-        <radialGradient id="teams_j" cx="0" cy="0" r="1" gradientTransform="rotate(-41.658 20.382 -26.516) scale(10.2153 25.0589)" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#E3ACFD"/><stop offset=".816" stopColor="#9FA2FF" stopOpacity="0"/>
-        </radialGradient>
-        <radialGradient id="teams_k" cx="0" cy="0" r="1" gradientTransform="rotate(45 -25.763 16.328) scale(22.6274)" gradientUnits="userSpaceOnUse">
-          <stop offset=".047" stopColor="#688EFF"/><stop offset=".947" stopColor="#230F94"/>
-        </radialGradient>
-        <radialGradient id="teams_l" cx="0" cy="0" r="1" gradientTransform="matrix(0 11.2 -13.0702 0 12 32.6)" gradientUnits="userSpaceOnUse">
-          <stop offset=".571" stopColor="#6965F6" stopOpacity="0"/><stop offset="1" stopColor="#8F8FFF"/>
-        </radialGradient>
-        <linearGradient id="teams_c" x1="20.594" x2="20.594" y1="18" y2="42" gradientUnits="userSpaceOnUse">
-          <stop offset=".801" stopColor="#6864F6" stopOpacity="0"/><stop offset="1" stopColor="#5149DE"/>
-        </linearGradient>
-      </defs>
-    </svg>
-  );
+  return <MicrosoftTeamsIcon className={className} width={size} height={size} {...props} />;
 }
 
 export function GoogleMeetIcon({ className, size = 24, ...props }: IconProps) {
@@ -311,16 +220,9 @@ export function MobbinIcon({ className, size = 24, ...props }: IconProps) {
   );
 }
 
+import { TodoistIcon as CustomTodoistIcon } from './icons/todoist';
 export function TodoistIcon({ className, size = 24, ...props }: IconProps) {
-  return (
-    <svg viewBox="0 0 24 24" width={size} height={size} className={className} fill="none" {...props}>
-      <rect width="24" height="24" rx="6" fill="#DB4035"/>
-      <path d="M5 8.5L7.5 11L13 5.5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-      <path d="M5 14.5L7.5 17L13 11.5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" opacity="0.65"/>
-      <line x1="15" y1="8" x2="19" y2="8" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-      <line x1="15" y1="14" x2="19" y2="14" stroke="white" strokeWidth="2" strokeLinecap="round" opacity="0.65"/>
-    </svg>
-  );
+  return <CustomTodoistIcon className={className} width={size} height={size} {...props} />;
 }
 
 export function ApifyIcon({ className, size = 24, ...props }: IconProps) {
@@ -348,9 +250,5 @@ export function NotionIcon({ className, size = 24, ...props }: IconProps) {
 }
 
 export function SlackIcon({ className, size = 24, ...props }: IconProps) {
-  return (
-    <svg viewBox="0 0 24 24" width={size} height={size} className={className} fill="none" {...props}>
-      <path d="M5.042 15.165a2.528 2.528 0 01-2.52 2.523A2.528 2.528 0 010 15.165a2.527 2.527 0 012.522-2.52h2.52v2.52zm1.271 0a2.527 2.527 0 012.521-2.52 2.527 2.527 0 012.521 2.52v6.313A2.528 2.528 0 018.834 24a2.528 2.528 0 01-2.521-2.522v-6.313zM8.834 5.042a2.528 2.528 0 01-2.521-2.52A2.528 2.528 0 018.834 0a2.527 2.527 0 012.521 2.522v2.52H8.834zm0 1.271a2.527 2.527 0 012.521 2.521 2.527 2.527 0 01-2.521 2.521H2.522A2.528 2.528 0 010 8.834a2.528 2.528 0 012.522-2.521h6.312zm10.122 2.521a2.528 2.528 0 012.522-2.521A2.528 2.528 0 0124 8.834a2.527 2.527 0 01-2.522 2.521h-2.522V8.834zm-1.268 0a2.527 2.527 0 01-2.521 2.521 2.527 2.527 0 01-2.522-2.521V2.522A2.528 2.528 0 0115.167 0a2.528 2.528 0 012.521 2.522v6.312zm-2.521 10.123a2.528 2.528 0 012.521 2.522A2.528 2.528 0 0115.167 24a2.527 2.527 0 01-2.521-2.522v-2.522h2.521zm0-1.268a2.527 2.527 0 01-2.521-2.521 2.527 2.527 0 012.521-2.522h6.313A2.528 2.528 0 0124 15.165a2.528 2.528 0 01-2.522 2.521h-6.313z" fill="#E01E5A"/>
-    </svg>
-  );
+  return <CustomSlackIcon className={className} size={size} {...props} />;
 }

@@ -32,6 +32,8 @@ import {
   ApifyIcon,
   NotionIcon,
   SlackIcon,
+  GmailIcon,
+  GoogleMapsIcon,
 } from '@/components/icons';
 import {
   getConnectedIntegrations,
@@ -85,7 +87,7 @@ const DEFAULT_INTEGRATIONS: IntegrationItem[] = [
     email: 'alexsmith@minerva-os-lite.com',
     accEmail: 'gmail.readonly, gmail.send',
     accEmailKey: 'integrations.google_gmail.acc_email',
-    icon: () => <Mail className="w-5 h-5 text-[#EA4335]" />,
+    icon: GmailIcon,
     status: 'Inactive',
     statusKey: 'integrations.status.inactive',
     assets: '—',
@@ -177,7 +179,7 @@ const DEFAULT_INTEGRATIONS: IntegrationItem[] = [
     email: 'alexsmith@minerva-os-lite.com',
     accEmail: 'Clé API Serveur',
     accEmailKey: 'integrations.google_places.acc_email',
-    icon: () => <MapPin className="w-5 h-5 text-[#34A853]" />,
+    icon: GoogleMapsIcon,
     status: 'Active',
     statusKey: 'integrations.status.active',
     assets: 'Illimité',

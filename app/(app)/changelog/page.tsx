@@ -18,6 +18,19 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v3.35.0',
+      date: '2026-06-23',
+      titleKey: 'changelog.v3_35_0_title' as TranslationKey,
+      descKey: 'changelog.v3_35_0_desc' as TranslationKey,
+      highlights: [
+        "Intégration globale de la bibliothèque d'icônes @thesvg/react pour remplacer systématiquement les icônes génériques/par défaut.",
+        "Ajout de composants d'icônes personnalisés haute fidélité pour Gmail, Google Maps, Google Chat, Google Drive, Google Calendar, Google Chrome, Slack, GitHub, Todoist et Microsoft Teams.",
+        "Mise à jour esthétique des cartes de configuration et d'intégration dans les Paramètres avec suppression des arrière-plans colorés au profit de boîtes neutres épurées.",
+        "Refonte visuelle et interactive des fiches lead pour inclure les nouveaux logos Gmail, Google Maps et Google Calendar sur les onglets et les actions d'engagement.",
+        "Remplacement des indicateurs d'agenda sur le Dashboard principal par la nouvelle icône Google Calendar premium."
+      ],
+    },
+    {
       version: 'v3.34.0',
       date: '2026-06-23',
       titleKey: 'changelog.v3_34_0_title' as TranslationKey,
