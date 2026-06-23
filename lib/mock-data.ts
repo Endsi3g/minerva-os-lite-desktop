@@ -68,6 +68,34 @@ export interface Lead {
   scoreEngagement?: number; // 0-25 — pipeline stage + temperature
   scoreUrgency?: number;    // 0-25 — next action recency + freshness
   scoreRevenue?: number;    // 0-25 — business size + enrichment signals
+  // Déduplication (v4.5)
+  isDuplicate?: boolean;
+  duplicateGroupId?: string;
+  mergedFromIds?: string[];
+  // Ads attribution (v4.5)
+  fbAdsetId?: string;
+  fbAdId?: string;
+  fbFormId?: string;
+  fbCampaignId?: string;
+  gclid?: string;
+  googleCampaignId?: string;
+  googleAdGroupId?: string;
+  googleKeyword?: string;
+  landingPage?: string;
+  firstTouchSource?: string;
+  lastTouchSource?: string;
+  // Advanced enrichment (v4.5)
+  enrichedLogo?: string;
+  companySizeEstimate?: 'solo' | 'small' | 'medium' | 'large';
+  techStack?: string[];
+  webPresenceScore?: number; // 0-100
+  enrichedAt?: string;
+  // Speed-to-lead (v4.5)
+  firstContactAt?: string;
+  slaStatus?: 'ok' | 'warning' | 'breach';
+  // Reply classification (v4.5)
+  replyClassification?: 'positive' | 'negative' | 'info_request' | 'scheduling' | 'out_of_office' | 'bounce' | 'not_right_person' | 'reschedule';
+  replyClassifiedAt?: string;
 }
 
 export interface LeadEvent {
@@ -84,17 +112,67 @@ export interface LeadEvent {
 
 export interface SequenceStep {
   id: string;
-  type: 'email' | 'delay' | 'task' | 'condition';
+  type: 'email' | 'delay' | 'task' | 'condition' | 'call' | 'sms' | 'ab_test';
   subject?: string;
   bodyHtml?: string;
+  bodyText?: string;
   delayDays?: number;
   taskTitle?: string;
   taskCategory?: string;
+  callScript?: string;
+  smsText?: string;
   condition?: {
-    on: 'reply' | 'open' | 'click';
-    then: 'stop' | 'next';
+    on: 'reply' | 'open' | 'click' | 'booking' | 'positive_reply' | 'negative_reply';
+    then: 'stop' | 'next' | string;
     else: 'next' | 'stop' | string;
   };
+  abVariants?: Array<{ id: string; subject: string; bodyHtml: string; weight: number }>;
+  pauseOnReply?: boolean;
+  sendWindow?: { start: string; end: string };
+}
+
+export interface MarketingAttribution {
+  leadId: string;
+  source: string;
+  medium?: string;
+  campaign?: string;
+  adset?: string;
+  ad?: string;
+  keyword?: string;
+  landingPage?: string;
+  touchType: 'first' | 'last' | 'assisted';
+  touchedAt: string;
+  dealAmount?: number;
+}
+
+export interface FacebookLeadAd {
+  id: string;
+  workspaceId: string;
+  pageId: string;
+  pageName: string;
+  formId: string;
+  formName: string;
+  campaignId?: string;
+  campaignName?: string;
+  adsetId?: string;
+  status: 'active' | 'paused' | 'disconnected';
+  leadsCount: number;
+  connectedAt: string;
+}
+
+export interface GoogleAdsCampaign {
+  id: string;
+  workspaceId: string;
+  campaignId: string;
+  campaignName: string;
+  adGroupId?: string;
+  adGroupName?: string;
+  impressions: number;
+  clicks: number;
+  cost: number;
+  conversions: number;
+  status: 'active' | 'paused';
+  connectedAt: string;
 }
 
 export interface SequenceTemplate {

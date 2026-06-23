@@ -136,6 +136,9 @@ function StepEditor({
     delay: <Clock className="w-3.5 h-3.5 text-amber-500" />,
     task: <CheckSquare className="w-3.5 h-3.5 text-blue-500" />,
     condition: <GitBranch className="w-3.5 h-3.5 text-purple-500" />,
+    call: <CheckSquare className="w-3.5 h-3.5 text-emerald-500" />,
+    sms: <Mail className="w-3.5 h-3.5 text-indigo-500" />,
+    ab_test: <GitBranch className="w-3.5 h-3.5 text-orange-500" />,
   };
 
   return (
@@ -713,7 +716,10 @@ export function OutreachRoot() {
                           delay: <Clock key={s.id} className="w-3 h-3 text-amber-500" />,
                           task: <CheckSquare key={s.id} className="w-3 h-3 text-blue-500" />,
                           condition: <GitBranch key={s.id} className="w-3 h-3 text-purple-500" />,
-                        }[s.type]))}
+                          call: <CheckSquare key={s.id} className="w-3 h-3 text-emerald-500" />,
+                          sms: <Mail key={s.id} className="w-3 h-3 text-indigo-500" />,
+                          ab_test: <GitBranch key={s.id} className="w-3 h-3 text-orange-500" />,
+                        }[s.type] ?? <Mail key={s.id} className="w-3 h-3 text-slate-400" />))}
                       </span>
                     </div>
 
