@@ -47,20 +47,22 @@ export function resolveAIProvider(settings?: AISettings | null) {
     return 'anthropic';
   })();
 
-  const OPENROUTER_DEFAULT = 'meta-llama/llama-3.1-8b-instruct:free';
+  const OPENROUTER_DEFAULT = 'meta-llama/llama-3.3-70b-instruct:free';
 
   let model = settings?.ai_model || (
     provider === 'openrouter' ? OPENROUTER_DEFAULT :
-    provider === 'groq' ? 'llama-3.1-70b-versatile' :
+    provider === 'groq' ? 'llama-3.3-70b-versatile' :
     provider === 'together' ? 'meta-llama/Llama-3-70b-chat-hf' :
     'claude-sonnet-4-6'
   );
 
-  // Remap placeholder / retired model IDs to a valid default
+  // Remap placeholder / retired / deprecated model IDs to a valid default
   if (
     model === 'openrouter/free' ||
     model === 'meta-llama/llama-3-8b-instruct:free' ||
-    model === 'google/gemma-2-9b-it:free'
+    model === 'meta-llama/llama-3.1-8b-instruct:free' ||
+    model === 'google/gemma-2-9b-it:free' ||
+    model === 'qwen/qwen-2-7b-instruct:free'
   ) {
     model = OPENROUTER_DEFAULT;
   }

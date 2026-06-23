@@ -18,10 +18,25 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v3.39.0',
+      date: '2026-06-23',
+      titleKey: 'changelog.v3_39_0_title' as TranslationKey,
+      descKey: 'changelog.v3_39_0_desc' as TranslationKey,
+      highlights: [
+        "Composer — Email → Brouillon Gmail : l'envoi d'email crée désormais un brouillon dans Gmail (jamais envoyé automatiquement) + bouton 'Sauvegarder' conserve le texte dans l'app (table drafts).",
+        "Composer — Onglet DM (Instagram/Facebook) : rédiger un message direct, choisir la plateforme, générer un template IA, copier en 1 clic, accéder directement au profil, sauvegarder comme brouillon.",
+        "Description du lead éditable : remplace l'affichage read-only par un Textarea éditable avec bouton 'Enregistrer' qui sauvegarde via updateLead (Supabase/SQLite).",
+        "Filtre 'Avis minimum' dans le scraper (prospecting) : slider 0–500 avis, filtrage en temps réel sur reviewsCount, grille de filtres passée en 4 colonnes.",
+        "Dernier lead visité en tête de liste : le lead ouvert en dernier est automatiquement remonté en première ligne de la liste des leads, avec badge 'Récemment visité' vert.",
+        "Migration SQL v4.7 (addendum) : colonnes subject + draft_type sur la table drafts ; SQLite schema mis à jour (ALTER TABLE safe).",
+        "Modèle OpenRouter mis à jour : meta-llama/llama-3.3-70b-instruct:free remplace le modèle deprecated 3.1-8b ; remapping automatique des anciens slugs.",
+      ],
+    },
+    {
       version: 'v3.38.0',
       date: '2026-06-23',
-      titleKey: 'changelog.v3_37_0_title' as TranslationKey,
-      descKey: 'changelog.v3_37_0_desc' as TranslationKey,
+      titleKey: 'changelog.v3_38_0_title' as TranslationKey,
+      descKey: 'changelog.v3_38_0_desc' as TranslationKey,
       highlights: [
         "Réseaux sociaux sur les fiches leads : section dédiée Instagram/Facebook/LinkedIn + site web dans le panneau principal (mode édition toggle), icônes SVG natifs.",
         "Galerie Instagram : bouton 'Voir les posts' scrape le profil Instagram via Firecrawl + fallback HTML mobile, affiche une grille 3×3 des derniers posts dans la fiche lead.",

@@ -51,7 +51,7 @@ const getStatusLabel = (status: Lead['status']) => {
   }
 };
 
-export function buildColumns(workspaceMembers: WorkspaceMember[]): ColumnDef<Lead>[] { return [
+export function buildColumns(workspaceMembers: WorkspaceMember[], lastVisitedLeadId?: string | null): ColumnDef<Lead>[] { return [
   // Checkbox row select
   {
     id: 'select',
@@ -95,13 +95,19 @@ export function buildColumns(workspaceMembers: WorkspaceMember[]): ColumnDef<Lea
       const name = row.getValue('businessName') as string;
       const city = row.original.city;
       const initial = name ? name.charAt(0).toUpperCase() : 'M';
+      const isLastVisited = lastVisitedLeadId && row.original.id === lastVisitedLeadId;
       return (
         <div className="flex items-center gap-3 py-1">
           <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-primary text-[10px] font-bold shrink-0">
             {initial}
           </div>
           <div className="flex flex-col gap-0.5">
-            <span className="text-xs font-semibold text-foreground leading-tight">{name}</span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs font-semibold text-foreground leading-tight">{name}</span>
+              {isLastVisited && (
+                <span className="text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-[#059669]/10 text-[#059669] border border-[#059669]/20 whitespace-nowrap">Récemment visité</span>
+              )}
+            </div>
             <span className="text-[10px] text-muted-foreground flex items-center gap-1">
               <MapPin className="h-2.5 w-2.5" />
               {city}

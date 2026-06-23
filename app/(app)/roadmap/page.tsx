@@ -131,6 +131,12 @@ const roadmapData: RoadmapItem[] = [
   { module: 'Intégrations', feature: 'Microsoft SharePoint', desc: 'Export et stockage des documents et rapports clients sur SharePoint.', priority: 'low', status: 'planned' },
   { module: 'Intégrations', feature: 'Meeting recorder', desc: 'Capture et transcription automatique des réunions, liées aux fiches leads.', priority: 'low', status: 'planned' },
 
+  // ─── Released (v3.39.0) ──────────────────────────────────────────────
+  { module: 'Composer', feature: 'Onglet DM (Instagram + Facebook Messenger)', desc: 'Onglet dédié DM dans le Composer : plateforme Instagram ou Facebook, template IA auto-personnalisé, copie presse-papiers en 1 clic, accès direct au profil, sauvegarde brouillon dans la table drafts.', priority: 'high', status: 'available' },
+  { module: 'Composer', feature: 'Email → Brouillon Gmail (jamais auto-envoyé)', desc: 'L\'envoi email crée un brouillon dans Gmail via l\'API drafts.create. Bouton "Sauvegarder" conserve également le texte dans l\'app. Plus d\'envoi automatique accidentel.', priority: 'high', status: 'available' },
+  { module: 'Leads', feature: 'Description du lead éditable', desc: 'La description IA (scrapée du site web) est maintenant un Textarea éditable avec bouton Enregistrer. Sauvegardé via updateLead → Supabase/SQLite.', priority: 'medium', status: 'available' },
+  { module: 'Prospection', feature: 'Filtre "Avis minimum" dans le scraper', desc: 'Slider 0–500 avis dans les filtres avancés de la page prospection. Filtrage en temps réel sur reviewsCount des leads scrapés.', priority: 'medium', status: 'available' },
+  { module: 'Leads', feature: 'Dernier lead visité en tête de liste', desc: 'Le dernier lead ouvert est automatiquement remonté en première ligne de la liste des leads avec badge "Récemment visité" vert. Persisté dans localStorage.', priority: 'medium', status: 'available' },
   // ─── Released (v3.38.0) ──────────────────────────────────────────────
   { module: 'Leads', feature: 'Réseaux sociaux sur les fiches leads', desc: 'Section dédiée Instagram, Facebook, LinkedIn et site web dans le panneau gauche de la fiche lead avec icônes SVG natifs. Mode édition toggle. Sauvegarde dans social_links (jsonb).', priority: 'high', status: 'available' },
   { module: 'Leads', feature: 'Galerie Instagram intégrée', desc: 'Scraping du profil Instagram via Firecrawl + fallback HTML mobile, affichage grille 3×3 des derniers posts directement dans la fiche lead. Bouton "Voir les posts" → chargement à la demande.', priority: 'medium', status: 'available' },

@@ -730,6 +730,8 @@ function initDb() {
     db.run(`CREATE INDEX IF NOT EXISTS idx_drafts_user_id ON drafts(user_id)`);
     db.run(`CREATE INDEX IF NOT EXISTS idx_drafts_sync_status ON drafts(sync_status)`);
     db.run(`CREATE INDEX IF NOT EXISTS idx_drafts_lead_id ON drafts(lead_id)`);
+    db.run(`ALTER TABLE drafts ADD COLUMN subject TEXT`, () => {});
+    db.run(`ALTER TABLE drafts ADD COLUMN draft_type TEXT DEFAULT 'email'`, () => {});
     db.run(`CREATE INDEX IF NOT EXISTS idx_notes_user_id ON notes(user_id)`);
     db.run(`CREATE INDEX IF NOT EXISTS idx_notes_sync_status ON notes(sync_status)`);
     db.run(`CREATE INDEX IF NOT EXISTS idx_notes_lead_id ON notes(lead_id)`);

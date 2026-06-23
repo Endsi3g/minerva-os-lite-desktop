@@ -80,8 +80,13 @@ export function LeadsRoot() {
 
   useEffect(() => { fetchCrossLeads(); }, [fetchCrossLeads]);
 
+  const [lastVisitedLeadId, setLastVisitedLeadId] = useState<string | null>(null);
+  useEffect(() => {
+    setLastVisitedLeadId(localStorage.getItem('minerva_last_visited_lead_id'));
+  }, []);
+
   // "Mes leads" mode: merge current workspace leads + cross-workspace assigned leads, deduplicated
-  const visibleLeads: Lead[] = showAssignedToMe && myUserId
+  const baseLeads: Lead[] = showAssignedToMe && myUserId
     ? (() => {
         const wsMatches = leads.filter(
           l => l.assignedTo === myUserId || l.assignedTo === TEAM_ASSIGN_VALUE
@@ -92,7 +97,18 @@ export function LeadsRoot() {
       })()
     : leads;
 
-  const columns = buildColumns(workspaceMembers);
+  // Put last visited lead first
+  const visibleLeads: Lead[] = lastVisitedLeadId
+    ? (() => {
+        const idx = baseLeads.findIndex(l => l.id === lastVisitedLeadId);
+        if (idx <= 0) return baseLeads;
+        const reordered = [...baseLeads];
+        const [visited] = reordered.splice(idx, 1);
+        return [visited, ...reordered];
+      })()
+    : baseLeads;
+
+  const columns = buildColumns(workspaceMembers, lastVisitedLeadId);
 
   const table = useReactTable({
     data: visibleLeads,

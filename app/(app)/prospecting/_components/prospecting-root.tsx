@@ -442,6 +442,7 @@ export function ProspectingRoot() {
 
   // Filters
   const [minRating, setMinRating] = useState(0);
+  const [minReviews, setMinReviews] = useState(0);
   const [maxResults, setMaxResults] = useState(100);
   const [radius, setRadius] = useState(10000);
   const [excludeExisting, setExcludeExisting] = useState(true);
@@ -605,6 +606,7 @@ export function ProspectingRoot() {
       
       allLeads = allLeads.filter(l => {
         if (minRating > 0 && l.rating > 0 && l.rating < minRating) return false;
+        if (minReviews > 0 && (l.reviewsCount ?? 0) < minReviews) return false;
         if (excludeExisting && l.mapsUrl && existingMapsUrls.has(l.mapsUrl)) return false;
         if (excludeExisting && existingNames.has(l.businessName?.toLowerCase().replace(/[^a-z0-9]/g, ''))) return false;
         if (onlyNoWebsite && l.website) return false;
@@ -668,7 +670,7 @@ export function ProspectingRoot() {
         return next;
       });
     }
-  }, [selectedNiches, selectedCities, customQuery, maxResults, radius, minRating, excludeExisting, onlyNoWebsite, onlyWithPhone, leads, searchMode, userLat, userLon, addLeadValidations]);
+  }, [selectedNiches, selectedCities, customQuery, maxResults, radius, minRating, minReviews, excludeExisting, onlyNoWebsite, onlyWithPhone, leads, searchMode, userLat, userLon, addLeadValidations]);
 
   // Duplicate Check logic
   const getDuplicate = useCallback((val: any) => {
@@ -1286,7 +1288,7 @@ export function ProspectingRoot() {
                     <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
                       <SlidersHorizontal className="h-3.5 w-3.5" />Filtres & Limites
                     </label>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
                       <div className="space-y-1.5">
                         <label className="text-[10px] font-medium text-muted-foreground flex justify-between">
                           <span>Note minimum</span>
@@ -1294,6 +1296,14 @@ export function ProspectingRoot() {
                         </label>
                         <input type="range" min={0} max={5} step={0.5} value={minRating} onChange={e => setMinRating(parseFloat(e.target.value))} disabled={scraping} className="w-full accent-primary h-1.5 cursor-pointer" />
                         <div className="flex justify-between text-[9px] text-muted-foreground"><span>0</span><span>2.5</span><span>5</span></div>
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-medium text-muted-foreground flex justify-between">
+                          <span>Avis minimum</span>
+                          <span className="font-bold text-foreground">{minReviews > 0 ? minReviews : 'Aucun'}</span>
+                        </label>
+                        <input type="range" min={0} max={500} step={10} value={minReviews} onChange={e => setMinReviews(parseInt(e.target.value))} disabled={scraping} className="w-full accent-primary h-1.5 cursor-pointer" />
+                        <div className="flex justify-between text-[9px] text-muted-foreground"><span>0</span><span>250</span><span>500</span></div>
                       </div>
                       <div className="space-y-1.5">
                         <label className="text-[10px] font-medium text-muted-foreground flex justify-between">

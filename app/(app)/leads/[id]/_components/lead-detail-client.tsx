@@ -562,6 +562,13 @@ export function LeadDetailClient({ id }: { id: string }) {
   // Unique per-mount suffix prevents "already subscribed" errors on React double-invoke
   const presenceChannelSuffix = useRef(`_${Math.random().toString(36).slice(2, 8)}`);
 
+  // Track last visited lead
+  useEffect(() => {
+    if (lead?.id) {
+      localStorage.setItem('minerva_last_visited_lead_id', lead.id);
+    }
+  }, [lead?.id]);
+
   // Auto-compute and persist score v2 if not yet saved to DB
   useEffect(() => {
     if (!lead || lead.scoreIcp != null) return;
@@ -1796,13 +1803,10 @@ export function LeadDetailClient({ id }: { id: string }) {
                 {scrapeError && (
                   <p className="text-[11px] text-red-600 font-medium">{scrapeError}</p>
                 )}
-                {lead.websiteDescription ? (
-                  <p className="text-xs text-foreground leading-relaxed">{lead.websiteDescription}</p>
-                ) : !scrapingSite && (
-                  <p className="text-[11px] text-muted-foreground italic">
-                    Analysez le site web pour générer une description commerciale, utilisée ensuite par l&apos;IA (script de visite, brouillons d&apos;emails).
-                  </p>
-                )}
+                <DescriptionEditor
+                  value={lead.websiteDescription || ''}
+                  onSave={val => updateLead(lead.id, { websiteDescription: val })}
+                />
               </div>
             )}
 
@@ -3521,6 +3525,74 @@ export function LeadDetailClient({ id }: { id: string }) {
   );
 }
 
+// ── Editable description ─────────────────────────────────────────────────────
+
+function DescriptionEditor({ value, onSave }: { value: string; onSave: (v: string) => void }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => { setDraft(value); }, [value]);
+
+  if (!editing) {
+    return (
+      <div className="group relative">
+        {value ? (
+          <p className="text-xs text-foreground leading-relaxed">{value}</p>
+        ) : (
+          <p className="text-[11px] text-muted-foreground italic">
+            Analysez le site web pour générer une description commerciale, utilisée ensuite par l&apos;IA (script de visite, brouillons d&apos;emails).
+          </p>
+        )}
+        <button
+          type="button"
+          onClick={() => setEditing(true)}
+          className="mt-1 text-[10px] text-[#059669] font-bold hover:underline"
+        >
+          {value ? 'Modifier la description' : 'Saisir manuellement'}
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      <Textarea
+        value={draft}
+        onChange={e => setDraft(e.target.value)}
+        rows={5}
+        placeholder="Description commerciale du lead…"
+        className="text-xs border-[#e5e5e0] resize-none focus:ring-[#059669]"
+        autoFocus
+      />
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={async () => {
+            setSaving(true);
+            onSave(draft);
+            await new Promise(r => setTimeout(r, 300));
+            setSaving(false);
+            setEditing(false);
+          }}
+          disabled={saving}
+          className="h-7 px-3 rounded-lg bg-[#059669] text-white text-[10px] font-bold hover:bg-[#047857] flex items-center gap-1"
+        >
+          {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
+          Enregistrer
+        </button>
+        <button
+          type="button"
+          onClick={() => { setDraft(value); setEditing(false); }}
+          className="h-7 px-3 rounded-lg border border-[#e5e5e0] text-[10px] font-bold text-[#7a7a76] hover:text-[#26251e]"
+        >
+          Annuler
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ── Social Links + Instagram Gallery ─────────────────────────────────────────
 
 function SocialLinksSection({ lead, onSave }: { lead: Lead; onSave: (fields: Partial<Lead>) => void }) {
@@ -3725,7 +3797,7 @@ function SocialLinksSection({ lead, onSave }: { lead: Lead; onSave: (fields: Par
 
 // ── Composer unifié ──────────────────────────────────────────────────────────
 
-type ComposerTab = 'email' | 'call' | 'task' | 'meeting';
+type ComposerTab = 'email' | 'call' | 'task' | 'meeting' | 'dm';
 
 function ComposerPanel({
   lead,
@@ -3765,24 +3837,29 @@ function ComposerPanel({
   const [meetingMsg, setMeetingMsg] = useState<string | null>(null);
 
   const handleSendEmail = async () => {
-    if (!emailSubject || !emailBody || !lead.contactEmail) return;
+    if (!emailSubject || !emailBody) return;
     setEmailSending(true);
     setEmailMsg(null);
     try {
-      const res = await fetch(getApiUrl('/api/send-email'), {
+      // Create a Gmail draft — does NOT send the email
+      const res = await fetch(getApiUrl('/api/create-draft'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          to: lead.contactEmail,
+          to: lead.contactEmail || '',
           subject: emailSubject,
           body: emailBody,
           leadId: lead.id,
         }),
       });
       if (res.ok) {
-        setEmailMsg({ type: 'success', text: t('composer.sent_ok') });
-        toast.success(`Email envoyé à ${lead.contactEmail}`);
-        addNoteToLead(lead.id, `Email envoyé : ${emailSubject}`, 'email');
+        const data = await res.json();
+        const msg = data.simulated
+          ? 'Brouillon sauvegardé (Google non connecté).'
+          : `Brouillon créé dans Gmail. Ouvrez Gmail pour envoyer.`;
+        setEmailMsg({ type: 'success', text: msg });
+        toast.success(msg);
+        addNoteToLead(lead.id, `Brouillon créé : ${emailSubject}`, 'email');
         setEmailSubject('');
         setEmailBody('');
       } else {
@@ -3797,6 +3874,26 @@ function ComposerPanel({
     } finally {
       setEmailSending(false);
     }
+  };
+
+  const [dmText, setDmText] = useState('');
+  const [dmPlatform, setDmPlatform] = useState<'instagram' | 'facebook'>('instagram');
+  const [dmCopied, setDmCopied] = useState(false);
+
+  const handleSaveDraft = async (type: 'email' | 'dm', subject: string, body: string) => {
+    if (!body) return;
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    await supabase.from('drafts').upsert({
+      user_id: user.id,
+      lead_id: lead.id,
+      content: body,
+      subject: type === 'email' ? subject : `DM ${dmPlatform} — ${lead.businessName}`,
+      draft_type: type,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'lead_id,draft_type' }).select().maybeSingle();
+    toast.success(`Brouillon ${type === 'email' ? 'email' : 'DM'} sauvegardé.`);
   };
 
   const handleLogCall = () => {
@@ -3835,7 +3932,8 @@ function ComposerPanel({
   };
 
   const tabConfig: { key: ComposerTab; label: string; icon: React.ReactNode }[] = [
-    { key: 'email', label: t('composer.tab_email'), icon: <Mail className="w-3.5 h-3.5" /> },
+    { key: 'email', label: 'Email', icon: <Mail className="w-3.5 h-3.5" /> },
+    { key: 'dm', label: 'DM', icon: <span className="text-[11px] font-black">DM</span> },
     { key: 'call', label: t('composer.tab_call'), icon: <Phone className="w-3.5 h-3.5" /> },
     { key: 'task', label: t('composer.tab_task'), icon: <CheckSquare className="w-3.5 h-3.5" /> },
     { key: 'meeting', label: t('composer.tab_meeting'), icon: <CalendarCheck className="w-3.5 h-3.5" /> },
@@ -3900,15 +3998,25 @@ function ComposerPanel({
               {emailMsg.text}
             </div>
           )}
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <Button
               onClick={handleSendEmail}
-              disabled={emailSending || !emailSubject || !emailBody || !lead.contactEmail}
+              disabled={emailSending || !emailSubject || !emailBody}
               className="h-8 bg-[#059669] hover:bg-[#047857] text-white font-bold text-xs gap-1.5"
             >
               {emailSending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
-              {t('composer.send')}
+              Brouillon Gmail
             </Button>
+            <Button
+              variant="outline"
+              onClick={() => handleSaveDraft('email', emailSubject, emailBody)}
+              disabled={!emailSubject || !emailBody}
+              className="h-8 border-[#e5e5e0] text-xs font-bold gap-1.5"
+            >
+              <FileText className="w-3.5 h-3.5" />
+              Sauvegarder
+            </Button>
+            <p className="text-[9px] text-[#7a7a76] w-full">Le brouillon Gmail n&apos;est pas envoyé. &quot;Sauvegarder&quot; conserve le texte dans l&apos;app.</p>
           </div>
         </div>
       )}
@@ -4080,6 +4188,118 @@ function ComposerPanel({
             {meetingLogging ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CalendarCheck className="w-3.5 h-3.5" />}
             {t('composer.log')}
           </Button>
+        </div>
+      )}
+
+      {/* DM — Instagram / Facebook */}
+      {tab === 'dm' && (
+        <div className="space-y-3">
+          {/* Platform selector */}
+          <div className="flex gap-2">
+            {(['instagram', 'facebook'] as const).map(platform => (
+              <button
+                key={platform}
+                type="button"
+                onClick={() => setDmPlatform(platform)}
+                className={cn(
+                  'flex-1 h-8 rounded-lg text-xs font-bold transition-colors border flex items-center justify-center gap-1.5',
+                  dmPlatform === platform
+                    ? 'bg-[#26251e] text-white border-[#26251e]'
+                    : 'bg-white text-[#7a7a76] border-[#e5e5e0] hover:border-[#26251e]/30'
+                )}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={`/icons/${platform}.svg`} alt="" className="w-3.5 h-3.5 rounded" />
+                {platform === 'instagram' ? 'Instagram DM' : 'Facebook Messenger'}
+              </button>
+            ))}
+          </div>
+
+          {/* Auto-fill template */}
+          {!dmText && (
+            <button
+              type="button"
+              onClick={() => {
+                const firstName = lead.contactName?.split(' ')[0] || lead.businessName;
+                const template = dmPlatform === 'instagram'
+                  ? `Bonjour ${firstName} 👋\n\nJ'ai vu votre profil et je pense qu'on pourrait collaborer ensemble. Je travaille avec des entreprises locales pour améliorer leur présence en ligne.\n\nÇa vous intéresserait qu'on en discute rapidement ?\n\nCordialement,`
+                  : `Bonjour ${firstName},\n\nVotre page m'a interpelé ! Je propose des services qui pourraient vraiment booster votre activité.\n\nDispo pour un rapide échange cette semaine ?`;
+                setDmText(template);
+              }}
+              className="text-[10px] text-[#059669] font-bold hover:underline flex items-center gap-1"
+            >
+              <Sparkles className="w-3 h-3" />Générer un message template
+            </button>
+          )}
+
+          {/* Social links info */}
+          {dmPlatform === 'instagram' && (lead.socialLinks?.instagram || lead.website?.includes('instagram')) && (
+            <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-[#fafaf8] border border-[#e5e5e0]">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/icons/instagram.svg" alt="" className="w-3.5 h-3.5 rounded shrink-0" />
+              <a
+                href={(lead.socialLinks?.instagram || lead.website || '')}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[10px] text-[#059669] underline truncate"
+              >
+                {lead.socialLinks?.instagram || lead.website}
+              </a>
+            </div>
+          )}
+
+          <div className="space-y-1">
+            <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Message</label>
+            <Textarea
+              value={dmText}
+              onChange={e => setDmText(e.target.value)}
+              placeholder={`Rédigez votre message ${dmPlatform === 'instagram' ? 'Instagram' : 'Facebook'}…`}
+              rows={6}
+              className="text-xs border-[#e5e5e0] resize-none focus:ring-[#059669]"
+            />
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={() => {
+                if (!dmText) return;
+                navigator.clipboard.writeText(dmText);
+                setDmCopied(true);
+                addNoteToLead(lead.id, `Message ${dmPlatform === 'instagram' ? 'Instagram' : 'Facebook'} rédigé : ${dmText.slice(0, 100)}…`, 'general');
+                toast.success(`Message copié ! Collez-le dans ${dmPlatform === 'instagram' ? 'Instagram' : 'Facebook Messenger'}.`);
+                setTimeout(() => setDmCopied(false), 2500);
+              }}
+              disabled={!dmText}
+              className="h-8 bg-[#26251e] hover:bg-[#3a3a32] text-white font-bold text-xs gap-1.5"
+            >
+              {dmCopied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+              {dmCopied ? 'Copié !' : 'Copier le message'}
+            </Button>
+            {(lead.socialLinks?.instagram || lead.website?.includes('instagram.com')) && dmPlatform === 'instagram' && (
+              <a
+                href={lead.socialLinks?.instagram || lead.website || ''}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="h-8 px-3 flex items-center gap-1.5 rounded-lg border border-[#e5e5e0] text-xs font-bold text-[#7a7a76] hover:text-[#26251e] transition-colors"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/icons/instagram.svg" alt="" className="w-3.5 h-3.5 rounded" />
+                Ouvrir le profil
+              </a>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={() => handleSaveDraft('dm', '', dmText)}
+              disabled={!dmText}
+              className="h-7 border-[#e5e5e0] text-[10px] font-bold gap-1 px-2"
+            >
+              <FileText className="w-3 h-3" />
+              Sauvegarder brouillon
+            </Button>
+          </div>
+          <p className="text-[9px] text-[#7a7a76]">Le message est copié dans votre presse-papiers. Collez-le directement dans l'app concernée.</p>
         </div>
       )}
     </div>

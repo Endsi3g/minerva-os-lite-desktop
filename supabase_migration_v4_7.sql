@@ -61,6 +61,10 @@ CREATE POLICY "services_workspace_access" ON services FOR ALL
     )
   );
 
+-- ── 6. Drafts: subject + draft_type columns ──────────────────────────────────
+ALTER TABLE drafts ADD COLUMN IF NOT EXISTS subject    text;
+ALTER TABLE drafts ADD COLUMN IF NOT EXISTS draft_type text DEFAULT 'email';
+
 -- ── NOTE: Supabase Storage bucket ────────────────────────────────────────────
 -- Create the bucket manually in Supabase Dashboard → Storage → Buckets:
 --   Name: library-assets
