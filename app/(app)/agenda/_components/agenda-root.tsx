@@ -6,13 +6,11 @@ import { useReach } from '@/lib/reach-context';
 import { getApiUrl } from '@/lib/api-helper';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { useLanguage } from '@/lib/language-context';
 import {
   ChevronLeft, ChevronRight, Plus, X, Loader2, CalendarDays,
   Clock, Users, CheckSquare, CalendarPlus, Check,
 } from 'lucide-react';
-
-const WEEKDAYS = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
-const MONTHS = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
 
 function ymd(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -21,6 +19,19 @@ function ymd(d: Date): string {
 export function AgendaRoot() {
   const { tasks, addTask, leads, activeWorkspace } = useReach();
   const router = useRouter();
+  const { t, locale } = useLanguage();
+
+  const WEEKDAYS = useMemo(() => {
+    if (locale === 'en') return ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    if (locale === 'de') return ['Mon', 'Die', 'Mit', 'Don', 'Fre', 'Sam', 'Son'];
+    return ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
+  }, [locale]);
+
+  const MONTHS = useMemo(() => {
+    if (locale === 'en') return ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    if (locale === 'de') return ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
+    return ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
+  }, [locale]);
 
   const today = new Date();
   const [viewYear, setViewYear] = useState(today.getFullYear());
@@ -160,72 +171,73 @@ export function AgendaRoot() {
         }).catch(() => {});
       }
 
-      const bits = ['Rendez-vous créé'];
+      const bits = [t('agenda.toast_success')];
       if (sideRes.google) bits.push('Google Agenda');
       if (sideRes.todoist) bits.push('Todoist');
       if (notifyTeam) bits.push('équipe notifiée');
       toast.success(bits.join(' · '));
       setShowBook(false);
     } catch {
-      toast.error('Erreur lors de la création du rendez-vous');
+      toast.error(t('agenda.toast_error'));
     } finally {
       setBooking(false);
     }
   };
 
   return (
-    <div className="h-full overflow-y-auto bg-background">
-      <div className="max-w-5xl mx-auto px-4 py-6 md:px-6 md:py-8 space-y-6">
+    <div className="h-full overflow-y-auto bg-white text-[#26251e] font-sans selection:bg-[#059669]/10 relative animate-page-enter">
+      <div className="absolute inset-0 opacity-[0.25] pointer-events-none bg-grid-pattern-20 z-0" />
+      
+      <div className="max-w-5xl mx-auto px-8 py-10 space-y-6 relative z-10">
 
         {/* Header */}
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-[#059669]/10 flex items-center justify-center">
-              <CalendarDays className="h-5 w-5 text-[#059669]" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold text-foreground">Agenda</h1>
-              <p className="text-sm text-muted-foreground">Planifiez et suivez vos rendez-vous.</p>
-            </div>
+        <div className="flex items-start justify-between gap-4">
+          <div className="space-y-1">
+            <h1 className="text-2xl font-bold text-[#26251e] tracking-tight">
+              {t('agenda.title')}
+            </h1>
+            <p className="text-xs text-neutral-500 font-medium">
+              {t('agenda.subtitle')}
+            </p>
           </div>
           <button
             onClick={() => router.push(`/agenda/new?date=${selectedDate}`)}
-            className="flex items-center gap-1.5 px-4 h-9 rounded-lg bg-[#059669] hover:bg-[#047857] text-white text-xs font-bold transition-colors"
+            className="flex items-center gap-1.5 px-4 h-9 rounded-lg bg-[#059669] hover:bg-[#047857] text-white text-xs font-bold transition-colors border-0 cursor-pointer"
           >
             <Plus className="h-3.5 w-3.5" />
-            Nouveau RDV
+            {t('agenda.new_meeting')}
           </button>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Calendar */}
-          <div className="lg:col-span-2 rounded-xl border border-border bg-card p-4">
+          <div className="lg:col-span-2 rounded-xl border border-border bg-white p-4">
             {/* Nav + view switcher */}
             <div className="flex items-center justify-between mb-4 gap-2">
               <div className="flex items-center gap-2">
-                <button onClick={() => shiftSelected(-1)} className="h-8 w-8 flex items-center justify-center rounded-lg border border-border hover:bg-muted transition-colors">
+                <button onClick={() => shiftSelected(-1)} className="h-8 w-8 flex items-center justify-center rounded-lg border border-border hover:bg-[#f4f4f3] transition-colors bg-white text-[#26251e] cursor-pointer">
                   <ChevronLeft className="h-4 w-4" />
                 </button>
-                <button onClick={() => shiftSelected(1)} className="h-8 w-8 flex items-center justify-center rounded-lg border border-border hover:bg-muted transition-colors">
+                <button onClick={() => shiftSelected(1)} className="h-8 w-8 flex items-center justify-center rounded-lg border border-border hover:bg-[#f4f4f3] transition-colors bg-white text-[#26251e] cursor-pointer">
                   <ChevronRight className="h-4 w-4" />
                 </button>
-                <p className="text-sm font-bold text-foreground ml-1">
+                <p className="text-xs font-bold text-[#26251e] ml-1">
                   {view === 'month'
                     ? `${MONTHS[viewMonth]} ${viewYear}`
                     : view === 'week'
                     ? `${weekDays[0].getDate()} – ${weekDays[6].getDate()} ${MONTHS[weekDays[6].getMonth()]}`
-                    : new Date(`${selectedDate}T00:00`).toLocaleDateString('fr-CA', { weekday: 'long', day: 'numeric', month: 'long' })}
+                    : new Date(`${selectedDate}T00:00`).toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long' })}
                 </p>
               </div>
-              <div className="flex items-center gap-0.5 bg-muted/50 rounded-lg p-0.5">
+              <div className="flex items-center gap-0.5 bg-[#f4f4f3] rounded-lg p-0.5 border border-border">
                 {(['month', 'week', 'day'] as const).map(v => (
                   <button
                     key={v}
                     onClick={() => setView(v)}
-                    className={cn('px-2.5 h-7 rounded-md text-[11px] font-semibold transition-colors',
-                      view === v ? 'bg-white text-[#26251e] shadow-sm' : 'text-muted-foreground hover:text-foreground')}
+                    className={cn('px-2.5 h-7 rounded-md text-[11px] font-bold transition-colors border-0 cursor-pointer',
+                      view === v ? 'bg-white text-[#26251e]' : 'text-[#807d72] hover:text-[#26251e] bg-transparent')}
                   >
-                    {v === 'month' ? 'Mois' : v === 'week' ? 'Semaine' : 'Jour'}
+                    {v === 'month' ? t('analytics.month') : v === 'week' ? t('analytics.week') : t('analytics.day')}
                   </button>
                 ))}
               </div>
@@ -235,7 +247,7 @@ export function AgendaRoot() {
             {view === 'month' && (<>
             <div className="grid grid-cols-7 gap-1 mb-1">
               {WEEKDAYS.map(d => (
-                <div key={d} className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground text-center py-1">{d}</div>
+                <div key={d} className="text-[10px] font-bold uppercase tracking-wider text-[#807d72] text-center py-1">{d}</div>
               ))}
             </div>
             <div className="grid grid-cols-7 gap-1">
@@ -251,18 +263,18 @@ export function AgendaRoot() {
                     onClick={() => setSelectedDate(key)}
                     onDoubleClick={() => openBooking(key)}
                     className={cn(
-                      'aspect-square rounded-lg border p-1 flex flex-col items-center gap-0.5 transition-all text-left',
-                      isSelected ? 'border-[#059669] bg-[#059669]/5' : 'border-transparent hover:border-border hover:bg-muted/40',
+                      'aspect-square rounded-lg border p-1 flex flex-col items-center gap-0.5 transition-all text-left bg-transparent cursor-pointer',
+                      isSelected ? 'border-[#059669] bg-[#059669]/5' : 'border-transparent hover:border-border hover:bg-[#f4f4f3]',
                     )}
                   >
                     <span className={cn(
                       'text-xs font-semibold h-5 w-5 flex items-center justify-center rounded-full',
-                      isToday ? 'bg-[#059669] text-white' : 'text-foreground',
+                      isToday ? 'bg-[#059669] text-white' : 'text-[#26251e]',
                     )}>
                       {date.getDate()}
                     </span>
                     {dayTasks.length > 0 && (
-                      <div className="flex gap-0.5 flex-wrap justify-center">
+                      <div className="flex gap-0.5 flex-wrap justify-center mt-auto">
                         {dayTasks.slice(0, 3).map((t, j) => (
                           <span key={j} className="h-1.5 w-1.5 rounded-full bg-[#059669]" />
                         ))}
@@ -284,21 +296,21 @@ export function AgendaRoot() {
                     const isToday = key === ymd(today);
                     return (
                       <button key={i} onClick={() => { setSelectedDate(key); setView('day'); }}
-                        className={cn('text-center py-1.5 rounded-md', isToday ? 'bg-[#059669]/10' : 'hover:bg-muted/40')}>
-                        <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{WEEKDAYS[i]}</div>
-                        <div className={cn('text-xs font-bold', isToday ? 'text-[#059669]' : 'text-foreground')}>{d.getDate()}</div>
+                        className={cn('text-center py-1.5 rounded-md border-0 bg-transparent cursor-pointer', isToday ? 'bg-[#059669]/10' : 'hover:bg-[#f4f4f3]')}>
+                        <div className="text-[10px] font-bold uppercase tracking-wider text-[#807d72]">{WEEKDAYS[i]}</div>
+                        <div className={cn('text-xs font-bold', isToday ? 'text-[#059669]' : 'text-[#26251e]')}>{d.getDate()}</div>
                       </button>
                     );
                   })}
                   {DAY_HOURS.map(hour => (
                     <React.Fragment key={hour}>
-                      <div className="text-[9px] text-muted-foreground text-right pr-1 py-1 border-t border-border">{hour}h</div>
+                      <div className="text-[9px] text-[#807d72] text-right pr-1 py-1 border-t border-[#e5e5e0]">{hour}h</div>
                       {weekDays.map((d, di) => {
                         const key = ymd(d);
                         const slotTasks = (tasksByDay[key] || []).filter(t => parseHour(t.title) === hour);
                         return (
                           <div key={di} onClick={() => openBooking(key)}
-                            className="min-h-[34px] border-t border-l border-border p-0.5 space-y-0.5 cursor-pointer hover:bg-muted/30">
+                            className="min-h-[34px] border-t border-l border-[#e5e5e0] p-0.5 space-y-0.5 cursor-pointer hover:bg-[#f4f4f3]/60">
                             {slotTasks.map(t => (
                               <div key={t.id} className="text-[9px] font-semibold text-white bg-[#059669] rounded px-1 py-0.5 truncate">{t.title}</div>
                             ))}
@@ -317,9 +329,9 @@ export function AgendaRoot() {
                 {DAY_HOURS.map(hour => {
                   const slotTasks = (tasksByDay[selectedDate] || []).filter(t => parseHour(t.title) === hour);
                   return (
-                    <div key={hour} className="grid grid-cols-[48px_minmax(0,1fr)] gap-2 border-t border-border">
-                      <div className="text-[10px] text-muted-foreground text-right pr-1 py-2">{hour}h</div>
-                      <div onClick={() => openBooking(selectedDate)} className="min-h-[40px] py-1 space-y-1 cursor-pointer hover:bg-muted/30 rounded">
+                    <div key={hour} className="grid grid-cols-[48px_minmax(0,1fr)] gap-2 border-t border-[#e5e5e0]">
+                      <div className="text-[10px] text-[#807d72] text-right pr-1 py-2">{hour}h</div>
+                      <div onClick={() => openBooking(selectedDate)} className="min-h-[40px] py-1 space-y-1 cursor-pointer hover:bg-[#f4f4f3]/60 rounded">
                         {slotTasks.map(t => (
                           <div key={t.id} className="text-[11px] font-semibold text-white bg-[#059669] rounded-md px-2 py-1">{t.title}</div>
                         ))}
@@ -332,32 +344,32 @@ export function AgendaRoot() {
           </div>
 
           {/* Selected day detail */}
-          <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+          <div className="rounded-xl border border-border bg-white p-4 space-y-3">
             <div className="flex items-center justify-between">
-              <p className="text-sm font-bold text-foreground">
-                {new Date(`${selectedDate}T00:00`).toLocaleDateString('fr-CA', { weekday: 'long', day: 'numeric', month: 'long' })}
+              <p className="text-xs font-bold text-[#26251e]">
+                {new Date(`${selectedDate}T00:00`).toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long' })}
               </p>
               <button
                 onClick={() => openBooking(selectedDate)}
-                className="h-7 w-7 flex items-center justify-center rounded-lg bg-[#059669]/10 text-[#059669] hover:bg-[#059669]/20 transition-colors"
+                className="h-7 w-7 flex items-center justify-center rounded-lg bg-[#059669]/10 text-[#059669] hover:bg-[#059669]/20 transition-colors border-0 cursor-pointer"
               >
                 <Plus className="h-4 w-4" />
               </button>
             </div>
             {selectedTasks.length === 0 ? (
-              <div className="py-10 text-center text-xs text-muted-foreground">
-                Aucun rendez-vous ce jour.
+              <div className="py-10 text-center text-xs text-[#807d72]">
+                {t('agenda.no_meetings')}
               </div>
             ) : (
               <div className="space-y-2">
-                {selectedTasks.map(t => (
-                  <div key={t.id} className="flex items-start gap-2.5 p-2.5 rounded-lg border border-border bg-background">
-                    <div className={cn('h-7 w-7 rounded-lg flex items-center justify-center shrink-0', t.category === 'Meeting' ? 'bg-[#059669]/10 text-[#059669]' : 'bg-[#059669]/10 text-[#059669]')}>
-                      {t.category === 'Meeting' ? <Clock className="h-3.5 w-3.5" /> : <CheckSquare className="h-3.5 w-3.5" />}
+                {selectedTasks.map(taskItem => (
+                  <div key={taskItem.id} className="flex items-start gap-2.5 p-2.5 rounded-lg border border-border bg-white">
+                    <div className="h-7 w-7 rounded-lg flex items-center justify-center shrink-0 bg-[#059669]/10 text-[#059669]">
+                      {taskItem.category === 'Meeting' ? <Clock className="h-3.5 w-3.5" /> : <CheckSquare className="h-3.5 w-3.5" />}
                     </div>
                     <div className="min-w-0">
-                      <p className={cn('text-xs font-semibold leading-snug', t.completed && 'line-through text-muted-foreground')}>{t.title}</p>
-                      <p className="text-[10px] text-muted-foreground mt-0.5">{t.category}</p>
+                      <p className={cn('text-xs font-semibold leading-snug text-[#26251e]', taskItem.completed && 'line-through text-[#807d72]')}>{taskItem.title}</p>
+                      <p className="text-[10px] text-[#807d72] mt-0.5">{taskItem.category}</p>
                     </div>
                   </div>
                 ))}
@@ -371,40 +383,40 @@ export function AgendaRoot() {
       {showBook && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={() => setShowBook(false)}>
           <div
-            className="bg-white rounded-2xl shadow-xl w-[460px] max-w-[95vw] p-6 space-y-4 animate-in zoom-in-95 duration-150"
+            className="bg-white rounded-2xl shadow-xl w-[460px] max-w-[95vw] p-6 space-y-4 animate-in zoom-in-95 duration-150 border border-border"
             onClick={e => e.stopPropagation()}
           >
             <div className="flex items-center justify-between">
-              <h2 className="text-base font-bold text-[#26251e]">Nouveau rendez-vous</h2>
-              <button onClick={() => setShowBook(false)} className="text-[#7a7a76] hover:text-[#26251e]">
+              <h2 className="text-sm font-bold text-[#26251e]">{t('agenda.new_meeting_modal')}</h2>
+              <button onClick={() => setShowBook(false)} className="text-[#807d72] hover:text-[#26251e] bg-transparent border-0 cursor-pointer">
                 <X className="h-4 w-4" />
               </button>
             </div>
 
             <div className="space-y-3">
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Titre</label>
+                <label className="text-[10px] font-bold uppercase tracking-wider text-[#807d72]">{t('agenda.meeting_title')}</label>
                 <input
                   value={title}
                   onChange={e => setTitle(e.target.value)}
-                  placeholder="Ex : Présentation offre SEO"
+                  placeholder={t('agenda.meeting_title_placeholder')}
                   autoFocus
-                  className="w-full h-9 text-xs border border-[#e5e5e0] rounded-lg px-3 focus:outline-none focus:ring-1 focus:ring-[#059669]"
+                  className="w-full h-9 text-xs border border-[#e5e5e0] rounded-lg px-3 focus:outline-none focus:ring-1 focus:ring-[#059669] bg-white text-[#26251e]"
                 />
               </div>
 
               <div className="grid grid-cols-3 gap-2">
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Date</label>
-                  <input type="date" value={selectedDate} onChange={e => setSelectedDate(e.target.value)} className="w-full h-9 text-xs border border-[#e5e5e0] rounded-lg px-2 focus:outline-none focus:ring-1 focus:ring-[#059669]" />
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-[#807d72]">{t('agenda.meeting_date')}</label>
+                  <input type="date" value={selectedDate} onChange={e => setSelectedDate(e.target.value)} className="w-full h-9 text-xs border border-[#e5e5e0] rounded-lg px-2 focus:outline-none focus:ring-1 focus:ring-[#059669] bg-white text-[#26251e]" />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Heure</label>
-                  <input type="time" value={time} onChange={e => setTime(e.target.value)} className="w-full h-9 text-xs border border-[#e5e5e0] rounded-lg px-2 focus:outline-none focus:ring-1 focus:ring-[#059669]" />
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-[#807d72]">{t('agenda.meeting_time')}</label>
+                  <input type="time" value={time} onChange={e => setTime(e.target.value)} className="w-full h-9 text-xs border border-[#e5e5e0] rounded-lg px-2 focus:outline-none focus:ring-1 focus:ring-[#059669] bg-white text-[#26251e]" />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Durée</label>
-                  <select value={duration} onChange={e => setDuration(Number(e.target.value))} className="w-full h-9 text-xs border border-[#e5e5e0] rounded-lg px-2 focus:outline-none focus:ring-1 focus:ring-[#059669]">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-[#807d72]">{t('agenda.meeting_duration')}</label>
+                  <select value={duration} onChange={e => setDuration(Number(e.target.value))} className="w-full h-9 text-xs border border-[#e5e5e0] rounded-lg px-2 focus:outline-none focus:ring-1 focus:ring-[#059669] bg-white text-[#26251e]">
                     <option value={30}>30 min</option>
                     <option value={60}>1 h</option>
                     <option value={90}>1 h 30</option>
@@ -414,9 +426,9 @@ export function AgendaRoot() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Lead associé (optionnel)</label>
-                <select value={leadId} onChange={e => setLeadId(e.target.value)} className="w-full h-9 text-xs border border-[#e5e5e0] rounded-lg px-2 focus:outline-none focus:ring-1 focus:ring-[#059669]">
-                  <option value="">Aucun</option>
+                <label className="text-[10px] font-bold uppercase tracking-wider text-[#807d72]">{t('agenda.meeting_lead')}</label>
+                <select value={leadId} onChange={e => setLeadId(e.target.value)} className="w-full h-9 text-xs border border-[#e5e5e0] rounded-lg px-2 focus:outline-none focus:ring-1 focus:ring-[#059669] bg-white text-[#26251e]">
+                  <option value="">{t('agenda.meeting_no_lead')}</option>
                   {leads.slice(0, 100).map(l => (
                     <option key={l.id} value={l.id}>{l.businessName}</option>
                   ))}
@@ -426,9 +438,9 @@ export function AgendaRoot() {
               {/* Options */}
               <div className="space-y-1.5 pt-1">
                 {([
-                  { key: 'team', label: "Notifier l'équipe", icon: Users, value: notifyTeam, set: setNotifyTeam },
-                  { key: 'gcal', label: 'Ajouter à Google Agenda', icon: CalendarPlus, value: addGoogle, set: setAddGoogle },
-                  { key: 'todo', label: 'Créer une tâche Todoist', icon: CheckSquare, value: addTodoist, set: setAddTodoist },
+                  { key: 'team', label: t('agenda.meeting_notify_team'), icon: Users, value: notifyTeam, set: setNotifyTeam },
+                  { key: 'gcal', label: t('agenda.meeting_add_gcal'), icon: CalendarPlus, value: addGoogle, set: setAddGoogle },
+                  { key: 'todo', label: t('agenda.meeting_add_todoist'), icon: CheckSquare, value: addTodoist, set: setAddTodoist },
                 ] as const).map(opt => {
                   const Icon = opt.icon;
                   return (
@@ -436,9 +448,9 @@ export function AgendaRoot() {
                       key={opt.key}
                       type="button"
                       onClick={() => opt.set(!opt.value)}
-                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg border border-[#e5e5e0] text-left hover:bg-[#f4f4f3] transition-colors"
+                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg border border-[#e5e5e0] text-left hover:bg-[#f4f4f3] transition-colors bg-white cursor-pointer"
                     >
-                      <Icon className="h-3.5 w-3.5 text-[#7a7a76]" />
+                      <Icon className="h-3.5 w-3.5 text-[#807d72]" />
                       <span className="text-xs font-semibold text-[#26251e] flex-1">{opt.label}</span>
                       <span className={cn(
                         'h-4 w-4 rounded border flex items-center justify-center shrink-0',
@@ -455,10 +467,10 @@ export function AgendaRoot() {
             <button
               onClick={handleBook}
               disabled={!title.trim() || booking}
-              className="w-full flex items-center justify-center gap-2 h-10 rounded-lg bg-[#059669] hover:bg-[#047857] text-white text-sm font-bold transition-colors disabled:opacity-60"
+              className="w-full flex items-center justify-center gap-2 h-10 rounded-lg bg-[#059669] hover:bg-[#047857] text-white text-sm font-bold transition-colors disabled:opacity-60 border-0 cursor-pointer"
             >
               {booking ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-              Confirmer le rendez-vous
+              {t('agenda.meeting_confirm')}
             </button>
           </div>
         </div>

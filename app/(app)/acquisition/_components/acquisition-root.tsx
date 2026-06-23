@@ -6,6 +6,7 @@ import { useReach } from '@/lib/reach-context';
 import { useLanguage } from '@/lib/language-context';
 import type { Lead } from '@/lib/mock-data';
 import { cn } from '@/lib/utils';
+import { Clock, Check, Building2, Eye, Compass } from 'lucide-react';
 
 // ─── SLA Helper ──────────────────────────────────────────────────────────────
 
@@ -23,13 +24,13 @@ function formatSLA(createdAt?: string): { label: string; level: 'green' | 'amber
 // ─── Source Badge ─────────────────────────────────────────────────────────────
 
 const sourceBadgeClasses: Record<string, string> = {
-  osm: 'bg-blue-100 text-blue-700',
-  csv: 'bg-purple-100 text-purple-700',
-  manual: 'bg-slate-100 text-slate-600',
-  form: 'bg-[#059669]/10 text-[#059669]',
-  facebook: 'bg-indigo-100 text-indigo-700',
-  google: 'bg-red-100 text-red-700',
-  import: 'bg-purple-100 text-purple-700',
+  osm: 'bg-blue-50 text-blue-700 border-blue-100',
+  csv: 'bg-purple-50 text-purple-700 border-purple-100',
+  manual: 'bg-slate-50 text-slate-600 border-slate-200',
+  form: 'bg-emerald-50 text-[#059669] border-emerald-100',
+  facebook: 'bg-indigo-50 text-indigo-700 border-indigo-100',
+  google: 'bg-red-50 text-red-700 border-red-100',
+  import: 'bg-purple-50 text-purple-700 border-purple-100',
 };
 
 const sourceLabels: Record<string, string> = {
@@ -54,7 +55,7 @@ function ScoreBadge({ score }: { score: number }) {
   return (
     <span
       className={cn(
-        'inline-flex items-center justify-center w-7 h-7 rounded-full text-[10px] font-bold',
+        'inline-flex items-center justify-center w-6 h-6 rounded-full text-[9px] font-bold font-mono',
         color
       )}
     >
@@ -66,20 +67,15 @@ function ScoreBadge({ score }: { score: number }) {
 // ─── Status Badge ─────────────────────────────────────────────────────────────
 
 const STATUS_COLORS: Record<string, string> = {
-  New: 'bg-blue-50 text-blue-600',
-  Contacted: 'bg-amber-50 text-amber-700',
-  'Meeting Booked': 'bg-purple-50 text-purple-700',
-  Won: 'bg-[#059669]/10 text-[#059669]',
-  Lost: 'bg-slate-100 text-slate-500',
+  New: 'bg-blue-50 text-blue-600 border-blue-100',
+  Contacted: 'bg-amber-50 text-amber-700 border-amber-100',
+  'Meeting Booked': 'bg-purple-50 text-purple-700 border-purple-100',
+  Won: 'bg-emerald-50 text-[#059669] border-emerald-100',
+  Lost: 'bg-slate-50 text-slate-500 border-slate-200',
 };
 
-// ─── Source filter tabs ───────────────────────────────────────────────────────
-
 type SourceFilter = 'all' | 'osm' | 'csv' | 'manual' | 'form';
-
 type SortMode = 'recent' | 'old' | 'score_desc' | 'score_asc';
-
-// ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function AcquisitionRoot() {
   const { leads, updateLead } = useReach();
@@ -171,197 +167,196 @@ export default function AcquisitionRoot() {
   ];
 
   return (
-    <div className="flex flex-col gap-6 p-6 max-w-4xl mx-auto">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">{t('acquisition.title')}</h1>
-        <p className="text-sm text-muted-foreground mt-1">{t('acquisition.subtitle')}</p>
-      </div>
+    <div className="h-full overflow-y-auto bg-white text-[#26251e] font-sans selection:bg-[#059669]/10 relative animate-page-enter">
+      <div className="absolute inset-0 opacity-[0.25] pointer-events-none bg-grid-pattern-20 z-0" />
 
-      {/* Stats Row */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <StatCard label="Total leads" value={stats.total} />
-        <StatCard label={t('acquisition.new_24h')} value={stats.new24h} accent />
-        <StatCard label={t('acquisition.in_contact')} value={stats.inContact} />
-        <StatCard label={t('acquisition.converted')} value={stats.converted} green />
-      </div>
+      <div className="max-w-5xl mx-auto px-8 py-10 space-y-6 relative z-10">
+        {/* Header */}
+        <div className="space-y-1 pb-4 border-b border-border">
+          <h1 className="text-2xl font-bold tracking-tight text-[#26251e]">{t('acquisition.title')}</h1>
+          <p className="text-xs text-neutral-500 font-medium">{t('acquisition.subtitle')}</p>
+        </div>
 
-      {/* Filters + Sort */}
-      <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
-        {/* Source filter tabs */}
-        <div className="flex items-center gap-1 flex-wrap">
-          {filterTabs.map((tab) => (
-            <button
-              key={tab.key}
-              type="button"
-              onClick={() => setSourceFilter(tab.key)}
-              className={cn(
-                'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors',
-                sourceFilter === tab.key
-                  ? 'bg-[#059669] text-white'
-                  : 'bg-secondary text-muted-foreground hover:bg-secondary/80'
-              )}
-            >
-              {tab.label}
-              <span
+        {/* Stats Row */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <StatCard label="Total leads" value={stats.total} />
+          <StatCard label={t('acquisition.new_24h')} value={stats.new24h} accent />
+          <StatCard label={t('acquisition.in_contact')} value={stats.inContact} />
+          <StatCard label={t('acquisition.converted')} value={stats.converted} green />
+        </div>
+
+        {/* Filters + Sort */}
+        <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
+          {/* Source filter tabs */}
+          <div className="flex items-center gap-1 bg-[#f4f4f3] rounded-lg p-0.5 border border-border">
+            {filterTabs.map((tab) => (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => setSourceFilter(tab.key)}
                 className={cn(
-                  'text-[10px] px-1.5 py-0.5 rounded-full font-bold',
-                  sourceFilter === tab.key ? 'bg-white/20 text-white' : 'bg-muted text-muted-foreground'
+                  'inline-flex items-center gap-1 px-3 h-8 rounded-md text-xs font-bold transition-colors border-0 cursor-pointer',
+                  sourceFilter === tab.key
+                    ? 'bg-white text-[#26251e]'
+                    : 'text-[#807d72] hover:text-[#26251e] bg-transparent'
                 )}
               >
-                {sourceCounts[tab.key]}
-              </span>
-            </button>
-          ))}
-          {/* Ads — coming soon (dimmed) */}
-          <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium bg-secondary text-muted-foreground/40 cursor-not-allowed select-none">
-            {t('acquisition.source_ads')}
-          </span>
-        </div>
+                {tab.label}
+                <span
+                  className={cn(
+                    'text-[9px] px-1.5 py-0.5 rounded-full font-black leading-none ml-1',
+                    sourceFilter === tab.key ? 'bg-[#059669] text-white' : 'bg-[#e5e5e2] text-[#807d72]'
+                  )}
+                >
+                  {sourceCounts[tab.key]}
+                </span>
+              </button>
+            ))}
+          </div>
 
-        {/* Sort selector */}
-        <select
-          value={sortMode}
-          onChange={(e) => setSortMode(e.target.value as SortMode)}
-          className="text-xs border border-border rounded-md px-2 py-1.5 bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-[#059669]"
-        >
-          {sortOptions.map((opt) => (
-            <option key={opt.key} value={opt.key}>
-              {opt.label}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {/* Lead List */}
-      {displayedLeads.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 text-center gap-3">
-          <p className="text-base font-semibold text-muted-foreground">{t('acquisition.empty')}</p>
-          <p className="text-sm text-muted-foreground">{t('acquisition.empty_sub')}</p>
-          <Link
-            href="/prospecting"
-            className="mt-2 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#059669] text-white text-sm font-medium hover:bg-[#047857] transition-colors"
+          {/* Sort selector */}
+          <select
+            value={sortMode}
+            onChange={(e) => setSortMode(e.target.value as SortMode)}
+            className="text-xs border border-border rounded-lg px-2.5 h-8 bg-white text-[#26251e] focus:outline-none focus:ring-1 focus:ring-[#059669]"
           >
-            Lancer une prospection
-          </Link>
+            {sortOptions.map((opt) => (
+              <option key={opt.key} value={opt.key}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
         </div>
-      ) : (
-        <div className="space-y-2">
-          {displayedLeads.map((lead) => {
-            const src = lead.leadSourceType || 'manual';
-            const srcBadgeClass = sourceBadgeClasses[src] || sourceBadgeClasses.manual;
-            const srcLabel = sourceLabels[src] || src;
-            const sla = formatSLA(lead.createdAt);
-            const isContacted =
-              lead.status === 'Contacted' ||
-              lead.status === 'Meeting Booked' ||
-              lead.status === 'Won' ||
-              lead.status === 'Lost';
 
-            return (
-              <div
-                key={lead.id}
-                className="flex items-center gap-3 p-3 rounded-xl border border-border/60 bg-background hover:bg-secondary/20 transition-colors"
-              >
-                {/* Source badge */}
-                <span
-                  className={cn(
-                    'shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide',
-                    srcBadgeClass
-                  )}
+        {/* Lead List */}
+        {displayedLeads.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 text-center gap-3 bg-white border border-border rounded-xl">
+            <p className="text-sm font-semibold text-muted-foreground">{t('acquisition.empty')}</p>
+            <p className="text-xs text-muted-foreground">{t('acquisition.empty_sub')}</p>
+            <Link
+              href="/prospecting"
+              className="mt-2 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#059669] text-white text-xs font-bold hover:bg-[#047857] transition-colors border-0 cursor-pointer"
+            >
+              Lancer une prospection
+            </Link>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {displayedLeads.map((lead) => {
+              const src = lead.leadSourceType || 'manual';
+              const srcBadgeClass = sourceBadgeClasses[src] || sourceBadgeClasses.manual;
+              const srcLabel = sourceLabels[src] || src;
+              const sla = formatSLA(lead.createdAt);
+              const isContacted =
+                lead.status === 'Contacted' ||
+                lead.status === 'Meeting Booked' ||
+                lead.status === 'Won' ||
+                lead.status === 'Lost';
+
+              return (
+                <div
+                  key={lead.id}
+                  className="flex items-center gap-4 p-4 rounded-xl border border-border bg-white hover:border-[#10b981]/40 transition-colors"
                 >
-                  {srcLabel}
-                </span>
+                  {/* Source badge */}
+                  <span
+                    className={cn(
+                      'shrink-0 text-[9px] font-bold px-2 py-0.5 rounded-full border uppercase tracking-wide',
+                      srcBadgeClass
+                    )}
+                  >
+                    {srcLabel}
+                  </span>
 
-                {/* Lead info */}
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-foreground truncate">{lead.businessName}</p>
-                  <p className="text-xs text-muted-foreground truncate">
-                    {[lead.city, lead.niche].filter(Boolean).join(' · ')}
-                  </p>
-                  {(lead.utmCampaign || lead.utmSource) && (
-                    <p className="text-[10px] text-muted-foreground/60 mt-0.5 truncate">
-                      {lead.utmCampaign ? `campaign: ${lead.utmCampaign}` : ''}
-                      {lead.utmCampaign && lead.utmSource ? ' · ' : ''}
-                      {lead.utmSource ? `src: ${lead.utmSource}` : ''}
+                  {/* Lead info */}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-bold text-[#26251e] truncate">{lead.businessName}</p>
+                    <p className="text-[11px] text-[#807d72] truncate mt-0.5">
+                      {[lead.city, lead.niche].filter(Boolean).join(' · ')}
                     </p>
-                  )}
-                </div>
+                    {(lead.utmCampaign || lead.utmSource) && (
+                      <p className="text-[9px] text-[#807d72]/60 mt-0.5 truncate">
+                        {lead.utmCampaign ? `campaign: ${lead.utmCampaign}` : ''}
+                        {lead.utmCampaign && lead.utmSource ? ' · ' : ''}
+                        {lead.utmSource ? `src: ${lead.utmSource}` : ''}
+                      </p>
+                    )}
+                  </div>
 
-                {/* Status badge */}
-                <span
-                  className={cn(
-                    'shrink-0 hidden sm:inline-flex text-[10px] font-semibold px-2 py-0.5 rounded-full',
-                    STATUS_COLORS[lead.status] || 'bg-slate-100 text-slate-500'
-                  )}
-                >
-                  {lead.status}
-                </span>
+                  {/* Status badge */}
+                  <span
+                    className={cn(
+                      'shrink-0 hidden sm:inline-flex text-[9px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full border',
+                      STATUS_COLORS[lead.status] || 'bg-slate-50 text-slate-500 border-slate-200'
+                    )}
+                  >
+                    {lead.status}
+                  </span>
 
-                {/* SLA or contacted indicator */}
-                <div className="shrink-0 flex items-center gap-1">
-                  {isContacted ? (
-                    <span className="text-[10px] font-medium text-[#059669]">
-                      ✓ {t('acquisition.sla_contacted')}
-                    </span>
-                  ) : (
-                    <>
-                      <span
-                        className={cn(
-                          'w-1.5 h-1.5 rounded-full',
-                          sla.level === 'green'
-                            ? 'bg-[#059669]'
-                            : sla.level === 'amber'
-                            ? 'bg-amber-400'
-                            : 'bg-red-500'
-                        )}
-                      />
-                      <span
-                        className={cn(
-                          'text-[10px] font-medium',
+                  {/* SLA or contacted indicator */}
+                  <div className="shrink-0 flex items-center gap-1">
+                    {isContacted ? (
+                      <span className="text-[10px] font-bold text-[#059669] flex items-center gap-1">
+                        <Check className="w-3.5 h-3.5" /> {t('acquisition.sla_contacted')}
+                      </span>
+                    ) : (
+                      <>
+                        <Clock className={cn(
+                          'w-3.5 h-3.5',
                           sla.level === 'green'
                             ? 'text-[#059669]'
                             : sla.level === 'amber'
-                            ? 'text-amber-600'
-                            : 'text-red-600'
-                        )}
-                      >
-                        {sla.label}
-                      </span>
-                    </>
-                  )}
-                </div>
-
-                {/* Score */}
-                {typeof lead.score === 'number' && lead.score > 0 && (
-                  <div className="shrink-0 hidden sm:block">
-                    <ScoreBadge score={lead.score} />
+                            ? 'text-amber-500'
+                            : 'text-[#cf2d56]'
+                        )} />
+                        <span
+                          className={cn(
+                            'text-[10px] font-bold',
+                            sla.level === 'green'
+                              ? 'text-[#059669]'
+                              : sla.level === 'amber'
+                              ? 'text-amber-600'
+                              : 'text-[#cf2d56]'
+                          )}
+                        >
+                          {sla.label}
+                        </span>
+                      </>
+                    )}
                   </div>
-                )}
 
-                {/* Actions */}
-                <div className="shrink-0 flex items-center gap-2">
-                  {lead.status === 'New' && (
-                    <button
-                      type="button"
-                      onClick={() => handleQualify(lead)}
-                      className="text-[10px] font-semibold px-2.5 py-1 rounded-lg bg-[#059669]/10 text-[#059669] hover:bg-[#059669] hover:text-white transition-colors"
-                    >
-                      {t('acquisition.qualify')}
-                    </button>
+                  {/* Score */}
+                  {typeof lead.score === 'number' && lead.score > 0 && (
+                    <div className="shrink-0 hidden sm:block">
+                      <ScoreBadge score={lead.score} />
+                    </div>
                   )}
-                  <Link
-                    href={`/leads/${lead.id}`}
-                    className="text-[10px] font-semibold px-2.5 py-1 rounded-lg border border-border text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors"
-                  >
-                    {t('acquisition.view')}
-                  </Link>
+
+                  {/* Actions */}
+                  <div className="shrink-0 flex items-center gap-2">
+                    {lead.status === 'New' && (
+                      <button
+                        type="button"
+                        onClick={() => handleQualify(lead)}
+                        className="text-[10px] font-bold px-2.5 py-1.5 rounded-lg bg-[#059669]/10 text-[#059669] hover:bg-[#059669] hover:text-white transition-colors border-0 cursor-pointer"
+                      >
+                        {t('acquisition.qualify')}
+                      </button>
+                    )}
+                    <Link
+                      href={`/leads/${lead.id}`}
+                      className="text-[10px] font-bold px-2.5 py-1.5 rounded-lg border border-border text-[#555552] hover:bg-[#f4f4f3] hover:text-[#26251e] hover:border-border transition-colors flex items-center gap-1"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                      {t('acquisition.view')}
+                    </Link>
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -382,23 +377,21 @@ function StatCard({
   return (
     <div
       className={cn(
-        'rounded-xl border p-4 flex flex-col gap-1',
-        green
-          ? 'border-[#059669]/30 bg-[#059669]/5'
-          : accent
-          ? 'border-amber-200 bg-amber-50'
-          : 'border-border bg-background'
+        'rounded-xl border p-4 flex flex-col gap-1 shadow-none bg-white border-border',
+        green && 'border-[#059669]/30 bg-[#059669]/5',
+        accent && 'border-amber-200 bg-amber-50/50'
       )}
     >
       <p
         className={cn(
-          'text-2xl font-bold',
-          green ? 'text-[#059669]' : accent ? 'text-amber-700' : 'text-foreground'
+          'text-2xl font-bold font-mono tracking-tight text-[#26251e]',
+          green && 'text-[#059669]',
+          accent && 'text-amber-700'
         )}
       >
         {value}
       </p>
-      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{label}</p>
     </div>
   );
 }

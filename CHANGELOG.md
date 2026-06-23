@@ -5,6 +5,46 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [3.33.0] - 2026-06-23
+
+### Ajouté — Redesign Premium UI/UX de 5 Pages Clés & i18n
+- **Refonte UI/UX de l'Agenda** — Calendrier mensuel dynamique adapté selon la locale de l'utilisateur, et vues Semaine/Jour horaires stylisées.
+- **Refonte UI/UX du Centre d'Acquisition** — Simplification des cartes de statistiques, design minimaliste et outline-style pour les onglets de filtrage.
+- **Refonte UI/UX des Comptes / Entreprises** — Vue double colonne épurée, indicateur émeraude de sélection active, et structure en grille fine.
+- **Refonte UI/UX des Skills IA** — Liste de compétences sous forme de cartes minimalistes avec interrupteurs de basculement premium et modale de création épurée.
+- **Refonte UI/UX des Automations** — Refonte visuelle de la liste des règles (badges SI/ALORS émeraude/gris) et du builder de création en 4 étapes avec indicateurs circulaires.
+- **Intégration du motif Cult UI** — Application homogène de la texture de grille `bg-grid-pattern-20` et des bordures hairline fines (`border-[#e5e5e0]`) sans ombres sur l'ensemble de ces pages.
+- **Localisation Complète (i18n)** — Traduction intégrale de toutes ces interfaces en français, anglais et allemand (`lib/translations.ts`).
+
+## [3.32.0] - 2026-06-23
+
+### Corrigé — Correction du partage de lead et intégrations Google
+- **Partage public de lead** — Résolution du problème de jointure PostgREST instable dans la prévisualisation des partages via deux requêtes Supabase distinctes.
+- **Export Google Drive** — Génération de documents Google Docs enrichis (HTML) avec mise en page et marque Minerva au lieu de fichiers texte brut.
+- **Services Google** — Ajout de Google Contacts et Google Tasks avec un panneau Google Workspace affichant leur statut en temps réel.
+- **Sécurité et Fallback** — Fallback sur Claude Haiku en cas d'erreur de complétion du modèle IA principal lors de la génération de messages.
+
+## [3.31.0] - 2026-06-22
+
+### Ajouté — Visionneuse d'images & Nettoyage de la base de code
+- **Visionneuse plein écran (Lightbox)** — Ouverture des images et GIFs du module Messages dans un overlay plein écran moderne avec effet flouté et fermeture simplifiée.
+- **Auto-persistance des scores** — Sauvegarde automatique des 4 dimensions de score en base de données lors de la première consultation de la fiche d'un lead.
+- **Nettoyage et Consolidation** — Suppression de 71 fichiers obsolètes, déplacement des contextes vers `lib/` et mise à jour du README.
+
+## [3.30.0] - 2026-06-22
+
+### Ajouté — Scoring v2 Multidimensionnel
+- **Scoring en 4 Dimensions** — Division du score de lead sur 100 points en 4 axes clés de 25 points : ICP Fit, Engagement, Urgence, et Revenu.
+- **Interface de score enrichie** — Visualisation détaillée via 4 barres de progression colorées au sein de la fiche lead.
+- **Persistance et synchronisation** — Intégration des nouvelles colonnes de score dans SQLite (`database.cjs`) et Supabase avec migration SQL associée.
+
+## [3.29.0] - 2026-06-22
+
+### Ajouté — Messagerie enrichie, Emojis & Processseur d'Envoi
+- **Support des images et GIFs** — Affichage natif et compression automatique des images envoyées dans le module de messagerie.
+- **Sélecteur d'Emojis** — Ajout d'un panneau d'emojis intégré dans la zone d'envoi.
+- **Queue Processor Outreach** — Exécution d'une tâche planifiée toutes les 15 minutes pour l'envoi d'e-mails Gmail et la progression dans les séquences.
+
 ## [3.28.0] - 2026-06-23
 
 ### Ajouté — Générateur de Proposition Interactif, Scraping Avancé & Script Pitch

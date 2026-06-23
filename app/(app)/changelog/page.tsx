@@ -18,6 +18,20 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v3.33.0',
+      date: '2026-06-23',
+      titleKey: 'changelog.v3_33_0_title' as TranslationKey,
+      descKey: 'changelog.v3_33_0_desc' as TranslationKey,
+      highlights: [
+        "Refonte Premium UI/UX de 5 pages clés : Agenda, Centre d'Acquisition, Comptes / Entreprises, Skills IA, et la configuration des Automations (liste et création de règles).",
+        "Intégration du motif de grille Cult UI (bg-grid-pattern-20) sur l'ensemble de ces pages pour assurer une texture visuelle haut de gamme cohérente avec la charte graphique.",
+        "Mise en conformité stricte avec DESIGN.md : suppression de toutes les ombres surélevées au profit de bordures hairline fines (#e5e5e0), typographie dense (text-xs, uppercase labels) et uniformisation des accents vert émeraude (#059669).",
+        "Internationalisation complète (i18n) : élimination de tous les textes en français codés en dur dans les pages redessinées au profit de clés i18n dynamiques localisées en français, anglais et allemand dans lib/translations.ts.",
+        "Amélioration de l'Agenda : calendrier mensuel dynamique localisé par locale utilisateur et vues Semaine/Jour horaires stylisées.",
+        "Simplification visuelle des widgets : refonte des cartes de statistiques d'Acquisition et des profils de compétences avec interrupteurs premium."
+      ],
+    },
+    {
       version: 'v3.32.0',
       date: '2026-06-23',
       titleKey: 'changelog.v3_32_0_title' as TranslationKey,
