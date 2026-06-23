@@ -13,7 +13,7 @@ import {
 import { type Plan } from "@/lib/billingsdk-config";
 import { cn } from "@/lib/utils";
 import { X, Circle } from "lucide-react";
-import { useTheme } from "@/contexts/theme-context";
+import { useTheme } from "@/lib/theme-context";
 import { getThemeStyles } from "@/lib/themes";
 
 export interface CancelSubscriptionDialogProps {

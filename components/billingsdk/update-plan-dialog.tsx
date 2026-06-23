@@ -16,7 +16,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { useState, useCallback } from "react";
-import { useTheme } from "@/contexts/theme-context";
+import { useTheme } from "@/lib/theme-context";
 import { getThemeStyles } from "@/lib/themes";
 
 export interface UpdatePlanDialogProps {
