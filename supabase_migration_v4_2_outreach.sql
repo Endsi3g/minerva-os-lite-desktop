@@ -67,8 +67,26 @@ ALTER TABLE sequence_enrollments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE email_queue ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Workspace access sequence_templates" ON sequence_templates FOR ALL
-  USING (workspace_id IN (SELECT workspace_id FROM settings WHERE user_id = auth.uid()));
+  USING (
+    workspace_id IN (
+      SELECT id FROM workspaces WHERE owner_id = auth.uid()
+      UNION ALL
+      SELECT workspace_id FROM team_members WHERE member_user_id = auth.uid()
+    )
+  );
 CREATE POLICY "Workspace access sequence_enrollments" ON sequence_enrollments FOR ALL
-  USING (workspace_id IN (SELECT workspace_id FROM settings WHERE user_id = auth.uid()));
+  USING (
+    workspace_id IN (
+      SELECT id FROM workspaces WHERE owner_id = auth.uid()
+      UNION ALL
+      SELECT workspace_id FROM team_members WHERE member_user_id = auth.uid()
+    )
+  );
 CREATE POLICY "Workspace access email_queue" ON email_queue FOR ALL
-  USING (workspace_id IN (SELECT workspace_id FROM settings WHERE user_id = auth.uid()));
+  USING (
+    workspace_id IN (
+      SELECT id FROM workspaces WHERE owner_id = auth.uid()
+      UNION ALL
+      SELECT workspace_id FROM team_members WHERE member_user_id = auth.uid()
+    )
+  );

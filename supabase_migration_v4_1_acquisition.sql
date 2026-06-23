@@ -37,4 +37,10 @@ CREATE INDEX IF NOT EXISTS lead_events_created_at_idx ON lead_events(lead_id, cr
 
 ALTER TABLE lead_events ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users manage lead events in their workspace" ON lead_events FOR ALL
-  USING (workspace_id IN (SELECT workspace_id FROM settings WHERE user_id = auth.uid()));
+  USING (
+    workspace_id IN (
+      SELECT id FROM workspaces WHERE owner_id = auth.uid()
+      UNION ALL
+      SELECT workspace_id FROM team_members WHERE member_user_id = auth.uid()
+    )
+  );
