@@ -44,7 +44,7 @@ CREATE POLICY "services_workspace_access" ON services FOR ALL
     workspace_id IN (
       SELECT id::text FROM workspaces WHERE owner_id = auth.uid()
       UNION ALL
-      SELECT workspace_id FROM team_members WHERE member_user_id = auth.uid()
+      SELECT workspace_id::text FROM team_members WHERE member_user_id = auth.uid()
     )
   );
 
