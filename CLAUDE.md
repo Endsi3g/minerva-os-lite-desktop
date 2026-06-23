@@ -35,6 +35,57 @@ pnpm deploy               # node scripts/deploy.js
 
 > **EXPORT_MODE**: The electron:build and cap:sync scripts temporarily rename `app/api/` to `app-api-temp/` before calling `next build` so that Next.js static export (which cannot include API routes) succeeds, then restores the folder. Never manually delete or move `app/api/`.
 
+## SQL Migrations — RÈGLES ABSOLUES (données production)
+
+> Ces règles s'appliquent à CHAQUE fichier `supabase_migration_*.sql` sans exception.
+
+### Opérations AUTORISÉES (safe — ne détruisent jamais de données)
+```sql
+ALTER TABLE t ADD COLUMN IF NOT EXISTS col TYPE DEFAULT val;
+CREATE TABLE IF NOT EXISTS t (...);
+CREATE INDEX IF NOT EXISTS idx ON t (...);
+DROP POLICY IF EXISTS "name" ON t;   -- policies seulement, pas de données
+CREATE POLICY "name" ON t ...;
+UPDATE t SET col = val WHERE condition_precise;
+INSERT INTO t (...) ON CONFLICT DO NOTHING;
+```
+
+### Opérations INTERDITES (ne jamais écrire dans une migration)
+```sql
+DROP TABLE ...              -- INTERDIT, même avec IF EXISTS
+DROP TABLE ... CASCADE      -- DOUBLEMENT INTERDIT — propage la destruction
+TRUNCATE ...               -- INTERDIT
+DELETE FROM t              -- INTERDIT sans WHERE ultra-précis sur une ligne
+DROP COLUMN ...            -- INTERDIT sans backup confirmé par l'utilisateur
+ALTER TABLE t DROP ...     -- INTERDIT
+```
+
+### Checklist obligatoire avant chaque migration
+Toujours inclure ce bloc en tête de chaque fichier SQL :
+```sql
+-- PRE-MIGRATION CHECK (exécuter séparément, vérifier > 0 avant de continuer)
+-- SELECT COUNT(*) FROM leads;         -- noter le nombre
+-- SELECT COUNT(*) FROM team_members;  -- noter le nombre
+-- SELECT COUNT(*) FROM workspaces;    -- noter le nombre
+-- Si un compte = 0 → STOP, ne pas lancer la migration
+```
+
+### Pattern RLS canonique (toujours utiliser cette forme)
+```sql
+DROP POLICY IF EXISTS "nom de la policy" ON nom_table;
+CREATE POLICY "nom de la policy" ON nom_table FOR ALL
+  USING (
+    workspace_id IN (
+      SELECT id FROM workspaces WHERE owner_id = auth.uid()
+      UNION ALL
+      SELECT workspace_id FROM team_members WHERE member_user_id = auth.uid()
+    )
+  );
+```
+Ne jamais référencer `settings.workspace_id` (cette colonne n'existe pas).
+
+---
+
 ## Architecture
 
 ### Runtime Contexts

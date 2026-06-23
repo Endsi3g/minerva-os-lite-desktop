@@ -1,0 +1,42 @@
+-- ============================================================
+-- MIGRATION TEMPLATE — MINERVA OS
+-- ============================================================
+-- RÈGLES ABSOLUES (ne jamais enfreindre) :
+--   ✅ ADD COLUMN IF NOT EXISTS   — safe
+--   ✅ CREATE TABLE IF NOT EXISTS — safe
+--   ✅ CREATE INDEX IF NOT EXISTS  — safe
+--   ✅ DROP POLICY IF EXISTS       — safe (policies only)
+--   ✅ ALTER TABLE … ADD …         — safe
+--   ✅ UPDATE … SET … WHERE …      — safe si WHERE clause précise
+--   ❌ DROP TABLE                  — JAMAIS (même avec CASCADE)
+--   ❌ DROP COLUMN                 — JAMAIS sans backup confirmé
+--   ❌ TRUNCATE                    — JAMAIS
+--   ❌ DELETE FROM sans WHERE      — JAMAIS
+-- ============================================================
+-- AVANT DE LANCER : exécuter le backup check ci-dessous
+-- ============================================================
+
+-- 0. BACKUP CHECK (copier-coller dans un autre onglet et vérifier)
+-- SELECT COUNT(*) FROM leads;
+-- SELECT COUNT(*) FROM team_members;
+-- SELECT COUNT(*) FROM workspaces;
+-- SELECT COUNT(*) FROM settings;
+-- Si tous > 0 → continuer. Si 0 → STOP, vérifier connexion/RLS.
+
+-- 1. Vos modifications ici (ADD COLUMN IF NOT EXISTS uniquement)
+-- ALTER TABLE your_table ADD COLUMN IF NOT EXISTS your_column TYPE DEFAULT value;
+
+-- 2. RLS (toujours avec DROP POLICY IF EXISTS avant CREATE POLICY)
+-- DROP POLICY IF EXISTS "policy name" ON your_table;
+-- CREATE POLICY "policy name" ON your_table FOR ALL
+--   USING (
+--     workspace_id IN (
+--       SELECT id FROM workspaces WHERE owner_id = auth.uid()
+--       UNION ALL
+--       SELECT workspace_id FROM team_members WHERE member_user_id = auth.uid()
+--     )
+--   );
+
+-- 3. Vérification post-migration
+-- SELECT COUNT(*) FROM leads;   -- doit être identique à avant
+-- SELECT COUNT(*) FROM workspaces; -- doit être identique
