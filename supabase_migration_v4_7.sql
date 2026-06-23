@@ -26,7 +26,7 @@ ALTER TABLE documents ADD COLUMN IF NOT EXISTS is_shared   boolean DEFAULT false
 -- ── 5. Services table (if not exists) ─────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS services (
   id           uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-  workspace_id text NOT NULL,
+  workspace_id uuid NOT NULL,
   name         text NOT NULL,
   description  text DEFAULT '',
   price        numeric,
@@ -36,15 +36,28 @@ CREATE TABLE IF NOT EXISTS services (
   UNIQUE(workspace_id, name)
 );
 
--- RLS on services
+-- Migrate existing text workspace_id to uuid if needed (safe if no invalid data)
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'services'
+      AND column_name = 'workspace_id'
+      AND data_type = 'text'
+  ) THEN
+    ALTER TABLE services ALTER COLUMN workspace_id TYPE uuid USING workspace_id::uuid;
+  END IF;
+END $$;
+
+-- RLS on services (canonical pattern — uuid throughout, no casts)
 ALTER TABLE services ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "services_workspace_access" ON services;
 CREATE POLICY "services_workspace_access" ON services FOR ALL
   USING (
     workspace_id IN (
-      SELECT id::text FROM workspaces WHERE owner_id = auth.uid()
+      SELECT id FROM workspaces WHERE owner_id = auth.uid()
       UNION ALL
-      SELECT workspace_id::text FROM team_members WHERE member_user_id = auth.uid()
+      SELECT workspace_id FROM team_members WHERE member_user_id = auth.uid()
     )
   );
 
