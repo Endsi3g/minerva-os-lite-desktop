@@ -324,6 +324,8 @@ function ScriptPanel({ lead }: { lead: Lead }) {
 
 function QualificationPanel({ lead, onSave }: { lead: Lead; onSave: (fields: Partial<Lead>) => void }) {
   const [loading, setLoading] = useState(false);
+  const [advEnriching, setAdvEnriching] = useState(false);
+  const [advResult, setAdvResult] = useState<{ techStack?: string[]; webPresenceScore?: number; companySizeEstimate?: string; enrichedLogo?: string } | null>(null);
   const [dmName, setDmName] = useState(lead.decisionMakerName || '');
   const [dmRole, setDmRole] = useState(lead.decisionMakerRole || '');
 
@@ -371,21 +373,96 @@ function QualificationPanel({ lead, onSave }: { lead: Lead; onSave: (fields: Par
     setLoading(false);
   };
 
+  const handleAdvancedEnrich = async () => {
+    if (!lead.website) { toast.error("Aucun site web pour cet enrichissement."); return; }
+    setAdvEnriching(true);
+    try {
+      const res = await fetch(getApiUrl('/api/leads/enrich-advanced'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ leadId: lead.id }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setAdvResult({
+          techStack: typeof data.techStack === 'string' ? JSON.parse(data.techStack) : data.techStack,
+          webPresenceScore: data.webPresenceScore,
+          companySizeEstimate: data.companySizeEstimate,
+          enrichedLogo: data.enrichedLogo,
+        });
+        toast.success("Enrichissement avancé terminé !");
+      } else {
+        toast.error("Échec de l'enrichissement avancé.");
+      }
+    } catch { toast.error("Erreur réseau."); }
+    finally { setAdvEnriching(false); }
+  };
+
   const hasData = lead.fitScore !== undefined || lead.intentScore !== undefined || lead.suggestedEmails?.length || lead.decisionMakerName;
 
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Qualification</h4>
-        <button
-          onClick={handleEnrich}
-          disabled={loading}
-          className="flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold border border-[#059669]/30 text-[#059669] bg-[#059669]/5 hover:bg-[#059669]/10 transition-colors disabled:opacity-50"
-        >
-          {loading ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : <Zap className="w-2.5 h-2.5" />}
-          Enrichir
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={handleAdvancedEnrich}
+            disabled={advEnriching || !lead.website}
+            className="flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold border border-purple-200 text-purple-700 bg-purple-50 hover:bg-purple-100 transition-colors disabled:opacity-50"
+            title="Enrichissement avancé : logo, taille, tech stack"
+          >
+            {advEnriching ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : <Globe className="w-2.5 h-2.5" />}
+            Avancé
+          </button>
+          <button
+            onClick={handleEnrich}
+            disabled={loading}
+            className="flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold border border-[#059669]/30 text-[#059669] bg-[#059669]/5 hover:bg-[#059669]/10 transition-colors disabled:opacity-50"
+          >
+            {loading ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : <Zap className="w-2.5 h-2.5" />}
+            Enrichir
+          </button>
+        </div>
       </div>
+
+      {/* Advanced enrichment result */}
+      {advResult && (
+        <div className="rounded-lg border border-purple-100 bg-purple-50/50 p-2.5 space-y-1.5">
+          {advResult.enrichedLogo && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <div className="flex items-center gap-2">
+              <img src={advResult.enrichedLogo} alt="logo" className="w-6 h-6 rounded" />
+              <span className="text-[10px] text-[#7a7a76]">Logo détecté</span>
+            </div>
+          )}
+          {advResult.companySizeEstimate && (
+            <div className="flex items-center gap-1.5">
+              <Building className="w-3 h-3 text-purple-500" />
+              <span className="text-[10px] font-semibold text-[#26251e]">
+                {{ solo: 'Solo', small: 'Petite (2–10)', medium: 'Moyenne (11–50)', large: 'Grande (50+)' }[advResult.companySizeEstimate] || advResult.companySizeEstimate}
+              </span>
+            </div>
+          )}
+          {advResult.webPresenceScore !== undefined && (
+            <div className="space-y-0.5">
+              <div className="flex items-center justify-between">
+                <span className="text-[9px] text-[#7a7a76]">Présence web</span>
+                <span className="text-[9px] font-bold text-purple-700">{advResult.webPresenceScore}/100</span>
+              </div>
+              <div className="w-full h-1 bg-purple-100 rounded-full">
+                <div className="h-1 bg-purple-500 rounded-full" style={{ width: `${advResult.webPresenceScore}%` }} />
+              </div>
+            </div>
+          )}
+          {advResult.techStack && advResult.techStack.length > 0 && (
+            <div className="flex flex-wrap gap-1">
+              {advResult.techStack.map(t => (
+                <span key={t} className="text-[8px] font-bold px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-700 border border-purple-200">{t}</span>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Scores */}
       {(lead.fitScore !== undefined || lead.intentScore !== undefined) && (
@@ -459,7 +536,7 @@ function QualificationPanel({ lead, onSave }: { lead: Lead; onSave: (fields: Par
 }
 
 export function LeadDetailClient({ id }: { id: string }) {
-  const { leads, updateLead, addNoteToLead, campaigns, activeWorkspace } = useReach();
+  const { leads, updateLead, addNoteToLead, campaigns, activeWorkspace, addTask } = useReach();
   const { t } = useLanguage();
 
   // Look up lead
@@ -616,7 +693,7 @@ export function LeadDetailClient({ id }: { id: string }) {
   }
 
   // AI draft states
-  const [activeTab, setActiveTab] = useState<'notes' | 'drafts' | 'timeline' | 'gmail' | 'agenda'>('notes');
+  const [activeTab, setActiveTab] = useState<'notes' | 'drafts' | 'composer' | 'timeline' | 'gmail' | 'agenda'>('notes');
   const [drafts, setDrafts] = useState<Draft[]>([]);
   const [loadingDrafts, setLoadingDrafts] = useState(false);
   const [generating, setGenerating] = useState(false);
@@ -1758,6 +1835,18 @@ export function LeadDetailClient({ id }: { id: string }) {
                 </button>
                 <button
                   type="button"
+                  onClick={() => setActiveTab('composer')}
+                  className={cn(
+                    "pb-3 text-xs font-bold uppercase tracking-wider border-b-2 px-1 transition-all cursor-pointer",
+                    activeTab === 'composer'
+                      ? "border-[#059669] text-[#059669] font-extrabold"
+                      : "border-transparent text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  {t('composer.title')}
+                </button>
+                <button
+                  type="button"
                   onClick={() => setActiveTab('timeline')}
                   className={cn(
                     "pb-3 text-xs font-bold uppercase tracking-wider border-b-2 px-1 transition-all cursor-pointer",
@@ -2272,6 +2361,9 @@ export function LeadDetailClient({ id }: { id: string }) {
                     )}
                   </div>
                 </div>
+              ) : activeTab === 'composer' ? (
+                /* ── Composer unifié ── */
+                <ComposerPanel lead={lead} addNoteToLead={addNoteToLead} addTask={addTask} />
               ) : activeTab === 'timeline' ? (
                 /* Timeline Panel */
                 <div className="space-y-4">
@@ -3420,6 +3512,361 @@ export function LeadDetailClient({ id }: { id: string }) {
             </div>
 
           </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Composer unifié ──────────────────────────────────────────────────────────
+
+type ComposerTab = 'email' | 'call' | 'task' | 'meeting';
+
+function ComposerPanel({
+  lead,
+  addNoteToLead,
+  addTask,
+}: {
+  lead: Lead;
+  addNoteToLead: (leadId: string, content: string, type: Note['type']) => void;
+  addTask: (title: string, category: 'Follow-up' | 'Preparation' | 'General' | 'Meeting', dueDate?: string) => void;
+}) {
+  const { t } = useLanguage();
+  const [tab, setTab] = useState<ComposerTab>('email');
+
+  // Email state
+  const [emailSubject, setEmailSubject] = useState('');
+  const [emailBody, setEmailBody] = useState('');
+  const [emailSending, setEmailSending] = useState(false);
+  const [emailMsg, setEmailMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  // Call state
+  const [callOutcome, setCallOutcome] = useState<'reached' | 'voicemail' | 'no_answer'>('reached');
+  const [callNotes, setCallNotes] = useState('');
+  const [callLogging, setCallLogging] = useState(false);
+
+  // Task state
+  const [taskTitle, setTaskTitle] = useState('');
+  const [taskCategory, setTaskCategory] = useState<'Follow-up' | 'Preparation' | 'General' | 'Meeting'>('Follow-up');
+  const [taskDue, setTaskDue] = useState('');
+  const [taskLogging, setTaskLogging] = useState(false);
+  const [taskMsg, setTaskMsg] = useState<string | null>(null);
+
+  // Meeting state
+  const [meetingTitle, setMeetingTitle] = useState('');
+  const [meetingDate, setMeetingDate] = useState('');
+  const [meetingLink, setMeetingLink] = useState('');
+  const [meetingLogging, setMeetingLogging] = useState(false);
+  const [meetingMsg, setMeetingMsg] = useState<string | null>(null);
+
+  const handleSendEmail = async () => {
+    if (!emailSubject || !emailBody || !lead.contactEmail) return;
+    setEmailSending(true);
+    setEmailMsg(null);
+    try {
+      const res = await fetch(getApiUrl('/api/send-email'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: lead.contactEmail,
+          subject: emailSubject,
+          body: emailBody,
+          leadId: lead.id,
+        }),
+      });
+      if (res.ok) {
+        setEmailMsg({ type: 'success', text: t('composer.sent_ok') });
+        addNoteToLead(lead.id, `Email envoyé : ${emailSubject}`, 'email');
+        setEmailSubject('');
+        setEmailBody('');
+      } else {
+        setEmailMsg({ type: 'error', text: t('composer.error') });
+      }
+    } catch {
+      setEmailMsg({ type: 'error', text: t('composer.error') });
+    } finally {
+      setEmailSending(false);
+    }
+  };
+
+  const handleLogCall = () => {
+    setCallLogging(true);
+    const outcomeLabels = { reached: 'Contacté', voicemail: 'Messagerie', no_answer: 'Pas de réponse' };
+    const content = `Appel — ${outcomeLabels[callOutcome]}${callNotes ? ` : ${callNotes}` : ''}`;
+    addNoteToLead(lead.id, content, 'call');
+    setCallNotes('');
+    setCallOutcome('reached');
+    setTimeout(() => setCallLogging(false), 500);
+  };
+
+  const handleAddTask = () => {
+    if (!taskTitle) return;
+    setTaskLogging(true);
+    addTask(taskTitle, taskCategory, taskDue || undefined);
+    setTaskMsg(t('composer.logged_ok'));
+    setTaskTitle('');
+    setTaskDue('');
+    setTimeout(() => { setTaskLogging(false); setTaskMsg(null); }, 1500);
+  };
+
+  const handleLogMeeting = () => {
+    if (!meetingTitle) return;
+    setMeetingLogging(true);
+    const content = `RDV planifié : ${meetingTitle}${meetingDate ? ` — ${new Date(meetingDate).toLocaleDateString('fr-CA')}` : ''}${meetingLink ? ` — ${meetingLink}` : ''}`;
+    addNoteToLead(lead.id, content, 'general');
+    setMeetingMsg(t('composer.logged_ok'));
+    setMeetingTitle('');
+    setMeetingDate('');
+    setMeetingLink('');
+    setTimeout(() => { setMeetingLogging(false); setMeetingMsg(null); }, 1500);
+  };
+
+  const tabConfig: { key: ComposerTab; label: string; icon: React.ReactNode }[] = [
+    { key: 'email', label: t('composer.tab_email'), icon: <Mail className="w-3.5 h-3.5" /> },
+    { key: 'call', label: t('composer.tab_call'), icon: <Phone className="w-3.5 h-3.5" /> },
+    { key: 'task', label: t('composer.tab_task'), icon: <CheckSquare className="w-3.5 h-3.5" /> },
+    { key: 'meeting', label: t('composer.tab_meeting'), icon: <CalendarCheck className="w-3.5 h-3.5" /> },
+  ];
+
+  return (
+    <div className="space-y-4">
+      {/* Sub-tabs */}
+      <div className="flex items-center gap-1 bg-[#f4f4f3] rounded-xl p-1 border border-[#e5e5e0]">
+        {tabConfig.map(({ key, label, icon }) => (
+          <button
+            key={key}
+            type="button"
+            onClick={() => setTab(key)}
+            className={cn(
+              'flex-1 flex items-center justify-center gap-1.5 h-8 rounded-lg text-xs font-bold transition-colors',
+              tab === key ? 'bg-white text-[#059669] shadow-sm' : 'text-[#7a7a76] hover:text-[#26251e]'
+            )}
+          >
+            {icon}
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {/* Email */}
+      {tab === 'email' && (
+        <div className="space-y-3">
+          {!lead.contactEmail && (
+            <div className="text-xs text-amber-700 bg-amber-50 px-3 py-2 rounded-lg border border-amber-200">
+              Aucun email enregistré pour ce lead. Ajoutez-en un dans les informations de contact.
+            </div>
+          )}
+          <div className="space-y-1">
+            <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">{t('composer.email_to')}</label>
+            <div className="h-8 px-3 flex items-center rounded-lg border border-[#e5e5e0] bg-[#fafaf8] text-xs text-[#26251e]">
+              {lead.contactEmail || <span className="text-[#b0afa9]">—</span>}
+            </div>
+          </div>
+          <div className="space-y-1">
+            <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">{t('composer.email_subject')}</label>
+            <Input
+              value={emailSubject}
+              onChange={e => setEmailSubject(e.target.value)}
+              placeholder={`Bonjour ${lead.contactName?.split(' ')[0] || lead.businessName}…`}
+              className="h-8 text-xs border-[#e5e5e0] focus:ring-[#059669]"
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Corps</label>
+            <Textarea
+              value={emailBody}
+              onChange={e => setEmailBody(e.target.value)}
+              placeholder="Rédigez votre message…"
+              rows={6}
+              className="text-xs border-[#e5e5e0] resize-none focus:ring-[#059669]"
+            />
+          </div>
+          {emailMsg && (
+            <div className={cn('flex items-center gap-2 px-3 py-2 rounded-lg border text-xs font-semibold', emailMsg.type === 'success' ? 'bg-[#059669]/10 text-[#059669] border-[#059669]/20' : 'bg-red-50 text-red-700 border-red-200')}>
+              {emailMsg.type === 'success' ? <Check className="w-3.5 h-3.5" /> : <X className="w-3.5 h-3.5" />}
+              {emailMsg.text}
+            </div>
+          )}
+          <div className="flex gap-2">
+            <Button
+              onClick={handleSendEmail}
+              disabled={emailSending || !emailSubject || !emailBody || !lead.contactEmail}
+              className="h-8 bg-[#059669] hover:bg-[#047857] text-white font-bold text-xs gap-1.5"
+            >
+              {emailSending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+              {t('composer.send')}
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Call */}
+      {tab === 'call' && (
+        <div className="space-y-4">
+          {/* Script IA */}
+          {lead.websiteDescription && (
+            <div className="p-3 rounded-xl bg-[#059669]/5 border border-[#059669]/20 space-y-1">
+              <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-[#059669]">
+                <Sparkles className="w-3 h-3" />
+                Script IA suggéré
+              </div>
+              <p className="text-xs text-[#26251e] leading-relaxed line-clamp-4">
+                {`Bonjour ${lead.contactName?.split(' ')[0] || 'Monsieur/Madame'}, je vous appelle au sujet de ${lead.businessName}. ${lead.websiteDescription.slice(0, 200)}…`}
+              </p>
+            </div>
+          )}
+          <div className="space-y-1">
+            <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">{t('composer.call_outcome')}</label>
+            <div className="flex gap-2">
+              {(['reached', 'voicemail', 'no_answer'] as const).map(outcome => {
+                const labels = { reached: t('composer.call_outcome_reached'), voicemail: t('composer.call_outcome_voicemail'), no_answer: t('composer.call_outcome_no_answer') };
+                return (
+                  <button
+                    key={outcome}
+                    type="button"
+                    onClick={() => setCallOutcome(outcome)}
+                    className={cn(
+                      'flex-1 h-8 rounded-lg text-xs font-bold transition-colors border',
+                      callOutcome === outcome
+                        ? 'bg-[#059669] text-white border-[#059669]'
+                        : 'bg-white text-[#7a7a76] border-[#e5e5e0] hover:border-[#059669]/30'
+                    )}
+                  >
+                    {labels[outcome]}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          <div className="space-y-1">
+            <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">{t('composer.call_log')}</label>
+            <Textarea
+              value={callNotes}
+              onChange={e => setCallNotes(e.target.value)}
+              placeholder="Notes de l'appel…"
+              rows={3}
+              className="text-xs border-[#e5e5e0] resize-none focus:ring-[#059669]"
+            />
+          </div>
+          <Button
+            onClick={handleLogCall}
+            disabled={callLogging}
+            className="h-8 bg-[#059669] hover:bg-[#047857] text-white font-bold text-xs gap-1.5"
+          >
+            {callLogging ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Phone className="w-3.5 h-3.5" />}
+            {t('composer.log')}
+          </Button>
+        </div>
+      )}
+
+      {/* Task */}
+      {tab === 'task' && (
+        <div className="space-y-3">
+          <div className="space-y-1">
+            <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">{t('composer.task_title')}</label>
+            <Input
+              value={taskTitle}
+              onChange={e => setTaskTitle(e.target.value)}
+              placeholder={`Relancer ${lead.contactName?.split(' ')[0] || lead.businessName}`}
+              className="h-8 text-xs border-[#e5e5e0] focus:ring-[#059669]"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">{t('composer.task_category')}</label>
+              <Select value={taskCategory} onValueChange={v => setTaskCategory(v as typeof taskCategory)}>
+                <SelectTrigger className="h-8 text-xs border-[#e5e5e0]"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Follow-up" className="text-xs">Relance</SelectItem>
+                  <SelectItem value="Preparation" className="text-xs">Préparation</SelectItem>
+                  <SelectItem value="General" className="text-xs">Général</SelectItem>
+                  <SelectItem value="Meeting" className="text-xs">Réunion</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">{t('composer.task_due')}</label>
+              <input
+                type="date"
+                value={taskDue}
+                onChange={e => setTaskDue(e.target.value)}
+                className="w-full h-8 text-xs border border-[#e5e5e0] rounded-lg px-2 focus:outline-none focus:ring-1 focus:ring-[#059669]"
+              />
+            </div>
+          </div>
+          {taskMsg && (
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-[#059669]/20 bg-[#059669]/5 text-xs font-semibold text-[#059669]">
+              <Check className="w-3.5 h-3.5" />{taskMsg}
+            </div>
+          )}
+          <Button
+            onClick={handleAddTask}
+            disabled={taskLogging || !taskTitle}
+            className="h-8 bg-[#059669] hover:bg-[#047857] text-white font-bold text-xs gap-1.5"
+          >
+            {taskLogging ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckSquare className="w-3.5 h-3.5" />}
+            Créer la tâche
+          </Button>
+        </div>
+      )}
+
+      {/* Meeting */}
+      {tab === 'meeting' && (
+        <div className="space-y-3">
+          <div className="space-y-1">
+            <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">{t('composer.meeting_title')}</label>
+            <Input
+              value={meetingTitle}
+              onChange={e => setMeetingTitle(e.target.value)}
+              placeholder={`RDV avec ${lead.businessName}`}
+              className="h-8 text-xs border-[#e5e5e0] focus:ring-[#059669]"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">{t('composer.meeting_date')}</label>
+              <input
+                type="datetime-local"
+                value={meetingDate}
+                onChange={e => setMeetingDate(e.target.value)}
+                className="w-full h-8 text-xs border border-[#e5e5e0] rounded-lg px-2 focus:outline-none focus:ring-1 focus:ring-[#059669]"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">{t('composer.meeting_link')}</label>
+              <Input
+                value={meetingLink}
+                onChange={e => setMeetingLink(e.target.value)}
+                placeholder="meet.google.com/…"
+                className="h-8 text-xs border-[#e5e5e0] focus:ring-[#059669]"
+              />
+            </div>
+          </div>
+          {lead.website && (
+            <div className="p-3 rounded-xl bg-[#f4f4f3] border border-[#e5e5e0]">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76] mb-1">Lien de booking</p>
+              <Link
+                href={`/book/${encodeURIComponent(lead.contactEmail || lead.businessName)}`}
+                className="text-xs text-[#059669] font-semibold hover:underline"
+                target="_blank"
+              >
+                Partager mon lien de réservation →
+              </Link>
+            </div>
+          )}
+          {meetingMsg && (
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-[#059669]/20 bg-[#059669]/5 text-xs font-semibold text-[#059669]">
+              <Check className="w-3.5 h-3.5" />{meetingMsg}
+            </div>
+          )}
+          <Button
+            onClick={handleLogMeeting}
+            disabled={meetingLogging || !meetingTitle}
+            className="h-8 bg-[#059669] hover:bg-[#047857] text-white font-bold text-xs gap-1.5"
+          >
+            {meetingLogging ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CalendarCheck className="w-3.5 h-3.5" />}
+            {t('composer.log')}
+          </Button>
         </div>
       )}
     </div>
