@@ -97,7 +97,7 @@ function Avatar({ name, src, size = 'md' }: { name: string; src?: string | null;
 }
 
 // Message content renderer — handles [[img]]..., plain text, @mentions
-function MessageContent({ content, isMe }: { content: string; isMe: boolean }) {
+function MessageContent({ content, isMe, onImageClick }: { content: string; isMe: boolean; onImageClick: (src: string) => void }) {
   if (content.startsWith('[[img]]')) {
     const src = content.slice(7);
     return (
@@ -105,11 +105,8 @@ function MessageContent({ content, isMe }: { content: string; isMe: boolean }) {
       <img
         src={src}
         alt="Image"
-        className="max-w-[240px] max-h-[220px] rounded-xl object-cover cursor-pointer block"
-        onClick={() => {
-          const win = window.open();
-          if (win) { win.document.write(`<img src="${src}" style="max-width:100%">`); }
-        }}
+        className="max-w-[240px] max-h-[220px] rounded-xl object-cover cursor-pointer block hover:opacity-90 transition-opacity"
+        onClick={() => onImageClick(src)}
       />
     );
   }
@@ -146,6 +143,7 @@ export default function MessagesRoot() {
   const [currentUserName, setCurrentUserName] = useState<string>('');
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [emojiOpen, setEmojiOpen] = useState(false);
+  const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -546,7 +544,7 @@ export default function MessagesRoot() {
                                   )
                             )}
                           >
-                            <MessageContent content={msg.content} isMe={isMe} />
+                            <MessageContent content={msg.content} isMe={isMe} onImageClick={setLightboxSrc} />
                           </div>
 
                           {!showSenderInfo && (
@@ -668,6 +666,29 @@ export default function MessagesRoot() {
           </div>
         </div>
       </div>
+
+      {/* Fullscreen image lightbox */}
+      {lightboxSrc && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-6 animate-in fade-in duration-150"
+          onClick={() => setLightboxSrc(null)}
+        >
+          <button
+            onClick={() => setLightboxSrc(null)}
+            className="absolute top-4 right-4 h-9 w-9 flex items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors"
+            aria-label="Fermer"
+          >
+            <X className="h-5 w-5" />
+          </button>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={lightboxSrc}
+            alt="aperçu plein écran"
+            onClick={e => e.stopPropagation()}
+            className="max-w-full max-h-full rounded-xl object-contain shadow-2xl"
+          />
+        </div>
+      )}
     </div>
   );
 }

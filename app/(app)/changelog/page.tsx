@@ -18,6 +18,19 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v3.31.0',
+      date: '2026-06-22 · 23h55',
+      titleKey: 'changelog.v3_31_0_title' as TranslationKey,
+      descKey: 'changelog.v3_31_0_desc' as TranslationKey,
+      highlights: [
+        "Lightbox plein écran dans Messages — Cliquer une image ouvre maintenant un overlay plein écran identique à l'onglet Chat Équipe (fond noir/blur, bouton ✕, clic extérieur pour fermer).",
+        "Score v2 auto-persisté — À l'ouverture d'une fiche lead, si les sous-scores ne sont pas encore en base, l'API /api/leads/score est appelée automatiquement et les 4 dimensions sont sauvegardées.",
+        "Nettoyage codebase — 71 fichiers supprimés (scratch-*.cjs, screenshots, 13 composants démo). Migrations SQL déplacées dans supabase/migrations/. contexts/ fusionné dans lib/.",
+        "RLS fix documenté — Policies leads_workspace / tasks_workspace / documents_workspace référençant workspace_members (table inexistante) identifiées et supprimées. Données restaurées.",
+        "README mis à jour — Architecture v3.31.0 avec arborescence complète, badges version, structure supabase/.",
+      ],
+    },
+    {
       version: 'v3.30.0',
       date: '2026-06-22 · 23h10',
       titleKey: 'changelog.v3_30_0_title' as TranslationKey,

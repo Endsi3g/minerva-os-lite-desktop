@@ -5,20 +5,20 @@
 <h1 align="center">Minerva OS Reach Lite</h1>
 
 <p align="center">
-  <strong>Système de Prospection et de Qualification de Leads Locaux de Haute Performance</strong>
+  <strong>CRM de prospection locale tout-en-un — IA, terrain, outreach automatisé</strong>
 </p>
 
 <p align="center">
-  Une application de bureau/web basée sur Next.js, Tailwind CSS, Supabase et Google APIs pour automatiser la découverte, l'audit SEO, la gestion des leads et l'engagement des commerces locaux.
+  Application Next.js · Electron · Supabase · Capacitor (iOS/Android) pour découvrir, qualifier et engager des prospects locaux avec l'aide de l'IA.
 </p>
 
 <div align="center">
 
-[![Node.js Version](https://img.shields.io/badge/node-%3E%3D20.0.0-blue.svg?style=flat-square)](https://nodejs.org/)
-[![pnpm Package Manager](https://img.shields.io/badge/pnpm-%3E%3D9.0.0-orange.svg?style=flat-square)](https://pnpm.io/)
-[![Framework Next.js](https://img.shields.io/badge/next.js-16.2.6-black.svg?style=flat-square)](https://nextjs.org/)
-[![Database Supabase](https://img.shields.io/badge/database-supabase-emerald.svg?style=flat-square)](https://supabase.com/)
-[![Version](https://img.shields.io/badge/version-2.77.0-f54e00.svg?style=flat-square)](#changelog)
+[![Node.js](https://img.shields.io/badge/node-%3E%3D20.0.0-blue.svg?style=flat-square)](https://nodejs.org/)
+[![pnpm](https://img.shields.io/badge/pnpm-%3E%3D10.0.0-orange.svg?style=flat-square)](https://pnpm.io/)
+[![Next.js](https://img.shields.io/badge/next.js-16.2.6-black.svg?style=flat-square)](https://nextjs.org/)
+[![Supabase](https://img.shields.io/badge/database-supabase-emerald.svg?style=flat-square)](https://supabase.com/)
+[![Version](https://img.shields.io/badge/version-3.31.0-059669.svg?style=flat-square)](#changelog)
 
 </div>
 
@@ -201,76 +201,73 @@ L'application fonctionne dans trois contextes distincts partageant le même code
 ## Architecture du projet
 
 ```
-app/
-  layout.tsx                  # Root layout (ThemeProvider, LanguageProvider)
-  (app)/                      # Shell authentifié avec sidebar
-    layout.tsx                # Sidebar + topbar + ReachProvider
-    today/                    # Tableau de bord quotidien
-    leads/                    # Liste + [id] détail + new/
-    prospecting/              # UI de scraping
-    pipeline/                 # Kanban + tableau
-    map/                      # Carte MapLibre (SSR désactivé via map-loader.tsx)
-    inbox/                    # Boîte de réception prospection Gmail
-    sequences/                # Séquences email + new/
-    campaigns/                # Campagnes + new/
-    intelligence/             # Insights IA
-    settings/                 # Paramètres sectionnés
-    team/                     # Gestion d'équipe
-    workspaces/               # CRUD workspaces + [id]/
-    agents/                   # Agent store + [id]/ + creator/[userId]/
-    analytics/                # Dashboard analytique
-    chat/                     # Chat IA
-    assistant/                # Assistant IA général
-    integrations/             # Connecteurs tiers
-    library/                  # Bibliothèque + [id]/
-    services/                 # Catalogue d'offres
-    projects/                 # Projets + [id]/
-    activities/               # Fil d'activités global
-    audit/                    # Audit SEO
-    billing/                  # Facturation
-    download/                 # Téléchargement app
-    changelog/                # Notes de version
-    help/                     # Centre d'aide + guides/[slug]/
-  api/
-    auth/                     # Google OAuth, PKCE reset
-    chat/                     # Streaming IA (Anthropic SDK)
-    generate-draft/           # Brouillon email IA
-    generate-proposal/        # Proposition PDF HTML
-    scrape-maps/              # OSM + DDG + Apify
-    scrape-apify/             # Apify dédié
-    audit-seo/                # Analyse SEO + export-pdf/
-    send-email/               # Envoi Gmail
-    export-drive/             # Export Google Drive
-    email-sequences/          # CRUD séquences
-    inbox/                    # threads/ thread/[threadId]/ suggest-reply/
-    enrich-contact/           # Enrichissement lead
-    support/contact/          # Formulaire de support SMTP
-    team/                     # invite/ members/ role/
-    workspaces/               # CRUD workspaces
-    agents/                   # CRUD agents IA
-    settings/ai-keys/         # Masquage des clés IA
-    cron/                     # email-sequences/ overdue-check/ daily-digest/ weekly-report/ gmail-check-replies/
-
-electron/
-  main.cjs                   # Main process, 4 fenêtres, IPC handlers
-  preload.js                 # contextBridge → window.electron
-  database.cjs               # SQLite + migrations (ALTER TABLE safe re-run)
-  sync.cjs                   # Sync bidirectionnel Last-Write-Wins
-
-lib/
-  reach-context.tsx          # État global, dual-store SQLite/Supabase
-  translations.ts            # Clés i18n fr/en/de
-  language-context.tsx       # useLanguage() hook
-  api-helper.ts              # getApiUrl() pour Electron/Capacitor
-  native-bridge.ts           # Capacitor avec fallback web
-  mock-data.ts               # Interfaces TypeScript + données de démo
-
-components/
-  ui/                        # shadcn/ui (Radix UI)
-  analytics-dashboard.tsx    # Tendances 30 jours réelles
-  realtime-sync-listener.tsx # Abonnements Supabase Realtime
-  notification-bell.tsx      # Sonnette de notification
-  tree-mascot.tsx            # Mascotte arbre animée SVG
+minerva-os-lite-desktop/
+├── app/
+│   ├── layout.tsx                 # Root layout (ThemeProvider, LanguageProvider)
+│   ├── (app)/                     # Shell authentifié avec sidebar
+│   │   ├── layout.tsx             # Sidebar + topbar + ReachProvider + TooltipProvider
+│   │   ├── today/                 # Tableau de bord + feed activité + intelligence comportementale
+│   │   ├── leads/                 # Liste TanStack Table + [id] détail + new/
+│   │   ├── prospecting/           # Scraping OSM/Apify + carte MapLibre
+│   │   ├── pipeline/              # Kanban + vue tableau
+│   │   ├── agenda/                # Calendrier semaine/jour + créneaux
+│   │   ├── inbox/                 # Gmail prospection (threads, suggestions IA)
+│   │   ├── outreach/              # Séquences + cadences 14j + queue email
+│   │   ├── messages/              # Chat équipe (DM + groupe, images, emojis)
+│   │   ├── field/                 # Mode terrain : route → préparation → résultat
+│   │   ├── intelligence/          # Insights IA + rapport hebdo
+│   │   ├── assistant/             # Chat IA + Canvas (blocs canvas: auto)
+│   │   ├── skills/                # Skills partagées par workspace
+│   │   ├── accounts/              # Comptes/Entreprises vue 360°
+│   │   ├── settings/              # Paramètres + automations
+│   │   ├── team/                  # Gestion équipe + chat
+│   │   ├── workspaces/            # CRUD workspaces
+│   │   ├── agents/                # Agents IA custom + store
+│   │   ├── analytics/             # Dashboard analytique 30j
+│   │   ├── library/               # Bibliothèque documents
+│   │   ├── roadmap/               # Roadmap produit
+│   │   └── changelog/             # Notes de version
+│   └── api/
+│       ├── auth/google/           # OAuth Google (settings.google_*)
+│       ├── google/auth/           # OAuth Google (google_accounts/tokens) — inbox/agenda
+│       ├── chat/                  # Streaming IA (Anthropic / OpenRouter / Groq)
+│       ├── leads/score/           # Score v2 multidimensionnel + persist
+│       ├── cron/
+│       │   ├── process-queue/     # Queue outreach (9h lun-ven)
+│       │   ├── email-sequences/   # Séquences (9h quotidien)
+│       │   ├── gmail-check-replies/ # Détection réponses Gmail (10h quotidien)
+│       │   ├── overdue-check/     # Rappels en retard (8h quotidien)
+│       │   ├── daily-digest/      # Digest (20h quotidien)
+│       │   └── weekly-report/     # Rapport IA (9h lundi)
+│       └── ...                    # scrape-maps, send-email, team/, workspaces/, etc.
+│
+├── electron/
+│   ├── main.cjs                  # Main process, 4 fenêtres (main/spotlight/tray/PDF)
+│   ├── preload.js                # contextBridge → window.electron
+│   ├── database.cjs              # SQLite init + migrations (ALTER TABLE safe)
+│   └── sync.cjs                  # Sync Last-Write-Wins (5 min + on-demand)
+│
+├── lib/
+│   ├── reach-context.tsx         # État global, dual-store SQLite/Supabase
+│   ├── mock-data.ts              # Interfaces TypeScript (Lead, Task, Note…)
+│   ├── translations.ts           # i18n fr/en/de
+│   ├── lead-score.ts             # Scoring v2 (ICP+Engagement+Urgence+Revenu /25 chacun)
+│   ├── lead-scoring.ts           # Scoring v1 (critères hérités)
+│   ├── google/                   # Gmail + Calendar services
+│   ├── supabase/                 # client.ts / server.ts / middleware.ts
+│   └── ...                       # api-helper, language-context, theme-context, utils…
+│
+├── components/
+│   ├── ui/                       # shadcn/ui (Radix UI)
+│   ├── billingsdk/               # Composants facturation
+│   └── ...                       # analytics-dashboard, error-boundary, page-transition…
+│
+├── supabase/
+│   ├── supabase_schema.sql       # Schéma complet de référence
+│   ├── supabase_migration_TEMPLATE.sql
+│   └── migrations/               # 15 migrations versionnées (v296 → v4_scoring_v2)
+│
+└── scripts/                      # deploy.js, launcher.js, sign-app.sh…
 ```
 
 ### Pattern dual-store (à respecter dans tout nouveau code)
@@ -370,6 +367,29 @@ pnpm cap:open:android     # ouvre dans Android Studio
 ---
 
 ## Changelog
+
+### v3.31.0 (2026-06-22)
+- **fix**: lightbox plein écran dans Messages — remplace `window.open()` par un overlay identique à l'onglet Chat Équipe
+- **fix**: Score v2 auto-persisté au chargement de la fiche lead (appel `/api/leads/score`) si les colonnes DB sont null — plus jamais recalculé à vide
+- **chore**: nettoyage de la codebase — suppression de 71 fichiers (scratch, screenshots, démos), migrations SQL déplacées dans `supabase/migrations/`, `contexts/` fusionné dans `lib/`
+- **fix**: policies RLS `leads_workspace` / `tasks_workspace` / `documents_workspace` référençant `workspace_members` (table inexistante) identifiées et documentées
+- **docs**: README mis à jour v3.31.0 avec architecture complète et arborescence actuelle
+
+### v3.30.0 (2026-06-22)
+- **feat**: Scoring v2 multidimensionnel — ICP Fit + Engagement + Urgence + Revenu (/25 chacun, total /100)
+- **feat**: carte Score v2 dans la fiche lead avec 4 barres colorées animées
+- **api**: `POST /api/leads/score` — calcule, sauvegarde les 4 dimensions, log `score_updated` dans `lead_events`
+- **db**: colonnes `score_icp`, `score_engagement`, `score_urgency`, `score_revenue` + index `score DESC`
+
+### v3.29.0 (2026-06-22)
+- **fix**: images dans Messages affichées correctement (décodage `[[img]]` prefix → `<img>`)
+- **feat**: messages — emoji picker (45 emojis), upload image avec compression canvas (800px / 70%)
+- **feat**: messages — prévisualisation image avant envoi, barre input dégagée du blur
+- **fix**: table `lead_shares` avec colonnes correctes (`share_token`, `created_by`)
+
+### v3.28.0 (2026-06-22)
+- **feat**: Queue Processor Outreach — cron Vercel `0 9 * * 1-5` (`/api/cron/process-queue`)
+- **feat**: Cadences vue 14 jours avec filtrage des jours vides
 
 ### v2.59.0
 - **feat**: interface responsive mobile & tablette — pages leads, inbox, agents et settings adaptées aux petits écrans (breakpoints sm/md, grilles fluides, panneau détail plein écran sur mobile)

@@ -484,6 +484,30 @@ export function LeadDetailClient({ id }: { id: string }) {
   // Unique per-mount suffix prevents "already subscribed" errors on React double-invoke
   const presenceChannelSuffix = useRef(`_${Math.random().toString(36).slice(2, 8)}`);
 
+  // Auto-compute and persist score v2 if not yet saved to DB
+  useEffect(() => {
+    if (!lead || lead.scoreIcp != null) return;
+    fetch(getApiUrl('/api/leads/score'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ leadId: lead.id }),
+    })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data?.scores) {
+          updateLead(lead.id, {
+            score: data.scores.total,
+            scoreIcp: data.scores.icp,
+            scoreEngagement: data.scores.engagement,
+            scoreUrgency: data.scores.urgency,
+            scoreRevenue: data.scores.revenue,
+          });
+        }
+      })
+      .catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lead?.id]);
+
   useEffect(() => {
     const fetchUser = async () => {
       const supabase = createClient();
