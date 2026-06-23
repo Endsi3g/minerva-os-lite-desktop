@@ -15,6 +15,10 @@ import {
   MicrosoftSharepoint,
   GoogleTasks2026,
   GoogleMeet2026,
+  Firecrawl,
+  Yelp,
+  Here,
+  GoogleDocs2026,
 } from '@thesvg/react';
 
 export interface IconProps extends React.SVGProps<SVGSVGElement> {
@@ -81,6 +85,22 @@ export function GoogleTasksIcon({ className, size = 24, ...props }: IconProps) {
 
 export function GoogleMeetIcon({ className, size = 24, ...props }: IconProps) {
   return <GoogleMeet2026 className={className} width={size} height={size} {...props} />;
+}
+
+export function FirecrawlSvgIcon({ className, size = 24, ...props }: IconProps) {
+  return <Firecrawl className={className} width={size} height={size} {...props} />;
+}
+
+export function YelpIcon({ className, size = 24, ...props }: IconProps) {
+  return <Yelp className={className} width={size} height={size} {...props} />;
+}
+
+export function HereIcon({ className, size = 24, ...props }: IconProps) {
+  return <Here className={className} width={size} height={size} {...props} />;
+}
+
+export function GoogleDocsIcon({ className, size = 24, ...props }: IconProps) {
+  return <GoogleDocs2026 className={className} width={size} height={size} {...props} />;
 }
 
 export function GoogleContactsIcon({ className, size = 24, ...props }: IconProps) {

@@ -36,6 +36,10 @@ import {
   GoogleMapsIcon,
   GoogleTasksIcon,
   GoogleContactsIcon,
+  FirecrawlSvgIcon,
+  YelpIcon,
+  HereIcon,
+  GoogleDocsIcon,
 } from '@/components/icons';
 import {
   getConnectedIntegrations,
@@ -422,6 +426,126 @@ const DEFAULT_INTEGRATIONS: IntegrationItem[] = [
       'Collez l\'URL dans l\'éditeur de cette intégration sous "Authentification > Webhook URL".',
       'Choisissez les événements à envoyer (nouveau lead, rapport, rappel) dans l\'onglet "Déclencheurs".',
     ],
+  },
+  {
+    id: 'google-directions',
+    name: 'Google Directions API',
+    category: 'maps',
+    owner: 'Alex Smith',
+    email: 'alexsmith@minerva-os-lite.com',
+    accEmail: 'Clé API Serveur',
+    icon: GoogleMapsIcon,
+    status: 'Active',
+    statusKey: 'integrations.status.active' as TranslationKey,
+    assets: 'Illimité',
+    access: 'Entire workspace',
+    accessKey: 'integrations.access.entire_workspace' as TranslationKey,
+    description: 'Calculez des itinéraires routiers, cyclistes, pédestres et en transports en commun entre plusieurs points de passage pour optimiser vos tournées terrain.',
+    steps: [
+      'Cette intégration est activée globalement côté serveur à l\'aide d\'une clé d\'API Google Cloud Maps.',
+      'Elle permet de calculer des itinéraires optimaux entre plusieurs prospects lors de vos tournées commerciales.',
+      'Aucune authentification OAuth individuelle n\'est nécessaire pour vos utilisateurs.'
+    ]
+  },
+  {
+    id: 'google-docs',
+    name: 'Google Docs API',
+    category: 'document',
+    owner: 'Alex Smith',
+    email: 'alexsmith@minerva-os-lite.com',
+    accEmail: 'documents.readonly, documents',
+    icon: GoogleDocsIcon,
+    status: 'Inactive',
+    statusKey: 'integrations.status.inactive' as TranslationKey,
+    assets: '—',
+    access: 'Private',
+    accessKey: 'integrations.access.private' as TranslationKey,
+    description: 'Créez, lisez et modifiez des documents Google Docs directement depuis Minerva pour générer vos propositions commerciales et comptes-rendus.',
+    steps: [
+      'Connectez votre compte Google via le bouton « Se connecter ».',
+      'Autorisez l\'accès à vos documents Google Docs (scopes documents et documents.readonly).',
+      'Générez des propositions commerciales ou des rapports d\'audit directement depuis Minerva en un clic.'
+    ]
+  },
+  {
+    id: 'google-meet-rest',
+    name: 'Google Meet REST API',
+    category: 'meeting',
+    owner: 'Alex Smith',
+    email: 'alexsmith@minerva-os-lite.com',
+    accEmail: 'meeting.create, artifacts',
+    icon: GoogleMeetIcon,
+    status: 'Active',
+    statusKey: 'integrations.status.active' as TranslationKey,
+    assets: '—',
+    access: 'Private',
+    accessKey: 'integrations.access.private' as TranslationKey,
+    description: 'Créez et gérez des espaces de réunion Google Meet via l\'API REST officielle pour planifier des visioconférences directement depuis vos fiches prospects.',
+    steps: [
+      'L\'intégration utilise votre connexion Google principale (Gmail & Calendar).',
+      'Lors de la création de rendez-vous dans Minerva, un espace Google Meet sera généré automatiquement via l\'API REST.',
+      'Les participants recevront une invitation avec le lien de réunion directement dans leur agenda.'
+    ]
+  },
+  {
+    id: 'firecrawl',
+    name: 'Firecrawl',
+    category: 'scraping',
+    owner: 'Alex Smith',
+    email: 'alexsmith@minerva-os-lite.com',
+    accEmail: 'Clé API Firecrawl',
+    icon: FirecrawlSvgIcon,
+    status: 'Inactive',
+    statusKey: 'integrations.status.inactive' as TranslationKey,
+    assets: '—',
+    access: 'Private',
+    accessKey: 'integrations.access.private' as TranslationKey,
+    description: 'Scrapez et crawlez n\'importe quelle page web en Markdown propre pour enrichir vos fiches prospects avec des données issues de leurs sites.',
+    steps: [
+      'Créez un compte sur firecrawl.dev et copiez votre clé API depuis le tableau de bord.',
+      'Collez la clé dans Paramètres Minerva > Intégrations > Clé Firecrawl.',
+      'Dans vos fiches prospects, utilisez l\'outil d\'enrichissement web pour scraper le site de votre prospect automatiquement.'
+    ]
+  },
+  {
+    id: 'yelp',
+    name: 'Yelp',
+    category: 'scraping',
+    owner: 'Alex Smith',
+    email: 'alexsmith@minerva-os-lite.com',
+    accEmail: 'Clé API Yelp Fusion',
+    icon: YelpIcon,
+    status: 'Inactive',
+    statusKey: 'integrations.status.inactive' as TranslationKey,
+    assets: '—',
+    access: 'Private',
+    accessKey: 'integrations.access.private' as TranslationKey,
+    description: 'Enrichissez vos prospects locaux avec les données Yelp : avis, notes, photos, horaires et coordonnées des commerces référencés sur la plateforme.',
+    steps: [
+      'Créez une application sur api.yelp.com/v3 et obtenez votre clé API Yelp Fusion.',
+      'Collez la clé dans Paramètres Minerva > Intégrations > Clé API Yelp.',
+      'Dans l\'outil de prospection, activez la source Yelp pour enrichir vos fiches avec les avis et informations commerciales.'
+    ]
+  },
+  {
+    id: 'here-maps',
+    name: 'HERE Maps',
+    category: 'maps',
+    owner: 'Alex Smith',
+    email: 'alexsmith@minerva-os-lite.com',
+    accEmail: 'Clé API HERE',
+    icon: HereIcon,
+    status: 'Inactive',
+    statusKey: 'integrations.status.inactive' as TranslationKey,
+    assets: '—',
+    access: 'Private',
+    accessKey: 'integrations.access.private' as TranslationKey,
+    description: 'Géocodez des adresses, calculez des itinéraires et affichez des cartes interactives avec la plateforme HERE Maps comme alternative à Google Maps.',
+    steps: [
+      'Créez un compte sur developer.here.com et générez une clé API depuis le portail développeur.',
+      'Collez la clé dans Paramètres Minerva > Intégrations > Clé HERE Maps.',
+      'La plateforme HERE sera disponible en alternative pour les calculs d\'itinéraires et la géolocalisation de vos prospects.'
+    ]
   },
 ];
 

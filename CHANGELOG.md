@@ -5,6 +5,17 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [3.36.0] - 2026-06-23
+
+### Ajouté — 7 Nouvelles Intégrations (Maps, Docs, Meeting, Scraping)
+- **Google Directions API** — Intégration serveur active (clé API Cloud Maps) pour le calcul d'itinéraires routiers, cyclistes et multi-modes entre plusieurs prospects, visible dans la catégorie `maps`.
+- **Google Docs API** — Connexion OAuth permettant de créer, lire et modifier des documents Google Docs directement depuis Minerva pour générer propositions commerciales et comptes-rendus, catégorie `document`.
+- **Google Meet REST API** — Intégration active (Private) pour la création automatique d'espaces de réunion Meet via l'API REST officielle lors de la prise de rendez-vous, catégorie `meeting`.
+- **Firecrawl** — Connecteur de scraping web propre (Markdown) via la clé API Firecrawl pour enrichir les fiches prospects à partir de leurs sites, catégorie `scraping`.
+- **Yelp Fusion** — Enrichissement local des prospects avec avis, notes, photos et horaires via l'API Yelp Fusion, catégorie `scraping`.
+- **HERE Maps** — Alternative à Google Maps pour le géocodage et le calcul d'itinéraires, intégrée via clé API HERE, catégorie `maps`.
+- **Icônes natives** — Toutes les nouvelles intégrations utilisent leurs icônes officielles via `@thesvg/react` (`Firecrawl`, `Yelp`, `Here`, `GoogleDocs2026`).
+
 ## [3.35.1] - 2026-06-23
 
 ### Corrigé — Résolution du bug d'affichage des icônes SVG sur la page Intégrations
