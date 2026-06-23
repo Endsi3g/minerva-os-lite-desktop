@@ -109,7 +109,7 @@ export async function POST(req: NextRequest) {
 
   const { data: lead, error } = await supabase
     .from('leads')
-    .select('*')
+    .select('id, website, business_name, niche, city, website_description, reviews_count, rating, social_links')
     .eq('id', leadId)
     .maybeSingle();
 
@@ -172,20 +172,29 @@ export async function POST(req: NextRequest) {
     } catch { /* silent */ }
   }
 
-  // Save to Supabase
+  // Save to Supabase — gracefully degrade if new columns don't exist yet (migration pending)
   const { error: updateErr } = await supabase
     .from('leads')
     .update(updates)
     .eq('id', leadId);
 
-  if (updateErr) return NextResponse.json({ error: updateErr.message }, { status: 500 });
+  if (updateErr) {
+    // Fallback: try with only base columns that definitely exist
+    const baseUpdates = { updated_at: updates['updated_at'] };
+    const { error: fallbackErr } = await supabase.from('leads').update(baseUpdates).eq('id', leadId);
+    if (fallbackErr) {
+      console.error('[enrich-advanced] fallback update failed:', fallbackErr.message);
+    }
+    // Return computed data anyway so UI can still display results
+  }
 
   return NextResponse.json({
     ok: true,
-    enrichedLogo: updates['enriched_logo'],
-    techStack: updates['tech_stack'],
-    webPresenceScore: updates['web_presence_score'],
-    companySizeEstimate: updates['company_size_estimate'],
+    enrichedLogo: updates['enriched_logo'] || null,
+    techStack: updates['tech_stack'] || null,
+    webPresenceScore: updates['web_presence_score'] ?? null,
+    companySizeEstimate: updates['company_size_estimate'] || null,
     enrichedAt: updates['enriched_at'],
+    savedToDb: !updateErr,
   });
 }
