@@ -18,6 +18,21 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v3.38.0',
+      date: '2026-06-23',
+      titleKey: 'changelog.v3_37_0_title' as TranslationKey,
+      descKey: 'changelog.v3_37_0_desc' as TranslationKey,
+      highlights: [
+        "Réseaux sociaux sur les fiches leads : section dédiée Instagram/Facebook/LinkedIn + site web dans le panneau principal (mode édition toggle), icônes SVG natifs.",
+        "Galerie Instagram : bouton 'Voir les posts' scrape le profil Instagram via Firecrawl + fallback HTML mobile, affiche une grille 3×3 des derniers posts dans la fiche lead.",
+        "Bibliothèque → Images : upload d'images vers Supabase Storage (bucket 'library-assets'), galerie avec prévisualisation, copie d'URL en 1 clic, suppression.",
+        "Setup agence amélioré : l'analyse de site web met maintenant à jour le nom + logo du workspace (sidebar) directement via l'API, services importés avec parsing de prix (string → numérique).",
+        "Logo agence → Documents : le logo importé est sauvegardé dans la bibliothèque (dossier 'Agence') comme document de type 'blank' avec imageUrl.",
+        "Couleur d'accent workspace : modal de sélection avec aperçu live (bouton, outline, texte), détecte automatiquement les couleurs du site de l'agence, alerte sur les risques esthétiques.",
+        "Migration SQL v4.7 : colonnes agency_website, agency_logo_url, agency_brand_colors, ai_agency_prompt dans settings ; social_links (jsonb) dans leads ; table services avec RLS ; instructions bucket library-assets.",
+      ],
+    },
+    {
       version: 'v3.37.0',
       date: '2026-06-23',
       titleKey: 'changelog.v3_37_0_title' as TranslationKey,
