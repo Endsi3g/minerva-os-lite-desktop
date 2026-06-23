@@ -3533,6 +3533,7 @@ function SocialLinksSection({ lead, onSave }: { lead: Lead; onSave: (fields: Par
   const [igPosts, setIgPosts] = useState<string[]>([]);
   const [igLoading, setIgLoading] = useState(false);
   const [igLoaded, setIgLoaded] = useState(false);
+  const [igBlockedMsg, setIgBlockedMsg] = useState<string | null>(null);
 
   const handleSave = () => {
     onSave({
@@ -3551,12 +3552,18 @@ function SocialLinksSection({ lead, onSave }: { lead: Lead; onSave: (fields: Par
     const url = instagram || lead.socialLinks?.instagram;
     if (!url) return;
     setIgLoading(true);
+    setIgBlockedMsg(null);
     try {
       const res = await fetch(getApiUrl(`/api/leads/instagram-posts?url=${encodeURIComponent(url)}`));
       if (res.ok) {
         const data = await res.json();
-        setIgPosts(data.images || []);
-        setIgLoaded(true);
+        if (data.blocked) {
+          setIgBlockedMsg(data.message || 'Instagram bloque la prévisualisation automatique.');
+          setIgLoaded(true);
+        } else {
+          setIgPosts(data.images || []);
+          setIgLoaded(true);
+        }
       }
     } catch { /* silent */ }
     finally { setIgLoading(false); }
@@ -3661,12 +3668,42 @@ function SocialLinksSection({ lead, onSave }: { lead: Lead; onSave: (fields: Par
               )}
               {igLoading ? 'Chargement…' : 'Voir les posts Instagram'}
             </button>
+          ) : igBlockedMsg ? (
+            <div className="space-y-2 p-3 rounded-xl bg-amber-50 border border-amber-200">
+              <div className="flex items-start gap-2">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/icons/instagram.svg" alt="" className="w-4 h-4 rounded shrink-0 mt-0.5" />
+                <div className="space-y-1.5 flex-1 min-w-0">
+                  <p className="text-[10px] font-bold text-amber-800">Publication Instagram uniquement</p>
+                  <p className="text-[10px] text-amber-700 leading-relaxed">{igBlockedMsg}</p>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <a
+                      href={igUrl && (igUrl.startsWith('http') ? igUrl : `https://${igUrl}`)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[10px] font-bold text-white bg-[#E1306C] hover:bg-[#C13584] px-2.5 py-1 rounded-full flex items-center gap-1 transition-colors"
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src="/icons/instagram.svg" alt="" className="w-3 h-3" />
+                      Voir le profil Instagram
+                    </a>
+                    <button
+                      type="button"
+                      onClick={() => setEditing(true)}
+                      className="text-[10px] font-bold text-[#059669] hover:underline"
+                    >
+                      + Ajouter d'autres infos
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
           ) : igPosts.length > 0 ? (
             <div className="space-y-1.5">
               <p className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">Derniers posts</p>
               <div className="grid grid-cols-3 gap-1">
                 {igPosts.map((img, i) => (
-                  <a key={i} href={igUrl.startsWith('http') ? igUrl : `https://${igUrl}`} target="_blank" rel="noopener noreferrer">
+                  <a key={i} href={igUrl && (igUrl.startsWith('http') ? igUrl : `https://${igUrl}`)} target="_blank" rel="noopener noreferrer">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={img}
@@ -3678,7 +3715,7 @@ function SocialLinksSection({ lead, onSave }: { lead: Lead; onSave: (fields: Par
               </div>
             </div>
           ) : (
-            <p className="text-[10px] text-muted-foreground italic">Compte privé ou scraping indisponible. <a href={igUrl.startsWith('http') ? igUrl : `https://${igUrl}`} target="_blank" rel="noopener noreferrer" className="text-[#059669] underline">Voir le profil →</a></p>
+            <p className="text-[10px] text-muted-foreground italic">Compte privé ou scraping indisponible. <a href={igUrl && (igUrl.startsWith('http') ? igUrl : `https://${igUrl}`)} target="_blank" rel="noopener noreferrer" className="text-[#059669] underline">Voir le profil →</a></p>
           )}
         </div>
       )}
@@ -3744,14 +3781,19 @@ function ComposerPanel({
       });
       if (res.ok) {
         setEmailMsg({ type: 'success', text: t('composer.sent_ok') });
+        toast.success(`Email envoyé à ${lead.contactEmail}`);
         addNoteToLead(lead.id, `Email envoyé : ${emailSubject}`, 'email');
         setEmailSubject('');
         setEmailBody('');
       } else {
-        setEmailMsg({ type: 'error', text: t('composer.error') });
+        const errData = await res.json().catch(() => ({}));
+        const errMsg = (errData as { error?: string }).error || t('composer.error');
+        setEmailMsg({ type: 'error', text: errMsg });
+        toast.error(errMsg);
       }
     } catch {
       setEmailMsg({ type: 'error', text: t('composer.error') });
+      toast.error(t('composer.error'));
     } finally {
       setEmailSending(false);
     }
@@ -3762,6 +3804,7 @@ function ComposerPanel({
     const outcomeLabels = { reached: 'Contacté', voicemail: 'Messagerie', no_answer: 'Pas de réponse' };
     const content = `Appel — ${outcomeLabels[callOutcome]}${callNotes ? ` : ${callNotes}` : ''}`;
     addNoteToLead(lead.id, content, 'call');
+    toast.success(`Appel enregistré — ${outcomeLabels[callOutcome]}`);
     setCallNotes('');
     setCallOutcome('reached');
     setTimeout(() => setCallLogging(false), 500);
@@ -3772,6 +3815,7 @@ function ComposerPanel({
     setTaskLogging(true);
     addTask(taskTitle, taskCategory, taskDue || undefined);
     setTaskMsg(t('composer.logged_ok'));
+    toast.success(`Tâche créée : ${taskTitle}`);
     setTaskTitle('');
     setTaskDue('');
     setTimeout(() => { setTaskLogging(false); setTaskMsg(null); }, 1500);
@@ -3782,6 +3826,7 @@ function ComposerPanel({
     setMeetingLogging(true);
     const content = `RDV planifié : ${meetingTitle}${meetingDate ? ` — ${new Date(meetingDate).toLocaleDateString('fr-CA')}` : ''}${meetingLink ? ` — ${meetingLink}` : ''}`;
     addNoteToLead(lead.id, content, 'general');
+    toast.success(`RDV enregistré : ${meetingTitle}`);
     setMeetingMsg(t('composer.logged_ok'));
     setMeetingTitle('');
     setMeetingDate('');

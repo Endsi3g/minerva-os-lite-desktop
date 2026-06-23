@@ -30,6 +30,18 @@ async function scrapeWithFirecrawl(url: string): Promise<string> {
   }
 }
 
+function isInstagramBlocked(html: string): boolean {
+  if (!html) return false;
+  const lower = html.toLowerCase();
+  return (
+    lower.includes('create an account or log in') ||
+    lower.includes('log in to instagram') ||
+    lower.includes('you must log in') ||
+    lower.includes('sign up to see') ||
+    (lower.includes('login') && lower.includes('signup') && !lower.includes('display_url'))
+  );
+}
+
 function extractInstagramImages(html: string): string[] {
   const images: string[] = [];
 
@@ -72,9 +84,23 @@ export async function GET(req: NextRequest) {
 
   // Try Firecrawl first
   const html = await scrapeWithFirecrawl(profileUrl);
+
+  // Detect Instagram login wall
+  if (isInstagramBlocked(html)) {
+    return NextResponse.json({
+      username,
+      profileUrl,
+      blocked: true,
+      noWebsite: true,
+      images: [],
+      hasImages: false,
+      message: `Ce lead n'a pas de site web dans Google Maps — son profil Instagram (@${username}) est la seule présence en ligne connue. Instagram bloque la prévisualisation automatique. Ouvrez le profil manuellement pour consulter les publications et récupérer les informations pertinentes.`,
+    });
+  }
+
   const images = html ? extractInstagramImages(html) : [];
 
-  // Try plain fetch as fallback
+  // Try plain fetch as fallback if no images yet
   let fallbackHtml = '';
   if (images.length === 0) {
     try {
@@ -87,6 +113,17 @@ export async function GET(req: NextRequest) {
       });
       if (res.ok) {
         fallbackHtml = await res.text();
+        if (isInstagramBlocked(fallbackHtml)) {
+          return NextResponse.json({
+            username,
+            profileUrl,
+            blocked: true,
+            noWebsite: true,
+            images: [],
+            hasImages: false,
+            message: `Ce lead utilise Instagram (@${username}) comme seule présence en ligne (aucun site web dans Google Maps). Instagram bloque la prévisualisation — ouvrez le profil directement pour voir les publications et renseigner les informations dans l'app.`,
+          });
+        }
         const fallbackImages = extractInstagramImages(fallbackHtml);
         images.push(...fallbackImages.filter(i => !images.includes(i)));
       }
@@ -94,12 +131,14 @@ export async function GET(req: NextRequest) {
   }
 
   // Extract bio/name from og tags
-  const ogDesc = (html || fallbackHtml).match(/<meta[^>]+property=["']og:description["'][^>]+content=["']([^"']+)["']/i)?.[1] || '';
-  const ogTitle = (html || fallbackHtml).match(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["']/i)?.[1] || '';
+  const combinedHtml = html || fallbackHtml;
+  const ogDesc = combinedHtml.match(/<meta[^>]+property=["']og:description["'][^>]+content=["']([^"']+)["']/i)?.[1] || '';
+  const ogTitle = combinedHtml.match(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["']/i)?.[1] || '';
 
   return NextResponse.json({
     username,
     profileUrl,
+    blocked: false,
     displayName: ogTitle.replace(/\s*•.*$/, '').trim(),
     bio: ogDesc.slice(0, 200),
     images: images.slice(0, 9),

@@ -324,8 +324,9 @@ function DedupTab({ workspaceId }: { workspaceId: string }) {
                             </span>
                           )}
                           {lead.website && (
-                            <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground truncate">
-                              <Globe className="w-2.5 h-2.5" />{lead.website}
+                            <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground min-w-0 overflow-hidden">
+                              <Globe className="w-2.5 h-2.5 shrink-0" />
+                              <span className="truncate">{lead.website.replace(/https?:\/\/(www\.)?/, '')}</span>
                             </span>
                           )}
                         </div>

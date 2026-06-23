@@ -1931,9 +1931,9 @@ export function ProspectingRoot() {
                                       <div className="text-[9px] text-muted-foreground italic">Pas de téléphone</div>
                                     )}
                                     {item.website ? (
-                                      <a href={item.website} target="_blank" rel="noopener noreferrer" className="text-[10px] text-primary hover:underline flex items-center gap-1 max-w-[140px] truncate">
+                                      <a href={item.website} target="_blank" rel="noopener noreferrer" className="text-[10px] text-primary hover:underline flex items-center gap-1 min-w-0 overflow-hidden max-w-[140px]">
                                         <Globe className="h-3 w-3 shrink-0" />
-                                        {item.website.replace(/https?:\/\/(www\.)?/, '')}
+                                        <span className="truncate">{item.website.replace(/https?:\/\/(www\.)?/, '')}</span>
                                       </a>
                                     ) : (
                                       <div className="text-[9px] text-rose-500 font-semibold flex items-center gap-0.5">Aucun site web</div>
@@ -2230,9 +2230,9 @@ export function ProspectingRoot() {
                                   <div className="text-[9px] italic text-muted-foreground flex items-center gap-1.5"><Phone className="h-3.5 w-3.5 text-muted-foreground shrink-0 opacity-40" />Pas de téléphone</div>
                                 )}
                                 {item.website ? (
-                                  <a href={item.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline flex items-center gap-1.5 truncate max-w-full">
+                                  <a href={item.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline flex items-center gap-1.5 min-w-0 overflow-hidden max-w-full">
                                     <Globe className="h-3.5 w-3.5 shrink-0" />
-                                    {item.website.replace(/https?:\/\/(www\.)?/, '')}
+                                    <span className="truncate">{item.website.replace(/https?:\/\/(www\.)?/, '')}</span>
                                   </a>
                                 ) : (
                                   <div className="text-rose-500 font-semibold flex items-center gap-1.5"><Globe className="h-3.5 w-3.5 text-rose-500 shrink-0 opacity-70" />Aucun site web</div>
