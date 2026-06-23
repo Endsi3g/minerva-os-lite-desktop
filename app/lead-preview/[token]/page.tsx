@@ -22,6 +22,7 @@ interface LeadData {
   score: number | null;
   rating: number | null;
   reviewsCount: number | null;
+  mapsUrl: string | null;
 }
 
 export default function LeadPreviewPage() {
@@ -199,6 +200,22 @@ export default function LeadPreviewPage() {
                       className="text-[#059669] font-semibold hover:underline flex items-center gap-1 truncate"
                     >
                       {lead.website}
+                      <ExternalLink className="h-2.5 w-2.5 shrink-0" />
+                    </a>
+                  </div>
+                )}
+                {lead.mapsUrl && (
+                  <div className="flex items-center gap-2.5 text-xs">
+                    <div className="w-6 h-6 rounded-lg bg-[#f4f4f3] flex items-center justify-center shrink-0">
+                      <MapPin className="h-3 w-3 text-[#7a7a76]" />
+                    </div>
+                    <a
+                      href={lead.mapsUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[#059669] font-semibold hover:underline flex items-center gap-1"
+                    >
+                      Voir sur Google Maps
                       <ExternalLink className="h-2.5 w-2.5 shrink-0" />
                     </a>
                   </div>

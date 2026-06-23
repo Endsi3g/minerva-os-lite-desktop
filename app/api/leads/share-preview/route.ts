@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
 
   const admin = adminClient();
 
-  // Two separate queries — avoid PostgREST FK join which requires schema cache refresh
+  // Step 1: find the share record
   const { data: share, error: shareErr } = await admin
     .from('lead_shares')
     .select('lead_id, expires_at')
@@ -30,14 +30,35 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ valid: false, error: 'Ce lien de partage a expiré.' }, { status: 410 });
   }
 
+  // Step 2: fetch lead — use only guaranteed columns to avoid column-not-found errors
   const { data: lead, error: leadErr } = await admin
     .from('leads')
-    .select('id, contact_name, business_name, contact_email, phone, niche, city, address, website, score, rating, reviews_count')
+    .select('id, contact_name, business_name, contact_email, phone, niche, city, address, website, score')
     .eq('id', share.lead_id)
     .maybeSingle();
 
   if (leadErr || !lead) {
-    return NextResponse.json({ valid: false, error: 'Prospect introuvable dans le partage.' }, { status: 404 });
+    return NextResponse.json(
+      { valid: false, error: 'Prospect introuvable dans le partage.', debug: leadErr?.message },
+      { status: 404 }
+    );
+  }
+
+  // Step 3: fetch optional enriched columns separately — silently skip if they don't exist
+  let rating: number | null = null;
+  let reviewsCount: number | null = null;
+  let mapsUrl: string | null = null;
+
+  const { data: extra } = await admin
+    .from('leads')
+    .select('rating, reviews_count, maps_url')
+    .eq('id', share.lead_id)
+    .maybeSingle();
+
+  if (extra) {
+    rating = extra.rating ?? null;
+    reviewsCount = extra.reviews_count ?? null;
+    mapsUrl = extra.maps_url ?? null;
   }
 
   return NextResponse.json({
@@ -53,8 +74,9 @@ export async function GET(req: NextRequest) {
       address: lead.address,
       website: lead.website,
       score: lead.score,
-      rating: lead.rating,
-      reviewsCount: lead.reviews_count,
+      rating,
+      reviewsCount,
+      mapsUrl,
     },
     expiresAt: share.expires_at,
   });
