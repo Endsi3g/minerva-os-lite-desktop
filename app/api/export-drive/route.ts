@@ -94,10 +94,35 @@ export async function POST(req: NextRequest) {
             .eq('user_id', user.id);
         }
 
-        // Upload via Google Drive Multipart API
+        // Build an HTML document for Google Docs import
+        const now = new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+        const htmlContent = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  body { font-family: 'Google Sans', Arial, sans-serif; max-width: 800px; margin: 40px auto; color: #1a1a1a; line-height: 1.6; }
+  h1 { font-size: 24px; font-weight: 700; color: #059669; border-bottom: 2px solid #059669; padding-bottom: 8px; margin-bottom: 4px; }
+  .meta { color: #666; font-size: 13px; margin-bottom: 24px; }
+  h2 { font-size: 16px; font-weight: 600; color: #26251e; margin-top: 28px; margin-bottom: 8px; border-left: 3px solid #059669; padding-left: 10px; }
+  p { margin: 6px 0; font-size: 14px; }
+  pre { white-space: pre-wrap; font-family: inherit; font-size: 14px; }
+  .footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid #e5e5e0; color: #999; font-size: 12px; }
+</style>
+</head>
+<body>
+<h1>${fileName.replace(/\.txt$/, '').replace(/\.html$/, '')}</h1>
+<p class="meta">Généré par Minerva OS · ${now}</p>
+<pre>${content.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</pre>
+<div class="footer">Document généré automatiquement par Minerva OS Reach Lite — minerva-os-lite-desktop.vercel.app</div>
+</body>
+</html>`;
+
+        // Upload as Google Doc (HTML → Docs conversion)
+        const docFileName = fileName.replace(/\.(txt|html)$/, '') + '.html';
         const fileMetadata = {
-          name: fileName,
-          mimeType: 'text/plain'
+          name: docFileName,
+          mimeType: 'application/vnd.google-apps.document',
         };
 
         const boundary = 'minerva_drive_boundary';
@@ -109,8 +134,8 @@ export async function POST(req: NextRequest) {
           'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
           JSON.stringify(fileMetadata) +
           delimiter +
-          'Content-Type: text/plain; charset=UTF-8\r\n\r\n' +
-          content +
+          'Content-Type: text/html; charset=UTF-8\r\n\r\n' +
+          htmlContent +
           closeDelimiter;
 
         const driveResponse = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {

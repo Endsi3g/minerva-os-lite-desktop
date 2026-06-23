@@ -18,6 +18,19 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v3.32.0',
+      date: '2026-06-23',
+      titleKey: 'changelog.v3_32_0_title' as TranslationKey,
+      descKey: 'changelog.v3_32_0_desc' as TranslationKey,
+      highlights: [
+        "Lien de partage lead corrigé — share-preview réécrit avec deux requêtes Supabase séparées (plus de join PostgREST instable). Le lien public fonctionne maintenant sans erreur.",
+        "Aperçu partagé amélioré — affichage de la note Google (étoiles) et du nombre d'avis, badges ville/catégorie, score en vert Minerva.",
+        "Export Google Drive — documents exportés en Google Docs (HTML→Docs) avec mise en forme : titre, date, sections colorées, pied de page Minerva. Fini le fichier .txt brut.",
+        "Intégrations Google — ajout de Google Contacts et Google Tasks dans la liste. Nouveau panneau Google Workspace en tête de la section 'Disponibles' avec statut en temps réel de chaque service.",
+        "Génération de messages — fallback Anthropic Haiku avant le contenu mock : si le modèle configuré échoue, Claude Haiku prend le relais. Le DM simulé n'est plus le premier recours.",
+      ],
+    },
+    {
       version: 'v3.31.0',
       date: '2026-06-22 · 23h55',
       titleKey: 'changelog.v3_31_0_title' as TranslationKey,

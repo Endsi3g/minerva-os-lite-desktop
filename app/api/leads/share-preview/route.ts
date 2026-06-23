@@ -15,25 +15,28 @@ export async function GET(req: NextRequest) {
 
   const admin = adminClient();
 
-  const { data: share, error } = await admin
+  // Two separate queries — avoid PostgREST FK join which requires schema cache refresh
+  const { data: share, error: shareErr } = await admin
     .from('lead_shares')
-    .select('lead_id, expires_at, leads(id, contact_name, business_name, contact_email, phone, niche, city, address, website, score)')
+    .select('lead_id, expires_at')
     .eq('share_token', token)
     .maybeSingle();
 
-  if (error || !share) {
+  if (shareErr || !share) {
     return NextResponse.json({ valid: false, error: 'Lien invalide ou expiré.' }, { status: 404 });
   }
 
   if (share.expires_at && new Date(share.expires_at) < new Date()) {
-    return NextResponse.json({ valid: false, error: 'Lien expiré.' }, { status: 410 });
+    return NextResponse.json({ valid: false, error: 'Ce lien de partage a expiré.' }, { status: 410 });
   }
 
-  // Supabase returns related rows as array or object depending on join type
-  const leadRaw = share.leads;
-  const lead = (Array.isArray(leadRaw) ? leadRaw[0] : leadRaw) as Record<string, any>;
+  const { data: lead, error: leadErr } = await admin
+    .from('leads')
+    .select('id, contact_name, business_name, contact_email, phone, niche, city, address, website, score, rating, reviews_count')
+    .eq('id', share.lead_id)
+    .maybeSingle();
 
-  if (!lead) {
+  if (leadErr || !lead) {
     return NextResponse.json({ valid: false, error: 'Prospect introuvable dans le partage.' }, { status: 404 });
   }
 
@@ -41,7 +44,7 @@ export async function GET(req: NextRequest) {
     valid: true,
     lead: {
       id: lead.id,
-      name: lead.contact_name,
+      name: lead.contact_name || lead.business_name,
       company: lead.business_name,
       email: lead.contact_email,
       phone: lead.phone,
@@ -50,6 +53,8 @@ export async function GET(req: NextRequest) {
       address: lead.address,
       website: lead.website,
       score: lead.score,
+      rating: lead.rating,
+      reviewsCount: lead.reviews_count,
     },
     expiresAt: share.expires_at,
   });

@@ -192,6 +192,66 @@ const DEFAULT_INTEGRATIONS: IntegrationItem[] = [
     ]
   },
   {
+    id: 'google-contacts',
+    name: 'Google Contacts',
+    nameKey: 'integrations.google_contacts.name' as TranslationKey,
+    category: 'crm',
+    owner: 'Alex Smith',
+    email: 'alexsmith@minerva-os-lite.com',
+    accEmail: 'contacts.readonly, contacts.other.readonly',
+    accEmailKey: 'integrations.google_contacts.acc_email' as TranslationKey,
+    icon: () => (
+      <div className="w-7 h-7 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
+        <svg viewBox="0 0 24 24" className="w-4.5 h-4.5" fill="none">
+          <circle cx="12" cy="8" r="3.5" fill="#4285F4" />
+          <path d="M5 19c0-3.866 3.134-7 7-7s7 3.134 7 7" stroke="#34A853" strokeWidth="2" strokeLinecap="round" fill="none"/>
+        </svg>
+      </div>
+    ),
+    status: 'Inactive',
+    statusKey: 'integrations.status.inactive' as TranslationKey,
+    assets: '—',
+    access: 'Private',
+    accessKey: 'integrations.access.private' as TranslationKey,
+    description: 'Importez et synchronisez vos contacts Google pour enrichir automatiquement vos leads Minerva.',
+    descriptionKey: 'integrations.google_contacts.description' as TranslationKey,
+    steps: [
+      'Connectez votre compte Google via le bouton « Se connecter ».',
+      'Autorisez l\'accès en lecture à vos Google Contacts (scope contacts.readonly).',
+      'Vos contacts seront automatiquement proposés lors de la création de nouveaux leads.'
+    ]
+  },
+  {
+    id: 'google-tasks',
+    name: 'Google Tasks',
+    nameKey: 'integrations.google_tasks.name' as TranslationKey,
+    category: 'productivity',
+    owner: 'Alex Smith',
+    email: 'alexsmith@minerva-os-lite.com',
+    accEmail: 'tasks',
+    accEmailKey: 'integrations.google_tasks.acc_email' as TranslationKey,
+    icon: () => (
+      <div className="w-7 h-7 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
+        <svg viewBox="0 0 24 24" className="w-4.5 h-4.5" fill="none">
+          <rect x="4" y="4" width="16" height="16" rx="2" fill="#4285F4" />
+          <path d="M8 12l2.5 2.5L16 9" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      </div>
+    ),
+    status: 'Inactive',
+    statusKey: 'integrations.status.inactive' as TranslationKey,
+    assets: '—',
+    access: 'Private',
+    accessKey: 'integrations.access.private' as TranslationKey,
+    description: 'Synchronisez vos listes Google Tasks avec les tâches Minerva pour un suivi unifié de vos actions commerciales.',
+    descriptionKey: 'integrations.google_tasks.description' as TranslationKey,
+    steps: [
+      'Connectez votre compte Google via le bouton « Se connecter ».',
+      'Autorisez l\'accès à vos listes de tâches Google (scope tasks).',
+      'Les tâches créées dans Minerva seront poussées vers votre liste Google Tasks principale.'
+    ]
+  },
+  {
     id: 'demo-website-1',
     name: 'Demo - Why AI Will Save the ...',
     category: 'website',
@@ -1543,6 +1603,53 @@ export default function IntegrationsPage() {
                     onChange={(e) => setAvailableSearchQuery(e.target.value)}
                     className="h-8.5 pl-8.5 text-xs bg-white border-[#e5e5e0] focus-visible:ring-1 focus-visible:ring-[#059669] rounded-md"
                   />
+                </div>
+
+                {/* Google Workspace featured banner */}
+                <div className="border border-[#4285F4]/20 bg-gradient-to-r from-[#4285F4]/5 via-[#34A853]/5 to-[#FBBC05]/5 rounded-2xl p-5 space-y-3">
+                  <div className="flex items-center gap-2.5">
+                    <div className="flex -space-x-1">
+                      <div className="w-6 h-6 rounded-full bg-white border-2 border-white shadow-sm flex items-center justify-center">
+                        <svg viewBox="0 0 24 24" className="w-3.5 h-3.5"><rect width="24" height="24" rx="4" fill="#EA4335"/><path d="M12 11.5L4 7v10l8 4 8-4V7l-8 4.5z" fill="white"/></svg>
+                      </div>
+                      <div className="w-6 h-6 rounded-full bg-white border-2 border-white shadow-sm flex items-center justify-center">
+                        <svg viewBox="0 0 24 24" className="w-3.5 h-3.5"><rect width="24" height="24" rx="4" fill="#4285F4"/><rect x="6" y="4" width="12" height="16" rx="1" fill="white"/><path d="M8 9h8M8 12h8M8 15h5" stroke="#4285F4" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                      </div>
+                      <div className="w-6 h-6 rounded-full bg-white border-2 border-white shadow-sm flex items-center justify-center">
+                        <svg viewBox="0 0 24 24" className="w-3.5 h-3.5"><rect width="24" height="24" rx="4" fill="#34A853"/><path d="M5 5h14v14H5z" fill="none"/><path d="M8 8h3v3H8zM13 8h3v3h-3zM8 13h3v3H8zM13 13h3v3h-3z" fill="white"/></svg>
+                      </div>
+                    </div>
+                    <h3 className="text-sm font-bold text-[#26251e]">Google Workspace</h3>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#4285F4]/10 text-[#4285F4] border border-[#4285F4]/20">
+                      {googleStatus.connected ? 'Connecté' : 'Non connecté'}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-[#7a7a76] leading-relaxed">
+                    Une seule connexion OAuth pour accéder à Gmail, Google Calendar, Drive, Meet, Contacts et Tasks.
+                  </p>
+                  <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                    {[
+                      { label: 'Gmail', color: '#EA4335', connected: googleStatus.connected },
+                      { label: 'Calendar', color: '#4285F4', connected: googleStatus.connected && googleStatus.scopes.some(s => s.includes('calendar')) },
+                      { label: 'Drive', color: '#FBBC05', connected: googleStatus.connected && googleStatus.scopes.some(s => s.includes('drive')) },
+                      { label: 'Meet', color: '#34A853', connected: googleStatus.connected },
+                      { label: 'Contacts', color: '#4285F4', connected: false },
+                      { label: 'Tasks', color: '#4285F4', connected: false },
+                    ].map(svc => (
+                      <div key={svc.label} className="flex flex-col items-center gap-1 p-2 rounded-xl bg-white border border-[#e5e5e0] shadow-2xs">
+                        <span className={`w-2 h-2 rounded-full ${svc.connected ? 'bg-emerald-500' : 'bg-[#e5e5e0]'}`} />
+                        <span className="text-[10px] font-semibold text-[#26251e]">{svc.label}</span>
+                      </div>
+                    ))}
+                  </div>
+                  {!googleStatus.connected && (
+                    <button
+                      onClick={() => setGoogleModal({ open: true, pack: 'communication' })}
+                      className="inline-flex items-center gap-1.5 text-[11px] font-bold text-white bg-[#4285F4] hover:bg-[#3367D6] px-3 py-1.5 rounded-lg transition-colors"
+                    >
+                      Connecter Google Workspace
+                    </button>
+                  )}
                 </div>
 
                 {/* Grid of Available Integrations cards */}

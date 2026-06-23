@@ -125,8 +125,19 @@ Rédige uniquement le corps du message final en français :`;
         maxTokens: 1024,
       });
     } catch (err) {
-      console.warn("Failed calling AI provider, falling back to simulated draft:", err);
-      draftContent = generateMockDraft(lead, notes || [], channel, aiTone, companyName, fullName);
+      // Try Anthropic as hard fallback before using mock
+      try {
+        console.warn("Primary AI provider failed, retrying with Anthropic:", (err as Error).message);
+        draftContent = await generateCompletion({
+          system: systemPrompt,
+          messages: [{ role: 'user', content: userPrompt }],
+          settings: { ai_provider: 'anthropic', ai_model: 'claude-haiku-4-5-20251001' },
+          maxTokens: 1024,
+        });
+      } catch (fallbackErr) {
+        console.warn("Anthropic fallback also failed, using mock:", (fallbackErr as Error).message);
+        draftContent = generateMockDraft(lead, notes || [], channel, aiTone, companyName, fullName);
+      }
     }
 
     // 6. Save draft in database
