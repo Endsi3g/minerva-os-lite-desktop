@@ -135,8 +135,12 @@ Rédige uniquement le corps du message final en français :`;
           maxTokens: 1024,
         });
       } catch (fallbackErr) {
-        console.warn("Anthropic fallback also failed, using mock:", (fallbackErr as Error).message);
-        draftContent = generateMockDraft(lead, notes || [], channel, aiTone, companyName, fullName);
+        const errMsg = (fallbackErr as Error).message;
+        console.error("All AI providers failed:", errMsg);
+        return NextResponse.json(
+          { error: `Génération IA échouée — ${errMsg}. Vérifie ta clé API dans Paramètres → IA.` },
+          { status: 502 }
+        );
       }
     }
 

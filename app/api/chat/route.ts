@@ -69,48 +69,27 @@ export async function POST(req: NextRequest) {
         }
       });
     } catch (err) {
-      console.warn("Failed calling AI provider, falling back to simulated stream:", err);
-    }
-
-    // High fidelity simulation stream fallback
-    const simulatedResponse = (() => {
-      if (selectedModel === 'nousresearch/hermes-3-llama-3-8b') {
-        return getHermesSimulatedReply(lastMessageLower, activeTool);
-      }
-      if (typeof system === 'string' && system.includes('Lucifee')) {
-        return getLucifeeSimulatedReply(lastMessageLower);
-      }
-      return getSimulatedReply(lastMessageLower, activeTool);
-    })();
-
-    const stream = new ReadableStream({
-      async start(controller) {
-        // Split text into small chunks to simulate network streaming latency
-        const words = simulatedResponse.split(/(\s+)/);
-        for (const word of words) {
-          const sseFormat = `data: ${JSON.stringify({
-            choices: [{
-              delta: {
-                content: word
-              }
-            }]
-          })}\n\n`;
-          controller.enqueue(encoder.encode(sseFormat));
-          // Small sleep to simulate streaming
-          await new Promise(r => setTimeout(r, 15));
+      const aiError = err instanceof Error ? err.message : 'AI provider unavailable';
+      console.error("AI provider failed:", aiError);
+      // Stream a real error message back rather than simulated content
+      const errorMsg = `⚠️ **Erreur IA** — ${aiError}\n\nVérifie ta clé API dans **Paramètres → IA** et réessaie.`;
+      const errorStream = new ReadableStream({
+        start(controller) {
+          const chunks = errorMsg.split(/(\s+)/);
+          (async () => {
+            for (const chunk of chunks) {
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: chunk } }] })}\n\n`));
+              await new Promise(r => setTimeout(r, 8));
+            }
+            controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+            controller.close();
+          })();
         }
-        controller.enqueue(encoder.encode('data: [DONE]\n\n'));
-        controller.close();
-      }
-    });
-
-    return new NextResponse(stream, {
-      headers: {
-        'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache',
-        'Connection': 'keep-alive',
-      }
-    });
+      });
+      return new NextResponse(errorStream, {
+        headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', 'Connection': 'keep-alive' }
+      });
+    }
 
   } catch (error) {
     console.error('Error in chat API route:', error);

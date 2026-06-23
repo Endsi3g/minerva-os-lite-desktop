@@ -615,7 +615,7 @@ export function LeadDetailClient({ id }: { id: string }) {
   }
 
   // AI draft states
-  const [activeTab, setActiveTab] = useState<'notes' | 'drafts' | 'timeline'>('notes');
+  const [activeTab, setActiveTab] = useState<'notes' | 'drafts' | 'timeline' | 'gmail' | 'agenda'>('notes');
   const [drafts, setDrafts] = useState<Draft[]>([]);
   const [loadingDrafts, setLoadingDrafts] = useState(false);
   const [generating, setGenerating] = useState(false);
@@ -644,6 +644,93 @@ export function LeadDetailClient({ id }: { id: string }) {
     };
   }, [generating]);
   
+  // Gmail threads state (Feature 2)
+  const [gmailThreads, setGmailThreads] = useState<Array<{
+    id: string;
+    subject: string;
+    date: string;
+    snippet: string;
+    unread: boolean;
+  }>>([]);
+  const [gmailConnectedForTab, setGmailConnectedForTab] = useState<boolean | null>(null);
+  const [gmailThreadsLoading, setGmailThreadsLoading] = useState(false);
+  const [gmailThreadsError, setGmailThreadsError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (activeTab !== 'gmail') return;
+    if (!lead?.contactEmail) {
+      setGmailConnectedForTab(true);
+      setGmailThreads([]);
+      return;
+    }
+    let cancelled = false;
+    setGmailThreadsLoading(true);
+    setGmailThreadsError(null);
+    fetch(getApiUrl(`/api/google/gmail/lead-threads?email=${encodeURIComponent(lead.contactEmail)}`))
+      .then((r) => r.json())
+      .then((data) => {
+        if (cancelled) return;
+        if (data.connected === false) {
+          setGmailConnectedForTab(false);
+        } else {
+          setGmailConnectedForTab(true);
+          setGmailThreads(data.threads || []);
+          if (data.error) setGmailThreadsError(data.error);
+        }
+      })
+      .catch((err) => {
+        if (!cancelled) setGmailThreadsError(err.message);
+      })
+      .finally(() => {
+        if (!cancelled) setGmailThreadsLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [activeTab, lead?.contactEmail]);
+
+  // Google Calendar lead events state (Feature 3)
+  const [leadCalEvents, setLeadCalEvents] = useState<Array<{
+    id: string;
+    summary: string;
+    start: string | null;
+    end: string | null;
+    status: string;
+    hangoutLink: string | null;
+  }>>([]);
+  const [calConnectedForTab, setCalConnectedForTab] = useState<boolean | null>(null);
+  const [leadCalLoading, setLeadCalLoading] = useState(false);
+  const [leadCalError, setLeadCalError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (activeTab !== 'agenda') return;
+    if (!lead?.contactEmail) {
+      setCalConnectedForTab(true);
+      setLeadCalEvents([]);
+      return;
+    }
+    let cancelled = false;
+    setLeadCalLoading(true);
+    setLeadCalError(null);
+    fetch(getApiUrl(`/api/google/calendar/lead-events?email=${encodeURIComponent(lead.contactEmail)}`))
+      .then((r) => r.json())
+      .then((data) => {
+        if (cancelled) return;
+        if (data.connected === false) {
+          setCalConnectedForTab(false);
+        } else {
+          setCalConnectedForTab(true);
+          setLeadCalEvents(data.events || []);
+          if (data.error) setLeadCalError(data.error);
+        }
+      })
+      .catch((err) => {
+        if (!cancelled) setLeadCalError(err.message);
+      })
+      .finally(() => {
+        if (!cancelled) setLeadCalLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [activeTab, lead?.contactEmail]);
+
   // Timeline states
   const [timelineEvents, setTimelineEvents] = useState<Array<{
     id: string;
@@ -1680,6 +1767,32 @@ export function LeadDetailClient({ id }: { id: string }) {
                 >
                   {t('lead.timeline')}
                 </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('gmail')}
+                  className={cn(
+                    "pb-3 text-xs font-bold uppercase tracking-wider border-b-2 px-1 transition-all cursor-pointer flex items-center gap-1",
+                    activeTab === 'gmail'
+                      ? "border-[#059669] text-foreground font-extrabold"
+                      : "border-transparent text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  <Mail className="h-3 w-3" />
+                  Gmail
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('agenda')}
+                  className={cn(
+                    "pb-3 text-xs font-bold uppercase tracking-wider border-b-2 px-1 transition-all cursor-pointer flex items-center gap-1",
+                    activeTab === 'agenda'
+                      ? "border-[#059669] text-foreground font-extrabold"
+                      : "border-transparent text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  <CalendarCheck className="h-3 w-3" />
+                  Agenda
+                </button>
               </div>
 
               {activeTab === 'notes' ? (
@@ -2158,7 +2271,7 @@ export function LeadDetailClient({ id }: { id: string }) {
                     )}
                   </div>
                 </div>
-              ) : (
+              ) : activeTab === 'timeline' ? (
                 /* Timeline Panel */
                 <div className="space-y-4">
                   {timelineLoading ? (
@@ -2232,6 +2345,155 @@ export function LeadDetailClient({ id }: { id: string }) {
                         })}
                       </div>
                     </div>
+                  )}
+                </div>
+              ) : activeTab === 'gmail' ? (
+                /* Gmail Threads Panel */
+                <div className="space-y-3">
+                  {!lead.contactEmail ? (
+                    <p className="text-xs text-[#7a7a76] italic py-4 text-center">
+                      Aucun email de contact renseigné sur ce lead.
+                    </p>
+                  ) : gmailConnectedForTab === false ? (
+                    <div className="flex flex-col items-center gap-3 py-6 text-center">
+                      <p className="text-xs text-[#7a7a76]">Connectez Gmail pour voir les échanges avec ce contact.</p>
+                      <button
+                        onClick={() => {
+                          window.location.href = getApiUrl(
+                            `/api/google/auth/start?pack=communication&redirect=/leads/${lead.id}`
+                          );
+                        }}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#e5e5e0] bg-white hover:bg-[#f4f4f3] text-[11px] font-bold text-[#26251e] transition-colors"
+                      >
+                        <Mail className="h-3.5 w-3.5 text-[#059669]" />
+                        Connecter Gmail
+                      </button>
+                    </div>
+                  ) : gmailThreadsLoading ? (
+                    <div className="flex flex-col gap-2">
+                      {[1, 2, 3].map((i) => (
+                        <div key={i} className="h-14 rounded-lg border border-[#e5e5e0] bg-[#f4f4f3]/50 animate-pulse" />
+                      ))}
+                    </div>
+                  ) : gmailThreadsError ? (
+                    <p className="text-xs text-red-600 py-2">{gmailThreadsError}</p>
+                  ) : gmailThreads.length === 0 ? (
+                    <p className="text-xs text-[#7a7a76] italic py-4 text-center">
+                      Aucun échange Gmail avec {lead.contactEmail}.
+                    </p>
+                  ) : (
+                    gmailThreads.map((thread) => (
+                      <div
+                        key={thread.id}
+                        className={cn(
+                          "flex flex-col gap-1 p-3 rounded-lg border transition-colors cursor-pointer hover:bg-[#f4f4f3]",
+                          thread.unread
+                            ? "border-[#059669]/30 bg-emerald-50/40 dark:bg-emerald-950/20"
+                            : "border-[#e5e5e0] bg-card"
+                        )}
+                        onClick={() => {
+                          window.open(`https://mail.google.com/mail/u/0/#inbox/${thread.id}`, '_blank');
+                        }}
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span className={cn(
+                            "text-xs truncate",
+                            thread.unread ? "font-bold text-[#26251e]" : "font-semibold text-[#26251e]"
+                          )}>
+                            {thread.subject}
+                          </span>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            {thread.unread && (
+                              <span className="w-2 h-2 rounded-full bg-[#059669] shrink-0" />
+                            )}
+                            <span className="text-[10px] text-[#7a7a76] font-mono">
+                              {new Date(thread.date).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit' })}
+                            </span>
+                            <ExternalLink className="h-3 w-3 text-[#7a7a76]" />
+                          </div>
+                        </div>
+                        <p className="text-[11px] text-[#7a7a76] line-clamp-2 leading-relaxed">{thread.snippet}</p>
+                      </div>
+                    ))
+                  )}
+                </div>
+              ) : (
+                /* Google Calendar Lead Events Panel (Agenda) */
+                <div className="space-y-3">
+                  {!lead.contactEmail ? (
+                    <p className="text-xs text-[#7a7a76] italic py-4 text-center">
+                      Aucun email de contact renseigné sur ce lead.
+                    </p>
+                  ) : calConnectedForTab === false ? (
+                    <div className="flex flex-col items-center gap-3 py-6 text-center">
+                      <p className="text-xs text-[#7a7a76]">Connectez Google Calendar pour voir les événements avec ce contact.</p>
+                      <button
+                        onClick={() => {
+                          window.location.href = getApiUrl(
+                            `/api/google/auth/start?pack=communication&redirect=/leads/${lead.id}`
+                          );
+                        }}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#e5e5e0] bg-white hover:bg-[#f4f4f3] text-[11px] font-bold text-[#26251e] transition-colors"
+                      >
+                        <CalendarCheck className="h-3.5 w-3.5 text-[#059669]" />
+                        Connecter Google Calendar
+                      </button>
+                    </div>
+                  ) : leadCalLoading ? (
+                    <div className="flex flex-col gap-2">
+                      {[1, 2].map((i) => (
+                        <div key={i} className="h-14 rounded-lg border border-[#e5e5e0] bg-[#f4f4f3]/50 animate-pulse" />
+                      ))}
+                    </div>
+                  ) : leadCalError ? (
+                    <p className="text-xs text-red-600 py-2">{leadCalError}</p>
+                  ) : leadCalEvents.length === 0 ? (
+                    <p className="text-xs text-[#7a7a76] italic py-4 text-center">
+                      Aucun événement Calendar avec ce contact (±90 jours).
+                    </p>
+                  ) : (
+                    leadCalEvents.map((ev) => {
+                      const startDate = ev.start ? new Date(ev.start) : null;
+                      const isUpcoming = startDate ? startDate > new Date() : false;
+                      return (
+                        <div
+                          key={ev.id}
+                          className={cn(
+                            "flex items-start justify-between gap-3 p-3 rounded-lg border transition-colors",
+                            isUpcoming
+                              ? "border-[#059669]/30 bg-emerald-50/40 dark:bg-emerald-950/20"
+                              : "border-[#e5e5e0] bg-[#f4f4f3]/30"
+                          )}
+                        >
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xs font-semibold text-[#26251e] truncate">{ev.summary}</p>
+                            {startDate && (
+                              <p className="text-[10px] text-[#7a7a76] mt-0.5">
+                                {startDate.toLocaleDateString('fr-FR', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' })}
+                                {ev.start?.includes('T') && ` · ${startDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`}
+                              </p>
+                            )}
+                          </div>
+                          <div className="flex flex-col items-end gap-1 shrink-0">
+                            {isUpcoming && (
+                              <span className="text-[9px] font-bold text-[#059669] bg-emerald-50 dark:bg-emerald-950/30 border border-[#059669]/20 px-1.5 py-0.5 rounded">
+                                À venir
+                              </span>
+                            )}
+                            {ev.hangoutLink && (
+                              <a
+                                href={ev.hangoutLink}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-[9px] font-bold text-[#059669] flex items-center gap-0.5 hover:underline"
+                              >
+                                Meet
+                              </a>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })
                   )}
                 </div>
               )}

@@ -15,6 +15,7 @@ import { TodayProjectsCard } from './today-projects-card';
 import { TodayStatsCard } from './today-stats-card';
 import { TodaySetupBanner } from './today-setup-banner';
 import { TodayAestheticCanvas } from './today-aesthetic-canvas';
+import { TodayGoogleCalendarCard } from './today-google-calendar-card';
 import { InboxRoot } from '@/app/(app)/inbox/_components/inbox-root';
 import { LayoutDashboard, Mail } from 'lucide-react';
 
@@ -83,6 +84,9 @@ export function TodayRoot() {
           <div className="flex flex-col gap-5">
             {/* Leads à contacter aujourd'hui + RDV */}
             <TodayAgendaCard />
+
+            {/* Google Calendar — événements du jour */}
+            <TodayGoogleCalendarCard />
 
             {/* Emails planifiés par les séquences */}
             <TodaySequenceStepsCard />
