@@ -166,7 +166,7 @@ export default function MessagesRoot() {
         const theirId = selectedConversation;
         const myId = currentUserId;
         query = query.or(
-          `and(user_id.eq.${myId},recipient_id.eq.${theirId}),and(user_id.eq.${theirId},recipient_id.eq.${myId})`
+          `and(sender_id.eq.${myId},recipient_id.eq.${theirId}),and(sender_id.eq.${theirId},recipient_id.eq.${myId})`
         );
       }
 
@@ -177,7 +177,7 @@ export default function MessagesRoot() {
         (data || []).map((r: any) => ({
           id: r.id,
           workspaceId: r.workspace_id || '',
-          senderId: r.user_id || r.sender_id || '',
+          senderId: r.sender_id || '',
           senderName: r.sender_name || 'Membre',
           content: r.content || '',
           recipientId: r.recipient_id ?? null,
@@ -215,7 +215,7 @@ export default function MessagesRoot() {
           const newMsg: DmMessage = {
             id: r.id,
             workspaceId: r.workspace_id || '',
-            senderId: r.user_id || r.sender_id || '',
+            senderId: r.sender_id || '',
             senderName: r.sender_name || 'Membre',
             content: r.content || '',
             recipientId: r.recipient_id ?? null,
@@ -274,7 +274,6 @@ export default function MessagesRoot() {
       const supabase = createClient();
       const { error } = await supabase.from('team_messages').insert({
         workspace_id: activeWorkspace.id,
-        user_id: currentUserId,
         sender_id: currentUserId,
         sender_name: currentUserName,
         content,

@@ -4,5 +4,5 @@
 ALTER TABLE team_messages ADD COLUMN IF NOT EXISTS recipient_id UUID REFERENCES auth.users(id);
 
 CREATE INDEX IF NOT EXISTS team_messages_dm_idx
-  ON team_messages(workspace_id, user_id, recipient_id)
+  ON team_messages(workspace_id, sender_id, recipient_id)
   WHERE recipient_id IS NOT NULL;
