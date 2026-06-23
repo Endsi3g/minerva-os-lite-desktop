@@ -1390,7 +1390,9 @@ export const translations = {
     "outreach.reply_v2_classifying": "Analyse IA...",
     // Changelog v3.36.0
     "changelog.v3_36_0_title": "v3.36.0 - v4 Outreach Multicanal, Déduplication, Ads & Attribution",
-    "changelog.v3_36_0_desc": "Implémentation complète des 13 éléments Prévu v4 : déduplication automatique multi-source avec fusion, enrichissement avancé (logo, taille, stack tech, présence web), séquences multicanales (email + appel + SMS + A/B test), cadences intelligentes avec pause sur réponse, Reply Classifier v2 avec next best action, Composer unifié par lead, queue avec score de délivrabilité, Facebook Lead Ads en temps réel, Google Ads, attribution marketing complète (first/last touch, CPL, ROAS), Inbound Speed-to-Lead SLA < 5 min, SharePoint et Meeting Recorder."
+    "changelog.v3_36_0_desc": "Implémentation complète des 13 éléments Prévu v4 : déduplication automatique multi-source avec fusion, enrichissement avancé (logo, taille, stack tech, présence web), séquences multicanales (email + appel + SMS + A/B test), cadences intelligentes avec pause sur réponse, Reply Classifier v2 avec next best action, Composer unifié par lead, queue avec score de délivrabilité, Facebook Lead Ads en temps réel, Google Ads, attribution marketing complète (first/last touch, CPL, ROAS), Inbound Speed-to-Lead SLA < 5 min, SharePoint et Meeting Recorder.",
+    "changelog.v3_37_0_title": "v3.37.0 - Composer unifié, Enrichissement avancé & Publicité",
+    "changelog.v3_37_0_desc": "Composer unifié dans la fiche lead (Email, Appel avec script IA, Tâche rapide, RDV). Enrichissement avancé par site web : logo détecté, taille d'entreprise estimée par Claude AI (solo/small/medium/large), détection de stack technologique (19 technos), score de présence web 0-100. Page dédiée Publicité & Attribution : Facebook Lead Ads OAuth Meta réel avec webhook temps réel, Google Ads (UTM tracking), attribution complète (CPL par source, taux RDV, délai Speed-to-Lead, pipeline ROAS). Alerte Speed-to-Lead si délai > 5 min. Migration SQL v4.6."
   },
   en: {
     // Sidebar & Layout
@@ -2732,7 +2734,9 @@ export const translations = {
     "outreach.reply_v2_classifying": "AI analysis...",
     // Changelog v3.36.0
     "changelog.v3_36_0_title": "v3.36.0 - v4 Multichannel Outreach, Dedup, Ads & Attribution",
-    "changelog.v3_36_0_desc": "Full implementation of all 13 Planned v4 features: automatic multi-source deduplication with merge, advanced enrichment (logo, size, tech stack, web presence), multichannel sequences (email + call + SMS + A/B test), smart cadences with reply pause, Reply Classifier v2 with next best action, unified lead composer, queue with deliverability score, Facebook Lead Ads real-time, Google Ads, full marketing attribution (first/last touch, CPL, ROAS), Inbound Speed-to-Lead SLA < 5 min, SharePoint and Meeting Recorder."
+    "changelog.v3_36_0_desc": "Full implementation of all 13 Planned v4 features: automatic multi-source deduplication with merge, advanced enrichment (logo, size, tech stack, web presence), multichannel sequences (email + call + SMS + A/B test), smart cadences with reply pause, Reply Classifier v2 with next best action, unified lead composer, queue with deliverability score, Facebook Lead Ads real-time, Google Ads, full marketing attribution (first/last touch, CPL, ROAS), Inbound Speed-to-Lead SLA < 5 min, SharePoint and Meeting Recorder.",
+    "changelog.v3_37_0_title": "v3.37.0 - Unified Composer, Advanced Enrichment & Ads",
+    "changelog.v3_37_0_desc": "Unified lead composer (Email, Call with AI script, Quick Task, Meeting). Advanced enrichment: logo detection, AI company size estimate (solo/small/medium/large), tech stack detection (19 technologies), web presence score 0-100. Dedicated Ads & Attribution page: Facebook Lead Ads with real Meta OAuth + real-time webhook, Google Ads (UTM tracking), full attribution dashboard (CPL by source, meeting rate, Speed-to-Lead delay, pipeline ROAS). Speed-to-Lead alert when delay > 5 min. SQL migration v4.6."
   },
   de: {
     // Sidebar & Layout
@@ -4074,7 +4078,9 @@ export const translations = {
     "outreach.reply_v2_classifying": "KI-Analyse...",
     // Changelog v3.36.0
     "changelog.v3_36_0_title": "v3.36.0 - v4 Multichannel-Outreach, Deduplizierung, Anzeigen & Attribution",
-    "changelog.v3_36_0_desc": "Vollständige Implementierung aller 13 geplanten v4-Funktionen: automatische Deduplizierung, erweiterte Anreicherung, Multi-Channel-Sequenzen, intelligente Kadenzen, Reply Classifier v2, einheitlicher Lead-Composer, Lieferbarkeitsscore, Facebook Lead Ads, Google Ads, vollständige Marketing-Attribution, Inbound Speed-to-Lead SLA, SharePoint und Meeting Recorder."
+    "changelog.v3_36_0_desc": "Vollständige Implementierung aller 13 geplanten v4-Funktionen: automatische Deduplizierung, erweiterte Anreicherung, Multi-Channel-Sequenzen, intelligente Kadenzen, Reply Classifier v2, einheitlicher Lead-Composer, Lieferbarkeitsscore, Facebook Lead Ads, Google Ads, vollständige Marketing-Attribution, Inbound Speed-to-Lead SLA, SharePoint und Meeting Recorder.",
+    "changelog.v3_37_0_title": "v3.37.0 - Einheitlicher Composer, Erweiterte Anreicherung & Werbung",
+    "changelog.v3_37_0_desc": "Einheitlicher Lead-Composer (E-Mail, Anruf mit KI-Skript, Schnellaufgabe, Termin). Erweiterte Anreicherung: Logo-Erkennung, KI-Unternehmensgrößenschätzung, Tech-Stack-Erkennung (19 Technologien), Web-Präsenz-Score 0-100. Neue Seite Werbung & Attribution: Facebook Lead Ads mit echtem Meta OAuth + Echtzeit-Webhook, Google Ads, vollständiges Attributions-Dashboard (CPL, Meeting-Rate, Speed-to-Lead, Pipeline ROAS). SQL-Migration v4.6."
   }
 } as const;
 

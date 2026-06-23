@@ -567,6 +567,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
       else if (segment === 'library') label = t('nav.library');
       else if (segment === 'prospecting') label = t('nav.prospect');
       else if (segment === 'integrations') label = t('nav.integrations');
+      else if (segment === 'ads') label = 'Publicité & Attribution';
       else if (segment === 'settings') label = t('nav.settings');
       else if (segment === 'team') label = t('nav.team');
       else if (segment === 'workspaces') label = t('nav.workspaces');
@@ -653,6 +654,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
       items: [
         { name: 'Configuration', href: '/setup', icon: ListChecks },
         { name: 'Automations', href: '/settings/automations', icon: Zap },
+        { name: 'Publicité & Attribution', href: '/ads', icon: Target },
         { name: t('nav.integrations'), href: '/integrations', icon: Plug },
         { name: 'Webhooks', href: '/webhooks', icon: Zap },
         { name: t('nav.download'), href: '/download', icon: Download },

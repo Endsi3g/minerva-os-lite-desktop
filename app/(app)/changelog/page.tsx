@@ -18,6 +18,20 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v3.37.0',
+      date: '2026-06-23',
+      titleKey: 'changelog.v3_37_0_title' as TranslationKey,
+      descKey: 'changelog.v3_37_0_desc' as TranslationKey,
+      highlights: [
+        "Composer unifié dans la fiche lead : 4 actions en 1 panneau — Email (envoi direct Gmail), Appel (script IA + 3 résultats), Tâche rapide (catégorie + date), RDV (lien de booking).",
+        "Enrichissement avancé v2 : logo détecté via Google Favicons, taille estimée par Claude AI (solo/small/medium/large), stack tech (19 technos : WordPress, Shopify, Next.js, Stripe, Calendly…), score de présence web 0-100.",
+        "Page dédiée /ads avec 3 onglets : Facebook Lead Ads (OAuth Meta réel, sélection page + formulaire, webhook temps réel), Google Ads (guide UTM/GCLID), Attribution marketing.",
+        "Dashboard Attribution : 4 KPIs (leads total, taux RDV, délai moyen Speed-to-Lead, pipeline gagné) + tableau par source (CPL, taux RDV, délai, pipeline).",
+        "Alerte Speed-to-Lead dynamique : rouge si délai > 5 min, vert si optimal — avec message contextualisé sur l'impact de la réactivité.",
+        "Migration SQL v4.6 : table fb_connections (RLS), nouvelles colonnes leads pour attribution (lead_source_type, utm_*, first_contact_at, deal_amount) et enrichissement (enriched_logo, company_size_estimate, tech_stack, web_presence_score).",
+      ],
+    },
+    {
       version: 'v3.36.0',
       date: '2026-06-23',
       titleKey: 'changelog.v3_36_0_title' as TranslationKey,
