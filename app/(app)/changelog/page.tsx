@@ -19,7 +19,7 @@ export default function ChangelogPage() {
   const versions: ChangelogVersion[] = [
     {
       version: 'v3.29.0',
-      date: '2026-06-22 · 23h30',
+      date: '2026-06-22 · 22h55',
       titleKey: 'changelog.v3_29_0_title' as TranslationKey,
       descKey: 'changelog.v3_29_0_desc' as TranslationKey,
       highlights: [
