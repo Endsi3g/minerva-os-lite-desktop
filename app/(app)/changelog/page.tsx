@@ -18,6 +18,21 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v3.29.0',
+      date: '2026-06-22 · 23h30',
+      titleKey: 'changelog.v3_29_0_title' as TranslationKey,
+      descKey: 'changelog.v3_29_0_desc' as TranslationKey,
+      highlights: [
+        "Rendu natif des images et GIFs — Les images envoyées dans le chat (format [[img]]) s'affichent maintenant correctement. Clic pour ouvrir en plein écran.",
+        "Emoji picker intégré — Bouton sourire dans la barre de saisie ouvre un picker avec 45 emojis répartis en 3 catégories (Smileys, Gestes, Symboles).",
+        "Upload image/GIF avec compression auto — Bouton trombone ouvre le sélecteur de fichier. Les images sont compressées (max 800px, qualité 70%) avant envoi, les GIFs sont envoyés tels quels.",
+        "Aperçu avant envoi — Une vignette de prévisualisation s'affiche au-dessus de la barre d'input avec option d'annulation.",
+        "Input repositionné — La barre de saisie est maintenant au-dessus du blur bas de page (padding-bottom: 20px) avec design intégré (emoji + image + texte + send dans un seul conteneur).",
+        "Queue Processor Outreach (cron toutes les 15 min) — Vérifie la fenêtre d'envoi et le quota journalier, envoie 1 email HTML par workspace par run via Gmail API, avance automatiquement l'enrollment séquence.",
+        "Migration lead_shares — Table manquante créée (supabase_migration_v4_lead_shares.sql). À appliquer dans le SQL editor Supabase.",
+      ],
+    },
+    {
       version: 'v3.28.0',
       date: '2026-06-23 · 00h05',
       titleKey: 'changelog.v3_28_0_title' as TranslationKey,
