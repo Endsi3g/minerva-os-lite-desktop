@@ -66,6 +66,10 @@ ALTER TABLE sequence_templates ENABLE ROW LEVEL SECURITY;
 ALTER TABLE sequence_enrollments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE email_queue ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Workspace access sequence_templates" ON sequence_templates;
+DROP POLICY IF EXISTS "Workspace access sequence_enrollments" ON sequence_enrollments;
+DROP POLICY IF EXISTS "Workspace access email_queue" ON email_queue;
+
 CREATE POLICY "Workspace access sequence_templates" ON sequence_templates FOR ALL
   USING (
     workspace_id IN (

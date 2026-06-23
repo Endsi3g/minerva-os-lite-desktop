@@ -36,6 +36,7 @@ CREATE INDEX IF NOT EXISTS lead_events_workspace_idx ON lead_events(workspace_id
 CREATE INDEX IF NOT EXISTS lead_events_created_at_idx ON lead_events(lead_id, created_at DESC);
 
 ALTER TABLE lead_events ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users manage lead events in their workspace" ON lead_events;
 CREATE POLICY "Users manage lead events in their workspace" ON lead_events FOR ALL
   USING (
     workspace_id IN (
