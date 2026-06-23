@@ -68,6 +68,7 @@ export default function ChangelogPage() {
         "Export Google Drive — documents exportés en Google Docs (HTML→Docs) avec mise en forme : titre, date, sections colorées, pied de page Minerva. Fini le fichier .txt brut.",
         "Intégrations Google — ajout de Google Contacts et Google Tasks dans la liste. Nouveau panneau Google Workspace en tête de la section 'Disponibles' avec statut en temps réel de chaque service.",
         "Génération de messages — fallback Anthropic Haiku avant le contenu mock : si le modèle configuré échoue, Claude Haiku prend le relais. Le DM simulé n'est plus le premier recours.",
+        "Migration SQL v4.5 — Ajout des colonnes d'enrichissement sur la table leads (reviews_count, maps_url, photos, social_links, scores v2) et correction de la structure et des permissions RLS de la table lead_shares."
       ],
     },
     {

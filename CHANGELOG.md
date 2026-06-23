@@ -38,6 +38,7 @@ et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 - **Export Google Drive** — Génération de documents Google Docs enrichis (HTML) avec mise en page et marque Minerva au lieu de fichiers texte brut.
 - **Services Google** — Ajout de Google Contacts et Google Tasks avec un panneau Google Workspace affichant leur statut en temps réel.
 - **Sécurité et Fallback** — Fallback sur Claude Haiku en cas d'erreur de complétion du modèle IA principal lors de la génération de messages.
+- **Migration SQL v4.5** — Ajout idempotent des colonnes d'enrichissement sur la table `leads` (`reviews_count`, `maps_url`, `photos`, `social_links`, `latitude`, `longitude`, `assigned_to`, et scores v2) et sécurisation de `lead_shares` avec RLS/grants.
 
 ## [3.31.0] - 2026-06-22
 
