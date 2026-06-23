@@ -2,7 +2,7 @@
 
 import React from 'react';
 import {
-  User, Sun, Briefcase, Users, Brain, Link2, Target, FileText,
+  User, Sun, Briefcase, Users, Brain, Link2, Target, Globe, FileText,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/lib/language-context';
@@ -10,7 +10,7 @@ import { useLanguage } from '@/lib/language-context';
 export type SettingsSection =
   | 'profile' | 'appearance'
   | 'workspace_general' | 'members'
-  | 'ai' | 'integrations' | 'goals';
+  | 'ai' | 'integrations' | 'goals' | 'agency';
 
 interface NavGroup {
   label: string;
@@ -44,6 +44,7 @@ export function SettingsNav({ section, onSectionChange }: SettingsNavProps) {
       label: 'Outils',
       items: [
         { id: 'ai', name: t('settings.tab_ai'), icon: Brain },
+        { id: 'agency', name: 'Profil d\'agence', icon: Globe },
         { id: 'integrations', name: t('settings.tab_integrations'), icon: Link2 },
         { id: 'goals', name: 'Objectifs', icon: Target },
       ],

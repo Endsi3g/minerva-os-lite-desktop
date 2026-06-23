@@ -25,11 +25,11 @@ import { MinervaIcon } from '@/components/icons';
 import { useLanguage } from '@/lib/language-context';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-type Step = 'login' | 'otp' | 'selection' | 'workspace' | 'pricing' | 'analytics' | 'profile' | 'finalizing';
+type Step = 'login' | 'otp' | 'selection' | 'workspace' | 'pricing' | 'analytics' | 'profile' | 'agency' | 'finalizing';
 type Direction = 'forward' | 'backward';
 
 // Steps that show the progress dots (excludes landing)
-const FLOW_STEPS: Step[] = ['login', 'otp', 'selection', 'workspace', 'pricing', 'analytics', 'profile'];
+const FLOW_STEPS: Step[] = ['login', 'otp', 'selection', 'workspace', 'pricing', 'analytics', 'profile', 'agency'];
 
 const PRESET_ROLES = [
   'Fondateur / CEO',
@@ -146,6 +146,13 @@ function OnboardingPageContent() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Agency setup step
+  const [agencyUrl, setAgencyUrl] = useState('');
+  const [agencyScraping, setAgencyScraping] = useState(false);
+  const [agencyResult, setAgencyResult] = useState<{
+    agencyName?: string; tagline?: string; services?: Array<{name: string; description: string; price?: string | null}>; logoUrl?: string | null; brandColors?: string[];
+  } | null>(null);
 
   // Loader
   const [creatingWorkspace, setCreatingWorkspace] = useState(false);
@@ -1066,7 +1073,7 @@ function OnboardingPageContent() {
                     Retour
                   </button>
                   <button
-                    onClick={handleFinalizeOnboarding}
+                    onClick={() => goToStep('agency', 'forward')}
                     disabled={!userRole || (userRole === 'Autre' && !userRoleCustom.trim())}
                     className={cn(
                       'flex-1 rounded-full py-2.5 text-xs font-bold transition-all shadow-none text-center',
@@ -1075,7 +1082,123 @@ function OnboardingPageContent() {
                         : 'bg-neutral-100 text-[#807d72] cursor-not-allowed border border-[#e6e5e0]',
                     )}
                   >
-                    Finaliser
+                    Continuer
+                  </button>
+                </div>
+                <div className="text-center">
+                  <button
+                    onClick={() => goToStep('agency', 'forward')}
+                    className="text-[10px] font-semibold text-[#807d72] hover:text-[#26251e] underline transition-colors"
+                  >
+                    Passer cette étape
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* ─── AGENCY SETUP ────────────────────────────────────────── */}
+            {step === 'agency' && (
+              <div className="space-y-6">
+                <div className="space-y-2">
+                  <h2 className="text-3xl tracking-tight text-[#26251e] font-serif font-light">Votre agence</h2>
+                  <p className="text-sm text-[#807d72]">Entrez votre URL et Minerva configure automatiquement votre workspace : nom, services, assets et IA.</p>
+                </div>
+
+                <div className="space-y-3">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-[#807d72]">URL de votre site web</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="url"
+                      value={agencyUrl}
+                      onChange={e => setAgencyUrl(e.target.value)}
+                      placeholder="https://monagence.com"
+                      className="flex-1 text-xs font-semibold px-4 py-3 bg-white border border-[#e6e5e0] focus:border-[#10b981] rounded-full outline-none transition-colors"
+                    />
+                    <button
+                      type="button"
+                      disabled={agencyScraping || !agencyUrl}
+                      onClick={async () => {
+                        setAgencyScraping(true);
+                        setAgencyResult(null);
+                        try {
+                          const res = await fetch('/api/agency-setup', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ websiteUrl: agencyUrl }),
+                          });
+                          if (res.ok) {
+                            const data = await res.json();
+                            setAgencyResult(data);
+                            if (data.agencyName) setWorkspaceName(data.agencyName);
+                          }
+                        } catch { /* silent */ }
+                        finally { setAgencyScraping(false); }
+                      }}
+                      className="flex items-center gap-2 px-5 py-3 rounded-full bg-[#26251e] hover:bg-[#1a1a19] text-white text-xs font-bold transition-colors disabled:opacity-50 whitespace-nowrap"
+                    >
+                      {agencyScraping ? (
+                        <><span className="w-3 h-3 rounded-full border border-white/30 border-t-white animate-spin" />Analyse…</>
+                      ) : (
+                        <><Zap className="w-3 h-3" />Importer</>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Result preview */}
+                {agencyResult && (
+                  <div className="p-4 rounded-2xl border border-[#e6e5e0] bg-neutral-50 space-y-3">
+                    <div className="flex items-center gap-3">
+                      {agencyResult.logoUrl && (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={agencyResult.logoUrl} alt="logo" className="w-8 h-8 rounded-lg object-contain" />
+                      )}
+                      <div>
+                        <p className="text-sm font-bold text-[#26251e]">{agencyResult.agencyName}</p>
+                        {agencyResult.tagline && <p className="text-[10px] text-[#807d72]">{agencyResult.tagline}</p>}
+                      </div>
+                      {agencyResult.brandColors && agencyResult.brandColors.length > 0 && (
+                        <div className="flex items-center gap-1 ml-auto">
+                          {agencyResult.brandColors.map((c, i) => (
+                            <span key={i} className="w-4 h-4 rounded-full border border-white shadow-sm" style={{ background: c }} />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    {agencyResult.services && agencyResult.services.length > 0 && (
+                      <div className="space-y-1">
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-[#807d72]">{agencyResult.services.length} services importés</p>
+                        <div className="flex flex-wrap gap-1">
+                          {agencyResult.services.slice(0, 5).map((s, i) => (
+                            <span key={i} className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#10b981]/10 text-[#10b981] border border-[#10b981]/20">
+                              {s.name}
+                            </span>
+                          ))}
+                          {agencyResult.services.length > 5 && (
+                            <span className="text-[10px] text-[#807d72]">+{agencyResult.services.length - 5}</span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                    <div className="flex items-center gap-1.5 text-[10px] text-[#10b981] font-semibold">
+                      <Check className="w-3 h-3" />
+                      Workspace configuré · IA entraînée sur votre site · Assets dans la bibliothèque
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex items-center gap-3 pt-2 border-t border-[#e6e5e0]/60">
+                  <button
+                    onClick={() => goToStep('profile', 'backward')}
+                    className="inline-flex items-center justify-center rounded-full border border-[#e6e5e0] bg-white hover:bg-neutral-50 px-6 py-2.5 text-xs font-bold text-[#26251e] shadow-none transition-colors"
+                  >
+                    Retour
+                  </button>
+                  <button
+                    onClick={handleFinalizeOnboarding}
+                    className="flex-1 rounded-full bg-[#26251e] hover:bg-[#1a1a19] text-white py-2.5 text-xs font-bold transition-colors text-center"
+                  >
+                    Finaliser mon espace
                   </button>
                 </div>
                 <div className="text-center">
@@ -1083,7 +1206,7 @@ function OnboardingPageContent() {
                     onClick={handleFinalizeOnboarding}
                     className="text-[10px] font-semibold text-[#807d72] hover:text-[#26251e] underline transition-colors"
                   >
-                    Passer cette étape
+                    Passer (configurer plus tard dans les Paramètres)
                   </button>
                 </div>
               </div>

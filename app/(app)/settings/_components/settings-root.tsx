@@ -9,6 +9,7 @@ import { SettingsIntegrationsSection } from './settings-integrations-section';
 import { SettingsWorkspaceGeneralSection } from './settings-workspace-general-section';
 import { SettingsMembersSection } from './settings-members-section';
 import { SettingsGoalsSection } from './settings-goals-section';
+import SettingsAgencySection from './settings-agency-section';
 import { createClient } from '@/lib/supabase/client';
 import { getApiUrl } from '@/lib/api-helper';
 import { cn } from '@/lib/utils';
@@ -332,6 +333,8 @@ export function SettingsRoot() {
           {section === 'integrations' && <SettingsIntegrationsSection />}
 
           {section === 'goals' && <SettingsGoalsSection />}
+
+          {section === 'agency' && <SettingsAgencySection />}
         </div>
       </div>
     </div>

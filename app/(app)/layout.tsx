@@ -568,6 +568,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
       else if (segment === 'prospecting') label = t('nav.prospect');
       else if (segment === 'integrations') label = t('nav.integrations');
       else if (segment === 'ads') label = 'Publicité & Attribution';
+      else if (segment === 'website-builder') label = 'Créateur de site';
       else if (segment === 'settings') label = t('nav.settings');
       else if (segment === 'team') label = t('nav.team');
       else if (segment === 'workspaces') label = t('nav.workspaces');
@@ -635,6 +636,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
         { name: t('nav.skills'), href: '/skills', icon: Sparkles },
         { name: t('nav.agents'), href: '/agents', icon: Sparkles },
         { name: t('nav.analytics'), href: '/analytics', icon: BarChart3 },
+        { name: 'Créateur de site', href: '/website-builder', icon: Globe },
         { name: t('nav.audit'), href: '/audit', icon: ShieldCheck },
         { name: t('nav.map'), href: '/map', icon: MapPin },
       ],
