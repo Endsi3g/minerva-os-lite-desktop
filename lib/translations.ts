@@ -175,6 +175,7 @@ export const translations = {
     "outreach.empty_queue": "Aucun email dans la queue",
     "outreach.empty_sequences": "Aucune séquence créée",
     "outreach.empty_cadences": "Aucun envoi planifié",
+    "outreach.empty_cadences_hint": "Inscrivez des leads dans une séquence ou composez un email planifié pour voir vos cadences ici.",
     "outreach.stats_active_sequences": "Séquences actives",
     "outreach.stats_enrollments": "Leads inscrits",
     "outreach.stats_pending": "En attente",

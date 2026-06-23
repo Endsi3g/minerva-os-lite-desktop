@@ -581,7 +581,7 @@ export function OutreachRoot() {
   const cadenceByDay = () => {
     const now = new Date();
     const days: Record<string, typeof cadenceItems> = {};
-    for (let i = 0; i < 7; i++) {
+    for (let i = 0; i < 14; i++) {
       const d = new Date(now);
       d.setDate(d.getDate() + i);
       const key = d.toISOString().split('T')[0];
@@ -592,7 +592,7 @@ export function OutreachRoot() {
       const key = item.scheduled_at.split('T')[0];
       if (days[key]) days[key].push(item);
     });
-    return days;
+    return Object.fromEntries(Object.entries(days).filter(([, items]) => items.length > 0));
   };
 
   const filteredLeads = leads.filter(l =>
@@ -1044,54 +1044,62 @@ export function OutreachRoot() {
 
           {/* ── Tab 4: Cadences ── */}
           <TabsContent value="cadences" className="mt-4 space-y-4">
-            {cadenceItems.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
-                <Calendar className="w-10 h-10 text-[#e5e5e0]" />
-                <p className="text-sm font-semibold text-[#26251e]">{t('outreach.empty_cadences')}</p>
-                <p className="text-xs text-[#7a7a76] max-w-xs">
-                  Inscrivez des leads dans une séquence ou composez un email planifié pour voir vos cadences ici.
-                </p>
-              </div>
-            ) : (
-              Object.entries(cadenceByDay()).map(([date, items]) => (
-                <div key={date} className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">
-                      {new Date(date).toLocaleDateString('fr-CA', { weekday: 'long', month: 'long', day: 'numeric' })}
-                    </span>
-                    {items.length > 0 && (
-                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[#059669]/10 text-[#059669]">
-                        {items.length}
-                      </span>
-                    )}
+            {(() => {
+              const byDay = cadenceByDay();
+              const dayEntries = Object.entries(byDay);
+              if (dayEntries.length === 0) {
+                return (
+                  <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
+                    <Calendar className="w-10 h-10 text-[#e5e5e0]" />
+                    <p className="text-sm font-semibold text-[#26251e]">{t('outreach.empty_cadences')}</p>
+                    <p className="text-xs text-[#7a7a76] max-w-xs">
+                      {t('outreach.empty_cadences_hint')}
+                    </p>
                   </div>
-                  {items.length === 0 ? (
-                    <div className="border border-dashed border-[#e5e5e0] rounded-lg px-4 py-3 text-xs text-[#7a7a76]">
-                      Aucun envoi prévu
-                    </div>
-                  ) : (
-                    <div className="border border-[#e5e5e0] rounded-xl bg-white overflow-hidden">
-                      {items.map(item => (
-                        <div key={item.id} className="flex items-center gap-3 px-4 py-2.5 border-b border-[#e5e5e0] last:border-0 hover:bg-[#fafaf8]">
-                          <span className="text-[10px] font-mono font-bold text-[#7a7a76] shrink-0 w-12">
-                            {item.scheduled_at
-                              ? new Date(item.scheduled_at).toLocaleTimeString('fr-CA', { hour: '2-digit', minute: '2-digit' })
-                              : '—'}
-                          </span>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs font-semibold text-[#26251e] truncate">
-                              {item.leads?.business_name || item.to_name || item.to_email}
-                            </p>
-                            <p className="text-[10px] text-[#7a7a76] truncate">{item.subject}</p>
+                );
+              }
+              const totalUpcoming = dayEntries.reduce((acc, [, items]) => acc + items.length, 0);
+              return (
+                <>
+                  <div className="flex items-center gap-2 text-[10px] text-[#7a7a76]">
+                    <span className="font-bold text-[#059669]">{totalUpcoming}</span>
+                    <span>{totalUpcoming > 1 ? 'envois planifiés' : 'envoi planifié'} sur les 14 prochains jours</span>
+                  </div>
+                  {dayEntries.map(([date, items]) => (
+                    <div key={date} className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-[#26251e]">
+                          {new Date(date + 'T12:00:00').toLocaleDateString('fr-CA', { weekday: 'long', month: 'long', day: 'numeric' })}
+                        </span>
+                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[#059669]/10 text-[#059669]">
+                          {items.length}
+                        </span>
+                      </div>
+                      <div className="border border-[#e5e5e0] rounded-xl bg-white overflow-hidden">
+                        {items.map(item => (
+                          <div key={item.id} className="flex items-center gap-3 px-4 py-2.5 border-b border-[#e5e5e0] last:border-0 hover:bg-[#fafaf8] transition-colors">
+                            <span className="text-[10px] font-mono font-bold text-[#059669] shrink-0 w-12 bg-[#059669]/8 rounded px-1 py-0.5 text-center">
+                              {item.scheduled_at
+                                ? new Date(item.scheduled_at).toLocaleTimeString('fr-CA', { hour: '2-digit', minute: '2-digit' })
+                                : '—'}
+                            </span>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-semibold text-[#26251e] truncate">
+                                {item.leads?.business_name || item.to_name || item.to_email}
+                              </p>
+                              <p className="text-[10px] text-[#7a7a76] truncate">{item.subject}</p>
+                            </div>
+                            <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-[#e5e5e0] text-[#7a7a76] shrink-0">
+                              {item.status === 'pending' ? 'planifié' : item.status}
+                            </span>
                           </div>
-                          <ChevronRight className="w-3.5 h-3.5 text-[#e5e5e0] shrink-0" />
-                        </div>
-                      ))}
+                        ))}
+                      </div>
                     </div>
-                  )}
-                </div>
-              ))
-            )}
+                  ))}
+                </>
+              );
+            })()}
           </TabsContent>
         </Tabs>
       </div>
