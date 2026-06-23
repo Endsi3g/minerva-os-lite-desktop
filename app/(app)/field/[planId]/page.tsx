@@ -1,15 +1,16 @@
 import React from 'react';
 import { FieldRoot } from '../_components/field-root';
 
-export function generateStaticParams() {
-  return [{ planId: '_placeholder_' }];
-}
+export const dynamic = 'force-dynamic';
 
 export default async function FieldPlanPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ planId: string }>;
+  searchParams: Promise<Record<string, string>>;
 }) {
   const resolved = await params;
-  return <FieldRoot planId={resolved.planId} />;
+  const sp = await searchParams;
+  return <FieldRoot planId={resolved.planId} refreshToken={sp.t || ''} />;
 }

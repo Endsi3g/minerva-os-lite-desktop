@@ -47,16 +47,22 @@ export function resolveAIProvider(settings?: AISettings | null) {
     return 'anthropic';
   })();
 
+  const OPENROUTER_DEFAULT = 'meta-llama/llama-3.1-8b-instruct:free';
+
   let model = settings?.ai_model || (
-    provider === 'openrouter' ? 'openrouter/free' :
+    provider === 'openrouter' ? OPENROUTER_DEFAULT :
     provider === 'groq' ? 'llama-3.1-70b-versatile' :
     provider === 'together' ? 'meta-llama/Llama-3-70b-chat-hf' :
-    'claude-3-5-sonnet-20241022'
+    'claude-sonnet-4-6'
   );
 
-  // Map retired free models to generic auto-router
-  if (model === 'meta-llama/llama-3-8b-instruct:free' || model === 'google/gemma-2-9b-it:free') {
-    model = 'openrouter/free';
+  // Remap placeholder / retired model IDs to a valid default
+  if (
+    model === 'openrouter/free' ||
+    model === 'meta-llama/llama-3-8b-instruct:free' ||
+    model === 'google/gemma-2-9b-it:free'
+  ) {
+    model = OPENROUTER_DEFAULT;
   }
 
   const apiKey = (() => {

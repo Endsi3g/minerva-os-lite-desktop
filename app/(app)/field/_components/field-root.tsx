@@ -254,7 +254,7 @@ const OUTCOME_ICONS: Record<VisitOutcome, React.ReactNode> = {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-export function FieldRoot({ planId }: { planId: string }) {
+export function FieldRoot({ planId, refreshToken = '' }: { planId: string; refreshToken?: string }) {
   const router = useRouter();
   const { leads, activeWorkspace } = useReach();
 
@@ -318,7 +318,7 @@ export function FieldRoot({ planId }: { planId: string }) {
         setVisitLogs(logs);
       })
       .catch(() => {});
-  }, [planId]);
+  }, [planId, refreshToken]);
 
   // Geolocation with watchPosition
   useEffect(() => {

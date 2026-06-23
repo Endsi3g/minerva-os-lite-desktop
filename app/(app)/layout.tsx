@@ -31,6 +31,7 @@ import {
   Globe,
   BarChart3,
   MessageSquare,
+  MessageCircle,
   Megaphone,
   Download,
   LayoutDashboard,
@@ -595,7 +596,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
     return crumbs;
   };
 
-  // Pinned nav items — always visible, never collapsed (6 core destinations)
+  // Pinned nav items — always visible, never collapsed (7 core destinations)
   const pinnedItems = [
     { name: t('nav.today'), href: '/today', icon: LayoutDashboard },
     { name: t('nav.agenda'), href: '/agenda', icon: CalendarDays },
@@ -603,6 +604,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
     { name: t('nav.prospect'), href: '/prospecting', icon: PenSquare },
     { name: t('nav.search'), href: '/leads', icon: Users },
     { name: t('nav.team'), href: '/team', icon: Users },
+    { name: t('nav.messages'), href: '/messages', icon: MessageCircle },
   ];
 
   // Collapsible nav categories

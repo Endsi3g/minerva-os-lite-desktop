@@ -146,7 +146,7 @@ export default function OutcomeClient() {
         );
         electron.triggerSync();
       } else {
-        await fetch(getApiUrl('/api/route-plans/visits'), {
+        const res = await fetch(getApiUrl('/api/route-plans/visits'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -162,6 +162,10 @@ export default function OutcomeClient() {
             meeting_datetime: selectedOutcome === 'meeting_booked' ? (meetingDatetime || null) : null,
           }),
         });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error((err as { error?: string }).error || `Erreur serveur ${res.status}`);
+        }
       }
 
       // Notify the team with rich context about this visit outcome
@@ -189,7 +193,7 @@ export default function OutcomeClient() {
       }
 
       setSaved(true);
-      setTimeout(() => router.push(`/field/${params.planId}`), 900);
+      setTimeout(() => router.push(`/field/${params.planId}?t=${Date.now()}`), 900);
     } catch (err) {
       console.error('[outcome]', err);
     } finally {

@@ -591,6 +591,9 @@ function initDb() {
     db.run(`ALTER TABLE settings ADD COLUMN outreach_window_days TEXT DEFAULT 'mon,tue,wed,thu,fri'`, () => {});
     db.run(`ALTER TABLE settings ADD COLUMN outreach_warmup_delay INTEGER DEFAULT 30`, () => {});
 
+    // v4.3.0 — Team DMs
+    db.run(`ALTER TABLE team_messages ADD COLUMN recipient_id TEXT`, () => {});
+
     // v5.1.0 — AI Assistant sessions, messages, and canvas
     db.run(`CREATE TABLE IF NOT EXISTS assistant_sessions (
       id TEXT PRIMARY KEY,
