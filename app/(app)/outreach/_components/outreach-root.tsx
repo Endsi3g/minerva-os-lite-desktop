@@ -6,6 +6,8 @@ import {
   GitBranch, Loader2, Archive, Users, RefreshCw, Settings,
   ChevronRight, Bold, Italic, Underline as UnderlineIcon,
   List, AlignLeft, Calendar, CheckCircle2, AlertCircle, Ban,
+  Phone, MessageSquare, FlaskConical, Pause, Sparkles, ThumbsUp,
+  ThumbsDown, Info, CalendarCheck, OctagonX, UserX, Clock3,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -136,9 +138,9 @@ function StepEditor({
     delay: <Clock className="w-3.5 h-3.5 text-amber-500" />,
     task: <CheckSquare className="w-3.5 h-3.5 text-blue-500" />,
     condition: <GitBranch className="w-3.5 h-3.5 text-purple-500" />,
-    call: <CheckSquare className="w-3.5 h-3.5 text-emerald-500" />,
-    sms: <Mail className="w-3.5 h-3.5 text-indigo-500" />,
-    ab_test: <GitBranch className="w-3.5 h-3.5 text-orange-500" />,
+    call: <Phone className="w-3.5 h-3.5 text-emerald-500" />,
+    sms: <MessageSquare className="w-3.5 h-3.5 text-indigo-500" />,
+    ab_test: <FlaskConical className="w-3.5 h-3.5 text-orange-500" />,
   };
 
   return (
@@ -153,10 +155,13 @@ function StepEditor({
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="email" className="text-xs">Email</SelectItem>
-            <SelectItem value="delay" className="text-xs">Délai</SelectItem>
-            <SelectItem value="task" className="text-xs">Tâche</SelectItem>
-            <SelectItem value="condition" className="text-xs">Condition</SelectItem>
+            <SelectItem value="email" className="text-xs">📧 Email</SelectItem>
+            <SelectItem value="call" className="text-xs">📞 Appel</SelectItem>
+            <SelectItem value="sms" className="text-xs">💬 SMS</SelectItem>
+            <SelectItem value="delay" className="text-xs">⏱ Délai</SelectItem>
+            <SelectItem value="task" className="text-xs">✅ Tâche</SelectItem>
+            <SelectItem value="condition" className="text-xs">🔀 Condition</SelectItem>
+            <SelectItem value="ab_test" className="text-xs">🧪 Test A/B</SelectItem>
           </SelectContent>
         </Select>
         <button
@@ -184,7 +189,81 @@ function StepEditor({
               </div>
             </div>
             <VarChips onInsert={(v) => emailEditor?.chain().focus().insertContent(v).run()} />
+            {/* Pause on reply toggle */}
+            <label className="flex items-center gap-2 cursor-pointer group select-none mt-1">
+              <div
+                className={`w-8 h-4 rounded-full transition-colors ${step.pauseOnReply ? 'bg-[#059669]' : 'bg-[#e5e5e0]'}`}
+                onClick={() => onChange({ ...step, pauseOnReply: !step.pauseOnReply })}
+              >
+                <div className={`w-3 h-3 rounded-full bg-white shadow mt-0.5 transition-transform ${step.pauseOnReply ? 'translate-x-4' : 'translate-x-0.5'}`} />
+              </div>
+              <span className="text-[10px] font-bold text-[#7a7a76] group-hover:text-[#26251e] flex items-center gap-1">
+                <Pause className="w-3 h-3" />
+                Pause auto si réponse détectée
+              </span>
+            </label>
           </>
+        )}
+
+        {step.type === 'call' && (
+          <div className="space-y-2">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Script d&apos;appel</p>
+            <textarea
+              placeholder="Bonjour {{prenom}}, je vous appelle de la part de…"
+              value={step.callScript || ''}
+              onChange={e => onChange({ ...step, callScript: e.target.value })}
+              rows={4}
+              className="w-full text-xs border border-[#e5e5e0] rounded-lg p-2 resize-none focus:outline-none focus:ring-1 focus:ring-[#059669] placeholder:text-[#b0afa9]"
+            />
+            <VarChips onInsert={v => onChange({ ...step, callScript: (step.callScript || '') + v })} />
+          </div>
+        )}
+
+        {step.type === 'sms' && (
+          <div className="space-y-2">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Texte du SMS</p>
+            <textarea
+              placeholder="Bonjour {{prenom}}, je m'appelle… {{business}}"
+              value={step.smsText || ''}
+              onChange={e => onChange({ ...step, smsText: e.target.value })}
+              rows={3}
+              className="w-full text-xs border border-[#e5e5e0] rounded-lg p-2 resize-none focus:outline-none focus:ring-1 focus:ring-[#059669] placeholder:text-[#b0afa9]"
+            />
+            <div className="flex items-center justify-between">
+              <VarChips onInsert={v => onChange({ ...step, smsText: (step.smsText || '') + v })} />
+              <span className={`text-[9px] font-mono ${(step.smsText || '').length > 160 ? 'text-amber-600' : 'text-[#b0afa9]'}`}>
+                {(step.smsText || '').length}/160
+              </span>
+            </div>
+          </div>
+        )}
+
+        {step.type === 'ab_test' && (
+          <div className="space-y-3">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Variante A (50%)</p>
+            <Input
+              placeholder="Objet variante A"
+              value={step.abVariants?.[0]?.subject || ''}
+              onChange={e => {
+                const variants = [...(step.abVariants || [{ id: 'a', subject: '', bodyHtml: '', weight: 50 }, { id: 'b', subject: '', bodyHtml: '', weight: 50 }])];
+                variants[0] = { ...variants[0], subject: e.target.value };
+                onChange({ ...step, abVariants: variants });
+              }}
+              className="h-7 text-xs border-[#e5e5e0]"
+            />
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Variante B (50%)</p>
+            <Input
+              placeholder="Objet variante B"
+              value={step.abVariants?.[1]?.subject || ''}
+              onChange={e => {
+                const variants = [...(step.abVariants || [{ id: 'a', subject: '', bodyHtml: '', weight: 50 }, { id: 'b', subject: '', bodyHtml: '', weight: 50 }])];
+                variants[1] = { ...variants[1], subject: e.target.value };
+                onChange({ ...step, abVariants: variants });
+              }}
+              className="h-7 text-xs border-[#e5e5e0]"
+            />
+            <p className="text-[9px] text-[#b0afa9]">Le corps de l&apos;email est partagé entre les deux variantes.</p>
+          </div>
         )}
 
         {step.type === 'delay' && (
@@ -227,11 +306,30 @@ function StepEditor({
         )}
 
         {step.type === 'condition' && (
-          <div className="text-xs text-[#7a7a76] space-y-1">
-            <p className="font-semibold text-[#26251e]">Si réponse détectée :</p>
-            <p>→ Arrêter la séquence</p>
-            <p className="font-semibold text-[#26251e]">Sinon :</p>
-            <p>→ Continuer à l'étape suivante</p>
+          <div className="space-y-2 text-xs">
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-[#26251e] w-16">Si</span>
+              <Select
+                value={step.condition?.on || 'reply'}
+                onValueChange={v => onChange({ ...step, condition: { ...(step.condition || { on: 'reply', then: 'stop', else: 'next' }), on: v as 'reply' | 'open' | 'click' | 'booking' | 'positive_reply' | 'negative_reply' } })}
+              >
+                <SelectTrigger className="h-7 text-xs border-[#e5e5e0] flex-1">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="reply" className="text-xs">Réponse reçue</SelectItem>
+                  <SelectItem value="positive_reply" className="text-xs">Réponse positive</SelectItem>
+                  <SelectItem value="negative_reply" className="text-xs">Réponse négative</SelectItem>
+                  <SelectItem value="open" className="text-xs">Email ouvert</SelectItem>
+                  <SelectItem value="click" className="text-xs">Lien cliqué</SelectItem>
+                  <SelectItem value="booking" className="text-xs">RDV booké</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="pl-4 border-l-2 border-[#059669]/30 space-y-1 text-[#7a7a76]">
+              <p className="text-[#059669] font-semibold text-[10px]">→ Arrêter la séquence</p>
+            </div>
+            <p className="font-semibold text-[#26251e]">Sinon → Continuer</p>
           </div>
         )}
       </div>
@@ -281,6 +379,49 @@ export function OutreachRoot() {
   const [enrollSearch, setEnrollSearch] = useState('');
   const [enrollSelected, setEnrollSelected] = useState<string[]>([]);
   const [enrolling, setEnrolling] = useState(false);
+
+  // Reply Classifier v2
+  const [replyPanelItem, setReplyPanelItem] = useState<null | {
+    id: string;
+    to_email: string;
+    to_name?: string;
+    subject: string;
+    status: string;
+    body_html?: string;
+    leads?: { business_name?: string };
+  }>(null);
+  const [classifying, setClassifying] = useState(false);
+  const [classificationResult, setClassificationResult] = useState<null | {
+    intent: string;
+    confidence: number;
+    nextAction: string;
+    suggestedReply?: string;
+  }>(null);
+
+  const handleClassifyReply = async (body: string) => {
+    if (!body) return;
+    setClassifying(true);
+    setClassificationResult(null);
+    try {
+      const res = await fetch(getApiUrl('/api/chat'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: [{ role: 'user', content: `Classifie cette réponse email en JSON strict (intent: positive|negative|info_request|scheduling|out_of_office|bounce|not_right_person|reschedule, confidence: 0-100, nextAction: string, suggestedReply: string):\n\n${body.slice(0, 1000)}` }],
+          system: 'Tu es un assistant de classification d\'emails commerciaux. Réponds uniquement en JSON valide.',
+        }),
+      });
+      if (res.ok) {
+        const text = await res.text();
+        const match = text.match(/\{[\s\S]*\}/);
+        if (match) {
+          const parsed = JSON.parse(match[0]);
+          setClassificationResult(parsed);
+        }
+      }
+    } catch { /* silent */ }
+    finally { setClassifying(false); }
+  };
 
   // Composer
   const [composerLead, setComposerLead] = useState<Lead | null>(null);
@@ -996,53 +1137,155 @@ export function OutreachRoot() {
               </button>
             </div>
 
-            {/* Queue list */}
-            <div className="border border-[#e5e5e0] rounded-xl bg-white overflow-hidden">
-              {filteredQueue.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 gap-2 text-center">
-                  <Mail className="w-8 h-8 text-[#e5e5e0]" />
-                  <p className="text-sm font-semibold text-[#26251e]">{t('outreach.empty_queue')}</p>
-                </div>
-              ) : (
-                <div className="divide-y divide-[#e5e5e0]">
-                  {filteredQueue.map(item => (
-                    <div key={item.id} className="flex items-center gap-3 px-4 py-3 hover:bg-[#fafaf8] transition-colors">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-semibold text-[#26251e] truncate">
-                          {item.leads?.business_name || item.to_name || item.to_email}
-                        </p>
-                        <p className="text-[10px] text-[#7a7a76] truncate mt-0.5">{item.subject}</p>
+            {/* Queue list + Reply Classifier panel */}
+            <div className="flex gap-4">
+              <div className="flex-1 border border-[#e5e5e0] rounded-xl bg-white overflow-hidden">
+                {filteredQueue.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-12 gap-2 text-center">
+                    <Mail className="w-8 h-8 text-[#e5e5e0]" />
+                    <p className="text-sm font-semibold text-[#26251e]">{t('outreach.empty_queue')}</p>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-[#e5e5e0]">
+                    {filteredQueue.map(item => (
+                      <div
+                        key={item.id}
+                        className={`flex items-center gap-3 px-4 py-3 hover:bg-[#fafaf8] transition-colors cursor-pointer ${replyPanelItem?.id === item.id ? 'bg-[#059669]/5 border-l-2 border-[#059669]' : ''}`}
+                        onClick={() => {
+                          if (replyPanelItem?.id === item.id) {
+                            setReplyPanelItem(null);
+                            setClassificationResult(null);
+                          } else {
+                            setReplyPanelItem(item as typeof replyPanelItem);
+                            setClassificationResult(null);
+                          }
+                        }}
+                      >
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-semibold text-[#26251e] truncate">
+                            {item.leads?.business_name || item.to_name || item.to_email}
+                          </p>
+                          <p className="text-[10px] text-[#7a7a76] truncate mt-0.5">{item.subject}</p>
+                        </div>
+                        <StatusBadge status={item.status} />
+                        <span className="text-[10px] text-[#7a7a76] shrink-0 hidden md:block">
+                          {item.scheduled_at
+                            ? new Date(item.scheduled_at).toLocaleString('fr-CA', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+                            : item.sent_at
+                              ? new Date(item.sent_at).toLocaleString('fr-CA', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+                              : '—'}
+                        </span>
+                        <div className="flex items-center gap-1 shrink-0" onClick={e => e.stopPropagation()}>
+                          {item.status === 'pending' && (
+                            <button
+                              onClick={() => updateQueueStatus(item.id, 'cancelled')}
+                              className="text-[10px] font-bold text-[#7a7a76] hover:text-red-600 px-2 py-0.5 rounded border border-[#e5e5e0] hover:border-red-200 transition-colors flex items-center gap-1"
+                            >
+                              <Ban className="w-3 h-3" />
+                              {t('outreach.cancel_email')}
+                            </button>
+                          )}
+                          {item.status === 'failed' && (
+                            <button
+                              onClick={() => updateQueueStatus(item.id, 'pending')}
+                              className="text-[10px] font-bold text-[#059669] hover:text-[#047857] px-2 py-0.5 rounded border border-[#059669]/30 hover:border-[#059669] transition-colors flex items-center gap-1"
+                            >
+                              <RefreshCw className="w-3 h-3" />
+                              {t('outreach.retry_email')}
+                            </button>
+                          )}
+                        </div>
                       </div>
-                      <StatusBadge status={item.status} />
-                      <span className="text-[10px] text-[#7a7a76] shrink-0 hidden md:block">
-                        {item.scheduled_at
-                          ? new Date(item.scheduled_at).toLocaleString('fr-CA', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
-                          : item.sent_at
-                            ? new Date(item.sent_at).toLocaleString('fr-CA', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
-                            : '—'}
-                      </span>
-                      <div className="flex items-center gap-1 shrink-0">
-                        {item.status === 'pending' && (
-                          <button
-                            onClick={() => updateQueueStatus(item.id, 'cancelled')}
-                            className="text-[10px] font-bold text-[#7a7a76] hover:text-red-600 px-2 py-0.5 rounded border border-[#e5e5e0] hover:border-red-200 transition-colors flex items-center gap-1"
-                          >
-                            <Ban className="w-3 h-3" />
-                            {t('outreach.cancel_email')}
-                          </button>
-                        )}
-                        {item.status === 'failed' && (
-                          <button
-                            onClick={() => updateQueueStatus(item.id, 'pending')}
-                            className="text-[10px] font-bold text-[#059669] hover:text-[#047857] px-2 py-0.5 rounded border border-[#059669]/30 hover:border-[#059669] transition-colors flex items-center gap-1"
-                          >
-                            <RefreshCw className="w-3 h-3" />
-                            {t('outreach.retry_email')}
-                          </button>
-                        )}
-                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Reply Classifier v2 Panel */}
+              {replyPanelItem && (
+                <div className="w-80 shrink-0 border border-[#e5e5e0] rounded-xl bg-white overflow-hidden flex flex-col">
+                  <div className="flex items-center justify-between px-3 py-2.5 border-b border-[#e5e5e0]">
+                    <div className="flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-[#059669]" />
+                      <span className="text-xs font-bold text-[#26251e]">{t('outreach.reply_v2_title')}</span>
                     </div>
-                  ))}
+                    <button onClick={() => { setReplyPanelItem(null); setClassificationResult(null); }} className="text-[#7a7a76] hover:text-[#26251e] p-0.5">
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+
+                  <div className="flex-1 overflow-y-auto p-3 space-y-3">
+                    {/* Email info */}
+                    <div className="space-y-0.5">
+                      <p className="text-xs font-semibold text-[#26251e] truncate">
+                        {replyPanelItem.leads?.business_name || replyPanelItem.to_name || replyPanelItem.to_email}
+                      </p>
+                      <p className="text-[10px] text-[#7a7a76] truncate">{replyPanelItem.subject}</p>
+                    </div>
+
+                    {/* Body preview */}
+                    {replyPanelItem.body_html && (
+                      <div
+                        className="text-[10px] text-[#555552] p-2 bg-[#fafaf8] rounded-lg border border-[#e5e5e0] max-h-24 overflow-y-auto"
+                        dangerouslySetInnerHTML={{ __html: replyPanelItem.body_html.slice(0, 500) }}
+                      />
+                    )}
+
+                    {/* Classify button */}
+                    {!classificationResult && (
+                      <button
+                        type="button"
+                        onClick={() => handleClassifyReply(replyPanelItem.body_html || replyPanelItem.subject)}
+                        disabled={classifying}
+                        className="w-full flex items-center justify-center gap-2 h-8 rounded-lg bg-[#059669] text-white text-xs font-bold hover:bg-[#047857] transition-colors border-0 cursor-pointer disabled:opacity-60"
+                      >
+                        {classifying
+                          ? <><Loader2 className="w-3.5 h-3.5 animate-spin" />{t('outreach.reply_v2_classifying')}</>
+                          : <><Sparkles className="w-3.5 h-3.5" />Classifier avec IA</>}
+                      </button>
+                    )}
+
+                    {/* Classification result */}
+                    {classificationResult && (() => {
+                      const intentConfig: Record<string, { label: string; icon: React.ReactNode; color: string }> = {
+                        positive: { label: t('outreach.reply_v2_positive'), icon: <ThumbsUp className="w-3.5 h-3.5" />, color: 'bg-[#059669]/10 text-[#059669] border-[#059669]/20' },
+                        negative: { label: t('outreach.reply_v2_negative'), icon: <ThumbsDown className="w-3.5 h-3.5" />, color: 'bg-red-50 text-red-700 border-red-200' },
+                        info_request: { label: t('outreach.reply_v2_info'), icon: <Info className="w-3.5 h-3.5" />, color: 'bg-blue-50 text-blue-700 border-blue-200' },
+                        scheduling: { label: t('outreach.reply_v2_scheduling'), icon: <CalendarCheck className="w-3.5 h-3.5" />, color: 'bg-purple-50 text-purple-700 border-purple-200' },
+                        out_of_office: { label: t('outreach.reply_v2_oof'), icon: <Clock3 className="w-3.5 h-3.5" />, color: 'bg-amber-50 text-amber-700 border-amber-200' },
+                        bounce: { label: t('outreach.reply_v2_bounce'), icon: <OctagonX className="w-3.5 h-3.5" />, color: 'bg-slate-50 text-slate-600 border-slate-200' },
+                        not_right_person: { label: t('outreach.reply_v2_wrong'), icon: <UserX className="w-3.5 h-3.5" />, color: 'bg-slate-50 text-slate-600 border-slate-200' },
+                        reschedule: { label: t('outreach.reply_v2_reschedule'), icon: <Clock3 className="w-3.5 h-3.5" />, color: 'bg-amber-50 text-amber-700 border-amber-200' },
+                      };
+                      const cfg = intentConfig[classificationResult.intent] || intentConfig.info_request;
+                      return (
+                        <div className="space-y-2">
+                          <div className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-xs font-bold ${cfg.color}`}>
+                            {cfg.icon}
+                            {cfg.label}
+                            <span className="ml-auto font-mono text-[9px]">{classificationResult.confidence}%</span>
+                          </div>
+                          <div className="px-3 py-2 rounded-lg border border-[#e5e5e0] bg-[#fafaf8]">
+                            <p className="text-[9px] font-bold uppercase tracking-wider text-[#7a7a76] mb-1">{t('outreach.reply_v2_next_action')}</p>
+                            <p className="text-[10px] text-[#26251e]">{classificationResult.nextAction}</p>
+                          </div>
+                          {classificationResult.suggestedReply && (
+                            <div className="px-3 py-2 rounded-lg border border-[#e5e5e0] bg-[#fafaf8]">
+                              <p className="text-[9px] font-bold uppercase tracking-wider text-[#7a7a76] mb-1">Réponse suggérée</p>
+                              <p className="text-[10px] text-[#26251e] italic">{classificationResult.suggestedReply.slice(0, 150)}…</p>
+                            </div>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => { setClassificationResult(null); }}
+                            className="w-full text-[10px] font-bold text-[#7a7a76] hover:text-[#26251e] py-1 border border-[#e5e5e0] rounded-lg hover:bg-[#f4f4f3] transition-colors"
+                          >
+                            Reclassifier
+                          </button>
+                        </div>
+                      );
+                    })()}
+                  </div>
                 </div>
               )}
             </div>
@@ -1159,20 +1402,23 @@ export function OutreachRoot() {
 
               {/* Add step buttons */}
               <div className="flex flex-wrap gap-1.5 pt-1">
-                {(['email', 'delay', 'task', 'condition'] as const).map(type => (
+                {([
+                  { type: 'email', label: t('outreach.step_email'), icon: '📧' },
+                  { type: 'call', label: t('outreach.step_call'), icon: '📞' },
+                  { type: 'sms', label: t('outreach.step_sms'), icon: '💬' },
+                  { type: 'delay', label: t('outreach.step_delay'), icon: '⏱' },
+                  { type: 'task', label: t('outreach.step_task'), icon: '✅' },
+                  { type: 'condition', label: t('outreach.step_condition'), icon: '🔀' },
+                  { type: 'ab_test', label: t('outreach.step_ab'), icon: '🧪' },
+                ] as const).map(({ type, label, icon }) => (
                   <button
                     key={type}
                     type="button"
                     onClick={() => addStep(type)}
                     className="flex items-center gap-1 text-[10px] font-bold px-2.5 py-1.5 rounded-md border border-dashed border-[#e5e5e0] text-[#7a7a76] hover:border-[#059669]/40 hover:text-[#059669] hover:bg-[#059669]/5 transition-colors"
                   >
-                    <Plus className="w-3 h-3" />
-                    {({
-                      email: t('outreach.step_email'),
-                      delay: t('outreach.step_delay'),
-                      task: t('outreach.step_task'),
-                      condition: t('outreach.step_condition'),
-                    })[type]}
+                    <span>{icon}</span>
+                    {label}
                   </button>
                 ))}
               </div>

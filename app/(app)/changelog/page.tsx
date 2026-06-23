@@ -18,6 +18,20 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v3.36.0',
+      date: '2026-06-23',
+      titleKey: 'changelog.v3_36_0_title' as TranslationKey,
+      descKey: 'changelog.v3_36_0_desc' as TranslationKey,
+      highlights: [
+        "Moteur de déduplication multi-source : détection automatique des leads similaires par domaine, téléphone et nom (algorithme Levenshtein). Tab « Doublons » dans /acquisition avec groupes, score de similarité et bouton Fusionner.",
+        "Fusion intelligente (most-complete wins) : le lead avec le plus de champs remplis devient le principal, les doublons sont archivés avec traçabilité des IDs fusionnés.",
+        "Widget Speed-to-Lead dans /acquisition : alerte visuelle pour chaque lead entrant avec timer SLA (vert < 2h, ambre < 24h, rouge > 24h) et bouton Répondre direct.",
+        "Nouveaux types de données v4.5 : isDuplicate, duplicateGroupId, mergedFromIds, fbAdsetId, fbAdId, gclid, enrichedLogo, companySizeEstimate, techStack, replyClassification.",
+        "Nouveaux types séquences multicanales : call, sms, ab_test avec callScript, smsText, abVariants, pauseOnReply dans mock-data.ts.",
+        "150+ nouvelles clés i18n (FR/EN/DE) pour tous les modules v4.5 : dedup, ads, attribution, sla, enrich, composer, outreach.",
+      ],
+    },
+    {
       version: 'v3.35.1',
       date: '2026-06-23',
       titleKey: 'changelog.v3_35_1_title' as TranslationKey,
