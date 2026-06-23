@@ -20,6 +20,8 @@ import {
   Check,
   Move,
   Share2,
+  Image as ImageIcon,
+  Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -195,6 +197,12 @@ export default function LibraryPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Image gallery state
+  const [images, setImages] = useState<{ name: string; url: string; created_at: string }[]>([]);
+  const [imagesLoading, setImagesLoading] = useState(false);
+  const [imageUploading, setImageUploading] = useState(false);
+  const imageInputRef = useRef<HTMLInputElement>(null);
 
   // Multi-select features
   const [selectedDocIds, setSelectedDocIds] = useState<string[]>([]);
@@ -434,6 +442,70 @@ export default function LibraryPage() {
       }
     } catch (err) {
       console.error("Error toggling document share:", err);
+    }
+  };
+
+  // Load images from Supabase Storage
+  const loadImages = useCallback(async () => {
+    setImagesLoading(true);
+    try {
+      const supabase = createClient();
+      const { data } = await supabase.storage.from('library-assets').list('', {
+        limit: 100,
+        sortBy: { column: 'created_at', order: 'desc' },
+      });
+      if (data) {
+        const imgs = data
+          .filter((f: { name: string }) => /\.(png|jpe?g|gif|webp|svg|avif)$/i.test(f.name))
+          .map((f: { name: string; created_at?: string }) => {
+            const { data: urlData } = supabase.storage.from('library-assets').getPublicUrl(f.name);
+            return { name: f.name, url: urlData.publicUrl, created_at: f.created_at || '' };
+          });
+        setImages(imgs);
+      }
+    } catch { /* bucket may not exist yet */ }
+    finally { setImagesLoading(false); }
+  }, []);
+
+  useEffect(() => { loadImages(); }, [loadImages]);
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImageUploading(true);
+    try {
+      const supabase = createClient();
+      const { data: authData } = await supabase.auth.getUser();
+      if (!authData.user) return;
+      const ext = file.name.split('.').pop() || 'jpg';
+      const filename = `${authData.user.id}/${Date.now()}.${ext}`;
+      const { error } = await supabase.storage.from('library-assets').upload(filename, file, {
+        contentType: file.type,
+        upsert: false,
+      });
+      if (error) {
+        if (error.message.includes('Bucket not found')) {
+          toast.error('Le bucket "library-assets" n\'existe pas encore. Créez-le dans Supabase Storage → Buckets (public).');
+        } else {
+          toast.error(error.message);
+        }
+        return;
+      }
+      toast.success('Image uploadée !');
+      await loadImages();
+    } catch { toast.error('Erreur lors de l\'upload.'); }
+    finally {
+      setImageUploading(false);
+      if (imageInputRef.current) imageInputRef.current.value = '';
+    }
+  };
+
+  const handleDeleteImage = async (name: string) => {
+    const supabase = createClient();
+    const { error } = await supabase.storage.from('library-assets').remove([name]);
+    if (!error) {
+      setImages(prev => prev.filter(i => i.name !== name));
+      toast.success('Image supprimée.');
     }
   };
 
@@ -927,6 +999,103 @@ export default function LibraryPage() {
       </div>
 
       {/* New Folder Modal Overlay */}
+        {/* ── Images Section (Supabase Storage) ── */}
+        <div className="space-y-4">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-2">
+              <ImageIcon className="h-4 w-4 text-[#059669]" />
+              <h2 className="text-xs font-bold uppercase tracking-wider text-[#807d72]">Images</h2>
+            </div>
+            <div className="flex items-center gap-2">
+              {imagesLoading && <Loader2 className="w-3.5 h-3.5 animate-spin text-[#059669]" />}
+              <input
+                ref={imageInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleImageUpload}
+                className="hidden"
+              />
+              <Button
+                size="sm"
+                onClick={() => imageInputRef.current?.click()}
+                disabled={imageUploading}
+                className="h-7 bg-[#059669] hover:bg-[#047857] text-white text-xs gap-1.5 rounded-xl"
+              >
+                {imageUploading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Upload className="h-3 w-3" />}
+                Importer
+              </Button>
+            </div>
+          </div>
+
+          {images.length === 0 && !imagesLoading ? (
+            <button
+              type="button"
+              onClick={() => imageInputRef.current?.click()}
+              disabled={imageUploading}
+              className="w-full border-2 border-dashed border-[#e5e5e0] hover:border-[#059669]/40 rounded-2xl py-12 flex flex-col items-center justify-center gap-2 transition-colors group"
+            >
+              <ImageIcon className="h-8 w-8 text-[#807d72] group-hover:text-[#059669] transition-colors" />
+              <p className="text-xs font-bold text-[#807d72] group-hover:text-[#26251e]">Importer des images</p>
+              <p className="text-[10px] text-[#807d72]">PNG, JPG, GIF, WebP, SVG — stockés dans Supabase Storage</p>
+            </button>
+          ) : (
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
+              {images.map((img) => (
+                <div key={img.name} className="group relative aspect-square rounded-xl overflow-hidden border border-[#e5e5e0] bg-[#fafaf8]">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={img.url}
+                    alt={img.name}
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
+                    <a
+                      href={img.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={e => e.stopPropagation()}
+                      className="p-1.5 rounded-lg bg-white/90 hover:bg-white text-[#26251e] text-[10px] font-bold"
+                    >
+                      <Globe className="w-3 h-3" />
+                    </a>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteImage(img.name)}
+                      className="p-1.5 rounded-lg bg-white/90 hover:bg-red-50 text-red-600"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+                  </div>
+                  {/* Copy URL on click */}
+                  <button
+                    type="button"
+                    onClick={() => { navigator.clipboard.writeText(img.url); toast.success('URL copiée !'); }}
+                    className="absolute bottom-0 left-0 right-0 text-[8px] font-bold text-white bg-black/60 px-1 py-0.5 truncate opacity-0 group-hover:opacity-100 transition-opacity text-center"
+                  >
+                    Copier l'URL
+                  </button>
+                </div>
+              ))}
+              {/* Upload card */}
+              <button
+                type="button"
+                onClick={() => imageInputRef.current?.click()}
+                disabled={imageUploading}
+                className="aspect-square rounded-xl border-2 border-dashed border-[#e5e5e0] hover:border-[#059669]/50 flex flex-col items-center justify-center gap-1 transition-colors group"
+              >
+                {imageUploading ? (
+                  <Loader2 className="h-5 w-5 text-[#059669] animate-spin" />
+                ) : (
+                  <>
+                    <Plus className="h-5 w-5 text-[#807d72] group-hover:text-[#059669] transition-colors" />
+                    <span className="text-[9px] font-bold text-[#807d72] group-hover:text-[#059669]">Ajouter</span>
+                  </>
+                )}
+              </button>
+            </div>
+          )}
+        </div>
+
       {showNewFolderModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-xs">
           <div className="w-full max-w-sm bg-white border border-[#e6e5e0] rounded-2xl p-6 space-y-4 shadow-2xl animate-in fade-in zoom-in-95 duration-150 text-left">

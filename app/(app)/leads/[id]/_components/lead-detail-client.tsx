@@ -1806,6 +1806,9 @@ export function LeadDetailClient({ id }: { id: string }) {
               </div>
             )}
 
+            {/* Social Links + Instagram Gallery */}
+            <SocialLinksSection lead={lead} onSave={(fields) => updateLead(lead.id, fields)} />
+
             {/* Tabs Selector for Notes vs AI Drafts */}
             <div className="space-y-6">
               <div className="flex border-b border-border/60 gap-6">
@@ -3512,6 +3515,171 @@ export function LeadDetailClient({ id }: { id: string }) {
             </div>
 
           </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Social Links + Instagram Gallery ─────────────────────────────────────────
+
+function SocialLinksSection({ lead, onSave }: { lead: Lead; onSave: (fields: Partial<Lead>) => void }) {
+  const [editing, setEditing] = useState(false);
+  const [instagram, setInstagram] = useState(lead.socialLinks?.instagram || '');
+  const [facebook, setFacebook] = useState(lead.socialLinks?.facebook || '');
+  const [linkedin, setLinkedin] = useState(lead.socialLinks?.linkedin || '');
+  const [website, setWebsite] = useState(lead.website || '');
+
+  const [igPosts, setIgPosts] = useState<string[]>([]);
+  const [igLoading, setIgLoading] = useState(false);
+  const [igLoaded, setIgLoaded] = useState(false);
+
+  const handleSave = () => {
+    onSave({
+      socialLinks: {
+        ...lead.socialLinks,
+        ...(instagram ? { instagram } : {}),
+        ...(facebook ? { facebook } : {}),
+        ...(linkedin ? { linkedin } : {}),
+      },
+      ...(website ? { website } : {}),
+    });
+    setEditing(false);
+  };
+
+  const loadInstagramPosts = async () => {
+    const url = instagram || lead.socialLinks?.instagram;
+    if (!url) return;
+    setIgLoading(true);
+    try {
+      const res = await fetch(getApiUrl(`/api/leads/instagram-posts?url=${encodeURIComponent(url)}`));
+      if (res.ok) {
+        const data = await res.json();
+        setIgPosts(data.images || []);
+        setIgLoaded(true);
+      }
+    } catch { /* silent */ }
+    finally { setIgLoading(false); }
+  };
+
+  const igUrl = instagram || lead.socialLinks?.instagram;
+  const fbUrl = facebook || lead.socialLinks?.facebook;
+  const liUrl = linkedin || lead.socialLinks?.linkedin;
+  const hasAnySocial = igUrl || fbUrl || liUrl;
+
+  if (!hasAnySocial && !editing) {
+    return (
+      <button
+        type="button"
+        onClick={() => setEditing(true)}
+        className="flex items-center gap-2 text-xs text-[#7a7a76] hover:text-[#059669] transition-colors py-1"
+      >
+        <span className="text-base">+</span> Ajouter réseaux sociaux
+      </button>
+    );
+  }
+
+  return (
+    <div className="rounded-lg border border-border/60 bg-muted/20 p-3.5 space-y-3">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+          <Globe className="h-3 w-3" />Présence en ligne
+        </div>
+        <button type="button" onClick={() => setEditing(e => !e)} className="text-[10px] text-[#059669] font-bold hover:underline">
+          {editing ? 'Fermer' : 'Modifier'}
+        </button>
+      </div>
+
+      {editing ? (
+        <div className="space-y-2">
+          {[
+            { icon: '/icons/instagram.svg', label: 'Instagram', value: instagram, set: setInstagram, placeholder: 'instagram.com/username' },
+            { icon: '/icons/facebook.svg', label: 'Facebook', value: facebook, set: setFacebook, placeholder: 'facebook.com/page' },
+            { icon: null, label: 'LinkedIn', value: linkedin, set: setLinkedin, placeholder: 'linkedin.com/company/...' },
+            { icon: null, label: 'Site web', value: website, set: setWebsite, placeholder: 'https://...' },
+          ].map(field => (
+            <div key={field.label} className="flex items-center gap-2">
+              {field.icon ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={field.icon} alt={field.label} className="w-4 h-4 rounded shrink-0" />
+              ) : (
+                <Globe className="w-4 h-4 text-muted-foreground shrink-0" />
+              )}
+              <Input
+                value={field.value}
+                onChange={e => field.set(e.target.value)}
+                placeholder={field.placeholder}
+                className="h-7 text-xs border-[#e5e5e0] focus:ring-[#059669]"
+              />
+            </div>
+          ))}
+          <Button size="sm" onClick={handleSave} className="h-7 bg-[#059669] hover:bg-[#047857] text-white text-xs gap-1">
+            <Check className="w-3 h-3" />Enregistrer
+          </Button>
+        </div>
+      ) : (
+        <div className="flex flex-wrap gap-2">
+          {igUrl && (
+            <a href={igUrl.startsWith('http') ? igUrl : `https://${igUrl}`} target="_blank" rel="noopener noreferrer"
+              className="flex items-center gap-1.5 text-xs font-semibold text-[#26251e] hover:text-[#059669] transition-colors">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/icons/instagram.svg" alt="Instagram" className="w-4 h-4 rounded" />
+              <span className="text-[10px]">{igUrl.replace(/^https?:\/\/(www\.)?instagram\.com\//, '@').replace(/\/$/, '')}</span>
+            </a>
+          )}
+          {fbUrl && (
+            <a href={fbUrl.startsWith('http') ? fbUrl : `https://${fbUrl}`} target="_blank" rel="noopener noreferrer"
+              className="flex items-center gap-1.5 text-xs font-semibold text-[#26251e] hover:text-[#059669] transition-colors">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/icons/facebook.svg" alt="Facebook" className="w-4 h-4 rounded" />
+              <span className="text-[10px]">Facebook</span>
+            </a>
+          )}
+          {liUrl && (
+            <a href={liUrl.startsWith('http') ? liUrl : `https://${liUrl}`} target="_blank" rel="noopener noreferrer"
+              className="flex items-center gap-1.5 text-xs font-semibold text-[#26251e] hover:text-[#059669] transition-colors">
+              <Globe className="w-3.5 h-3.5" />
+              <span className="text-[10px]">LinkedIn</span>
+            </a>
+          )}
+        </div>
+      )}
+
+      {/* Instagram gallery */}
+      {igUrl && !editing && (
+        <div className="space-y-2">
+          {!igLoaded ? (
+            <button
+              type="button"
+              onClick={loadInstagramPosts}
+              disabled={igLoading}
+              className="flex items-center gap-1.5 text-[10px] font-bold text-[#7a7a76] hover:text-[#26251e] transition-colors"
+            >
+              {igLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src="/icons/instagram.svg" alt="" className="w-3 h-3 rounded" />
+              )}
+              {igLoading ? 'Chargement…' : 'Voir les posts Instagram'}
+            </button>
+          ) : igPosts.length > 0 ? (
+            <div className="space-y-1.5">
+              <p className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">Derniers posts</p>
+              <div className="grid grid-cols-3 gap-1">
+                {igPosts.map((img, i) => (
+                  <a key={i} href={igUrl.startsWith('http') ? igUrl : `https://${igUrl}`} target="_blank" rel="noopener noreferrer">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={img}
+                      alt={`Post ${i + 1}`}
+                      className="w-full aspect-square object-cover rounded-lg hover:opacity-80 transition-opacity"
+                    />
+                  </a>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <p className="text-[10px] text-muted-foreground italic">Compte privé ou scraping indisponible. <a href={igUrl.startsWith('http') ? igUrl : `https://${igUrl}`} target="_blank" rel="noopener noreferrer" className="text-[#059669] underline">Voir le profil →</a></p>
+          )}
         </div>
       )}
     </div>

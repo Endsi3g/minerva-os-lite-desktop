@@ -174,41 +174,55 @@ Extrait les informations en JSON strict, sans markdown. Format :
     await supabase.from('settings').update({ updated_at: new Date().toISOString() }).eq('user_id', user.id);
   }
 
-  // Save services to library (best effort)
-  if (extracted.services?.length) {
-    const { data: workspace } = await supabase
-      .from('workspaces')
-      .select('id')
-      .eq('owner_id', user.id)
-      .limit(1)
-      .maybeSingle();
+  // Update workspace: name + logo (best effort)
+  const { data: workspace } = await supabase
+    .from('workspaces')
+    .select('id')
+    .eq('owner_id', user.id)
+    .limit(1)
+    .maybeSingle();
 
-    if (workspace?.id) {
+  if (workspace?.id) {
+    const wUpdates: Record<string, unknown> = { updated_at: new Date().toISOString() };
+    if (extracted.agencyName) wUpdates['name'] = extracted.agencyName;
+    if (logoUrl) wUpdates['logo_base64'] = logoUrl; // store URL, sidebar shows as <img src>
+    await supabase.from('workspaces').update(wUpdates).eq('id', workspace.id);
+
+    // Save services catalog (price as number)
+    if (extracted.services?.length) {
       for (const svc of extracted.services.slice(0, 10)) {
+        let priceNum: number | null = null;
+        if (svc.price) {
+          const numMatch = svc.price.replace(/[\s$€£]/g, '').match(/[\d]+([.,]\d+)?/);
+          if (numMatch) priceNum = parseFloat(numMatch[0].replace(',', '.'));
+        }
         const { error: svcErr } = await supabase.from('services').upsert({
           workspace_id: workspace.id,
           name: svc.name,
-          description: svc.description,
-          price: svc.price || null,
-          source: 'agency_import',
+          description: svc.description || '',
+          price: priceNum,
+          type: 'digital',
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         }, { onConflict: 'workspace_id,name', ignoreDuplicates: true });
         void svcErr;
       }
+    }
 
-      // Save logo to library
-      if (logoUrl) {
-        const { error: libErr } = await supabase.from('library_assets').insert({
-          workspace_id: workspace.id,
-          type: 'image',
-          name: `Logo — ${extracted.agencyName || 'Agence'}`,
-          url: logoUrl,
-          source: 'agency_import',
-          created_at: new Date().toISOString(),
-        });
-        void libErr;
-      }
+    // Save logo to documents library (with imageUrl in content JSON)
+    if (logoUrl) {
+      const { error: docErr } = await supabase.from('documents').insert({
+        user_id: user.id,
+        workspace_id: workspace.id,
+        title: `Logo — ${extracted.agencyName || 'Agence'}`,
+        type: 'blank' as const,
+        content: JSON.stringify({ imageUrl: logoUrl, assetType: 'agency_logo' }),
+        is_shared: true,
+        folder_name: 'Agence',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      });
+      void docErr;
     }
   }
 
