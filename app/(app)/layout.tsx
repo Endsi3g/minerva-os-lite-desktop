@@ -169,6 +169,14 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [checkingWelcome, setCheckingWelcome] = useState(true);
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
   const [moreSheetOpen, setMoreSheetOpen] = useState(false);
   const [footerExpanded, setFooterExpanded] = useState(false);
 
@@ -709,22 +717,28 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
       {/* Sidebar */}
       <motion.aside
         animate={{
-          width: sidebarOpen ? 240 : isCollapsed ? 0 : 240,
-          x: sidebarOpen ? 0 : undefined,
+          // Mobile: slide the fixed sidebar in/out via x
+          // Desktop: animate width (layout push) + inner content slides via x
+          ...(isMobile
+            ? { x: sidebarOpen ? 0 : -240, width: 240 }
+            : { width: isCollapsed ? 0 : 240, x: 0 }
+          ),
         }}
         initial={false}
-        transition={{ type: 'spring', stiffness: 320, damping: 32, mass: 1 }}
+        transition={{ type: 'spring', stiffness: 300, damping: 30, mass: 1 }}
         className={cn(
           "fixed inset-y-0 left-0 z-50 flex flex-col border-r border-[#e5e5e0] bg-[#f4f4f3] md:static md:relative shrink-0 overflow-hidden",
           isCollapsed ? "md:border-r-0" : "",
-          sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         )}
         style={{ minWidth: 0 }}>
-        {/* Inner wrapper holds the actual 240px content — sidebar clips it via overflow-hidden */}
+        {/* Inner wrapper: fixed at 240px so content never reflows; slides left on desktop collapse */}
         <motion.div
           className="flex flex-col h-full w-[240px] min-w-[240px]"
-          animate={{ opacity: isCollapsed ? 0 : 1 }}
-          transition={{ duration: 0.15, ease: [0.4, 0, 0.2, 1] }}
+          animate={isMobile
+            ? { x: 0, opacity: 1 }
+            : { x: isCollapsed ? -48 : 0, opacity: isCollapsed ? 0 : 1 }
+          }
+          transition={{ type: 'spring', stiffness: 300, damping: 30, mass: 1 }}
         >
         {/* Sidebar Brand Header (With Langdock style Switcher Dropdown) */}
         <div className={cn(
