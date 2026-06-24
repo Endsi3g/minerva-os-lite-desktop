@@ -648,6 +648,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
         { name: t('nav.sequences'), href: '/sequences', icon: Mail },
         { name: 'Services & Tarifs', href: '/services', icon: Tag },
         { name: t('nav.library'), href: '/library', icon: Folder },
+        { name: 'Bibliothèque de preuves', href: '/leverage-library', icon: BookOpen },
       ],
     },
     {

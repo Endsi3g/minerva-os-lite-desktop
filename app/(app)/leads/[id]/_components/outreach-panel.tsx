@@ -1,0 +1,246 @@
+'use client';
+
+import React, { useState } from 'react';
+import { getApiUrl } from '@/lib/api-helper';
+import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
+import { Lead } from '@/lib/mock-data';
+import { computeLeadScoreV2 } from '@/lib/lead-score';
+import {
+  Mail, Phone, Loader2, CheckCircle2, AlertCircle,
+  Zap, Trophy, BookOpen,
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+
+interface OutreachPanelProps {
+  lead: Lead;
+}
+
+type Channel = 'email' | 'voicemail';
+
+export function OutreachPanel({ lead }: OutreachPanelProps) {
+  const computed = computeLeadScoreV2(lead);
+  const total = computed.total ?? ((computed.icp + computed.engagement) / 2);
+  const score = Math.round(total);
+
+  const emailEnabled = true;
+  const voicemailEnabled = score >= 50;
+
+  const [emailStatus, setEmailStatus] = useState<'idle' | 'loading' | 'ok' | 'error'>('idle');
+  const [emailError, setEmailError] = useState('');
+  const [voicemailStatus, setVoicemailStatus] = useState<'idle' | 'loading' | 'ok' | 'error'>('idle');
+  const [voicemailScript, setVoicemailScript] = useState('');
+  const [voicemailError, setVoicemailError] = useState('');
+  const [sendingVoicemail, setSendingVoicemail] = useState(false);
+
+  const handleEnrollSmartlead = async () => {
+    setEmailStatus('loading');
+    setEmailError('');
+    try {
+      const res = await fetch(getApiUrl('/api/outreach/smartlead'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ leadId: lead.id }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setEmailStatus('error'); setEmailError(data.error || 'Erreur Smartlead'); return; }
+      setEmailStatus('ok');
+      toast.success('Lead ajouté à la séquence Smartlead');
+    } catch {
+      setEmailStatus('error');
+      setEmailError('Erreur réseau');
+    }
+  };
+
+  const handleGenerateVoicemail = async () => {
+    setVoicemailStatus('loading');
+    setVoicemailScript('');
+    setVoicemailError('');
+    try {
+      const res = await fetch(getApiUrl('/api/outreach/voicemail'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ leadId: lead.id, send: false }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setVoicemailStatus('error'); setVoicemailError(data.error || 'Erreur génération'); return; }
+      setVoicemailStatus('ok');
+      setVoicemailScript(data.script || '');
+    } catch {
+      setVoicemailStatus('error');
+      setVoicemailError('Erreur réseau');
+    }
+  };
+
+  const handleSendVoicemail = async () => {
+    if (!voicemailScript || !lead.phone) return;
+    setSendingVoicemail(true);
+    try {
+      const res = await fetch(getApiUrl('/api/outreach/voicemail'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ leadId: lead.id, send: true }),
+      });
+      const data = await res.json();
+      if (res.ok && data.delivered) {
+        toast.success('Voicemail envoyé via Drop Cowboy');
+      } else if (res.ok) {
+        toast.success('Script sauvegardé — configurez Drop Cowboy dans Paramètres pour l\'envoi automatique');
+      } else {
+        toast.error(data.error || 'Erreur envoi voicemail');
+      }
+    } finally {
+      setSendingVoicemail(false);
+    }
+  };
+
+  const ScoreBar = ({ value, label }: { value: number; label: string }) => (
+    <div className="space-y-0.5">
+      <div className="flex justify-between text-[9px] text-[#7a7a76]">
+        <span>{label}</span>
+        <span className="font-bold text-[#26251e]">{value}/100</span>
+      </div>
+      <div className="h-1 w-full rounded-full bg-[#e5e5e0]">
+        <div
+          className="h-1 rounded-full bg-[#059669] transition-all"
+          style={{ width: `${Math.min(100, Math.max(0, value))}%` }}
+        />
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="space-y-5 py-2">
+      {/* Score + routing */}
+      <div className="border border-[#e5e5e0] rounded-xl p-4 space-y-3 bg-[#f9f9f8]">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Zap className="h-3.5 w-3.5 text-[#059669]" />
+            <span className="text-xs font-bold text-[#26251e]">Score lead</span>
+          </div>
+          <div className={cn(
+            "px-2 py-0.5 rounded-full text-[10px] font-extrabold",
+            score >= 75 ? "bg-[#059669]/15 text-[#059669]" :
+            score >= 50 ? "bg-blue-50 text-blue-700" :
+            "bg-[#f4f4f3] text-[#7a7a76]"
+          )}>
+            {score}/100
+          </div>
+        </div>
+        <ScoreBar value={computed.icp} label="ICP" />
+        <ScoreBar value={computed.engagement} label="Engagement" />
+
+        <div className="pt-1 border-t border-[#e5e5e0] space-y-1.5">
+          <p className="text-[9px] font-bold uppercase tracking-wider text-[#7a7a76]">Canaux recommandés</p>
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="flex items-center gap-1 text-[10px] font-bold text-[#059669] bg-[#059669]/10 border border-[#059669]/20 px-2 py-0.5 rounded-full">
+              <Mail className="h-2.5 w-2.5" />Email
+            </span>
+            {voicemailEnabled && (
+              <span className="flex items-center gap-1 text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-full">
+                <Phone className="h-2.5 w-2.5" />Voicemail
+              </span>
+            )}
+            {!voicemailEnabled && (
+              <span className="text-[10px] text-[#7a7a76]">Score &lt; 50 → email uniquement</span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Email sequence — Smartlead */}
+      <div className="border border-[#e5e5e0] rounded-xl p-4 space-y-3">
+        <div className="flex items-center gap-2">
+          <Mail className="h-3.5 w-3.5 text-[#059669]" />
+          <span className="text-xs font-bold text-[#26251e]">Séquence email — Smartlead</span>
+        </div>
+        {lead.contactEmail ? (
+          <div className="space-y-2">
+            <p className="text-[10px] text-[#7a7a76]">
+              Ajouter <span className="font-bold text-[#26251e]">{lead.contactEmail}</span> à la campagne Smartlead configurée dans Paramètres.
+            </p>
+            {emailStatus === 'ok' && (
+              <div className="flex items-center gap-1.5 text-[#059669] text-[10px] font-bold">
+                <CheckCircle2 className="h-3 w-3" />Lead enrollé dans la séquence
+              </div>
+            )}
+            {emailStatus === 'error' && (
+              <div className="flex items-center gap-1.5 text-red-600 text-[10px]">
+                <AlertCircle className="h-3 w-3" />{emailError}
+              </div>
+            )}
+            <Button
+              onClick={handleEnrollSmartlead}
+              disabled={emailStatus === 'loading' || emailStatus === 'ok'}
+              className="h-7 bg-[#059669] hover:bg-[#047857] text-white text-[10px] font-bold gap-1"
+            >
+              {emailStatus === 'loading' ? <Loader2 className="h-3 w-3 animate-spin" /> : <Mail className="h-3 w-3" />}
+              {emailStatus === 'ok' ? 'Enrollé' : 'Enroller dans Smartlead'}
+            </Button>
+          </div>
+        ) : (
+          <p className="text-[10px] text-[#7a7a76] italic">Aucun email de contact — renseignez-le pour activer la séquence.</p>
+        )}
+      </div>
+
+      {/* Voicemail — Drop Cowboy */}
+      {voicemailEnabled && (
+        <div className="border border-[#e5e5e0] rounded-xl p-4 space-y-3">
+          <div className="flex items-center gap-2">
+            <Phone className="h-3.5 w-3.5 text-blue-600" />
+            <span className="text-xs font-bold text-[#26251e]">Voicemail — Drop Cowboy</span>
+          </div>
+
+          {voicemailStatus === 'error' && (
+            <div className="flex items-center gap-1.5 text-red-600 text-[10px]">
+              <AlertCircle className="h-3 w-3" />{voicemailError}
+            </div>
+          )}
+
+          {voicemailScript && (
+            <div className="bg-[#f4f4f3] border border-[#e5e5e0] rounded-lg p-3 space-y-2">
+              <p className="text-[9px] font-bold uppercase tracking-wider text-[#7a7a76]">Script IA généré</p>
+              <p className="text-[11px] text-[#26251e] leading-relaxed whitespace-pre-wrap">{voicemailScript}</p>
+              {lead.phone ? (
+                <Button
+                  onClick={handleSendVoicemail}
+                  disabled={sendingVoicemail}
+                  className="h-7 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold gap-1 mt-1"
+                >
+                  {sendingVoicemail ? <Loader2 className="h-3 w-3 animate-spin" /> : <Phone className="h-3 w-3" />}
+                  Envoyer le voicemail
+                </Button>
+              ) : (
+                <p className="text-[10px] text-[#7a7a76] italic">Ajoutez un téléphone pour envoyer.</p>
+              )}
+            </div>
+          )}
+
+          <Button
+            onClick={handleGenerateVoicemail}
+            disabled={voicemailStatus === 'loading'}
+            variant="outline"
+            className="h-7 border-[#e5e5e0] text-[10px] font-bold gap-1"
+          >
+            {voicemailStatus === 'loading' ? <Loader2 className="h-3 w-3 animate-spin" /> : <Zap className="h-3 w-3 text-[#059669]" />}
+            {voicemailScript ? 'Regénérer le script' : 'Générer un script IA'}
+          </Button>
+        </div>
+      )}
+
+      {/* Leverage library hint */}
+      <div className="border border-dashed border-[#e5e5e0] rounded-xl p-4 flex items-start gap-2.5">
+        <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[#059669]/10 mt-0.5">
+          <BookOpen className="h-3 w-3 text-[#059669]" />
+        </div>
+        <div className="space-y-0.5">
+          <p className="text-[10px] font-bold text-[#26251e]">Preuves sociales</p>
+          <p className="text-[10px] text-[#7a7a76]">
+            L'IA sélectionne automatiquement l'étude de cas la plus pertinente pour {lead.niche || 'ce secteur'} depuis votre{' '}
+            <a href="/leverage-library" className="text-[#059669] font-bold hover:underline">Bibliothèque de preuves</a>.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}

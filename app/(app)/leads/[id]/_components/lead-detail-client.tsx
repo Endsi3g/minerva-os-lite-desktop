@@ -61,6 +61,7 @@ import { createClient } from '@/lib/supabase/client';
 import type { REALTIME_SUBSCRIBE_STATES } from '@supabase/supabase-js';
 import { toast } from 'sonner';
 import { GmailIcon, GoogleCalendarIcon, GoogleMapsIcon } from '@/components/icons';
+import { OutreachPanel } from './outreach-panel';
 
 function cleanMarkdownForPreview(text: string | null | undefined): string {
   if (!text) return '';
@@ -700,7 +701,7 @@ export function LeadDetailClient({ id }: { id: string }) {
   }
 
   // AI draft states
-  const [activeTab, setActiveTab] = useState<'notes' | 'drafts' | 'composer' | 'timeline' | 'gmail' | 'agenda'>('notes');
+  const [activeTab, setActiveTab] = useState<'notes' | 'drafts' | 'composer' | 'timeline' | 'gmail' | 'agenda' | 'outreach'>('notes');
   const [drafts, setDrafts] = useState<Draft[]>([]);
   const [loadingDrafts, setLoadingDrafts] = useState(false);
   const [generating, setGenerating] = useState(false);
@@ -1890,6 +1891,19 @@ export function LeadDetailClient({ id }: { id: string }) {
                   <GoogleCalendarIcon size={12} />
                   Agenda
                 </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('outreach')}
+                  className={cn(
+                    "pb-3 text-xs font-bold uppercase tracking-wider border-b-2 px-1 transition-all cursor-pointer flex items-center gap-1",
+                    activeTab === 'outreach'
+                      ? "border-[#059669] text-[#059669] font-extrabold"
+                      : "border-transparent text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  <Zap className="h-3 w-3" />
+                  Outreach
+                </button>
               </div>
 
               {activeTab === 'notes' ? (
@@ -2517,7 +2531,7 @@ export function LeadDetailClient({ id }: { id: string }) {
                     ))
                   )}
                 </div>
-              ) : (
+              ) : activeTab === 'agenda' ? (
                 /* Google Calendar Lead Events Panel (Agenda) */
                 <div className="space-y-3">
                   {!lead.contactEmail ? (
@@ -2596,7 +2610,9 @@ export function LeadDetailClient({ id }: { id: string }) {
                     })
                   )}
                 </div>
-              )}
+              ) : activeTab === 'outreach' ? (
+                <OutreachPanel lead={lead} />
+              ) : null}
             </div>
           </div>
 

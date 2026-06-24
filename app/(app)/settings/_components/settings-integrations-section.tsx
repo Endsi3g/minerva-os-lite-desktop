@@ -10,6 +10,7 @@ import { Mail, Search, Globe, RefreshCw, Check, Key, Server, ChevronDown, Chevro
 import { GmailIcon, SlackIcon, NotionIcon } from '@/components/icons';
 import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
 interface SmtpConfig {
   host: string;
@@ -41,6 +42,17 @@ export function SettingsIntegrationsSection() {
   const [savingNotion, setSavingNotion] = useState(false);
   const [testingNotion, setTestingNotion] = useState(false);
   const [notionSaved, setNotionSaved] = useState(false);
+
+  // Outreach machine
+  const [smartleadApiKey, setSmartleadApiKey] = useState('');
+  const [smartleadCampaignId, setSmartleadCampaignId] = useState('');
+  const [savingSmartlead, setSavingSmartlead] = useState(false);
+  const [dropCowboyUsername, setDropCowboyUsername] = useState('');
+  const [dropCowboyApiKey, setDropCowboyApiKey] = useState('');
+  const [savingDropCowboy, setSavingDropCowboy] = useState(false);
+  const [aiInboxAutoReply, setAiInboxAutoReply] = useState(false);
+  const [aiInboxConfidenceMin, setAiInboxConfidenceMin] = useState(80);
+  const [savingAiInbox, setSavingAiInbox] = useState(false);
 
   // Real integration states
   const [gmailConnected, setGmailConnected] = useState(false);
@@ -116,6 +128,12 @@ export function SettingsIntegrationsSection() {
             if ((data as any).slack_webhook_url) setSlackWebhookUrl((data as any).slack_webhook_url);
             if ((data as any).notion_token) setNotionToken((data as any).notion_token);
             if ((data as any).notion_database_id) setNotionDatabaseId((data as any).notion_database_id);
+            if ((data as any).smartlead_api_key) setSmartleadApiKey((data as any).smartlead_api_key);
+            if ((data as any).smartlead_campaign_id) setSmartleadCampaignId((data as any).smartlead_campaign_id);
+            if ((data as any).drop_cowboy_username) setDropCowboyUsername((data as any).drop_cowboy_username);
+            if ((data as any).drop_cowboy_api_key) setDropCowboyApiKey((data as any).drop_cowboy_api_key);
+            if (typeof (data as any).ai_inbox_auto_reply === 'boolean') setAiInboxAutoReply((data as any).ai_inbox_auto_reply);
+            if (typeof (data as any).ai_inbox_confidence_min === 'number') setAiInboxConfidenceMin((data as any).ai_inbox_confidence_min);
           }
         }
       } catch (e) {
@@ -325,6 +343,57 @@ export function SettingsIntegrationsSection() {
       else { const d = await res.json(); toast.error(d.error || 'Token Notion invalide.'); }
     } catch { toast.error('Erreur test Notion'); }
     setTestingNotion(false);
+  };
+
+  const handleSaveSmartlead = async () => {
+    setSavingSmartlead(true);
+    try {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase.from('settings').update({
+          smartlead_api_key: smartleadApiKey.trim() || null,
+          smartlead_campaign_id: smartleadCampaignId.trim() || null,
+          updated_at: new Date().toISOString(),
+        }).eq('user_id', user.id);
+        toast.success('Smartlead enregistré');
+      }
+    } catch { toast.error('Erreur sauvegarde Smartlead'); }
+    setSavingSmartlead(false);
+  };
+
+  const handleSaveDropCowboy = async () => {
+    setSavingDropCowboy(true);
+    try {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase.from('settings').update({
+          drop_cowboy_username: dropCowboyUsername.trim() || null,
+          drop_cowboy_api_key: dropCowboyApiKey.trim() || null,
+          updated_at: new Date().toISOString(),
+        }).eq('user_id', user.id);
+        toast.success('Drop Cowboy enregistré');
+      }
+    } catch { toast.error('Erreur sauvegarde Drop Cowboy'); }
+    setSavingDropCowboy(false);
+  };
+
+  const handleSaveAiInbox = async () => {
+    setSavingAiInbox(true);
+    try {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase.from('settings').update({
+          ai_inbox_auto_reply: aiInboxAutoReply,
+          ai_inbox_confidence_min: aiInboxConfidenceMin,
+          updated_at: new Date().toISOString(),
+        }).eq('user_id', user.id);
+        toast.success('Inbox IA enregistré');
+      }
+    } catch { toast.error('Erreur sauvegarde Inbox IA'); }
+    setSavingAiInbox(false);
   };
 
   if (loading) {
@@ -899,6 +968,114 @@ export function SettingsIntegrationsSection() {
                   <span>Partagez votre base de données avec l'intégration dans Notion (bouton Partager → Inviter), puis copiez son ID depuis l'URL (32 caractères hexadécimaux).</span>
                 </div>
               </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Outreach Machine — Smartlead */}
+        <Card className="border border-border bg-card">
+          <CardContent className="p-5 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#059669]/10 shrink-0">
+                <Send className="h-4 w-4 text-[#059669]" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-[#26251e]">Smartlead — Séquences email</p>
+                <p className="text-[10px] text-muted-foreground">Enrôle automatiquement tes leads dans des campagnes cold email</p>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Clé API Smartlead</label>
+                <div className="flex gap-2">
+                  <Input value={smartleadApiKey} onChange={e => setSmartleadApiKey(e.target.value)} placeholder="sl_..." type="password" className="h-8 text-xs flex-1 border-border" />
+                </div>
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Campaign ID (défaut)</label>
+                <Input value={smartleadCampaignId} onChange={e => setSmartleadCampaignId(e.target.value)} placeholder="123456" className="h-8 text-xs border-border" />
+              </div>
+              <Button onClick={handleSaveSmartlead} disabled={savingSmartlead} className="h-8 text-xs font-bold bg-[#059669] hover:bg-[#047857] text-white gap-1">
+                {savingSmartlead ? <RefreshCw className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
+                Enregistrer
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Outreach Machine — Drop Cowboy */}
+        <Card className="border border-border bg-card">
+          <CardContent className="p-5 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 shrink-0">
+                <MessageSquare className="h-4 w-4 text-blue-600" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-[#26251e]">Drop Cowboy — Voicemail</p>
+                <p className="text-[10px] text-muted-foreground">Envoie des voicemails sans sonnerie générés par l'IA (score ≥ 50)</p>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Nom d'utilisateur</label>
+                <Input value={dropCowboyUsername} onChange={e => setDropCowboyUsername(e.target.value)} placeholder="moncompte" className="h-8 text-xs border-border" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Clé API Drop Cowboy</label>
+                <Input value={dropCowboyApiKey} onChange={e => setDropCowboyApiKey(e.target.value)} placeholder="dc_..." type="password" className="h-8 text-xs border-border" />
+              </div>
+              <Button onClick={handleSaveDropCowboy} disabled={savingDropCowboy} className="h-8 text-xs font-bold bg-[#059669] hover:bg-[#047857] text-white gap-1">
+                {savingDropCowboy ? <RefreshCw className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
+                Enregistrer
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* AI Inbox */}
+        <Card className="border border-border bg-card">
+          <CardContent className="p-5 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-50 shrink-0">
+                <Layers className="h-4 w-4 text-purple-600" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-[#26251e]">IA Inbox — Réponse autonome</p>
+                <p className="text-[10px] text-muted-foreground">L'IA répond automatiquement si le score de confiance dépasse le seuil</p>
+              </div>
+            </div>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-[#26251e] font-bold">Réponse automatique</span>
+                <button
+                  onClick={() => setAiInboxAutoReply(v => !v)}
+                  className={cn(
+                    "relative inline-flex h-5 w-9 items-center rounded-full transition-colors",
+                    aiInboxAutoReply ? "bg-[#059669]" : "bg-[#e5e5e0]"
+                  )}
+                >
+                  <span className={cn("inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform", aiInboxAutoReply ? "translate-x-4" : "translate-x-0.5")} />
+                </button>
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                  Seuil de confiance — {aiInboxConfidenceMin}%
+                </label>
+                <p className="text-[9px] text-muted-foreground">En dessous : brouillon. Au-dessus : envoi automatique.</p>
+                <input
+                  type="range" min={50} max={95} step={5}
+                  value={aiInboxConfidenceMin}
+                  onChange={e => setAiInboxConfidenceMin(Number(e.target.value))}
+                  className="w-full accent-[#059669]"
+                />
+                <div className="flex justify-between text-[9px] text-muted-foreground">
+                  <span>50% (permissif)</span><span>95% (strict)</span>
+                </div>
+              </div>
+              <Button onClick={handleSaveAiInbox} disabled={savingAiInbox} className="h-8 text-xs font-bold bg-[#059669] hover:bg-[#047857] text-white gap-1">
+                {savingAiInbox ? <RefreshCw className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
+                Enregistrer
+              </Button>
             </div>
           </CardContent>
         </Card>
