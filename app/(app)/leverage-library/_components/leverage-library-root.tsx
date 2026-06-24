@@ -84,7 +84,7 @@ export function LeverageLibraryRoot() {
             <BookOpen className="h-4 w-4 text-[#059669]" />
           </div>
           <div>
-            <h1 className="text-base font-semibold text-[#26251e]">Bibliothèque de preuves</h1>
+            <h1 className="text-base font-semibold tracking-tight leading-tight text-[#26251e]">Bibliothèque de preuves</h1>
             <p className="text-[10px] text-[#7a7a76]">Études de cas sélectionnées automatiquement par l'IA lors de la rédaction d'emails</p>
           </div>
         </div>

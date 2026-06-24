@@ -79,15 +79,15 @@ export function LeadsFilters<TData>({ table, showAssignedToMe, onToggleAssignedT
       </div>
 
       {/* Select Filters (Right side) */}
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center gap-3">
         {/* Status Filter */}
         <Select
           value={statusFilter}
-          onValueChange={(val) => 
+          onValueChange={(val) =>
             table.getColumn('status')?.setFilterValue(val === 'all' ? undefined : val)
           }
         >
-          <SelectTrigger className="h-8.5 w-[130px] text-xs bg-card">
+          <SelectTrigger className="h-8 min-w-[148px] text-xs bg-card">
             <SelectValue placeholder="Tous les statuts" />
           </SelectTrigger>
           <SelectContent>
@@ -103,11 +103,11 @@ export function LeadsFilters<TData>({ table, showAssignedToMe, onToggleAssignedT
         {/* Temperature Filter */}
         <Select
           value={tempFilter}
-          onValueChange={(val) => 
+          onValueChange={(val) =>
             table.getColumn('temperature')?.setFilterValue(val === 'all' ? undefined : val)
           }
         >
-          <SelectTrigger className="h-8.5 w-[140px] text-xs bg-card">
+          <SelectTrigger className="h-8 min-w-[160px] text-xs bg-card">
             <SelectValue placeholder="Toutes températures" />
           </SelectTrigger>
           <SelectContent>
@@ -121,11 +121,11 @@ export function LeadsFilters<TData>({ table, showAssignedToMe, onToggleAssignedT
         {/* Niche Filter */}
         <Select
           value={nicheFilter}
-          onValueChange={(val) => 
+          onValueChange={(val) =>
             table.getColumn('niche')?.setFilterValue(val === 'all' ? undefined : val)
           }
         >
-          <SelectTrigger className="h-8.5 w-[140px] text-xs bg-card">
+          <SelectTrigger className="h-8 min-w-[152px] text-xs bg-card">
             <SelectValue placeholder="Tous les secteurs" />
           </SelectTrigger>
           <SelectContent>
@@ -142,9 +142,9 @@ export function LeadsFilters<TData>({ table, showAssignedToMe, onToggleAssignedT
         <button
           onClick={onToggleAssignedToMe}
           className={cn(
-            'flex items-center gap-1.5 h-8.5 px-3 text-xs font-semibold rounded-md border transition-colors',
+            'flex items-center gap-1.5 h-8 px-3 text-xs font-semibold rounded-md border transition-colors',
             showAssignedToMe
-              ? 'bg-[#059669] text-white border-[#059669] hover:bg-[#e04300]'
+              ? 'bg-[#059669] text-white border-[#059669] hover:bg-[#047857]'
               : 'bg-card border-border text-muted-foreground hover:text-foreground hover:bg-secondary'
           )}
         >
@@ -160,7 +160,7 @@ export function LeadsFilters<TData>({ table, showAssignedToMe, onToggleAssignedT
               handleClearFilters();
               if (showAssignedToMe) onToggleAssignedToMe();
             }}
-            className="h-8.5 px-3 text-xs gap-1.5 text-muted-foreground hover:text-foreground"
+            className="h-8 px-3 text-xs gap-1.5 text-muted-foreground hover:text-foreground"
           >
             <X className="h-3.5 w-3.5" />
             <span>Réinitialiser</span>

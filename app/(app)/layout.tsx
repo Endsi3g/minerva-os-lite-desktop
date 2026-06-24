@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { getApiUrl } from '@/lib/api-helper';
@@ -57,6 +58,8 @@ import {
   Flag,
   TrendingUp,
   Send,
+  MoreHorizontal,
+  Home,
 } from 'lucide-react';
 import { BottomBlur } from '@/components/ui/edge-blur';
 import { cn } from '@/lib/utils';
@@ -166,7 +169,9 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [checkingWelcome, setCheckingWelcome] = useState(true);
   const [isCollapsed, setIsCollapsed] = useState(false);
-  
+  const [moreSheetOpen, setMoreSheetOpen] = useState(false);
+  const [footerExpanded, setFooterExpanded] = useState(false);
+
   // Dropdown States for Workspaces switcher
   const [isWorkspaceMenuOpen, setIsWorkspaceMenuOpen] = useState(false);
   const [isSwitchWorkspaceOpen, setIsSwitchWorkspaceOpen] = useState(false);
@@ -725,13 +730,22 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
               <MinervaIcon size={20} className="shrink-0" />
             )}
             {!isCollapsed && (
-              <div 
+              <div
                 onClick={() => setIsWorkspaceMenuOpen(!isWorkspaceMenuOpen)}
                 className="flex flex-1 items-center justify-between gap-1 cursor-pointer hover:bg-[#e5e5e2] px-1.5 py-0.5 rounded transition-colors select-none min-w-0"
               >
-                <span className="font-semibold text-sm text-[#26251e] truncate">
-                  {activeWorkspace ? activeWorkspace.name : 'Minerva OS Lite'}
-                </span>
+                <AnimatePresence mode="wait" initial={false}>
+                  <motion.span
+                    key={activeWorkspace?.id ?? 'default'}
+                    initial={{ opacity: 0, y: 4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -4 }}
+                    transition={{ duration: 0.15, ease: [0.4, 0, 0.2, 1] }}
+                    className="font-semibold text-sm text-[#26251e] truncate"
+                  >
+                    {activeWorkspace ? activeWorkspace.name : 'Minerva OS Lite'}
+                  </motion.span>
+                </AnimatePresence>
                 <ChevronDown className="h-3 w-3 text-[#7a7a76] shrink-0" />
               </div>
             )}
@@ -1085,7 +1099,10 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                       : "text-[#555552] hover:bg-[#e5e5e2]/60 hover:text-[#26251e]"
                   )}
                 >
-                  <item.icon className="h-4 w-4 shrink-0 text-[#555552]" />
+                  <item.icon
+                    className={cn("h-4 w-4 shrink-0 transition-all duration-150", isActive ? "text-[#26251e]" : "text-[#555552] opacity-60")}
+                    strokeWidth={isActive ? 2 : 1.5}
+                  />
                   {!isCollapsed && <span className="truncate">{item.name}</span>}
                 </Link>
               );
@@ -1136,7 +1153,10 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                                   : "text-[#555552] hover:bg-[#e5e5e2]/60 hover:text-[#26251e]"
                               )}
                             >
-                              <item.icon className="h-4 w-4 shrink-0 text-[#555552]" />
+                              <item.icon
+                                className={cn("h-4 w-4 shrink-0 transition-all duration-150", isActive ? "text-[#26251e]" : "text-[#555552] opacity-60")}
+                                strokeWidth={isActive ? 2 : 1.5}
+                              />
                               <span className="truncate">{item.name}</span>
                             </Link>
                           );
@@ -1270,50 +1290,60 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
             </div>
           )}
 
-          {/* Billing, Help, Changelog links above Settings */}
-          <div className="space-y-0.5">
-            {[
-              { href: '/billing', icon: CreditCard, label: 'Facturation' },
-              { href: '/help', icon: HelpCircle, label: 'Aide & Docs' },
-              { href: '/changelog', icon: Megaphone, label: t('nav.changelog') },
-            ].map(({ href, icon: Icon, label }) => (
-              <React.Fragment key={href}>
-                {isCollapsed ? (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Link
-                        href={href}
-                        className={cn(
-                          "flex h-8 w-8 mx-auto items-center justify-center rounded-md transition-colors",
-                          pathname === href
-                            ? "bg-[#e5e5e2] text-[#26251e]"
-                            : "text-[#555552] hover:bg-[#e5e5e2]/60 hover:text-[#26251e]"
-                        )}
-                      >
-                        <Icon className="h-4 w-4" />
-                      </Link>
-                    </TooltipTrigger>
-                    <TooltipContent side="right" className="text-xs bg-[#26251e] text-white">
-                      {label}
-                    </TooltipContent>
-                  </Tooltip>
-                ) : (
-                  <Link
-                    href={href}
-                    className={cn(
-                      "flex items-center gap-2.5 text-xs font-semibold px-2.5 py-1.5 rounded-md transition-colors",
-                      pathname === href
-                        ? "bg-[#e5e5e2] text-[#26251e] font-semibold"
-                        : "text-[#555552] hover:text-[#26251e] hover:bg-[#e5e5e2]/60"
-                    )}
+          {/* Secondary links — collapsible accordion */}
+          {!isCollapsed && (
+            <div className="space-y-0.5">
+              <button
+                onClick={() => setFooterExpanded(v => !v)}
+                className="w-full flex items-center justify-between px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-[#7a7a76] hover:text-[#26251e] transition-colors"
+              >
+                <span>Paramètres & Plus</span>
+                <ChevronDown className={cn("h-3 w-3 transition-transform duration-200", footerExpanded && "rotate-180")} />
+              </button>
+              <AnimatePresence initial={false}>
+                {footerExpanded && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.18, ease: [0.4, 0, 0.2, 1] }}
+                    className="overflow-hidden"
                   >
-                    <Icon className="h-4 w-4 text-[#555552]" />
-                    <span>{label}</span>
-                  </Link>
+                    <div className="space-y-[2px] pb-1">
+                      {[
+                        { href: '/billing', icon: CreditCard, label: 'Facturation' },
+                        { href: '/help', icon: HelpCircle, label: 'Aide & Docs' },
+                        { href: '/changelog', icon: Megaphone, label: t('nav.changelog') },
+                        { href: '/roadmap', icon: Flag, label: 'Roadmap' },
+                        { href: '/leverage-library', icon: BookOpen, label: 'Bibliothèque de preuves' },
+                      ].map(({ href, icon: Icon, label }) => {
+                        const isFooterActive = pathname === href;
+                        return (
+                          <Link
+                            key={href}
+                            href={href}
+                            onClick={() => setSidebarOpen(false)}
+                            className={cn(
+                              "flex items-center gap-2.5 text-xs font-semibold px-2.5 py-1.5 rounded-md transition-colors",
+                              isFooterActive
+                                ? "bg-[#e5e5e2] text-[#26251e]"
+                                : "text-[#555552] hover:text-[#26251e] hover:bg-[#e5e5e2]/60"
+                            )}
+                          >
+                            <Icon
+                              className={cn("h-4 w-4 shrink-0 transition-all", isFooterActive ? "text-[#26251e]" : "text-[#555552] opacity-60")}
+                              strokeWidth={isFooterActive ? 2 : 1.5}
+                            />
+                            <span>{label}</span>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  </motion.div>
                 )}
-              </React.Fragment>
-            ))}
-          </div>
+              </AnimatePresence>
+            </div>
+          )}
 
           {/* Settings and user control row */}
           <div className="flex items-center justify-between">
@@ -1587,36 +1617,104 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
       </div>
 
       {/* Mobile Bottom Navigation Bar (hidden on md+) */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-white border-t border-[#e5e5e0] bottom-nav-safe">
-        <div className="flex items-center justify-around h-16 px-2">
-          {[
+      {/* Bottom Nav — 4 primary tabs + "Plus" sheet */}
+      <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-white/95 backdrop-blur-md border-t border-[#e5e5e0] bottom-nav-safe">
+        <div className="flex items-center justify-around h-16 px-4">
+          {([
+            { name: 'Accueil', href: '/today', icon: Home },
             { name: t('nav.prospect'), href: '/prospecting', icon: PenSquare },
-            { name: t('nav.search'), href: '/leads', icon: Users },
-            { name: t('nav.library'), href: '/library', icon: Folder },
-            { name: t('nav.agents'), href: '/agents', icon: Sparkles },
-            { name: t('nav.integrations'), href: '/integrations', icon: Plug },
-            { name: t('nav.settings'), href: '/settings', icon: SettingsIcon },
-            { name: t('nav.changelog'), href: '/changelog', icon: Megaphone },
-          ].map((item) => {
+            { name: 'Leads', href: '/leads', icon: Users },
+            { name: 'Assistant', href: '/assistant', icon: Brain },
+          ] as const).map((item) => {
             const isActive = pathname === item.href || (item.href !== '/today' && pathname.startsWith(item.href));
             return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(
-                  "flex flex-col items-center gap-0.5 px-1 py-1 rounded-lg smooth-toggle min-w-0",
-                  isActive
-                    ? "text-[#059669]"
-                    : "text-[#7a7a76] hover:text-[#26251e]"
-                )}
-              >
-                <item.icon className="h-5 w-5 shrink-0" />
-                <span className="text-[8px] font-semibold truncate max-w-[40px] text-center leading-tight">{item.name}</span>
-              </Link>
+              <motion.div key={item.href} whileTap={{ scale: 0.88 }} transition={{ type: 'spring', stiffness: 400, damping: 30 }}>
+                <Link
+                  href={item.href}
+                  className={cn(
+                    "flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl transition-all duration-150 min-w-0",
+                    isActive ? "text-[#059669]" : "text-[#7a7a76]"
+                  )}
+                >
+                  <item.icon
+                    className={cn("h-[22px] w-[22px] shrink-0 transition-all duration-150", isActive ? "opacity-100" : "opacity-50")}
+                    strokeWidth={isActive ? 2 : 1.5}
+                    fill={isActive ? 'currentColor' : 'none'}
+                  />
+                  <span className={cn("text-[9px] font-bold tracking-tight leading-tight", isActive ? "opacity-100" : "opacity-50")}>
+                    {item.name}
+                  </span>
+                </Link>
+              </motion.div>
             );
           })}
+
+          {/* Plus tab */}
+          <motion.button
+            whileTap={{ scale: 0.88 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+            onClick={() => setMoreSheetOpen(true)}
+            className="flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl min-w-0"
+          >
+            <MoreHorizontal className="h-[22px] w-[22px] text-[#7a7a76] opacity-50" strokeWidth={1.5} />
+            <span className="text-[9px] font-bold tracking-tight leading-tight text-[#7a7a76] opacity-50">Plus</span>
+          </motion.button>
         </div>
       </nav>
+
+      {/* Bottom sheet "Plus" */}
+      <AnimatePresence>
+        {moreSheetOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
+              className="fixed inset-0 z-[60] bg-black/30 md:hidden"
+              onClick={() => setMoreSheetOpen(false)}
+            />
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', stiffness: 300, damping: 30, mass: 1 }}
+              className="fixed bottom-0 left-0 right-0 z-[61] md:hidden bg-white rounded-t-2xl shadow-xl pb-safe"
+            >
+              <div className="flex justify-center pt-3 pb-1">
+                <div className="w-10 h-1 rounded-full bg-[#e5e5e0]" />
+              </div>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-[#7a7a76] px-6 py-2">Navigation</p>
+              <div className="grid grid-cols-3 gap-px px-4 pb-6">
+                {[
+                  { name: 'Bibliothèque', href: '/library', icon: Folder },
+                  { name: 'Agents', href: '/agents', icon: Sparkles },
+                  { name: 'Intégrations', href: '/integrations', icon: Plug },
+                  { name: 'Paramètres', href: '/settings', icon: SettingsIcon },
+                  { name: 'Changelog', href: '/changelog', icon: Megaphone },
+                  { name: 'Équipe', href: '/team', icon: Users },
+                ].map(({ name, href, icon: Icon }) => {
+                  const isActive = pathname.startsWith(href);
+                  return (
+                    <Link
+                      key={href}
+                      href={href}
+                      onClick={() => setMoreSheetOpen(false)}
+                      className={cn(
+                        "flex flex-col items-center gap-2 p-4 rounded-xl transition-colors",
+                        isActive ? "bg-[#059669]/8 text-[#059669]" : "text-[#555552] hover:bg-[#f4f4f3]"
+                      )}
+                    >
+                      <Icon className="h-6 w-6" strokeWidth={isActive ? 2 : 1.5} />
+                      <span className="text-[10px] font-semibold text-center leading-tight">{name}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
 
       {/* New Project Modal Overlay */}
       {showNewProjectModal && (
