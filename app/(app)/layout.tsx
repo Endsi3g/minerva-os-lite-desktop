@@ -707,12 +707,25 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
       )}
 
       {/* Sidebar */}
-      <aside className={cn(
-        "fixed inset-y-0 left-0 z-50 flex flex-col border-r border-[#e5e5e0] bg-[#f4f4f3] sidebar-transition md:static md:relative md:translate-x-0 shrink-0",
-        isCollapsed ? "md:w-0 md:border-r-0" : "md:w-[240px]",
-        sidebarOpen ? "translate-x-0 w-[240px]" : "-translate-x-full w-[240px]"
-      )}>
-        
+      <motion.aside
+        animate={{
+          width: sidebarOpen ? 240 : isCollapsed ? 0 : 240,
+          x: sidebarOpen ? 0 : undefined,
+        }}
+        initial={false}
+        transition={{ type: 'spring', stiffness: 320, damping: 32, mass: 1 }}
+        className={cn(
+          "fixed inset-y-0 left-0 z-50 flex flex-col border-r border-[#e5e5e0] bg-[#f4f4f3] md:static md:relative shrink-0 overflow-hidden",
+          isCollapsed ? "md:border-r-0" : "",
+          sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+        )}
+        style={{ minWidth: 0 }}>
+        {/* Inner wrapper holds the actual 240px content — sidebar clips it via overflow-hidden */}
+        <motion.div
+          className="flex flex-col h-full w-[240px] min-w-[240px]"
+          animate={{ opacity: isCollapsed ? 0 : 1 }}
+          transition={{ duration: 0.15, ease: [0.4, 0, 0.2, 1] }}
+        >
         {/* Sidebar Brand Header (With Langdock style Switcher Dropdown) */}
         <div className={cn(
           "relative flex h-12 items-center border-b border-[#e5e5e0] px-4 transition-all duration-300",
@@ -1382,7 +1395,8 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
           </div>
 
         </div>
-      </aside>
+        </motion.div>
+      </motion.aside>
 
       {/* Main Layout Area */}
       <div className="flex flex-1 flex-col overflow-hidden bg-white min-w-0">
@@ -1404,10 +1418,15 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
 
             <button
               onClick={toggleCollapse}
-              className="h-8 w-8 hidden md:flex items-center justify-center rounded text-[#7a7a76] hover:bg-[#e5e5e2]/60 smooth-toggle"
+              className="h-8 w-8 hidden md:flex items-center justify-center rounded text-[#7a7a76] hover:bg-[#e5e5e2]/60 transition-colors"
               aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
             >
-              {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
+              <motion.div
+                animate={{ rotate: isCollapsed ? 180 : 0 }}
+                transition={{ type: 'spring', stiffness: 320, damping: 32 }}
+              >
+                <PanelLeftClose className="h-4 w-4" />
+              </motion.div>
             </button>
 
             <Breadcrumb className="hidden sm:flex">
