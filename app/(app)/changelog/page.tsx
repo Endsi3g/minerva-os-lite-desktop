@@ -18,6 +18,49 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v3.42.0',
+      date: '2026-06-24',
+      titleKey: 'changelog.v3_42_0_title' as TranslationKey,
+      descKey: 'changelog.v3_42_0_desc' as TranslationKey,
+      highlights: [
+        "Google Places auto-enrichissement : note, nombre d'avis, résumé IA Google et top 2 avis clients récupérés automatiquement à l'ouverture de chaque fiche lead (cache 7 jours). Clé GOOGLE_PLACES_API_KEY requise.",
+        "Section 'Google Insights' dans la fiche lead : affichée entre les réseaux sociaux et les onglets — rating étoiles, résumé IA, extraits d'avis.",
+        "Email IA refondu : 1ère phrase = détail SPÉCIFIQUE issu de Google (résumé IA ou avis client). Interdit : 'J'espère que tu vas bien', 'En tant que leader'. Ton ami qui a vraiment fait ses recherches.",
+        "Fiche lead mobile : 8 onglets scrollables horizontalement sans troncature (overflow-x-auto, whitespace-nowrap, shrink-0).",
+        "Transition fluide entre onglets de la fiche lead (AnimatePresence fade + slide 6px, 160ms ease).",
+        "Sidebar — slide depuis la gauche : mobile = motion.x -240→0 (vrai drawer), desktop = width spring + inner slide synchronisé. Icône toggle rotation 180° spring.",
+        "Transitions de page globales : AnimatePresence mode='wait' sur le slot {children} (opacity + y:8→0, 180ms). Remplace l'animation CSS statique.",
+        "Migration SQL v4.9 : colonnes google_place_id, google_place_data (JSONB), google_enriched_at sur la table leads.",
+      ],
+    },
+    {
+      version: 'v3.41.0',
+      date: '2026-06-24',
+      titleKey: 'changelog.v3_41_0_title' as TranslationKey,
+      descKey: 'changelog.v3_41_0_desc' as TranslationKey,
+      highlights: [
+        "Bottom nav mobile : réduit de 7 à 4 destinations (Accueil, Prospecter, Leads, Assistant) avec retour tactile spring (scale: 0.88). Sheet '+ Plus' pour 6 destinations secondaires avec AnimatePresence slide.",
+        "Icônes sidebar : strokeWidth 1.5 inactif / 2 actif, fill='currentColor' quand actif, opacity 60% inactif — poids optique aligné à la hauteur de ligne.",
+        "Sidebar — accordion 'Paramètres & Plus' : footer collapsable AnimatePresence (height: 0→auto, 180ms ease). Remplace la liste statique.",
+        "Workspace switcher animé : AnimatePresence mode='wait' key={activeWorkspace.id} — fade + slide vertical à chaque changement de workspace.",
+        "Barre de filtres leads plus aérée : gap-3, hauteurs unifiées h-8, min-w ajustés. Correction du hover sur 'Mes leads' (orange → vert #047857).",
+        "Toutes les animations Framer Motion spring (stiffness 300–400, damping 30, mass 1). Imports depuis 'motion/react' (paquet motion v12.40).",
+      ],
+    },
+    {
+      version: 'v3.40.0',
+      date: '2026-06-23',
+      titleKey: 'changelog.v3_40_0_title' as TranslationKey,
+      descKey: 'changelog.v3_40_0_desc' as TranslationKey,
+      highlights: [
+        "Smartlead sequences : onglet 'Outreach' dans chaque fiche lead — bouton Enroller envoie le lead à la campagne Smartlead configurée via API. Score ICP + canaux recommandés (email / voicemail si score ≥ 50).",
+        "Voicemail Drop Cowboy : génération de script IA ≤80 mots (~30s) + envoi Ringless Voicemail via API Drop Cowboy. Nécessite numéro de téléphone.",
+        "Bibliothèque de preuves (/leverage-library) : CRUD études de cas — titre, niche cible, headline résultat, snippet email. L'IA sélectionne automatiquement la plus pertinente lors de la génération d'email.",
+        "Paramètres → Intégrations : cartes Smartlead (API key + campaign ID), Drop Cowboy (username + API key), IA Inbox (toggle auto-réponse + slider seuil de confiance 0-100).",
+        "Migration SQL v4.8 : tables leverage_library et voicemail_queue avec RLS ; colonnes settings smartlead_api_key, smartlead_campaign_id, drop_cowboy_username, drop_cowboy_api_key, ai_inbox_auto_reply, ai_inbox_confidence_min.",
+      ],
+    },
+    {
       version: 'v3.39.0',
       date: '2026-06-23',
       titleKey: 'changelog.v3_39_0_title' as TranslationKey,
