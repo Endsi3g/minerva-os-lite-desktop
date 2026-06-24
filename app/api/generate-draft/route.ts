@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
     // 2. Fetch Lead Context
     const { data: lead, error: leadErr } = await supabase
       .from('leads')
-      .select('*')
+      .select('*, google_place_data')
       .eq('id', leadId)
       .single();
 
@@ -86,30 +86,52 @@ export async function POST(req: NextRequest) {
     let draftContent = '';
     const notesText = (notes || []).map(n => `- [${n.type}] : ${n.content}`).join('\n');
 
+    // Build Google Places context if available
+    const gd = (lead as any).google_place_data as Record<string, any> | null;
+    let googleContext = '';
+    if (gd) {
+      const parts: string[] = [];
+      if (gd.rating && gd.review_count) {
+        parts.push(`Note Google : ${gd.rating}/5 (${gd.review_count} avis)`);
+      }
+      if (gd.generative_summary) {
+        parts.push(`Résumé Google IA : "${gd.generative_summary}"`);
+      } else if (gd.editorial_summary) {
+        parts.push(`Description Google : "${gd.editorial_summary}"`);
+      }
+      if (gd.reviews?.length) {
+        const topReview = gd.reviews[0];
+        if (topReview.text) parts.push(`Meilleur avis client : "${topReview.text.slice(0, 180)}"`);
+      }
+      if (parts.length > 0) {
+        googleContext = `\nDonnées Google (utilise ces détails concrets pour l'accroche) :\n${parts.join('\n')}`;
+      }
+    }
+
     const systemPrompt = `Tu es un copilote de prospection pour ${fullName} de l'agence "${companyName}".
 Ton but est de rédiger un message de prospection ultra-personnalisé, court et percutant en français.
-Il doit être rédigé pour le canal : ${channel}.
-Ton de rédaction ciblé : ${aiTone}.
+Canal : ${channel}. Ton : ${aiTone}.
 
-Directives :
-1. Pas de formules de politesse bateau comme "J'espère que vous allez bien" ou "En tant que leader...". Sois direct, naturel, et humain.
-2. Utilise les observations terrain et les notes du prospect ci-dessous pour rendre le message unique et hautement personnalisé.
-3. Reste concis (maximum 3 paragraphes pour un e-mail, très court pour un DM ou SMS).
-4. Termine par un appel à l'action simple et direct (ex: proposer un appel de 5 minutes).${emailSignature ? `\n5. Termine le message par cette signature exacte :\n${emailSignature}` : ''}`;
+RÈGLES ABSOLUES :
+1. La PREMIÈRE phrase doit montrer que tu as réellement cherché / remarqué quelque chose de SPÉCIFIQUE sur ce business (utilise les données Google ou les notes terrain). PAS de "J'espère que vous allez bien". PAS de "En tant que leader". Parle comme un ami curieux qui a fait ses recherches.
+2. Ligne 2-3 : valeur concrète et rapide que tu apportes (chiffre ou résultat).
+3. Dernière ligne : appel à l'action simple (ex: "5 minutes cette semaine ?").
+4. Sois concis : 3 paragraphes max pour email, 2 phrases pour DM.
+5. Vouvoiement si email, tutoiement si DM Instagram/Facebook.${emailSignature ? `\n6. Signature exacte à utiliser :\n${emailSignature}` : ''}`;
 
     const userPrompt = `Prospect : ${lead.business_name}
-Contact : ${lead.contact_name || 'Inconnu'} (E-mail: ${lead.contact_email || 'Inconnu'})
-Secteur : ${lead.niche}
-Ville : ${lead.city}
-Source : ${lead.source}
-
+Contact : ${lead.contact_name || 'le gérant/propriétaire'}
+Email : ${lead.contact_email || 'non renseigné'}
+Secteur : ${lead.niche || 'non précisé'}
+Ville : ${lead.city || 'non précisée'}
+${googleContext}
 Notes terrain / observations :
-${notesText || 'Aucune note spécifique disponible.'}
+${notesText || '(aucune note spécifique — utilise les données Google comme seul contexte personnel)'}
 
-Instructions spécifiques supplémentaires de l'utilisateur :
-${instructions}
+Instructions supplémentaires :
+${instructions || 'Aucune'}
 
-Rédige uniquement le corps du message final en français :`;
+Rédige uniquement le message final (pas de méta-commentaires, pas de "Voici le message :") :`;
 
     try {
       draftContent = await generateCompletion({

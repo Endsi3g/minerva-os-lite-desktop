@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import Link from 'next/link';
 import { useReach } from '@/lib/reach-context';
 import { useLanguage } from '@/lib/language-context';
@@ -570,6 +571,23 @@ export function LeadDetailClient({ id }: { id: string }) {
     }
   }, [lead?.id]);
 
+  // Auto-enrich with Google Places data on mount
+  useEffect(() => {
+    if (!lead?.id) return;
+    const cached = (lead as any).google_place_data;
+    if (cached) { setGooglePlaceData(cached); return; }
+    setEnrichingGoogle(true);
+    fetch(getApiUrl('/api/leads/enrich-google'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ leadId: lead.id }),
+    })
+      .then(r => r.json())
+      .then(d => { if (d.ok && d.data) setGooglePlaceData(d.data); })
+      .catch(() => {})
+      .finally(() => setEnrichingGoogle(false));
+  }, [lead?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Auto-compute and persist score v2 if not yet saved to DB
   useEffect(() => {
     if (!lead || lead.scoreIcp != null) return;
@@ -702,10 +720,13 @@ export function LeadDetailClient({ id }: { id: string }) {
 
   // AI draft states
   const [activeTab, setActiveTab] = useState<'notes' | 'drafts' | 'composer' | 'timeline' | 'gmail' | 'agenda' | 'outreach'>('notes');
+  const prevTabRef = useRef<string>('notes');
   const [drafts, setDrafts] = useState<Draft[]>([]);
   const [loadingDrafts, setLoadingDrafts] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [aiStage, setAiStage] = useState<'idle' | 'thinking' | 'reading' | 'writing' | 'done'>('idle');
+  const [googlePlaceData, setGooglePlaceData] = useState<Record<string, any> | null>(null);
+  const [enrichingGoogle, setEnrichingGoogle] = useState(false);
 
   useEffect(() => {
     if (!generating) {
@@ -1814,14 +1835,58 @@ export function LeadDetailClient({ id }: { id: string }) {
             {/* Social Links + Instagram Gallery */}
             <SocialLinksSection lead={lead} onSave={(fields) => updateLead(lead.id, fields)} />
 
+            {/* Google Insights — auto-enrichi depuis Google Places */}
+            {(googlePlaceData || enrichingGoogle) && (
+              <div className="rounded-xl border border-[#e5e5e0] bg-[#f9fafb] overflow-hidden">
+                <div className="flex items-center gap-2 px-3 py-2 border-b border-[#e5e5e0] bg-white">
+                  <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 shrink-0" fill="none">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z" fill="#4285F4"/>
+                    <path d="M17.6 12.2c0-.4 0-.7-.1-1H12v1.9h3.1c-.1.7-.6 1.8-1.6 2.5l2.4 1.9c1.4-1.3 2.2-3.2 2.2-5.3z" fill="#4285F4"/>
+                    <path d="M12 18c1.6 0 2.9-.5 3.9-1.4l-2.4-1.9c-.5.4-1.2.6-1.5.6-1.7 0-3.2-1.1-3.7-2.7H5.6l-2.5 1.9C4.5 16.5 8 18 12 18z" fill="#34A853"/>
+                    <path d="M8.3 12.6c-.1-.4-.2-.8-.2-1.2s.1-.8.2-1.2V8.3L5.6 6.5C4.8 8 4.3 9.9 4.3 12s.5 3.9 1.3 5.5l2.7-2.4-.3-2.5z" fill="#FBBC05"/>
+                    <path d="M12 6.6c1.3 0 2.5.4 3.4 1.3L17.6 6c-1.4-1.3-3.2-2-5.6-2-3.9 0-7.3 2.2-9 5.4l2.7 2.1C6.8 9.3 9.2 6.6 12 6.6z" fill="#EA4335"/>
+                  </svg>
+                  <span className="text-[10px] font-bold text-[#26251e] tracking-tight">Google Insights</span>
+                  {enrichingGoogle && <span className="ml-auto text-[9px] text-[#7a7a76]">Enrichissement…</span>}
+                  {googlePlaceData && (
+                    <div className="ml-auto flex items-center gap-1.5">
+                      {googlePlaceData.rating && (
+                        <span className="text-[10px] font-bold text-amber-600">⭐ {googlePlaceData.rating}</span>
+                      )}
+                      {googlePlaceData.review_count && (
+                        <span className="text-[9px] text-[#7a7a76]">({googlePlaceData.review_count} avis)</span>
+                      )}
+                    </div>
+                  )}
+                </div>
+                {googlePlaceData && (
+                  <div className="p-3 space-y-2">
+                    {(googlePlaceData.generative_summary || googlePlaceData.editorial_summary) && (
+                      <p className="text-[11px] text-[#26251e] leading-relaxed">
+                        {googlePlaceData.generative_summary || googlePlaceData.editorial_summary}
+                      </p>
+                    )}
+                    {googlePlaceData.reviews?.slice(0, 2).map((r: any, i: number) => r.text ? (
+                      <div key={i} className="flex gap-2 items-start">
+                        <span className="text-[9px] text-amber-500 mt-0.5 shrink-0">{"⭐".repeat(Math.min(r.rating || 5, 5))}</span>
+                        <p className="text-[10px] text-[#555552] leading-relaxed italic line-clamp-2">"{r.text.slice(0, 140)}"</p>
+                      </div>
+                    ) : null)}
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Tabs Selector for Notes vs AI Drafts */}
-            <div className="space-y-6">
-              <div className="flex border-b border-border/60 gap-6">
+            <div className="space-y-4">
+              <div className="flex border-b border-border/60 gap-4 overflow-x-auto scrollbar-hide -mx-1 px-1 pb-0"
+                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+              >
                 <button
                   type="button"
                   onClick={() => setActiveTab('notes')}
                   className={cn(
-                    "pb-3 text-xs font-bold uppercase tracking-wider border-b-2 px-1 transition-all cursor-pointer",
+                    "pb-3 text-[10px] font-bold uppercase tracking-wider border-b-2 px-1 transition-all cursor-pointer whitespace-nowrap shrink-0",
                     activeTab === 'notes'
                       ? "border-primary text-foreground font-extrabold"
                       : "border-transparent text-muted-foreground hover:text-foreground"
@@ -1833,7 +1898,7 @@ export function LeadDetailClient({ id }: { id: string }) {
                   type="button"
                   onClick={() => setActiveTab('drafts')}
                   className={cn(
-                    "pb-3 text-xs font-bold uppercase tracking-wider border-b-2 px-1 transition-all cursor-pointer",
+                    "pb-3 text-[10px] font-bold uppercase tracking-wider border-b-2 px-1 transition-all cursor-pointer whitespace-nowrap shrink-0",
                     activeTab === 'drafts'
                       ? "border-primary text-foreground font-extrabold"
                       : "border-transparent text-muted-foreground hover:text-foreground"
@@ -1845,7 +1910,7 @@ export function LeadDetailClient({ id }: { id: string }) {
                   type="button"
                   onClick={() => setActiveTab('composer')}
                   className={cn(
-                    "pb-3 text-xs font-bold uppercase tracking-wider border-b-2 px-1 transition-all cursor-pointer",
+                    "pb-3 text-[10px] font-bold uppercase tracking-wider border-b-2 px-1 transition-all cursor-pointer whitespace-nowrap shrink-0",
                     activeTab === 'composer'
                       ? "border-[#059669] text-[#059669] font-extrabold"
                       : "border-transparent text-muted-foreground hover:text-foreground"
@@ -1857,7 +1922,7 @@ export function LeadDetailClient({ id }: { id: string }) {
                   type="button"
                   onClick={() => setActiveTab('timeline')}
                   className={cn(
-                    "pb-3 text-xs font-bold uppercase tracking-wider border-b-2 px-1 transition-all cursor-pointer",
+                    "pb-3 text-[10px] font-bold uppercase tracking-wider border-b-2 px-1 transition-all cursor-pointer whitespace-nowrap shrink-0",
                     activeTab === 'timeline'
                       ? "border-primary text-foreground font-extrabold"
                       : "border-transparent text-muted-foreground hover:text-foreground"
@@ -1869,7 +1934,7 @@ export function LeadDetailClient({ id }: { id: string }) {
                   type="button"
                   onClick={() => setActiveTab('gmail')}
                   className={cn(
-                    "pb-3 text-xs font-bold uppercase tracking-wider border-b-2 px-1 transition-all cursor-pointer flex items-center gap-1",
+                    "pb-3 text-[10px] font-bold uppercase tracking-wider border-b-2 px-1 transition-all cursor-pointer flex items-center gap-1 whitespace-nowrap shrink-0",
                     activeTab === 'gmail'
                       ? "border-[#059669] text-foreground font-extrabold"
                       : "border-transparent text-muted-foreground hover:text-foreground"
@@ -1882,7 +1947,7 @@ export function LeadDetailClient({ id }: { id: string }) {
                   type="button"
                   onClick={() => setActiveTab('agenda')}
                   className={cn(
-                    "pb-3 text-xs font-bold uppercase tracking-wider border-b-2 px-1 transition-all cursor-pointer flex items-center gap-1",
+                    "pb-3 text-[10px] font-bold uppercase tracking-wider border-b-2 px-1 transition-all cursor-pointer flex items-center gap-1 whitespace-nowrap shrink-0",
                     activeTab === 'agenda'
                       ? "border-[#059669] text-foreground font-extrabold"
                       : "border-transparent text-muted-foreground hover:text-foreground"
@@ -1895,7 +1960,7 @@ export function LeadDetailClient({ id }: { id: string }) {
                   type="button"
                   onClick={() => setActiveTab('outreach')}
                   className={cn(
-                    "pb-3 text-xs font-bold uppercase tracking-wider border-b-2 px-1 transition-all cursor-pointer flex items-center gap-1",
+                    "pb-3 text-[10px] font-bold uppercase tracking-wider border-b-2 px-1 transition-all cursor-pointer flex items-center gap-1 whitespace-nowrap shrink-0",
                     activeTab === 'outreach'
                       ? "border-[#059669] text-[#059669] font-extrabold"
                       : "border-transparent text-muted-foreground hover:text-foreground"
@@ -1906,6 +1971,14 @@ export function LeadDetailClient({ id }: { id: string }) {
                 </button>
               </div>
 
+              <AnimatePresence mode="wait" initial={false}>
+              <motion.div
+                key={activeTab}
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -4 }}
+                transition={{ duration: 0.16, ease: [0.4, 0, 0.2, 1] }}
+              >
               {activeTab === 'notes' ? (
                 <div className="space-y-6">
                   {/* Add Note Form */}
@@ -2613,6 +2686,8 @@ export function LeadDetailClient({ id }: { id: string }) {
               ) : activeTab === 'outreach' ? (
                 <OutreachPanel lead={lead} />
               ) : null}
+              </motion.div>
+              </AnimatePresence>
             </div>
           </div>
 

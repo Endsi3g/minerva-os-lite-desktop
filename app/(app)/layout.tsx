@@ -1609,9 +1609,18 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
         {/* Page Content Slot */}
         <UpdateBanner />
         <main className="flex-1 overflow-hidden bg-white mobile-main-content relative">
-          <div key={pathname} className="animate-page-enter w-full h-full flex flex-col overflow-hidden">
-            {children}
-          </div>
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={pathname}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              transition={{ duration: 0.18, ease: [0.4, 0, 0.2, 1] }}
+              className="w-full h-full flex flex-col overflow-hidden"
+            >
+              {children}
+            </motion.div>
+          </AnimatePresence>
           <RealtimeSyncListener />
         </main>
       </div>
