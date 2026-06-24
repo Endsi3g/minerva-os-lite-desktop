@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   useReactTable,
   getCoreRowModel,
@@ -86,29 +86,31 @@ export function LeadsRoot() {
   }, []);
 
   // "Mes leads" mode: merge current workspace leads + cross-workspace assigned leads, deduplicated
-  const baseLeads: Lead[] = showAssignedToMe && myUserId
-    ? (() => {
-        const wsMatches = leads.filter(
-          l => l.assignedTo === myUserId || l.assignedTo === TEAM_ASSIGN_VALUE
-        );
-        const wsIds = new Set(wsMatches.map(l => l.id));
-        const crossOnly = crossLeads.filter(l => !wsIds.has(l.id));
-        return [...wsMatches, ...crossOnly];
-      })()
-    : leads;
+  const baseLeads = useMemo<Lead[]>(() => {
+    if (!showAssignedToMe || !myUserId) return leads;
+    const wsMatches = leads.filter(
+      l => l.assignedTo === myUserId || l.assignedTo === TEAM_ASSIGN_VALUE
+    );
+    const wsIds = new Set(wsMatches.map(l => l.id));
+    const crossOnly = crossLeads.filter(l => !wsIds.has(l.id));
+    return [...wsMatches, ...crossOnly];
+  }, [leads, showAssignedToMe, myUserId, crossLeads]);
 
-  // Put last visited lead first
-  const visibleLeads: Lead[] = lastVisitedLeadId
-    ? (() => {
-        const idx = baseLeads.findIndex(l => l.id === lastVisitedLeadId);
-        if (idx <= 0) return baseLeads;
-        const reordered = [...baseLeads];
-        const [visited] = reordered.splice(idx, 1);
-        return [visited, ...reordered];
-      })()
-    : baseLeads;
+  // Put last visited lead first — memoized so TanStack Table never sees an unstable data reference
+  const visibleLeads = useMemo<Lead[]>(() => {
+    if (!lastVisitedLeadId) return baseLeads;
+    const idx = baseLeads.findIndex(l => l.id === lastVisitedLeadId);
+    if (idx <= 0) return baseLeads;
+    const reordered = [...baseLeads];
+    const [visited] = reordered.splice(idx, 1);
+    return [visited, ...reordered];
+  }, [baseLeads, lastVisitedLeadId]);
 
-  const columns = buildColumns(workspaceMembers, lastVisitedLeadId);
+  // Memoized so TanStack Table never receives new column-def references on every render
+  const columns = useMemo(
+    () => buildColumns(workspaceMembers, lastVisitedLeadId),
+    [workspaceMembers, lastVisitedLeadId]
+  );
 
   const table = useReactTable({
     data: visibleLeads,

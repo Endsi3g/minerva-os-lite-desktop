@@ -3885,14 +3885,14 @@ function ComposerPanel({
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
-    await supabase.from('drafts').upsert({
+    await supabase.from('drafts').insert({
       user_id: user.id,
       lead_id: lead.id,
       content: body,
       subject: type === 'email' ? subject : `DM ${dmPlatform} — ${lead.businessName}`,
       draft_type: type,
       updated_at: new Date().toISOString(),
-    }, { onConflict: 'lead_id,draft_type' }).select().maybeSingle();
+    }).select().maybeSingle();
     toast.success(`Brouillon ${type === 'email' ? 'email' : 'DM'} sauvegardé.`);
   };
 

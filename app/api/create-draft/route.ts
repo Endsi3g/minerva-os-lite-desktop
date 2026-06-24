@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
           user_id: user.id,
           lead_id: leadId,
           subject,
-          body,
+          content: body,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         }).select().maybeSingle();
