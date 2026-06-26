@@ -24,7 +24,7 @@ export interface AppNotification {
   id: string;
   userId: string;
   workspaceId: string;
-  type: 'info' | 'lead_assigned' | 'overdue' | 'digest' | 'report' | 'team_message';
+  type: 'info' | 'lead_assigned' | 'overdue' | 'digest' | 'report' | 'team_message' | 'email_sent' | 'email_received' | 'scraping_done' | 'lead_aging';
   title: string;
   body: string;
   link?: string;
@@ -1942,6 +1942,31 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
       console.error("Error in addNoteToLead:", err);
     }
   };
+
+  // Lead aging check — once per day, notify if leads have had no activity for 7+ days
+  useEffect(() => {
+    if (!user || !activeWorkspace?.id || leads.length === 0) return;
+    const todayKey = `aging_notif_${activeWorkspace.id}_${new Date().toDateString()}`;
+    if (typeof window !== 'undefined' && localStorage.getItem(todayKey)) return;
+
+    const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    const aging = leads.filter(l =>
+      (l.status === 'New' || l.status === 'Contacted') &&
+      new Date(l.updatedAt || l.createdAt || 0).getTime() < sevenDaysAgo
+    );
+    if (aging.length > 0) {
+      addNotification({
+        userId: user.id,
+        workspaceId: activeWorkspace.id,
+        type: 'lead_aging',
+        title: `${aging.length} lead${aging.length > 1 ? 's' : ''} sans activité depuis 7+ jours`,
+        body: 'Reprenez contact pour maintenir votre pipeline actif.',
+        link: '/leads',
+      });
+      if (typeof window !== 'undefined') localStorage.setItem(todayKey, '1');
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [leads.length > 0, user?.id, activeWorkspace?.id]);
 
   // Supabase Realtime subscription for incoming notifications
   useEffect(() => {

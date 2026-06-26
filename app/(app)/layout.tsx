@@ -630,6 +630,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
       items: [
         { name: t('nav.outreach'), href: '/outreach', icon: Send },
         { name: 'Boîte de réception', href: '/inbox', icon: Inbox },
+        { name: 'Templates Email', href: '/email-templates', icon: FileText },
         { name: 'Comptes', href: '/accounts', icon: Building2 },
         { name: 'Cockpit Ops', href: '/ops/prospecting', icon: Activity },
         { name: 'Campagnes', href: '/campaigns', icon: Megaphone },

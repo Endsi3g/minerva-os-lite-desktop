@@ -39,7 +39,7 @@ function substitute(text: string, lead: Lead, firstName: string, signature: stri
 }
 
 export function TemplateComposer({ lead }: TemplateComposerProps) {
-  const { activeWorkspace } = useReach();
+  const { activeWorkspace, addNotification, user } = useReach();
   const [templates, setTemplates] = useState<EmailTemplate[]>([]);
   const [loadingTemplates, setLoadingTemplates] = useState(true);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -166,6 +166,17 @@ export function TemplateComposer({ lead }: TemplateComposerProps) {
             'Email envoyé',
             `À : ${lead.contactEmail} — Sujet : ${composedSubject || 'Sans objet'}`
           );
+        }
+        // In-app notification
+        if (user && activeWorkspace) {
+          addNotification({
+            userId: user.id,
+            workspaceId: activeWorkspace.id,
+            type: 'email_sent',
+            title: `Email envoyé à ${lead.businessName || lead.contactEmail}`,
+            body: `Sujet : ${composedSubject || 'Sans objet'}`,
+            link: `/leads/${lead.id}`,
+          });
         }
         // Increment template send count
         if (selectedTemplate) {

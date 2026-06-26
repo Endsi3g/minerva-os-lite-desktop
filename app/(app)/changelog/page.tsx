@@ -18,6 +18,21 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v3.46.0',
+      date: '2026-06-26',
+      titleKey: 'changelog.v3_42_0_title' as TranslationKey,
+      descKey: 'changelog.v3_42_0_desc' as TranslationKey,
+      highlights: [
+        'Inbox Gmail — resolveAccessToken renforcé avec un 3ème chemin direct sur google_tokens qui contourne le statut error et auto-réinitialise le statut à connected. Le badge "Connecter Google" ne réapparaît plus après reconnexion.',
+        'Google Maps — le lien inline <a> converti en bouton electron-safe qui utilise openExternal dans Electron et window.open en web. Plus de blocage dans l\'app Electron.',
+        'Couleurs profil agency — bouton "Réinitialiser" ajouté à côté de "Modifier" pour revenir au vert Minerva (#059669) en un clic. Le CSS var --sidebar-primary est aussi retiré immédiatement.',
+        'Templates Email — maintenant accessible depuis la sidebar sous "Templates Email" (/email-templates), plus uniquement dans les paramètres.',
+        'Notifications — 4 nouveaux types : email_sent, email_received, scraping_done, lead_aging. Notification automatique après envoi d\'email depuis le composer. Notification inbox quand de nouvelles réponses de leads arrivent (avec dédup localStorage). Notification quotidienne pour les leads inactifs depuis 7+ jours.',
+        'Page Statistiques — /analytics refaite avec 3 onglets : Vue globale (KPIs + funnel + top niches/villes), Prospection, Activité équipe. Utilise les composants existants + nouveau composant StatCard/MiniBar.',
+        'Attribution leads projets — le picker de projet dans la fiche lead fonctionne correctement (project_id FK via supabase migration v4.3).',
+      ],
+    },
+    {
       version: 'v3.45.0',
       date: '2026-06-26',
       titleKey: 'changelog.v3_42_0_title' as TranslationKey,

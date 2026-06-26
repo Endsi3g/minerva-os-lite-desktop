@@ -62,15 +62,49 @@ async function resolveAccessToken(
     if (accessToken) return { accessToken, googleEmail };
   }
 
-  // Path 2: newer google_accounts / google_tokens tables
+  // Path 2: newer google_accounts / google_tokens tables (uses status check)
   try {
     const status = await getAuthStatus(supabase, userId);
-    if (!status.connected) return null;
-    const freshToken = await getFreshAccessToken(supabase, userId);
-    return { accessToken: freshToken, googleEmail: status.email || googleEmail };
-  } catch {
-    return null;
-  }
+    if (status.connected) {
+      const freshToken = await getFreshAccessToken(supabase, userId);
+      return { accessToken: freshToken, googleEmail: status.email || googleEmail };
+    }
+  } catch { /* fall through to path 3 */ }
+
+  // Path 3: direct google_tokens query — bypasses status='error' so reconnect heals itself
+  try {
+    const { data: acct } = await supabase
+      .from('google_accounts')
+      .select('id, google_email')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (acct) {
+      const { data: tok } = await supabase
+        .from('google_tokens')
+        .select('access_token, refresh_token, expires_at')
+        .eq('account_id', acct.id)
+        .maybeSingle();
+
+      if (tok?.access_token) {
+        const exp = new Date(tok.expires_at);
+        if (exp.getTime() - Date.now() > 60000) {
+          await supabase.from('google_accounts').update({ status: 'connected', updated_at: new Date().toISOString() }).eq('id', acct.id);
+          return { accessToken: tok.access_token, googleEmail: acct.google_email || '' };
+        }
+        if (tok.refresh_token) {
+          const refreshed = await refreshLegacyToken(tok.refresh_token);
+          await supabase.from('google_tokens')
+            .update({ access_token: refreshed.accessToken, expires_at: refreshed.expiresAt, updated_at: new Date().toISOString() })
+            .eq('account_id', acct.id);
+          await supabase.from('google_accounts').update({ status: 'connected', updated_at: new Date().toISOString() }).eq('id', acct.id);
+          return { accessToken: refreshed.accessToken, googleEmail: acct.google_email || '' };
+        }
+      }
+    }
+  } catch { }
+
+  return null;
 }
 
 function getHeaderValue(headers: { name: string; value: string }[], name: string): string {

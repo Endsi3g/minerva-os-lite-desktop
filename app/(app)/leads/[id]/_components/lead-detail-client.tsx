@@ -1792,10 +1792,21 @@ export function LeadDetailClient({ id }: { id: string }) {
                   </a>
                 )}
                 {lead.mapsUrl && (
-                  <a href={lead.mapsUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-blue-600 hover:underline">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const url = lead.mapsUrl!;
+                      if ((window as any).electron?.openExternal) {
+                        (window as any).electron.openExternal(url);
+                      } else {
+                        window.open(url, '_blank', 'noopener');
+                      }
+                    }}
+                    className="flex items-center gap-1 text-blue-600 hover:underline text-xs"
+                  >
                     <GoogleMapsIcon size={12} className="shrink-0" />
                     Google Maps
-                  </a>
+                  </button>
                 )}
               </div>
             )}

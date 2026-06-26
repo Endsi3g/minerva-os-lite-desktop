@@ -16,7 +16,7 @@ type ReplyStatus = 'positive' | 'followup' | 'negative' | null;
 type ViewMode = 'all' | 'leads' | 'sent';
 
 export function InboxRoot() {
-  const { activeWorkspace, updateLead, addTask, campaigns } = useReach();
+  const { activeWorkspace, updateLead, addTask, campaigns, addNotification, user } = useReach();
 
   const [viewMode, setViewMode] = useState<ViewMode>('all');
   const [threads, setThreads] = useState<InboxThread[]>([]);
@@ -48,9 +48,31 @@ export function InboxRoot() {
         getApiUrl(`/api/inbox/threads?workspace_id=${activeWorkspace.id}&mode=${mode}`)
       );
       const data = await res.json();
-      setThreads(data.threads || []);
+      const incoming: InboxThread[] = data.threads || [];
+      setThreads(incoming);
       setNeedsReauth(!!data.needsReauth);
       setIsConnected(data.isConnected !== false);
+      // Notify for new unread replies from leads
+      if (data.isConnected && user && activeWorkspace) {
+        const seenKey = `inbox_seen_${activeWorkspace.id}`;
+        const seen = new Set<string>(JSON.parse(localStorage.getItem(seenKey) || '[]'));
+        const newReplies = incoming.filter(t => t.hasUnread && t.isLeadLinked && !seen.has(t.gmailThreadId));
+        if (newReplies.length > 0) {
+          addNotification({
+            userId: user.id,
+            workspaceId: activeWorkspace.id,
+            type: 'email_received',
+            title: newReplies.length === 1 ? `Réponse de ${newReplies[0].fromName || newReplies[0].contactEmail}` : `${newReplies.length} nouvelles réponses de leads`,
+            body: newReplies.length === 1 ? (newReplies[0].subject || 'Nouvel email') : newReplies.map(t => t.fromName || t.contactEmail).join(', '),
+            link: '/inbox',
+          });
+          if ((window as any).electron?.sendNotification) {
+            (window as any).electron.sendNotification('Nouvelle réponse', newReplies.length === 1 ? `De : ${newReplies[0].fromName || newReplies[0].contactEmail}` : `${newReplies.length} réponses non lues`);
+          }
+        }
+        const allSeen = [...Array.from(seen), ...incoming.map(t => t.gmailThreadId)];
+        localStorage.setItem(seenKey, JSON.stringify(allSeen.slice(-200)));
+      }
     } catch {
       // silently fail — inbox unavailable without Gmail
     } finally {

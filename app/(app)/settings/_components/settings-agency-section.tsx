@@ -340,14 +340,28 @@ export default function SettingsAgencySection() {
               <div className="w-5 h-5 rounded-full" style={{ background: activeWorkspace.accent_color }} />
               <span className="text-xs font-bold text-[#26251e]">Couleur d'accent : {activeWorkspace.accent_color}</span>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => { setPendingColors([activeWorkspace.accent_color!]); setShowColorModal(true); }}
-              className="h-7 text-[10px]"
-            >
-              Modifier
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={async () => {
+                  await updateWorkspace(activeWorkspace.id, { accent_color: '#059669' });
+                  document.documentElement.style.removeProperty('--sidebar-primary');
+                  toast.success('Couleur réinitialisée au vert Minerva (#059669)');
+                }}
+                className="h-7 text-[10px] text-[#7a7a76]"
+              >
+                Réinitialiser
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => { setPendingColors([activeWorkspace.accent_color!]); setShowColorModal(true); }}
+                className="h-7 text-[10px]"
+              >
+                Modifier
+              </Button>
+            </div>
           </div>
         )}
 
