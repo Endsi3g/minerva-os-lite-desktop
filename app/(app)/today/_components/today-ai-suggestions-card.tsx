@@ -10,6 +10,64 @@ import { getApiUrl } from '@/lib/api-helper';
 import { toast } from 'sonner';
 import type { Lead } from '@/lib/mock-data';
 
+function renderInline(text: string): React.ReactNode {
+  const segments = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*)/g);
+  if (segments.length === 1) return text;
+  return (
+    <>
+      {segments.map((seg, i) => {
+        if (seg.startsWith('**') && seg.endsWith('**'))
+          return <strong key={i} className="font-bold text-[#26251e]">{seg.slice(2, -2)}</strong>;
+        if (seg.startsWith('*') && seg.endsWith('*'))
+          return <em key={i}>{seg.slice(1, -1)}</em>;
+        return seg || null;
+      })}
+    </>
+  );
+}
+
+function MarkdownRenderer({ text }: { text: string }) {
+  const lines = text.split('\n');
+  const result: React.ReactNode[] = [];
+  let bulletBuffer: string[] = [];
+
+  const flushBullets = (key: string) => {
+    if (bulletBuffer.length === 0) return;
+    result.push(
+      <ul key={key} className="space-y-1 my-1">
+        {bulletBuffer.map((item, bi) => (
+          <li key={bi} className="flex items-start gap-2 text-[11px] text-[#555552] leading-relaxed">
+            <span className="mt-[5px] h-1.5 w-1.5 rounded-full bg-[#059669] shrink-0" />
+            <span>{renderInline(item.trim())}</span>
+          </li>
+        ))}
+      </ul>
+    );
+    bulletBuffer = [];
+  };
+
+  lines.forEach((line, i) => {
+    const t = line.trim();
+    if (t.startsWith('## ')) {
+      flushBullets(`b${i}`);
+      result.push(<p key={i} className="text-[10px] font-extrabold uppercase tracking-widest text-[#7a7a76] mt-3 mb-0.5">{t.slice(3)}</p>);
+    } else if (t.startsWith('# ')) {
+      flushBullets(`b${i}`);
+      result.push(<p key={i} className="text-xs font-black text-[#26251e] mt-2">{t.slice(2)}</p>);
+    } else if (/^[-*•]\s/.test(t)) {
+      bulletBuffer.push(t.replace(/^[-*•]\s/, ''));
+    } else if (t === '') {
+      flushBullets(`b${i}`);
+    } else {
+      flushBullets(`b${i}`);
+      result.push(<p key={i} className="text-[11px] text-[#555552] leading-relaxed">{renderInline(t)}</p>);
+    }
+  });
+  flushBullets('bend');
+
+  return <div className="space-y-1">{result}</div>;
+}
+
 interface Suggestion {
   lead: Lead;
   label: string;
@@ -150,8 +208,8 @@ export function TodayAiSuggestionsCard() {
       <CardContent className="px-6 pb-6 space-y-4">
         {/* Weekly insight report */}
         {autoInsights && report && (
-          <div className="rounded-lg border border-[#e5e5e0] bg-[#fafaf8] p-3 text-xs text-[#26251e] leading-relaxed whitespace-pre-line">
-            {report}
+          <div className="rounded-lg border border-[#e5e5e0] bg-[#fafaf8] p-3">
+            <MarkdownRenderer text={report} />
           </div>
         )}
         {autoInsights && !report && !reportLoading && (
