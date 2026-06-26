@@ -67,6 +67,11 @@ export function resolveAIProvider(settings?: AISettings | null) {
     model = OPENROUTER_DEFAULT;
   }
 
+  // Anthropic model IDs (claude-*) are not valid on OpenRouter — remap to free default
+  if (provider === 'openrouter' && model.startsWith('claude')) {
+    model = OPENROUTER_DEFAULT;
+  }
+
   const apiKey = (() => {
     if (provider === 'openrouter') return openrouterKey;
     if (provider === 'groq') return groqKey;

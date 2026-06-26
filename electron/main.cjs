@@ -1,5 +1,5 @@
  
-const { app, protocol, net, BrowserWindow, Menu, Tray, nativeImage, dialog, ipcMain, Notification, globalShortcut, clipboard, powerMonitor } = require('electron');
+const { app, protocol, net, BrowserWindow, Menu, Tray, nativeImage, dialog, ipcMain, Notification, globalShortcut, clipboard, powerMonitor, shell } = require('electron');
 
 // Prevent JIT-related crashes on macOS by restarting the main process with V8 JIT disabled if not already done.
 // Calling app.commandLine.appendSwitch('js-flags') inside main.cjs does not affect the main process itself
@@ -380,6 +380,15 @@ function setupIpcHandlers() {
         body,
         icon: path.join(__dirname, '../public/icon-192.png')
       }).show();
+      return true;
+    }
+    return false;
+  });
+
+  // 3b. Open external URL in system browser
+  ipcMain.handle('open-external', async (event, url) => {
+    if (typeof url === 'string' && (url.startsWith('https://') || url.startsWith('http://'))) {
+      await shell.openExternal(url);
       return true;
     }
     return false;

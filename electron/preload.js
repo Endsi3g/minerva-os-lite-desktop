@@ -43,6 +43,9 @@ contextBridge.exposeInMainWorld('electron', {
   sendSmtpEmail: (params) => ipcRenderer.invoke('send-smtp-email', params),
   testSmtpConnection: (smtpConfig) => ipcRenderer.invoke('test-smtp-connection', smtpConfig),
 
+  // Open external URLs in the system browser
+  openExternal: (url) => ipcRenderer.invoke('open-external', url),
+
   // Tray Popover API
   openMainWindow: () => ipcRenderer.send('open-main-window'),
   triggerBackgroundScrapeOnDemand: () => ipcRenderer.invoke('trigger-background-scrape-on-demand'),

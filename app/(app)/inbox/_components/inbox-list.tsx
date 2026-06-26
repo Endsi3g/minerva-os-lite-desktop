@@ -1,14 +1,16 @@
 'use client';
 
-import { AlertCircle, Filter, Mail } from 'lucide-react';
+import { AlertCircle, Filter, Mail, User } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import type { InboxThread } from '@/lib/inbox-types';
 import type { Campaign } from '@/lib/reach-context';
 
-type Filter = 'all' | 'positive' | 'followup' | 'negative';
+type ReplyStatusFilter = 'all' | 'positive' | 'followup' | 'negative';
+type UnreadFilter = 'all' | 'unread' | 'leads';
+type ViewMode = 'all' | 'leads' | 'sent';
 
-const STATUS_LABELS: Record<string, { label: string; color: string }> = {
+const REPLY_STATUS_LABELS: Record<string, { label: string; color: string }> = {
   positive: { label: 'Positif', color: 'bg-[#059669]/10 text-[#059669] border-[#059669]/20' },
   followup: { label: 'À relancer', color: 'bg-[#d97706]/10 text-[#d97706] border-[#d97706]/20' },
   negative: { label: 'Négatif', color: 'bg-[#dc2626]/10 text-[#dc2626] border-[#dc2626]/20' },
@@ -24,10 +26,19 @@ function relativeTime(isoDate: string): string {
   return `il y a ${days}j`;
 }
 
+function getInitials(name: string): string {
+  const parts = name.trim().split(/\s+/);
+  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+  return name.slice(0, 2).toUpperCase();
+}
+
 interface InboxListProps {
   threads: InboxThread[];
-  filter: Filter;
-  onFilterChange: (f: Filter) => void;
+  viewMode: ViewMode;
+  replyFilter: ReplyStatusFilter;
+  unreadFilter: UnreadFilter;
+  onReplyFilterChange: (f: ReplyStatusFilter) => void;
+  onUnreadFilterChange: (f: UnreadFilter) => void;
   selectedThreadId: string | null;
   onSelectThread: (thread: InboxThread) => void;
   needsReauth: boolean;
@@ -39,8 +50,11 @@ interface InboxListProps {
 
 export function InboxList({
   threads,
-  filter,
-  onFilterChange,
+  viewMode,
+  replyFilter,
+  unreadFilter,
+  onReplyFilterChange,
+  onUnreadFilterChange,
   selectedThreadId,
   onSelectThread,
   needsReauth,
@@ -49,23 +63,39 @@ export function InboxList({
   campaignFilter,
   onCampaignFilterChange,
 }: InboxListProps) {
+  // Apply filters based on view mode
   const filtered = threads.filter(t => {
-    if (filter !== 'all' && t.replyStatus !== filter) return false;
-    if (campaignFilter && t.campaignId !== campaignFilter) return false;
+    if (viewMode === 'all') {
+      if (unreadFilter === 'unread' && !t.hasUnread) return false;
+      if (unreadFilter === 'leads' && !t.isLeadLinked) return false;
+    } else {
+      // leads mode: filter by reply status
+      if (replyFilter !== 'all' && t.replyStatus !== replyFilter) return false;
+      if (campaignFilter && t.campaignId !== campaignFilter) return false;
+    }
     return true;
   });
 
-  // Only show campaigns that have at least one threaded lead
   const relevantCampaigns = campaigns.filter(c =>
     threads.some(t => t.campaignId === c.id)
   );
+
+  const unreadCount = threads.filter(t => t.hasUnread).length;
+  const linkedCount = threads.filter(t => t.isLeadLinked).length;
 
   return (
     <div className="flex h-full w-full md:w-[340px] md:shrink-0 flex-col border-r border-[#e5e5e0]">
       {/* Header */}
       <div className="border-b border-[#e5e5e0] px-4 py-3">
-        <h2 className="text-sm font-semibold text-[#26251e]">Boîte de réception</h2>
-        <p className="text-xs text-[#78716c] mt-0.5">{threads.length} fils de discussion</p>
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-[#26251e]">
+            {viewMode === 'all' ? 'Boîte de réception' : 'Réponses leads'}
+          </h2>
+          <span className="text-[10px] text-[#7a7a76]">{threads.length} conversation{threads.length !== 1 ? 's' : ''}</span>
+        </div>
+        {viewMode === 'all' && unreadCount > 0 && (
+          <p className="text-[10px] text-[#059669] mt-0.5 font-medium">{unreadCount} non lu{unreadCount > 1 ? 's' : ''} · {linkedCount} lead{linkedCount !== 1 ? 's' : ''}</p>
+        )}
       </div>
 
       {/* Re-auth banner */}
@@ -82,8 +112,30 @@ export function InboxList({
         </div>
       )}
 
-      {/* Campaign filter */}
-      {relevantCampaigns.length > 0 && (
+      {/* Filters */}
+      <div className="px-3 py-2 border-b border-[#e5e5e0]">
+        {viewMode === 'all' ? (
+          <Tabs value={unreadFilter} onValueChange={v => onUnreadFilterChange(v as UnreadFilter)}>
+            <TabsList className="h-7 w-full bg-[#f4f4f3]">
+              <TabsTrigger value="all" className="flex-1 text-xs h-6">Tous</TabsTrigger>
+              <TabsTrigger value="unread" className="flex-1 text-xs h-6">Non lus</TabsTrigger>
+              <TabsTrigger value="leads" className="flex-1 text-xs h-6">Leads</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        ) : (
+          <Tabs value={replyFilter} onValueChange={v => onReplyFilterChange(v as ReplyStatusFilter)}>
+            <TabsList className="h-7 w-full bg-[#f4f4f3]">
+              <TabsTrigger value="all" className="flex-1 text-xs h-6">Tous</TabsTrigger>
+              <TabsTrigger value="positive" className="flex-1 text-xs h-6">Positifs</TabsTrigger>
+              <TabsTrigger value="followup" className="flex-1 text-xs h-6">Relancer</TabsTrigger>
+              <TabsTrigger value="negative" className="flex-1 text-xs h-6">Négatifs</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        )}
+      </div>
+
+      {/* Campaign filter (leads mode only) */}
+      {viewMode === 'leads' && relevantCampaigns.length > 0 && (
         <div className="px-3 pt-2 pb-1 border-b border-[#e5e5e0]">
           <div className="flex items-center gap-1 mb-1.5">
             <Filter className="h-3 w-3 text-[#a8a29e]" />
@@ -106,8 +158,8 @@ export function InboxList({
                 onClick={() => onCampaignFilterChange(c.id)}
                 className={`rounded-full px-2 py-0.5 text-[10px] border transition-colors truncate max-w-[120px] ${
                   campaignFilter === c.id
-                    ? 'bg-[#10b981] text-white border-[#10b981]'
-                    : 'border-[#e5e5e0] text-[#78716c] hover:border-[#10b981]/40'
+                    ? 'bg-[#059669] text-white border-[#059669]'
+                    : 'border-[#e5e5e0] text-[#78716c] hover:border-[#059669]/40'
                 }`}
               >
                 {c.name}
@@ -116,18 +168,6 @@ export function InboxList({
           </div>
         </div>
       )}
-
-      {/* Reply-status filter tabs */}
-      <div className="px-3 py-2 border-b border-[#e5e5e0]">
-        <Tabs value={filter} onValueChange={v => onFilterChange(v as Filter)}>
-          <TabsList className="h-7 w-full bg-[#f4f4f3]">
-            <TabsTrigger value="all" className="flex-1 text-xs h-6">Tous</TabsTrigger>
-            <TabsTrigger value="positive" className="flex-1 text-xs h-6">Positifs</TabsTrigger>
-            <TabsTrigger value="followup" className="flex-1 text-xs h-6">À relancer</TabsTrigger>
-            <TabsTrigger value="negative" className="flex-1 text-xs h-6">Négatifs</TabsTrigger>
-          </TabsList>
-        </Tabs>
-      </div>
 
       {/* Thread list */}
       <div className="flex-1 overflow-y-auto">
@@ -138,21 +178,25 @@ export function InboxList({
         ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 gap-3 text-[#78716c]">
             <Mail className="h-8 w-8 opacity-30" />
-            <p className="text-xs">Aucun fil de discussion</p>
-            {!needsReauth && threads.length === 0 && (
-              <a
-                href="/settings?section=integrations"
-                className="text-[11px] text-[#059669] font-semibold hover:underline flex items-center gap-1"
-              >
-                Configurer votre e-mail →
-              </a>
+            <p className="text-xs text-center">
+              {viewMode === 'all'
+                ? 'Aucun email dans votre boîte de réception'
+                : 'Aucune réponse de lead pour le moment'}
+            </p>
+            {viewMode === 'leads' && !needsReauth && threads.length === 0 && (
+              <p className="text-[11px] text-[#a8a29e] text-center max-w-[200px]">
+                Les réponses apparaîtront ici quand un lead vous répond à un email envoyé via l'app.
+              </p>
             )}
           </div>
         ) : (
           filtered.map(thread => {
             const isSelected = thread.gmailThreadId === selectedThreadId;
-            const statusMeta = thread.replyStatus ? STATUS_LABELS[thread.replyStatus] : null;
-            const initials = thread.leadName.slice(0, 2).toUpperCase();
+            const displayName = thread.isLeadLinked
+              ? (thread.leadName || thread.fromName)
+              : thread.fromName;
+            const statusMeta = thread.replyStatus ? REPLY_STATUS_LABELS[thread.replyStatus] : null;
+            const initials = getInitials(displayName);
 
             return (
               <button
@@ -164,14 +208,18 @@ export function InboxList({
               >
                 <div className="flex items-start gap-2.5">
                   {/* Avatar */}
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#10b981]/10 text-[#10b981] text-xs font-semibold">
+                  <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${
+                    thread.isLeadLinked
+                      ? 'bg-[#059669]/10 text-[#059669]'
+                      : 'bg-[#f4f4f3] text-[#7a7a76]'
+                  }`}>
                     {initials}
                   </div>
 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-1">
-                      <span className={`truncate text-xs font-medium text-[#26251e] ${thread.hasUnread ? 'font-semibold' : ''}`}>
-                        {thread.leadName}
+                      <span className={`truncate text-xs text-[#26251e] ${thread.hasUnread ? 'font-bold' : 'font-medium'}`}>
+                        {displayName}
                       </span>
                       <div className="flex items-center gap-1 shrink-0">
                         {thread.hasUnread && (
@@ -181,9 +229,20 @@ export function InboxList({
                       </div>
                     </div>
 
-                    <p className="mt-0.5 text-[10px] text-[#78716c] line-clamp-2">{thread.snippet}</p>
+                    {/* Subject line */}
+                    <p className={`mt-0.5 text-[10px] truncate ${thread.hasUnread ? 'text-[#26251e] font-medium' : 'text-[#7a7a76]'}`}>
+                      {thread.subject}
+                    </p>
 
-                    <div className="mt-1 flex items-center gap-1.5">
+                    <p className="mt-0.5 text-[10px] text-[#a8a29e] line-clamp-1">{thread.snippet}</p>
+
+                    <div className="mt-1 flex items-center gap-1.5 flex-wrap">
+                      {thread.isLeadLinked && (
+                        <Badge className="text-[9px] px-1 py-0 h-4 border bg-[#059669]/8 text-[#059669] border-[#059669]/20 gap-0.5">
+                          <User className="h-2 w-2" />
+                          Lead
+                        </Badge>
+                      )}
                       {statusMeta && (
                         <Badge className={`text-[9px] px-1 py-0 h-4 border ${statusMeta.color}`}>
                           {statusMeta.label}

@@ -3035,7 +3035,11 @@ export function LeadDetailClient({ id }: { id: string }) {
                       const url = lead.mapsUrl
                         ? lead.mapsUrl
                         : `https://www.google.com/maps/search/${encodeURIComponent((lead.businessName || '') + ' ' + (lead.city || ''))}`;
-                      window.open(url, '_blank');
+                      if ((window as any).electron?.openExternal) {
+                        (window as any).electron.openExternal(url);
+                      } else {
+                        window.open(url, '_blank');
+                      }
                     }}
                   >
                     <GoogleMapsIcon size={14} />
