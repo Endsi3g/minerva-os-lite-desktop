@@ -1530,7 +1530,7 @@ export default function IntegrationsPage() {
         ) : (
           /* Main Integrations Scrollable list */
           <div className="flex-1 overflow-y-auto relative z-10">
-            <div className="max-w-5xl mx-auto p-8 space-y-10">
+            <div className="w-full p-3 sm:p-4 md:p-8 space-y-10">
               
               {/* Connected Integrations Section */}
               <div className="space-y-5">

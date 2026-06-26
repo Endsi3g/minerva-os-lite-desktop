@@ -17,7 +17,7 @@ export default function AnalyticsPage() {
 
   return (
     <div className="h-full overflow-y-auto min-h-0 scrollbar-thin">
-      <div className="mx-auto flex max-w-5xl flex-col gap-6 p-6">
+      <div className="flex flex-col gap-6 p-3 sm:p-4 md:p-6 w-full">
         {/* Tab switcher */}
         <div className="flex gap-1 p-1 rounded-lg bg-muted/50 border border-border/60 w-fit">
           {tabs.map((t) => (

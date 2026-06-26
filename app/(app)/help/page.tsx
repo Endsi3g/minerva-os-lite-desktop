@@ -162,7 +162,7 @@ export default function HelpPage() {
 
   return (
     <div className="h-full overflow-y-auto min-h-0 scrollbar-thin">
-      <div className="mx-auto flex max-w-5xl flex-col gap-6 p-6">
+      <div className="flex flex-col gap-6 p-3 sm:p-4 md:p-6 w-full">
 
         {/* Header */}
         <div className="flex items-start justify-between gap-4 flex-wrap">

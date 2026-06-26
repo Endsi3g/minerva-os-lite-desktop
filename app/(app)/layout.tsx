@@ -2047,7 +2047,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
         </div>
       )}
 
-      <BottomBlur height={64} />
+      {pathname !== '/messages' && <BottomBlur height={64} />}
     </div>
   );
 }

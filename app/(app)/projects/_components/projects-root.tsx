@@ -28,7 +28,7 @@ export default function ProjectsRoot() {
 
   return (
     <div className="h-full overflow-y-auto bg-[#fafaf9] text-[#26251e]">
-      <div className="max-w-5xl mx-auto p-6 space-y-6">
+      <div className="w-full p-3 sm:p-4 md:p-6 space-y-6">
 
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-[#e5e5e0] pb-5">

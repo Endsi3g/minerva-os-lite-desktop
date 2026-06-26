@@ -454,7 +454,7 @@ export default function AcquisitionRoot() {
     <div className="h-full overflow-y-auto bg-white text-[#26251e] font-sans selection:bg-[#059669]/10 relative animate-page-enter">
       <div className="absolute inset-0 opacity-[0.25] pointer-events-none bg-grid-pattern-20 z-0" />
 
-      <div className="max-w-5xl mx-auto px-8 py-10 space-y-6 relative z-10">
+      <div className="w-full px-3 sm:px-4 md:px-8 py-6 md:py-10 space-y-6 relative z-10">
         {/* Header */}
         <div className="space-y-1 pb-4 border-b border-border">
           <h1 className="text-2xl font-bold tracking-tight text-[#26251e]">{t('acquisition.title')}</h1>

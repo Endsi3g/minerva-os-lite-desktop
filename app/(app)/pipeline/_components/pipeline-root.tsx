@@ -22,7 +22,7 @@ export function PipelineRoot() {
   });
 
   return (
-    <div className="flex h-full flex-col gap-5 p-6 overflow-hidden">
+    <div className="flex h-full flex-col gap-4 p-3 sm:p-4 md:p-6 overflow-hidden">
       {/* Header section with niche/owner selectors */}
       <PipelineHeader
         selectedNiche={niche}

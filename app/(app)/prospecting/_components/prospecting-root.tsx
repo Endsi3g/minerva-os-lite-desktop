@@ -940,7 +940,7 @@ export function ProspectingRoot() {
     <div className={`h-full overflow-y-auto bg-background relative pb-6 md:pb-12 ${selectedValidationIds.length > 0 ? 'pb-52 md:pb-12' : ''}`}>
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-0 opacity-30 dark:opacity-15"
         style={{ backgroundImage: 'radial-gradient(circle, #a1a1aa 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
-      <div className="relative z-10 max-w-6xl mx-auto px-3 py-4 sm:px-4 md:px-6 md:py-6 space-y-4 md:space-y-6">
+      <div className="relative z-10 w-full px-3 py-4 sm:px-4 md:px-6 md:py-6 space-y-4 md:space-y-6">
 
         {/* Header */}
         <div className="space-y-1">

@@ -384,8 +384,8 @@ export default function MessagesRoot() {
 
   return (
     <div className="flex h-full w-full overflow-hidden bg-white text-[#26251e]">
-      {/* Left panel */}
-      <div className="w-64 flex-shrink-0 border-r border-[#e5e5e0] bg-[#f4f4f3] flex flex-col">
+      {/* Left panel — hidden on mobile, visible on md+ */}
+      <div className="hidden md:flex w-56 lg:w-64 flex-shrink-0 border-r border-[#e5e5e0] bg-[#f4f4f3] flex-col">
         <div className="px-4 pt-5 pb-3">
           <h1 className="text-sm font-bold text-[#26251e] tracking-tight mb-3">{t('messages.title')}</h1>
           <div className="relative">

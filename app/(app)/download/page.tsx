@@ -144,7 +144,7 @@ export default function DownloadPage() {
   if (isElectron) {
     return (
       <div className="h-full overflow-y-auto bg-white">
-        <div className="max-w-6xl mx-auto p-8 space-y-8 text-[#26251e] font-sans selection:bg-[#10b981]/10 text-left">
+        <div className="w-full p-3 sm:p-4 md:p-8 space-y-8 text-[#26251e] font-sans selection:bg-[#10b981]/10 text-left">
           
           {/* Header */}
           <div className="space-y-1.5 border-b border-[#e5e5e0] pb-5">
@@ -255,7 +255,7 @@ export default function DownloadPage() {
   // Render Web view installer downloads page
   return (
     <div className="h-full overflow-y-auto bg-white">
-      <div className="max-w-5xl mx-auto p-8 space-y-8 text-[#26251e] font-sans selection:bg-[#10b981]/10 text-left">
+      <div className="w-full p-3 sm:p-4 md:p-8 space-y-8 text-[#26251e] font-sans selection:bg-[#10b981]/10 text-left">
         
         {/* Header Section */}
         <div className="space-y-1.5 border-b border-[#e5e5e0] pb-5">

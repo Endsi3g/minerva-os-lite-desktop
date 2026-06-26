@@ -70,7 +70,7 @@ export function PersonasRoot() {
 
   return (
     <div className="h-full overflow-y-auto bg-[#fafaf9]">
-      <div className="max-w-5xl mx-auto p-6 space-y-6 animate-in fade-in duration-200">
+      <div className="w-full p-3 sm:p-4 md:p-6 space-y-6 animate-in fade-in duration-200">
         
         {/* Page header */}
         <div className="flex items-start justify-between gap-4 pb-4 border-b border-[#e5e5e0]">

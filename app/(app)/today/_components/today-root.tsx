@@ -60,7 +60,7 @@ export function TodayRoot() {
       {/* grid background pattern overlay */}
       <div className="absolute inset-0 opacity-[0.25] pointer-events-none bg-grid-pattern-20 z-0" />
 
-      <div className="relative z-10 flex flex-col gap-4 p-3 sm:p-6 max-w-5xl mx-auto">
+      <div className="relative z-10 flex flex-col gap-4 p-3 sm:p-4 md:p-6 xl:p-8 w-full">
         {/* Setup checklist banner (hidden once dismissed or complete) */}
         <TodaySetupBanner />
 
@@ -71,7 +71,7 @@ export function TodayRoot() {
         <TodayGoalsCard />
 
         {/* Main cockpit grid: left (wider) + right (sidebar) */}
-        <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+        <div className="grid grid-cols-1 gap-4 sm:gap-5 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
 
           {/* ── Colonne gauche : actions du jour ── */}
           <div className="flex flex-col gap-5">

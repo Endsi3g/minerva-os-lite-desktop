@@ -679,7 +679,7 @@ export default function TeamPage() {
         </div>
       )}
 
-      <div className="max-w-5xl mx-auto px-8 py-10 space-y-6 relative z-10">
+      <div className="w-full px-3 sm:px-4 md:px-8 py-6 md:py-10 space-y-6 relative z-10">
 
         {/* ── Header ── */}
         <div className="flex items-start justify-between gap-4">

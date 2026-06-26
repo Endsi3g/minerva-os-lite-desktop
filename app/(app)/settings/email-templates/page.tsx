@@ -150,7 +150,7 @@ export default function EmailTemplatesPage() {
 
   return (
     <div className="h-full overflow-y-auto bg-[#fafaf8] text-[#26251e] font-sans">
-      <div className="max-w-5xl mx-auto px-8 py-10 space-y-8">
+      <div className="w-full px-3 sm:px-4 md:px-8 py-6 md:py-10 space-y-8">
 
         {/* Header */}
         <div className="flex items-start justify-between gap-4 pb-4 border-b border-[#e5e5e0]">
