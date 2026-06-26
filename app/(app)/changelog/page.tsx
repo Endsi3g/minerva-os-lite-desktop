@@ -18,6 +18,20 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v3.43.0',
+      date: '2026-06-25',
+      titleKey: 'changelog.v3_42_0_title' as TranslationKey,
+      descKey: 'changelog.v3_42_0_desc' as TranslationKey,
+      highlights: [
+        "OpenRouter : les modèles Anthropic (claude-*) ne sont plus envoyés à OpenRouter — remappés automatiquement vers meta-llama/llama-3.3-70b-instruct:free. L'assistant IA fonctionne de nouveau sans erreur de modèle.",
+        "Email — notification renforcée : bannière verte dans le composer après envoi (sujet + destinataire visible), toast avec description du sujet (5s), et notification native macOS via Electron si disponible.",
+        "Panneau outreach : Score V2 (ICP/Engagement) retiré — ne créait pas de valeur. La voicemail est désormais activée dès qu'un numéro de téléphone est renseigné.",
+        "Bouton 'Voir sur Google Maps' : utilise shell.openExternal() dans Electron pour ouvrir dans le navigateur système (window.open bloqué dans Electron). Ajout du handler IPC open-external + exposition dans preload.",
+        "Inbox — onglet 'Envoyés' : nouveau tab qui récupère les fils de discussion du label SENT dans Gmail et les lie automatiquement aux leads par email destinataire.",
+        "Inbox — OAuth robuste : resolveAccessToken utilise maybeSingle() (ne crash plus si pas de row settings), tente d'abord le chemin legacy (settings.google_refresh_token), puis google_accounts/google_tokens. Fin du faux 'Connecter Google'.",
+      ],
+    },
+    {
       version: 'v3.42.0',
       date: '2026-06-24',
       titleKey: 'changelog.v3_42_0_title' as TranslationKey,
