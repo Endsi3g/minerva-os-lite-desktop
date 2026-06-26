@@ -5,12 +5,33 @@ import { Megaphone, Calendar, CheckCircle } from 'lucide-react';
 import { useLanguage } from '@/lib/language-context';
 import { TranslationKey } from '@/lib/translations';
 
+type HighlightTag = 'fix' | 'feature' | 'design';
+type HighlightItem = string | { tag: HighlightTag; text: string };
+
 interface ChangelogVersion {
   version: string;
   date: string;
   titleKey: TranslationKey;
   descKey: TranslationKey;
-  highlights: string[];
+  highlights: HighlightItem[];
+}
+
+const TAG_CONFIG: Record<HighlightTag, { label: string; bg: string; text: string; border: string }> = {
+  fix: { label: 'Fix', bg: '#fef2f2', text: '#dc2626', border: '#fecaca' },
+  feature: { label: 'Nouveauté', bg: '#f0fdf4', text: '#059669', border: '#bbf7d0' },
+  design: { label: 'Design', bg: '#eef2ff', text: '#6366f1', border: '#c7d2fe' },
+};
+
+function TagBadge({ tag }: { tag: HighlightTag }) {
+  const cfg = TAG_CONFIG[tag];
+  return (
+    <span
+      className="inline-flex items-center shrink-0 text-[8px] font-extrabold uppercase tracking-widest px-1.5 py-0.5 rounded-full border leading-none mt-0.5"
+      style={{ background: cfg.bg, color: cfg.text, borderColor: cfg.border }}
+    >
+      {cfg.label}
+    </span>
+  );
 }
 
 export default function ChangelogPage() {
@@ -23,13 +44,13 @@ export default function ChangelogPage() {
       titleKey: 'changelog.v3_42_0_title' as TranslationKey,
       descKey: 'changelog.v3_42_0_desc' as TranslationKey,
       highlights: [
-        'Inbox Gmail — resolveAccessToken renforcé avec un 3ème chemin direct sur google_tokens qui contourne le statut error et auto-réinitialise le statut à connected. Le badge "Connecter Google" ne réapparaît plus après reconnexion.',
-        'Google Maps — le lien inline <a> converti en bouton electron-safe qui utilise openExternal dans Electron et window.open en web. Plus de blocage dans l\'app Electron.',
-        'Couleurs profil agency — bouton "Réinitialiser" ajouté à côté de "Modifier" pour revenir au vert Minerva (#059669) en un clic. Le CSS var --sidebar-primary est aussi retiré immédiatement.',
-        'Templates Email — maintenant accessible depuis la sidebar sous "Templates Email" (/email-templates), plus uniquement dans les paramètres.',
-        'Notifications — 4 nouveaux types : email_sent, email_received, scraping_done, lead_aging. Notification automatique après envoi d\'email depuis le composer. Notification inbox quand de nouvelles réponses de leads arrivent (avec dédup localStorage). Notification quotidienne pour les leads inactifs depuis 7+ jours.',
-        'Page Statistiques — /analytics refaite avec 3 onglets : Vue globale (KPIs + funnel + top niches/villes), Prospection, Activité équipe. Utilise les composants existants + nouveau composant StatCard/MiniBar.',
-        'Attribution leads projets — le picker de projet dans la fiche lead fonctionne correctement (project_id FK via supabase migration v4.3).',
+        { tag: 'fix', text: 'Inbox Gmail — resolveAccessToken renforcé avec un 3ème chemin direct sur google_tokens qui contourne le statut error et auto-réinitialise le statut à connected. Le badge "Connecter Google" ne réapparaît plus après reconnexion.' },
+        { tag: 'fix', text: 'Google Maps — le lien inline <a> converti en bouton electron-safe (openExternal dans Electron, window.open en web). Plus de blocage dans l\'app desktop.' },
+        { tag: 'fix', text: 'Couleurs profil agency — bouton "Réinitialiser" ajouté à côté de "Modifier" pour revenir au vert Minerva (#059669) en un clic, avec retrait immédiat du CSS var --sidebar-primary.' },
+        { tag: 'fix', text: 'Attribution leads projets — le picker de projet dans la fiche lead fonctionne correctement (project_id FK, supabase migration v4.3).' },
+        { tag: 'feature', text: 'Templates Email — maintenant accessible depuis la sidebar sous "Templates Email" (/email-templates), plus seulement dans les Paramètres.' },
+        { tag: 'feature', text: 'Notifications — 4 nouveaux types : email_sent, email_received, lead_aging, scraping_done. Notif in-app + macOS native après envoi depuis le composer. Détection des nouvelles réponses de leads dans l\'inbox (dédup localStorage). Alerte quotidienne si des leads sont inactifs depuis 7+ jours.' },
+        { tag: 'feature', text: 'Page Statistiques (/analytics) — 3 onglets : Vue globale (KPI cards, funnel coloré, top niches & villes), Prospection, Activité équipe. Composants existants réutilisés.' },
       ],
     },
     {
@@ -38,34 +59,10 @@ export default function ChangelogPage() {
       titleKey: 'changelog.v3_42_0_title' as TranslationKey,
       descKey: 'changelog.v3_42_0_desc' as TranslationKey,
       highlights: [
-        "[23:54] Refonte responsive globale — suppression de toutes les contraintes de largeur fixes (max-w-5xl, max-w-4xl, max-w-3xl, max-w-6xl) sur toutes les pages de l'application. Le contenu s'étale désormais de manière fluid sur tout l'écran disponible.",
-        "[23:54] Today (Dashboard) — max-w-5xl retiré, padding adaptatif (p-3 → sm:p-4 → md:p-6 → xl:p-8), grille cockpit fluid avec colonnes responsives automatiques.",
-        "[23:54] Leads — padding adaptatif (p-3 → sm:p-4 → md:p-6). Le tableau conserve son overflow-x-auto pour le scroll horizontal sur mobile.",
-        "[23:54] Pipeline (Kanban) — padding adaptatif sur le conteneur racine. La vue Kanban garde son overflow-x-auto pour les colonnes horizontales.",
-        "[23:54] Analytics — max-w-5xl retiré, padding adaptatif. Les dashboards AnalyticsDashboard et ProspectionDashboard utilisent maintenant toute la largeur.",
-        "[23:54] Prospecting — max-w-6xl retiré. La page de scraping utilise maintenant tout l'espace horizontal disponible.",
-        "[23:54] Billing — max-w-5xl retiré sur le conteneur principal et la bannière d'essai. Padding adaptatif appliqué.",
-        "[23:54] Campaigns + Campaign detail — max-w-5xl retiré. Padding adaptatif sur les deux vues (liste et détail).",
-        "[23:54] Webhooks — max-w-4xl retiré. Padding adaptatif.",
-        "[23:54] Sequences — max-w-4xl retiré. Padding adaptatif (p-3 → md:p-8).",
-        "[23:54] Skills — max-w-5xl retiré. Padding horizontal adaptatif (px-3 → md:px-8).",
-        "[23:54] Agenda — max-w-5xl retiré. Padding adaptatif (px-3 → md:px-8, py-6 → md:py-10).",
-        "[23:54] Activities — max-w-3xl retiré. Padding adaptatif.",
-        "[23:54] Services — max-w-5xl retiré. Padding adaptatif.",
-        "[23:54] Ops/Cockpit — max-w-6xl retiré. Padding adaptatif.",
-        "[23:54] Team — max-w-5xl retiré. Padding horizontal adaptatif.",
-        "[23:54] Integrations — max-w-5xl retiré dans la vue liste principale.",
-        "[23:54] Personas (ICP) — max-w-5xl retiré. Padding adaptatif.",
-        "[23:54] Playbooks — max-w-5xl retiré. Padding adaptatif.",
-        "[23:54] Projects — max-w-5xl retiré. Padding adaptatif.",
-        "[23:54] Acquisition — max-w-5xl retiré. Padding adaptatif.",
-        "[23:54] Settings/Automations + Settings/Email templates — max-w-5xl retiré. Padding adaptatif.",
-        "[23:54] Download (Electron + Web) — max-w-6xl et max-w-5xl retirés. Padding adaptatif (p-3 → md:p-8).",
-        "[23:54] Help/Centre d'aide — max-w-5xl retiré. Padding adaptatif.",
-        "[23:54] Client Reports (détail) — max-w-5xl retiré. Padding adaptatif.",
-        "[23:54] Field Gallery — max-w-5xl retiré. Padding adaptatif.",
-        "[23:54] Fix BottomBlur Messages — le BottomBlur global (fixed, hauteur 64px) n'est plus rendu sur la route /messages. Il couvrait le bas du chat et l'input bar, les rendant inaccessibles.",
-        "[23:54] globals.css — overflow-x: hidden ajouté sur html et body pour éliminer les scrollbars horizontaux parasites. Nouvelles classes utilitaires : .page-container (padding responsive standardisé) et .table-responsive (overflow-x auto pour tableaux mobiles).",
+        { tag: 'design', text: 'Refonte responsive globale — suppression de toutes les contraintes de largeur fixes (max-w-5xl, max-w-4xl, max-w-3xl, max-w-6xl) sur toutes les pages. Le contenu s\'étale de manière fluide sur tout l\'écran disponible.' },
+        { tag: 'design', text: 'Today, Leads, Pipeline, Analytics, Prospecting, Billing, Campaigns, Webhooks, Sequences, Skills, Agenda, Activities, Services, Ops, Team, Integrations, Personas, Playbooks, Projects, Acquisition, Settings, Download, Help, Client Reports, Field Gallery — padding adaptatif appliqué sur toutes ces pages.' },
+        { tag: 'fix', text: 'BottomBlur Messages — le BottomBlur global (fixed, 64px) ne s\'affiche plus sur /messages. Il couvrait l\'input bar et le bas du chat, les rendant inaccessibles.' },
+        { tag: 'design', text: 'globals.css — overflow-x: hidden sur html et body pour éliminer les scrollbars parasites. Nouvelles classes : .page-container et .table-responsive.' },
       ],
     },
     {
@@ -74,11 +71,10 @@ export default function ChangelogPage() {
       titleKey: 'changelog.v3_42_0_title' as TranslationKey,
       descKey: 'changelog.v3_42_0_desc' as TranslationKey,
       highlights: [
-        "Projets — association explicite leads ↔ projets : colonne project_id UUID sur les leads (migration v4.3). Les leads s'assignent maintenant directement à un projet via un sélecteur dans la fiche lead.",
-        "Fiche lead — nouveau sélecteur 'Projet' dans la sidebar droite (sous Campagne). Lien direct vers la page du projet si un projet est assigné.",
-        "Page projet — le compteur de leads et la vue détail filtrent maintenant par project_id explicite (plus de fausse correspondance par nom de texte).",
-        "updateLead : projectId → project_id mappé dans les deux chemins (Electron SQLite et Supabase).",
-        "Migration SQL v4.3 : ADD COLUMN IF NOT EXISTS project_id UUID REFERENCES projects(id) ON DELETE SET NULL + index idx_leads_project_id.",
+        { tag: 'feature', text: 'Projets — association explicite leads ↔ projets : colonne project_id UUID sur les leads (migration v4.3). Les leads s\'assignent via un sélecteur dans la fiche lead.' },
+        { tag: 'feature', text: 'Fiche lead — nouveau sélecteur "Projet" dans la sidebar droite (sous Campagne). Lien direct vers la page du projet si assigné.' },
+        { tag: 'fix', text: 'Page projet — le compteur et le filtre utilisent project_id explicite (plus de fausse correspondance par texte).' },
+        { tag: 'fix', text: 'updateLead : projectId → project_id mappé dans les deux chemins (Electron SQLite et Supabase). Migration SQL v4.3 incluse.' },
       ],
     },
     {
@@ -87,12 +83,12 @@ export default function ChangelogPage() {
       titleKey: 'changelog.v3_42_0_title' as TranslationKey,
       descKey: 'changelog.v3_42_0_desc' as TranslationKey,
       highlights: [
-        "OpenRouter : les modèles Anthropic (claude-*) ne sont plus envoyés à OpenRouter — remappés automatiquement vers meta-llama/llama-3.3-70b-instruct:free. L'assistant IA fonctionne de nouveau sans erreur de modèle.",
-        "Email — notification renforcée : bannière verte dans le composer après envoi (sujet + destinataire visible), toast avec description du sujet (5s), et notification native macOS via Electron si disponible.",
-        "Panneau outreach : Score V2 (ICP/Engagement) retiré — ne créait pas de valeur. La voicemail est désormais activée dès qu'un numéro de téléphone est renseigné.",
-        "Bouton 'Voir sur Google Maps' : utilise shell.openExternal() dans Electron pour ouvrir dans le navigateur système (window.open bloqué dans Electron). Ajout du handler IPC open-external + exposition dans preload.",
-        "Inbox — onglet 'Envoyés' : nouveau tab qui récupère les fils de discussion du label SENT dans Gmail et les lie automatiquement aux leads par email destinataire.",
-        "Inbox — OAuth robuste : resolveAccessToken utilise maybeSingle() (ne crash plus si pas de row settings), tente d'abord le chemin legacy (settings.google_refresh_token), puis google_accounts/google_tokens. Fin du faux 'Connecter Google'.",
+        { tag: 'fix', text: 'OpenRouter — les modèles Anthropic (claude-*) sont remappés automatiquement vers meta-llama/llama-3.3-70b-instruct:free. L\'assistant IA ne renvoie plus d\'erreur de modèle.' },
+        { tag: 'feature', text: 'Email — bannière verte de confirmation après envoi (sujet + destinataire), toast 5s, notification native macOS via Electron.' },
+        { tag: 'fix', text: 'Panneau outreach — Score V2 (ICP/Engagement) retiré. La voicemail est activée dès qu\'un numéro est renseigné.' },
+        { tag: 'fix', text: 'Bouton Google Maps — utilise shell.openExternal() dans Electron (IPC open-external + preload). Ouvre dans le navigateur système.' },
+        { tag: 'feature', text: 'Inbox — onglet "Envoyés" : récupère les fils du label SENT dans Gmail, liés automatiquement aux leads par email.' },
+        { tag: 'fix', text: 'Inbox OAuth — resolveAccessToken utilise maybeSingle() (ne crash plus), essaie d\'abord legacy settings, puis google_accounts/google_tokens. Fin du faux "Connecter Google".' },
       ],
     },
     {
@@ -1983,12 +1979,17 @@ export default function ChangelogPage() {
 
                   {/* Highlights Bullet List */}
                   <ul className="space-y-2 pt-1 border-t border-neutral-50">
-                    {ver.highlights.map((h, i) => (
-                      <li key={i} className="flex items-start gap-2 text-[11px] text-neutral-500 font-semibold leading-normal">
-                        <CheckCircle className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" />
-                        <span>{h}</span>
-                      </li>
-                    ))}
+                    {ver.highlights.map((h, i) => {
+                      const isTagged = typeof h !== 'string';
+                      const text = isTagged ? h.text : h;
+                      return (
+                        <li key={i} className="flex items-start gap-2 text-[11px] text-neutral-500 font-semibold leading-normal">
+                          <CheckCircle className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" />
+                          {isTagged && <TagBadge tag={(h as { tag: HighlightTag; text: string }).tag} />}
+                          <span>{text}</span>
+                        </li>
+                      );
+                    })}
                   </ul>
 
                 </div>
