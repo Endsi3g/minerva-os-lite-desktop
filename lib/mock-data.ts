@@ -96,6 +96,8 @@ export interface Lead {
   // Reply classification (v4.5)
   replyClassification?: 'positive' | 'negative' | 'info_request' | 'scheduling' | 'out_of_office' | 'bounce' | 'not_right_person' | 'reschedule';
   replyClassifiedAt?: string;
+  // Project association (v4.6)
+  projectId?: string;
 }
 
 export interface LeadEvent {

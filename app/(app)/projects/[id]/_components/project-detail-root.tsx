@@ -41,13 +41,8 @@ export default function ProjectDetailRoot({ id }: Props) {
     );
   }
 
-  // MVP filter: leads whose notes mention the project name
-  const relatedLeads = leads.filter((lead) =>
-    lead.notes?.some((note) =>
-      note.content.toLowerCase().includes(project.name.toLowerCase())
-    ) ||
-    lead.businessName.toLowerCase().includes(project.name.toLowerCase())
-  );
+  // Filter leads by explicit project_id assignment
+  const relatedLeads = leads.filter((lead) => lead.projectId === id);
 
   // MVP filter: team messages mentioning the project name
   const relatedMessages = teamMessages.filter((msg) =>

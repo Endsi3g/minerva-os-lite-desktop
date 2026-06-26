@@ -538,7 +538,7 @@ function QualificationPanel({ lead, onSave }: { lead: Lead; onSave: (fields: Par
 }
 
 export function LeadDetailClient({ id }: { id: string }) {
-  const { leads, updateLead, addNoteToLead, campaigns, activeWorkspace, addTask } = useReach();
+  const { leads, updateLead, addNoteToLead, campaigns, projects, activeWorkspace, addTask } = useReach();
   const { t } = useLanguage();
 
   // Look up lead
@@ -3018,6 +3018,33 @@ export function LeadDetailClient({ id }: { id: string }) {
                     </Select>
                   </div>
                 )}
+                {/* Projet */}
+                <div className="space-y-1">
+                  <label className="text-[9px] uppercase tracking-wider text-muted-foreground font-bold">Projet</label>
+                  <Select
+                    value={lead.projectId || '__none__'}
+                    onValueChange={(v) => updateLead(lead.id, { projectId: v === '__none__' ? undefined : v })}
+                    disabled={isLocked}
+                  >
+                    <SelectTrigger className="h-7 w-full text-xs bg-background">
+                      <SelectValue placeholder="Aucun projet" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none__" className="text-xs text-muted-foreground">Aucun projet</SelectItem>
+                      {projects.map(p => (
+                        <SelectItem key={p.id} value={p.id} className="text-xs">{p.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {lead.projectId && (
+                    <a
+                      href={`/projects/${lead.projectId}`}
+                      className="text-[10px] text-[#059669] hover:underline flex items-center gap-1 mt-0.5"
+                    >
+                      Voir le projet →
+                    </a>
+                  )}
+                </div>
               </div>
 
               {/* Script de Pitch IA */}

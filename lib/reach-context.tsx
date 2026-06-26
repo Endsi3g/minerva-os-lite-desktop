@@ -255,6 +255,8 @@ interface DbLead {
   score_engagement?: number | null;
   score_urgency?: number | null;
   score_revenue?: number | null;
+  // Project association (v4.6)
+  project_id?: string | null;
 }
 
 interface DbNote {
@@ -343,6 +345,7 @@ function mapDbLeadToUi(dbLead: DbLead, dbNotes: DbNote[] = []): Lead {
     scoreEngagement: dbLead.score_engagement ?? undefined,
     scoreUrgency: dbLead.score_urgency ?? undefined,
     scoreRevenue: dbLead.score_revenue ?? undefined,
+    projectId: dbLead.project_id || undefined,
     notes: dbNotes
       .filter(n => n.lead_id === dbLead.id)
       .map(n => ({
@@ -1691,6 +1694,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
         if (fields.dealProbability !== undefined) { dbFields.push("deal_probability = ?"); params.push(fields.dealProbability ?? null); }
         if (fields.dealClosingDate !== undefined) { dbFields.push("deal_closing_date = ?"); params.push(fields.dealClosingDate || null); }
         if (fields.campaignId !== undefined) { dbFields.push("campaign_id = ?"); params.push(fields.campaignId || null); }
+        if (fields.projectId !== undefined) { dbFields.push("project_id = ?"); params.push(fields.projectId || null); }
         if (fields.lastActivityAt !== undefined) { dbFields.push("last_activity_at = ?"); params.push(fields.lastActivityAt || null); }
         if (fields.replyDetectedAt !== undefined) { dbFields.push("reply_detected_at = ?"); params.push(fields.replyDetectedAt || null); }
         if (fields.gmailThreadId !== undefined) { dbFields.push("gmail_thread_id = ?"); params.push(fields.gmailThreadId || null); }
@@ -1757,6 +1761,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
     if (fields.dealProbability !== undefined) dbFields.deal_probability = fields.dealProbability ?? null;
     if (fields.dealClosingDate !== undefined) dbFields.deal_closing_date = fields.dealClosingDate || null;
     if (fields.campaignId !== undefined) dbFields.campaign_id = fields.campaignId || null;
+    if (fields.projectId !== undefined) dbFields.project_id = fields.projectId || null;
     if (fields.lastActivityAt !== undefined) dbFields.last_activity_at = fields.lastActivityAt || null;
     if (fields.replyDetectedAt !== undefined) dbFields.reply_detected_at = fields.replyDetectedAt || null;
     if (fields.gmailThreadId !== undefined) dbFields.gmail_thread_id = fields.gmailThreadId || null;

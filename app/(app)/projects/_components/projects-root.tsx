@@ -16,12 +16,8 @@ export default function ProjectsRoot() {
     p.name.toLowerCase().includes(search.toLowerCase())
   );
 
-  const getLeadCount = (projectName: string) =>
-    leads.filter(
-      (l) =>
-        l.businessName.toLowerCase().includes(projectName.toLowerCase()) ||
-        l.notes?.some((n) => n.content.toLowerCase().includes(projectName.toLowerCase()))
-    ).length;
+  const getLeadCount = (projectId: string) =>
+    leads.filter((l) => l.projectId === projectId).length;
 
   const handleCreate = async () => {
     if (!newName.trim()) return;
@@ -129,7 +125,7 @@ export default function ProjectsRoot() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {filtered.map((project) => {
-              const leadCount = getLeadCount(project.name);
+              const leadCount = getLeadCount(project.id);
               const date = new Date(project.createdAt).toLocaleDateString('fr-CA', {
                 year: 'numeric',
                 month: 'short',
