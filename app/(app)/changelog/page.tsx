@@ -18,6 +18,19 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v3.44.0',
+      date: '2026-06-26',
+      titleKey: 'changelog.v3_42_0_title' as TranslationKey,
+      descKey: 'changelog.v3_42_0_desc' as TranslationKey,
+      highlights: [
+        "Projets — association explicite leads ↔ projets : colonne project_id UUID sur les leads (migration v4.3). Les leads s'assignent maintenant directement à un projet via un sélecteur dans la fiche lead.",
+        "Fiche lead — nouveau sélecteur 'Projet' dans la sidebar droite (sous Campagne). Lien direct vers la page du projet si un projet est assigné.",
+        "Page projet — le compteur de leads et la vue détail filtrent maintenant par project_id explicite (plus de fausse correspondance par nom de texte).",
+        "updateLead : projectId → project_id mappé dans les deux chemins (Electron SQLite et Supabase).",
+        "Migration SQL v4.3 : ADD COLUMN IF NOT EXISTS project_id UUID REFERENCES projects(id) ON DELETE SET NULL + index idx_leads_project_id.",
+      ],
+    },
+    {
       version: 'v3.43.0',
       date: '2026-06-25',
       titleKey: 'changelog.v3_42_0_title' as TranslationKey,

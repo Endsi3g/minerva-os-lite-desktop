@@ -5,7 +5,7 @@ import Link from 'next/link';
 import {
   Send, Sparkles, Loader2, Mail, ChevronDown,
   CheckCircle2, XCircle, Calendar, Briefcase,
-  ClipboardList, ExternalLink, DollarSign, Bot, Info
+  ClipboardList, ExternalLink, DollarSign, Bot, Info, User, Archive
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -66,6 +66,7 @@ interface InboxDetailProps {
   suggestionsLoading: boolean;
   replyText: string;
   sending: boolean;
+  hasModifyScope: boolean;
   onReplyTextChange: (text: string) => void;
   onSendReply: () => void;
   onReplyStatusChange: (status: ReplyStatus) => void;
@@ -73,6 +74,7 @@ interface InboxDetailProps {
   onCreateDeal: (amount: number, probability: number, closingDate: string) => void;
   onCreateTask: (title: string, dueDate: string) => void;
   onLoadSuggestions: () => void;
+  onArchive: (threadId: string) => void;
   onBack?: () => void;
 }
 
@@ -84,6 +86,7 @@ export function InboxDetail({
   suggestionsLoading,
   replyText,
   sending,
+  hasModifyScope,
   onReplyTextChange,
   onSendReply,
   onReplyStatusChange,
@@ -91,6 +94,7 @@ export function InboxDetail({
   onCreateDeal,
   onCreateTask,
   onLoadSuggestions,
+  onArchive,
   onBack,
 }: InboxDetailProps) {
   // Deal dialog state
@@ -129,7 +133,8 @@ export function InboxDetail({
   };
 
   const handleOpenTask = () => {
-    setTaskTitle(thread ? `Follow-up : ${thread.leadName}` : '');
+    const name = thread?.leadName || thread?.fromName || thread?.contactEmail || '';
+    setTaskTitle(thread ? `Follow-up : ${name}` : '');
     setTaskDate(tomorrowDate());
     setTaskOpen(true);
   };
@@ -190,91 +195,124 @@ export function InboxDetail({
           </button>
         )}
         <div className="flex-1 min-w-0">
-          <p className="font-semibold text-sm text-[#26251e] truncate">{thread.leadName}</p>
+          <div className="flex items-center gap-1.5">
+            <p className="font-semibold text-sm text-[#26251e] truncate">
+              {thread.leadName || thread.fromName || thread.contactEmail}
+            </p>
+            {thread.isLeadLinked && (
+              <span className="shrink-0 flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded border bg-[#059669]/8 text-[#059669] border-[#059669]/20">
+                <User className="h-2 w-2" />
+                Lead
+              </span>
+            )}
+          </div>
           <p className="text-xs text-[#78716c] truncate">{thread.contactEmail}</p>
+          {thread.subject && (
+            <p className="text-[10px] text-[#a8a29e] truncate">{thread.subject}</p>
+          )}
         </div>
 
-        {/* Reply status */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" className="h-7 text-xs gap-1 shrink-0">
-              {currentReplyStatus ? (
-                <Badge className={`text-[10px] px-1.5 py-0 border ${currentReplyStatus.color}`}>
-                  {currentReplyStatus.label}
-                </Badge>
-              ) : (
-                <span className="text-[#78716c]">Réponse</span>
-              )}
-              <ChevronDown className="h-3 w-3 text-[#78716c]" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-44">
-            {REPLY_STATUS_OPTIONS.map(opt => (
-              <DropdownMenuItem key={opt.value} onClick={() => onReplyStatusChange(opt.value)} className="text-xs">
-                {opt.label}
-              </DropdownMenuItem>
-            ))}
-            {thread.replyStatus && (
-              <>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => onReplyStatusChange(null)} className="text-xs text-[#78716c]">
-                  Effacer le statut
+        {/* Reply status (only for linked leads) */}
+        {thread.isLeadLinked && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="h-7 text-xs gap-1 shrink-0">
+                {currentReplyStatus ? (
+                  <Badge className={`text-[10px] px-1.5 py-0 border ${currentReplyStatus.color}`}>
+                    {currentReplyStatus.label}
+                  </Badge>
+                ) : (
+                  <span className="text-[#78716c]">Qualifier</span>
+                )}
+                <ChevronDown className="h-3 w-3 text-[#78716c]" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-44">
+              {REPLY_STATUS_OPTIONS.map(opt => (
+                <DropdownMenuItem key={opt.value} onClick={() => onReplyStatusChange(opt.value)} className="text-xs">
+                  {opt.label}
                 </DropdownMenuItem>
-              </>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
+              ))}
+              {thread.replyStatus && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => onReplyStatusChange(null)} className="text-xs text-[#78716c]">
+                    Effacer le statut
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
 
         {/* Voir le lead */}
-        <Link href={`/leads/${thread.leadId}`} target="_blank">
-          <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-[#78716c] hover:text-[#26251e]">
-            <ExternalLink className="h-3.5 w-3.5" />
-          </Button>
-        </Link>
+        {thread.leadId && (
+          <Link href={`/leads/${thread.leadId}`} target="_blank">
+            <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-[#78716c] hover:text-[#26251e]" title="Voir la fiche lead">
+              <ExternalLink className="h-3.5 w-3.5" />
+            </Button>
+          </Link>
+        )}
+
+        {/* Archive */}
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-7 w-7 p-0 text-[#78716c] hover:text-[#26251e]"
+          title={hasModifyScope ? 'Archiver' : 'Archivage indisponible — réautoriser Gmail'}
+          disabled={!hasModifyScope}
+          onClick={() => onArchive(thread.gmailThreadId)}
+        >
+          <Archive className="h-3.5 w-3.5" />
+        </Button>
       </div>
 
       {/* ── Actions rapides ── */}
-      <div className="flex items-center gap-2 border-b border-[#e5e5e0] bg-[#fafaf8] px-5 py-2">
+      <div className="flex items-center gap-2 border-b border-[#e5e5e0] bg-[#fafaf8] px-5 py-2 flex-wrap">
         <span className="text-[10px] font-semibold text-[#a8a29e] uppercase tracking-wider mr-1">Actions</span>
 
-        {/* Lead status */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" className="h-6 text-[10px] gap-1 px-2 border-[#e5e5e0] bg-white">
-              {currentLeadStatus ? (
-                <span className="flex items-center gap-1">{currentLeadStatus.icon}{currentLeadStatus.label}</span>
-              ) : (
-                <span className="text-[#78716c]">Statut lead</span>
-              )}
-              <ChevronDown className="h-2.5 w-2.5 text-[#a8a29e]" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="w-40">
-            {LEAD_STATUS_OPTIONS.map(opt => (
-              <DropdownMenuItem
-                key={opt.value}
-                onClick={() => onLeadStatusChange(opt.value)}
-                className="text-xs gap-2"
-              >
-                {opt.icon}
-                {opt.label}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {/* Lead status (only for linked leads) */}
+        {thread.isLeadLinked && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="h-6 text-[10px] gap-1 px-2 border-[#e5e5e0] bg-white">
+                {currentLeadStatus ? (
+                  <span className="flex items-center gap-1">{currentLeadStatus.icon}{currentLeadStatus.label}</span>
+                ) : (
+                  <span className="text-[#78716c]">Statut lead</span>
+                )}
+                <ChevronDown className="h-2.5 w-2.5 text-[#a8a29e]" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-40">
+              {LEAD_STATUS_OPTIONS.map(opt => (
+                <DropdownMenuItem
+                  key={opt.value}
+                  onClick={() => onLeadStatusChange(opt.value)}
+                  className="text-xs gap-2"
+                >
+                  {opt.icon}
+                  {opt.label}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
 
-        {/* Créer deal */}
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-6 text-[10px] gap-1 px-2 border-[#e5e5e0] bg-white"
-          onClick={handleOpenDeal}
-        >
-          <DollarSign className="h-3 w-3 text-[#059669]" />
-          Créer deal
-        </Button>
+        {/* Créer deal (only for linked leads) */}
+        {thread.isLeadLinked && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-6 text-[10px] gap-1 px-2 border-[#e5e5e0] bg-white"
+            onClick={handleOpenDeal}
+          >
+            <DollarSign className="h-3 w-3 text-[#059669]" />
+            Créer deal
+          </Button>
+        )}
 
-        {/* Créer tâche */}
+        {/* Créer tâche (always available) */}
         <Button
           variant="outline"
           size="sm"
@@ -471,7 +509,7 @@ export function InboxDetail({
             size="sm"
             onClick={onSendReply}
             disabled={!replyText.trim() || sending}
-            className="h-8 gap-1.5 bg-[#059669] hover:bg-[#e04500] text-white text-xs"
+            className="h-8 gap-1.5 bg-[#059669] hover:bg-[#047857] text-white text-xs"
           >
             {sending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
             Envoyer
@@ -485,7 +523,7 @@ export function InboxDetail({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-sm">
               <Briefcase className="h-4 w-4 text-[#059669]" />
-              Créer un deal — {thread.leadName}
+              Créer un deal — {thread.leadName || thread.fromName}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-3 py-2">
