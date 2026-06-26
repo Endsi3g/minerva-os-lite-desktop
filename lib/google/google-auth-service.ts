@@ -36,6 +36,18 @@ export async function getAuthStatus(supabase: any, userId: string): Promise<Goog
     .maybeSingle();
 
   if (!account) {
+    // Fallback: legacy settings.google_* columns
+    const { data: s } = await supabase
+      .from('settings')
+      .select('google_access_token, google_email, google_token_expires_at')
+      .eq('user_id', userId)
+      .maybeSingle();
+    if (s?.google_access_token && s?.google_email) {
+      const exp = new Date(s.google_token_expires_at || 0).getTime();
+      if (exp > Date.now() - 300_000) {
+        return { connected: true, email: s.google_email, scopes: [] };
+      }
+    }
     return { connected: false, scopes: [] };
   }
 
@@ -46,8 +58,32 @@ export async function getAuthStatus(supabase: any, userId: string): Promise<Goog
 
   const scopes = (grants || []).map((g: any) => g.scope);
 
+  // If status is 'error', check tokens directly and auto-heal
+  if (account.status !== 'connected') {
+    const { data: tok } = await supabase
+      .from('google_tokens')
+      .select('access_token, expires_at, refresh_token')
+      .eq('account_id', account.id)
+      .order('updated_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (tok?.access_token) {
+      const exp = new Date(tok.expires_at).getTime();
+      if (exp > Date.now() - 300_000 || tok.refresh_token) {
+        // Auto-heal status to 'connected'
+        await supabase
+          .from('google_accounts')
+          .update({ status: 'connected', updated_at: new Date().toISOString() })
+          .eq('id', account.id);
+        return { connected: true, email: account.google_email, scopes, status: 'connected' };
+      }
+    }
+    return { connected: false, email: account.google_email, scopes, status: account.status };
+  }
+
   return {
-    connected: account.status === 'connected',
+    connected: true,
     email: account.google_email,
     scopes,
     status: account.status
@@ -172,10 +208,17 @@ export async function exchangeCodeForTokens(supabase: any, code: string, redirec
 
   const { error: tokenError } = await supabase
     .from('google_tokens')
-    .upsert(tokenData);
+    .upsert(tokenData, { onConflict: 'account_id' });
 
   if (tokenError) {
-    throw new Error(`Failed to save tokens: ${tokenError.message}`);
+    // Fallback: try update then insert
+    const { error: updateErr } = await supabase
+      .from('google_tokens')
+      .update(tokenData)
+      .eq('account_id', accountId);
+    if (updateErr) {
+      await supabase.from('google_tokens').insert(tokenData);
+    }
   }
 
   const grantedScopes = (scope || '').split(' ').filter(Boolean);

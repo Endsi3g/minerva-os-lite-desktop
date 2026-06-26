@@ -2,10 +2,10 @@
 
 import React, { useEffect, useState } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Video, ExternalLink, Loader2 } from 'lucide-react';
+import { Video, Loader2 } from 'lucide-react';
 import { GoogleCalendarIcon } from '@/components/icons';
 import { getApiUrl } from '@/lib/api-helper';
+import { GoogleConnectModal } from '@/components/google-connect-modal';
 
 interface CalendarEvent {
   id: string;
@@ -39,6 +39,7 @@ export function TodayGoogleCalendarCard() {
   const [connected, setConnected] = useState(false);
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [showConnect, setShowConnect] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -85,19 +86,19 @@ export function TodayGoogleCalendarCard() {
         ) : !connected ? (
           <div className="flex flex-col items-center gap-3 py-4 text-center">
             <p className="text-xs text-[#7a7a76]">Connectez Google Calendar pour voir vos événements ici.</p>
-            <Button
-              size="sm"
-              variant="outline"
-              className="gap-1.5 text-xs border-[#e5e5e0] text-[#26251e] hover:bg-[#f4f4f3]"
-              onClick={() => {
-                window.location.href = getApiUrl(
-                  '/api/google/auth/start?pack=communication&redirect=/today'
-                );
-              }}
+            <button
+              onClick={() => setShowConnect(true)}
+              className="flex items-center gap-1.5 px-3 h-8 rounded-lg bg-[#059669] hover:bg-[#047857] text-white text-xs font-bold transition-colors"
             >
-              <GoogleCalendarIcon size={14} className="mr-1.5" />
+              <GoogleCalendarIcon size={14} />
               Connecter Google Calendar
-            </Button>
+            </button>
+            <GoogleConnectModal
+              open={showConnect}
+              onClose={() => setShowConnect(false)}
+              pack="communication"
+              redirect="/today"
+            />
           </div>
         ) : error ? (
           <p className="text-xs text-red-600 py-2">{error}</p>

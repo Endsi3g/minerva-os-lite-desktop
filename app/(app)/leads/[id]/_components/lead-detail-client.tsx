@@ -1740,7 +1740,7 @@ export function LeadDetailClient({ id }: { id: string }) {
         )}
 
         {/* Notion Document Canvas */}
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-8 bg-card border border-border rounded-lg shadow-sm p-6 sm:p-8">
+        <div className="grid grid-cols-1 xl:grid-cols-[1fr_300px] gap-6 bg-card border border-border rounded-lg shadow-sm p-4 sm:p-6">
           
           {/* Main Content Side (Document Body) */}
           <div className="space-y-8 min-w-0">
@@ -1890,7 +1890,7 @@ export function LeadDetailClient({ id }: { id: string }) {
 
             {/* Tabs Selector for Notes vs AI Drafts */}
             <div className="space-y-4">
-              <div className="flex border-b border-border/60 gap-4 overflow-x-auto scrollbar-hide -mx-1 px-1 pb-0"
+              <div className="flex border-b border-border/60 gap-1 overflow-x-auto -mx-1 px-1 pb-0"
                 style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
               >
                 <button
