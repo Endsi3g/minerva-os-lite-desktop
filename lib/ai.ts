@@ -131,6 +131,9 @@ export async function generateCompletion(options: AICallOptions): Promise<string
 
     if (!resp.ok) {
       const errorText = await resp.text();
+      if (resp.status === 429) {
+        throw new Error(`Le modèle IA est temporairement saturé (429 rate limit). Réessaie dans 30–60 secondes, ou configure un autre fournisseur dans Paramètres → IA.`);
+      }
       throw new Error(`AI Provider ${provider} error: ${resp.status} - ${errorText}`);
     }
 
@@ -210,6 +213,9 @@ export async function generateStreamCompletion(options: AICallOptions): Promise<
 
     if (!resp.ok) {
       const errorText = await resp.text();
+      if (resp.status === 429) {
+        throw new Error(`Le modèle IA est temporairement saturé (429 rate limit). Réessaie dans 30–60 secondes, ou configure un autre fournisseur dans Paramètres → IA.`);
+      }
       throw new Error(`AI Provider ${provider} streaming error: ${resp.status} - ${errorText}`);
     }
 

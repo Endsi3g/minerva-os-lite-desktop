@@ -39,6 +39,22 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v3.47.0',
+      date: '2026-06-27',
+      titleKey: 'changelog.v3_42_0_title' as TranslationKey,
+      descKey: 'changelog.v3_42_0_desc' as TranslationKey,
+      highlights: [
+        { tag: 'fix', text: 'Google auth (systémique) — getAuthStatus renforcé : si status="error" mais des tokens valides existent, l\'état est auto-réparé à "connected". Plus jamais l\'app ne demande de reconnecter Google après une session normale. Fallback sur settings.google_* (tokens legacy) si google_accounts est absent.' },
+        { tag: 'fix', text: 'google_tokens upsert — utilise onConflict: "account_id" pour éviter les doublons lors d\'une reconnexion (cause silencieuse de mauvais tokens retournés par maybeSingle).' },
+        { tag: 'fix', text: 'Intégrations Google — si déjà connecté dans /integrations, toutes les pages (Inbox, Today, fiche lead Gmail, Agenda, etc.) le détectent sans redemander une autorisation.' },
+        { tag: 'design', text: 'Fiche lead — layout responsive corrigé : grid passe en 2 colonnes à xl (≥1280px) au lieu de lg (≥1024px), padding réduit à p-4/p-6, gap entre onglets réduit à gap-1. L\'onglet Outreach ne clippe plus même avec la sidebar étendue.' },
+        { tag: 'design', text: 'Google Calendar (Today) + Gmail/Agenda (fiche lead) — remplacent les boutons de connexion bruts par le GoogleConnectModal centralisé (même UX que la page Intégrations).' },
+        { tag: 'fix', text: 'AI 429 rate limit — message d\'erreur explicite : "Le modèle IA est temporairement saturé. Réessaie dans 30–60 secondes…" au lieu du message technique brut.' },
+        { tag: 'design', text: 'Widget Intelligence comportementale — rapport IA rendu en JSX structuré via MarkdownRenderer (## en-têtes, listes à puces vertes, **gras**, *italique*) au lieu de whitespace-pre-line.' },
+        { tag: 'feature', text: 'Changelog — système de tags (Fix / Nouveauté / Design) avec badges colorés sur tous les highlights. Versions v3.43–v3.46 rétroactivement taguées.' },
+      ],
+    },
+    {
       version: 'v3.46.0',
       date: '2026-06-26',
       titleKey: 'changelog.v3_42_0_title' as TranslationKey,

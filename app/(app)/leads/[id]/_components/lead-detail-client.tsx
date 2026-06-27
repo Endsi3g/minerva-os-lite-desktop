@@ -63,6 +63,7 @@ import type { REALTIME_SUBSCRIBE_STATES } from '@supabase/supabase-js';
 import { toast } from 'sonner';
 import { GmailIcon, GoogleCalendarIcon, GoogleMapsIcon } from '@/components/icons';
 import { OutreachPanel } from './outreach-panel';
+import { GoogleConnectModal } from '@/components/google-connect-modal';
 
 function cleanMarkdownForPreview(text: string | null | undefined): string {
   if (!text) return '';
@@ -760,6 +761,8 @@ export function LeadDetailClient({ id }: { id: string }) {
     unread: boolean;
   }>>([]);
   const [gmailConnectedForTab, setGmailConnectedForTab] = useState<boolean | null>(null);
+  const [showGmailConnectModal, setShowGmailConnectModal] = useState(false);
+  const [showCalConnectModal, setShowCalConnectModal] = useState(false);
   const [gmailThreadsLoading, setGmailThreadsLoading] = useState(false);
   const [gmailThreadsError, setGmailThreadsError] = useState<string | null>(null);
 
@@ -2556,16 +2559,18 @@ export function LeadDetailClient({ id }: { id: string }) {
                     <div className="flex flex-col items-center gap-3 py-6 text-center">
                       <p className="text-xs text-[#7a7a76]">Connectez Gmail pour voir les échanges avec ce contact.</p>
                       <button
-                        onClick={() => {
-                          window.location.href = getApiUrl(
-                            `/api/google/auth/start?pack=communication&redirect=/leads/${lead.id}`
-                          );
-                        }}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#e5e5e0] bg-white hover:bg-[#f4f4f3] text-[11px] font-bold text-[#26251e] transition-colors"
+                        onClick={() => setShowGmailConnectModal(true)}
+                        className="flex items-center gap-1.5 px-3 h-8 rounded-lg bg-[#059669] hover:bg-[#047857] text-white text-xs font-bold transition-colors"
                       >
-                        <Mail className="h-3.5 w-3.5 text-[#059669]" />
+                        <Mail className="h-3.5 w-3.5" />
                         Connecter Gmail
                       </button>
+                      <GoogleConnectModal
+                        open={showGmailConnectModal}
+                        onClose={() => setShowGmailConnectModal(false)}
+                        pack="communication"
+                        redirect={`/leads/${lead.id}`}
+                      />
                     </div>
                   ) : gmailThreadsLoading ? (
                     <div className="flex flex-col gap-2">
@@ -2626,16 +2631,18 @@ export function LeadDetailClient({ id }: { id: string }) {
                     <div className="flex flex-col items-center gap-3 py-6 text-center">
                       <p className="text-xs text-[#7a7a76]">Connectez Google Calendar pour voir les événements avec ce contact.</p>
                       <button
-                        onClick={() => {
-                          window.location.href = getApiUrl(
-                            `/api/google/auth/start?pack=communication&redirect=/leads/${lead.id}`
-                          );
-                        }}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#e5e5e0] bg-white hover:bg-[#f4f4f3] text-[11px] font-bold text-[#26251e] transition-colors"
+                        onClick={() => setShowCalConnectModal(true)}
+                        className="flex items-center gap-1.5 px-3 h-8 rounded-lg bg-[#059669] hover:bg-[#047857] text-white text-xs font-bold transition-colors"
                       >
                         <GoogleCalendarIcon size={14} />
                         Connecter Google Calendar
                       </button>
+                      <GoogleConnectModal
+                        open={showCalConnectModal}
+                        onClose={() => setShowCalConnectModal(false)}
+                        pack="communication"
+                        redirect={`/leads/${lead.id}`}
+                      />
                     </div>
                   ) : leadCalLoading ? (
                     <div className="flex flex-col gap-2">
