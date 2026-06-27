@@ -538,6 +538,27 @@ function QualificationPanel({ lead, onSave }: { lead: Lead; onSave: (fields: Par
   );
 }
 
+function TagInputInline({ onAdd }: { onAdd: (tag: string) => void }) {
+  const [val, setVal] = useState('');
+  return (
+    <div className="flex items-center gap-1">
+      <input
+        type="text"
+        value={val}
+        onChange={e => setVal(e.target.value)}
+        onKeyDown={e => {
+          if (e.key === 'Enter' && val.trim()) {
+            onAdd(val.trim());
+            setVal('');
+          }
+        }}
+        placeholder="+ Ajouter un tag…"
+        className="flex-1 h-6 text-[10px] border border-border rounded px-2 bg-background focus:outline-none focus:ring-1 focus:ring-[#059669]/40"
+      />
+    </div>
+  );
+}
+
 export function LeadDetailClient({ id }: { id: string }) {
   const { leads, updateLead, addNoteToLead, campaigns, projects, activeWorkspace, addTask } = useReach();
   const { t } = useLanguage();
@@ -3063,6 +3084,50 @@ export function LeadDetailClient({ id }: { id: string }) {
                     </a>
                   )}
                 </div>
+              </div>
+
+              {/* Tags */}
+              <div className="space-y-2">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                  <Tag className="h-3 w-3" />
+                  Tags
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {(lead.tags || []).map(tag => (
+                    <span
+                      key={tag}
+                      className={cn(
+                        "inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full border",
+                        tag.startsWith('@')
+                          ? "bg-[#059669]/10 text-[#059669] border-[#059669]/30"
+                          : ['Intéressé', 'RDV demandé', 'Demande info'].includes(tag)
+                            ? "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800"
+                            : ['Pas intéressé'].includes(tag)
+                              ? "bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800"
+                              : "bg-[#f4f4f3] text-[#555552] border-[#e5e5e0] dark:bg-secondary dark:text-secondary-foreground dark:border-border"
+                      )}
+                    >
+                      {tag}
+                      {!tag.startsWith('@') && (
+                        <button
+                          type="button"
+                          onClick={() => updateLead(lead.id, { tags: (lead.tags || []).filter(t => t !== tag) })}
+                          className="hover:text-red-500 transition-colors ml-0.5"
+                          aria-label={`Supprimer le tag ${tag}`}
+                        >
+                          <X className="h-2.5 w-2.5" />
+                        </button>
+                      )}
+                    </span>
+                  ))}
+                </div>
+                <TagInputInline
+                  onAdd={(tag) => {
+                    if (tag && !(lead.tags || []).includes(tag)) {
+                      updateLead(lead.id, { tags: [...(lead.tags || []), tag] });
+                    }
+                  }}
+                />
               </div>
 
               {/* Script de Pitch IA */}

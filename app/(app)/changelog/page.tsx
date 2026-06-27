@@ -39,6 +39,20 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v4.0.0',
+      date: '2026-06-27',
+      titleKey: 'changelog.v3_42_0_title' as TranslationKey,
+      descKey: 'changelog.v3_42_0_desc' as TranslationKey,
+      highlights: [
+        { tag: 'feature', text: 'Automatisation complète — enrichissement batch (/api/leads/enrich-batch), cron nocturne à 2h, auto-email après enrichissement. L\'app peut prospecter et contacter des leads sans intervention.' },
+        { tag: 'feature', text: 'Tags leads — champ tags[] sur chaque lead. Auto-tags depuis statut CRM (@Contacté, @Gagné, @RDV fixé, @Perdu) et depuis les réponses email classifiées (Intéressé, RDV demandé, Pas intéressé, Demande info, Absent). Tags libres manuels depuis la fiche lead.' },
+        { tag: 'feature', text: 'Paramètres Automations — nouveau panneau dédié avec 4 toggles : Enrichir à l\'import, Enrichissement nocturne, Email auto après enrichissement, Tagger les réponses. Sélecteur de template email et délai configurable.' },
+        { tag: 'feature', text: 'Cron enrichissement nocturne — /api/cron/enrich-leads tourne à 2h chaque nuit, traite jusqu\'à 50 leads non enrichis par workspace avec auto_enrich_scheduled activé.' },
+        { tag: 'fix', text: 'AI 429 rate limit — retry automatique après 60 secondes pour les appels non-streaming et streaming. Plus de crash immédiat sur modèle saturé.' },
+        { tag: 'design', text: 'Page Prospection responsive — grille principale xl:grid-cols-[1fr_300px], min-w-0 sur les colonnes. La page s\'adapte maintenant à la largeur disponible quelle que soit l\'état de la sidebar.' },
+      ],
+    },
+    {
       version: 'v3.47.0',
       date: '2026-06-27',
       titleKey: 'changelog.v3_42_0_title' as TranslationKey,

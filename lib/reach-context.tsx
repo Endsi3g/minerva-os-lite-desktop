@@ -257,6 +257,8 @@ interface DbLead {
   score_revenue?: number | null;
   // Project association (v4.6)
   project_id?: string | null;
+  // Tags (v4.0) — JSON string in SQLite, text[] in Supabase
+  tags?: string | string[] | null;
 }
 
 interface DbNote {
@@ -346,6 +348,7 @@ function mapDbLeadToUi(dbLead: DbLead, dbNotes: DbNote[] = []): Lead {
     scoreUrgency: dbLead.score_urgency ?? undefined,
     scoreRevenue: dbLead.score_revenue ?? undefined,
     projectId: dbLead.project_id || undefined,
+    tags: (() => { try { return dbLead.tags ? (Array.isArray(dbLead.tags) ? dbLead.tags : JSON.parse(dbLead.tags as string)) : []; } catch { return []; } })(),
     notes: dbNotes
       .filter(n => n.lead_id === dbLead.id)
       .map(n => ({
@@ -1651,12 +1654,30 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
 
   const updateLead = async (leadId: string, fields: Partial<Lead>) => {
     if (!user) return;
+
+    // Auto-sync status tag (@Contacté, @Gagné, etc.)
+    if (fields.status !== undefined) {
+      const STATUS_TAG_MAP: Partial<Record<Lead['status'], string>> = {
+        'Contacted': '@Contacté',
+        'Meeting Booked': '@RDV fixé',
+        'Won': '@Gagné',
+        'Lost': '@Perdu',
+      };
+      const newStatusTag = STATUS_TAG_MAP[fields.status];
+      if (newStatusTag) {
+        const currentLead = leads.find(l => l.id === leadId);
+        const currentTags = currentLead?.tags || [];
+        const filteredTags = currentTags.filter(t => !t.startsWith('@'));
+        fields = { ...fields, tags: [...filteredTags, newStatusTag] };
+      }
+    }
+
     const electronObj = typeof window !== 'undefined' && (window as any).electron ? (window as any).electron : null;
     if (electronObj) {
       try {
         const dbFields: string[] = [];
         const params: any[] = [];
-        
+
         if (fields.businessName !== undefined) { dbFields.push("business_name = ?"); params.push(fields.businessName); }
         if (fields.contactName !== undefined) { dbFields.push("contact_name = ?"); params.push(fields.contactName); }
         if (fields.contactEmail !== undefined) { dbFields.push("contact_email = ?"); params.push(fields.contactEmail); }
@@ -1702,6 +1723,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
         if (fields.latitude !== undefined) { dbFields.push("latitude = ?"); params.push(fields.latitude ?? null); }
         if (fields.longitude !== undefined) { dbFields.push("longitude = ?"); params.push(fields.longitude ?? null); }
         if (fields.phone !== undefined) { dbFields.push("phone = ?"); params.push(fields.phone || null); }
+        if (fields.tags !== undefined) { dbFields.push("tags = ?"); params.push(JSON.stringify(fields.tags || [])); }
 
         if (dbFields.length > 0) {
           dbFields.push("updated_at = ?");
@@ -1769,6 +1791,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
     if (fields.latitude !== undefined) dbFields.latitude = fields.latitude ?? null;
     if (fields.longitude !== undefined) dbFields.longitude = fields.longitude ?? null;
     if (fields.phone !== undefined) dbFields.phone = fields.phone || null;
+    if (fields.tags !== undefined) dbFields.tags = fields.tags || [];
 
     try {
       const { error } = await supabase

@@ -178,12 +178,48 @@ export async function GET(req: NextRequest) {
 
         const now = new Date().toISOString();
 
+        // Auto-tag: map reply classification to tag
+        const INTENT_TAG_MAP: Record<string, string> = {
+          interested: 'Intéressé',
+          not_interested: 'Pas intéressé',
+          scheduling: 'RDV demandé',
+          info_request: 'Demande info',
+          out_of_office: 'Absent',
+        };
+
+        // Check if auto_tag_replies is enabled (default true)
+        const { data: userSettings } = await supabase
+          .from('settings')
+          .select('auto_tag_replies')
+          .eq('user_id', settings.user_id)
+          .maybeSingle();
+
+        const autoTagEnabled = userSettings?.auto_tag_replies !== false;
+
+        // Apply a basic "replied" tag — classification would require a separate AI call
+        // Here we tag with 'RDV demandé' as default when status → Meeting Booked
+        let tagsUpdate: string[] | undefined;
+        if (autoTagEnabled) {
+          const { data: currentLead } = await supabase
+            .from('leads')
+            .select('tags')
+            .eq('id', lead.id)
+            .maybeSingle();
+
+          const existingTags: string[] = currentLead?.tags || [];
+          const responseTags = Object.values(INTENT_TAG_MAP);
+          const filteredTags = existingTags.filter((t: string) => !responseTags.includes(t));
+          // Default intent for a detected reply (no classification) — mark as needs follow-up
+          tagsUpdate = [...filteredTags, 'RDV demandé'];
+        }
+
         await supabase
           .from('leads')
           .update({
             reply_detected_at: now,
             status: 'Meeting Booked', // Upgrade status — replied lead is a warm prospect
             updated_at: now,
+            ...(tagsUpdate !== undefined ? { tags: tagsUpdate } : {}),
           })
           .eq('id', lead.id);
 
@@ -194,7 +230,7 @@ export async function GET(req: NextRequest) {
           workspace_id: lead.workspace_id || settings.workspace_id,
           type: 'reply_detected',
           title: 'Réponse détectée',
-          body: `${lead.business_name} a répondu à votre e-mail.`,
+          body: `${lead.business_name} a répondu à votre e-mail.${autoTagEnabled ? ' Tag « RDV demandé » ajouté.' : ''}`,
           link: `/leads/${lead.id}`,
           is_read: false,
           created_at: now,

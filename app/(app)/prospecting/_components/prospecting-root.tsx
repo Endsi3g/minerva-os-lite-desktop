@@ -167,6 +167,7 @@ export function ProspectingRoot() {
   const [loadingPrefs, setLoadingPrefs] = useState(true);
   const [apifyConfigured, setApifyConfigured] = useState<boolean | 'checking'>('checking');
   const [userCities, setUserCities] = useState<string[]>([]);
+  const [autoEnrichOnImport, setAutoEnrichOnImport] = useState(false);
 
   // Search mode
   const [searchMode, setSearchMode] = useState<SearchMode>('par_ville');
@@ -496,12 +497,13 @@ export function ProspectingRoot() {
         const supabase = createClient();
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-          const { data } = await supabase.from('settings').select('niches, cities, apify_token').eq('user_id', user.id).maybeSingle();
+          const { data } = await supabase.from('settings').select('niches, cities, apify_token, auto_enrich_on_import').eq('user_id', user.id).maybeSingle();
           if (data) {
             setUserCities((data as any).cities || []);
             if ((data as any).cities?.length > 0) setSelectedCities([(data as any).cities[0]]);
             const token = (data as any).apify_token;
             setApifyConfigured(!!(token && token !== 'native' && token.trim().length > 5));
+            setAutoEnrichOnImport(Boolean((data as any).auto_enrich_on_import));
           } else {
             setApifyConfigured(false);
           }
@@ -845,6 +847,23 @@ export function ProspectingRoot() {
       });
       await updateLeadValidation(item.id, { status: 'imported' });
       setImportCount(1);
+
+      // Auto-enrich if enabled — fire & forget after a short delay for state to settle
+      if (autoEnrichOnImport) {
+        setTimeout(() => {
+          const newLead = leads.find(l =>
+            l.businessName === item.businessName && l.city === item.city
+          );
+          const leadId = newLead?.id;
+          if (leadId) {
+            fetch(getApiUrl('/api/leads/enrich-batch'), {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ leadIds: [leadId], mode: 'full' }),
+            }).catch(console.error);
+          }
+        }, 1500);
+      }
     } catch (e) {
       console.error(e);
     }
@@ -986,9 +1005,9 @@ export function ProspectingRoot() {
           ))}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 xl:grid-cols-[1fr_300px] gap-6 min-w-0">
           {/* Config card */}
-          <Card className="md:col-span-2 border border-border bg-card">
+          <Card className="min-w-0 border border-border bg-card">
             <CardHeader className="pb-3 border-b border-border/50">
               <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
                 <Building className="h-4 w-4 text-primary" />Paramètres de recherche
@@ -1628,7 +1647,7 @@ export function ProspectingRoot() {
           </Card>
 
           {/* Legend card */}
-          <Card className="border border-border bg-card">
+          <Card className="min-w-0 border border-border bg-card">
             <CardHeader className="pb-3 border-b border-border/50">
               <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
                 <Settings2 className="h-4 w-4 text-primary" />Validation & Scoring
@@ -1804,7 +1823,19 @@ export function ProspectingRoot() {
                   )}
                   {activeTab === 'ready' && (
                     <>
-                      <Button size="sm" onClick={handleBulkImport} className="h-7 text-[10px] font-semibold bg-emerald-600 hover:bg-emerald-700 text-white gap-1"><Plus className="w-3 h-3" />Importer dans le CRM</Button>
+                      <div className="flex items-center gap-1.5 mr-1">
+                        <button
+                          type="button"
+                          role="switch"
+                          aria-checked={autoEnrichOnImport}
+                          onClick={() => setAutoEnrichOnImport(v => !v)}
+                          className={`relative inline-flex h-4 w-7 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none ${autoEnrichOnImport ? 'bg-[#059669]' : 'bg-muted-foreground/30'}`}
+                        >
+                          <span className={`pointer-events-none block h-3 w-3 rounded-full bg-white shadow-lg ring-0 transition-transform ${autoEnrichOnImport ? 'translate-x-3' : 'translate-x-0'}`} />
+                        </button>
+                        <span className="text-[9px] font-semibold text-muted-foreground whitespace-nowrap">Enrichir auto</span>
+                      </div>
+                      <Button size="sm" onClick={handleBulkImport} className="h-7 text-[10px] font-semibold bg-[#059669] hover:bg-[#047857] text-white gap-1"><Plus className="w-3 h-3" />Importer dans le CRM</Button>
                       <Button size="sm" onClick={handleBulkIgnore} variant="outline" className="h-7 text-[10px] font-semibold border-rose-200 text-rose-700 bg-rose-50 hover:bg-rose-100 gap-1"><ThumbsDown className="w-3 h-3" />Ignorer</Button>
                     </>
                   )}

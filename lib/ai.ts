@@ -130,10 +130,21 @@ export async function generateCompletion(options: AICallOptions): Promise<string
     });
 
     if (!resp.ok) {
-      const errorText = await resp.text();
       if (resp.status === 429) {
-        throw new Error(`Le modèle IA est temporairement saturé (429 rate limit). Réessaie dans 30–60 secondes, ou configure un autre fournisseur dans Paramètres → IA.`);
+        // Auto-retry after 60s
+        await new Promise(r => setTimeout(r, 60_000));
+        const retryResp = await fetch(`${baseURL}/chat/completions`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(body),
+        });
+        if (!retryResp.ok) {
+          throw new Error(`Le modèle IA est temporairement saturé. Réessaie dans quelques minutes ou change de fournisseur dans Paramètres → IA.`);
+        }
+        const retryData = await retryResp.json();
+        return retryData.choices?.[0]?.message?.content?.trim() || '';
       }
+      const errorText = await resp.text();
       throw new Error(`AI Provider ${provider} error: ${resp.status} - ${errorText}`);
     }
 
@@ -212,10 +223,35 @@ export async function generateStreamCompletion(options: AICallOptions): Promise<
     });
 
     if (!resp.ok) {
-      const errorText = await resp.text();
       if (resp.status === 429) {
-        throw new Error(`Le modèle IA est temporairement saturé (429 rate limit). Réessaie dans 30–60 secondes, ou configure un autre fournisseur dans Paramètres → IA.`);
+        // Auto-retry after 60s (streaming)
+        await new Promise(r => setTimeout(r, 60_000));
+        const retryResp = await fetch(`${baseURL}/chat/completions`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(body),
+        });
+        if (!retryResp.ok) {
+          throw new Error(`Le modèle IA est temporairement saturé. Réessaie dans quelques minutes ou change de fournisseur dans Paramètres → IA.`);
+        }
+        return new ReadableStream({
+          async start(controller) {
+            const reader = retryResp.body!.getReader();
+            try {
+              while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                controller.enqueue(value);
+              }
+            } catch (e) {
+              controller.error(e);
+            } finally {
+              controller.close();
+            }
+          }
+        });
       }
+      const errorText = await resp.text();
       throw new Error(`AI Provider ${provider} streaming error: ${resp.status} - ${errorText}`);
     }
 

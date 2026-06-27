@@ -98,6 +98,8 @@ export interface Lead {
   replyClassifiedAt?: string;
   // Project association (v4.6)
   projectId?: string;
+  // Tags (v4.0)
+  tags?: string[];
 }
 
 export interface LeadEvent {

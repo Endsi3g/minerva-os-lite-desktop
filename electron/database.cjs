@@ -600,6 +600,15 @@ function initDb() {
     db.run(`ALTER TABLE leads ADD COLUMN score_urgency INTEGER DEFAULT NULL`, () => {});
     db.run(`ALTER TABLE leads ADD COLUMN score_revenue INTEGER DEFAULT NULL`, () => {});
 
+    // v4.11.0 — Lead tags + Automation settings
+    db.run(`ALTER TABLE leads ADD COLUMN tags TEXT DEFAULT '[]'`, () => {});
+    db.run(`ALTER TABLE settings ADD COLUMN auto_enrich_on_import INTEGER DEFAULT 0`, () => {});
+    db.run(`ALTER TABLE settings ADD COLUMN auto_enrich_scheduled INTEGER DEFAULT 0`, () => {});
+    db.run(`ALTER TABLE settings ADD COLUMN auto_email_on_enrichment INTEGER DEFAULT 0`, () => {});
+    db.run(`ALTER TABLE settings ADD COLUMN auto_tag_replies INTEGER DEFAULT 1`, () => {});
+    db.run(`ALTER TABLE settings ADD COLUMN auto_email_template_id TEXT DEFAULT NULL`, () => {});
+    db.run(`ALTER TABLE settings ADD COLUMN auto_email_delay_hours INTEGER DEFAULT 0`, () => {});
+
     // v5.1.0 — AI Assistant sessions, messages, and canvas
     db.run(`CREATE TABLE IF NOT EXISTS assistant_sessions (
       id TEXT PRIMARY KEY,
