@@ -62,6 +62,29 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v4.5.0',
+      date: '2026-06-28',
+      titleKey: 'changelog.v3_42_0_title' as TranslationKey,
+      descKey: 'changelog.v3_42_0_desc' as TranslationKey,
+      highlights: [
+        { tag: 'design', text: '[01:58] Changelog — badges de type remplacés : les étiquettes texte (Fix / Nouveauté / Design) deviennent des icônes circulaires 18px (Bug rouge, Sparkles vert, Palette indigo). Légende TagLegend placée entre l\'en-tête et la timeline. Description masquée sous sm (icône + label seulement sur mobile). Attributs aria-label + title pour l\'accessibilité.' },
+        { tag: 'fix', text: '[01:58] Leads — restauration de l\'arrière-plan crème chaud (#fafaf8) avec superposition de grille. Correction d\'une régression qui avait remplacé le fond par du blanc uni.' },
+      ],
+    },
+    {
+      version: 'v4.4.0',
+      date: '2026-06-28',
+      titleKey: 'changelog.v3_42_0_title' as TranslationKey,
+      descKey: 'changelog.v3_42_0_desc' as TranslationKey,
+      highlights: [
+        { tag: 'design', text: 'Charts analytics — polish visuel complet : axes, grilles, tooltips et couleurs alignés avec le design system (#059669 vert Minerva).' },
+        { tag: 'feature', text: 'Mémoïsation des re-renders sur les composantes lourdes (graphiques, tableaux) via useMemo et React.memo pour éliminer les calculs redondants.' },
+        { tag: 'design', text: 'Iconographie unifiée : remplacement des icônes génériques par des variantes Lucide cohérentes avec la charte visuelle.' },
+        { tag: 'feature', text: 'Messages toast améliorés : description contextuelle, durée 5 secondes, icône de statut colorée.' },
+        { tag: 'feature', text: 'Titres de page clients : chaque vue (lead, projet, campagne) met à jour document.title avec le nom de l\'entité pour un meilleur historique navigateur.' },
+      ],
+    },
+    {
       version: 'v4.3.0',
       date: '2026-06-28',
       titleKey: 'changelog.v3_42_0_title' as TranslationKey,
