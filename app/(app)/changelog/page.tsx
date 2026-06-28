@@ -67,8 +67,11 @@ export default function ChangelogPage() {
       titleKey: 'changelog.v3_42_0_title' as TranslationKey,
       descKey: 'changelog.v3_42_0_desc' as TranslationKey,
       highlights: [
-        { tag: 'design', text: '[01:58] Changelog — badges de type remplacés : les étiquettes texte (Fix / Nouveauté / Design) deviennent des icônes circulaires 18px (Bug rouge, Sparkles vert, Palette indigo). Légende TagLegend placée entre l\'en-tête et la timeline. Description masquée sous sm (icône + label seulement sur mobile). Attributs aria-label + title pour l\'accessibilité.' },
-        { tag: 'fix', text: '[01:58] Leads — restauration de l\'arrière-plan crème chaud (#fafaf8) avec superposition de grille. Correction d\'une régression qui avait remplacé le fond par du blanc uni.' },
+        { tag: 'design', text: 'Changelog — badges de type remplacés : les étiquettes texte (Fix / Nouveauté / Design) deviennent des icônes circulaires 18px (Bug rouge, Sparkles vert, Palette indigo). Légende TagLegend placée entre l\'en-tête et la timeline.' },
+        { tag: 'fix', text: 'Leads — restauration de l\'arrière-plan crème chaud (#fafaf8) avec superposition de grille. Correction d\'une régression qui avait remplacé le fond par du blanc uni.' },
+        { tag: 'feature', text: 'Centre d\'automations (/automations) — 4 cartes d\'automation avec toggle on/off, bouton "Run maintenant", historique 7 jours. Polling 30s, badge "En cours" animé.' },
+        { tag: 'feature', text: 'Trigger manuel /api/automations/trigger — déclenche n\'importe quel cron (enrich-leads, gmail-replies, email-sequences, weekly-report) depuis la page Automations.' },
+        { tag: 'design', text: 'README complet — sections produit et développeur : setup, variables d\'env, architecture dual-store, crons Vercel, Google OAuth, commandes build.' },
       ],
     },
     {

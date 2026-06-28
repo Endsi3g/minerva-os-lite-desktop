@@ -656,6 +656,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
         { name: t('nav.skills'), href: '/skills', icon: Sparkles },
         { name: t('nav.agents'), href: '/agents', icon: Sparkles },
         { name: t('nav.analytics'), href: '/analytics', icon: BarChart3 },
+        { name: 'Automations', href: '/automations', icon: Zap },
         { name: 'Créateur de site', href: '/website-builder', icon: Globe },
         { name: t('nav.audit'), href: '/audit', icon: ShieldCheck },
         { name: t('nav.map'), href: '/map', icon: MapPin },
@@ -676,7 +677,6 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
       label: 'Plateforme',
       items: [
         { name: 'Configuration', href: '/setup', icon: ListChecks },
-        { name: 'Automations', href: '/settings/automations', icon: Zap },
         { name: 'Publicité & Attribution', href: '/ads', icon: Target },
         { name: t('nav.integrations'), href: '/integrations', icon: Plug },
         { name: 'Webhooks', href: '/webhooks', icon: Zap },
