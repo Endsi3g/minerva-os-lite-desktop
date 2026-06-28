@@ -362,6 +362,16 @@ html {
   --text-label:    0.6875rem;   /* 11 px */
 }
 
+/* ─── Icon size standards ────────────────────────────────────────────────────
+   xs  : h-3 w-3   (12 px) — inline in dense labels, tags, metadata rows
+   sm  : h-3.5 w-3.5 (14 px) — sidebar nav, button icons, form field adornments
+   md  : h-4 w-4   (16 px) — card actions, toolbar buttons, default interactive
+   lg  : h-5 w-5   (20 px) — section headers, primary CTAs
+   xl  : h-6 w-6   (24 px) — page-level illustration icons, empty states
+   All Lucide icons next to visible text MUST have aria-hidden="true".
+   Standalone interactive icons MUST have an aria-label on the button/link wrapper.
+   ────────────────────────────────────────────────────────────────────────── */
+
 /* Utility layer so these tokens are available as Tailwind-like classes */
 @layer utilities {
   .text-display { font-size: var(--text-display); }

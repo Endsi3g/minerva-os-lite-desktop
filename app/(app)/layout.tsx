@@ -1136,6 +1136,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                   <item.icon
                     className={cn("h-4 w-4 shrink-0 transition-all duration-150", isActive ? "text-[#26251e]" : "text-[#555552] opacity-60")}
                     strokeWidth={isActive ? 2 : 1.5}
+                    aria-hidden="true"
                   />
                   {!isCollapsed && <span className="truncate">{item.name}</span>}
                 </Link>
@@ -1190,6 +1191,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                               <item.icon
                                 className={cn("h-4 w-4 shrink-0 transition-all duration-150", isActive ? "text-[#26251e]" : "text-[#555552] opacity-60")}
                                 strokeWidth={isActive ? 2 : 1.5}
+                                aria-hidden="true"
                               />
                               <span className="truncate">{item.name}</span>
                             </Link>

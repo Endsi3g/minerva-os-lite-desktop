@@ -35,6 +35,7 @@ import { useLanguage } from '@/lib/language-context';
 const PROMO_CODE = 'MINERVA10';
 
 export default function WelcomePage() {
+  useEffect(() => { document.title = 'Bienvenue — Minerva'; }, []);
   const router = useRouter();
   const { t } = useLanguage();
 

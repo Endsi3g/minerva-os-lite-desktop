@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { AnalyticsDashboard } from '@/components/analytics-dashboard';
 import { ProspectionDashboard } from '@/components/prospection-dashboard';
 import { useReach } from '@/lib/reach-context';
@@ -197,6 +197,7 @@ function OverviewTab() {
 }
 
 export default function AnalyticsPage() {
+  useEffect(() => { document.title = 'Statistiques — Minerva'; }, []);
   const [tab, setTab] = useState<Tab>('overview');
 
   const tabs: { id: Tab; label: string; icon: React.ElementType }[] = [

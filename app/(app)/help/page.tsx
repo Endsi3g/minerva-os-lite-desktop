@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { HelpCircle, ChevronDown, PlayCircle, BookOpen, ExternalLink, Mail, Send, CheckCircle2, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -111,6 +111,7 @@ const CONTACT_CATEGORIES = [
 ] as const;
 
 export default function HelpPage() {
+  useEffect(() => { document.title = 'Aide — Minerva'; }, []);
   const { user } = useReach();
   const [tab, setTab] = useState<HelpTab>('faq');
 

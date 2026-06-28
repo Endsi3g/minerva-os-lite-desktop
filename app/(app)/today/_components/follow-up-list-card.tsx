@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { FollowUpList } from './follow-up-list';
@@ -13,15 +13,17 @@ export function FollowUpListCard() {
   const { t } = useLanguage();
 
   // Filter leads with nextActionDate <= today AND status is not Won/Lost
-  const todayStr = new Date().toISOString().split('T')[0];
-  const followUpLeads = leads.filter(
-    (lead) =>
-      !!lead.nextActionDate &&
-      lead.nextActionDate <= todayStr &&
-      lead.status !== 'Won' &&
-      lead.status !== 'Lost' &&
-      lead.nextAction
-  );
+  const followUpLeads = useMemo(() => {
+    const todayStr = new Date().toISOString().split('T')[0];
+    return leads.filter(
+      (lead) =>
+        !!lead.nextActionDate &&
+        lead.nextActionDate <= todayStr &&
+        lead.status !== 'Won' &&
+        lead.status !== 'Lost' &&
+        lead.nextAction
+    );
+  }, [leads]);
 
   return (
     <Card className="border border-[#e5e5e0] bg-white shadow-none flex flex-col min-h-0">

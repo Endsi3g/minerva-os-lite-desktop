@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { BarChart3, TrendingUp, Mail, CheckCircle2 } from 'lucide-react';
 import { useReach } from '@/lib/reach-context';
@@ -13,17 +13,18 @@ export function TodayStatsCard() {
   const [todoistTaskCount, setTodoistTaskCount] = useState({ completed: 0, total: 0 });
   const [seqStats, setSeqStats] = useState({ sent: 0, total: 0 });
 
-  // Funnel calculations based on real leads
-  const totalLeads = leads.length;
-  const newLeads = leads.filter(l => l.status === 'New').length;
-  const contactedLeads = leads.filter(l => l.status === 'Contacted').length;
-  const qualifiedLeads = leads.filter(l => ['Meeting Booked', 'Proposal Sent', 'Negotiation', 'Won'].includes(l.status)).length;
-  
-  const conversionRate = totalLeads > 0 ? Math.round((qualifiedLeads / totalLeads) * 100) : 0;
+  const stats = useMemo(() => {
+    const totalLeads = leads.length;
+    const newLeads = leads.filter(l => l.status === 'New').length;
+    const contactedLeads = leads.filter(l => l.status === 'Contacted').length;
+    const qualifiedLeads = leads.filter(l => ['Meeting Booked', 'Proposal Sent', 'Negotiation', 'Won'].includes(l.status)).length;
+    const conversionRate = totalLeads > 0 ? Math.round((qualifiedLeads / totalLeads) * 100) : 0;
+    const totalTasks = tasks.length;
+    const completedTasks = tasks.filter(t => t.completed).length;
+    return { totalLeads, newLeads, contactedLeads, qualifiedLeads, conversionRate, totalTasks, completedTasks };
+  }, [leads, tasks]);
 
-  // Local task completion
-  const totalTasks = tasks.length;
-  const completedTasks = tasks.filter(t => t.completed).length;
+  const { totalLeads, newLeads, contactedLeads, qualifiedLeads, conversionRate } = stats;
 
   useEffect(() => {
     const fetchStats = async () => {

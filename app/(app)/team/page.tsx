@@ -44,6 +44,7 @@ interface TeamMember {
 }
 
 export default function TeamPage() {
+  useEffect(() => { document.title = 'Équipe — Minerva'; }, []);
   const { t, locale } = useLanguage();
   
   // Data State

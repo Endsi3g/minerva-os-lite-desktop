@@ -1,11 +1,12 @@
 'use client';
 
-import React, { Suspense } from 'react';
+import React, { Suspense, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { FieldRoot } from './_components/field-root';
 import { Loader2 } from 'lucide-react';
 
 function FieldPageContent() {
+  useEffect(() => { document.title = 'Mode Terrain — Minerva'; }, []);
   const searchParams = useSearchParams();
   const planId = searchParams.get('plan') || 'default';
   return <FieldRoot planId={planId} />;

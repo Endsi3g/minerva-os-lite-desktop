@@ -550,6 +550,7 @@ const DEFAULT_INTEGRATIONS: IntegrationItem[] = [
 ];
 
 export default function IntegrationsPage() {
+  useEffect(() => { document.title = 'Intégrations — Minerva'; }, []);
   const router = useRouter();
   const { t } = useLanguage();
   const { user: contextUser } = useReach();

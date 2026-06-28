@@ -65,6 +65,7 @@ function OtpGrid({
 
 // ─── inner component (needs useSearchParams, must be inside Suspense) ────────
 function LoginPageInner() {
+  useEffect(() => { document.title = 'Connexion — Minerva'; }, []);
   const searchParams = useSearchParams();
   const nextPath = searchParams.get('next') || '/today';
 

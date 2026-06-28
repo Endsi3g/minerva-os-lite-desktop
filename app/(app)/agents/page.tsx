@@ -87,6 +87,7 @@ interface AgentResult {
 }
 
 export default function AgentsPage() {
+  useEffect(() => { document.title = 'Agents — Minerva'; }, []);
   const { t } = useLanguage();
   const router = useRouter();
   const searchParams = useSearchParams();

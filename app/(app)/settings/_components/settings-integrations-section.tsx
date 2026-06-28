@@ -158,11 +158,11 @@ export function SettingsIntegrationsSection() {
         setGmailConnected(false);
         setGmailEmail('');
       } else {
-        toast.error("Erreur lors de la déconnexion de Gmail");
+        toast.error('Déconnexion Gmail échouée. Actualisez la page et réessayez.');
       }
     } catch (e) {
       console.error(e);
-      toast.error("Erreur lors de la déconnexion de Gmail");
+      toast.error('Déconnexion Gmail échouée. Actualisez la page et réessayez.');
     }
     setLoading(false);
   };
@@ -187,7 +187,7 @@ export function SettingsIntegrationsSection() {
       }
     } catch (e) {
       console.error(e);
-      toast.error("Erreur lors de la sauvegarde de la configuration de prospection");
+      toast.error('Impossible de sauvegarder la configuration de prospection. Réessayez dans quelques instants.');
     }
     setSavingApify(false);
   };
@@ -201,7 +201,7 @@ export function SettingsIntegrationsSection() {
         await supabase.from('settings').update({ here_api_key: hereApiKey.trim() || null, updated_at: new Date().toISOString() }).eq('user_id', user.id);
         toast.success('Clé HERE enregistrée !');
       }
-    } catch (e) { console.error(e); toast.error('Erreur sauvegarde HERE'); }
+    } catch (e) { console.error(e); toast.error('Impossible d\'enregistrer la clé HERE Maps. Vérifiez la clé et réessayez.'); }
     setSavingHere(false);
   };
 
@@ -214,7 +214,7 @@ export function SettingsIntegrationsSection() {
         await supabase.from('settings').update({ yelp_api_key: yelpApiKey.trim() || null, updated_at: new Date().toISOString() }).eq('user_id', user.id);
         toast.success('Clé Yelp enregistrée !');
       }
-    } catch (e) { console.error(e); toast.error('Erreur sauvegarde Yelp'); }
+    } catch (e) { console.error(e); toast.error('Impossible d\'enregistrer la clé Yelp. Vérifiez la clé et réessayez.'); }
     setSavingYelp(false);
   };
 
@@ -227,7 +227,7 @@ export function SettingsIntegrationsSection() {
         await supabase.from('settings').update({ firecrawl_api_key: firecrawlApiKey.trim() || null, updated_at: new Date().toISOString() }).eq('user_id', user.id);
         toast.success('Clé Firecrawl enregistrée !');
       }
-    } catch (e) { console.error(e); toast.error('Erreur sauvegarde Firecrawl'); }
+    } catch (e) { console.error(e); toast.error('Impossible d\'enregistrer la clé Firecrawl. Vérifiez la clé et réessayez.'); }
     setSavingFirecrawl(false);
   };
 
@@ -256,7 +256,7 @@ export function SettingsIntegrationsSection() {
       setSmtpSaved(true);
     } catch (e) {
       console.error(e);
-      toast.error("Erreur lors de la sauvegarde SMTP");
+      toast.error('Impossible de sauvegarder la configuration SMTP. Vérifiez les champs et réessayez.');
     }
     setSavingSmtp(false);
   };
@@ -276,7 +276,7 @@ export function SettingsIntegrationsSection() {
         toast.info("Le test SMTP est disponible uniquement dans l'application Electron.");
       }
     } catch (e: any) {
-      toast.error("Erreur : " + e.message);
+      toast.error(`Erreur SMTP : ${e.message}`);
     }
     setTestingSmtp(false);
   };
@@ -292,7 +292,7 @@ export function SettingsIntegrationsSection() {
         toast.success('URL Slack enregistrée !');
         setTimeout(() => setSlackSaved(false), 2000);
       }
-    } catch { toast.error('Erreur sauvegarde Slack'); }
+    } catch { toast.error('Impossible d\'enregistrer l\'URL Slack. Vérifiez le format et réessayez.'); }
     setSavingSlack(false);
   };
 
@@ -307,7 +307,7 @@ export function SettingsIntegrationsSection() {
       });
       if (res.ok) toast.success('Message test envoyé dans Slack !');
       else { const d = await res.json(); toast.error(d.error || 'Échec du test Slack.'); }
-    } catch { toast.error('Erreur test Slack'); }
+    } catch { toast.error('Test Slack échoué. Vérifiez que l\'URL du webhook est correcte.'); }
     setTestingSlack(false);
   };
 
@@ -326,7 +326,7 @@ export function SettingsIntegrationsSection() {
         toast.success('Connexion Notion enregistrée !');
         setTimeout(() => setNotionSaved(false), 2000);
       }
-    } catch { toast.error('Erreur sauvegarde Notion'); }
+    } catch { toast.error('Impossible d\'enregistrer le token Notion. Vérifiez le token et réessayez.'); }
     setSavingNotion(false);
   };
 
@@ -341,7 +341,7 @@ export function SettingsIntegrationsSection() {
       });
       if (res.ok) { const d = await res.json(); toast.success(`Notion connecté${d.name ? ` (${d.name})` : ''} !`); }
       else { const d = await res.json(); toast.error(d.error || 'Token Notion invalide.'); }
-    } catch { toast.error('Erreur test Notion'); }
+    } catch { toast.error('Test Notion échoué. Vérifiez que le token d\'intégration est valide.'); }
     setTestingNotion(false);
   };
 
@@ -358,7 +358,7 @@ export function SettingsIntegrationsSection() {
         }).eq('user_id', user.id);
         toast.success('Smartlead enregistré');
       }
-    } catch { toast.error('Erreur sauvegarde Smartlead'); }
+    } catch { toast.error('Impossible d\'enregistrer la clé Smartlead. Vérifiez la clé et réessayez.'); }
     setSavingSmartlead(false);
   };
 
@@ -375,7 +375,7 @@ export function SettingsIntegrationsSection() {
         }).eq('user_id', user.id);
         toast.success('Drop Cowboy enregistré');
       }
-    } catch { toast.error('Erreur sauvegarde Drop Cowboy'); }
+    } catch { toast.error('Impossible d\'enregistrer la clé Drop Cowboy. Vérifiez la clé et réessayez.'); }
     setSavingDropCowboy(false);
   };
 
@@ -392,7 +392,7 @@ export function SettingsIntegrationsSection() {
         }).eq('user_id', user.id);
         toast.success('Inbox IA enregistré');
       }
-    } catch { toast.error('Erreur sauvegarde Inbox IA'); }
+    } catch { toast.error('Impossible d\'enregistrer la clé Inbox IA. Vérifiez la clé et réessayez.'); }
     setSavingAiInbox(false);
   };
 

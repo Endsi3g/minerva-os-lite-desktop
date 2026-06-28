@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Megaphone, Calendar, CheckCircle } from 'lucide-react';
 import { useLanguage } from '@/lib/language-context';
 import { TranslationKey } from '@/lib/translations';
@@ -35,6 +35,7 @@ function TagBadge({ tag }: { tag: HighlightTag }) {
 }
 
 export default function ChangelogPage() {
+  useEffect(() => { document.title = 'Changelog — Minerva'; }, []);
   const { t } = useLanguage();
 
   const versions: ChangelogVersion[] = [

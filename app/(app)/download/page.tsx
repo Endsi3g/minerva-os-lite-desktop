@@ -36,6 +36,7 @@ interface SystemDiagnostics {
 }
 
 export default function DownloadPage() {
+  useEffect(() => { document.title = 'Télécharger — Minerva'; }, []);
   const { t } = useLanguage();
   const [isElectron, setIsElectron] = useState(false);
   const [diagnostics, setDiagnostics] = useState<SystemDiagnostics | null>(null);

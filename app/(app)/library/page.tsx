@@ -183,6 +183,7 @@ const ENTREPRENEUR_TEMPLATES = [
 ];
 
 export default function LibraryPage() {
+  useEffect(() => { document.title = 'Bibliothèque — Minerva'; }, []);
   const { t } = useLanguage();
   const router = useRouter();
   const { activeWorkspace } = useReach();

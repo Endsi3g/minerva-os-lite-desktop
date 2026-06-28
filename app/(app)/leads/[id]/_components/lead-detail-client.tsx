@@ -372,7 +372,7 @@ function QualificationPanel({ lead, onSave }: { lead: Lead; onSave: (fields: Par
         toast.error("Échec de l'enrichissement.");
       }
     } catch {
-      toast.error("Erreur réseau lors de l'enrichissement.");
+      toast.error('Impossible de contacter le serveur pour l\'enrichissement. Vérifiez votre connexion.');
     }
     setLoading(false);
   };
@@ -398,7 +398,7 @@ function QualificationPanel({ lead, onSave }: { lead: Lead; onSave: (fields: Par
       } else {
         toast.error("Échec de l'enrichissement avancé.");
       }
-    } catch { toast.error("Erreur réseau."); }
+    } catch { toast.error('Connexion impossible. Vérifiez votre internet et réessayez.'); }
     finally { setAdvEnriching(false); }
   };
 
@@ -1019,7 +1019,7 @@ export function LeadDetailClient({ id }: { id: string }) {
         toast.error(data.error || 'Erreur lors de la génération.');
       }
     } catch {
-      toast.error('Erreur réseau.');
+      toast.error('Connexion impossible. Vérifiez votre internet et réessayez.');
     } finally {
       setGeneratingSection(null);
     }
@@ -1031,7 +1031,7 @@ export function LeadDetailClient({ id }: { id: string }) {
     try {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { toast.error('Non connecté'); return; }
+      if (!user) { toast.error('Vous n\'êtes pas connecté. Actualisez la page pour vous reconnecter.'); return; }
       await supabase.from('proposals').upsert({
         lead_id: lead.id,
         workspace_id: activeWorkspace?.id,
@@ -1047,7 +1047,7 @@ export function LeadDetailClient({ id }: { id: string }) {
       }, { onConflict: 'lead_id' });
       toast.success('Proposition sauvegardée.');
     } catch {
-      toast.error('Erreur lors de la sauvegarde.');
+      toast.error('La note n\'a pas pu être sauvegardée. Réessayez dans quelques instants.');
     } finally {
       setSavingProposal(false);
     }
@@ -1058,7 +1058,7 @@ export function LeadDetailClient({ id }: { id: string }) {
     try {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { toast.error('Non connecté'); return; }
+      if (!user) { toast.error('Vous n\'êtes pas connecté. Actualisez la page pour vous reconnecter.'); return; }
       await supabase.from('proposals').upsert({
         lead_id: lead.id,
         workspace_id: activeWorkspace?.id,
@@ -1070,7 +1070,7 @@ export function LeadDetailClient({ id }: { id: string }) {
       updateLead(lead.id, { status: 'Proposal Sent' });
       toast.success('Lead passé en "Proposition envoyée".');
     } catch {
-      toast.error('Erreur.');
+      toast.error('Une erreur est survenue. Rafraîchissez la page et réessayez.');
     }
   };
 
@@ -1183,7 +1183,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
         toast.error(data.error || 'Impossible de créer le lien de partage.');
       }
     } catch {
-      toast.error('Erreur réseau.');
+      toast.error('Connexion impossible. Vérifiez votre internet et réessayez.');
     } finally {
       setSharingLead(false);
     }

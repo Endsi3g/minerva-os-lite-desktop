@@ -575,6 +575,7 @@ function RoadmapCard({ item, t }: { item: RoadmapItem; t: (k: TranslationKey, fa
 }
 
 export default function RoadmapPage() {
+  useEffect(() => { document.title = 'Roadmap — Minerva'; }, []);
   const { t } = useLanguage();
   const [copied, setCopied] = useState(false);
 

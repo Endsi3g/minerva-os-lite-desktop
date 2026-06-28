@@ -109,6 +109,7 @@ function FinalizingCheck({ index, delay }: { index: number; delay: number }) {
 
 // ─── Main Component ────────────────────────────────────────────────────────────
 function OnboardingPageContent() {
+  useEffect(() => { document.title = 'Configuration — Minerva'; }, []);
   const router = useRouter();
   const searchParams = useSearchParams();
   const { locale, setLocale } = useLanguage();

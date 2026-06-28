@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { 
   Briefcase, Plus, Trash2, Edit3, Check, Loader2, 
@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils';
 import { useReach } from '@/lib/reach-context';
 
 export default function WorkspacesPage() {
+  useEffect(() => { document.title = 'Espaces de travail — Minerva'; }, []);
   const router = useRouter();
   const { 
     workspacesList, 
