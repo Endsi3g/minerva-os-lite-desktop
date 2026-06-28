@@ -110,6 +110,7 @@ export interface LeadValidation {
 
 interface ReachContextType {
   user: SupabaseUser | null;
+  isDataReady: boolean;
   leads: Lead[];
   tasks: Task[];
   aiSuggestions: AiSuggestion[];
@@ -513,6 +514,7 @@ function mapDbSuggestionToUi(s: DbSuggestion, leads: Lead[]): AiSuggestion {
 
 export function ReachProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<SupabaseUser | null>(null);
+  const [isDataReady, setIsDataReady] = useState(false);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [aiSuggestions, setAiSuggestions] = useState<AiSuggestion[]>([]);
@@ -583,8 +585,10 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
       setCampaigns((dbCampaigns || []).map(mapDbCampaignToUi));
       setGoals((dbGoals || []).map(mapDbGoalToUi));
       setLeadValidations((dbValidations || []).map(mapDbValidationToUi));
+      setIsDataReady(true);
     } catch (err) {
       console.error("Failed to load local SQLite data in ReachProvider:", err);
+      setIsDataReady(true);
     }
   }, []);
 
@@ -709,9 +713,11 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
       if (dbCampaigns) setCampaigns(dbCampaigns.map(mapDbCampaignToUi));
       if (dbGoals) setGoals(dbGoals.map(mapDbGoalToUi));
       setLeadValidations((dbValidations || []).map(mapDbValidationToUi));
+      setIsDataReady(true);
 
     } catch (e) {
       console.error("Error loading data from Supabase:", e);
+      setIsDataReady(true);
     }
   }, []);
 
@@ -2805,6 +2811,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
     <ReachContext.Provider
       value={{
         user,
+        isDataReady,
         leads,
         tasks,
         aiSuggestions,

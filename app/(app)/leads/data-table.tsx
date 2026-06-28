@@ -16,18 +16,53 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
 
 interface DataTableProps<TData> {
   columns: ColumnDef<TData>[];
   table: TableType<TData>;
+  isLoading?: boolean;
 }
 
 export function DataTable<TData>({
   columns,
   table,
+  isLoading = false,
 }: DataTableProps<TData>) {
   const router = useRouter();
+
+  if (isLoading) {
+    return (
+      <div className="space-y-4">
+        <div className="rounded-md border border-border bg-card overflow-x-auto">
+          <Table>
+            <TableHeader className="bg-muted/40">
+              <TableRow>
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <TableHead key={i} className="h-10">
+                    <Skeleton className="h-3 w-16" />
+                  </TableHead>
+                ))}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {Array.from({ length: 8 }).map((_, rowIdx) => (
+                <TableRow key={rowIdx} className="border-b border-border last:border-0">
+                  {Array.from({ length: 6 }).map((_, colIdx) => (
+                    <TableCell key={colIdx} className="py-3 px-4">
+                      <Skeleton className={`h-3 ${colIdx === 0 ? 'w-4' : colIdx === 1 ? 'w-28' : colIdx === 2 ? 'w-20' : 'w-14'}`} />
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
       {/* Table Card Grid */}

@@ -10,12 +10,14 @@ import { Toaster } from "sonner"
 import type { Metadata, Viewport } from "next"
 
 const inter = Inter({
-  subsets: ["sans-serif", "latin"] as any, // prevent type differences in different versions
+  subsets: ["latin"],
+  display: "swap",
   variable: "--font-sans"
 })
 
 const fontMono = JetBrains_Mono({
   subsets: ["latin"],
+  display: "swap",
   variable: "--font-mono",
 })
 

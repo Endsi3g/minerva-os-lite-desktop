@@ -598,7 +598,12 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
       else if (segment === 'personas') label = 'Profils cibles';
 
       if (segments[index - 1] === 'leads' && segment !== 'leads') {
-        label = 'Details';
+        const lead = leads.find(l => l.id === segment);
+        label = lead?.businessName
+          ? lead.businessName.length > 28
+            ? lead.businessName.slice(0, 26) + '…'
+            : lead.businessName
+          : 'Fiche prospect';
       }
 
       crumbs.push({

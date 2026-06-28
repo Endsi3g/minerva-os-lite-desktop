@@ -31,7 +31,7 @@ interface WorkspaceMember {
 }
 
 export function LeadsRoot() {
-  const { leads, activeWorkspace } = useReach();
+  const { leads, activeWorkspace, isDataReady } = useReach();
 
   const [myUserId, setMyUserId] = useState<string | null>(null);
   const [showAssignedToMe, setShowAssignedToMe] = useState(false);
@@ -143,7 +143,9 @@ export function LeadsRoot() {
           onToggleAssignedToMe={() => setShowAssignedToMe(v => !v)}
         />
 
-        {isDatabaseEmpty ? (
+        {!isDataReady ? (
+          <DataTable columns={columns} table={table} isLoading={true} />
+        ) : isDatabaseEmpty ? (
           <LeadsEmptyState
             type="no-leads"
             onAddLead={() => {

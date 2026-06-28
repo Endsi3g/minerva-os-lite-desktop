@@ -39,6 +39,20 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v4.1.0',
+      date: '2026-06-27',
+      titleKey: 'changelog.v3_42_0_title' as TranslationKey,
+      descKey: 'changelog.v3_42_0_desc' as TranslationKey,
+      highlights: [
+        { tag: 'design', text: 'Transitions de page — suppression du loader/blur overlay, remplacé par une barre de progression verte fine (#059669) en haut de l\'écran + fade-in 180ms sur le contenu. Respect de prefers-reduced-motion.' },
+        { tag: 'feature', text: 'Skeleton chargement — tableau Leads affiche 8 lignes animées (pulse) pendant le chargement initial des données, grâce au flag isDataReady exposé par ReachContext.' },
+        { tag: 'design', text: 'Polices — correction du subset Inter (suppression de "sans-serif" invalide) + display: swap sur Inter et JetBrains Mono pour éliminer les décalages de mise en page (CLS) au chargement.' },
+        { tag: 'feature', text: 'Recherche leads — debounce 220ms (plus d\'appel à chaque frappe). Historique des recherches récentes (max 5, localStorage) affiché dans un dropdown au focus sur le champ vide. Suppression individuelle de chaque terme. Touche Escape pour effacer.' },
+        { tag: 'feature', text: 'AlertDialog — nouveau composant (radix-ui AlertDialog) remplace les window.confirm() natifs du navigateur. Suppression en masse de leads : dialog avec titre, description de conséquence et bouton libellé par l\'action ("Supprimer les N prospects").' },
+        { tag: 'design', text: 'Fil d\'Ariane — sur la fiche lead (/leads/[id]), le breadcrumb affiche maintenant le vrai nom du business (ex. "Cabinet Dentaire Dr. Laurent") au lieu de "Details", avec troncature à 28 caractères.' },
+      ],
+    },
+    {
       version: 'v4.0.0',
       date: '2026-06-27',
       titleKey: 'changelog.v3_42_0_title' as TranslationKey,
