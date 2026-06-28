@@ -82,6 +82,7 @@ import {
   toggleOnboardingTask
 } from '@/lib/onboarding-store';
 import { ALL_MODULES, routeToModule, type PermissionModule } from '@/lib/permissions';
+import { cachedFetch, invalidateClientCache } from '@/lib/fetch-cache';
 import { requestNotificationPermission, checkAndSendTaskReminders, checkAndSendLeadReminder } from '@/lib/notification-service';
 import {
   Breadcrumb,
@@ -300,9 +301,9 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
     const loadWorkspaceAvatars = async () => {
       try {
         const ownerParam = activeWorkspace.owner_id ? `?ownerUserId=${activeWorkspace.owner_id}` : '';
-        const res = await fetch(getApiUrl(`/api/team/members${ownerParam}`));
-        if (res.ok) {
-          const data = await res.json();
+        const url = getApiUrl(`/api/team/members${ownerParam}`);
+        const data = await cachedFetch<{ members: any[] }>(url, undefined, 30_000);
+        if (data) {
           const avatars: Record<string, string> = {};
           (data.members || []).forEach((m: any) => {
             if (m.member_user_id && m.profile?.avatar_base64) {
@@ -323,7 +324,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
       }
     };
     loadWorkspaceAvatars();
-  }, [activeWorkspace, contextUser]);
+  }, [activeWorkspace?.id, contextUser?.id]);
 
   useEffect(() => {
     if (!activeWorkspace || !userProfile) return;
@@ -522,18 +523,18 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
     checkUserAndSettings();
   }, [router]);
 
-  // Fetch user permissions for role-based sidebar filtering
+  // Fetch user permissions for role-based sidebar filtering (cached for 60 s)
   useEffect(() => {
     if (!contextUser || !activeWorkspace) return;
     const ownerId = (activeWorkspace as { owner_id?: string }).owner_id ?? activeWorkspace.id;
-    fetch(getApiUrl(`/api/team/my-permissions?workspaceOwnerId=${ownerId}`))
-      .then(r => r.ok ? r.json() : null)
+    const url = getApiUrl(`/api/team/my-permissions?workspaceOwnerId=${ownerId}`);
+    cachedFetch<{ permissions?: string[] }>(url, undefined, 60_000)
       .then(data => {
-        if (data?.permissions) setUserPermissions(data.permissions);
+        if (data?.permissions) setUserPermissions(data.permissions as PermissionModule[]);
         else setUserPermissions(ALL_MODULES);
       })
       .catch(() => setUserPermissions(ALL_MODULES));
-  }, [contextUser, activeWorkspace]);
+  }, [contextUser?.id, activeWorkspace?.id]);
 
   // Listen for avatar updates broadcasted from settings save
   useEffect(() => {

@@ -39,6 +39,20 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v4.2.0',
+      date: '2026-06-28',
+      titleKey: 'changelog.v3_42_0_title' as TranslationKey,
+      descKey: 'changelog.v3_42_0_desc' as TranslationKey,
+      highlights: [
+        { tag: 'design', text: 'SVG inline — icônes Instagram et Facebook converties de requêtes HTTP externes (img src="/icons/*.svg") vers des composants JSX inline dans le bundle. Zéro requête réseau supplémentaire sur la fiche lead, rendu immédiat sans round-trip.' },
+        { tag: 'feature', text: 'Singleton admin Supabase — client service-role partagé entre toutes les requêtes serveur via globalThis (_supabaseAdminClient). Élimine la réinstanciation par requête et réduit l\'overhead de connexion.' },
+        { tag: 'feature', text: 'Correction N+1 team/members — les profils de tous les membres chargés en une seule requête IN (user_id) au lieu de N requêtes individuelles. Idem pour les workspaces : tous les ownerName résolus en un seul batch au lieu d\'une requête par workspace.' },
+        { tag: 'feature', text: 'Cache serveur (lib/server-cache.ts) — Map TTL en mémoire partagée entre les requêtes du même processus. /api/team/members mis en cache 30 s avec invalidation automatique sur PATCH/DELETE.' },
+        { tag: 'feature', text: 'Cache client (lib/fetch-cache.ts) — Map TTL côté navigateur pour les fetch() répétitifs. Layout : /api/team/members mis en cache 30 s, /api/team/my-permissions 60 s. LeadsRoot réutilise la même entrée de cache que le layout.' },
+        { tag: 'design', text: 'Dépendances useEffect stabilisées — les deux effets fetch du layout utilisent contextUser?.id et activeWorkspace?.id au lieu des objets entiers, évitant les re-fetch lors des re-renders sans changement de workspace.' },
+      ],
+    },
+    {
       version: 'v4.1.0',
       date: '2026-06-27',
       titleKey: 'changelog.v3_42_0_title' as TranslationKey,

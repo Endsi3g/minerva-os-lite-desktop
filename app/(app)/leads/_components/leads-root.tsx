@@ -14,6 +14,7 @@ import { useReach } from '@/lib/reach-context';
 import { createClient } from '@/lib/supabase/client';
 import type { AuthResponse } from '@supabase/supabase-js';
 import { getApiUrl } from '@/lib/api-helper';
+import { cachedFetch } from '@/lib/fetch-cache';
 import { Lead } from '@/lib/mock-data';
 import { buildColumns } from '../columns';
 import { TEAM_ASSIGN_VALUE } from './leads-assign-cell';
@@ -51,18 +52,19 @@ export function LeadsRoot() {
     });
   }, []);
 
-  // Fetch workspace members for assignment dropdown
+  // Fetch workspace members for assignment dropdown (30 s client cache — same TTL as server cache)
   const fetchMembers = useCallback(async () => {
     if (!activeWorkspace) return;
     const ownerParam = activeWorkspace.owner_id ? `?ownerUserId=${activeWorkspace.owner_id}` : '';
     try {
-      const res = await fetch(getApiUrl(`/api/team/members${ownerParam}`));
-      if (res.ok) {
-        const data = await res.json();
-        setWorkspaceMembers(data.members || []);
-      }
+      const data = await cachedFetch<{ members: WorkspaceMember[] }>(
+        getApiUrl(`/api/team/members${ownerParam}`),
+        undefined,
+        30_000
+      );
+      setWorkspaceMembers(data.members || []);
     } catch {}
-  }, [activeWorkspace]);
+  }, [activeWorkspace?.id]);
 
   useEffect(() => { fetchMembers(); }, [fetchMembers]);
 

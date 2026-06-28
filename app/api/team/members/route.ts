@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
-import { createClient as createAdminClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
+import { getAdminClient } from '@/lib/supabase/admin';
+import { serverCache } from '@/lib/server-cache';
+
+const MEMBERS_TTL_MS = 30_000; // 30 s
 
 async function getAuthClient() {
   const cookieStore = await cookies();
@@ -17,14 +20,6 @@ async function getAuthClient() {
   );
 }
 
-function getServiceClient() {
-  return createAdminClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { autoRefreshToken: false, persistSession: false } }
-  );
-}
-
 // GET /api/team/members — List all members of the current user's workspace
 export async function GET(request: NextRequest) {
   const supabase = await getAuthClient();
@@ -34,11 +29,15 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  // ownerUserId: who owns the workspace we're viewing (may differ from user.id for members)
   const ownerUserId = request.nextUrl.searchParams.get('ownerUserId') || user.id;
 
-  // If the viewer is NOT the workspace owner, verify they're an active member via service role
-  const admin = getServiceClient();
+  // Return cached response if available (avoids repeated DB round-trips from sidebar/presence)
+  const cacheKey = `team:members:${ownerUserId}`;
+  const cached = serverCache.get<object>(cacheKey);
+  if (cached) return NextResponse.json(cached);
+
+  const admin = getAdminClient();
+
   if (ownerUserId !== user.id) {
     const { data: membership } = await admin
       .from('team_members')
@@ -53,7 +52,6 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // Use service role to bypass RLS — members need to see the full list
   const { data: members, error: fetchError } = await admin
     .from('team_members')
     .select('*')
@@ -64,50 +62,39 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: fetchError.message }, { status: 500 });
   }
 
-  // Also fetch profile info for active members
-  const enriched = await Promise.all(
-    (members || []).map(async (m) => {
-      const enrichedMember = {
-        ...m,
-        plan: m.plan || 'Business',
-        usage_count: m.usage_count !== undefined && m.usage_count !== null ? m.usage_count : 0,
-        profile: null as { full_name: string | null; company_name: string | null; avatar_base64: string | null } | null
-      };
-      if (m.member_user_id) {
-        // Use admin client so members can see profiles of all workspace members
-        const { data: profile } = await admin
-          .from('settings')
-          .select('full_name, company_name, avatar_base64')
-          .eq('user_id', m.member_user_id)
-          .maybeSingle();
-        enrichedMember.profile = profile;
-      }
-      return enrichedMember;
-    })
-  );
+  // Batch-load all member profiles in a single query instead of N individual queries
+  const memberUserIds = (members || []).map((m) => m.member_user_id).filter(Boolean) as string[];
+  const allUserIds = [...new Set([...memberUserIds, ownerUserId])];
 
-  // Deduplicate: a user can end up with several team_members rows (e.g. invited by
-  // email AND via link, or re-invited). Collapse by member_user_id (fallback email),
-  // keeping the active row over a pending one. Also drop any row that is actually the
-  // workspace owner — the owner is rendered separately below.
+  const [{ data: profiles }, ownerAuth] = await Promise.all([
+    admin
+      .from('settings')
+      .select('user_id, full_name, company_name, avatar_base64')
+      .in('user_id', allUserIds),
+    admin.auth.admin.getUserById(ownerUserId),
+  ]);
+
+  const profileMap = new Map((profiles || []).map((p) => [p.user_id, p]));
+
+  const enriched = (members || []).map((m) => ({
+    ...m,
+    plan: m.plan || 'Business',
+    usage_count: m.usage_count ?? 0,
+    profile: m.member_user_id ? (profileMap.get(m.member_user_id) ?? null) : null,
+  }));
+
+  // Deduplicate rows — keep active over pending, drop rows matching the owner
   const seen = new Map<string, typeof enriched[number]>();
   for (const m of enriched) {
-    if (m.member_user_id && m.member_user_id === ownerUserId) continue; // owner handled separately
+    if (m.member_user_id && m.member_user_id === ownerUserId) continue;
     const key = m.member_user_id || `email:${(m.email || '').toLowerCase()}`;
     const existing = seen.get(key);
-    if (!existing) {
+    if (!existing || (existing.status !== 'active' && m.status === 'active')) {
       seen.set(key, m);
-    } else if (existing.status !== 'active' && m.status === 'active') {
-      seen.set(key, m); // prefer the active membership over pending
     }
   }
   const deduped = Array.from(seen.values());
 
-  // Prepend the workspace owner as an assignable person (they're not in team_members)
-  const [ownerProfile, ownerAuth] = await Promise.all([
-    admin.from('settings').select('full_name, company_name, avatar_base64').eq('user_id', ownerUserId).maybeSingle(),
-    admin.auth.admin.getUserById(ownerUserId),
-  ]);
   const ownerEntry = {
     id: `__owner__${ownerUserId}`,
     workspace_owner_id: ownerUserId,
@@ -119,11 +106,13 @@ export async function GET(request: NextRequest) {
     joined_at: null,
     plan: 'Business',
     usage_count: 0,
-    profile: ownerProfile.data ?? null,
+    profile: profileMap.get(ownerUserId) ?? null,
     isOwner: true,
   };
 
-  return NextResponse.json({ members: [ownerEntry, ...deduped] });
+  const payload = { members: [ownerEntry, ...deduped] };
+  serverCache.set(cacheKey, payload, MEMBERS_TTL_MS);
+  return NextResponse.json(payload);
 }
 
 // PATCH /api/team/members — Update a member's role, plan, or usage_count (owner only)
@@ -193,6 +182,8 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: updateError.message }, { status: 500 });
   }
 
+  // Invalidate cached member list so the next GET reflects the change
+  serverCache.deleteByPrefix(`team:members:`);
   return NextResponse.json({ success: true, member: updated });
 }
 
@@ -230,5 +221,6 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: deleteError.message }, { status: 500 });
   }
 
+  serverCache.deleteByPrefix(`team:members:`);
   return NextResponse.json({ success: true });
 }

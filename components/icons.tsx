@@ -207,3 +207,37 @@ export function ApifyIcon({ className, size = 24, ...props }: IconProps) {
     </svg>
   );
 }
+
+export function InstagramIcon({ className, size = 24, ...props }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" width={size} height={size} className={className} {...props} aria-label="Instagram">
+      <defs>
+        <radialGradient id="ig-a" cx="30%" cy="107%" r="145%">
+          <stop offset="0%" stopColor="#ffd879"/>
+          <stop offset="15%" stopColor="#f9a22d"/>
+          <stop offset="42%" stopColor="#f0544c"/>
+          <stop offset="72%" stopColor="#c13584"/>
+          <stop offset="100%" stopColor="#833ab4"/>
+        </radialGradient>
+        <radialGradient id="ig-b" cx="110%" cy="5%" r="120%">
+          <stop offset="0%" stopColor="#4168c9"/>
+          <stop offset="60%" stopColor="#4168c9" stopOpacity="0"/>
+        </radialGradient>
+      </defs>
+      <rect width="24" height="24" rx="6" fill="url(#ig-a)"/>
+      <rect width="24" height="24" rx="6" fill="url(#ig-b)"/>
+      <rect x="4.5" y="4.5" width="15" height="15" rx="3.5" stroke="white" strokeWidth="1.5" fill="none"/>
+      <circle cx="12" cy="12" r="4" stroke="white" strokeWidth="1.5" fill="none"/>
+      <circle cx="17.2" cy="6.8" r="1.2" fill="white"/>
+    </svg>
+  );
+}
+
+export function FacebookIcon({ className, size = 24, ...props }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" width={size} height={size} className={className} {...props} aria-label="Facebook">
+      <rect width="24" height="24" rx="5" fill="#1877F2"/>
+      <path d="M13.2 21V13.8h2.4l.4-2.8h-2.8V9.4c0-.8.4-1.4 1.5-1.4H16V5.2s-1.1-.2-2.2-.2c-2.3 0-3.8 1.4-3.8 3.9v2.1H7.5v2.8H10V21h3.2z" fill="white"/>
+    </svg>
+  );
+}

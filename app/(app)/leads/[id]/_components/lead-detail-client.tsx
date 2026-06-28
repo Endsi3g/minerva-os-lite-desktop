@@ -61,7 +61,7 @@ import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
 import type { REALTIME_SUBSCRIBE_STATES } from '@supabase/supabase-js';
 import { toast } from 'sonner';
-import { GmailIcon, GoogleCalendarIcon, GoogleMapsIcon } from '@/components/icons';
+import { GmailIcon, GoogleCalendarIcon, GoogleMapsIcon, InstagramIcon, FacebookIcon } from '@/components/icons';
 import { OutreachPanel } from './outreach-panel';
 import { GoogleConnectModal } from '@/components/google-connect-modal';
 
@@ -3906,16 +3906,14 @@ function SocialLinksSection({ lead, onSave }: { lead: Lead; onSave: (fields: Par
           {igUrl && (
             <a href={igUrl.startsWith('http') ? igUrl : `https://${igUrl}`} target="_blank" rel="noopener noreferrer"
               className="flex items-center gap-1.5 text-xs font-semibold text-[#26251e] hover:text-[#059669] transition-colors">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/icons/instagram.svg" alt="Instagram" className="w-4 h-4 rounded" />
+              <InstagramIcon size={16} className="rounded" />
               <span className="text-[10px]">{igUrl.replace(/^https?:\/\/(www\.)?instagram\.com\//, '@').replace(/\/$/, '')}</span>
             </a>
           )}
           {fbUrl && (
             <a href={fbUrl.startsWith('http') ? fbUrl : `https://${fbUrl}`} target="_blank" rel="noopener noreferrer"
               className="flex items-center gap-1.5 text-xs font-semibold text-[#26251e] hover:text-[#059669] transition-colors">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/icons/facebook.svg" alt="Facebook" className="w-4 h-4 rounded" />
+              <FacebookIcon size={16} className="rounded" />
               <span className="text-[10px]">Facebook</span>
             </a>
           )}
@@ -3940,16 +3938,14 @@ function SocialLinksSection({ lead, onSave }: { lead: Lead; onSave: (fields: Par
               className="flex items-center gap-1.5 text-[10px] font-bold text-[#7a7a76] hover:text-[#26251e] transition-colors"
             >
               {igLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src="/icons/instagram.svg" alt="" className="w-3 h-3 rounded" />
+                <InstagramIcon size={12} className="rounded" />
               )}
               {igLoading ? 'Chargement…' : 'Voir les posts Instagram'}
             </button>
           ) : igBlockedMsg ? (
             <div className="space-y-2 p-3 rounded-xl bg-amber-50 border border-amber-200">
               <div className="flex items-start gap-2">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/icons/instagram.svg" alt="" className="w-4 h-4 rounded shrink-0 mt-0.5" />
+                <InstagramIcon size={16} className="rounded shrink-0 mt-0.5" />
                 <div className="space-y-1.5 flex-1 min-w-0">
                   <p className="text-[10px] font-bold text-amber-800">Publication Instagram uniquement</p>
                   <p className="text-[10px] text-amber-700 leading-relaxed">{igBlockedMsg}</p>
@@ -3960,8 +3956,7 @@ function SocialLinksSection({ lead, onSave }: { lead: Lead; onSave: (fields: Par
                       rel="noopener noreferrer"
                       className="text-[10px] font-bold text-white bg-[#E1306C] hover:bg-[#C13584] px-2.5 py-1 rounded-full flex items-center gap-1 transition-colors"
                     >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src="/icons/instagram.svg" alt="" className="w-3 h-3" />
+                      <InstagramIcon size={12} />
                       Voir le profil Instagram
                     </a>
                     <button
@@ -4440,8 +4435,7 @@ function ComposerPanel({
           {/* Social links info */}
           {dmPlatform === 'instagram' && (lead.socialLinks?.instagram || lead.website?.includes('instagram')) && (
             <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-[#fafaf8] border border-[#e5e5e0]">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/icons/instagram.svg" alt="" className="w-3.5 h-3.5 rounded shrink-0" />
+              <InstagramIcon size={14} className="rounded shrink-0" />
               <a
                 href={(lead.socialLinks?.instagram || lead.website || '')}
                 target="_blank"
@@ -4487,8 +4481,7 @@ function ComposerPanel({
                 rel="noopener noreferrer"
                 className="h-8 px-3 flex items-center gap-1.5 rounded-lg border border-[#e5e5e0] text-xs font-bold text-[#7a7a76] hover:text-[#26251e] transition-colors"
               >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/icons/instagram.svg" alt="" className="w-3.5 h-3.5 rounded" />
+                <InstagramIcon size={14} className="rounded" />
                 Ouvrir le profil
               </a>
             )}

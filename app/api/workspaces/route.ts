@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
-import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
+import { getAdminClient } from '@/lib/supabase/admin';
 
 async function getAuthClient() {
   const cookieStore = await cookies();
@@ -14,15 +14,6 @@ async function getAuthClient() {
         setAll() {},
       },
     }
-  );
-}
-
-// Admin client bypasses RLS — used only for membership lookups server-side
-function getAdminClient() {
-  return createSupabaseClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { autoRefreshToken: false, persistSession: false } }
   );
 }
 
@@ -107,32 +98,24 @@ export async function GET() {
     ...memberWorkspaces.map(w => ({ ...w, isOwner: false, role: 'member', joinedAt: membershipMeta[w.id] ?? null }))
   ];
 
-  // Enrich with owner full name
-  const enriched = await Promise.all(
-    allWorkspaces.map(async (w) => {
-      const { data: ownerSettings } = await supabase
-        .from('settings')
-        .select('full_name')
-        .eq('user_id', w.owner_id)
-        .maybeSingle();
-      return {
-        ...w,
-        ownerName: ownerSettings?.full_name || 'Utilisateur anonyme'
-      };
-    })
-  );
+  // Batch-load owner names in a single query instead of N individual queries
+  const ownerIds = [...new Set(allWorkspaces.map((w) => w.owner_id))];
+  const [{ data: ownerSettings }, activeWsResult] = await Promise.all([
+    adminClient.from('settings').select('user_id, full_name').in('user_id', ownerIds),
+    adminClient.from('settings').select('active_workspace_id').eq('user_id', user.id).maybeSingle(),
+  ]);
+  const ownerNameMap = new Map((ownerSettings || []).map((s) => [s.user_id, s.full_name]));
 
-  // Read active workspace preference (column may not exist yet before migration)
+  const enriched = allWorkspaces.map((w) => ({
+    ...w,
+    ownerName: ownerNameMap.get(w.owner_id) || 'Utilisateur anonyme',
+  }));
+
   let activeWorkspaceId: string | null = null;
   try {
-    const { data: userSettings } = await adminClient
-      .from('settings')
-      .select('active_workspace_id')
-      .eq('user_id', user.id)
-      .maybeSingle();
-    activeWorkspaceId = (userSettings as any)?.active_workspace_id ?? null;
+    activeWorkspaceId = (activeWsResult.data as any)?.active_workspace_id ?? null;
   } catch {
-    // Column doesn't exist yet — ignore, will be null
+    // Column doesn't exist yet — ignore
   }
 
   return NextResponse.json({ workspaces: enriched, activeWorkspaceId });
