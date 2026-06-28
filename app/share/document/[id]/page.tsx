@@ -2,7 +2,7 @@ import React from "react";
 import SharedDocumentClient from "./shared-document-client";
 
 export const metadata = {
-  title: "Document Partagé - Minerva Reach",
+  title: 'Document partagé',
   description: "Consultation publique d'un document partagé.",
 };
 

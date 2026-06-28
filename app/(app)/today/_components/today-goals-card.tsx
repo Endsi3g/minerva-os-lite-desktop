@@ -49,7 +49,7 @@ export function TodayGoalsCard() {
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="kpi-container"><div className="kpi-grid">
           {goals.map(goal => {
             const progress = progressByGoal[goal.id] ?? 0;
             const pct = Math.min(100, Math.round((progress / Math.max(goal.target, 1)) * 100));
@@ -76,7 +76,7 @@ export function TodayGoalsCard() {
               </div>
             );
           })}
-        </div>
+        </div></div>
       </CardContent>
     </Card>
   );

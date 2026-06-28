@@ -1,7 +1,7 @@
 import AuditRoot from './_components/audit-root';
 
 export const metadata = {
-  title: 'Audit SEO - Minerva Reach',
+  title: 'Audit SEO',
   description: 'Analysez le référencement de vos prospects et obtenez un score SEO détaillé.',
 };
 

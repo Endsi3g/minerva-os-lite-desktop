@@ -1,7 +1,7 @@
 import { SettingsRoot } from './_components/settings-root';
 
 export const metadata = {
-  title: 'Paramètres - Minerva Reach',
+  title: 'Paramètres',
   description: 'Gère ton profil, ton style de prospection, et tes configurations d\'IA.',
 };
 

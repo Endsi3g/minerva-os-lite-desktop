@@ -2,7 +2,7 @@ import React from 'react';
 import OutcomeClient from './outcome-client';
 
 export const metadata = {
-  title: 'Enregistrer le passage - Minerva Reach',
+  title: 'Enregistrer le passage',
   description: 'Saisissez le résultat de votre visite terrain.',
 };
 

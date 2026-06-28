@@ -1,6 +1,6 @@
 import ProjectDetailRoot from './_components/project-detail-root';
 
-export const metadata = { title: 'Projet — Minerva Reach' };
+export const metadata = { title: 'Projet' };
 
 export function generateStaticParams() {
   return [{ id: '_placeholder_' }];

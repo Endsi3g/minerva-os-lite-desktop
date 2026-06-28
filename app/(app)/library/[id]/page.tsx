@@ -1,7 +1,7 @@
 import LibraryEditorClient from './_components/library-editor-client';
 
 export const metadata = {
-  title: 'Document - Minerva Reach',
+  title: 'Document',
   description: "Éditeur de document de la bibliothèque Minerva.",
 };
 

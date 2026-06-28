@@ -1,7 +1,7 @@
 import { ImportRoot } from './_components/import-root';
 
 export const metadata = {
-  title: 'Importer une intégration - Minerva Reach',
+  title: 'Importer',
   description: 'Importe une intégration depuis une configuration JSON ou le catalogue Minerva.',
 };
 

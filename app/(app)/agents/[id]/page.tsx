@@ -1,3 +1,8 @@
+export const metadata = {
+  title: 'Agent',
+  description: "Détails et configuration d'un agent IA.",
+};
+
 import { AgentDetailRoot } from './_components/agent-detail-root';
 
 export async function generateStaticParams() {

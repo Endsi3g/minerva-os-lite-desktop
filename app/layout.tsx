@@ -22,7 +22,10 @@ const fontMono = JetBrains_Mono({
 })
 
 export const metadata: Metadata = {
-  title: "Minerva OS Lite",
+  title: {
+    template: "%s — Minerva",
+    default: "Minerva",
+  },
   description: "AI-powered sales prospecting and workspace management",
   manifest: "/manifest.json",
   icons: {
@@ -59,11 +62,17 @@ export default function RootLayout({
       className={cn("antialiased", fontMono.variable, "font-sans", inter.variable)}
     >
       <head>
+        {/* Critical resource hints — establish connections before scripts parse */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        {process.env.NEXT_PUBLIC_SUPABASE_URL ? (
+          <link rel="dns-prefetch" href={process.env.NEXT_PUBLIC_SUPABASE_URL} />
+        ) : null}
         <link rel="manifest" href="/manifest.json" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <meta name="apple-mobile-web-app-title" content="Minerva OS Lite" />
+        <meta name="apple-mobile-web-app-title" content="Minerva" />
         <link rel="apple-touch-icon" href="/icon.png" />
       </head>
       <body>

@@ -2,7 +2,7 @@ import React from "react";
 import SharedFolderClient from "./shared-folder-client";
 
 export const metadata = {
-  title: "Dossier Partagé - Minerva Reach",
+  title: 'Dossier partagé',
   description: "Accès public aux documents partagés de l'espace de travail.",
 };
 

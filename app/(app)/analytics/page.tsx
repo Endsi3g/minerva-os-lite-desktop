@@ -126,12 +126,14 @@ function OverviewTab() {
 
   return (
     <div className="space-y-6">
-      {/* KPI grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      {/* KPI grid — container-aware: 2 cols when narrow, 4 when wide */}
+      <div className="kpi-container">
+      <div className="kpi-grid">
         <StatCard label="Leads totaux" value={stats.total} icon={Users} sub={`+${stats.recentLeads} cette semaine`} trend={stats.recentLeads > 0 ? 'up' : 'flat'} />
         <StatCard label="Taux de contact" value={`${stats.contactRate}%`} icon={Mail} sub={`${stats.contacted} contactés`} color="#3b82f6" />
         <StatCard label="Clients gagnés" value={stats.won} icon={Trophy} sub={`Conv. ${stats.convRate}%`} color="#059669" trend={stats.won > 0 ? 'up' : 'flat'} />
         <StatCard label="Tâches en retard" value={stats.overdueTasks} icon={AlertCircle} sub={`${stats.openTasks} ouvertes au total`} color={stats.overdueTasks > 0 ? '#dc2626' : '#059669'} />
+      </div>
       </div>
 
       {/* Funnel + notifs */}

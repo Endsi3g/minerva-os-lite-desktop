@@ -2,7 +2,7 @@ import React from 'react';
 import { SkillsRoot } from './_components/skills-root';
 
 export const metadata = {
-  title: 'Skills - Minerva Reach',
+  title: 'Skills',
   description: 'Étendez les capacités de l\'assistant IA avec des compétences.',
 };
 

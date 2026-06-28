@@ -2,7 +2,7 @@ import React from 'react';
 import ClientReportDetail from './client-report-detail';
 
 export const metadata = {
-  title: 'Rapport Client - Minerva Reach',
+  title: 'Rapport client',
   description: 'Rapport client détaillé et statistiques CRM.',
 };
 

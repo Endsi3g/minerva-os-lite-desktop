@@ -2,7 +2,7 @@ import { LeadsRoot } from './_components/leads-root';
 import { ErrorBoundary } from '@/components/error-boundary';
 
 export const metadata = {
-  title: 'Leads - Minerva Reach',
+  title: 'Leads',
   description: 'Portefeuille global de toutes tes opportunités de prospection.',
 };
 

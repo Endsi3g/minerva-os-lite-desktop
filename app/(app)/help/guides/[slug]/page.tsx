@@ -11,7 +11,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { slug } = await params;
   const guide = getHelpGuide(slug);
   return {
-    title: guide ? `${guide.title} - Minerva Reach` : 'Guide - Minerva Reach',
+    title: guide ? guide.title : 'Guide',
     description: guide?.description ?? 'Guide pas à pas Minerva OS Reach Lite.',
   };
 }

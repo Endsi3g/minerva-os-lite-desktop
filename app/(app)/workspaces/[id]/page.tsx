@@ -1,7 +1,7 @@
 import WorkspaceDetailClient from './_components/workspace-detail-client';
 
 export const metadata = {
-  title: 'Configuration Espace - Minerva Reach',
+  title: 'Configuration espace',
   description: 'Configuration et personnalisation visuelle de l\'espace de travail.',
 };
 

@@ -2,7 +2,7 @@ import React, { Suspense } from "react";
 import InviteTokenClient from "./invite-token-client";
 
 export const metadata = {
-  title: "Rejoindre l'équipe - Minerva OS",
+  title: "Rejoindre l'équipe",
   description: "Acceptez l'invitation pour rejoindre l'équipe sur Minerva OS Reach Lite.",
 };
 

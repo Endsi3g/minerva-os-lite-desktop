@@ -1,7 +1,7 @@
 import LeadDetailClient from './_components/lead-detail-client';
 
 export const metadata = {
-  title: 'Détails Prospect - Minerva Reach',
+  title: 'Fiche prospect',
   description: 'Fiche détaillée du prospect, observations terrain, historique et notes.',
 };
 

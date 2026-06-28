@@ -21,7 +21,7 @@
 
 import ServicesRoot from './_components/services-root';
 
-export const metadata = { title: 'Services & Tarifs — Minerva Reach' };
+export const metadata = { title: 'Services & Tarifs' };
 
 export default function ServicesPage() {
   return <ServicesRoot />;

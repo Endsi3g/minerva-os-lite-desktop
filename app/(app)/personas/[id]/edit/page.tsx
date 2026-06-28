@@ -1,7 +1,7 @@
 import { PersonaForm } from "../../_components/persona-form";
 
 export const metadata = {
-  title: "Modifier le profil cible | Minerva OS Reach Lite",
+  title: 'Modifier le profil cible',
 };
 
 interface EditPersonaPageProps {

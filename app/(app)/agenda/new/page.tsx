@@ -2,7 +2,7 @@ import React, { Suspense } from 'react';
 import { AgendaNewRoot } from './_components/agenda-new-root';
 
 export const metadata = {
-  title: 'Nouveau rendez-vous - Minerva Reach',
+  title: 'Nouveau rendez-vous',
   description: 'Planifiez un rendez-vous et synchronisez-le avec votre équipe.',
 };
 

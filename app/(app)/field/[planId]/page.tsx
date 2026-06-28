@@ -1,3 +1,8 @@
+export const metadata = {
+  title: 'Mode terrain',
+  description: 'Préparez et exécutez votre tournée de prospection.',
+};
+
 import React from 'react';
 import { FieldRoot } from '../_components/field-root';
 
