@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { Megaphone, Calendar, CheckCircle } from 'lucide-react';
+import { Megaphone, Calendar, CheckCircle, Bug, Sparkles, Palette } from 'lucide-react';
 import { useLanguage } from '@/lib/language-context';
 import { TranslationKey } from '@/lib/translations';
 
@@ -16,21 +16,43 @@ interface ChangelogVersion {
   highlights: HighlightItem[];
 }
 
-const TAG_CONFIG: Record<HighlightTag, { label: string; bg: string; text: string; border: string }> = {
-  fix: { label: 'Fix', bg: '#fef2f2', text: '#dc2626', border: '#fecaca' },
-  feature: { label: 'Nouveauté', bg: '#f0fdf4', text: '#059669', border: '#bbf7d0' },
-  design: { label: 'Design', bg: '#eef2ff', text: '#6366f1', border: '#c7d2fe' },
+const TAG_CONFIG: Record<HighlightTag, { label: string; description: string; bg: string; text: string; border: string; icon: React.ElementType }> = {
+  fix:     { label: 'Correctif',  description: 'bug ou problème résolu',      bg: '#fef2f2', text: '#dc2626', border: '#fecaca', icon: Bug      },
+  feature: { label: 'Nouveauté',  description: 'nouvelle fonctionnalité',     bg: '#f0fdf4', text: '#059669', border: '#bbf7d0', icon: Sparkles },
+  design:  { label: 'Design',     description: 'amélioration visuelle ou UX', bg: '#eef2ff', text: '#6366f1', border: '#c7d2fe', icon: Palette  },
 };
 
 function TagBadge({ tag }: { tag: HighlightTag }) {
-  const cfg = TAG_CONFIG[tag];
+  const { bg, border, text, icon: Icon, label } = TAG_CONFIG[tag];
   return (
     <span
-      className="inline-flex items-center shrink-0 text-[8px] font-extrabold uppercase tracking-widest px-1.5 py-0.5 rounded-full border leading-none mt-0.5"
-      style={{ background: cfg.bg, color: cfg.text, borderColor: cfg.border }}
+      aria-label={label}
+      title={label}
+      className="inline-flex items-center justify-center shrink-0 w-[18px] h-[18px] rounded-full border mt-0.5"
+      style={{ background: bg, borderColor: border }}
     >
-      {cfg.label}
+      <Icon className="w-2.5 h-2.5" style={{ color: text }} strokeWidth={2.5} aria-hidden="true" />
     </span>
+  );
+}
+
+function TagLegend() {
+  return (
+    <div className="flex flex-wrap items-center gap-x-5 gap-y-2 px-4 py-2.5 rounded-xl border border-neutral-200/80 bg-white shadow-2xs w-fit">
+      <span className="text-[9px] font-black uppercase tracking-widest text-neutral-400 shrink-0">Légende</span>
+      {(Object.entries(TAG_CONFIG) as [HighlightTag, typeof TAG_CONFIG[HighlightTag]][]).map(([, cfg]) => (
+        <span key={cfg.label} className="inline-flex items-center gap-1.5">
+          <span
+            className="inline-flex items-center justify-center w-[18px] h-[18px] rounded-full border shrink-0"
+            style={{ background: cfg.bg, borderColor: cfg.border }}
+          >
+            <cfg.icon className="w-2.5 h-2.5" style={{ color: cfg.text }} strokeWidth={2.5} aria-hidden="true" />
+          </span>
+          <span className="text-[11px] font-bold text-neutral-700">{cfg.label}</span>
+          <span className="text-[10px] text-neutral-400 hidden sm:inline">— {cfg.description}</span>
+        </span>
+      ))}
+    </div>
   );
 }
 
@@ -1986,6 +2008,9 @@ export default function ChangelogPage() {
             </p>
           </div>
         </div>
+
+        {/* ── Tag legend ── */}
+        <TagLegend />
 
         {/* ── Timeline Timeline ── */}
         <div className="relative border-l border-neutral-200/80 ml-5 pl-8 space-y-8 py-2">
