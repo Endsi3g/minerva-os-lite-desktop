@@ -35,6 +35,7 @@ import {
   Trash2,
   FileText,
   Send,
+  Save,
   Cloud,
   Camera,
   HardDrive,
@@ -984,268 +985,158 @@ export function LeadDetailClient({ id }: { id: string }) {
   const [newSvcDesc, setNewSvcDesc] = useState('');
   const [newSvcPrice, setNewSvcPrice] = useState('');
 
+  // v4.12.0 — Multi-section proposal builder
+  interface ProposalSections {
+    intro: string;
+    problem: string;
+    solution: string;
+    pricing: { amount: number; taxRate: number };
+    terms: string;
+  }
+  const [proposalSections, setProposalSections] = useState<ProposalSections>({
+    intro: '',
+    problem: '',
+    solution: '',
+    pricing: { amount: 0, taxRate: 14.975 },
+    terms: '',
+  });
+  const [generatingSection, setGeneratingSection] = useState<string | null>(null);
+  const [savingProposal, setSavingProposal] = useState(false);
+
+  const generateSection = async (section: 'intro' | 'problem' | 'solution' | 'terms') => {
+    if (!lead) return;
+    setGeneratingSection(section);
+    try {
+      const res = await fetch(getApiUrl('/api/proposals/generate-section'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ leadId: lead.id, section, amount: proposalSections.pricing.amount }),
+      });
+      const data = await res.json();
+      if (res.ok && data.content) {
+        setProposalSections(p => ({ ...p, [section]: data.content }));
+      } else {
+        toast.error(data.error || 'Erreur lors de la génération.');
+      }
+    } catch {
+      toast.error('Erreur réseau.');
+    } finally {
+      setGeneratingSection(null);
+    }
+  };
+
+  const saveProposal = async () => {
+    if (!lead) return;
+    setSavingProposal(true);
+    try {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { toast.error('Non connecté'); return; }
+      await supabase.from('proposals').upsert({
+        lead_id: lead.id,
+        workspace_id: activeWorkspace?.id,
+        user_id: user.id,
+        title: `Proposition — ${lead.businessName}`,
+        amount: proposalSections.pricing.amount,
+        section_intro: proposalSections.intro,
+        section_problem: proposalSections.problem,
+        section_solution: proposalSections.solution,
+        section_pricing: proposalSections.pricing,
+        section_terms: proposalSections.terms,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'lead_id' });
+      toast.success('Proposition sauvegardée.');
+    } catch {
+      toast.error('Erreur lors de la sauvegarde.');
+    } finally {
+      setSavingProposal(false);
+    }
+  };
+
+  const markProposalSent = async () => {
+    if (!lead) return;
+    try {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { toast.error('Non connecté'); return; }
+      await supabase.from('proposals').upsert({
+        lead_id: lead.id,
+        workspace_id: activeWorkspace?.id,
+        user_id: user.id,
+        status: 'sent',
+        sent_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'lead_id' });
+      updateLead(lead.id, { status: 'Proposal Sent' });
+      toast.success('Lead passé en "Proposition envoyée".');
+    } catch {
+      toast.error('Erreur.');
+    }
+  };
+
+  const SECTION_LABELS: Record<string, string> = {
+    intro: 'Présentation',
+    problem: 'Problème identifié',
+    solution: 'Solution proposée',
+    terms: 'Modalités',
+  };
+
+  const SECTION_PLACEHOLDERS: Record<string, string> = {
+    intro: 'Présentation de votre agence et du contexte de cette proposition…',
+    problem: 'Quel problème principal avez-vous identifié chez ce client ?',
+    solution: 'Décrivez concrètement ce que vous proposez de faire…',
+    terms: 'Validité 30 jours, acompte 50%, solde à la livraison…',
+  };
+
   const handleExportProposalPdf = async () => {
     if (!lead) return;
     setExportingProposal(true);
     try {
       const fileName = `${lead.businessName.toLowerCase().replace(/[^a-z0-9]/g, '_')}_proposition.pdf`;
-      
-      const dateObj = new Date(proposalDate);
-      const dateStr = dateObj.toLocaleDateString('fr-CA', { day: '2-digit', month: 'long', year: 'numeric' });
-      const validUntil = new Date(dateObj);
-      validUntil.setDate(validUntil.getDate() + Number(proposalValidDays));
-      const validUntilStr = validUntil.toLocaleDateString('fr-CA', { day: '2-digit', month: 'long', year: 'numeric' });
+      const dateStr = new Date().toLocaleDateString('fr-CA', { day: '2-digit', month: 'long', year: 'numeric' });
+      const amount = proposalSections.pricing.amount;
+      const tps = amount * 0.05;
+      const tvq = amount * 0.09975;
+      const ttc = amount * 1.14975;
 
-      const allSelected = [
-        ...proposalServices.filter(s => s.selected),
-        ...customServices
-      ];
-      const totalHT = allSelected.reduce((sum, s) => sum + Number(s.price || 0), 0);
-      const taxes = totalHT * (Number(proposalTaxRate) / 100);
-      const totalTTC = totalHT + taxes;
-
-      const serviceRows = allSelected.map(s => `
-        <tr>
-          <td style="padding:10px 0; border-bottom:1px solid #e5e5e0; font-weight:600; font-family:sans-serif; text-align:left;">${s.name}</td>
-          <td style="padding:10px 0; border-bottom:1px solid #e5e5e0; color:#4a4a45; font-size:12px; font-family:sans-serif; text-align:left;">${s.description || '—'}</td>
-          <td style="padding:10px 0; border-bottom:1px solid #e5e5e0; text-align:right; font-weight:700; font-family:sans-serif;">${Number(s.price || 0).toLocaleString('fr-CA', {style:'currency', currency:'CAD'})}</td>
-        </tr>
-      `).join('');
-
-      const formattedHtml = `
-        <!DOCTYPE html>
-        <html lang="fr">
-        <head>
-          <meta charset="utf-8" />
-          <title>${proposalTitle} — ${lead.businessName}</title>
-          <style>
-            @page {
-              size: A4;
-              margin: 20mm 15mm;
-            }
-            body {
-              font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-              color: #000000;
-              background: #ffffff;
-              font-size: 13px;
-              line-height: 1.6;
-            }
-            .header-bar {
-              border-bottom: 2px solid #000000;
-              padding-bottom: 15px;
-              margin-bottom: 30px;
-            }
-            .doc-title {
-              font-size: 24px;
-              font-weight: 800;
-              letter-spacing: -0.03em;
-              text-transform: uppercase;
-              margin-bottom: 5px;
-            }
-            .metadata {
-              font-size: 11px;
-              color: #4a4a45;
-              text-transform: uppercase;
-              letter-spacing: 0.05em;
-            }
-            .parties {
-              display: flex;
-              justify-content: space-between;
-              margin-bottom: 30px;
-              gap: 40px;
-            }
-            .party-box {
-              flex: 1;
-              border: 1px solid #000000;
-              padding: 15px;
-            }
-            .party-title {
-               font-size: 10px;
-               font-weight: 800;
-               text-transform: uppercase;
-               margin-bottom: 8px;
-               border-bottom: 1px solid #000000;
-               padding-bottom: 4px;
-            }
-            .party-name {
-              font-size: 14px;
-              font-weight: 700;
-              margin-bottom: 5px;
-            }
-            .section {
-              margin-bottom: 30px;
-            }
-            .section-title {
-              font-size: 12px;
-              font-weight: 800;
-              text-transform: uppercase;
-              border-bottom: 1.5px solid #000000;
-              padding-bottom: 5px;
-              margin-bottom: 12px;
-            }
-            .summary-box {
-              background: #fcfcfc;
-              border-left: 3px solid #000000;
-              padding: 12px 15px;
-              font-style: italic;
-            }
-            .services-table {
-              width: 100%;
-              border-collapse: collapse;
-              margin-top: 10px;
-            }
-            .services-table th {
-              font-size: 11px;
-              font-weight: 800;
-              text-transform: uppercase;
-              border-bottom: 1.5px solid #000000;
-              padding-bottom: 8px;
-              text-align: left;
-            }
-            .services-table th:last-child {
-              text-align: right;
-            }
-            .totals-box {
-              width: 250px;
-              margin-left: auto;
-              margin-top: 20px;
-              border-top: 2px solid #000000;
-              padding-top: 10px;
-            }
-            .total-row {
-              display: flex;
-              justify-content: space-between;
-              padding: 4px 0;
-            }
-            .total-row.grand-total {
-              font-weight: 800;
-              font-size: 14px;
-              border-top: 1px solid #000000;
-              padding-top: 6px;
-              margin-top: 6px;
-            }
-            .terms-box {
-              border: 1px solid #e5e5e0;
-              padding: 12px;
-              font-size: 11px;
-              color: #333;
-            }
-            .footer {
-              margin-top: 50px;
-              border-top: 1px solid #e5e5e0;
-              padding-top: 15px;
-              text-align: center;
-              font-size: 10px;
-              color: #7a7a76;
-            }
-            @media print {
-              .no-print { display: none !important; }
-            }
-            .print-btn {
-              position: fixed;
-              top: 15px;
-              right: 15px;
-              padding: 8px 16px;
-              background: #000000;
-              color: #ffffff;
-              border: none;
-              font-weight: 700;
-              cursor: pointer;
-              z-index: 10000;
-            }
-          </style>
-        </head>
-        <body>
-          <button class="print-btn no-print" onclick="window.print()">🖨️ Imprimer / PDF</button>
-
-          <div class="header-bar">
-            <div class="doc-title">${proposalTitle}</div>
-            <div class="metadata">Date : ${dateStr} · Valide : ${proposalValidDays} jours</div>
-          </div>
-
-          <div class="parties">
-            <div class="party-box">
-              <div class="party-title">Préparé pour</div>
-              <div class="party-name">${lead.businessName}</div>
-              <div style="font-size:11px; color:#4a4a45;">
-                ${lead.city ? `📍 ${lead.city}` : ''}
-                ${lead.niche ? `<br>🏢 Niche : ${lead.niche}` : ''}
-                ${proposalRecipientName ? `<br>👤 Contact : ${proposalRecipientName}` : ''}
-              </div>
-            </div>
-            <div class="party-box">
-              <div class="party-title">De la part de</div>
-              <div class="party-name">${proposalSenderCompany}</div>
-              <div style="font-size:11px; color:#4a4a45;">
-                👤 ${proposalSenderName}
-                ${lead.owner ? `<br>✉️ Responsable : ${lead.owner}` : ''}
-              </div>
-            </div>
-          </div>
-
-          ${proposalSummary ? `
-          <div class="section">
-            <div class="section-title">Résumé exécutif</div>
-            <div class="summary-box">${proposalSummary}</div>
-          </div>
-          ` : ''}
-
-          <div class="section">
-            <div class="section-title">Services et Tarifs</div>
-            <table class="services-table">
-              <thead>
-                <tr>
-                  <th style="width: 30%; text-align:left;">Service</th>
-                  <th style="width: 50%; text-align:left;">Description</th>
-                  <th style="width: 20%; text-align:right;">Prix (CAD)</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${serviceRows}
-              </tbody>
-            </table>
-
-            <div class="totals-box font-sans">
-              <div class="total-row">
-                <span>Total HT</span>
-                <span>${totalHT.toLocaleString('fr-CA', {style:'currency', currency:'CAD'})}</span>
-              </div>
-              <div class="total-row">
-                <span>Taxes (${proposalTaxRate}%)</span>
-                <span>${taxes.toLocaleString('fr-CA', {style:'currency', currency:'CAD'})}</span>
-              </div>
-              <div class="total-row grand-total">
-                <span>Total TTC</span>
-                <span>${totalTTC.toLocaleString('fr-CA', {style:'currency', currency:'CAD'})}</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="section font-sans">
-            <div class="section-title">Conditions de règlement</div>
-            <div class="terms-box">
-              <p><strong>Modalités :</strong> ${proposalPaymentTerms}</p>
-              <p style="margin-top:5px;"><strong>Date d'échéance :</strong> Offre valable jusqu'au ${validUntilStr}.</p>
-            </div>
-          </div>
-
-          <div class="section font-sans" style="margin-top: 40px; page-break-inside: avoid;">
-            <div class="section-title">Acceptation de l'offre</div>
-            <div style="padding: 15px; border: 1px solid #000000; text-align: center;">
-              <p style="font-weight: 700; margin-bottom: 10px;">${proposalCallToAction}</p>
-              <div style="display: flex; justify-content: space-around; margin-top: 30px;">
-                <div style="border-top: 1px solid #000000; width: 150px; padding-top: 5px; font-size: 11px;">Signature du Client</div>
-                <div style="border-top: 1px solid #000000; width: 150px; padding-top: 5px; font-size: 11px;">Signature du Fournisseur</div>
-              </div>
-            </div>
-          </div>
-
-          <div class="footer font-sans">
-            Proposition commerciale générée pour ${lead.businessName} - Minerva OS Reach Lite
-          </div>
-        </body>
-        </html>
-      `;
+      const formattedHtml = `<!DOCTYPE html><html lang="fr"><head>
+<meta charset="UTF-8">
+<style>
+  @page { size: A4; margin: 20mm 15mm; }
+  @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } .no-print { display: none !important; } }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 11px; color: #26251e; line-height: 1.6; }
+  h1 { font-size: 22px; font-weight: 800; color: #26251e; margin: 0 0 4px; }
+  h2 { font-size: 13px; font-weight: 700; color: #059669; text-transform: uppercase; letter-spacing: 0.05em; margin: 24px 0 8px; border-bottom: 1px solid #e5e5e0; padding-bottom: 4px; }
+  p { margin: 0 0 8px; }
+  .header { margin-bottom: 32px; border-bottom: 2px solid #059669; padding-bottom: 16px; }
+  .meta { font-size: 10px; color: #7a7a76; }
+  table { width: 100%; border-collapse: collapse; margin: 8px 0; }
+  td, th { padding: 6px 8px; border: 1px solid #e5e5e0; font-size: 10px; }
+  th { background: #f7f7f4; font-weight: 700; }
+  .total-row { font-weight: 800; background: #f0fdf4; color: #059669; }
+  .print-btn { position: fixed; top: 12px; right: 12px; padding: 6px 14px; background: #059669; color: #fff; border: none; font-weight: 700; cursor: pointer; border-radius: 6px; font-size: 11px; }
+</style>
+</head><body>
+<button class="print-btn no-print" onclick="window.print()">Imprimer / PDF</button>
+<div class="header">
+  <h1>PROPOSITION COMMERCIALE</h1>
+  <p class="meta">Adressé à : ${lead.contactName || lead.businessName} · ${lead.city}</p>
+  <p class="meta">Date : ${dateStr} · Validité : 30 jours</p>
+</div>
+${proposalSections.intro ? `<h2>Présentation</h2><p>${proposalSections.intro.replace(/\n/g, '<br>')}</p>` : ''}
+${proposalSections.problem ? `<h2>Problème identifié</h2><p>${proposalSections.problem.replace(/\n/g, '<br>')}</p>` : ''}
+${proposalSections.solution ? `<h2>Solution proposée</h2><p>${proposalSections.solution.replace(/\n/g, '<br>')}</p>` : ''}
+${amount > 0 ? `
+<h2>Tarification</h2>
+<table>
+  <tr><th>Description</th><th style="text-align:right">Montant</th></tr>
+  <tr><td>Services professionnels</td><td style="text-align:right">${amount.toLocaleString('fr-CA', { style: 'currency', currency: 'CAD' })}</td></tr>
+  <tr><td>TPS (5%)</td><td style="text-align:right">${tps.toLocaleString('fr-CA', { style: 'currency', currency: 'CAD' })}</td></tr>
+  <tr><td>TVQ (9.975%)</td><td style="text-align:right">${tvq.toLocaleString('fr-CA', { style: 'currency', currency: 'CAD' })}</td></tr>
+  <tr class="total-row"><td><strong>Total TTC</strong></td><td style="text-align:right"><strong>${ttc.toLocaleString('fr-CA', { style: 'currency', currency: 'CAD' })}</strong></td></tr>
+</table>` : ''}
+${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.replace(/\n/g, '<br>')}</p>` : ''}
+</body></html>`;
 
       const electronObj = typeof window !== 'undefined' && (window as any).electron;
       if (electronObj && electronObj.printToPdf) {
@@ -1684,6 +1575,8 @@ export function LeadDetailClient({ id }: { id: string }) {
       case 'New': return 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/40 dark:text-blue-300';
       case 'Contacted': return 'bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/40 dark:text-amber-300';
       case 'Meeting Booked': return 'bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/40 dark:text-purple-300';
+      case 'Proposal Sent': return 'bg-violet-100 text-violet-800 border-violet-200 dark:bg-violet-900/40 dark:text-violet-300';
+      case 'Negotiation': return 'bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/40 dark:text-amber-300';
       case 'Won': return 'bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-300';
       default: return 'bg-rose-100 text-rose-800 border-rose-200 dark:bg-rose-900/40 dark:text-rose-300';
     }
@@ -2803,6 +2696,8 @@ export function LeadDetailClient({ id }: { id: string }) {
                       <SelectItem value="New" className="text-xs">🔴 {t('lead.status_new')}</SelectItem>
                       <SelectItem value="Contacted" className="text-xs">🟡 {t('lead.status_contacted')}</SelectItem>
                       <SelectItem value="Meeting Booked" className="text-xs">🟣 {t('lead.status_meeting')}</SelectItem>
+                      <SelectItem value="Proposal Sent" className="text-xs">🟪 Proposition envoyée</SelectItem>
+                      <SelectItem value="Negotiation" className="text-xs">🟠 Négociation</SelectItem>
                       <SelectItem value="Won" className="text-xs">🟢 {t('lead.status_won')}</SelectItem>
                       <SelectItem value="Lost" className="text-xs">⚪ {t('lead.status_lost')}</SelectItem>
                     </SelectContent>
@@ -3206,6 +3101,14 @@ export function LeadDetailClient({ id }: { id: string }) {
                         }
                         setCustomServices([]);
 
+                        // Pre-populate multi-section proposal with dealAmount if available
+                        if (lead.dealAmount) {
+                          setProposalSections(p => ({
+                            ...p,
+                            pricing: { ...p.pricing, amount: lead.dealAmount! },
+                          }));
+                        }
+
                         // Open modal!
                         setShowProposalBuilder(true);
                       } catch (err) {
@@ -3308,10 +3211,131 @@ export function LeadDetailClient({ id }: { id: string }) {
               </Button>
             </div>
 
-            {/* Split Panel Body */}
-            <div className="flex-1 overflow-hidden grid grid-cols-1 lg:grid-cols-[1.2fr_1fr] divide-y lg:divide-y-0 lg:divide-x divide-border">
-              
-              {/* Left Config Panel */}
+            {/* Multi-section Body */}
+            <div className="flex-1 overflow-y-auto p-5 space-y-5">
+              {/* ——— 5 sections éditables ——— */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                {/* Sections texte */}
+                <div className="space-y-4">
+                  {(['intro', 'problem', 'solution', 'terms'] as const).map(section => (
+                    <div key={section} className="space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                          {SECTION_LABELS[section]}
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => generateSection(section)}
+                          disabled={!!generatingSection}
+                          className="flex items-center gap-1 text-[10px] px-2 py-0.5 rounded bg-[#059669]/10 text-[#059669] hover:bg-[#059669]/20 font-semibold transition-colors disabled:opacity-50"
+                        >
+                          {generatingSection === section ? (
+                            <Loader2 className="h-2.5 w-2.5 animate-spin" />
+                          ) : (
+                            <Sparkles className="h-2.5 w-2.5" />
+                          )}
+                          Générer
+                        </button>
+                      </div>
+                      <Textarea
+                        value={proposalSections[section]}
+                        onChange={e => setProposalSections(p => ({ ...p, [section]: e.target.value }))}
+                        rows={4}
+                        className="text-xs resize-none font-sans"
+                        placeholder={SECTION_PLACEHOLDERS[section]}
+                      />
+                    </div>
+                  ))}
+                </div>
+
+                {/* Section Prix + Taxes QC */}
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Prix</label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        value={proposalSections.pricing.amount}
+                        onChange={e => setProposalSections(p => ({
+                          ...p,
+                          pricing: { ...p.pricing, amount: Number(e.target.value) },
+                        }))}
+                        className="w-40 h-8 text-sm font-bold border border-border rounded px-2 bg-background focus:outline-none focus:ring-1 focus:ring-[#059669]/40"
+                        placeholder="0"
+                        min={0}
+                      />
+                      <span className="text-xs text-muted-foreground">CAD</span>
+                    </div>
+                    {proposalSections.pricing.amount > 0 && (
+                      <div className="rounded border border-[#e5e5e0] bg-[#f7f7f4] p-3 space-y-1 text-xs">
+                        {[
+                          ['Sous-total (HT)', proposalSections.pricing.amount],
+                          ['TPS (5%)', proposalSections.pricing.amount * 0.05],
+                          ['TVQ (9.975%)', proposalSections.pricing.amount * 0.09975],
+                        ].map(([label, val]) => (
+                          <div key={label as string} className="flex justify-between text-[#555552]">
+                            <span>{label}</span>
+                            <span>{(val as number).toLocaleString('fr-CA', { style: 'currency', currency: 'CAD' })}</span>
+                          </div>
+                        ))}
+                        <div className="flex justify-between font-bold text-[#26251e] border-t border-[#e5e5e0] pt-1 mt-1">
+                          <span>Total TTC</span>
+                          <span>{(proposalSections.pricing.amount * 1.14975).toLocaleString('fr-CA', { style: 'currency', currency: 'CAD' })}</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Aperçu identité */}
+                  <div className="rounded-xl border border-[#e5e5e0] bg-[#f7f7f4] p-4 space-y-2 text-xs text-[#26251e]">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Récapitulatif</p>
+                    <div><span className="text-[#7a7a76]">Client : </span><strong>{lead.businessName}</strong> · {lead.city}</div>
+                    {lead.contactName && <div><span className="text-[#7a7a76]">Contact : </span>{lead.contactName}</div>}
+                    <div><span className="text-[#7a7a76]">Validité : </span>30 jours</div>
+                    <div><span className="text-[#7a7a76]">Date : </span>{new Date().toLocaleDateString('fr-CA')}</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action buttons */}
+              <div className="flex items-center gap-2 pt-2 border-t border-[#e5e5e0]">
+                <button
+                  type="button"
+                  onClick={saveProposal}
+                  disabled={savingProposal}
+                  className="flex items-center gap-1.5 px-3 h-8 rounded-lg border border-[#e5e5e0] bg-white text-xs font-bold text-[#26251e] hover:bg-[#f4f4f3] transition-colors disabled:opacity-50"
+                >
+                  {savingProposal ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}
+                  Sauvegarder
+                </button>
+                <button
+                  type="button"
+                  onClick={handleExportProposalPdf}
+                  disabled={exportingProposal}
+                  className="flex items-center gap-1.5 px-3 h-8 rounded-lg border border-[#e5e5e0] bg-white text-xs font-bold text-[#26251e] hover:bg-[#f4f4f3] transition-colors disabled:opacity-50"
+                >
+                  {exportingProposal ? <Loader2 className="h-3 w-3 animate-spin" /> : <FileText className="h-3 w-3" />}
+                  Exporter PDF
+                </button>
+                <button
+                  type="button"
+                  onClick={markProposalSent}
+                  className="flex items-center gap-1.5 px-3 h-8 rounded-lg bg-[#059669] hover:bg-[#047857] text-white text-xs font-bold transition-colors"
+                >
+                  <Send className="h-3 w-3" />
+                  Marquer envoyée
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowProposalBuilder(false)}
+                  className="ml-auto flex items-center gap-1.5 px-3 h-8 rounded-lg border border-[#e5e5e0] bg-white text-xs font-bold text-[#7a7a76] hover:bg-[#f4f4f3] transition-colors"
+                >
+                  Fermer
+                </button>
+              </div>
+            </div>
+            {/* LEGACY LEFT PANEL — hidden, kept for old export function compatibility */}
+            <div className="hidden">
               <div className="overflow-y-auto p-5 space-y-6">
                 
                 {/* Section 1: Informations Générales */}
@@ -3688,40 +3712,7 @@ export function LeadDetailClient({ id }: { id: string }) {
               </div>
 
             </div>
-
-            {/* Footer / Actions Bar */}
-            <div className="p-4 border-t border-border/80 flex justify-end gap-3 bg-card shrink-0">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowProposalBuilder(false)}
-                className="text-xs h-9"
-              >
-                Annuler
-              </Button>
-              <Button
-                variant="default"
-                size="sm"
-                disabled={exportingProposal || [
-                  ...proposalServices.filter(s => s.selected),
-                  ...customServices
-                ].length === 0}
-                onClick={handleExportProposalPdf}
-                className="text-xs h-9 bg-primary hover:bg-primary/95 text-white gap-2 font-bold px-4"
-              >
-                {exportingProposal ? (
-                  <>
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    Génération du PDF…
-                  </>
-                ) : (
-                  <>
-                    <FileOutput className="h-3.5 w-3.5" />
-                    Exporter la Proposition en PDF
-                  </>
-                )}
-              </Button>
-            </div>
+            {/* END LEGACY HIDDEN PANEL */}
 
           </div>
         </div>

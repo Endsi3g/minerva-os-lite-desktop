@@ -39,17 +39,29 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v4.3.0',
+      date: '2026-06-28',
+      titleKey: 'changelog.v3_42_0_title' as TranslationKey,
+      descKey: 'changelog.v3_42_0_desc' as TranslationKey,
+      highlights: [
+        { tag: 'feature', text: 'Nouvelles étapes pipeline : "Proposition envoyée" et "Négociation" entre Meeting Booked et Won. 2 nouvelles colonnes Kanban avec codes couleur (violet #7c3aed et ambre #d97706).' },
+        { tag: 'feature', text: 'Onglet Prévisions dans le pipeline : KPIs (taux de closing, valeur moy. deal, pipeline 30j pondéré), graphique barres par mois pondéré par probabilité, tableau des deals à clôturer.' },
+        { tag: 'feature', text: 'Builder de propositions multi-sections : 5 sections éditables (Présentation, Problème identifié, Solution proposée, Prix QC, Modalités) avec génération IA par section. Calcul taxes QC automatique (TPS 5% + TVQ 9.975%).' },
+        { tag: 'feature', text: 'Export PDF proposition — Electron : dialogue de sauvegarde natif. Web : impression navigateur. Format A4 professionnel avec en-tête vert Minerva.' },
+        { tag: 'feature', text: 'Persistance propositions : table "proposals" sauvegarde chaque section. Bouton "Marquer envoyée" passe le lead en "Proposition envoyée" automatiquement.' },
+        { tag: 'feature', text: 'IA par section de proposition : /api/proposals/generate-section génère Présentation, Problème identifié, Solution proposée ou Modalités en contexte du lead (niche, ville, description site).' },
+      ],
+    },
+    {
       version: 'v4.2.0',
       date: '2026-06-28',
       titleKey: 'changelog.v3_42_0_title' as TranslationKey,
       descKey: 'changelog.v3_42_0_desc' as TranslationKey,
       highlights: [
-        { tag: 'design', text: 'SVG inline — icônes Instagram et Facebook converties de requêtes HTTP externes (img src="/icons/*.svg") vers des composants JSX inline dans le bundle. Zéro requête réseau supplémentaire sur la fiche lead, rendu immédiat sans round-trip.' },
-        { tag: 'feature', text: 'Singleton admin Supabase — client service-role partagé entre toutes les requêtes serveur via globalThis (_supabaseAdminClient). Élimine la réinstanciation par requête et réduit l\'overhead de connexion.' },
-        { tag: 'feature', text: 'Correction N+1 team/members — les profils de tous les membres chargés en une seule requête IN (user_id) au lieu de N requêtes individuelles. Idem pour les workspaces : tous les ownerName résolus en un seul batch au lieu d\'une requête par workspace.' },
-        { tag: 'feature', text: 'Cache serveur (lib/server-cache.ts) — Map TTL en mémoire partagée entre les requêtes du même processus. /api/team/members mis en cache 30 s avec invalidation automatique sur PATCH/DELETE.' },
-        { tag: 'feature', text: 'Cache client (lib/fetch-cache.ts) — Map TTL côté navigateur pour les fetch() répétitifs. Layout : /api/team/members mis en cache 30 s, /api/team/my-permissions 60 s. LeadsRoot réutilise la même entrée de cache que le layout.' },
-        { tag: 'design', text: 'Dépendances useEffect stabilisées — les deux effets fetch du layout utilisent contextUser?.id et activeWorkspace?.id au lieu des objets entiers, évitant les re-fetch lors des re-renders sans changement de workspace.' },
+        { tag: 'design', text: 'SVG inline — icônes Instagram et Facebook converties de requêtes HTTP externes vers des composants JSX inline. Zéro requête réseau supplémentaire sur la fiche lead, rendu immédiat.' },
+        { tag: 'feature', text: 'Singleton admin Supabase — client service-role partagé entre toutes les requêtes serveur. Élimine la réinstanciation par requête et réduit l\'overhead de connexion.' },
+        { tag: 'feature', text: 'Correction N+1 team/members — profils chargés en une seule requête IN (user_id) au lieu de N requêtes individuelles. Idem pour les ownerName des workspaces.' },
+        { tag: 'feature', text: 'Cache serveur (lib/server-cache.ts) + cache client (lib/fetch-cache.ts) — TTL 30-60s pour /api/team/members et /api/team/my-permissions. Invalidation automatique sur mutation.' },
       ],
     },
     {

@@ -216,7 +216,7 @@ export function LeadsHeader() {
         niche: row.niche || '',
         city: row.city || '',
         source: row.source || 'CSV Import',
-        status: (['New','Contacted','Meeting Booked','Won','Lost'].includes(row.status) ? row.status : 'New') as Lead['status'],
+        status: (['New','Contacted','Meeting Booked','Proposal Sent','Negotiation','Won','Lost'].includes(row.status) ? row.status : 'New') as Lead['status'],
         temperature: 'Warm',
         nextAction: '',
         nextActionDate: new Date().toISOString().split('T')[0],

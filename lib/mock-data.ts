@@ -14,7 +14,7 @@ export interface Lead {
   niche: string;
   city: string;
   source: string;
-  status: 'New' | 'Contacted' | 'Meeting Booked' | 'Won' | 'Lost';
+  status: 'New' | 'Contacted' | 'Meeting Booked' | 'Proposal Sent' | 'Negotiation' | 'Won' | 'Lost';
   temperature: 'Hot' | 'Warm' | 'Cold';
   nextAction: string;
   nextActionDate: string; // ISO date string (YYYY-MM-DD)

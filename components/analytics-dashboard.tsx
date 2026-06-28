@@ -82,11 +82,13 @@ export function AnalyticsDashboard() {
 
   // Leads-by-status breakdown for pipeline chart
   const pipelineBreakdown = useMemo(() => {
-    const statuses: Lead['status'][] = ['New', 'Contacted', 'Meeting Booked', 'Won', 'Lost'];
+    const statuses: Lead['status'][] = ['New', 'Contacted', 'Meeting Booked', 'Proposal Sent', 'Negotiation', 'Won', 'Lost'];
     const labels: Record<Lead['status'], string> = {
       'New': 'Nouveau',
       'Contacted': 'Contacté',
       'Meeting Booked': 'RDV',
+      'Proposal Sent': 'Proposition',
+      'Negotiation': 'Négociation',
       'Won': 'Gagné',
       'Lost': 'Perdu',
     };
@@ -94,6 +96,8 @@ export function AnalyticsDashboard() {
       'New': '#a1a1aa',
       'Contacted': '#60a5fa',
       'Meeting Booked': '#f59e0b',
+      'Proposal Sent': '#7c3aed',
+      'Negotiation': '#d97706',
       'Won': '#059669',
       'Lost': '#ef4444',
     };

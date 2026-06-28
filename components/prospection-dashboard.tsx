@@ -7,11 +7,13 @@ import { useReach } from '@/lib/reach-context';
 import { Lead } from '@/lib/mock-data';
 import { Users, TrendingUp, Calendar, Trophy } from 'lucide-react';
 
-const STATUS_ORDER: Lead['status'][] = ['New', 'Contacted', 'Meeting Booked', 'Won', 'Lost'];
+const STATUS_ORDER: Lead['status'][] = ['New', 'Contacted', 'Meeting Booked', 'Proposal Sent', 'Negotiation', 'Won', 'Lost'];
 const STATUS_LABELS: Record<Lead['status'], string> = {
   New: 'Nouveaux',
   Contacted: 'Contactés',
   'Meeting Booked': 'RDV fixés',
+  'Proposal Sent': 'Propositions',
+  Negotiation: 'Négociation',
   Won: 'Gagnés',
   Lost: 'Perdus',
 };

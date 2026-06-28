@@ -746,6 +746,18 @@ function initDb() {
     db.run(`CREATE INDEX IF NOT EXISTS idx_notes_lead_id ON notes(lead_id)`);
     db.run(`CREATE INDEX IF NOT EXISTS idx_workspaces_sync_status ON workspaces(sync_status)`);
     db.run(`CREATE INDEX IF NOT EXISTS idx_workspaces_owner_id ON workspaces(owner_id)`);
+
+    // v4.12.0 — Proposals table (multi-section proposal builder)
+    db.run(`CREATE TABLE IF NOT EXISTS proposals (
+      id TEXT PRIMARY KEY, lead_id TEXT, workspace_id TEXT, user_id TEXT,
+      title TEXT, status TEXT DEFAULT 'draft', amount REAL,
+      section_intro TEXT, section_problem TEXT, section_solution TEXT,
+      section_pricing TEXT DEFAULT '{}', section_terms TEXT,
+      valid_days INTEGER DEFAULT 30, sent_at TEXT, accepted_at TEXT,
+      created_at TEXT, updated_at TEXT, sync_status TEXT DEFAULT 'pending_insert'
+    )`, () => {});
+    db.run(`CREATE INDEX IF NOT EXISTS idx_proposals_lead_id ON proposals(lead_id)`, () => {});
+    db.run(`CREATE INDEX IF NOT EXISTS idx_proposals_workspace_id ON proposals(workspace_id)`, () => {});
   });
 }
 

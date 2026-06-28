@@ -8,6 +8,8 @@ const STATUS_CONFIG: Record<string, { color: string; label: string }> = {
   'New':            { color: '#a8a29e', label: 'Nouveau' },
   'Contacted':      { color: '#3b82f6', label: 'Contacté' },
   'Meeting Booked': { color: '#f59e0b', label: 'RDV fixé' },
+  'Proposal Sent':  { color: '#7c3aed', label: 'Proposition envoyée' },
+  'Negotiation':    { color: '#d97706', label: 'Négociation' },
   'Won':            { color: '#059669', label: 'Gagné' },
 };
 

@@ -26,6 +26,10 @@ export function PipelineKanbanColumn({ column, leads, onDrop }: PipelineKanbanCo
         return 'border-t-2 border-t-amber-500 bg-amber-50/10 dark:bg-amber-950/5';
       case 'Meeting Booked':
         return 'border-t-2 border-t-purple-500 bg-purple-50/10 dark:bg-purple-950/5';
+      case 'Proposal Sent':
+        return 'border-t-2 bg-violet-50/10 dark:bg-violet-950/5' + ' ' + 'border-t-[#7c3aed]';
+      case 'Negotiation':
+        return 'border-t-2 bg-amber-50/10 dark:bg-amber-950/5' + ' ' + 'border-t-[#d97706]';
       case 'Won':
         return 'border-t-2 border-t-emerald-500 bg-emerald-50/10 dark:bg-emerald-950/5';
       case 'Lost':
@@ -43,6 +47,10 @@ export function PipelineKanbanColumn({ column, leads, onDrop }: PipelineKanbanCo
         return 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300';
       case 'Meeting Booked':
         return 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300';
+      case 'Proposal Sent':
+        return 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300';
+      case 'Negotiation':
+        return 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300';
       case 'Won':
         return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300';
       case 'Lost':

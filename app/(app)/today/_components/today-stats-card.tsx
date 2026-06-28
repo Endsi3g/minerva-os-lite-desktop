@@ -17,7 +17,7 @@ export function TodayStatsCard() {
   const totalLeads = leads.length;
   const newLeads = leads.filter(l => l.status === 'New').length;
   const contactedLeads = leads.filter(l => l.status === 'Contacted').length;
-  const qualifiedLeads = leads.filter(l => ['Meeting Booked', 'Won'].includes(l.status)).length;
+  const qualifiedLeads = leads.filter(l => ['Meeting Booked', 'Proposal Sent', 'Negotiation', 'Won'].includes(l.status)).length;
   
   const conversionRate = totalLeads > 0 ? Math.round((qualifiedLeads / totalLeads) * 100) : 0;
 

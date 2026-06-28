@@ -84,6 +84,8 @@ export function LeadsBulkActionsBar<TData>({ table }: LeadsBulkActionsBarProps<T
               <SelectItem value="New" className="text-xs">🔴 Nouveau</SelectItem>
               <SelectItem value="Contacted" className="text-xs">🟡 Contacté</SelectItem>
               <SelectItem value="Meeting Booked" className="text-xs">🟣 RDV Fixé</SelectItem>
+              <SelectItem value="Proposal Sent" className="text-xs">🟪 Proposition envoyée</SelectItem>
+              <SelectItem value="Negotiation" className="text-xs">🟠 Négociation</SelectItem>
               <SelectItem value="Won" className="text-xs">🟢 Gagné</SelectItem>
               <SelectItem value="Lost" className="text-xs">⚪ Perdu</SelectItem>
             </SelectContent>

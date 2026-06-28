@@ -257,6 +257,8 @@ export default function NewLeadRoot() {
                 <option value="New">Nouveau</option>
                 <option value="Contacted">Contacté</option>
                 <option value="Meeting Booked">RDV Fixé</option>
+                <option value="Proposal Sent">Proposition envoyée</option>
+                <option value="Negotiation">Négociation</option>
                 <option value="Won">Gagné ✓</option>
                 <option value="Lost">Perdu ✗</option>
               </AppSelect>

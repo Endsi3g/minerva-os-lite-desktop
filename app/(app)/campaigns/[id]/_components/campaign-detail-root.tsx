@@ -18,6 +18,8 @@ const LEAD_STATUS_COLORS: Record<Lead['status'], string> = {
   'New': 'bg-[#7a7a76]/10 text-[#7a7a76]',
   'Contacted': 'bg-blue-50 text-blue-700',
   'Meeting Booked': 'bg-violet-50 text-violet-700',
+  'Proposal Sent': 'bg-violet-50 text-violet-700',
+  'Negotiation': 'bg-amber-50 text-amber-700',
   'Won': 'bg-[#059669]/10 text-[#059669]',
   'Lost': 'bg-red-50 text-red-600',
 };

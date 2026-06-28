@@ -31,6 +31,10 @@ const getStatusStyle = (status: Lead['status']) => {
       return 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-300 dark:border-amber-800';
     case 'Meeting Booked':
       return 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/30 dark:text-purple-300 dark:border-purple-800';
+    case 'Proposal Sent':
+      return 'bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950/30 dark:text-violet-300 dark:border-violet-800';
+    case 'Negotiation':
+      return 'bg-amber-50 text-amber-600 border-amber-200 dark:bg-amber-950/30 dark:text-amber-300 dark:border-amber-800';
     case 'Won':
       return 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-300 dark:border-emerald-800';
     case 'Lost':
@@ -45,6 +49,8 @@ const getStatusLabel = (status: Lead['status']) => {
     case 'New': return 'Nouveau';
     case 'Contacted': return 'Contacté';
     case 'Meeting Booked': return 'RDV Fixé';
+    case 'Proposal Sent': return 'Proposition envoyée';
+    case 'Negotiation': return 'Négociation';
     case 'Won': return 'Gagné';
     case 'Lost': return 'Perdu';
     default: return status;

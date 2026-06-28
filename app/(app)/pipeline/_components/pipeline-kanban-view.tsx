@@ -16,6 +16,8 @@ export function PipelineKanbanView({ leads }: PipelineKanbanViewProps) {
     { id: 'New', title: 'Nouveau' },
     { id: 'Contacted', title: 'Contacté' },
     { id: 'Meeting Booked', title: 'RDV Fixé' },
+    { id: 'Proposal Sent', title: 'Proposition envoyée' },
+    { id: 'Negotiation', title: 'Négociation' },
     { id: 'Won', title: 'Gagné' },
     { id: 'Lost', title: 'Perdu' },
   ];
