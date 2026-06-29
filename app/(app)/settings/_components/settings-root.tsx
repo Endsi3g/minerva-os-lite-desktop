@@ -11,6 +11,7 @@ import { SettingsMembersSection } from './settings-members-section';
 import { SettingsGoalsSection } from './settings-goals-section';
 import SettingsAgencySection from './settings-agency-section';
 import { SettingsAutomationsSection } from './settings-automations-section';
+import { SettingsDiagnosticsIA } from './settings-diagnostics-ia';
 import { createClient } from '@/lib/supabase/client';
 import { getApiUrl } from '@/lib/api-helper';
 import { cn } from '@/lib/utils';
@@ -330,6 +331,8 @@ export function SettingsRoot() {
               isSaving={!!savingSection.ai}
             />
           )}
+
+          {section === 'diagnostics' && <SettingsDiagnosticsIA />}
 
           {section === 'integrations' && <SettingsIntegrationsSection />}
 

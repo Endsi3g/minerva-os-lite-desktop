@@ -23,6 +23,7 @@ import { LeadsHeader } from './leads-header';
 import { LeadsFilters } from './leads-filters';
 import { LeadsEmptyState } from './leads-empty-state';
 import { LeadsBulkActionsBar } from './leads-bulk-actions-bar';
+import { LeadsSubNav } from './leads-sub-nav';
 
 interface WorkspaceMember {
   id: string;
@@ -134,7 +135,9 @@ export function LeadsRoot() {
   const isDatabaseEmpty = !showAssignedToMe && leads.length === 0;
 
   return (
-    <div className="flex h-full flex-col gap-4 p-3 sm:p-4 md:p-6 overflow-y-auto bg-[#fafaf8] relative">
+    <div className="flex h-full flex-col overflow-hidden">
+      <LeadsSubNav />
+      <div className="flex flex-1 flex-col gap-4 p-3 sm:p-4 md:p-6 overflow-y-auto bg-[#fafaf8] relative min-h-0">
       <div className="absolute inset-0 opacity-[0.25] pointer-events-none bg-grid-pattern-20" />
       <div className="flex flex-col gap-5 relative z-10 flex-1">
         <LeadsHeader />
@@ -173,6 +176,7 @@ export function LeadsRoot() {
         )}
 
         <LeadsBulkActionsBar table={table} />
+      </div>
       </div>
     </div>
   );

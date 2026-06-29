@@ -62,6 +62,20 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v5.0.0',
+      date: '2026-06-29',
+      titleKey: 'changelog.v3_42_0_title' as TranslationKey,
+      descKey: 'changelog.v3_42_0_desc' as TranslationKey,
+      highlights: [
+        { tag: 'feature', text: 'Navigation v5 — 7 entrées épurées : Accueil, Leads, Outreach, Terrain, Agenda, Équipe, Paramètres. Les pages secondaires restent accessibles par URL directe.' },
+        { tag: 'feature', text: 'AI Gateway interne (Vercel) — /api/ai/gateway/* centralise tous les appels IA. Endpoints : completions, health, status, wake, providers, logs/:requestId. Logs persistés dans ai_gateway_logs.' },
+        { tag: 'feature', text: 'Agent Feed sur l\'Accueil — timeline temps réel des actions IA depuis la table notifications. Polling 30s, liens cliquables vers les leads concernés.' },
+        { tag: 'feature', text: 'Outreach unifié — page /outreach avec 5 onglets : Inbox (Gmail), Séquences, Campagnes, Templates, Approbations (human-in-the-loop).' },
+        { tag: 'feature', text: 'Famille Leads — sous-navigation Liste | Pipeline | Comptes | Prospection | Timeline. Toutes les surfaces commerciales depuis une entrée.' },
+        { tag: 'feature', text: 'Diagnostics IA dans Paramètres — latence par provider, taux succès/fallback, test ping manuel de la gateway, historique des requêtes.' },
+      ],
+    },
+    {
       version: 'v4.5.0',
       date: '2026-06-28',
       titleKey: 'changelog.v3_42_0_title' as TranslationKey,

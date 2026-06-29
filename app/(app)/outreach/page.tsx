@@ -1,10 +1,10 @@
+import { OutreachTabsRoot } from './_components/outreach-tabs-root';
+
 export const metadata = {
-  title: 'Outreach',
-  description: "Séquences et campagnes d'approche multi-canales.",
+  title: 'Outreach — Minerva',
+  description: "Inbox, séquences, campagnes, templates et approbations d'approche multi-canales.",
 };
 
-import { OutreachRoot } from './_components/outreach-root';
-
 export default function OutreachPage() {
-  return <OutreachRoot />;
+  return <OutreachTabsRoot />;
 }

@@ -17,6 +17,7 @@ import { TodaySetupBanner } from './today-setup-banner';
 import { TodayAestheticCanvas } from './today-aesthetic-canvas';
 import { TodayGoogleCalendarCard } from './today-google-calendar-card';
 import { InboxRoot } from '@/app/(app)/inbox/_components/inbox-root';
+import { AgentFeed } from './agent-feed';
 import { LayoutDashboard, Mail } from 'lucide-react';
 
 export function TodayRoot() {
@@ -93,6 +94,9 @@ export function TodayRoot() {
 
           {/* ── Colonne droite : contexte & stats ── */}
           <div className="flex flex-col gap-5">
+            {/* Agent Feed — activité IA temps réel (notifications) */}
+            <AgentFeed />
+
             {/* Focus du jour */}
             <TodayFocusCard />
 

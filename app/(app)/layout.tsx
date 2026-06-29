@@ -100,7 +100,7 @@ import {
   AssistantSession
 } from '@/app/(app)/assistant/_components/assistant-db';
 import { Pin, PinOff } from 'lucide-react';
-import { CalendarDays } from 'lucide-react';
+import { CalendarDays, UsersRound } from 'lucide-react';
 
 const CURRENT_VERSION = '3.35.1';
 
@@ -617,74 +617,19 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
     return crumbs;
   };
 
-  // Pinned nav items — always visible, never collapsed (7 core destinations)
+  // Pinned nav items — Navigation v5 : 7 entrées épurées
   const pinnedItems = [
-    { name: t('nav.today'), href: '/today', icon: LayoutDashboard },
-    { name: t('nav.agenda'), href: '/agenda', icon: CalendarDays },
-    { name: t('nav.acquisition'), href: '/acquisition', icon: TrendingUp },
-    { name: t('nav.prospect'), href: '/prospecting', icon: PenSquare },
-    { name: t('nav.search'), href: '/leads', icon: Users },
-    { name: t('nav.team'), href: '/team', icon: Users },
-    { name: t('nav.messages'), href: '/messages', icon: MessageCircle },
+    { name: 'Accueil',     href: '/today',    icon: Home },
+    { name: 'Leads',       href: '/leads',    icon: Users },
+    { name: 'Outreach',    href: '/outreach', icon: Send },
+    { name: 'Terrain',     href: '/field',    icon: MapPin },
+    { name: 'Agenda',      href: '/agenda',   icon: CalendarDays },
+    { name: 'Équipe',      href: '/team',     icon: UsersRound },
+    { name: 'Paramètres',  href: '/settings', icon: SettingsIcon },
   ];
 
-  // Collapsible nav categories
-  const navCategories = [
-    {
-      id: 'crm',
-      label: 'CRM & Prospection',
-      items: [
-        { name: t('nav.outreach'), href: '/outreach', icon: Send },
-        { name: 'Boîte de réception', href: '/inbox', icon: Inbox },
-        { name: 'Templates Email', href: '/email-templates', icon: FileText },
-        { name: 'Comptes', href: '/accounts', icon: Building2 },
-        { name: 'Cockpit Ops', href: '/ops/prospecting', icon: Activity },
-        { name: 'Campagnes', href: '/campaigns', icon: Megaphone },
-        { name: 'Playbooks', href: '/playbooks', icon: BookOpen },
-        { name: 'Pipeline', href: '/pipeline', icon: Kanban },
-        { name: 'Rapports clients', href: '/client-reports', icon: BarChart2 },
-        { name: 'Profils cibles (ICP)', href: '/personas', icon: Target },
-        { name: 'Activités', href: '/activities', icon: Activity },
-        { name: t('nav.tasks'), href: '/tasks', icon: ClipboardList },
-      ],
-    },
-    {
-      id: 'ai',
-      label: 'Intelligence IA',
-      items: [
-        { name: t('nav.assistant'), href: '/assistant', icon: Brain },
-        { name: t('nav.skills'), href: '/skills', icon: Sparkles },
-        { name: t('nav.agents'), href: '/agents', icon: Sparkles },
-        { name: t('nav.analytics'), href: '/analytics', icon: BarChart3 },
-        { name: 'Automations', href: '/automations', icon: Zap },
-        { name: 'Créateur de site', href: '/website-builder', icon: Globe },
-        { name: t('nav.audit'), href: '/audit', icon: ShieldCheck },
-        { name: t('nav.map'), href: '/map', icon: MapPin },
-      ],
-    },
-    {
-      id: 'data',
-      label: 'Données & Fichiers',
-      items: [
-        { name: t('nav.sequences'), href: '/sequences', icon: Mail },
-        { name: 'Services & Tarifs', href: '/services', icon: Tag },
-        { name: t('nav.library'), href: '/library', icon: Folder },
-        { name: 'Bibliothèque de preuves', href: '/leverage-library', icon: BookOpen },
-      ],
-    },
-    {
-      id: 'platform',
-      label: 'Plateforme',
-      items: [
-        { name: 'Configuration', href: '/setup', icon: ListChecks },
-        { name: 'Publicité & Attribution', href: '/ads', icon: Target },
-        { name: t('nav.integrations'), href: '/integrations', icon: Plug },
-        { name: 'Webhooks', href: '/webhooks', icon: Zap },
-        { name: t('nav.download'), href: '/download', icon: Download },
-        { name: t('nav.roadmap'), href: '/roadmap', icon: Flag },
-      ],
-    },
-  ];
+  // Collapsible nav categories — vidées en v5 (pages secondaires accessibles par URL directe)
+  const navCategories: Array<{ id: string; label: string; items: { name: string; href: string; icon: React.ElementType }[] }> = [];
 
   // Filter nav items based on user role permissions
   const canShowNavItem = (href: string) => {
