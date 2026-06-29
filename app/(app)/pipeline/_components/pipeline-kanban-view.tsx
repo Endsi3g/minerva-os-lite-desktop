@@ -4,6 +4,7 @@ import React, { useCallback } from 'react';
 import { Lead } from '@/lib/mock-data';
 import { useReach } from '@/lib/reach-context';
 import { PipelineKanbanColumn } from './pipeline-kanban-column';
+import { triggerAgentLoop } from '@/lib/agent-trigger';
 
 interface PipelineKanbanViewProps {
   leads: Lead[];
@@ -24,6 +25,7 @@ export function PipelineKanbanView({ leads }: PipelineKanbanViewProps) {
 
   const handleDrop = useCallback((leadId: string, status: Lead['status']) => {
     updateLeadStatus(leadId, status);
+    triggerAgentLoop('pipeline_stage_change');
   }, [updateLeadStatus]);
 
   return (

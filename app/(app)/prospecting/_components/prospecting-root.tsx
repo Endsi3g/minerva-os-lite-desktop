@@ -20,6 +20,7 @@ import {
   AlertTriangle, Inbox, CheckCircle, RefreshCw, ThumbsDown, Upload
 } from 'lucide-react';
 import { LeadsSubNav } from '../../leads/_components/leads-sub-nav';
+import { triggerAgentLoop } from '@/lib/agent-trigger';
 
 interface ScrapeJobRecord {
   id: string;
@@ -162,7 +163,10 @@ export function ProspectingRoot() {
     updateLeadValidation,
     deleteLeadValidation,
     addOsmFeedback,
-    updateLead
+    updateLead,
+    addNotification,
+    activeWorkspace,
+    user
   } = useReach();
 
   const [loadingPrefs, setLoadingPrefs] = useState(true);
@@ -652,6 +656,18 @@ export function ProspectingRoot() {
         if (electronObj?.updateScrapingStatus) electronObj.updateScrapingStatus('idle');
         if (electronObj?.sendNotification) electronObj.sendNotification('Minerva OS', `${allLeads.length} prospects extraits et ajoutés à la boîte de validation !`);
         
+        addNotification({
+          userId: user?.id || '',
+          workspaceId: activeWorkspace?.id || '',
+          type: 'scraping_done',
+          title: 'Prospection terminée',
+          body: `${allLeads.length} prospects extraits et ajoutés à la boîte de validation !`,
+          link: '/prospecting'
+        });
+
+        // Déclencher la boucle agent après un import significatif
+        if (allLeads.length >= 3) triggerAgentLoop('import_leads');
+
         // Mark job completed
         setJobHistory(prev => {
           const next = prev.map(j => j.id === jobId ? { ...j, status: 'completed' as const, resultsCount: allLeads.length, completedAt: new Date().toISOString() } : j);
@@ -666,6 +682,15 @@ export function ProspectingRoot() {
       toast.error(`Erreur de prospection : ${String(err).slice(0, 140)}`, { duration: 8000 });
       if ((window as any).electron?.updateScrapingStatus) (window as any).electron.updateScrapingStatus('idle');
       
+      addNotification({
+        userId: user?.id || '',
+        workspaceId: activeWorkspace?.id || '',
+        type: 'scraping_done',
+        title: 'Échec de prospection',
+        body: `Erreur : ${String(err).slice(0, 80)}`,
+        link: '/prospecting'
+      });
+
       // Mark job failed
       setJobHistory(prev => {
         const next = prev.map(j => j.id === jobId ? { ...j, status: 'failed' as const, error: String(err), completedAt: new Date().toISOString() } : j);
