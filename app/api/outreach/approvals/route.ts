@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { logLeadEvent } from '@/lib/timeline-logger';
 
 // GET: return pending approval items — agent_actions (suggested, not executed) + agent-drafted emails
 export async function GET(req: NextRequest) {
@@ -37,15 +38,13 @@ export async function GET(req: NextRequest) {
   });
 }
 
-// PATCH: approve or reject an item
+// PATCH: approve or reject an item — and log to timeline
 export async function PATCH(req: NextRequest) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { id, type, decision } = await req.json();
-  // type: 'agent_action' | 'draft'
-  // decision: 'approve' | 'reject'
+  const { id, type, decision, workspace_id } = await req.json();
   if (!id || !type || !['approve', 'reject'].includes(decision)) {
     return NextResponse.json({ error: 'id, type, decision required' }, { status: 400 });
   }
@@ -53,17 +52,47 @@ export async function PATCH(req: NextRequest) {
   const approved = decision === 'approve';
 
   if (type === 'draft') {
-    const { error } = await supabase
+    const { data: draft, error } = await supabase
       .from('drafts')
       .update({ approved, approved_at: new Date().toISOString() })
-      .eq('id', id);
+      .eq('id', id)
+      .select('lead_id, subject, workspace_id')
+      .single();
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+    if (draft?.lead_id) {
+      logLeadEvent({
+        lead_id: draft.lead_id,
+        workspace_id: draft.workspace_id ?? workspace_id ?? '',
+        user_id: user.id,
+        event_type: approved ? 'email_draft_approved' : 'email_draft_rejected',
+        title: approved
+          ? `Brouillon approuvé : ${draft.subject || 'email'}`
+          : `Brouillon rejeté : ${draft.subject || 'email'}`,
+        metadata: { draft_id: id, decision },
+      });
+    }
   } else {
-    const { error } = await supabase
+    const { data: action, error } = await supabase
       .from('agent_actions')
       .update({ approved })
-      .eq('id', id);
+      .eq('id', id)
+      .select('lead_id, action_type, workspace_id')
+      .single();
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+    if (action?.lead_id) {
+      logLeadEvent({
+        lead_id: action.lead_id,
+        workspace_id: action.workspace_id ?? workspace_id ?? '',
+        user_id: user.id,
+        event_type: approved ? 'agent_action_approved' : 'agent_action_rejected',
+        title: approved
+          ? `Action agent approuvée : ${action.action_type}`
+          : `Action agent rejetée : ${action.action_type}`,
+        metadata: { action_id: id, action_type: action.action_type, decision },
+      });
+    }
   }
 
   return NextResponse.json({ ok: true, approved });

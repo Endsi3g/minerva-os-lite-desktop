@@ -1,4 +1,5 @@
 import { generateCompletion, type AISettings } from '@/lib/ai';
+import { logLeadEvent } from '@/lib/timeline-logger';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 export type AutonomyLevel = 'off' | 'suggest' | 'prepare' | 'act_with_approval' | 'auto';
@@ -168,6 +169,16 @@ export async function enrollInSequence(
   }).select('id').single();
 
   if (error) throw new Error(`enrollInSequence failed: ${error.message}`);
+
+  logLeadEvent({
+    lead_id: params.lead_id,
+    workspace_id: ctx.workspaceId,
+    user_id: ctx.userId,
+    event_type: 'sequence_enrolled',
+    title: 'Inscrit en séquence par l\'agent',
+    metadata: { sequence_id: params.sequence_id, enrollment_id: data.id, enrolled_by: 'agent' },
+  });
+
   return { enrolled: true, enrollment_id: data.id };
 }
 
@@ -317,6 +328,23 @@ JSON uniquement:
       .update({ reply_intent: parsed.intent, intent_confidence: parsed.confidence, next_action: parsed.next_action })
       .eq('thread_id', params.thread_id);
   }
+
+  // Log to lead timeline
+  logLeadEvent({
+    lead_id: params.lead_id,
+    workspace_id: ctx.workspaceId,
+    user_id: ctx.userId,
+    event_type: 'reply_classified',
+    title: `Réponse classifiée : ${parsed.intent ?? 'inconnu'}`,
+    body: (parsed.summary as string) ?? undefined,
+    metadata: {
+      intent: parsed.intent,
+      confidence: parsed.confidence,
+      next_action: parsed.next_action,
+      should_pause_sequence: parsed.should_pause_sequence,
+      thread_id: params.thread_id,
+    },
+  });
 
   return parsed;
 }

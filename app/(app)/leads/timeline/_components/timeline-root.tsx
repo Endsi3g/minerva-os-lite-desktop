@@ -5,7 +5,7 @@ import { useReach } from '@/lib/reach-context';
 import {
   Clock, Mail, MapPin, CheckSquare, Tag, TrendingUp, Database,
   Activity, RefreshCw, Bot, CalendarCheck, List,
-  ChevronDown, ChevronUp,
+  ChevronDown, ChevronUp, Send,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
@@ -16,7 +16,8 @@ import { LeadsSubNav } from '../../_components/leads-sub-nav';
 type EventType =
   | 'email' | 'field_visit' | 'task' | 'status_change'
   | 'enrichment' | 'note' | 'tag'
-  | 'agent_action' | 'sequence' | 'booking';
+  | 'agent_action' | 'sequence' | 'booking'
+  | 'outreach';
 
 interface TimelineEvent {
   id: string;
@@ -47,11 +48,12 @@ const TYPE_CONFIG: Record<EventType, { icon: React.ElementType; color: string; l
   agent_action:  { icon: Bot,          color: '#059669', label: 'Agent Minerva' },
   sequence:      { icon: List,         color: '#d97706', label: 'Séquence' },
   booking:       { icon: CalendarCheck,color: '#2563eb', label: 'RDV' },
+  outreach:      { icon: Send,         color: '#7c3aed', label: 'Outreach' },
 };
 
 const ALL_TYPES: EventType[] = [
-  'email', 'field_visit', 'task', 'status_change',
-  'enrichment', 'agent_action', 'sequence', 'booking',
+  'email', 'outreach', 'sequence', 'agent_action',
+  'task', 'status_change', 'field_visit', 'enrichment', 'booking',
 ];
 
 const AGENT_ACTION_LABELS: Record<string, string> = {
@@ -61,6 +63,33 @@ const AGENT_ACTION_LABELS: Record<string, string> = {
   enroll_in_sequence:    'Enrôlé en séquence',
   plan_field_route:      'Tournée planifiée',
   summarize_pipeline:    'Pipeline résumé',
+  pause_sequence:        'Séquence mise en pause',
+  resume_sequence:       'Séquence reprise',
+  tag_lead:              'Tags ajoutés',
+  classify_reply:        'Réponse classifiée',
+  summarize_inbox:       'Inbox analysée',
+  suggest_follow_up:     'Relance suggérée',
+};
+
+// Maps lead_event.event_type → timeline EventType
+const LEAD_EVENT_TYPE_MAP: Record<string, EventType> = {
+  email_draft_approved:    'outreach',
+  email_draft_rejected:    'outreach',
+  email_sent:              'email',
+  reply_classified:        'outreach',
+  sequence_enrolled:       'sequence',
+  sequence_paused:         'sequence',
+  sequence_resumed:        'sequence',
+  sequence_completed:      'sequence',
+  agent_action_approved:   'agent_action',
+  agent_action_rejected:   'agent_action',
+  tag_added:               'tag',
+  follow_up_suggested:     'agent_action',
+  pipeline_updated_by_agent: 'status_change',
+  note:                    'note',
+  call:                    'task',
+  meeting_booked:          'booking',
+  field_visit:             'field_visit',
 };
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -284,36 +313,63 @@ export function TimelineRoot({ leadId: filterLeadId, hideSubNav }: TimelineRootP
 
     // ── 5. Sequence enrollments ───────────────────────────────────────────────
     try {
+      const wsId = localStorage.getItem('minerva_active_workspace_id') || '';
       let q = supabase
         .from('sequence_enrollments')
-        .select('id, lead_id, status, current_step, created_at, sequence_templates(name)')
-        .eq('workspace_id', '')
+        .select('id, lead_id, status, current_step, paused_at, created_at, sequence_templates(name)')
         .order('created_at', { ascending: false })
         .limit(30);
-      // Note: workspace_id filter omitted since we don't easily have it here; use user_id join if available
-      const { data: enrollments } = await supabase
-        .from('sequence_enrollments')
-        .select('id, lead_id, status, current_step, created_at, sequence_templates(name)')
-        .order('created_at', { ascending: false })
-        .limit(30);
+      if (wsId) q = q.eq('workspace_id', wsId);
+      if (filterLeadId) q = q.eq('lead_id', filterLeadId);
 
+      const { data: enrollments } = await q;
       for (const e of enrollments || []) {
-        if (filterLeadId && e.lead_id !== filterLeadId) continue;
         const seqName = (e.sequence_templates as any)?.name || 'Séquence';
         const leadName = e.lead_id ? leadNameMap[e.lead_id] : undefined;
+        const statusLabel = e.status === 'paused' ? 'en pause' : e.status === 'completed' ? 'terminée' : 'active';
         all.push({
           id: `seq_${e.id}`,
           type: 'sequence',
-          title: `Enrôlé : ${seqName}`,
-          description: `Étape ${(e.current_step || 0) + 1} — Statut : ${e.status || 'actif'}`,
+          title: `Séquence : ${seqName}`,
+          description: `Étape ${(e.current_step || 0) + 1} — ${statusLabel}`,
           leadId: e.lead_id || undefined,
           leadName,
-          timestamp: e.created_at,
+          timestamp: e.paused_at || e.created_at,
         });
       }
     } catch { /* sequence_enrollments might not exist yet */ }
 
-    // ── 6. Bookings / Agenda ──────────────────────────────────────────────────
+    // ── 6b. Lead events (outreach actions logged by timeline-logger) ──────────
+    try {
+      let q = supabase
+        .from('lead_events')
+        .select('id, lead_id, event_type, title, body, metadata, created_at')
+        .order('created_at', { ascending: false })
+        .limit(60);
+      if (filterLeadId) q = q.eq('lead_id', filterLeadId);
+      else {
+        const wsId = localStorage.getItem('minerva_active_workspace_id');
+        if (wsId) q = q.eq('workspace_id', wsId);
+      }
+
+      const { data: leadEvents } = await q;
+      for (const ev of leadEvents || []) {
+        const type: EventType = LEAD_EVENT_TYPE_MAP[ev.event_type] ?? 'outreach';
+        const leadName = ev.lead_id ? leadNameMap[ev.lead_id] : undefined;
+        all.push({
+          id: `lev_${ev.id}`,
+          type,
+          title: ev.title || ev.event_type,
+          description: ev.body || undefined,
+          leadId: ev.lead_id || undefined,
+          leadName,
+          timestamp: ev.created_at,
+          meta: ev.metadata || {},
+        });
+      }
+    } catch { /* lead_events table might not exist yet */ }
+
+    // ── 7. Bookings / Agenda ──────────────────────────────────────────────────
     try {
       const { data: appts } = await supabase
         .from('appointments')
