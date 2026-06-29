@@ -51,7 +51,7 @@ export async function GET() {
   // 4. Current active_workspace_id
   const { data: settings } = await admin
     .from('settings')
-    .select('active_workspace_id, workspace_id')
+    .select('active_workspace_id')
     .eq('user_id', user.id)
     .maybeSingle();
 
@@ -60,7 +60,7 @@ export async function GET() {
 
   return NextResponse.json({
     userId: user.id,
-    currentActiveWorkspaceId: settings?.active_workspace_id ?? settings?.workspace_id ?? null,
+    currentActiveWorkspaceId: settings?.active_workspace_id ?? null,
     workspaces: sorted,
     recommended: recommended?.id ?? null,
   });
@@ -89,7 +89,6 @@ export async function POST(req: NextRequest) {
   await admin.from('settings').upsert({
     user_id: user.id,
     active_workspace_id: workspaceId,
-    workspace_id: workspaceId,
   }, { onConflict: 'user_id' });
 
   return NextResponse.json({ ok: true, workspaceId });

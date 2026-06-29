@@ -28,8 +28,7 @@ SELECT
   user_id,
   full_name,
   company_name,
-  active_workspace_id,
-  workspace_id
+  active_workspace_id
 FROM settings
 WHERE user_id = auth.uid();
 
