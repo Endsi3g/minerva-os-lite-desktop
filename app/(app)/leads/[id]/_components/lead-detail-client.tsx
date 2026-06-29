@@ -945,6 +945,7 @@ export function LeadDetailClient({ id }: { id: string }) {
   const [draftTone, setDraftTone] = useState<string>('Calme & Conseil');
   const [draftInstructions, setDraftInstructions] = useState('');
   const [generatedContent, setGeneratedContent] = useState('');
+  const [draftError, setDraftError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
   // Personalization variables
@@ -1452,6 +1453,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
 
   const handleGenerateDraft = async () => {
     setGenerating(true);
+    setDraftError(null);
     try {
       // Substitute custom variables into instructions
       let enrichedInstructions = draftInstructions;
@@ -1477,6 +1479,10 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
           instructions: enrichedInstructions
         })
       });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || `Erreur ${res.status}`);
+      }
       const data = await res.json();
       if (data.content) {
         setAiStage('done');
@@ -1485,9 +1491,12 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
         setGeneratedContent(data.content);
         // Refresh drafts list
         await fetchDrafts();
+      } else {
+        throw new Error('Réponse vide de l\'IA');
       }
     } catch (err) {
       console.error("Error generating draft:", err);
+      setDraftError((err as Error).message);
     } finally {
       setGenerating(false);
     }
@@ -2225,6 +2234,8 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                         )}
                       </Button>
                     </div>
+
+                    {draftError && <p className="text-xs text-red-600 font-semibold">{draftError}</p>}
                   </div>
 
                   {/* Active Draft Output */}

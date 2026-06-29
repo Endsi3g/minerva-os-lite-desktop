@@ -126,6 +126,7 @@ export async function GET(req: NextRequest) {
   let sent = 0;
   let failed = 0;
   let skippedCap = 0;
+  const errors: Array<{ stepId: string; reason: string }> = [];
 
   for (const step of dueSteps) {
     const seq = step.email_sequences as { id: string; user_id: string; lead_email: string; lead_name: string; status: string } | null;
@@ -145,6 +146,9 @@ export async function GET(req: NextRequest) {
     try {
       const accessToken = await getValidAccessToken(supabase, seq.user_id);
       if (!accessToken) {
+        const reason = `Aucun token Google valide pour user ${seq.user_id}`;
+        console.error(`[email-sequences] step ${step.id} failed: ${reason}`);
+        errors.push({ stepId: step.id, reason });
         await supabase.from('email_sequence_steps').update({ status: 'failed' }).eq('id', step.id);
         failed++;
         continue;
@@ -165,10 +169,17 @@ export async function GET(req: NextRequest) {
         sent++;
         if (quota) quota.sentToday++;
       } else {
+        const errBody = await res.text().catch(() => '');
+        const reason = `Gmail API ${res.status}: ${errBody.slice(0, 300)}`;
+        console.error(`[email-sequences] step ${step.id} failed: ${reason}`);
+        errors.push({ stepId: step.id, reason });
         await supabase.from('email_sequence_steps').update({ status: 'failed' }).eq('id', step.id);
         failed++;
       }
-    } catch {
+    } catch (err) {
+      const reason = (err as Error).message || 'Erreur inconnue';
+      console.error(`[email-sequences] step ${step.id} threw:`, err);
+      errors.push({ stepId: step.id, reason });
       await supabase.from('email_sequence_steps').update({ status: 'failed' }).eq('id', step.id);
       failed++;
     }
@@ -188,5 +199,9 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  return NextResponse.json({ ok: true, sent, failed, skippedCap });
+  if (failed > 0) {
+    console.error(`[email-sequences] ${failed} step(s) échouée(s) sur ${dueSteps.length} dues.`);
+  }
+
+  return NextResponse.json({ ok: true, sent, failed, skippedCap, errors });
 }

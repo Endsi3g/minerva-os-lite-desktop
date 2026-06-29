@@ -108,7 +108,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const systemPrompt = `Tu es un copilote de prospection pour ${fullName} de l'agence "${companyName}".
+    const baseSystemPrompt = `Tu es un copilote de prospection pour ${fullName} de l'agence "${companyName}".
 Ton but est de rédiger un message de prospection ultra-personnalisé, court et percutant en français.
 Canal : ${channel}. Ton : ${aiTone}.
 
@@ -119,11 +119,29 @@ RÈGLES ABSOLUES :
 4. Sois concis : 3 paragraphes max pour email, 2 phrases pour DM.
 5. Vouvoiement si email, tutoiement si DM Instagram/Facebook.${emailSignature ? `\n6. Signature exacte à utiliser :\n${emailSignature}` : ''}`;
 
+    // Inject the user's personalized AI system prompt (from the AI setup wizard) if present
+    const systemPrompt = settings?.ai_system_prompt
+      ? `${settings.ai_system_prompt}\n\n${baseSystemPrompt}`
+      : baseSystemPrompt;
+
+    // Website description / context — handle the possible DB column names
+    const websiteDescription =
+      (lead as any).website_description ||
+      (lead as any).description ||
+      null;
+    const websiteUrl = (lead as any).website_url || (lead as any).website || null;
+    let webContext = '';
+    if (websiteDescription) {
+      webContext = `\nDescription du site / activité : ${websiteDescription}`;
+    } else if (websiteUrl) {
+      webContext = `\nSite web : ${websiteUrl}`;
+    }
+
     const userPrompt = `Prospect : ${lead.business_name}
 Contact : ${lead.contact_name || 'le gérant/propriétaire'}
 Email : ${lead.contact_email || 'non renseigné'}
 Secteur : ${lead.niche || 'non précisé'}
-Ville : ${lead.city || 'non précisée'}
+Ville : ${lead.city || 'non précisée'}${webContext}
 ${googleContext}
 Notes terrain / observations :
 ${notesText || '(aucune note spécifique — utilise les données Google comme seul contexte personnel)'}

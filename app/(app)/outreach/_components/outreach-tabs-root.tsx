@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Inbox, GitBranch, Megaphone, FileText, CheckCircle2, ArrowRight } from 'lucide-react';
+import { Inbox, GitBranch, Megaphone, FileText, CheckCircle2, ArrowRight, Zap, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { getApiUrl } from '@/lib/api-helper';
 import { InboxRoot } from '@/app/(app)/inbox/_components/inbox-root';
 import { OutreachRoot } from './outreach-root';
 
@@ -38,9 +39,51 @@ function ShellTab({ icon: Icon, title, description, href, cta }: { icon: React.E
 
 export function OutreachTabsRoot() {
   const [activeTab, setActiveTab] = useState<OutreachTab>('inbox');
+  const [showSetupBanner, setShowSetupBanner] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && localStorage.getItem('minerva_ai_setup_dismissed') === '1') {
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(getApiUrl('/api/ai/setup'));
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!cancelled && data?.ai_setup_complete === false) {
+          setShowSetupBanner(true);
+        }
+      } catch {
+        // ignore — banner is non-blocking
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   return (
     <div className="flex h-full flex-col overflow-hidden bg-[#fafaf8]">
+      {showSetupBanner && (
+        <div className="mx-4 mt-3 p-4 bg-[#059669]/8 border border-[#059669]/20 rounded-2xl flex items-start gap-3">
+          <div className="w-8 h-8 rounded-xl bg-[#059669] flex items-center justify-center shrink-0">
+            <Zap className="h-4 w-4 text-white" />
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-bold text-[#26251e]">Configure ton assistant IA</p>
+            <p className="text-xs text-[#7a7a76] mt-0.5">Personnalise tes messages de prospection en 3 minutes avec un flow guidé.</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Link href="/settings/ai/setup" className="h-7 px-3 bg-[#059669] text-white text-[10px] font-bold rounded-lg flex items-center hover:bg-[#047857] transition-colors">
+              Configurer →
+            </Link>
+            <button onClick={() => { setShowSetupBanner(false); localStorage.setItem('minerva_ai_setup_dismissed', '1'); }}
+              className="w-7 h-7 rounded-lg hover:bg-[#059669]/10 flex items-center justify-center text-[#7a7a76]">
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Tab bar */}
       <div className="flex items-center gap-0 border-b border-[#e5e5e0] bg-white px-4 sm:px-6 overflow-x-auto shrink-0">
         {TABS.map((tab) => {

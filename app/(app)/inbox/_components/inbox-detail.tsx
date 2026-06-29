@@ -5,7 +5,7 @@ import Link from 'next/link';
 import {
   Send, Sparkles, Loader2, Mail, ChevronDown,
   CheckCircle2, XCircle, Calendar, Briefcase,
-  ClipboardList, ExternalLink, DollarSign, Bot, Info, User, Archive
+  ClipboardList, ExternalLink, DollarSign, Bot, Info, User, Archive, Zap
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -108,6 +108,9 @@ export function InboxDetail({
   const [taskTitle, setTaskTitle] = useState('');
   const [taskDate, setTaskDate] = useState(tomorrowDate());
 
+  // AI Reply generation state ("Répondre avec IA")
+  const [generatingReply, setGeneratingReply] = useState(false);
+
   // AI Reply Classifier state
   const [classifying, setClassifying] = useState(false);
   const [classifyResult, setClassifyResult] = useState<{
@@ -163,6 +166,43 @@ export function InboxDetail({
       }
     } finally {
       setClassifying(false);
+    }
+  };
+
+  const handleAIReply = async () => {
+    if (!thread || generatingReply) return;
+    setGeneratingReply(true);
+    try {
+      const context = messages
+        .slice(-3)
+        .map(m => `${m.from}: ${(m.body || '').substring(0, 200)}`)
+        .join('\n');
+      const res = await fetch(getApiUrl('/api/chat'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: [{
+            role: 'user',
+            content: `Tu es un assistant commercial québécois professionnel.
+Génère une réponse courte (100 mots max) à cet email. Sois naturel, chaleureux, et conclus avec une action concrète.
+
+Conversation récente:
+${context}
+
+Réponds uniquement avec le texte de la réponse, sans introduction.`,
+          }],
+          provider: 'anthropic',
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const text = (data.content || data.message || '').trim();
+        if (text) onReplyTextChange(text);
+      }
+    } catch {
+      // non-blocking
+    } finally {
+      setGeneratingReply(false);
     }
   };
 
@@ -504,7 +544,19 @@ export function InboxDetail({
           placeholder="Rédigez votre réponse…"
           className="min-h-[90px] text-xs resize-none border-[#e5e5e0] focus:border-[#059669] focus:ring-[#059669]/20"
         />
-        <div className="flex justify-end">
+        <div className="flex justify-end items-center gap-2">
+          <button
+            onClick={handleAIReply}
+            disabled={generatingReply || !messages.length}
+            className="flex items-center gap-1.5 h-7 px-3 border border-[#e5e5e0] rounded-lg text-[10px] font-bold text-[#26251e] hover:bg-[#f4f4f3] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {generatingReply ? (
+              <Loader2 className="h-3 w-3 animate-spin text-[#059669]" />
+            ) : (
+              <Zap className="h-3 w-3 text-[#059669]" />
+            )}
+            Répondre avec IA
+          </button>
           <Button
             size="sm"
             onClick={onSendReply}
