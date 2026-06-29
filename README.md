@@ -6,7 +6,7 @@
 
 **CRM de prospection B2B autonome pour entrepreneurs québécois**
 
-[![Version](https://img.shields.io/badge/version-v5.1.0-059669?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-v5.2.0-059669?style=flat-square)](CHANGELOG.md)
 [![Next.js](https://img.shields.io/badge/Next.js-15-black?style=flat-square&logo=next.js)](https://nextjs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178c6?style=flat-square&logo=typescript&logoColor=white)](https://typescriptlang.org)
 [![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-3ecf8e?style=flat-square&logo=supabase&logoColor=white)](https://supabase.com)
@@ -24,6 +24,8 @@
 
 - [Produit](#produit)
 - [Fonctionnalités](#fonctionnalités)
+- [Agent Minerva](#agent-minerva)
+- [AI Gateway](#ai-gateway)
 - [Stack technologique](#stack-technologique)
 - [Architecture](#architecture)
 - [Setup développeur](#setup-développeur)
@@ -40,6 +42,8 @@
 ## Produit
 
 Minerva OS Reach Lite est une plateforme CRM all-in-one conçue pour les entrepreneurs qui veulent maximiser leur temps de vente. Elle combine la prospection automatisée, la gestion des leads, les séquences d'emails IA, l'intelligence comportementale et le mode terrain — dans une seule application disponible sur **Web**, **macOS/Windows** (Electron) et **iOS/Android** (Capacitor).
+
+À partir de la v5.2, Minerva embarque un **agent IA autonome** qui perçoit l'état du pipeline, planifie les meilleures actions et les exécute — selon les niveaux d'autonomie configurés par l'utilisateur.
 
 ---
 
@@ -71,10 +75,12 @@ Minerva OS Reach Lite est une plateforme CRM all-in-one conçue pour les entrepr
 | Fonctionnalité | Détail |
 |---|---|
 | **Rapport hebdomadaire** | Analyse comportementale IA : opportunités, recommandations, score de santé du pipeline |
-| **Assistant IA** | Chat multi-modèle (Anthropic / OpenRouter / Groq / Together AI) + Canvas editor |
+| **Agent Minerva** | Boucle autonome perceive → plan → act → log avec 7 outils, niveaux d'autonomie par domaine |
+| **Mémoire d'agent** | Apprentissages persistants par workspace (`agent_memory`) — niches, campagnes, décisions |
+| **Assistant IA** | Chat multi-modèle (Anthropic / OpenRouter) + Canvas editor |
 | **AI Skills** | Packs de compétences IA activables, éditeur de skills personnalisés |
 | **Agents IA** | Agents personnalisés configurables, feed d'activité en temps réel |
-| **AI Gateway** | Routage unifié des fournisseurs IA, fallover automatique, suivi des coûts et latences |
+| **AI Gateway** | Provider unifié (Anthropic + OpenRouter), fallover automatique, logs latence par appel |
 
 ### Terrain & Agenda
 
@@ -93,9 +99,131 @@ Minerva OS Reach Lite est une plateforme CRM all-in-one conçue pour les entrepr
 | **Chat d'équipe** | Messages, mentions `@`, images, lightbox, notifications push |
 | **Automations** | Centre de contrôle : enrichissement, séquences, tagging, rapports — activation/désactivation |
 
-### Navigation v5
+---
 
-Six entrées épurées dans la sidebar : **Accueil · Leads · Outreach · Carte · Agenda · Équipe**. Les pages secondaires (Paramètres, Intelligence, Assistant, Skills, Agents, Analytics, Bibliothèque) restent accessibles par URL directe et depuis le footer de la sidebar.
+## Agent Minerva
+
+L'Agent Minerva est un système IA autonome embarqué dans le CRM. Il tourne en boucle (`POST /api/agent/loop`) et peut être déclenché manuellement ou via cron.
+
+### Architecture de la boucle
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│  1. PERCEIVE                                                     │
+│     • Leads inactifs ≥ 7 jours avec score ≥ 30                  │
+│     • État du pipeline (par étape, score moyen)                  │
+│     • Mémoire d'agent (agent_memory) — apprentissages récents    │
+├──────────────────────────────────────────────────────────────────┤
+│  2. PLAN (Claude / OpenRouter)                                   │
+│     • Contexte → Claude → JSON actions[]                         │
+│     • Max 5 actions par cycle                                    │
+│     • Chaque action contient : tool, params, reasoning,          │
+│       data_signals (signaux justificatifs)                       │
+├──────────────────────────────────────────────────────────────────┤
+│  3. ACT (selon niveaux d'autonomie)                              │
+│     • canExecute(tool, autonomy) → exécution directe             │
+│     • shouldSuggest(tool, autonomy) → carte dans Today Feed      │
+│     • Chaque action loguée dans agent_actions                    │
+├──────────────────────────────────────────────────────────────────┤
+│  4. LOG + EXPLAIN                                                │
+│     • reasoning : "Pourquoi cette action"                        │
+│     • data_signals : "Score 82, dernier contact il y a 9 jours" │
+│     • result : retour de l'outil                                 │
+│     • approved : NULL → peut être validé/rejeté par l'user       │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+### Outils disponibles (`lib/agent-tools.ts`)
+
+| Outil | Domaine | Description |
+|-------|---------|-------------|
+| `list_leads_to_follow_up` | — | Leads inactifs avec score minimum |
+| `create_task` | `tasks` | Crée une tâche de relance |
+| `update_pipeline_stage` | `pipeline` | Déplace un lead dans le pipeline |
+| `generate_email_draft` | `emails` | Génère un brouillon email IA |
+| `enroll_in_sequence` | `sequences` | Inscrit un lead dans une séquence |
+| `plan_field_route` | `field` | Planifie une tournée terrain |
+| `update_agent_memory` | — | Mémorise un apprentissage |
+| `summarize_pipeline` | — | Résume l'état du pipeline |
+
+### Niveaux d'autonomie
+
+Configurables par domaine dans **Paramètres → IA → Niveaux d'autonomie** :
+
+| Niveau | Comportement |
+|--------|-------------|
+| `off` | L'agent ne touche pas à ce domaine |
+| `suggest` | Carte dans le Today Feed — vous décidez |
+| `prepare` | Brouillon/tâche créés mais non envoyés |
+| `act_with_approval` | Exécuté après confirmation rapide |
+| `auto` | Exécution sans intervention |
+
+### Mémoire d'agent (`agent_memory`)
+
+Chaque workspace possède une mémoire structurée, alimentée par l'agent :
+
+```typescript
+{
+  type: 'niche_summary' | 'campaign_stat' | 'learning' | 'decision_log',
+  key: 'niche:boulangerie' | 'sequence:cold_outreach' | ...,
+  content: string,   // résumé en langage naturel
+  metadata: {}       // données structurées optionnelles
+}
+```
+
+La mémoire est injectée dans chaque cycle de planification pour permettre l'apprentissage continu.
+
+### API endpoints de l'agent
+
+```
+POST /api/agent/loop              # Lance un cycle complet (auth requise)
+GET  /api/agent/loop?workspace_id # Version cron (auth par CRON_SECRET header)
+GET  /api/agent/actions           # Journal des actions (+ joins leads)
+GET  /api/agent/memory            # Lecture de la mémoire workspace
+POST /api/agent/memory            # Écriture / upsert mémoire
+DELETE /api/agent/memory?id=      # Suppression d'une entrée mémoire
+```
+
+---
+
+## AI Gateway
+
+`lib/ai.ts` est la **source unique** de toute interaction IA dans l'application.
+
+### Providers supportés
+
+| Provider | Modèle par défaut | Clé |
+|----------|------------------|-----|
+| **Anthropic** (primaire) | `claude-sonnet-4-6` | `ANTHROPIC_API_KEY` (serveur) |
+| **OpenRouter** (fallback / alternatif) | `meta-llama/llama-3.3-70b-instruct:free` | `OPENROUTER_API_KEY` (serveur) ou clé utilisateur |
+
+### Cascade de résolution
+
+```typescript
+resolveAIProvider(settings?) → { provider, model, apiKey }
+
+// Priorité :
+// 1. Provider explicite dans settings (si clé disponible)
+// 2. Anthropic si ANTHROPIC_API_KEY présent
+// 3. OpenRouter si OPENROUTER_API_KEY présent
+// 4. Fallback automatique : si Anthropic échoue → OpenRouter, et inversement
+```
+
+### Fonctions publiques
+
+```typescript
+generateCompletion(options: AICallOptions): Promise<string>
+// Non-streaming. Logging automatique, fallback intégré.
+
+generateStreamCompletion(options: AICallOptions): Promise<ReadableStream>
+// Streaming SSE, compatible Anthropic et OpenRouter.
+```
+
+### Logging
+
+Chaque appel IA est loggé en fire-and-forget dans `ai_gateway_logs` (via admin client) :
+- `provider`, `model`, `latency_ms`, `success`, `user_id`
+- Visible dans **Paramètres → Diagnostics IA**
 
 ---
 
@@ -108,13 +236,13 @@ Six entrées épurées dans la sidebar : **Accueil · Leads · Outreach · Carte
 | **UI** | Tailwind CSS v4 · shadcn/ui · Radix UI · Framer Motion |
 | **Base de données** | Supabase (PostgreSQL + RLS) · SQLite (Electron, offline-first) |
 | **Auth** | Supabase Auth (OTP + password) + Google OAuth2 |
-| **IA** | Anthropic Claude · OpenRouter · Groq · Together AI |
+| **IA** | Anthropic Claude (primaire) · OpenRouter (fallback / alternatif) |
 | **Email** | Gmail API (OAuth2) · Nodemailer (SMTP support) |
 | **Agenda** | Google Calendar API |
 | **Prospection** | OpenStreetMap Overpass API · Firecrawl (optionnel) |
 | **Desktop** | Electron (macOS/Windows) — export statique + protocole `app://` |
 | **Mobile** | Capacitor (iOS/Android) — même export statique |
-| **Déploiement** | Vercel (Edge + Serverless Functions) |
+| **Déploiement** | Vercel (Serverless Functions + Cron) |
 
 ---
 
@@ -187,7 +315,7 @@ app/
 │   ├── skills/                   # Packs de skills IA + éditeur
 │   ├── agents/                   # Agents IA personnalisés
 │   ├── team/                     # Membres · rôles · chat · notifications
-│   ├── settings/                 # Profil · IA · intégrations · automations · rôles
+│   ├── settings/                 # Profil · IA · autonomie agent · intégrations · diagnostics
 │   ├── analytics/                # Dashboard analytique
 │   ├── workspaces/               # CRUD workspaces
 │   ├── library/                  # Bibliothèque d'assets
@@ -195,6 +323,10 @@ app/
 │   └── changelog/                # Notes de version
 │
 ├── api/                          # API Routes Next.js
+│   ├── agent/
+│   │   ├── loop/                 # Boucle autonome perceive→plan→act→log
+│   │   ├── actions/              # Journal des actions agent
+│   │   └── memory/               # Mémoire persistante par workspace
 │   ├── cron/                     # Jobs planifiés (enrich-leads, gmail-check-replies…)
 │   ├── leads/                    # Enrichissement · score · dédup
 │   ├── inbox/                    # Threads Gmail · reply · archive
@@ -218,7 +350,8 @@ app/
 │
 ├── lib/
 │   ├── reach-context.tsx         # État global (leads, tasks, workspaces, aiSuggestions)
-│   ├── ai.ts                     # Provider AI — resolveAIProvider + generateCompletion
+│   ├── ai.ts                     # AI Gateway — resolveAIProvider + generateCompletion
+│   ├── agent-tools.ts            # Outils de l'agent : définitions, dispatcher, gate d'autonomie
 │   ├── mock-data.ts              # Interfaces TypeScript (Lead, Task, Deal…)
 │   ├── google/                   # OAuth · refresh token · getAuthStatus · getFreshAccessToken
 │   ├── api-helper.ts             # getApiUrl() — routing Web / Electron / Capacitor
@@ -316,11 +449,11 @@ cp .env.example .env.local
 | `SUPABASE_SERVICE_ROLE_KEY` | ✅ | Clé service role — **serveur uniquement, ne jamais exposer** |
 | `GOOGLE_CLIENT_ID` | ✅ | Client ID Google OAuth2 |
 | `GOOGLE_CLIENT_SECRET` | ✅ | Secret Google OAuth2 |
-| `ANTHROPIC_API_KEY` | ✅ | Clé API Anthropic Claude |
+| `ANTHROPIC_API_KEY` | ✅ | Clé API Anthropic Claude (provider primaire) |
 | `NEXT_PUBLIC_APP_URL` | ✅ | URL publique de l'app (ex : `https://minerva-os-lite-desktop.vercel.app`) |
 | `CRON_SECRET` | ✅ | Secret pour authentifier les endpoints cron Vercel |
 | `FIRECRAWL_API_KEY` | ⬜ | Optionnel — scraping avancé PagesJaunes via Firecrawl |
-| `OPENROUTER_API_KEY` | ⬜ | Optionnel — fallback AI provider via OpenRouter |
+| `OPENROUTER_API_KEY` | ⬜ | Optionnel — fallback AI / modèles alternatifs gratuits |
 | `SUPPORT_SMTP_HOST` | ⬜ | SMTP pour le formulaire de support (ex : `smtp.gmail.com`) |
 | `SUPPORT_SMTP_PORT` | ⬜ | Port SMTP (`587` STARTTLS · `465` SSL) |
 | `SUPPORT_SMTP_USER` | ⬜ | Login SMTP |
@@ -348,13 +481,25 @@ SELECT COUNT(*) FROM workspaces;   -- doit être > 0 en prod
 | `supabase_migration_v4_2_outreach.sql` | Séquences, campagnes, templates outreach |
 | `supabase_migration_v4_11_lead_tags.sql` | Tags leads |
 | `supabase_migration_v4_12_proposals.sql` | Table proposals multi-sections |
-| `supabase_migration_v5_1_ai_gateway_logs.sql` | Logs AI Gateway |
+| `supabase_migration_v5_agent.sql` | Tables agent (`agent_memory`, `agent_actions`), colonnes autonomie settings, `ai_gateway_logs`, `sequence_enrollments` |
 
 > **Règles absolues :** Ne jamais utiliser `DROP TABLE`, `TRUNCATE`, `DELETE FROM` sans `WHERE` précis, ni `DROP COLUMN` sans backup confirmé. Voir `CLAUDE.md` pour les détails.
 
+### Tables agent
+
+```sql
+-- Mémoire persistante de l'agent
+agent_memory (workspace_id, type, key, content, metadata, updated_at)
+-- UNIQUE(workspace_id, type, key) — upsert sur (workspace_id, type, key)
+
+-- Journal des actions (exécutées + suggérées)
+agent_actions (workspace_id, action_type, lead_id, reasoning, data_signals, result,
+               autonomy_level, executed, suggested, approved, created_at)
+```
+
 ### Schéma SQLite (Electron)
 
-Tout changement de schéma Supabase doit être **mirroré** dans `electron/database.cjs` via `ALTER TABLE … ADD COLUMN IF NOT EXISTS` pour garantir l'idempotence.
+Tout changement de schéma Supabase doit être **mirroré** dans `electron/database.cjs` via `ALTER TABLE … ADD COLUMN` (idempotent grâce au `try/catch` interne de SQLite sur colonnes existantes).
 
 ---
 
@@ -420,6 +565,7 @@ Définis dans `vercel.json` — déclenchés par Vercel Cron, authentifiés par 
 | `POST /api/cron/email-sequences` | `0 * * * *` | Envoi des étapes de séquences planifiées |
 | `POST /api/cron/weekly-report` | `0 8 * * 1` | Rapport IA comportemental hebdomadaire |
 | `POST /api/cron/process-queue` | `*/5 * * * *` | File d'attente IA — traitement par lots |
+| `GET /api/agent/loop?workspace_id=` | À configurer | Cycle agent autonome (auth par `CRON_SECRET` header) |
 
 ---
 
@@ -431,11 +577,11 @@ Dernières versions :
 
 | Version | Date | Points clés |
 |---------|------|-------------|
+| **v5.2.0** | 2026-06-29 | Agent Minerva (boucle autonome), mémoire d'agent, niveaux d'autonomie, AI Gateway unifié, suppression Groq/Together |
 | **v5.1.0** | 2026-06-29 | Sidebar 6 entrées, fix Google OAuth Inbox, Breadcrumb Leads, Timeline unifiée, pages Rôles dédiées |
 | **v5.0.0** | 2026-06-28 | Navigation Revenue OS, AI Gateway, Agent Feed, Outreach unifié |
 | **v4.5.0** | 2026-06-27 | Automations control center, AI gateway foundations |
 | **v4.3.0** | 2026-06-28 | Perf: inline SVGs, cache server+client, container queries |
-| **v4.2.0** | 2026-06-28 | Type scale, title template, preconnect DNS |
 
 ---
 

@@ -7,32 +7,27 @@ import { Input } from '@/components/ui/input';
 import { SettingsSectionWrapper } from './settings-section-wrapper';
 import { Eye, EyeOff, Trash2, Check, AlertCircle } from 'lucide-react';
 
-type Provider = 'openrouter' | 'groq' | 'together';
-
 interface ApiKeysData {
   openrouterKeyMasked: string | null;
-  groqKeyMasked: string | null;
-  togetherKeyMasked: string | null;
 }
 
 interface SettingsApiKeysSectionProps {
   data: ApiKeysData;
-  onSaveKey: (provider: Provider, value: string) => Promise<void>;
-  onDeleteKey: (provider: Provider) => Promise<void>;
+  onSaveKey: (provider: 'openrouter', value: string) => Promise<void>;
+  onDeleteKey: (provider: 'openrouter') => Promise<void>;
   isSaving: boolean;
 }
 
-interface KeyRowProps {
+function KeyRow({
+  label, maskedValue, placeholder, helpUrl, onSave, onDelete,
+}: {
   label: string;
-  provider: Provider;
   maskedValue: string | null;
   placeholder: string;
   helpUrl?: string;
-  onSave: (provider: Provider, value: string) => Promise<void>;
-  onDelete: (provider: Provider) => Promise<void>;
-}
-
-function KeyRow({ label, provider, maskedValue, placeholder, helpUrl, onSave, onDelete }: KeyRowProps) {
+  onSave: (value: string) => Promise<void>;
+  onDelete: () => Promise<void>;
+}) {
   const [inputValue, setInputValue] = useState('');
   const [show, setShow] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -43,39 +38,29 @@ function KeyRow({ label, provider, maskedValue, placeholder, helpUrl, onSave, on
     if (!inputValue.trim()) return;
     setIsSaving(true);
     try {
-      await onSave(provider, inputValue.trim());
+      await onSave(inputValue.trim());
       setInputValue('');
       setSavedFlash(true);
       setTimeout(() => setSavedFlash(false), 2000);
-    } finally {
-      setIsSaving(false);
-    }
+    } finally { setIsSaving(false); }
   };
 
   const handleDelete = async () => {
     setIsDeleting(true);
-    try {
-      await onDelete(provider);
-    } finally {
-      setIsDeleting(false);
-    }
+    try { await onDelete(); } finally { setIsDeleting(false); }
   };
 
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-          {label}
-        </label>
+        <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{label}</label>
         {maskedValue ? (
-          <span className="flex items-center gap-1 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
-            <Check className="w-3 h-3" />
-            Configurée
+          <span className="flex items-center gap-1 text-[10px] font-semibold text-emerald-600">
+            <Check className="w-3 h-3" />Configurée
           </span>
         ) : (
           <span className="flex items-center gap-1 text-[10px] font-semibold text-amber-600">
-            <AlertCircle className="w-3 h-3" />
-            Non configurée
+            <AlertCircle className="w-3 h-3" />Non configurée
           </span>
         )}
       </div>
@@ -85,14 +70,8 @@ function KeyRow({ label, provider, maskedValue, placeholder, helpUrl, onSave, on
           <div className="flex-1 h-9 px-3 bg-muted/40 border border-border rounded-md flex items-center text-xs text-muted-foreground font-mono select-none">
             {maskedValue}
           </div>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={handleDelete}
-            disabled={isDeleting}
-            className="h-9 px-2.5 text-destructive hover:text-destructive hover:bg-destructive/10 border border-border"
-          >
+          <Button type="button" variant="ghost" size="sm" onClick={handleDelete} disabled={isDeleting}
+            className="h-9 px-2.5 text-destructive hover:text-destructive hover:bg-destructive/10 border border-border">
             <Trash2 className="w-3.5 h-3.5" />
           </Button>
         </div>
@@ -107,21 +86,13 @@ function KeyRow({ label, provider, maskedValue, placeholder, helpUrl, onSave, on
               className="text-xs bg-card pr-9 font-mono"
               onKeyDown={(e) => { if (e.key === 'Enter') handleSave(); }}
             />
-            <button
-              type="button"
-              onClick={() => setShow(!show)}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-            >
+            <button type="button" onClick={() => setShow(!show)}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">
               {show ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
             </button>
           </div>
-          <Button
-            type="button"
-            size="sm"
-            onClick={handleSave}
-            disabled={isSaving || !inputValue.trim()}
-            className={`h-9 text-xs font-bold px-3 transition-all ${savedFlash ? 'bg-emerald-600 text-white' : 'bg-[#059669] hover:bg-[#047857] text-white'}`}
-          >
+          <Button type="button" size="sm" onClick={handleSave} disabled={isSaving || !inputValue.trim()}
+            className={`h-9 text-xs font-bold px-3 transition-all ${savedFlash ? 'bg-emerald-600 text-white' : 'bg-[#059669] hover:bg-[#047857] text-white'}`}>
             {isSaving ? '...' : savedFlash ? <Check className="w-3.5 h-3.5" /> : 'Enregistrer'}
           </Button>
         </div>
@@ -143,7 +114,7 @@ export function SettingsApiKeysSection({ data, onSaveKey, onDeleteKey, isSaving 
   return (
     <SettingsSectionWrapper
       title="Clés API"
-      description="Connectez vos fournisseurs IA pour activer le chat, les agents et la génération de contenu."
+      description="Connectez OpenRouter pour activer les modèles alternatifs."
       isSaving={isSaving}
     >
       <Card className="border border-border bg-card">
@@ -154,46 +125,21 @@ export function SettingsApiKeysSection({ data, onSaveKey, onDeleteKey, isSaving 
           </p>
 
           <KeyRow
-            label="OpenRouter"
-            provider="openrouter"
+            label="OpenRouter (modèles alternatifs)"
             maskedValue={data.openrouterKeyMasked}
             placeholder="sk-or-v1-..."
             helpUrl="https://openrouter.ai/keys"
-            onSave={onSaveKey}
-            onDelete={onDeleteKey}
-          />
-
-          <div className="border-t border-border/50" />
-
-          <KeyRow
-            label="Groq"
-            provider="groq"
-            maskedValue={data.groqKeyMasked}
-            placeholder="gsk_..."
-            helpUrl="https://console.groq.com/keys"
-            onSave={onSaveKey}
-            onDelete={onDeleteKey}
-          />
-
-          <div className="border-t border-border/50" />
-
-          <KeyRow
-            label="Together AI"
-            provider="together"
-            maskedValue={data.togetherKeyMasked}
-            placeholder="..."
-            helpUrl="https://api.together.ai/settings/api-keys"
-            onSave={onSaveKey}
-            onDelete={onDeleteKey}
+            onSave={(v) => onSaveKey('openrouter', v)}
+            onDelete={() => onDeleteKey('openrouter')}
           />
         </CardContent>
       </Card>
 
-      <Card className="border border-amber-200 dark:border-amber-900/30 bg-amber-50/50 dark:bg-amber-950/10">
+      <Card className="border border-[#bbf7d0] bg-[#f0fdf4]">
         <CardContent className="p-4">
-          <p className="text-xs text-amber-700 dark:text-amber-400 leading-relaxed">
-            <strong>Priorité de fallback :</strong> Minerva OS essaie d&apos;abord OpenRouter, puis Groq, puis Together AI,
-            puis Anthropic (clé serveur). Configurez au moins une clé pour activer les fonctionnalités IA.
+          <p className="text-xs text-[#059669] leading-relaxed">
+            <strong>Priorité :</strong> Minerva utilise Claude (Anthropic) par défaut via la clé serveur.
+            Configurez une clé OpenRouter pour accéder à des modèles alternatifs gratuits ou spécialisés.
           </p>
         </CardContent>
       </Card>

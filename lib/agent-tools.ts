@@ -1,0 +1,289 @@
+import { generateCompletion, type AISettings } from '@/lib/ai';
+import type { SupabaseClient } from '@supabase/supabase-js';
+
+export type AutonomyLevel = 'off' | 'suggest' | 'prepare' | 'act_with_approval' | 'auto';
+
+export interface AgentAutonomy {
+  tasks: AutonomyLevel;
+  pipeline: AutonomyLevel;
+  sequences: AutonomyLevel;
+  emails: AutonomyLevel;
+  field: AutonomyLevel;
+}
+
+export interface AgentContext {
+  workspaceId: string;
+  userId: string;
+  supabase: SupabaseClient;
+  settings?: AISettings;
+  autonomy?: Partial<AgentAutonomy>;
+}
+
+export interface AgentAction {
+  tool: string;
+  params: Record<string, unknown>;
+  reasoning: string;
+  data_signals: string;
+  autonomy_level: AutonomyLevel;
+}
+
+export interface AgentActionResult extends AgentAction {
+  id: string;
+  result: Record<string, unknown> | null;
+  executed: boolean;
+  created_at: string;
+}
+
+// ── Tool: list leads to follow up ────────────────────────────────────────────
+
+export async function listLeadsToFollowUp(
+  ctx: AgentContext,
+  params: { threshold_days?: number; min_score?: number } = {},
+) {
+  const { threshold_days = 7, min_score = 40 } = params;
+  const cutoff = new Date(Date.now() - threshold_days * 86_400_000).toISOString();
+
+  const { data } = await ctx.supabase
+    .from('leads')
+    .select('id, name, company, status, score, last_contacted_at, pipeline_stage')
+    .eq('workspace_id', ctx.workspaceId)
+    .not('status', 'eq', 'Client')
+    .not('status', 'eq', 'Perdu')
+    .or(`last_contacted_at.lt.${cutoff},last_contacted_at.is.null`)
+    .gte('score', min_score)
+    .order('score', { ascending: false })
+    .limit(20);
+
+  return data ?? [];
+}
+
+// ── Tool: create task ─────────────────────────────────────────────────────────
+
+export async function createTask(
+  ctx: AgentContext,
+  params: { lead_id: string; type: string; due_date: string; description: string },
+) {
+  const { data, error } = await ctx.supabase.from('tasks').insert({
+    workspace_id: ctx.workspaceId,
+    lead_id: params.lead_id,
+    type: params.type,
+    due_date: params.due_date,
+    description: params.description,
+    status: 'pending',
+    created_by: ctx.userId,
+    source: 'agent',
+  }).select('id').single();
+
+  if (error) throw new Error(`createTask failed: ${error.message}`);
+  return { task_id: data.id };
+}
+
+// ── Tool: update pipeline stage ───────────────────────────────────────────────
+
+export async function updatePipelineStage(
+  ctx: AgentContext,
+  params: { lead_id: string; stage: string; reason: string },
+) {
+  const { error } = await ctx.supabase
+    .from('leads')
+    .update({ pipeline_stage: params.stage, updated_at: new Date().toISOString() })
+    .eq('id', params.lead_id)
+    .eq('workspace_id', ctx.workspaceId);
+
+  if (error) throw new Error(`updatePipelineStage failed: ${error.message}`);
+  return { updated: true, stage: params.stage };
+}
+
+// ── Tool: generate email draft ────────────────────────────────────────────────
+
+export async function generateEmailDraft(
+  ctx: AgentContext,
+  params: { lead_id: string; template_type: 'follow_up' | 'introduction' | 'closing' | 'reactivation' },
+) {
+  const { data: lead } = await ctx.supabase
+    .from('leads')
+    .select('name, company, status, score, website_description, notes')
+    .eq('id', params.lead_id)
+    .single();
+
+  if (!lead) throw new Error('Lead not found');
+
+  const draft = await generateCompletion({
+    system: `Tu es un assistant commercial expert en prospection B2B. Génère un email concis (max 120 mots), personnalisé, en français. Retourne uniquement JSON: { "subject": "...", "body": "..." }`,
+    messages: [{
+      role: 'user',
+      content: `Prospect: ${lead.name} chez ${lead.company}. Type: ${params.template_type}. Contexte: ${lead.website_description || lead.notes || 'Pas de contexte disponible'}.`,
+    }],
+    jsonMode: true,
+    maxTokens: 400,
+    settings: ctx.settings,
+    userId: ctx.userId,
+  });
+
+  let parsed: { subject: string; body: string };
+  try { parsed = JSON.parse(draft); } catch { parsed = { subject: `Relance — ${lead.company}`, body: draft }; }
+
+  const { data, error } = await ctx.supabase.from('drafts').insert({
+    workspace_id: ctx.workspaceId,
+    lead_id: params.lead_id,
+    subject: parsed.subject,
+    body: parsed.body,
+    source: 'agent',
+    created_at: new Date().toISOString(),
+  }).select('id').single();
+
+  if (error) throw new Error(`generateEmailDraft insert failed: ${error.message}`);
+  return { draft_id: data.id, subject: parsed.subject };
+}
+
+// ── Tool: enroll in sequence ──────────────────────────────────────────────────
+
+export async function enrollInSequence(
+  ctx: AgentContext,
+  params: { lead_id: string; sequence_id: string },
+) {
+  const { data: existing } = await ctx.supabase
+    .from('sequence_enrollments')
+    .select('id')
+    .eq('lead_id', params.lead_id)
+    .eq('sequence_id', params.sequence_id)
+    .maybeSingle();
+
+  if (existing) return { enrolled: false, reason: 'already_enrolled' };
+
+  const { data, error } = await ctx.supabase.from('sequence_enrollments').insert({
+    workspace_id: ctx.workspaceId,
+    lead_id: params.lead_id,
+    sequence_id: params.sequence_id,
+    status: 'active',
+    enrolled_by: 'agent',
+    enrolled_at: new Date().toISOString(),
+  }).select('id').single();
+
+  if (error) throw new Error(`enrollInSequence failed: ${error.message}`);
+  return { enrolled: true, enrollment_id: data.id };
+}
+
+// ── Tool: update agent memory ─────────────────────────────────────────────────
+
+export async function updateAgentMemory(
+  ctx: AgentContext,
+  params: { type: string; key: string; content: string; metadata?: Record<string, unknown> },
+) {
+  const { error } = await ctx.supabase.from('agent_memory').upsert({
+    workspace_id: ctx.workspaceId,
+    type: params.type,
+    key: params.key,
+    content: params.content,
+    metadata: params.metadata ?? {},
+    updated_at: new Date().toISOString(),
+  }, { onConflict: 'workspace_id,type,key' });
+
+  if (error) throw new Error(`updateAgentMemory failed: ${error.message}`);
+  return { stored: true };
+}
+
+// ── Tool: summarize pipeline ──────────────────────────────────────────────────
+
+export async function summarizePipeline(
+  ctx: AgentContext,
+) {
+  const { data: leads } = await ctx.supabase
+    .from('leads')
+    .select('status, pipeline_stage, score')
+    .eq('workspace_id', ctx.workspaceId);
+
+  if (!leads?.length) return { summary: 'Aucun lead dans le pipeline.' };
+
+  const byStage = leads.reduce<Record<string, number>>((acc, l) => {
+    const stage = l.pipeline_stage || l.status || 'Non défini';
+    acc[stage] = (acc[stage] || 0) + 1;
+    return acc;
+  }, {});
+
+  const avgScore = leads.reduce((s, l) => s + (l.score || 0), 0) / leads.length;
+
+  return {
+    total: leads.length,
+    by_stage: byStage,
+    avg_score: Math.round(avgScore),
+  };
+}
+
+// ── Autonomy gate ─────────────────────────────────────────────────────────────
+
+const TOOL_DOMAIN_MAP: Record<string, keyof AgentAutonomy> = {
+  create_task: 'tasks',
+  update_pipeline_stage: 'pipeline',
+  enroll_in_sequence: 'sequences',
+  generate_email_draft: 'emails',
+  plan_field_route: 'field',
+};
+
+export function canExecute(tool: string, autonomy: Partial<AgentAutonomy>): boolean {
+  const domain = TOOL_DOMAIN_MAP[tool];
+  if (!domain) return true; // read-only tools always execute
+  const level: AutonomyLevel = autonomy[domain] ?? 'suggest';
+  return level === 'act_with_approval' || level === 'auto';
+}
+
+export function shouldSuggest(tool: string, autonomy: Partial<AgentAutonomy>): boolean {
+  const domain = TOOL_DOMAIN_MAP[tool];
+  if (!domain) return false;
+  const level: AutonomyLevel = autonomy[domain] ?? 'suggest';
+  return level === 'suggest' || level === 'prepare';
+}
+
+// ── Tool dispatcher ───────────────────────────────────────────────────────────
+
+export async function dispatchTool(
+  tool: string,
+  params: Record<string, unknown>,
+  ctx: AgentContext,
+): Promise<Record<string, unknown>> {
+  switch (tool) {
+    case 'list_leads_to_follow_up':
+      return { leads: await listLeadsToFollowUp(ctx, params as any) };
+    case 'create_task':
+      return createTask(ctx, params as any);
+    case 'update_pipeline_stage':
+      return updatePipelineStage(ctx, params as any);
+    case 'generate_email_draft':
+      return generateEmailDraft(ctx, params as any);
+    case 'enroll_in_sequence':
+      return enrollInSequence(ctx, params as any);
+    case 'update_agent_memory':
+      return updateAgentMemory(ctx, params as any);
+    case 'summarize_pipeline':
+      return summarizePipeline(ctx);
+    default:
+      throw new Error(`Unknown tool: ${tool}`);
+  }
+}
+
+// ── Tool schema for Claude ────────────────────────────────────────────────────
+
+export const TOOL_DESCRIPTIONS = `
+Tu as accès aux outils suivants (utilise-les via JSON actions[]):
+
+- list_leads_to_follow_up(threshold_days, min_score) : retourne les leads inactifs à relancer
+- create_task(lead_id, type, due_date, description) : crée une tâche de suivi
+- update_pipeline_stage(lead_id, stage, reason) : met à jour l'étape pipeline
+- generate_email_draft(lead_id, template_type) : génère un brouillon email (follow_up/introduction/closing/reactivation)
+- enroll_in_sequence(lead_id, sequence_id) : inscrit un lead dans une séquence
+- update_agent_memory(type, key, content) : mémorise un apprentissage
+- summarize_pipeline() : résume l'état du pipeline
+
+Réponds UNIQUEMENT avec du JSON valide :
+{
+  "reasoning": "Explication courte de ce que tu fais et pourquoi",
+  "actions": [
+    {
+      "tool": "nom_outil",
+      "params": { ... },
+      "reasoning": "Pourquoi cet outil pour ce lead/contexte",
+      "data_signals": "Les données qui justifient cette décision"
+    }
+  ]
+}
+`;

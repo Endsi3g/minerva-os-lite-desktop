@@ -1,0 +1,226 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@/lib/supabase/server';
+import { getAdminClient } from '@/lib/supabase/admin';
+import { generateCompletion } from '@/lib/ai';
+import {
+  listLeadsToFollowUp,
+  summarizePipeline,
+  dispatchTool,
+  canExecute,
+  shouldSuggest,
+  TOOL_DESCRIPTIONS,
+  type AgentContext,
+  type AgentAction,
+  type AgentActionResult,
+} from '@/lib/agent-tools';
+
+const AGENT_SYSTEM = `Tu es l'Agent Minerva, un assistant commercial intelligent et autonome.
+Tu analyses le pipeline de vente d'un commercial et tu décides des meilleures actions à prendre.
+Tu raisonnes à partir des données réelles : scores, dates de contact, étapes pipeline, notes terrain.
+Tu es concis, pragmatique, et tu justifies chaque action par des signaux concrets.
+
+${TOOL_DESCRIPTIONS}
+
+Limite à 5 actions maximum par cycle. Priorise les leads à score élevé et les plus dormants.`;
+
+export async function POST(req: NextRequest) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  let workspaceId: string | undefined;
+  try {
+    const body = await req.json().catch(() => ({}));
+    workspaceId = body.workspace_id;
+  } catch { /* ignore */ }
+
+  if (!workspaceId) {
+    const { data: settings } = await supabase
+      .from('settings')
+      .select('workspace_id')
+      .eq('user_id', user.id)
+      .maybeSingle();
+    workspaceId = settings?.workspace_id;
+  }
+
+  if (!workspaceId) {
+    const { data: ws } = await supabase
+      .from('workspaces')
+      .select('id')
+      .eq('owner_id', user.id)
+      .limit(1)
+      .maybeSingle();
+    workspaceId = ws?.id;
+  }
+
+  if (!workspaceId) return NextResponse.json({ error: 'Workspace not found' }, { status: 404 });
+
+  // Fetch settings (AI provider + autonomy)
+  const { data: dbSettings } = await supabase
+    .from('settings')
+    .select('ai_provider, ai_model, openrouter_key, agent_autonomy')
+    .eq('user_id', user.id)
+    .maybeSingle();
+
+  const aiSettings = {
+    ai_provider: dbSettings?.ai_provider,
+    ai_model: dbSettings?.ai_model,
+    openrouter_key: dbSettings?.openrouter_key,
+  };
+  const autonomy = dbSettings?.agent_autonomy ?? {};
+
+  const ctx: AgentContext = {
+    workspaceId,
+    userId: user.id,
+    supabase,
+    settings: aiSettings,
+    autonomy,
+  };
+
+  // ── 1. Perceive ──────────────────────────────────────────────────────────────
+  const [leadsToFollowUp, pipelineSummary] = await Promise.all([
+    listLeadsToFollowUp(ctx, { threshold_days: 7, min_score: 30 }),
+    summarizePipeline(ctx),
+  ]);
+
+  const { data: recentMemory } = await supabase
+    .from('agent_memory')
+    .select('type, key, content, updated_at')
+    .eq('workspace_id', workspaceId)
+    .order('updated_at', { ascending: false })
+    .limit(10);
+
+  const contextBlock = `
+Pipeline actuel:
+${JSON.stringify(pipelineSummary, null, 2)}
+
+Leads prioritaires à relancer (${leadsToFollowUp.length}):
+${leadsToFollowUp.slice(0, 10).map((l: any) => `- ${l.name} (${l.company}) | Score: ${l.score} | Statut: ${l.status} | Dernier contact: ${l.last_contacted_at || 'jamais'}`).join('\n')}
+
+Mémoire agent (apprentissages récents):
+${recentMemory?.map((m: any) => `[${m.type}] ${m.key}: ${m.content}`).join('\n') || 'Aucune mémoire enregistrée.'}
+`;
+
+  // ── 2. Plan (Claude decides what to do) ─────────────────────────────────────
+  let plan: { reasoning: string; actions: AgentAction[] };
+  try {
+    const raw = await generateCompletion({
+      system: AGENT_SYSTEM,
+      messages: [{ role: 'user', content: `Contexte du workspace:\n${contextBlock}\n\nQue dois-je faire maintenant ?` }],
+      jsonMode: true,
+      maxTokens: 2000,
+      settings: aiSettings,
+      userId: user.id,
+    });
+    plan = JSON.parse(raw);
+  } catch {
+    return NextResponse.json({ error: 'Agent planning failed' }, { status: 500 });
+  }
+
+  const actions: AgentAction[] = Array.isArray(plan?.actions) ? plan.actions.slice(0, 5) : [];
+
+  // ── 3. Act + Log ─────────────────────────────────────────────────────────────
+  const results: AgentActionResult[] = [];
+  const admin = getAdminClient();
+
+  for (const action of actions) {
+    const executed = canExecute(action.tool, autonomy);
+    const suggested = shouldSuggest(action.tool, autonomy);
+    let result: Record<string, unknown> | null = null;
+
+    if (executed) {
+      try {
+        result = await dispatchTool(action.tool, action.params, ctx);
+      } catch (err: any) {
+        result = { error: err.message };
+      }
+    }
+
+    const logEntry: AgentActionResult = {
+      ...action,
+      id: crypto.randomUUID(),
+      result,
+      executed,
+      created_at: new Date().toISOString(),
+      autonomy_level: (autonomy as any)[(action.tool)] ?? 'suggest',
+    };
+
+    results.push(logEntry);
+
+    await admin.from('agent_actions').insert({
+      id: logEntry.id,
+      workspace_id: workspaceId,
+      user_id: user.id,
+      action_type: action.tool,
+      lead_id: (action.params?.lead_id as string) ?? null,
+      reasoning: action.reasoning,
+      data_signals: action.data_signals,
+      result: result ?? {},
+      autonomy_level: logEntry.autonomy_level,
+      executed,
+      suggested,
+      created_at: logEntry.created_at,
+    }).then(() => {}, () => {});
+  }
+
+  return NextResponse.json({
+    reasoning: plan.reasoning,
+    actions_executed: results.filter((r) => r.executed).length,
+    actions_suggested: results.filter((r) => !r.executed).length,
+    results,
+  });
+}
+
+// Cron-friendly GET: same logic, uses service role to resolve workspace
+export async function GET(req: NextRequest) {
+  const workspaceId = req.nextUrl.searchParams.get('workspace_id');
+  if (!workspaceId) return NextResponse.json({ error: 'workspace_id required' }, { status: 400 });
+
+  const secret = req.headers.get('x-cron-secret');
+  if (secret !== process.env.CRON_SECRET) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+
+  const admin = getAdminClient();
+  const { data: ws } = await admin.from('workspaces').select('owner_id').eq('id', workspaceId).single();
+  if (!ws) return NextResponse.json({ error: 'Workspace not found' }, { status: 404 });
+
+  const { data: settings } = await admin
+    .from('settings')
+    .select('ai_provider, ai_model, openrouter_key, agent_autonomy')
+    .eq('user_id', ws.owner_id)
+    .maybeSingle();
+
+  const aiSettings = { ai_provider: settings?.ai_provider, ai_model: settings?.ai_model, openrouter_key: settings?.openrouter_key };
+  const autonomy = settings?.agent_autonomy ?? {};
+  const ctx: AgentContext = { workspaceId, userId: ws.owner_id, supabase: admin as any, settings: aiSettings, autonomy };
+
+  const [leadsToFollowUp, pipelineSummary] = await Promise.all([
+    listLeadsToFollowUp(ctx, { threshold_days: 7, min_score: 30 }),
+    summarizePipeline(ctx),
+  ]);
+
+  const contextBlock = `Pipeline: ${JSON.stringify(pipelineSummary)}\n\nLeads à relancer: ${leadsToFollowUp.slice(0, 10).map((l: any) => `${l.name} (score: ${l.score})`).join(', ')}`;
+
+  let plan: { reasoning: string; actions: AgentAction[] };
+  try {
+    const raw = await generateCompletion({
+      system: AGENT_SYSTEM,
+      messages: [{ role: 'user', content: contextBlock }],
+      jsonMode: true,
+      maxTokens: 2000,
+      settings: aiSettings,
+    });
+    plan = JSON.parse(raw);
+  } catch {
+    return NextResponse.json({ error: 'Planning failed' }, { status: 500 });
+  }
+
+  const actions = Array.isArray(plan?.actions) ? plan.actions.slice(0, 5) : [];
+  let executed = 0;
+  for (const action of actions) {
+    if (canExecute(action.tool, autonomy)) {
+      try { await dispatchTool(action.tool, action.params, ctx); executed++; } catch { /* log silently */ }
+    }
+  }
+
+  return NextResponse.json({ ok: true, actions_planned: actions.length, actions_executed: executed });
+}

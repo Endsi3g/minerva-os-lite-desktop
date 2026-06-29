@@ -758,6 +758,34 @@ function initDb() {
     )`, () => {});
     db.run(`CREATE INDEX IF NOT EXISTS idx_proposals_lead_id ON proposals(lead_id)`, () => {});
     db.run(`CREATE INDEX IF NOT EXISTS idx_proposals_workspace_id ON proposals(workspace_id)`, () => {});
+
+    // v5.0.0 — Agent memory + actions
+    db.run(`CREATE TABLE IF NOT EXISTS agent_memory (
+      id TEXT PRIMARY KEY, workspace_id TEXT NOT NULL,
+      type TEXT NOT NULL, key TEXT NOT NULL, content TEXT NOT NULL,
+      metadata TEXT DEFAULT '{}', created_at TEXT, updated_at TEXT,
+      UNIQUE(workspace_id, type, key)
+    )`, () => {});
+    db.run(`CREATE INDEX IF NOT EXISTS idx_agent_memory_workspace ON agent_memory(workspace_id)`, () => {});
+
+    db.run(`CREATE TABLE IF NOT EXISTS agent_actions (
+      id TEXT PRIMARY KEY, workspace_id TEXT NOT NULL, user_id TEXT,
+      action_type TEXT NOT NULL, lead_id TEXT,
+      reasoning TEXT, data_signals TEXT, result TEXT DEFAULT '{}',
+      autonomy_level TEXT DEFAULT 'suggest',
+      executed INTEGER DEFAULT 0, suggested INTEGER DEFAULT 1, approved INTEGER,
+      created_at TEXT
+    )`, () => {});
+    db.run(`CREATE INDEX IF NOT EXISTS idx_agent_actions_workspace ON agent_actions(workspace_id)`, () => {});
+    db.run(`CREATE INDEX IF NOT EXISTS idx_agent_actions_created ON agent_actions(workspace_id, created_at)`, () => {});
+
+    // v5.0.0 — agent_autonomy column on settings
+    db.run(`ALTER TABLE settings ADD COLUMN agent_autonomy TEXT DEFAULT '{}'`, () => {});
+    db.run(`ALTER TABLE settings ADD COLUMN agent_enabled INTEGER DEFAULT 1`, () => {});
+
+    // v5.0.0 — source column on tasks/drafts for agent attribution
+    db.run(`ALTER TABLE tasks ADD COLUMN source TEXT DEFAULT 'user'`, () => {});
+    db.run(`ALTER TABLE drafts ADD COLUMN source TEXT DEFAULT 'user'`, () => {});
   });
 }
 

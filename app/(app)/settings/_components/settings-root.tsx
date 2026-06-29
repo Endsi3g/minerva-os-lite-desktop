@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { SettingsNav, SettingsSection } from './settings-nav';
 import { SettingsProfileSection } from './settings-profile-section';
-import { SettingsAiSection } from './settings-ai-section';
+import { SettingsAiSection, type AgentAutonomy } from './settings-ai-section';
 import { SettingsAppearanceSection } from './settings-appearance-section';
 import { SettingsIntegrationsSection } from './settings-integrations-section';
 import { SettingsWorkspaceGeneralSection } from './settings-workspace-general-section';
@@ -32,11 +32,10 @@ interface AiData {
   customization: 'low' | 'medium' | 'high';
   autoInsights: boolean;
   autoFollowUps: boolean;
-  aiProvider: 'anthropic' | 'openrouter' | 'groq' | 'together';
+  aiProvider: 'anthropic' | 'openrouter';
   openrouterKeyMasked: string | null;
-  groqKeyMasked: string | null;
-  togetherKeyMasked: string | null;
   aiModel: string;
+  agentAutonomy: AgentAutonomy;
 }
 
 interface AppearanceData {
@@ -75,9 +74,8 @@ const DEFAULT_SETTINGS: AppSettings = {
     autoFollowUps: false,
     aiProvider: 'anthropic',
     openrouterKeyMasked: null,
-    groqKeyMasked: null,
-    togetherKeyMasked: null,
     aiModel: 'meta-llama/llama-3.3-70b-instruct:free',
+    agentAutonomy: { tasks: 'suggest', pipeline: 'suggest', sequences: 'off', emails: 'prepare', field: 'suggest' },
   },
   appearance: {
     density: 'comfortable',
@@ -125,11 +123,10 @@ export function SettingsRoot() {
                 customization: dbSettings.ai_density === 'Standard' ? 'low' : dbSettings.ai_density === 'Profond' ? 'high' : 'medium',
                 autoInsights: dbSettings.auto_insights ?? true,
                 autoFollowUps: dbSettings.auto_follow_ups ?? false,
-                aiProvider: dbSettings.ai_provider || 'anthropic',
+                aiProvider: (dbSettings.ai_provider === 'openrouter' ? 'openrouter' : 'anthropic') as 'anthropic' | 'openrouter',
                 openrouterKeyMasked: null,
-                groqKeyMasked: null,
-                togetherKeyMasked: null,
                 aiModel: dbSettings.ai_model || 'meta-llama/llama-3.3-70b-instruct:free',
+                agentAutonomy: dbSettings.agent_autonomy ?? { tasks: 'suggest', pipeline: 'suggest', sequences: 'off', emails: 'prepare', field: 'suggest' },
               },
               appearance: {
                 density: 'comfortable',
@@ -154,8 +151,6 @@ export function SettingsRoot() {
           const parsed = JSON.parse(stored);
           if (parsed?.ai) {
             delete parsed.ai.openrouterKey;
-            delete parsed.ai.groqKey;
-            delete parsed.ai.togetherKey;
           }
           const { profile, ai, appearance, workspaceGeneral } = parsed;
           setSettings((prev) => ({ ...prev, ...(profile && { profile }), ...(ai && { ai }), ...(appearance && { appearance }), ...(workspaceGeneral && { workspaceGeneral }) }));
@@ -172,12 +167,7 @@ export function SettingsRoot() {
         const keys = await res.json();
         setSettings((prev) => ({
           ...prev,
-          ai: {
-            ...prev.ai,
-            openrouterKeyMasked: keys.openrouterKeyMasked,
-            groqKeyMasked: keys.groqKeyMasked,
-            togetherKeyMasked: keys.togetherKeyMasked,
-          },
+          ai: { ...prev.ai, openrouterKeyMasked: keys.openrouterKeyMasked },
         }));
       } catch (e) {
         console.error('Failed to fetch AI key status', e);
@@ -230,6 +220,7 @@ export function SettingsRoot() {
               ai_model: nextSettings.ai.aiModel,
               auto_insights: nextSettings.ai.autoInsights,
               auto_follow_ups: nextSettings.ai.autoFollowUps,
+              agent_autonomy: nextSettings.ai.agentAutonomy,
             });
             if (baseError) console.error('Error saving base settings:', baseError.message);
 
@@ -259,34 +250,21 @@ export function SettingsRoot() {
     }, 800);
   };
 
-  const FIELD_BY_PROVIDER = {
-    openrouter: 'openrouter_key',
-    groq: 'groq_api_key',
-    together: 'together_api_key',
-  } as const;
-  const MASK_KEY_BY_PROVIDER = {
-    openrouter: 'openrouterKeyMasked',
-    groq: 'groqKeyMasked',
-    together: 'togetherKeyMasked',
-  } as const;
-
-  const saveAiKey = async (provider: keyof typeof FIELD_BY_PROVIDER, value: string) => {
+  const saveAiKey = async (_provider: 'openrouter', value: string) => {
     const res = await fetch(getApiUrl('/api/settings/ai-keys'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ field: FIELD_BY_PROVIDER[provider], value }),
+      body: JSON.stringify({ field: 'openrouter_key', value }),
     });
     if (!res.ok) return;
     const { masked } = await res.json();
-    setSettings((prev) => ({ ...prev, ai: { ...prev.ai, [MASK_KEY_BY_PROVIDER[provider]]: masked } }));
+    setSettings((prev) => ({ ...prev, ai: { ...prev.ai, openrouterKeyMasked: masked } }));
   };
 
-  const deleteAiKey = async (provider: keyof typeof FIELD_BY_PROVIDER) => {
-    const res = await fetch(getApiUrl(`/api/settings/ai-keys?field=${FIELD_BY_PROVIDER[provider]}`), {
-      method: 'DELETE',
-    });
+  const deleteAiKey = async (_provider: 'openrouter') => {
+    const res = await fetch(getApiUrl('/api/settings/ai-keys?field=openrouter_key'), { method: 'DELETE' });
     if (!res.ok) return;
-    setSettings((prev) => ({ ...prev, ai: { ...prev.ai, [MASK_KEY_BY_PROVIDER[provider]]: null } }));
+    setSettings((prev) => ({ ...prev, ai: { ...prev.ai, openrouterKeyMasked: null } }));
   };
 
   return (

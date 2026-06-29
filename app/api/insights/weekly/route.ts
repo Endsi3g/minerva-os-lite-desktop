@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
   // Confirm the toggle is enabled and fetch AI configuration settings
   const { data: settings } = await supabase
     .from('settings')
-    .select('auto_insights, ai_provider, ai_model, openrouter_key, groq_api_key, together_api_key')
+    .select('auto_insights, ai_provider, ai_model, openrouter_key')
     .eq('user_id', user.id)
     .maybeSingle();
 

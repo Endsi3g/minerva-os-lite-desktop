@@ -59,7 +59,7 @@ Format de sortie: 3 sections distinctes avec titres (🎯 Accroche, 💡 Valeur,
 
     const { data: settings } = await supabase
       .from('settings')
-      .select('ai_provider, ai_model, openrouter_key, groq_api_key, together_api_key')
+      .select('ai_provider, ai_model, openrouter_key')
       .eq('user_id', user.id)
       .maybeSingle();
 
