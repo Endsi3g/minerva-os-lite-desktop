@@ -806,84 +806,52 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
 
                 <div className="h-px bg-[#e5e5e0] my-1" />
 
-                {/* Switch workspace parent item */}
-                <div className="relative">
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setIsSwitchWorkspaceOpen(!isSwitchWorkspaceOpen);
-                    }}
-                    className={cn(
-                      "w-full flex items-center justify-between px-3 py-2 text-xs font-semibold text-[#555552] hover:text-[#26251e] hover:bg-[#e5e5e2]/60 transition-colors text-left",
-                      isSwitchWorkspaceOpen && "bg-[#e5e5e2]/60 text-[#26251e]"
-                    )}
-                  >
-                    <span className="flex items-center gap-2">
-                      <Briefcase className="w-3.5 h-3.5" />
-                      <span>{t('nav.switch_workspace')}</span>
-                    </span>
-                    <ChevronRight className="w-3 h-3 text-[#7a7a76]" />
-                  </button>
-
-                  {/* Submenu flyout to the right */}
-                  {isSwitchWorkspaceOpen && (
-                    <div className="absolute left-full top-0 ml-0.5 w-52 bg-white border border-[#e5e5e0] rounded-xl shadow-lg py-1.5 z-[101] animate-in fade-in slide-in-from-left-1 duration-150 text-left">
-                      <div className="max-h-[200px] overflow-y-auto">
-                        {workspacesList.map((ws) => {
-                          const isWsActive = activeWorkspace?.id === ws.id;
-                          return (
-                            <button
-                              key={ws.id}
-                              onClick={() => {
-                                switchWorkspace(ws.id);
-                                setIsWorkspaceMenuOpen(false);
-                                setIsSwitchWorkspaceOpen(false);
-                              }}
-                              className="w-full flex items-center justify-between px-3 py-2 text-xs font-semibold text-[#555552] hover:text-[#26251e] hover:bg-[#e5e5e2]/60 transition-colors text-left"
-                            >
-                              <span className="flex items-center gap-2 min-w-0">
-                                {ws.logo_base64 ? (
-                                  // eslint-disable-next-line @next/next/no-img-element
-                                  <img 
-                                    src={ws.logo_base64} 
-                                    alt="" 
-                                    className="w-4 h-4 object-contain rounded-sm shrink-0" 
-                                  />
-                                ) : (
-                                  <div className="w-4 h-4 rounded-sm bg-neutral-100 border flex items-center justify-center font-bold text-[8px] text-neutral-500 shrink-0">
-                                    {ws.name.substring(0, 1).toUpperCase()}
-                                  </div>
-                                )}
-                                <span className="flex flex-col min-w-0">
-                                  <span className="truncate max-w-[120px]">{ws.name}</span>
-                                  {ws.description && (
-                                    <span className="truncate max-w-[120px] text-[10px] font-normal text-[#9b9588]">{ws.description}</span>
-                                  )}
-                                </span>
-                              </span>
-                              {isWsActive && <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />}
-                            </button>
-                          );
-                        })}
-                      </div>
-                      
-                      {workspacesList.length > 0 && <div className="h-px bg-[#e5e5e0] my-1" />}
-
-                      <Link
-                        href="/workspaces"
-                        onClick={() => {
-                          setIsWorkspaceMenuOpen(false);
-                          setIsSwitchWorkspaceOpen(false);
-                        }}
-                        className="flex items-center justify-between px-3 py-2 text-xs font-semibold text-[#807d72] hover:text-[#26251e] hover:bg-[#e5e5e2]/60 transition-colors"
-                      >
-                        <span>{t('nav.all_workspaces')}</span>
-                        <Globe className="w-3 h-3" />
-                      </Link>
+                {/* Workspace list — inline, no flyout */}
+                {workspacesList.length > 0 && (
+                  <div>
+                    <div className="px-3 py-1 text-[9px] font-bold uppercase tracking-wider text-[#7a7a76]">
+                      Workspaces
                     </div>
-                  )}
-                </div>
+                    <div className="max-h-[160px] overflow-y-auto">
+                      {workspacesList.map((ws) => {
+                        const isWsActive = activeWorkspace?.id === ws.id;
+                        return (
+                          <button
+                            key={ws.id}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              switchWorkspace(ws.id);
+                              setIsWorkspaceMenuOpen(false);
+                            }}
+                            className="w-full flex items-center justify-between px-3 py-2 text-xs font-semibold text-[#555552] hover:text-[#26251e] hover:bg-[#e5e5e2]/60 transition-colors text-left"
+                          >
+                            <span className="flex items-center gap-2 min-w-0">
+                              {ws.logo_base64 ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img src={ws.logo_base64} alt="" className="w-4 h-4 object-contain rounded-sm shrink-0" />
+                              ) : (
+                                <div className="w-4 h-4 rounded-sm bg-[#e5e5e2] border border-[#d5d5d0] flex items-center justify-center font-bold text-[8px] text-[#555552] shrink-0">
+                                  {ws.name.substring(0, 1).toUpperCase()}
+                                </div>
+                              )}
+                              <span className="truncate max-w-[130px]">{ws.name}</span>
+                            </span>
+                            {isWsActive && <Check className="w-3.5 h-3.5 text-[#059669] shrink-0" />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <div className="h-px bg-[#e5e5e0] my-1" />
+                    <Link
+                      href="/workspaces"
+                      onClick={() => setIsWorkspaceMenuOpen(false)}
+                      className="flex items-center justify-between px-3 py-2 text-xs font-semibold text-[#807d72] hover:text-[#26251e] hover:bg-[#e5e5e2]/60 transition-colors"
+                    >
+                      <span>{t('nav.all_workspaces')}</span>
+                      <Globe className="w-3 h-3" />
+                    </Link>
+                  </div>
+                )}
 
                 <div className="h-px bg-[#e5e5e0] my-1" />
 
