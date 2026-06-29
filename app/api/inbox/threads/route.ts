@@ -77,6 +77,8 @@ async function resolveAccessToken(
       .from('google_accounts')
       .select('id, google_email')
       .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(1)
       .maybeSingle();
 
     if (acct) {

@@ -62,6 +62,20 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v5.1.0',
+      date: '2026-06-29',
+      titleKey: 'changelog.v3_42_0_title' as TranslationKey,
+      descKey: 'changelog.v3_42_0_desc' as TranslationKey,
+      highlights: [
+        { tag: 'fix', text: 'Sidebar v5 — "Paramètres" retiré des entrées principales (il est déjà accessible en bas de sidebar). Terrain renommé "Carte" — pointe directement vers /field.' },
+        { tag: 'feature', text: 'Rôles — page dédiée de création /settings/roles/new et /team/roles/new. Modal de création remplacé par navigation vers page dédiée.' },
+        { tag: 'fix', text: 'Google Inbox — fix critique : getAuthStatus et getFreshAccessToken utilisaient maybeSingle() qui cassait avec plusieurs comptes Google. Correction avec limit(1). Reload automatique après OAuth redirect.' },
+        { tag: 'fix', text: 'Breadcrumb Leads — LeadsSubNav (Liste | Pipeline | Comptes | Prospection | Timeline) affichée sur /pipeline, /accounts, /prospecting. Breadcrumb reconnaît les pages de la famille Leads.' },
+        { tag: 'feature', text: 'Timeline unifiée — page complète /leads/timeline avec notifications, tâches, visites terrain, chronologie par date, filtres par type d\'événement.' },
+        { tag: 'fix', text: 'Bannière de mise à jour — version mise à jour vers v5.0.0.' },
+      ],
+    },
+    {
       version: 'v5.0.0',
       date: '2026-06-29',
       titleKey: 'changelog.v3_42_0_title' as TranslationKey,

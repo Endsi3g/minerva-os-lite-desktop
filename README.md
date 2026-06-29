@@ -1,5 +1,7 @@
 # Minerva OS — Reach Lite
 
+> **Dernière version : v5.0.0**
+
 CRM de prospection B2B autonome pour entrepreneurs québécois. Prospecte, enrichit les leads, envoie les emails et catégorise les réponses — le tout de manière automatique.
 
 ---
@@ -17,6 +19,11 @@ Minerva OS est une plateforme CRM all-in-one conçue pour les entrepreneurs qui 
 - **Intelligence IA** — Rapport hebdomadaire comportemental, assistant IA avec canvas, agents personnalisés, skills IA
 - **Agenda & terrain** — Intégration Google Calendar, mode terrain (route → préparation → compte-rendu), réservation de RDV
 - **Multi-workspace & équipe** — Espaces de travail séparés, rôles (Admin/Manager/Member), chat d'équipe, notifications
+- **Navigation v5 — 6 entrées épurées** — Accueil, Leads, Outreach, Carte, Agenda, Équipe ; pages secondaires accessibles par URL directe
+- **AI Gateway Vercel** — Routage unifié des fournisseurs IA avec failover et suivi des coûts
+- **Agent Feed** — Flux d'activité des agents IA et de l'automatisation
+- **Outreach unifié** — Espace de prospection multi-canal centralisé
+- **Timeline unifiée** — Historique chronologique de toutes les interactions leads (emails, tâches, visites terrain, enrichissements)
 
 ### Stack technologique
 

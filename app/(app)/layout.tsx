@@ -102,7 +102,7 @@ import {
 import { Pin, PinOff } from 'lucide-react';
 import { CalendarDays, UsersRound } from 'lucide-react';
 
-const CURRENT_VERSION = '3.35.1';
+const CURRENT_VERSION = '5.0.0';
 
 function UpdateBanner() {
   const [visible, setVisible] = useState(false);
@@ -561,6 +561,14 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
     );
   }
 
+  // Pages secondaires rattachées à la famille "Leads"
+  const LEADS_FAMILY: Record<string, string> = {
+    '/pipeline': 'Pipeline',
+    '/accounts': 'Comptes',
+    '/prospecting': 'Prospection',
+    '/leads/timeline': 'Timeline',
+  };
+
   const getBreadcrumbs = () => {
     const segments = pathname.split('/').filter(Boolean);
     const crumbs = [];
@@ -570,6 +578,13 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
       href: '/today',
       isLast: segments.length === 0 || (segments.length === 1 && segments[0] === 'today')
     });
+
+    // Famille Leads : afficher "Leads > [label]" pour pipeline / comptes / prospection / timeline
+    if (LEADS_FAMILY[pathname]) {
+      crumbs.push({ label: t('nav.search'), href: '/leads', isLast: false });
+      crumbs.push({ label: LEADS_FAMILY[pathname], href: pathname, isLast: true });
+      return crumbs;
+    }
 
     segments.forEach((segment, index) => {
       if (segment === 'today' && index === 0) return;
@@ -617,15 +632,14 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
     return crumbs;
   };
 
-  // Pinned nav items — Navigation v5 : 7 entrées épurées
+  // Pinned nav items — Navigation v5 : 6 entrées épurées
   const pinnedItems = [
     { name: 'Accueil',     href: '/today',    icon: Home },
     { name: 'Leads',       href: '/leads',    icon: Users },
     { name: 'Outreach',    href: '/outreach', icon: Send },
-    { name: 'Terrain',     href: '/field',    icon: MapPin },
+    { name: 'Carte',       href: '/field',    icon: MapPin },
     { name: 'Agenda',      href: '/agenda',   icon: CalendarDays },
     { name: 'Équipe',      href: '/team',     icon: UsersRound },
-    { name: 'Paramètres',  href: '/settings', icon: SettingsIcon },
   ];
 
   // Collapsible nav categories — vidées en v5 (pages secondaires accessibles par URL directe)

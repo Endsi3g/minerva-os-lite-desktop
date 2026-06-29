@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import {
   Mail, Search, Download, Filter, Check, X,
   Loader2, ChevronDown, Info, Trash2, ArrowUpDown,
@@ -54,7 +55,10 @@ export default function TeamPage() {
   // Online presence — userIds of members currently in the app
   const [onlineUserIds, setOnlineUserIds] = useState<Set<string>>(new Set());
   const [currentUser, setCurrentUser] = useState<{ id: string; email: string; name: string; avatar?: string } | null>(null);
-  const [activeTab, setActiveTab] = useState<'members' | 'chat' | 'roles'>('members');
+  const searchParams = useSearchParams();
+  const [activeTab, setActiveTab] = useState<'members' | 'chat' | 'roles'>(
+    searchParams.get('tab') === 'roles' ? 'roles' : searchParams.get('tab') === 'chat' ? 'chat' : 'members'
+  );
   const [chatMessage, setChatMessage] = useState('');
   const chatEndRef = useRef<HTMLDivElement>(null);
   const chatInputRef = useRef<HTMLInputElement>(null);
@@ -1627,13 +1631,13 @@ export default function TeamPage() {
                     <span className="text-[10px] font-bold px-1.5 py-0.5 bg-[#059669]/10 text-[#059669] rounded-full">{customRoles.length}</span>
                   )}
                 </h2>
-                <button
-                  onClick={openNewRole}
+                <Link
+                  href="/team/roles/new"
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#26251e] text-white text-xs font-bold hover:bg-[#3d3c35] transition-colors"
                 >
                   <Plus className="h-3.5 w-3.5" />
                   Nouveau rôle
-                </button>
+                </Link>
               </div>
 
               {customRoles.length === 0 ? (
@@ -1641,13 +1645,13 @@ export default function TeamPage() {
                   <Shield className="h-8 w-8 text-[#d4d4d0] mx-auto" />
                   <p className="text-sm font-bold text-[#807d72]">Aucun rôle personnalisé</p>
                   <p className="text-xs text-[#b0b0a8]">Créez des rôles sur mesure avec des permissions spécifiques par module.</p>
-                  <button
-                    onClick={openNewRole}
+                  <Link
+                    href="/team/roles/new"
                     className="mt-2 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#26251e] text-white text-xs font-bold hover:bg-[#3d3c35] transition-colors"
                   >
                     <Plus className="h-3.5 w-3.5" />
                     Créer un rôle
-                  </button>
+                  </Link>
                 </div>
               ) : (
                 <div className="space-y-2.5">
@@ -1907,102 +1911,6 @@ export default function TeamPage() {
               >
                 {leavingTeam ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <LogOut className="h-3.5 w-3.5" />}
                 Confirmer
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── Custom Role Modal ── */}
-      {showRoleModal && (
-        <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="bg-white border border-[#e5e5e0] rounded-2xl shadow-2xl p-6 w-full max-w-lg mx-4 space-y-5 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-black text-[#26251e] flex items-center gap-2">
-                <Shield className="h-4 w-4 text-[#807d72]" />
-                {editingRole ? 'Modifier le rôle' : 'Créer un rôle'}
-              </h3>
-              <button onClick={() => setShowRoleModal(false)} className="w-7 h-7 rounded-full hover:bg-[#f4f4f3] flex items-center justify-center">
-                <X className="h-4 w-4 text-[#807d72]" />
-              </button>
-            </div>
-
-            {/* Name + Color */}
-            <div className="grid grid-cols-3 gap-3">
-              <div className="col-span-2 space-y-1">
-                <label className="text-[10px] font-bold uppercase tracking-wider text-[#807d72]">Nom du rôle</label>
-                <input
-                  value={roleName}
-                  onChange={e => setRoleName(e.target.value)}
-                  placeholder="ex: Commercial terrain"
-                  className="w-full h-9 border border-[#e5e5e0] rounded-xl px-3 text-xs font-semibold text-[#26251e] outline-none focus:ring-1 focus:ring-[#059669]"
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold uppercase tracking-wider text-[#807d72]">Couleur</label>
-                <div className="flex items-center gap-2">
-                  <div className="w-9 h-9 rounded-xl border border-[#e5e5e0] overflow-hidden">
-                    <input type="color" value={roleColor} onChange={e => setRoleColor(e.target.value)} className="w-full h-full cursor-pointer border-none" />
-                  </div>
-                  {['#059669','#059669','#6366f1','#f59e0b','#ec4899'].map(c => (
-                    <button key={c} onClick={() => setRoleColor(c)} className="w-5 h-5 rounded-full border-2 transition-all" style={{ background: c, borderColor: roleColor === c ? c : 'transparent' }} />
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Permission toggles */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <label className="text-[10px] font-bold uppercase tracking-wider text-[#807d72]">Modules ({rolePerms.size}/{ALL_MODULES.length})</label>
-                <div className="flex gap-2">
-                  <button onClick={() => setRolePerms(new Set(ALL_MODULES))} className="text-[10px] font-bold text-[#059669] hover:underline">Tout activer</button>
-                  <button onClick={() => setRolePerms(new Set())} className="text-[10px] font-bold text-[#807d72] hover:underline">Tout désactiver</button>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-1.5">
-                {ALL_MODULES.map(mod => {
-                  const cfg = PERMISSION_MODULES[mod];
-                  const enabled = rolePerms.has(mod);
-                  return (
-                    <button
-                      key={mod}
-                      onClick={() => {
-                        const next = new Set(rolePerms);
-                        enabled ? next.delete(mod) : next.add(mod);
-                        setRolePerms(next);
-                      }}
-                      className={cn(
-                        "flex items-center gap-2 px-3 py-2.5 rounded-xl border text-left transition-all",
-                        enabled
-                          ? 'border-[#26251e] bg-[#26251e]/5 text-[#26251e]'
-                          : 'border-[#e5e5e0] bg-white text-[#807d72] hover:border-[#c5c5c0]'
-                      )}
-                    >
-                      <div className={cn("w-4 h-4 rounded flex items-center justify-center shrink-0 transition-all", enabled ? 'bg-[#26251e]' : 'bg-[#e5e5e0]')}>
-                        {enabled && <Check className="h-2.5 w-2.5 text-white" />}
-                      </div>
-                      <span className="text-[9px] font-black leading-tight">
-                        {cfg?.icon} {cfg?.label ?? mod}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="flex gap-2 pt-1">
-              <button onClick={() => setShowRoleModal(false)} className="flex-1 py-2.5 text-xs font-bold border border-[#e5e5e0] rounded-xl hover:bg-[#f4f4f3] transition-colors">
-                Annuler
-              </button>
-              <button
-                onClick={handleSaveRole}
-                disabled={savingRole || !roleName.trim()}
-                className="flex-1 py-2.5 text-xs font-bold text-white rounded-xl transition-colors flex items-center justify-center gap-1.5 disabled:opacity-60"
-                style={{ background: roleColor }}
-              >
-                {savingRole ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
-                {editingRole ? 'Enregistrer' : 'Créer le rôle'}
               </button>
             </div>
           </div>

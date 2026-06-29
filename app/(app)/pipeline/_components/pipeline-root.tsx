@@ -10,6 +10,7 @@ import { PipelineTableView } from './pipeline-table-view';
 import { PipelineForecastView } from './pipeline-forecast-view';
 import { Kanban, Table, TrendingUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { LeadsSubNav } from '../../leads/_components/leads-sub-nav';
 
 export function PipelineRoot() {
   const { leads } = useReach();
@@ -25,7 +26,9 @@ export function PipelineRoot() {
   });
 
   return (
-    <div className="flex h-full flex-col gap-4 p-3 sm:p-4 md:p-6 overflow-hidden">
+    <div className="flex h-full flex-col overflow-hidden">
+      <LeadsSubNav />
+      <div className="flex flex-1 flex-col gap-4 p-3 sm:p-4 md:p-6 overflow-hidden">
       {/* Header section with niche/owner selectors */}
       <PipelineHeader
         selectedNiche={niche}
@@ -85,6 +88,7 @@ export function PipelineRoot() {
         {view === 'board' && <PipelineKanbanView leads={filteredLeads} />}
         {view === 'table' && <PipelineTableView leads={filteredLeads} />}
         {view === 'forecast' && <PipelineForecastView />}
+      </div>
       </div>
     </div>
   );

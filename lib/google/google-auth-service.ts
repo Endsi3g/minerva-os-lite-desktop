@@ -33,6 +33,8 @@ export async function getAuthStatus(supabase: any, userId: string): Promise<Goog
     .from('google_accounts')
     .select('id, google_email, status')
     .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(1)
     .maybeSingle();
 
   if (!account) {
@@ -256,6 +258,8 @@ export async function getFreshAccessToken(supabase: any, userId: string): Promis
     .from('google_accounts')
     .select('id, status')
     .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(1)
     .maybeSingle();
 
   if (!account) {

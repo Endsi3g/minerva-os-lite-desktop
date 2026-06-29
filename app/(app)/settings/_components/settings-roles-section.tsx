@@ -1,7 +1,8 @@
 'use client';
 
 import React from 'react';
-import { Check, X } from 'lucide-react';
+import Link from 'next/link';
+import { Check, Plus } from 'lucide-react';
 import { SettingsSectionWrapper } from './settings-section-wrapper';
 
 interface Permission {
@@ -134,6 +135,16 @@ export function SettingsRolesSection() {
       description="Configurez les autorisations spécifiques pour chaque rôle."
       isSaving={false}
     >
+      <div className="flex justify-end mb-3">
+        <Link
+          href="/settings/roles/new"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#26251e] text-white text-xs font-bold hover:bg-[#3d3c35] transition-colors"
+        >
+          <Plus className="h-3.5 w-3.5" />
+          Créer un rôle
+        </Link>
+      </div>
+
       <div className="border border-border rounded-xl overflow-hidden bg-card">
         {/* Header */}
         <div className="grid grid-cols-[1fr_100px_100px_100px] border-b border-border bg-muted/40">

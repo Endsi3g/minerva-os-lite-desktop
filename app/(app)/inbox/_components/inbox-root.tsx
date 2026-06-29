@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { useReach } from '@/lib/reach-context';
 import { getApiUrl } from '@/lib/api-helper';
 import { InboxList } from './inbox-list';
@@ -16,6 +17,7 @@ type ReplyStatus = 'positive' | 'followup' | 'negative' | null;
 type ViewMode = 'all' | 'leads' | 'sent';
 
 export function InboxRoot() {
+  const router = useRouter();
   const { activeWorkspace, updateLead, addTask, campaigns, addNotification, user } = useReach();
 
   const [viewMode, setViewMode] = useState<ViewMode>('all');
@@ -94,6 +96,17 @@ export function InboxRoot() {
   useEffect(() => {
     fetchThreads();
   }, [fetchThreads]);
+
+  // Force a re-fetch right after the Google OAuth redirect, then clean the URL
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.search.includes('success=google_connected')) {
+      setTimeout(() => {
+        fetchThreads();
+        router.replace('/inbox');
+      }, 500);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Reset thread selection when switching modes
   useEffect(() => {

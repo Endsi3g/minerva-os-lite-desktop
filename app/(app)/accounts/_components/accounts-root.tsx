@@ -11,6 +11,7 @@ import {
   Star, ArrowUpRight, Loader2,
 } from 'lucide-react';
 import { useLanguage } from '@/lib/language-context';
+import { LeadsSubNav } from '../../leads/_components/leads-sub-nav';
 
 interface Account {
   key: string;
@@ -103,6 +104,7 @@ export function AccountsRoot() {
 
   return (
     <div className="h-full overflow-hidden bg-white text-[#26251e] font-sans selection:bg-[#059669]/10 relative animate-page-enter flex flex-col">
+      <LeadsSubNav />
       <div className="absolute inset-0 opacity-[0.25] pointer-events-none bg-grid-pattern-20 z-0" />
 
       {/* Header */}
