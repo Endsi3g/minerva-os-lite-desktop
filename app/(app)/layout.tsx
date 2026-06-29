@@ -413,7 +413,20 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
         setIsCollapsed(true);
       }, 0);
     }
+    // Auto-collapse on /map for full-screen experience
+    if (typeof window !== 'undefined' && window.location.pathname === '/map') {
+      setIsCollapsed(true);
+      document.body.classList.add('sidebar-collapsed');
+    }
   }, []);
+
+  useEffect(() => {
+    if (pathname === '/map') {
+      setIsCollapsed(true);
+      localStorage.setItem('minerva_sidebar_collapsed', 'true');
+      document.body.classList.add('sidebar-collapsed');
+    }
+  }, [pathname]);
 
   useEffect(() => {
     if (!contextUser || !activeWorkspace) return;
@@ -637,7 +650,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
     { name: 'Accueil',     href: '/today',    icon: Home },
     { name: 'Leads',       href: '/leads',    icon: Users },
     { name: 'Outreach',    href: '/outreach', icon: Send },
-    { name: 'Carte',       href: '/field',    icon: MapPin },
+    { name: 'Carte',       href: '/map',      icon: MapPin },
     { name: 'Agenda',      href: '/agenda',   icon: CalendarDays },
     { name: 'Équipe',      href: '/team',     icon: UsersRound },
   ];
