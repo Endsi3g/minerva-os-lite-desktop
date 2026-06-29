@@ -812,10 +812,8 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
         const list: Workspace[] = data.workspaces || [];
         setWorkspacesList(list);
 
-        // Active workspace: DB setting → localStorage backup → owned workspace → first
-        const dbSavedId: string | null = data.activeWorkspaceId ?? null;
-        const lsSavedId = typeof window !== 'undefined' ? localStorage.getItem('minerva_active_workspace_id') : null;
-        const savedId = dbSavedId ?? lsSavedId ?? null;
+        // Active workspace: prefer DB setting (settings.active_workspace_id), fallback to owned workspace
+        const savedId: string | null = data.activeWorkspaceId ?? null;
         let active = savedId ? list.find((w) => w.id === savedId) : null;
         if (!active && list.length > 0) {
           active = list.find((w) => w.isOwner) || list[0];
@@ -854,8 +852,6 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
 
         if (active) {
           setActiveWorkspace(active);
-          // Persist to localStorage immediately (survives even if DB column is missing)
-          if (typeof window !== 'undefined') localStorage.setItem('minerva_active_workspace_id', active.id);
           // Persist choice back to Supabase (fire-and-forget)
           fetch(getApiUrl('/api/workspaces'), {
             method: 'PATCH',
@@ -882,8 +878,6 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
     }
 
     setActiveWorkspace(ws);
-    // Persist to localStorage immediately (belt-and-suspenders)
-    if (typeof window !== 'undefined') localStorage.setItem('minerva_active_workspace_id', ws.id);
     window.dispatchEvent(new Event('minerva_workspace_changed'));
 
     const electronObj = typeof window !== 'undefined' && (window as any).electron ? (window as any).electron : null;
