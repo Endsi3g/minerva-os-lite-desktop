@@ -68,4 +68,4 @@ SELECT
   w.name AS workspace_name
 FROM team_members tm
 LEFT JOIN workspaces w ON w.id = tm.workspace_id
-ORDER BY tm.created_at DESC;
+ORDER BY tm.id;
