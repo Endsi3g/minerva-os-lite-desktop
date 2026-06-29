@@ -7,15 +7,18 @@ import { cn } from '@/lib/utils';
 import { getApiUrl } from '@/lib/api-helper';
 import { InboxRoot } from '@/app/(app)/inbox/_components/inbox-root';
 import { OutreachRoot } from './outreach-root';
+import { OutreachApprovals } from './outreach-approvals';
+import { OutreachCampaigns } from './outreach-campaigns';
+import EmailTemplatesPage from '@/app/(app)/settings/email-templates/page';
 
 type OutreachTab = 'inbox' | 'sequences' | 'campaigns' | 'templates' | 'approvals';
 
-const TABS: { id: OutreachTab; label: string; icon: React.ElementType }[] = [
+const TABS: { id: OutreachTab; label: string; icon: React.ElementType; badgeKey?: string }[] = [
   { id: 'inbox', label: 'Inbox', icon: Inbox },
   { id: 'sequences', label: 'Séquences', icon: GitBranch },
   { id: 'campaigns', label: 'Campagnes', icon: Megaphone },
   { id: 'templates', label: 'Templates', icon: FileText },
-  { id: 'approvals', label: 'Approbations', icon: CheckCircle2 },
+  { id: 'approvals', label: 'Approbations', icon: CheckCircle2, badgeKey: 'approvals' },
 ];
 
 function ShellTab({ icon: Icon, title, description, href, cta }: { icon: React.ElementType; title: string; description: string; href: string; cta: string }) {
@@ -40,6 +43,16 @@ function ShellTab({ icon: Icon, title, description, href, cta }: { icon: React.E
 export function OutreachTabsRoot() {
   const [activeTab, setActiveTab] = useState<OutreachTab>('inbox');
   const [showSetupBanner, setShowSetupBanner] = useState(false);
+  const [pendingApprovals, setPendingApprovals] = useState(0);
+
+  useEffect(() => {
+    const workspaceId = typeof window !== 'undefined' ? localStorage.getItem('minerva_active_workspace_id') : null;
+    if (!workspaceId) return;
+    fetch(getApiUrl(`/api/outreach/approvals?workspace_id=${workspaceId}`))
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d) setPendingApprovals(d.total ?? 0); })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (typeof window !== 'undefined' && localStorage.getItem('minerva_ai_setup_dismissed') === '1') {
@@ -94,7 +107,7 @@ export function OutreachTabsRoot() {
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={cn(
-                'flex items-center gap-1.5 px-3 py-3 text-xs font-semibold border-b-2 transition-colors whitespace-nowrap shrink-0',
+                'relative flex items-center gap-1.5 px-3 py-3 text-xs font-semibold border-b-2 transition-colors whitespace-nowrap shrink-0',
                 isActive
                   ? 'border-[#059669] text-[#059669]'
                   : 'border-transparent text-[#7a7a76] hover:text-[#26251e]'
@@ -102,6 +115,11 @@ export function OutreachTabsRoot() {
             >
               <Icon className="h-3.5 w-3.5" />
               {tab.label}
+              {tab.badgeKey === 'approvals' && pendingApprovals > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#d97706] text-[8px] font-black text-white">
+                  {pendingApprovals > 9 ? '9+' : pendingApprovals}
+                </span>
+              )}
             </button>
           );
         })}
@@ -117,33 +135,17 @@ export function OutreachTabsRoot() {
         {activeTab === 'sequences' && <OutreachRoot />}
 
         {activeTab === 'campaigns' && (
-          <ShellTab
-            icon={Megaphone}
-            title="Campagnes d'approche"
-            description="Lance et pilote des campagnes multi-canales à grande échelle. Suivi des ouvertures, réponses et conversions."
-            href="/campaigns"
-            cta="Ouvrir les campagnes"
-          />
+          <div className="h-full">
+            <OutreachCampaigns />
+          </div>
         )}
 
-        {activeTab === 'templates' && (
-          <ShellTab
-            icon={FileText}
-            title="Templates Email"
-            description="Crée et gère tes modèles d'emails réutilisables avec variables dynamiques pour personnaliser chaque envoi."
-            href="/email-templates"
-            cta="Gérer les templates"
-          />
-        )}
+        {activeTab === 'templates' && <EmailTemplatesPage />}
 
         {activeTab === 'approvals' && (
-          <ShellTab
-            icon={CheckCircle2}
-            title="Approbations (human-in-the-loop)"
-            description="Validez les emails et actions générés par l'IA avant leur envoi. File d'attente d'approbation pour garder le contrôle. Bientôt disponible."
-            href="/outreach"
-            cta="Configurer les approbations"
-          />
+          <div className="h-full">
+            <OutreachApprovals />
+          </div>
         )}
       </div>
     </div>

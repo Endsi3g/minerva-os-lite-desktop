@@ -19,6 +19,13 @@ export interface AgentAutonomy {
   sequences: AutonomyLevel;
   emails: AutonomyLevel;
   field: AutonomyLevel;
+  // Outreach granular
+  outreach_draft: AutonomyLevel;
+  outreach_initial_send: AutonomyLevel;
+  outreach_followup: AutonomyLevel;
+  outreach_reply: AutonomyLevel;
+  outreach_sequence_pause: AutonomyLevel;
+  outreach_pipeline_update: AutonomyLevel;
 }
 
 interface AiData {
@@ -56,12 +63,18 @@ const AUTONOMY_DESCRIPTIONS: Record<AutonomyLevel, string> = {
   auto: "L'agent agit seul dans ce domaine",
 };
 
-const AGENT_TOOLS: { key: keyof AgentAutonomy; label: string }[] = [
+const AGENT_TOOLS: { key: keyof AgentAutonomy; label: string; group?: string }[] = [
   { key: 'tasks', label: 'Tâches de relance' },
   { key: 'pipeline', label: 'Mise à jour pipeline' },
-  { key: 'sequences', label: 'Séquences email' },
-  { key: 'emails', label: 'Brouillons email' },
   { key: 'field', label: 'Tournées terrain' },
+  { key: 'sequences', label: 'Séquences (niveau général)' },
+  { key: 'emails', label: 'Emails (niveau général)' },
+  { key: 'outreach_draft', label: 'Création de brouillons', group: 'Outreach granulaire' },
+  { key: 'outreach_initial_send', label: 'Premier envoi séquence', group: 'Outreach granulaire' },
+  { key: 'outreach_followup', label: 'Relances automatiques', group: 'Outreach granulaire' },
+  { key: 'outreach_reply', label: 'Réponse aux réponses', group: 'Outreach granulaire' },
+  { key: 'outreach_sequence_pause', label: 'Pause de séquence', group: 'Outreach granulaire' },
+  { key: 'outreach_pipeline_update', label: 'Pipeline après intent', group: 'Outreach granulaire' },
 ];
 
 function ApiKeyField({
@@ -297,10 +310,18 @@ export function SettingsAiSection({ data, onChange, onSaveKey, onDeleteKey, isSa
             </div>
 
             <div className="space-y-3 pt-1">
-              {AGENT_TOOLS.map(({ key, label }) => {
+              {AGENT_TOOLS.map(({ key, label, group }, idx) => {
                 const currentLevel = data.agentAutonomy?.[key] ?? 'suggest';
+                const prevGroup = idx > 0 ? AGENT_TOOLS[idx - 1].group : undefined;
+                const showGroupHeader = group && group !== prevGroup;
                 return (
-                  <div key={key} className="flex items-center justify-between gap-3">
+                  <React.Fragment key={key}>
+                    {showGroupHeader && (
+                      <div className="pt-2">
+                        <p className="text-[9px] font-black uppercase tracking-wider text-muted-foreground">{group}</p>
+                      </div>
+                    )}
+                    <div className="flex items-center justify-between gap-3">
                     <div className="min-w-0">
                       <span className="text-xs font-semibold text-foreground block">{label}</span>
                       <span className="text-[10px] text-muted-foreground leading-none">{AUTONOMY_DESCRIPTIONS[currentLevel]}</span>
@@ -323,6 +344,7 @@ export function SettingsAiSection({ data, onChange, onSaveKey, onDeleteKey, isSa
                       </SelectContent>
                     </Select>
                   </div>
+                  </React.Fragment>
                 );
               })}
             </div>

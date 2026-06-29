@@ -9,6 +9,13 @@ export interface AgentAutonomy {
   sequences: AutonomyLevel;
   emails: AutonomyLevel;
   field: AutonomyLevel;
+  // Outreach granular autonomy
+  outreach_draft: AutonomyLevel;
+  outreach_initial_send: AutonomyLevel;
+  outreach_followup: AutonomyLevel;
+  outreach_reply: AutonomyLevel;
+  outreach_sequence_pause: AutonomyLevel;
+  outreach_pipeline_update: AutonomyLevel;
 }
 
 export interface AgentContext {
@@ -210,13 +217,169 @@ export async function summarizePipeline(
   };
 }
 
+// ── Tool: pause sequence enrollment ──────────────────────────────────────────
+
+export async function pauseSequence(
+  ctx: AgentContext,
+  params: { enrollment_id: string; reason?: string },
+) {
+  const { error } = await ctx.supabase
+    .from('sequence_enrollments')
+    .update({ status: 'paused', paused_at: new Date().toISOString(), paused_reason: params.reason ?? 'agent_pause' })
+    .eq('id', params.enrollment_id)
+    .eq('workspace_id', ctx.workspaceId);
+
+  if (error) throw new Error(`pauseSequence failed: ${error.message}`);
+  return { paused: true, enrollment_id: params.enrollment_id };
+}
+
+// ── Tool: resume sequence enrollment ─────────────────────────────────────────
+
+export async function resumeSequence(
+  ctx: AgentContext,
+  params: { enrollment_id: string },
+) {
+  const { error } = await ctx.supabase
+    .from('sequence_enrollments')
+    .update({ status: 'active', paused_at: null, paused_reason: null })
+    .eq('id', params.enrollment_id)
+    .eq('workspace_id', ctx.workspaceId);
+
+  if (error) throw new Error(`resumeSequence failed: ${error.message}`);
+  return { resumed: true, enrollment_id: params.enrollment_id };
+}
+
+// ── Tool: tag lead ────────────────────────────────────────────────────────────
+
+export async function tagLead(
+  ctx: AgentContext,
+  params: { lead_id: string; tags: string[] },
+) {
+  const { data: lead } = await ctx.supabase
+    .from('leads')
+    .select('outreach_tags')
+    .eq('id', params.lead_id)
+    .single();
+
+  const existing: string[] = lead?.outreach_tags ?? [];
+  const merged = Array.from(new Set([...existing, ...params.tags]));
+
+  const { error } = await ctx.supabase
+    .from('leads')
+    .update({ outreach_tags: merged, updated_at: new Date().toISOString() })
+    .eq('id', params.lead_id)
+    .eq('workspace_id', ctx.workspaceId);
+
+  if (error) throw new Error(`tagLead failed: ${error.message}`);
+  return { tags_added: params.tags, total_tags: merged.length };
+}
+
+// ── Tool: classify reply ──────────────────────────────────────────────────────
+
+export async function classifyReply(
+  ctx: AgentContext,
+  params: { lead_id: string; subject: string; snippet: string; thread_id?: string },
+) {
+  const result = await generateCompletion({
+    system: 'Tu es un assistant de classification d\'emails commerciaux. Réponds uniquement en JSON valide.',
+    messages: [{
+      role: 'user',
+      content: `Classe cette réponse email. Sujet: "${params.subject}". Contenu: "${params.snippet}".
+JSON uniquement:
+{
+  "intent": "interested" | "not_interested" | "scheduling" | "info_request" | "objection" | "other",
+  "confidence": 0-100,
+  "summary": "phrase de 1 ligne",
+  "next_action": "recommandation d'action concrète",
+  "should_pause_sequence": true | false
+}`,
+    }],
+    jsonMode: true,
+    maxTokens: 300,
+    settings: ctx.settings,
+    userId: ctx.userId,
+  });
+
+  let parsed: Record<string, unknown>;
+  try { parsed = JSON.parse(result); }
+  catch { parsed = { intent: 'other', confidence: 0, summary: result }; }
+
+  // Persist intent on lead
+  await ctx.supabase
+    .from('leads')
+    .update({ last_reply_intent: parsed.intent, updated_at: new Date().toISOString() })
+    .eq('id', params.lead_id)
+    .eq('workspace_id', ctx.workspaceId);
+
+  if (params.thread_id) {
+    await ctx.supabase
+      .from('gmail_threads')
+      .update({ reply_intent: parsed.intent, intent_confidence: parsed.confidence, next_action: parsed.next_action })
+      .eq('thread_id', params.thread_id);
+  }
+
+  return parsed;
+}
+
+// ── Tool: summarize inbox ─────────────────────────────────────────────────────
+
+export async function summarizeInbox(ctx: AgentContext) {
+  const { data: threads } = await ctx.supabase
+    .from('gmail_threads')
+    .select('reply_intent, workspace_id')
+    .eq('workspace_id', ctx.workspaceId)
+    .not('reply_intent', 'is', null)
+    .limit(50);
+
+  const counts = (threads ?? []).reduce<Record<string, number>>((acc, t: any) => {
+    acc[t.reply_intent] = (acc[t.reply_intent] || 0) + 1;
+    return acc;
+  }, {});
+
+  return { total_classified: threads?.length ?? 0, by_intent: counts };
+}
+
+// ── Tool: suggest follow up ───────────────────────────────────────────────────
+
+export async function suggestFollowUp(
+  ctx: AgentContext,
+  params: { lead_id: string },
+) {
+  const { data: lead } = await ctx.supabase
+    .from('leads')
+    .select('name, company, status, score, last_contacted_at, last_reply_intent, outreach_tags')
+    .eq('id', params.lead_id)
+    .single();
+
+  if (!lead) return { suggestion: null };
+
+  const suggestion = await generateCompletion({
+    system: 'Tu es un coach commercial. Donne une recommandation courte et actionnable pour la prochaine interaction avec ce lead.',
+    messages: [{
+      role: 'user',
+      content: `Lead: ${lead.name} (${lead.company}). Statut: ${lead.status}. Score: ${lead.score}. Dernier contact: ${lead.last_contacted_at || 'jamais'}. Intent détecté: ${lead.last_reply_intent || 'inconnu'}. Tags: ${(lead.outreach_tags || []).join(', ') || 'aucun'}.
+Quelle est la meilleure prochaine action ? En 1 phrase concrète.`,
+    }],
+    maxTokens: 150,
+    settings: ctx.settings,
+    userId: ctx.userId,
+  });
+
+  return { lead_id: params.lead_id, suggestion: suggestion.trim() };
+}
+
 // ── Autonomy gate ─────────────────────────────────────────────────────────────
 
 const TOOL_DOMAIN_MAP: Record<string, keyof AgentAutonomy> = {
   create_task: 'tasks',
   update_pipeline_stage: 'pipeline',
   enroll_in_sequence: 'sequences',
-  generate_email_draft: 'emails',
+  generate_email_draft: 'outreach_draft',
+  pause_sequence: 'outreach_sequence_pause',
+  resume_sequence: 'outreach_sequence_pause',
+  classify_reply: 'outreach_draft',
+  suggest_follow_up: 'outreach_followup',
+  tag_lead: 'tasks',
   plan_field_route: 'field',
 };
 
@@ -256,6 +419,18 @@ export async function dispatchTool(
       return updateAgentMemory(ctx, params as any);
     case 'summarize_pipeline':
       return summarizePipeline(ctx);
+    case 'pause_sequence':
+      return pauseSequence(ctx, params as any);
+    case 'resume_sequence':
+      return resumeSequence(ctx, params as any);
+    case 'tag_lead':
+      return tagLead(ctx, params as any);
+    case 'classify_reply':
+      return classifyReply(ctx, params as any);
+    case 'summarize_inbox':
+      return summarizeInbox(ctx);
+    case 'suggest_follow_up':
+      return suggestFollowUp(ctx, params as any);
     default:
       throw new Error(`Unknown tool: ${tool}`);
   }
@@ -266,13 +441,24 @@ export async function dispatchTool(
 export const TOOL_DESCRIPTIONS = `
 Tu as accès aux outils suivants (utilise-les via JSON actions[]):
 
+PIPELINE & LEADS:
 - list_leads_to_follow_up(threshold_days, min_score) : retourne les leads inactifs à relancer
 - create_task(lead_id, type, due_date, description) : crée une tâche de suivi
 - update_pipeline_stage(lead_id, stage, reason) : met à jour l'étape pipeline
+- summarize_pipeline() : résume l'état du pipeline
+- tag_lead(lead_id, tags[]) : ajoute des tags outreach à un lead
+
+OUTREACH:
 - generate_email_draft(lead_id, template_type) : génère un brouillon email (follow_up/introduction/closing/reactivation)
 - enroll_in_sequence(lead_id, sequence_id) : inscrit un lead dans une séquence
+- pause_sequence(enrollment_id, reason) : met en pause un enrollment de séquence
+- resume_sequence(enrollment_id) : reprend un enrollment en pause
+- classify_reply(lead_id, subject, snippet, thread_id?) : classifie l'intention d'une réponse
+- summarize_inbox() : résume l'état de la boîte de réception par intent
+- suggest_follow_up(lead_id) : suggère la prochaine action pour un lead spécifique
+
+MÉMOIRE:
 - update_agent_memory(type, key, content) : mémorise un apprentissage
-- summarize_pipeline() : résume l'état du pipeline
 
 Réponds UNIQUEMENT avec du JSON valide :
 {

@@ -75,7 +75,12 @@ const DEFAULT_SETTINGS: AppSettings = {
     aiProvider: 'anthropic',
     openrouterKeyMasked: null,
     aiModel: 'meta-llama/llama-3.3-70b-instruct:free',
-    agentAutonomy: { tasks: 'suggest', pipeline: 'suggest', sequences: 'off', emails: 'prepare', field: 'suggest' },
+    agentAutonomy: {
+      tasks: 'suggest', pipeline: 'suggest', sequences: 'off', emails: 'prepare', field: 'suggest',
+      outreach_draft: 'prepare', outreach_initial_send: 'act_with_approval',
+      outreach_followup: 'auto', outreach_reply: 'prepare',
+      outreach_sequence_pause: 'auto', outreach_pipeline_update: 'act_with_approval',
+    },
   },
   appearance: {
     density: 'comfortable',
@@ -126,7 +131,12 @@ export function SettingsRoot() {
                 aiProvider: (dbSettings.ai_provider === 'openrouter' ? 'openrouter' : 'anthropic') as 'anthropic' | 'openrouter',
                 openrouterKeyMasked: null,
                 aiModel: dbSettings.ai_model || 'meta-llama/llama-3.3-70b-instruct:free',
-                agentAutonomy: dbSettings.agent_autonomy ?? { tasks: 'suggest', pipeline: 'suggest', sequences: 'off', emails: 'prepare', field: 'suggest' },
+                agentAutonomy: dbSettings.agent_autonomy ?? {
+                  tasks: 'suggest', pipeline: 'suggest', sequences: 'off', emails: 'prepare', field: 'suggest',
+                  outreach_draft: 'prepare', outreach_initial_send: 'act_with_approval',
+                  outreach_followup: 'auto', outreach_reply: 'prepare',
+                  outreach_sequence_pause: 'auto', outreach_pipeline_update: 'act_with_approval',
+                },
               },
               appearance: {
                 density: 'comfortable',

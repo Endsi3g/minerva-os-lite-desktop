@@ -62,6 +62,21 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v5.3.0',
+      date: '2026-06-29',
+      titleKey: 'changelog.v3_42_0_title' as TranslationKey,
+      descKey: 'changelog.v3_42_0_desc' as TranslationKey,
+      highlights: [
+        { tag: 'feature', text: 'Outreach Control Center — Campagnes et Approbations sont désormais des écrans complets (remplacent les placeholders "Bientôt disponible").' },
+        { tag: 'feature', text: 'Écran Campagnes — liste des campagnes actives/pausées avec KPIs (envoyés, ouvertures, réponses, positifs, RDV), toggle pause/relance par campagne, alertes de performance.' },
+        { tag: 'feature', text: 'Écran Approbations — file d\'attente unifiée brouillons IA + actions agent. Chaque item affiche reasoning, signaux IA, et boutons Approuver / Rejeter. Badge de count dans l\'onglet.' },
+        { tag: 'feature', text: 'Autonomie Outreach granulaire — 6 niveaux d\'autonomie indépendants : création brouillons, premier envoi, relances auto, réponse aux réponses, pause séquence, mise à jour pipeline après intent.' },
+        { tag: 'feature', text: 'Nouveaux outils Agent Minerva — pause_sequence, resume_sequence, tag_lead, classify_reply, summarize_inbox, suggest_follow_up s\'ajoutent aux 7 outils existants.' },
+        { tag: 'feature', text: 'API routes outreach — POST enrollments/pause|resume, GET/PATCH approvals, GET/POST/PATCH campaigns, GET enrollments with lead+sequence join.' },
+        { tag: 'feature', text: 'Migration Supabase v5_outreach — colonnes source/intent_type/approved sur drafts, current_step/next_send_at/paused_at sur enrollments, stats et alert sur campaigns, outreach_tags sur leads.' },
+      ],
+    },
+    {
       version: 'v5.2.0',
       date: '2026-06-29',
       titleKey: 'changelog.v3_42_0_title' as TranslationKey,
