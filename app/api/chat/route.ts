@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
     // Get user settings to look for API Keys
     const { data: dbSettings } = await supabase
       .from('settings')
-      .select('openrouter_key, ai_provider, ai_model, groq_api_key, together_api_key')
+      .select('openrouter_key, ai_provider, ai_model')
       .eq('user_id', user.id)
       .maybeSingle();
 
@@ -56,8 +56,6 @@ export async function POST(req: NextRequest) {
           ai_provider: requestProvider || dbSettings?.ai_provider,
           ai_model: model || dbSettings?.ai_model,
           openrouter_key: dbSettings?.openrouter_key,
-          groq_api_key: dbSettings?.groq_api_key,
-          together_api_key: dbSettings?.together_api_key,
         },
       });
 

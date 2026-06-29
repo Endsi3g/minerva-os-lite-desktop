@@ -19,10 +19,19 @@ import { TodayGoogleCalendarCard } from './today-google-calendar-card';
 import { InboxRoot } from '@/app/(app)/inbox/_components/inbox-root';
 import { AgentFeed } from './agent-feed';
 import { LayoutDashboard, Mail } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 
 export function TodayRoot() {
+  const router = useRouter();
   const [showAestheticMode, setShowAestheticMode] = useState(false);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'inbox'>('dashboard');
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && !localStorage.getItem('minerva_guide_seen')) {
+      router.replace('/guide');
+    }
+  }, [router]);
 
   return (
     <div className="h-full overflow-hidden flex flex-col">

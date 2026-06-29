@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
 
     const [leadRes, settingsRes] = await Promise.all([
       supabase.from('leads').select('business_name, city, niche, website_description, decision_maker_name, contact_name, contact_email').eq('id', leadId).maybeSingle(),
-      supabase.from('settings').select('full_name, company_name, ai_provider, ai_model, openrouter_key, groq_api_key, together_api_key').eq('user_id', user.id).maybeSingle(),
+      supabase.from('settings').select('full_name, company_name, ai_provider, ai_model, openrouter_key').eq('user_id', user.id).maybeSingle(),
     ]);
 
     const lead = leadRes.data;
@@ -40,8 +40,6 @@ export async function POST(req: NextRequest) {
         ai_provider: settings.ai_provider,
         ai_model: settings.ai_model,
         openrouter_key: settings.openrouter_key,
-        groq_api_key: settings.groq_api_key,
-        together_api_key: settings.together_api_key,
       } : undefined,
       maxTokens: 400,
       temperature: 0.7,

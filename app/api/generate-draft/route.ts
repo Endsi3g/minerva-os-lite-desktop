@@ -159,8 +159,6 @@ Rédige uniquement le message final (pas de méta-commentaires, pas de "Voici le
           ai_provider: settings?.ai_provider,
           ai_model: settings?.ai_model,
           openrouter_key: settings?.openrouter_key,
-          groq_api_key: settings?.groq_api_key,
-          together_api_key: settings?.together_api_key,
         },
         maxTokens: 1024,
       });

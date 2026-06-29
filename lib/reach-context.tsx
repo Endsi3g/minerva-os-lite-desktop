@@ -6,6 +6,7 @@ import { User as SupabaseUser, AuthChangeEvent, Session } from '@supabase/supaba
 import { Lead, Task, Note, AiSuggestion, initialLeads, initialTasks } from './mock-data';
 import { computeLeadScore } from './lead-scoring';
 import { createClient } from './supabase/client';
+import { sendDesktopNotification } from './notification-service';
 
 export interface Workspace {
   id: string;
@@ -815,9 +816,9 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
         const savedId: string | null = data.activeWorkspaceId ?? null;
         let active = savedId ? list.find((w) => w.id === savedId) : null;
         if (!active && list.length > 0) {
-          // Prefer the workspace the user was invited into (member, not owner),
-          // then fall back to their own workspace
-          active = list.find((w) => !w.isOwner) || list.find((w) => w.isOwner) || list[0];
+          // Prefer the user's OWN workspace; only fall back to member workspace
+          // if the user has no owned workspace at all (edge case: org-only accounts)
+          active = list.find((w) => w.isOwner) || list[0];
         }
 
         if (!active && list.length === 0) {
@@ -2008,7 +2009,9 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
         table: 'notifications',
         filter: `user_id=eq.${user.id}`
       }, (payload: { new: Record<string, unknown> }) => {
-        setNotifications(prev => [mapDbNotifToUi(payload.new), ...prev.slice(0, 29)]);
+        const mapped = mapDbNotifToUi(payload.new);
+        setNotifications(prev => [mapped, ...prev.slice(0, 29)]);
+        sendDesktopNotification(mapped.title, mapped.body);
       })
       .subscribe();
     return () => { channel.unsubscribe(); };
@@ -2095,6 +2098,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
     };
 
     setNotifications(prev => [newNotif, ...prev]);
+    sendDesktopNotification(notif.title, notif.body);
 
     const electronObj = typeof window !== 'undefined' && (window as any).electron ? (window as any).electron : null;
     if (electronObj) {

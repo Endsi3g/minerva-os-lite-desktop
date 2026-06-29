@@ -84,6 +84,7 @@ import {
 import { ALL_MODULES, routeToModule, type PermissionModule } from '@/lib/permissions';
 import { cachedFetch, invalidateClientCache } from '@/lib/fetch-cache';
 import { requestNotificationPermission, checkAndSendTaskReminders, checkAndSendLeadReminder } from '@/lib/notification-service';
+import { MinervaOwl } from '@/components/minerva-owl';
 import {
   Breadcrumb,
   BreadcrumbList,
@@ -650,6 +651,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
     { name: 'Accueil',     href: '/today',    icon: Home },
     { name: 'Leads',       href: '/leads',    icon: Users },
     { name: 'Outreach',    href: '/outreach', icon: Send },
+    { name: 'Templates',   href: '/email-templates', icon: FileText },
     { name: 'Carte',       href: '/map',      icon: MapPin },
     { name: 'Agenda',      href: '/agenda',   icon: CalendarDays },
     { name: 'Équipe',      href: '/team',     icon: UsersRound },
@@ -733,7 +735,12 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                 className="w-5 h-5 object-contain rounded shrink-0" 
               />
             ) : (
-              <MinervaIcon size={20} className="shrink-0" />
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src="/icon.png"
+                alt="Minerva"
+                className="w-5 h-5 object-contain rounded shrink-0"
+              />
             )}
             {!isCollapsed && (
               <div
@@ -1319,6 +1326,8 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                   >
                     <div className="space-y-[2px] pb-1">
                       {[
+                        { href: '/guide', icon: Zap, label: 'Guide de démarrage' },
+                        { href: '/analytics', icon: BarChart3, label: 'Statistiques' },
                         { href: '/billing', icon: CreditCard, label: 'Facturation' },
                         { href: '/help', icon: HelpCircle, label: 'Aide & Docs' },
                         { href: '/changelog', icon: Megaphone, label: t('nav.changelog') },
@@ -1626,10 +1635,10 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
           <AnimatePresence mode="wait" initial={false}>
             <motion.div
               key={pathname}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -4 }}
-              transition={{ duration: 0.18, ease: [0.4, 0, 0.2, 1] }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.12, ease: 'easeOut' }}
               className="w-full h-full flex flex-col overflow-hidden"
             >
               {children}

@@ -65,6 +65,7 @@ import { toast } from 'sonner';
 import { GmailIcon, GoogleCalendarIcon, GoogleMapsIcon, InstagramIcon, FacebookIcon } from '@/components/icons';
 import { OutreachPanel } from './outreach-panel';
 import { GoogleConnectModal } from '@/components/google-connect-modal';
+import { TimelineRoot } from '@/app/(app)/leads/timeline/_components/timeline-root';
 
 function cleanMarkdownForPreview(text: string | null | undefined): string {
   if (!text) return '';
@@ -561,7 +562,7 @@ function TagInputInline({ onAdd }: { onAdd: (tag: string) => void }) {
 }
 
 export function LeadDetailClient({ id }: { id: string }) {
-  const { leads, updateLead, addNoteToLead, campaigns, projects, activeWorkspace, addTask } = useReach();
+  const { leads, updateLead, addNoteToLead, campaigns, projects, activeWorkspace, addTask, addNotification, user } = useReach();
   const { t } = useLanguage();
 
   // Look up lead
@@ -863,82 +864,7 @@ export function LeadDetailClient({ id }: { id: string }) {
     return () => { cancelled = true; };
   }, [activeTab, lead?.contactEmail]);
 
-  // Timeline states
-  const [timelineEvents, setTimelineEvents] = useState<Array<{
-    id: string;
-    eventType: string;
-    title?: string;
-    body?: string;
-    createdAt: string;
-    synthetic?: boolean;
-  }>>([]);
-  const [timelineLoading, setTimelineLoading] = useState(false);
-
-  useEffect(() => {
-    if (activeTab !== 'timeline') return;
-    if (!lead) return;
-    let cancelled = false;
-    setTimelineLoading(true);
-
-    const buildTimeline = async () => {
-      const synthetic: typeof timelineEvents = [];
-
-      // Lead creation event
-      synthetic.push({
-        id: `synthetic-created-${lead.id}`,
-        eventType: 'created',
-        title: 'Lead créé',
-        body: `Source: ${lead.source || lead.leadSourceType || 'Manuel'}`,
-        createdAt: lead.createdAt,
-        synthetic: true,
-      });
-
-      // Notes as events
-      for (const note of lead.notes || []) {
-        synthetic.push({
-          id: `synthetic-note-${note.id}`,
-          eventType: 'note',
-          title: 'Note ajoutée',
-          body: note.content,
-          createdAt: note.createdAt,
-          synthetic: true,
-        });
-      }
-
-      // Fetch DB events from Supabase
-      let dbEvents: typeof timelineEvents = [];
-      try {
-        const supabase = createClient();
-        const { data } = await supabase
-          .from('lead_events')
-          .select('*')
-          .eq('lead_id', lead.id)
-          .order('created_at', { ascending: false });
-        if (data) {
-          dbEvents = data.map((e: { id: string; event_type: string; title?: string; body?: string; created_at: string }) => ({
-            id: e.id,
-            eventType: e.event_type,
-            title: e.title,
-            body: e.body,
-            createdAt: e.created_at,
-          }));
-        }
-      } catch {
-        // table may not exist yet — ignore
-      }
-
-      if (cancelled) return;
-
-      const merged = [...dbEvents, ...synthetic].sort(
-        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      );
-      setTimelineEvents(merged);
-      setTimelineLoading(false);
-    };
-
-    buildTimeline();
-    return () => { cancelled = true; };
-  }, [activeTab, lead]);
+  // Timeline is now rendered by <TimelineRoot leadId={lead.id} hideSubNav />
 
   // Composer states
   const [draftChannel, setDraftChannel] = useState<'Email' | 'DM' | 'Call'>('Email');
@@ -1204,7 +1130,8 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
   useEffect(() => {
     const fetchTeamMembers = async () => {
       try {
-        const res = await fetch(getApiUrl('/api/team/members'));
+        const ownerParam = activeWorkspace?.owner_id ? `?ownerUserId=${activeWorkspace.owner_id}` : '';
+        const res = await fetch(getApiUrl(`/api/team/members${ownerParam}`));
         if (res.ok) {
           const data = await res.json();
           const members = Array.isArray(data) ? data : (data?.members ?? []);
@@ -1215,7 +1142,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
       }
     };
     fetchTeamMembers();
-  }, []);
+  }, [activeWorkspace?.owner_id]);
 
   // Gmail OAuth status states
   const [gmailConnected, setGmailConnected] = useState(false);
@@ -1230,14 +1157,30 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
         const supabase = createClient();
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-          const { data } = await supabase
-            .from('settings')
-            .select('google_refresh_token, google_email')
-            .eq('user_id', user.id)
-            .maybeSingle();
-          if (data && data.google_refresh_token) {
+          const [settingsRes, googleAcctRes] = await Promise.all([
+            supabase
+              .from('settings')
+              .select('google_refresh_token, google_email')
+              .eq('user_id', user.id)
+              .maybeSingle(),
+            supabase
+              .from('google_accounts')
+              .select('google_email, status')
+              .eq('user_id', user.id)
+              .eq('status', 'connected')
+              .limit(1)
+              .maybeSingle()
+          ]);
+
+          const s = settingsRes.data;
+          const g = googleAcctRes?.data;
+
+          if (s?.google_refresh_token) {
             setGmailConnected(true);
-            setGoogleEmail(data.google_email || '');
+            setGoogleEmail(s.google_email || '');
+          } else if (g) {
+            setGmailConnected(true);
+            setGoogleEmail(g.google_email || '');
           }
         }
       } catch (e) {
@@ -1279,6 +1222,15 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
         
         addNoteToLead(lead.id, logText, 'email');
         
+        addNotification({
+          userId: user?.id || '',
+          workspaceId: activeWorkspace?.id || '',
+          type: 'email_sent',
+          title: 'E-mail envoyé',
+          body: `L'e-mail pour ${lead.businessName} a été envoyé avec succès.`,
+          link: `/leads/${lead.id}`
+        });
+
         setGeneratedContent(''); // Clear active editor
         await fetchDrafts();
       } else {
@@ -2398,80 +2350,9 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                 /* ── Composer unifié ── */
                 <ComposerPanel lead={lead} addNoteToLead={addNoteToLead} addTask={addTask} />
               ) : activeTab === 'timeline' ? (
-                /* Timeline Panel */
-                <div className="space-y-4">
-                  {timelineLoading ? (
-                    <div className="flex items-center justify-center py-8">
-                      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                    </div>
-                  ) : timelineEvents.length === 0 ? (
-                    <p className="text-xs text-muted-foreground text-center py-6">{t('lead.timeline_empty')}</p>
-                  ) : (
-                    <div className="relative">
-                      <div className="space-y-0">
-                        {timelineEvents.map((event, idx) => {
-                          const iconMap: Record<string, React.ReactNode> = {
-                            created: <UserPlus className="h-3.5 w-3.5" />,
-                            note: <FileText className="h-3.5 w-3.5" />,
-                            email_sent: <Mail className="h-3.5 w-3.5" />,
-                            reply: <Reply className="h-3.5 w-3.5" />,
-                            call: <Phone className="h-3.5 w-3.5" />,
-                            visit: <MapPin className="h-3.5 w-3.5" />,
-                            task: <CheckSquare className="h-3.5 w-3.5" />,
-                            meeting: <Calendar className="h-3.5 w-3.5" />,
-                            status_changed: <ArrowRight className="h-3.5 w-3.5" />,
-                            enrichment: <Sparkles className="h-3.5 w-3.5" />,
-                            booking: <CalendarCheck className="h-3.5 w-3.5" />,
-                          };
-                          const colorMap: Record<string, string> = {
-                            created: 'bg-[#059669]/10 text-[#059669]',
-                            note: 'bg-blue-100 text-blue-700',
-                            email_sent: 'bg-indigo-100 text-indigo-700',
-                            reply: 'bg-purple-100 text-purple-700',
-                            call: 'bg-[#059669]/10 text-[#059669]',
-                            visit: 'bg-amber-100 text-amber-700',
-                            task: 'bg-slate-100 text-slate-600',
-                            meeting: 'bg-teal-100 text-teal-700',
-                            status_changed: 'bg-purple-100 text-purple-700',
-                            enrichment: 'bg-[#059669]/10 text-[#059669]',
-                            booking: 'bg-teal-100 text-teal-700',
-                          };
-                          const icon = iconMap[event.eventType] || <Activity className="h-3.5 w-3.5" />;
-                          const color = colorMap[event.eventType] || 'bg-slate-100 text-slate-600';
-                          const relTime = (() => {
-                            const ms = Date.now() - new Date(event.createdAt).getTime();
-                            const mins = Math.floor(ms / 60000);
-                            const hours = Math.floor(mins / 60);
-                            const days = Math.floor(hours / 24);
-                            if (days > 0) return `Il y a ${days}j`;
-                            if (hours > 0) return `Il y a ${hours}h`;
-                            return `Il y a ${mins}min`;
-                          })();
-                          return (
-                            <div key={event.id} className="flex gap-3">
-                              <div className="flex flex-col items-center">
-                                <div className={cn('flex items-center justify-center w-7 h-7 rounded-full shrink-0', color)}>
-                                  {icon}
-                                </div>
-                                {idx < timelineEvents.length - 1 && (
-                                  <div className="w-px flex-1 bg-border/60 my-1" />
-                                )}
-                              </div>
-                              <div className="pb-4 flex-1 min-w-0">
-                                <div className="flex items-center justify-between gap-2">
-                                  <p className="text-xs font-semibold text-foreground">{event.title || event.eventType}</p>
-                                  <span className="text-[10px] text-muted-foreground shrink-0">{relTime}</span>
-                                </div>
-                                {event.body && (
-                                  <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-2">{event.body}</p>
-                                )}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
+                /* Timeline Panel — unified timeline for this lead */
+                <div className="-mx-4 -mb-4 h-[500px] overflow-hidden">
+                  <TimelineRoot leadId={lead.id} hideSubNav />
                 </div>
               ) : activeTab === 'gmail' ? (
                 /* Gmail Threads Panel */
@@ -2878,8 +2759,8 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                 <Select
                   value={lead.assignedTo || '__none__'}
                   onValueChange={(val) => {
-                    const newVal = val === '__none__' ? undefined : val;
-                    updateLead(lead.id, { assignedTo: newVal });
+                    const newVal = val === '__none__' ? null : val;
+                    updateLead(lead.id, { assignedTo: newVal as any });
                   }}
                   disabled={isLocked}
                 >

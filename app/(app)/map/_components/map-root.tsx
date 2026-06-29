@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import maplibregl from 'maplibre-gl';
-import 'maplibre-gl/dist/maplibre-gl.css';
 import { useReach } from '@/lib/reach-context';
 import { Lead } from '@/lib/mock-data';
 import { getApiUrl } from '@/lib/api-helper';
@@ -95,19 +94,31 @@ export function MapRoot() {
 
   // Initialize MapLibre
   useEffect(() => {
-    if (!mapContainer.current || map.current) return;
+    // Guard: container must be mounted, no existing instance
+    const container = mapContainer.current;
+    if (!container || map.current) return;
 
     map.current = new maplibregl.Map({
-      container: mapContainer.current,
+      container,
       style: MAP_STYLE,
       center: [-73.5674, 45.5019], // Montréal
       zoom: 11,
     });
 
     map.current.addControl(new maplibregl.NavigationControl(), 'bottom-right');
-    map.current.on('load', () => setMapLoaded(true));
+    map.current.on('load', () => {
+      // Force resize after load to fix blank map when container dimensions
+      // weren't fully settled during the sidebar collapse animation
+      map.current?.resize();
+      setMapLoaded(true);
+    });
+
+    // Resize whenever the container dimensions change (sidebar toggle, window resize)
+    const ro = new ResizeObserver(() => { map.current?.resize(); });
+    ro.observe(container);
 
     return () => {
+      ro.disconnect();
       map.current?.remove();
       map.current = null;
     };
@@ -255,6 +266,15 @@ export function MapRoot() {
           <span className="text-xs font-bold text-[#26251e]">{filteredLeads.length}</span>
           <span className="text-xs text-[#7a7a76]">leads</span>
         </div>
+
+        {/* Terrain flow button */}
+        <Link
+          href="/field"
+          className="flex items-center gap-1.5 h-9 px-3 rounded-xl bg-[#26251e] text-white text-xs font-bold shadow-sm hover:bg-[#3a3930] transition-colors whitespace-nowrap"
+        >
+          <MapPin className="h-3.5 w-3.5" />
+          Planifier des visites
+        </Link>
       </div>
 
       {/* Filters panel */}
