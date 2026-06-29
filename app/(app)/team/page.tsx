@@ -1679,12 +1679,12 @@ export default function TeamPage() {
                         </div>
                       </div>
                       <div className="flex items-center gap-1.5 shrink-0">
-                        <button
-                          onClick={() => openEditRole(role)}
-                          className="p-2 rounded-lg border border-[#e5e5e0] hover:bg-[#f4f4f3] transition-colors text-[#807d72]"
+                        <Link
+                          href={`/team/roles/${role.id}/edit`}
+                          className="p-2 rounded-lg border border-[#e5e5e0] hover:bg-[#f4f4f3] transition-colors text-[#807d72] inline-flex items-center"
                         >
                           <Pencil className="h-3.5 w-3.5" />
-                        </button>
+                        </Link>
                         <button
                           onClick={() => handleDeleteRole(role.id)}
                           className="p-2 rounded-lg border border-red-100 hover:bg-red-50 transition-colors text-red-500"

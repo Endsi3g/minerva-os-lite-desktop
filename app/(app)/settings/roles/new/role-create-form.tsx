@@ -1,7 +1,6 @@
 'use client';
 
-// Formulaire dédié de création de rôle — nom + couleur + permissions
-// Reprend exactement le schéma du modal RoleModal (team/page.tsx) mais en page full-page.
+// Formulaire dédié de création / édition de rôle — nom + couleur + permissions
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Shield, Check, Loader2, ArrowLeft } from 'lucide-react';
@@ -11,11 +10,20 @@ import { ALL_MODULES, PERMISSION_MODULES, type PermissionModule } from '@/lib/pe
 
 const PRESET_COLORS = ['#059669', '#6366f1', '#f59e0b', '#ec4899', '#26251e'];
 
-export function RoleCreateForm({ redirectTo }: { redirectTo: string }) {
+interface RoleCreateFormProps {
+  redirectTo: string;
+  roleId?: string;
+  initialName?: string;
+  initialColor?: string;
+  initialPermissions?: PermissionModule[];
+}
+
+export function RoleCreateForm({ redirectTo, roleId, initialName = '', initialColor = '#6366f1', initialPermissions = [] }: RoleCreateFormProps) {
   const router = useRouter();
-  const [roleName, setRoleName] = useState('');
-  const [roleColor, setRoleColor] = useState('#6366f1');
-  const [rolePerms, setRolePerms] = useState<Set<PermissionModule>>(new Set());
+  const isEditing = !!roleId;
+  const [roleName, setRoleName] = useState(initialName);
+  const [roleColor, setRoleColor] = useState(initialColor);
+  const [rolePerms, setRolePerms] = useState<Set<PermissionModule>>(new Set(initialPermissions));
   const [savingRole, setSavingRole] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -25,15 +33,17 @@ export function RoleCreateForm({ redirectTo }: { redirectTo: string }) {
     setError(null);
     try {
       const permsArray = Array.from(rolePerms);
-      const res = await fetch(getApiUrl('/api/team/roles'), {
-        method: 'POST',
+      const url = isEditing ? getApiUrl(`/api/team/roles?id=${roleId}`) : getApiUrl('/api/team/roles');
+      const method = isEditing ? 'PUT' : 'POST';
+      const res = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: roleName.trim(), color: roleColor, permissions: permsArray }),
       });
       if (res.ok) {
         router.push(redirectTo);
       } else {
-        setError('Impossible de créer le rôle. Réessayez.');
+        setError(isEditing ? 'Impossible de mettre à jour le rôle. Réessayez.' : 'Impossible de créer le rôle. Réessayez.');
       }
     } catch {
       setError('Erreur réseau.');
@@ -58,7 +68,7 @@ export function RoleCreateForm({ redirectTo }: { redirectTo: string }) {
             <div>
               <h1 className="text-lg font-bold text-[#26251e] flex items-center gap-2">
                 <Shield className="h-5 w-5 text-[#059669]" />
-                Créer un rôle
+                {isEditing ? 'Modifier le rôle' : 'Créer un rôle'}
               </h1>
               <p className="text-xs text-[#7a7a76] mt-0.5">Définissez un rôle sur mesure avec ses permissions par module.</p>
             </div>
@@ -141,7 +151,7 @@ export function RoleCreateForm({ redirectTo }: { redirectTo: string }) {
               style={{ background: roleColor }}
             >
               {savingRole ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
-              Créer le rôle
+              {isEditing ? 'Enregistrer' : 'Créer le rôle'}
             </button>
           </div>
         </div>
