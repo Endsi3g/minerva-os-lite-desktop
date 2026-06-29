@@ -62,6 +62,21 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v5.2.0',
+      date: '2026-06-29',
+      titleKey: 'changelog.v3_42_0_title' as TranslationKey,
+      descKey: 'changelog.v3_42_0_desc' as TranslationKey,
+      highlights: [
+        { tag: 'feature', text: 'Agent Minerva — boucle autonome perceive → plan → act → log. L\'agent analyse le pipeline, choisit les meilleures actions et les exécute selon vos niveaux d\'autonomie configurés.' },
+        { tag: 'feature', text: 'Niveaux d\'autonomie par domaine — 5 niveaux (Désactivé / Suggérer / Préparer / Exécuter avec validation / Automatique) configurables indépendamment pour Tâches, Pipeline, Séquences, Emails et Terrain.' },
+        { tag: 'feature', text: 'Mémoire d\'agent — table agent_memory par workspace. L\'agent mémorise ses apprentissages (niches performantes, signaux de conversion, décisions passées) et les réinjecte à chaque cycle.' },
+        { tag: 'feature', text: 'Journal des actions agent — agent_actions trace chaque action avec reasoning (pourquoi) et data_signals (signaux utilisés). Chaque action peut être approuvée ou rejetée par l\'utilisateur.' },
+        { tag: 'feature', text: 'AI Gateway unifié — lib/ai.ts est désormais la seule source de vérité pour tous les appels IA : logging fire-and-forget, fallback automatique Anthropic ↔ OpenRouter, résolution du provider.' },
+        { tag: 'fix', text: 'Suppression de Groq et Together AI — le stack IA est simplifié à deux providers : Claude (Anthropic, primaire) et OpenRouter (alternatif/fallback). Interface Settings nettoyée en conséquence.' },
+        { tag: 'feature', text: 'Migration Supabase v5_agent — tables agent_memory, agent_actions, ai_gateway_logs ; colonnes agent_autonomy + agent_enabled dans settings ; table sequence_enrollments.' },
+      ],
+    },
+    {
       version: 'v5.1.0',
       date: '2026-06-29',
       titleKey: 'changelog.v3_42_0_title' as TranslationKey,
