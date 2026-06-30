@@ -1,4 +1,6 @@
-// Server component wrapper — required for static export compatibility
+// Static export wrapper — params resolved client-side
+import LeadPreviewClient from './lead-preview-client';
+
 export function generateStaticParams() { return []; }
 
-export { default } from './lead-preview-client';
+export default function Page() { return <LeadPreviewClient />; }
