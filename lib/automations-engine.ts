@@ -124,13 +124,13 @@ async function executeAction(workspaceId: string, action: Action, context: Recor
     case 'notify': {
       const notifId = crypto.randomUUID();
       const msg = action.payload.message.replace('{{leadName}}', context.businessName || 'Lead');
-      
+
       let targetUserId = context.user_id || context.userId;
       if (!targetUserId || targetUserId === 'system') {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) targetUserId = user.id;
       }
-      
+
       if (targetUserId && targetUserId !== 'system') {
         await supabase.from('notifications').insert({
           id: notifId,
@@ -142,6 +142,35 @@ async function executeAction(workspaceId: string, action: Action, context: Recor
           created_at: now
         });
       }
+      break;
+    }
+
+    case 'send_email': {
+      if (!context.id) break;
+      // Load template if templateId provided
+      let subject = `Suivi — ${context.businessName || 'Lead'}`;
+      let body = `Bonjour,\n\nNous souhaitions reprendre contact avec vous.\n\nCordialement`;
+      if (action.payload.templateId) {
+        const { data: tpl } = await supabase
+          .from('email_templates')
+          .select('subject, body')
+          .eq('id', action.payload.templateId)
+          .maybeSingle();
+        if (tpl) {
+          subject = tpl.subject.replace('{{leadName}}', context.businessName || 'Lead');
+          body = tpl.body.replace('{{leadName}}', context.businessName || 'Lead');
+        }
+      }
+      await supabase.from('drafts').insert({
+        id: crypto.randomUUID(),
+        workspace_id: workspaceId,
+        lead_id: context.id,
+        subject,
+        body,
+        source: 'automation',
+        approved: null,
+        created_at: now,
+      });
       break;
     }
   }

@@ -15,7 +15,6 @@ export function IntelligenceRoot() {
 
   const handleRefresh = () => {
     setRefreshTrigger(prev => prev + 1);
-    console.log('Intelligence dashboard refreshed');
   };
 
   return (
