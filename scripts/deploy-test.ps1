@@ -1,14 +1,9 @@
 # Script de deploiement et test local de production pour Minerva Reach Lite
 # Ce script valide les types, le style, compile l'application et la demarre en tache de fond pour valider l'acces HTTP 200.
 
-$PSScriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Definition
+$ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
+$PSScriptRoot = Split-Path -Parent $ScriptDir
 Set-Location $PSScriptRoot
-
-# Resolution automatique du repertoire de l'application de bureau
-if (Test-Path "Minerva OS Lite/minerva-os-lite-desktop") {
-    $PSScriptRoot = (Get-Item "Minerva OS Lite/minerva-os-lite-desktop").FullName
-    Set-Location $PSScriptRoot
-}
 
 Write-Host "=============================================" -ForegroundColor Cyan
 Write-Host " Minerva Reach Lite - Deploy & Test Runner   " -ForegroundColor Cyan

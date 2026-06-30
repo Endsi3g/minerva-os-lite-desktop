@@ -23,12 +23,19 @@ export function TodaySetupBanner() {
       try {
         const supabase = createClient();
 
-        const [settingsRes, sequencesRes, teamRes] = await Promise.all([
+        const [settingsRes, googleAcctRes, sequencesRes, teamRes] = await Promise.all([
           supabase
             .from('settings')
             .select('full_name, company_name, google_refresh_token')
             .eq('user_id', user.id)
             .single(),
+          supabase
+            .from('google_accounts')
+            .select('id, status')
+            .eq('user_id', user.id)
+            .eq('status', 'connected')
+            .limit(1)
+            .maybeSingle(),
           activeWorkspace
             ? supabase
                 .from('email_sequences')
@@ -45,9 +52,12 @@ export function TodaySetupBanner() {
         ]);
 
         const s = settingsRes.data;
+        const g = googleAcctRes?.data;
+        const gmailConnected = !!s?.google_refresh_token || !!g;
+
         const done = [
           !!(s?.full_name && s?.company_name),
-          !!s?.google_refresh_token,
+          gmailConnected,
           leads.length > 0,
           (sequencesRes.count ?? 0) > 0,
           goals.length > 0,

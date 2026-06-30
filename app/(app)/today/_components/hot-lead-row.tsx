@@ -17,12 +17,12 @@ export function HotLeadRow({ lead }: HotLeadRowProps) {
   const { updateLeadStatus } = useReach();
 
   return (
-    <TableRow className="hover:bg-muted/50 transition-colors">
+    <TableRow className="hover:bg-[#f4f4f3]/80 transition-colors">
       {/* Business detail */}
       <TableCell className="py-3.5 font-medium">
         <div className="flex flex-col gap-0.5">
-          <span className="text-xs font-semibold text-foreground">{lead.businessName}</span>
-          <span className="text-[10px] text-muted-foreground">
+          <span className="text-xs font-semibold text-[#26251e]">{lead.businessName}</span>
+          <span className="text-[10px] text-[#7a7a76]">
             {lead.niche} • {lead.city}
           </span>
         </div>
@@ -42,7 +42,7 @@ export function HotLeadRow({ lead }: HotLeadRowProps) {
       </TableCell>
 
       {/* Last activity */}
-      <TableCell className="py-3.5 text-xs text-muted-foreground">
+      <TableCell className="py-3.5 text-xs text-[#7a7a76]">
         {new Date(lead.updatedAt).toLocaleDateString('fr-FR', {
           day: '2-digit',
           month: '2-digit'
@@ -51,7 +51,7 @@ export function HotLeadRow({ lead }: HotLeadRowProps) {
 
       {/* Next Step */}
       <TableCell className="py-3.5 text-xs">
-        <span className="font-medium text-foreground max-w-[180px] block truncate">
+        <span className="font-medium text-[#26251e] max-w-[180px] block truncate">
           {lead.nextAction || 'Aucune action planifiée'}
         </span>
       </TableCell>
@@ -63,7 +63,7 @@ export function HotLeadRow({ lead }: HotLeadRowProps) {
             value={lead.status} 
             onValueChange={(val: Lead['status']) => updateLeadStatus(lead.id, val)}
           >
-            <SelectTrigger className="h-7 w-[120px] text-[11px] font-medium bg-background">
+            <SelectTrigger className="h-7 w-[120px] text-[11px] font-medium bg-[#fafaf8]">
               <SelectValue placeholder="Changer le statut" />
             </SelectTrigger>
             <SelectContent>

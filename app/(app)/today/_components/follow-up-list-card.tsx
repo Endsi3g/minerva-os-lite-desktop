@@ -29,7 +29,7 @@ export function FollowUpListCard() {
     <Card className="border border-[#e5e5e0] bg-white shadow-none flex flex-col min-h-0">
       <CardHeader className="flex flex-row items-center justify-between pb-3 shrink-0">
         <div className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/10 text-primary">
+          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-[#059669]/10 text-[#059669]">
             <MessageSquareReply className="h-4 w-4" />
           </div>
           <div>

@@ -38,7 +38,7 @@ export function LeadsAssignCell({ lead, workspaceMembers }: LeadsAssignCellProps
 
   const handleClear = (e: React.MouseEvent) => {
     e.stopPropagation();
-    updateLead(lead.id, { assignedTo: undefined });
+    updateLead(lead.id, { assignedTo: null as any });
   };
 
   return (
@@ -101,7 +101,7 @@ export function LeadsAssignCell({ lead, workspaceMembers }: LeadsAssignCellProps
             {/* Unassign */}
             <button
               className="w-full px-3 py-1.5 text-[11px] text-left text-neutral-500 hover:bg-neutral-50 flex items-center justify-between"
-              onClick={() => { updateLead(lead.id, { assignedTo: undefined }); setOpen(false); }}
+              onClick={() => { updateLead(lead.id, { assignedTo: null as any }); setOpen(false); }}
             >
               <span>Non assigné</span>
               {!lead.assignedTo && <Check className="w-3 h-3 text-[#059669]" />}

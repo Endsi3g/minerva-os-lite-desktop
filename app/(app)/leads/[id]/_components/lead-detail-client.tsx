@@ -170,7 +170,7 @@ function InlineTextEdit({ value, onSave, placeholder = 'Non spécifié', classNa
         onBlur={handleBlur}
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
-        className={cn("h-7 text-xs bg-background py-0.5 px-2", inputClassName)}
+        className={cn("h-7 text-xs bg-[#fafaf8] py-0.5 px-2", inputClassName)}
       />
     );
   }
@@ -184,8 +184,8 @@ function InlineTextEdit({ value, onSave, placeholder = 'Non spécifié', classNa
         }
       }}
       className={cn(
-        "cursor-pointer hover:bg-muted/60 px-1 py-0.5 rounded border border-transparent hover:border-border/50 transition-all text-xs min-h-6 flex items-center min-w-0 break-all",
-        !value && "text-muted-foreground italic",
+        "cursor-pointer hover:bg-[#f4f4f3]/60 px-1 py-0.5 rounded border border-transparent hover:border-[#e5e5e0]/70 transition-all text-xs min-h-6 flex items-center min-w-0 break-all",
+        !value && "text-[#7a7a76] italic",
         disabled && "cursor-not-allowed hover:bg-transparent hover:border-transparent opacity-85",
         className
       )}
@@ -204,10 +204,10 @@ function ScoreBar({ value, color, label }: { value: number; color: string; label
   return (
     <div className="space-y-1">
       <div className="flex items-center justify-between">
-        <span className="text-[10px] text-muted-foreground">{label}</span>
+        <span className="text-[10px] text-[#7a7a76]">{label}</span>
         <span className="text-[10px] font-bold" style={{ color }}>{value}/100</span>
       </div>
-      <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+      <div className="h-1.5 bg-[#f4f4f3] rounded-full overflow-hidden">
         <div className="h-full rounded-full transition-all" style={{ width: `${value}%`, backgroundColor: color }} />
       </div>
     </div>
@@ -222,7 +222,7 @@ function BantCheckbox({ label, checked, onChange }: { label: string; checked: bo
         'flex items-center gap-1.5 px-2 py-1 rounded-md text-[10px] font-bold border transition-all',
         checked
           ? 'bg-[#059669]/10 border-[#059669]/30 text-[#059669]'
-          : 'bg-muted/30 border-border text-muted-foreground'
+          : 'bg-[#f4f4f3]/60 border-[#e5e5e0] text-[#7a7a76]'
       )}
     >
       <span className={cn('w-3 h-3 rounded-sm border flex items-center justify-center shrink-0', checked ? 'bg-[#059669] border-[#059669]' : 'border-muted-foreground/40')}>
@@ -280,9 +280,9 @@ function ScriptPanel({ lead }: { lead: Lead }) {
   };
 
   return (
-    <div className="pt-4 border-t border-border mt-4 space-y-2">
+    <div className="pt-4 border-t border-[#e5e5e0] mt-4 space-y-2">
       <div className="flex items-center justify-between">
-        <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+        <h4 className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76] flex items-center gap-1.5">
           <FileSignature className="h-3 w-3" />
           Script de Pitch
         </h4>
@@ -297,9 +297,9 @@ function ScriptPanel({ lead }: { lead: Lead }) {
       </div>
 
       {open && (
-        <div className="rounded-md border border-border bg-muted/20 p-3 space-y-2">
+        <div className="rounded-md border border-[#e5e5e0] bg-[#f4f4f3]/40 p-3 space-y-2">
           {loading ? (
-            <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+            <div className="flex items-center gap-2 text-[10px] text-[#7a7a76]">
               <Loader2 className="h-3 w-3 animate-spin" />
               {lead.website ? 'Analyse du site web + génération…' : 'Génération du script…'}
             </div>
@@ -311,10 +311,10 @@ function ScriptPanel({ lead }: { lead: Lead }) {
                   Basé sur le site web
                 </p>
               )}
-              <div className="text-[11px] text-foreground leading-relaxed whitespace-pre-wrap">{cleanMarkdownForPreview(script)}</div>
+              <div className="text-[11px] text-[#26251e] leading-relaxed whitespace-pre-wrap">{cleanMarkdownForPreview(script)}</div>
               <button
                 onClick={handleCopy}
-                className="flex items-center gap-1 text-[9px] text-muted-foreground hover:text-foreground transition-colors"
+                className="flex items-center gap-1 text-[9px] text-[#7a7a76] hover:text-[#26251e] transition-colors"
               >
                 <Copy className="h-2.5 w-2.5" />
                 Copier le script
@@ -408,7 +408,7 @@ function QualificationPanel({ lead, onSave }: { lead: Lead; onSave: (fields: Par
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Qualification</h4>
+        <h4 className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Qualification</h4>
         <div className="flex items-center gap-1">
           <button
             onClick={handleAdvancedEnrich}
@@ -479,7 +479,7 @@ function QualificationPanel({ lead, onSave }: { lead: Lead; onSave: (fields: Par
 
       {/* BANT */}
       <div>
-        <p className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground/60 mb-1.5">BANT</p>
+        <p className="text-[9px] font-bold uppercase tracking-wider text-[#7a7a76]/60 mb-1.5">BANT</p>
         <div className="flex flex-wrap gap-1.5">
           <BantCheckbox label="Budget" checked={!!lead.bantBudget} onChange={(v) => onSave({ bantBudget: v })} />
           <BantCheckbox label="Authority" checked={!!lead.bantAuthority} onChange={(v) => onSave({ bantAuthority: v })} />
@@ -490,21 +490,21 @@ function QualificationPanel({ lead, onSave }: { lead: Lead; onSave: (fields: Par
 
       {/* Decision maker */}
       <div className="space-y-1.5">
-        <p className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground/60">Décideur</p>
+        <p className="text-[9px] font-bold uppercase tracking-wider text-[#7a7a76]/60">Décideur</p>
         <div className="flex gap-1.5">
           <input
             value={dmName}
             onChange={(e) => setDmName(e.target.value)}
             onBlur={() => { if (dmName !== lead.decisionMakerName) onSave({ decisionMakerName: dmName }); }}
             placeholder="Prénom Nom"
-            className="flex-1 h-6 text-[10px] px-2 border border-border rounded bg-background focus:outline-none focus:ring-1 focus:ring-[#059669]/40"
+            className="flex-1 h-6 text-[10px] px-2 border border-[#e5e5e0] rounded bg-[#fafaf8] focus:outline-none focus:ring-1 focus:ring-[#059669]/40"
           />
           <input
             value={dmRole}
             onChange={(e) => setDmRole(e.target.value)}
             onBlur={() => { if (dmRole !== lead.decisionMakerRole) onSave({ decisionMakerRole: dmRole }); }}
             placeholder="Propriétaire"
-            className="w-24 h-6 text-[10px] px-2 border border-border rounded bg-background focus:outline-none focus:ring-1 focus:ring-[#059669]/40"
+            className="w-24 h-6 text-[10px] px-2 border border-[#e5e5e0] rounded bg-[#fafaf8] focus:outline-none focus:ring-1 focus:ring-[#059669]/40"
           />
         </div>
       </div>
@@ -512,7 +512,7 @@ function QualificationPanel({ lead, onSave }: { lead: Lead; onSave: (fields: Par
       {/* Suggested emails */}
       {lead.suggestedEmails && lead.suggestedEmails.length > 0 && (
         <div className="space-y-1.5">
-          <p className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground/60">Emails suggérés</p>
+          <p className="text-[9px] font-bold uppercase tracking-wider text-[#7a7a76]/60">Emails suggérés</p>
           <div className="flex flex-wrap gap-1">
             {lead.suggestedEmails.map((email) => (
               <button
@@ -523,7 +523,7 @@ function QualificationPanel({ lead, onSave }: { lead: Lead; onSave: (fields: Par
                   'text-[9px] px-1.5 py-0.5 rounded border font-mono transition-all',
                   lead.contactEmail === email
                     ? 'bg-[#059669]/10 border-[#059669]/30 text-[#059669]'
-                    : 'bg-muted/30 border-border text-muted-foreground hover:border-[#059669]/30 hover:text-foreground'
+                    : 'bg-[#f4f4f3]/60 border-[#e5e5e0] text-[#7a7a76] hover:border-[#059669]/30 hover:text-[#26251e]'
                 )}
               >
                 {email}
@@ -534,7 +534,7 @@ function QualificationPanel({ lead, onSave }: { lead: Lead; onSave: (fields: Par
       )}
 
       {!hasData && (
-        <p className="text-[10px] text-muted-foreground italic">Cliquez sur "Enrichir" pour calculer les scores et suggérer des emails.</p>
+        <p className="text-[10px] text-[#7a7a76] italic">Cliquez sur "Enrichir" pour calculer les scores et suggérer des emails.</p>
       )}
     </div>
   );
@@ -555,7 +555,7 @@ function TagInputInline({ onAdd }: { onAdd: (tag: string) => void }) {
           }
         }}
         placeholder="+ Ajouter un tag…"
-        className="flex-1 h-6 text-[10px] border border-border rounded px-2 bg-background focus:outline-none focus:ring-1 focus:ring-[#059669]/40"
+        className="flex-1 h-6 text-[10px] border border-[#e5e5e0] rounded px-2 bg-[#fafaf8] focus:outline-none focus:ring-1 focus:ring-[#059669]/40"
       />
     </div>
   );
@@ -1479,7 +1479,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
     return (
       <div className="flex flex-col items-center justify-center py-24 px-4 text-center">
         <h2 className="text-lg font-bold">{t('lead.not_found_title')}</h2>
-        <p className="text-xs text-muted-foreground mt-1">{t('lead.not_found_desc')}</p>
+        <p className="text-xs text-[#7a7a76] mt-1">{t('lead.not_found_desc')}</p>
         <Button asChild size="sm" className="mt-5">
           <Link href="/leads" className="gap-2">
             <ChevronLeft className="h-4 w-4" />
@@ -1534,21 +1534,21 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
 
   const getStatusColor = (status: Lead['status']) => {
     switch (status) {
-      case 'New': return 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/40 dark:text-blue-300';
-      case 'Contacted': return 'bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/40 dark:text-amber-300';
-      case 'Meeting Booked': return 'bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/40 dark:text-purple-300';
-      case 'Proposal Sent': return 'bg-violet-100 text-violet-800 border-violet-200 dark:bg-violet-900/40 dark:text-violet-300';
-      case 'Negotiation': return 'bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/40 dark:text-amber-300';
-      case 'Won': return 'bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-300';
-      default: return 'bg-rose-100 text-rose-800 border-rose-200 dark:bg-rose-900/40 dark:text-rose-300';
+      case 'New': return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'Contacted': return 'bg-amber-100 text-amber-800 border-amber-200';
+      case 'Meeting Booked': return 'bg-purple-100 text-purple-800 border-purple-200';
+      case 'Proposal Sent': return 'bg-violet-100 text-violet-800 border-violet-200';
+      case 'Negotiation': return 'bg-amber-100 text-amber-800 border-amber-200';
+      case 'Won': return 'bg-emerald-100 text-emerald-800 border-emerald-200';
+      default: return 'bg-rose-100 text-rose-800 border-rose-200';
     }
   };
 
   const getTemperatureColor = (temp: Lead['temperature']) => {
     switch (temp) {
-      case 'Hot': return 'bg-rose-100 text-rose-800 border-rose-200 dark:bg-rose-900/40 dark:text-rose-300';
-      case 'Warm': return 'bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/40 dark:text-amber-300';
-      default: return 'bg-slate-100 text-slate-800 border-slate-200 dark:bg-slate-800 dark:text-slate-300';
+      case 'Hot': return 'bg-rose-100 text-rose-800 border-rose-200';
+      case 'Warm': return 'bg-amber-100 text-amber-800 border-amber-200';
+      default: return 'bg-slate-100 text-slate-800 border-slate-200';
     }
   };
 
@@ -1558,7 +1558,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
         
         {/* Back Link Header */}
         <div className="flex items-center justify-between">
-          <Button asChild variant="ghost" size="sm" className="gap-1.5 -ml-2 text-muted-foreground hover:text-foreground">
+          <Button asChild variant="ghost" size="sm" className="gap-1.5 -ml-2 text-[#7a7a76] hover:text-[#26251e]">
             <Link href="/leads">
               <ChevronLeft className="h-4 w-4" />
               <span>{t('lead.back_to_portfolio')}</span>
@@ -1593,7 +1593,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                 </button>
               </div>
             )}
-            <div className="text-[10px] text-muted-foreground font-mono">
+            <div className="text-[10px] text-[#7a7a76] font-mono">
               {t('lead.last_updated')} {new Date(lead.updatedAt).toLocaleString('fr-FR')}
             </div>
           </div>
@@ -1619,7 +1619,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
         )}
 
         {/* Notion Document Canvas */}
-        <div className="grid grid-cols-1 xl:grid-cols-[1fr_300px] gap-6 bg-card border border-border rounded-lg shadow-sm p-4 sm:p-6">
+        <div className="grid grid-cols-1 xl:grid-cols-[1fr_300px] gap-6 bg-white border border-[#e5e5e0] rounded-lg shadow-sm p-4 sm:p-6">
           
           {/* Main Content Side (Document Body) */}
           <div className="space-y-8 min-w-0">
@@ -1629,12 +1629,12 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                 value={lead.businessName} 
                 onSave={(val) => handleSaveProperty('businessName', val)}
                 placeholder="Nom de l'entreprise"
-                className="text-2xl sm:text-3xl font-bold font-sans tracking-tight hover:bg-muted/40 rounded px-2 py-0.5 -ml-2 text-foreground focus:outline-none"
+                className="text-2xl sm:text-3xl font-bold font-sans tracking-tight hover:bg-[#f4f4f3]/40 rounded px-2 py-0.5 -ml-2 text-[#26251e] focus:outline-none"
                 inputClassName="text-2xl sm:text-3xl font-bold font-sans h-12 -ml-2"
                 disabled={isLocked}
                 onEditStateChange={setIsEditing}
               />
-              <p className="text-xs text-muted-foreground px-0.5">
+              <p className="text-xs text-[#7a7a76] px-0.5">
                 {t('lead.created_at')} {new Date(lead.createdAt).toLocaleDateString('fr-FR')} • {t('lead.owner')} {lead.owner}
               </p>
             </div>
@@ -1643,23 +1643,23 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
 
             {/* Prospect data from OSM / Google Maps */}
             {(lead.rating !== undefined || lead.reviewsCount !== undefined || lead.phone || lead.website || lead.mapsUrl) && (
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-2 px-3 py-2.5 rounded-lg border border-border/60 bg-muted/20 text-xs">
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-2 px-3 py-2.5 rounded-lg border border-[#e5e5e0]/70 bg-[#f4f4f3]/40 text-xs">
                 {lead.rating !== undefined && (
                   <div className="flex items-center gap-1">
                     {[1, 2, 3, 4, 5].map((i) => (
                       <Star
                         key={i}
-                        className={cn('h-3 w-3', i <= Math.round(lead.rating!) ? 'fill-amber-400 text-amber-400' : 'text-muted-foreground/30')}
+                        className={cn('h-3 w-3', i <= Math.round(lead.rating!) ? 'fill-amber-400 text-amber-400' : 'text-[#7a7a76]/30')}
                       />
                     ))}
-                    <span className="font-bold text-foreground ml-0.5">{lead.rating.toFixed(1)}</span>
+                    <span className="font-bold text-[#26251e] ml-0.5">{lead.rating.toFixed(1)}</span>
                     {lead.reviewsCount !== undefined && (
-                      <span className="text-muted-foreground">({lead.reviewsCount} avis)</span>
+                      <span className="text-[#7a7a76]">({lead.reviewsCount} avis)</span>
                     )}
                   </div>
                 )}
                 {lead.phone && (
-                  <a href={`tel:${lead.phone}`} className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors">
+                  <a href={`tel:${lead.phone}`} className="flex items-center gap-1 text-[#7a7a76] hover:text-[#26251e] transition-colors">
                     <Phone className="h-3 w-3 shrink-0" />
                     {lead.phone}
                   </a>
@@ -1692,9 +1692,9 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
 
             {/* Website scraper — AI business description (fed to the AI script + drafts) */}
             {lead.website && (
-              <div className="rounded-lg border border-border/60 bg-muted/20 p-3.5 space-y-2.5">
+              <div className="rounded-lg border border-[#e5e5e0]/70 bg-[#f4f4f3]/40 p-3.5 space-y-2.5">
                 <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                  <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">
                     <FileText className="h-3.5 w-3.5" />
                     Description du site (IA)
                   </div>
@@ -1769,7 +1769,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
 
             {/* Tabs Selector for Notes vs AI Drafts */}
             <div className="space-y-4">
-              <div className="flex border-b border-border/60 gap-1 overflow-x-auto -mx-1 px-1 pb-0"
+              <div className="flex border-b border-[#e5e5e0]/70 gap-1 overflow-x-auto -mx-1 px-1 pb-0"
                 style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
               >
                 <button
@@ -1778,8 +1778,8 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                   className={cn(
                     "pb-3 text-[10px] font-bold uppercase tracking-wider border-b-2 px-1 transition-all cursor-pointer whitespace-nowrap shrink-0",
                     activeTab === 'notes'
-                      ? "border-primary text-foreground font-extrabold"
-                      : "border-transparent text-muted-foreground hover:text-foreground"
+                      ? "border-primary text-[#26251e] font-extrabold"
+                      : "border-transparent text-[#7a7a76] hover:text-[#26251e]"
                   )}
                 >
                   {t('lead.notes_tab')} ({lead.notes?.length || 0})
@@ -1790,8 +1790,8 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                   className={cn(
                     "pb-3 text-[10px] font-bold uppercase tracking-wider border-b-2 px-1 transition-all cursor-pointer whitespace-nowrap shrink-0",
                     activeTab === 'drafts'
-                      ? "border-primary text-foreground font-extrabold"
-                      : "border-transparent text-muted-foreground hover:text-foreground"
+                      ? "border-primary text-[#26251e] font-extrabold"
+                      : "border-transparent text-[#7a7a76] hover:text-[#26251e]"
                   )}
                 >
                   {t('lead.ai_writer_tab')} ({drafts.length})
@@ -1803,7 +1803,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                     "pb-3 text-[10px] font-bold uppercase tracking-wider border-b-2 px-1 transition-all cursor-pointer whitespace-nowrap shrink-0",
                     activeTab === 'composer'
                       ? "border-[#059669] text-[#059669] font-extrabold"
-                      : "border-transparent text-muted-foreground hover:text-foreground"
+                      : "border-transparent text-[#7a7a76] hover:text-[#26251e]"
                   )}
                 >
                   {t('composer.title')}
@@ -1814,8 +1814,8 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                   className={cn(
                     "pb-3 text-[10px] font-bold uppercase tracking-wider border-b-2 px-1 transition-all cursor-pointer whitespace-nowrap shrink-0",
                     activeTab === 'timeline'
-                      ? "border-primary text-foreground font-extrabold"
-                      : "border-transparent text-muted-foreground hover:text-foreground"
+                      ? "border-primary text-[#26251e] font-extrabold"
+                      : "border-transparent text-[#7a7a76] hover:text-[#26251e]"
                   )}
                 >
                   {t('lead.timeline')}
@@ -1826,8 +1826,8 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                   className={cn(
                     "pb-3 text-[10px] font-bold uppercase tracking-wider border-b-2 px-1 transition-all cursor-pointer flex items-center gap-1 whitespace-nowrap shrink-0",
                     activeTab === 'gmail'
-                      ? "border-[#059669] text-foreground font-extrabold"
-                      : "border-transparent text-muted-foreground hover:text-foreground"
+                      ? "border-[#059669] text-[#26251e] font-extrabold"
+                      : "border-transparent text-[#7a7a76] hover:text-[#26251e]"
                   )}
                 >
                   <GmailIcon size={12} />
@@ -1839,8 +1839,8 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                   className={cn(
                     "pb-3 text-[10px] font-bold uppercase tracking-wider border-b-2 px-1 transition-all cursor-pointer flex items-center gap-1 whitespace-nowrap shrink-0",
                     activeTab === 'agenda'
-                      ? "border-[#059669] text-foreground font-extrabold"
-                      : "border-transparent text-muted-foreground hover:text-foreground"
+                      ? "border-[#059669] text-[#26251e] font-extrabold"
+                      : "border-transparent text-[#7a7a76] hover:text-[#26251e]"
                   )}
                 >
                   <GoogleCalendarIcon size={12} />
@@ -1853,7 +1853,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                     "pb-3 text-[10px] font-bold uppercase tracking-wider border-b-2 px-1 transition-all cursor-pointer flex items-center gap-1 whitespace-nowrap shrink-0",
                     activeTab === 'outreach'
                       ? "border-[#059669] text-[#059669] font-extrabold"
-                      : "border-transparent text-muted-foreground hover:text-foreground"
+                      : "border-transparent text-[#7a7a76] hover:text-[#26251e]"
                   )}
                 >
                   <Zap className="h-3 w-3" />
@@ -1872,7 +1872,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
               {activeTab === 'notes' ? (
                 <div className="space-y-6">
                   {/* Add Note Form */}
-                  <form onSubmit={handleAddNote} className="space-y-3 bg-secondary/10 border border-border/80 p-4 rounded-lg">
+                  <form onSubmit={handleAddNote} className="space-y-3 bg-secondary/10 border border-[#e5e5e0]/80 p-4 rounded-lg">
                     <div className="flex items-center gap-4">
                       <span className="text-xs font-semibold">{t('lead.activity_type')}</span>
                       <Select
@@ -1880,7 +1880,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                         onValueChange={(val: Note['type']) => setNoteType(val)}
                         disabled={isLocked}
                       >
-                        <SelectTrigger className="h-7 w-[110px] text-xs bg-background">
+                        <SelectTrigger className="h-7 w-[110px] text-xs bg-[#fafaf8]">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent className="text-xs">
@@ -1895,14 +1895,14 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                       placeholder={t('lead.note_placeholder')}
                       value={noteContent}
                       onChange={(e) => setNoteContent(e.target.value)}
-                      className="text-xs min-h-[70px] resize-y bg-background"
+                      className="text-xs min-h-[70px] resize-y bg-[#fafaf8]"
                       required
                       disabled={isLocked}
                       onFocus={() => setIsEditing(true)}
                       onBlur={() => setIsEditing(false)}
                     />
                     <div className="flex justify-end">
-                      <Button type="submit" size="sm" className="h-8 text-xs font-semibold gap-1.5 bg-primary hover:bg-primary/90" disabled={isLocked}>
+                      <Button type="submit" size="sm" className="h-8 text-xs font-semibold gap-1.5 bg-[#059669] hover:bg-[#059669]/90" disabled={isLocked}>
                         <Plus className="h-3.5 w-3.5" />
                         <span>{t('lead.add_note_btn')}</span>
                       </Button>
@@ -1913,7 +1913,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                   <div className="space-y-3">
                     {lead.notes && lead.notes.length > 0 ? (
                       [...lead.notes].reverse().map((note) => (
-                        <div key={note.id} className="border border-border/60 bg-card p-3.5 rounded-lg flex flex-col gap-2 shadow-xs">
+                        <div key={note.id} className="border border-[#e5e5e0]/70 bg-white p-3.5 rounded-lg flex flex-col gap-2 shadow-xs">
                           <div className="flex items-center justify-between">
                             <Badge variant="secondary" className="text-[8px] font-bold uppercase tracking-wider px-1.5 py-0">
                               {note.type === 'visit' ? t('lead.activity_visit') : note.type === 'call' ? t('lead.activity_call') : note.type === 'email' ? t('lead.activity_email') : t('lead.activity_general')}
@@ -1930,7 +1930,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                                   <span>PDF</span>
                                 </Button>
                               )}
-                              <span className="text-[10px] text-muted-foreground font-mono">
+                              <span className="text-[10px] text-[#7a7a76] font-mono">
                                 {new Date(note.createdAt).toLocaleString('fr-FR', {
                                   day: '2-digit',
                                   month: '2-digit',
@@ -1941,15 +1941,15 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                               </span>
                             </div>
                           </div>
-                          <p className="text-xs text-foreground/90 whitespace-pre-wrap leading-relaxed">
+                          <p className="text-xs text-[#26251e]/90 whitespace-pre-wrap leading-relaxed">
                             {note.content}
                           </p>
                         </div>
                       ))
                     ) : (
-                      <div className="flex flex-col items-center justify-center py-6 text-center border border-dashed border-border rounded-lg">
-                        <ClipboardList className="h-5 w-5 text-muted-foreground/45 mb-1.5" />
-                        <span className="text-[11px] text-muted-foreground">{t('lead.no_notes')}</span>
+                      <div className="flex flex-col items-center justify-center py-6 text-center border border-dashed border-[#e5e5e0] rounded-lg">
+                        <ClipboardList className="h-5 w-5 text-[#7a7a76]/45 mb-1.5" />
+                        <span className="text-[11px] text-[#7a7a76]">{t('lead.no_notes')}</span>
                       </div>
                     )}
                   </div>
@@ -1957,17 +1957,17 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
               ) : activeTab === 'drafts' ? (
                 <div className="space-y-6">
                   {/* AI Draft Form */}
-                  <div className="space-y-4 bg-secondary/15 border border-border/80 p-5 rounded-lg">
+                  <div className="space-y-4 bg-secondary/15 border border-[#e5e5e0]/80 p-5 rounded-lg">
                     <div className="grid grid-cols-2 gap-4">
                       {/* Channel Selection */}
                       <div className="space-y-1.5">
-                        <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{t('lead.prospecting_channel')}</label>
+                        <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">{t('lead.prospecting_channel')}</label>
                         <Select
                           value={draftChannel}
                           onValueChange={(val: 'Email' | 'DM' | 'Call') => setDraftChannel(val)}
                           disabled={isLocked}
                         >
-                          <SelectTrigger className="h-8 text-xs bg-background">
+                          <SelectTrigger className="h-8 text-xs bg-[#fafaf8]">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent className="text-xs">
@@ -1980,13 +1980,13 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
 
                       {/* Tone Selection */}
                       <div className="space-y-1.5">
-                        <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{t('lead.style_tone')}</label>
+                        <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">{t('lead.style_tone')}</label>
                         <Select
                           value={draftTone}
                           onValueChange={(val) => setDraftTone(val)}
                           disabled={isLocked}
                         >
-                          <SelectTrigger className="h-8 text-xs bg-background">
+                          <SelectTrigger className="h-8 text-xs bg-[#fafaf8]">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent className="text-xs">
@@ -2000,12 +2000,12 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
 
                     {/* Specific instructions */}
                     <div className="space-y-1.5">
-                      <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{t('lead.custom_instructions')}</label>
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">{t('lead.custom_instructions')}</label>
                       <Textarea
                         placeholder={t('lead.custom_instructions_placeholder')}
                         value={draftInstructions}
                         onChange={(e) => setDraftInstructions(e.target.value)}
-                        className="text-xs min-h-[50px] resize-y bg-background"
+                        className="text-xs min-h-[50px] resize-y bg-[#fafaf8]"
                         disabled={isLocked}
                         onFocus={() => setIsEditing(true)}
                         onBlur={() => setIsEditing(false)}
@@ -2017,34 +2017,34 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                       <button
                         type="button"
                         onClick={() => setShowVars(v => !v)}
-                        className="flex items-center gap-1.5 text-[10px] font-semibold text-muted-foreground hover:text-foreground transition-colors"
+                        className="flex items-center gap-1.5 text-[10px] font-semibold text-[#7a7a76] hover:text-[#26251e] transition-colors"
                       >
                         <span>{showVars ? '▾' : '▸'}</span>
                         Variables de personnalisation
                         {Object.keys(customVars).filter(k => customVars[k]).length > 0 && (
-                          <span className="bg-primary/10 text-primary px-1.5 py-0.5 rounded text-[9px]">
+                          <span className="bg-[#059669]/10 text-[#059669] px-1.5 py-0.5 rounded text-[9px]">
                             {Object.keys(customVars).filter(k => customVars[k]).length} active{Object.keys(customVars).filter(k => customVars[k]).length > 1 ? 's' : ''}
                           </span>
                         )}
                       </button>
                       {showVars && (
-                        <div className="border border-border/60 rounded-md p-3 space-y-2 bg-muted/20">
-                          <p className="text-[9px] text-muted-foreground">Définissez des variables <code className="bg-muted px-1 rounded text-[9px]">{'{{clé}}'}</code> à injecter dans le message généré.</p>
+                        <div className="border border-[#e5e5e0]/70 rounded-md p-3 space-y-2 bg-[#f4f4f3]/40">
+                          <p className="text-[9px] text-[#7a7a76]">Définissez des variables <code className="bg-[#f4f4f3] px-1 rounded text-[9px]">{'{{clé}}'}</code> à injecter dans le message généré.</p>
                           {/* Existing vars */}
                           {Object.entries(customVars).map(([k, v]) => (
                             <div key={k} className="flex items-center gap-1.5">
-                              <span className="text-[10px] font-mono bg-primary/10 text-primary px-1.5 py-0.5 rounded shrink-0">{`{{${k}}}`}</span>
+                              <span className="text-[10px] font-mono bg-[#059669]/10 text-[#059669] px-1.5 py-0.5 rounded shrink-0">{`{{${k}}}`}</span>
                               <input
                                 type="text"
                                 value={v}
                                 onChange={e => setCustomVars(prev => ({ ...prev, [k]: e.target.value }))}
                                 placeholder="valeur…"
-                                className="flex-1 text-[10px] border border-border rounded px-2 py-1 bg-background focus:outline-none focus:ring-1 focus:ring-primary"
+                                className="flex-1 text-[10px] border border-[#e5e5e0] rounded px-2 py-1 bg-[#fafaf8] focus:outline-none focus:ring-1 focus:ring-primary"
                               />
                               <button
                                 type="button"
                                 onClick={() => setCustomVars(prev => { const n = {...prev}; delete n[k]; return n; })}
-                                className="text-muted-foreground hover:text-destructive transition-colors text-[10px]"
+                                className="text-[#7a7a76] hover:text-destructive transition-colors text-[10px]"
                               >✕</button>
                             </div>
                           ))}
@@ -2055,14 +2055,14 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                               value={newVarKey}
                               onChange={e => setNewVarKey(e.target.value.replace(/[^a-z0-9_]/gi, '_').toLowerCase())}
                               placeholder="nom_variable"
-                              className="w-28 text-[10px] border border-border rounded px-2 py-1 bg-background focus:outline-none focus:ring-1 focus:ring-primary font-mono"
+                              className="w-28 text-[10px] border border-[#e5e5e0] rounded px-2 py-1 bg-[#fafaf8] focus:outline-none focus:ring-1 focus:ring-primary font-mono"
                             />
                             <input
                               type="text"
                               value={newVarValue}
                               onChange={e => setNewVarValue(e.target.value)}
                               placeholder="valeur par défaut…"
-                              className="flex-1 text-[10px] border border-border rounded px-2 py-1 bg-background focus:outline-none focus:ring-1 focus:ring-primary"
+                              className="flex-1 text-[10px] border border-[#e5e5e0] rounded px-2 py-1 bg-[#fafaf8] focus:outline-none focus:ring-1 focus:ring-primary"
                             />
                             <button
                               type="button"
@@ -2071,7 +2071,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                                 setCustomVars(prev => ({ ...prev, [newVarKey]: newVarValue }));
                                 setNewVarKey(''); setNewVarValue('');
                               }}
-                              className="text-[10px] font-bold text-primary hover:text-primary/80 transition-colors px-2 py-1 border border-primary/30 rounded"
+                              className="text-[10px] font-bold text-[#059669] hover:text-[#059669]/80 transition-colors px-2 py-1 border border-primary/30 rounded"
                             >+ Ajouter</button>
                           </div>
                           {/* Quick presets */}
@@ -2087,7 +2087,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                                   key={k}
                                   type="button"
                                   onClick={() => setCustomVars(prev => ({ ...prev, [k]: '' }))}
-                                  className="text-[9px] px-1.5 py-0.5 rounded border border-border text-muted-foreground hover:border-primary hover:text-primary transition-colors"
+                                  className="text-[9px] px-1.5 py-0.5 rounded border border-[#e5e5e0] text-[#7a7a76] hover:border-primary hover:text-[#059669] transition-colors"
                                 >
                                   + {`{{${k}}}`}
                                 </button>
@@ -2099,12 +2099,12 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                     </div>
 
                     {generating && (
-                      <div className="space-y-3 p-4 bg-muted/50 border border-border rounded-lg animate-in fade-in duration-300">
+                      <div className="space-y-3 p-4 bg-[#f4f4f3]/70 border border-[#e5e5e0] rounded-lg animate-in fade-in duration-300">
                         <div className="flex items-center justify-between">
-                          <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">
                             {t('lead.ai_composer_active')}
                           </span>
-                          <span className="text-[9px] font-mono bg-primary/10 text-primary px-1.5 py-0.5 rounded">
+                          <span className="text-[9px] font-mono bg-[#059669]/10 text-[#059669] px-1.5 py-0.5 rounded">
                             {aiStage === 'thinking' && t('lead.ai_thinking')}
                             {aiStage === 'reading' && t('lead.ai_reading')}
                             {aiStage === 'writing' && t('lead.ai_writing')}
@@ -2118,8 +2118,8 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                             className={cn(
                               "flex flex-col gap-1 p-2.5 rounded border text-center transition-all duration-300",
                               aiStage === 'thinking'
-                                ? "border-[var(--timeline-thinking)] bg-[var(--timeline-thinking)]/15 scale-[1.02] ring-1 ring-[var(--timeline-thinking)]/45 animate-pulse text-foreground font-semibold"
-                                : "border-border/60 bg-background/50 text-muted-foreground/60"
+                                ? "border-[var(--timeline-thinking)] bg-[var(--timeline-thinking)]/15 scale-[1.02] ring-1 ring-[var(--timeline-thinking)]/45 animate-pulse text-[#26251e] font-semibold"
+                                : "border-[#e5e5e0]/70 bg-[#fafaf8]/50 text-[#7a7a76]/60"
                             )}
                           >
                             <span className="text-xs">📍</span>
@@ -2131,8 +2131,8 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                             className={cn(
                               "flex flex-col gap-1 p-2.5 rounded border text-center transition-all duration-300",
                               aiStage === 'reading'
-                                ? "border-[var(--timeline-read)] bg-[var(--timeline-read)]/15 scale-[1.02] ring-1 ring-[var(--timeline-read)]/45 animate-pulse text-foreground font-semibold"
-                                : "border-border/60 bg-background/50 text-muted-foreground/60"
+                                ? "border-[var(--timeline-read)] bg-[var(--timeline-read)]/15 scale-[1.02] ring-1 ring-[var(--timeline-read)]/45 animate-pulse text-[#26251e] font-semibold"
+                                : "border-[#e5e5e0]/70 bg-[#fafaf8]/50 text-[#7a7a76]/60"
                             )}
                           >
                             <span className="text-xs">🔎</span>
@@ -2144,8 +2144,8 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                             className={cn(
                               "flex flex-col gap-1 p-2.5 rounded border text-center transition-all duration-300",
                               aiStage === 'writing'
-                                ? "border-[var(--timeline-edit)] bg-[var(--timeline-edit)]/15 scale-[1.02] ring-1 ring-[var(--timeline-edit)]/45 animate-pulse text-foreground font-semibold"
-                                : "border-border/60 bg-background/50 text-muted-foreground/60"
+                                ? "border-[var(--timeline-edit)] bg-[var(--timeline-edit)]/15 scale-[1.02] ring-1 ring-[var(--timeline-edit)]/45 animate-pulse text-[#26251e] font-semibold"
+                                : "border-[#e5e5e0]/70 bg-[#fafaf8]/50 text-[#7a7a76]/60"
                             )}
                           >
                             <span className="text-xs">✍️</span>
@@ -2157,8 +2157,8 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                             className={cn(
                               "flex flex-col gap-1 p-2.5 rounded border text-center transition-all duration-300",
                               aiStage === 'done'
-                                ? "border-[var(--timeline-done)] bg-[var(--timeline-done)]/15 scale-[1.02] ring-1 ring-[var(--timeline-done)]/45 text-foreground font-semibold"
-                                : "border-border/60 bg-background/50 text-muted-foreground/60"
+                                ? "border-[var(--timeline-done)] bg-[var(--timeline-done)]/15 scale-[1.02] ring-1 ring-[var(--timeline-done)]/45 text-[#26251e] font-semibold"
+                                : "border-[#e5e5e0]/70 bg-[#fafaf8]/50 text-[#7a7a76]/60"
                             )}
                           >
                             <span className="text-xs">🛡️</span>
@@ -2172,7 +2172,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                       <Button
                         onClick={handleGenerateDraft}
                         disabled={generating || isLocked}
-                        className="h-8.5 text-xs font-semibold gap-1.5 bg-primary hover:bg-primary/95 text-primary-foreground transition-all"
+                        className="h-8.5 text-xs font-semibold gap-1.5 bg-[#059669] hover:bg-[#059669]/95 text-white transition-all"
                       >
                         {generating ? (
                           <>
@@ -2193,9 +2193,9 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
 
                   {/* Active Draft Output */}
                   {generatedContent && (
-                    <div className="border border-primary/25 bg-primary/5 p-4.5 rounded-lg flex flex-col gap-3.5 animate-in fade-in duration-300">
-                      <div className="flex items-center justify-between border-b border-border/50 pb-2">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-primary flex items-center gap-1.5">
+                    <div className="border border-primary/25 bg-[#059669]/5 p-4.5 rounded-lg flex flex-col gap-3.5 animate-in fade-in duration-300">
+                      <div className="flex items-center justify-between border-b border-[#e5e5e0]/70 pb-2">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-[#059669] flex items-center gap-1.5">
                           <Sparkles className="h-3.5 w-3.5" />
                           {t('lead.ai_draft_generated')}
                         </span>
@@ -2205,15 +2205,15 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                             size="sm"
                             disabled={exportingDrive}
                             onClick={() => handleExportToDrive(generatedContent)}
-                            className="h-7 text-[10px] font-semibold px-2 text-muted-foreground hover:text-foreground flex items-center gap-1 cursor-pointer"
+                            className="h-7 text-[10px] font-semibold px-2 text-[#7a7a76] hover:text-[#26251e] flex items-center gap-1 cursor-pointer"
                             title={typeof window !== 'undefined' && (window as any).electron ? t('lead.export_local') : t('lead.save_to_drive')}
                           >
                             {exportingDrive ? (
                               <Loader2 className="h-3 w-3 animate-spin" />
                             ) : typeof window !== 'undefined' && (window as any).electron ? (
-                              <HardDrive className="h-3.5 w-3.5 text-primary" />
+                              <HardDrive className="h-3.5 w-3.5 text-[#059669]" />
                             ) : (
-                              <Cloud className="h-3.5 w-3.5 text-primary" />
+                              <Cloud className="h-3.5 w-3.5 text-[#059669]" />
                             )}
                             <span>{typeof window !== 'undefined' && (window as any).electron ? t('lead.export_local') : t('lead.save_to_drive')}</span>
                           </Button>
@@ -2221,7 +2221,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                             variant="ghost"
                             size="icon"
                             onClick={handleCopyDraft}
-                            className={cn("h-7 w-7 text-muted-foreground hover:text-foreground", copied && "text-emerald-500 hover:text-emerald-500")}
+                            className={cn("h-7 w-7 text-[#7a7a76] hover:text-[#26251e]", copied && "text-emerald-500 hover:text-emerald-500")}
                             title="Copier"
                           >
                             {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
@@ -2231,23 +2231,23 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                       <Textarea
                         value={generatedContent}
                         onChange={(e) => setGeneratedContent(e.target.value)}
-                        className="text-xs font-sans min-h-[160px] leading-relaxed bg-background focus-visible:ring-1 focus-visible:ring-primary"
+                        className="text-xs font-sans min-h-[160px] leading-relaxed bg-[#fafaf8] focus-visible:ring-1 focus-visible:ring-primary"
                         disabled={isLocked}
                         onFocus={() => setIsEditing(true)}
                         onBlur={() => setIsEditing(false)}
                       />
                       
                       {/* Send button panel */}
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1 border-t border-border/40">
-                        <div className="text-[10px] text-muted-foreground">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1 border-t border-[#e5e5e0]/60">
+                        <div className="text-[10px] text-[#7a7a76]">
                           {checkingGmail ? (
                             <span>{t('lead.checking_gmail')}</span>
                           ) : gmailConnected ? (
-                            <span className="text-emerald-600 dark:text-emerald-400 font-medium">
+                            <span className="text-emerald-600 font-medium">
                               ✓ {t('lead.gmail_connected')} ({googleEmail})
                             </span>
                           ) : (
-                            <span className="text-amber-600 dark:text-amber-400">
+                            <span className="text-amber-600">
                               ⚠ {t('lead.gmail_not_connected')}
                             </span>
                           )}
@@ -2256,7 +2256,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                           onClick={handleSendEmail}
                           disabled={sendingEmail || !lead.contactEmail || isLocked}
                           size="sm"
-                          className="h-8 text-xs font-bold gap-1.5 bg-primary hover:bg-primary/95 text-primary-foreground self-end sm:self-auto"
+                          className="h-8 text-xs font-bold gap-1.5 bg-[#059669] hover:bg-[#059669]/95 text-white self-end sm:self-auto"
                         >
                           {sendingEmail ? (
                             <>
@@ -2272,7 +2272,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                         </Button>
                       </div>
                       
-                      <p className="text-[10px] text-muted-foreground italic">
+                      <p className="text-[10px] text-[#7a7a76] italic">
                         {t('lead.draft_auto_saved')}
                       </p>
                     </div>
@@ -2280,21 +2280,21 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
 
                   {/* History of drafts */}
                   <div className="space-y-3.5">
-                    <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{t('lead.drafts_history')}</h4>
+                    <h4 className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">{t('lead.drafts_history')}</h4>
                     {loadingDrafts ? (
                       <div className="flex justify-center py-6">
-                        <Loader2 className="h-5 w-5 text-primary animate-spin" />
+                        <Loader2 className="h-5 w-5 text-[#059669] animate-spin" />
                       </div>
                     ) : drafts.length > 0 ? (
                       <div className="space-y-3">
                         {drafts.map((draft) => (
-                          <div key={draft.id} className="border border-border/60 bg-card p-4 rounded-lg flex flex-col gap-3 hover:border-border transition-all">
-                            <div className="flex items-center justify-between border-b border-border/40 pb-2">
+                          <div key={draft.id} className="border border-[#e5e5e0]/70 bg-white p-4 rounded-lg flex flex-col gap-3 hover:border-[#e5e5e0] transition-all">
+                            <div className="flex items-center justify-between border-b border-[#e5e5e0]/60 pb-2">
                               <div className="flex items-center gap-2">
                                 <Badge variant="secondary" className="text-[8px] font-extrabold uppercase px-1.5 py-0">
                                   {draft.channel === 'Email' ? `✉️ ${t('lead.channel_email')}` : draft.channel === 'DM' ? `📱 ${t('lead.channel_dm')}` : `📞 ${t('lead.channel_call')}`}
                                 </Badge>
-                                <span className="text-[9px] text-muted-foreground font-mono">Ton: {draft.tone}</span>
+                                <span className="text-[9px] text-[#7a7a76] font-mono">Ton: {draft.tone}</span>
                               </div>
                               <div className="flex items-center gap-1">
                                 <Button
@@ -2302,7 +2302,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                                   size="icon"
                                   disabled={exportingDrive}
                                   onClick={() => handleExportToDrive(draft.content)}
-                                  className="h-6.5 w-6.5 text-muted-foreground hover:text-primary"
+                                  className="h-6.5 w-6.5 text-[#7a7a76] hover:text-[#059669]"
                                   title={typeof window !== 'undefined' && (window as any).electron ? t('lead.export_local') : t('lead.save_to_drive')}
                                 >
                                   {typeof window !== 'undefined' && (window as any).electron ? (
@@ -2315,7 +2315,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                                   variant="ghost"
                                   size="icon"
                                   onClick={() => setGeneratedContent(draft.content)}
-                                  className="h-6.5 w-6.5 text-muted-foreground hover:text-foreground"
+                                  className="h-6.5 w-6.5 text-[#7a7a76] hover:text-[#26251e]"
                                   title="Ouvrir dans l'éditeur"
                                   disabled={isLocked}
                                 >
@@ -2325,7 +2325,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                                   variant="ghost"
                                   size="icon"
                                   onClick={() => handleDeleteDraft(draft.id)}
-                                  className="h-6.5 w-6.5 text-muted-foreground hover:text-red-500"
+                                  className="h-6.5 w-6.5 text-[#7a7a76] hover:text-red-500"
                                   title="Supprimer"
                                   disabled={isLocked}
                                 >
@@ -2333,16 +2333,16 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                                 </Button>
                               </div>
                             </div>
-                            <p className="text-xs text-foreground/95 whitespace-pre-wrap leading-relaxed">
+                            <p className="text-xs text-[#26251e]/95 whitespace-pre-wrap leading-relaxed">
                               {cleanMarkdownForPreview(draft.content)}
                             </p>
                           </div>
                         ))}
                       </div>
                     ) : (
-                      <div className="flex flex-col items-center justify-center py-6 text-center border border-dashed border-border rounded-lg">
-                        <Sparkles className="h-4.5 w-4.5 text-muted-foreground/45 mb-1.5" />
-                        <span className="text-[11px] text-muted-foreground">{t('lead.no_drafts')}</span>
+                      <div className="flex flex-col items-center justify-center py-6 text-center border border-dashed border-[#e5e5e0] rounded-lg">
+                        <Sparkles className="h-4.5 w-4.5 text-[#7a7a76]/45 mb-1.5" />
+                        <span className="text-[11px] text-[#7a7a76]">{t('lead.no_drafts')}</span>
                       </div>
                     )}
                   </div>
@@ -2398,8 +2398,8 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                         className={cn(
                           "flex flex-col gap-1 p-3 rounded-lg border transition-colors cursor-pointer hover:bg-[#f4f4f3]",
                           thread.unread
-                            ? "border-[#059669]/30 bg-emerald-50/40 dark:bg-emerald-950/20"
-                            : "border-[#e5e5e0] bg-card"
+                            ? "border-[#059669]/30 bg-emerald-50/40"
+                            : "border-[#e5e5e0] bg-white"
                         )}
                         onClick={() => {
                           window.open(`https://mail.google.com/mail/u/0/#inbox/${thread.id}`, '_blank');
@@ -2473,7 +2473,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                           className={cn(
                             "flex items-start justify-between gap-3 p-3 rounded-lg border transition-colors",
                             isUpcoming
-                              ? "border-[#059669]/30 bg-emerald-50/40 dark:bg-emerald-950/20"
+                              ? "border-[#059669]/30 bg-emerald-50/40"
                               : "border-[#e5e5e0] bg-[#f4f4f3]/30"
                           )}
                         >
@@ -2488,7 +2488,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                           </div>
                           <div className="flex flex-col items-end gap-1 shrink-0">
                             {isUpcoming && (
-                              <span className="text-[9px] font-bold text-[#059669] bg-emerald-50 dark:bg-emerald-950/30 border border-[#059669]/20 px-1.5 py-0.5 rounded">
+                              <span className="text-[9px] font-bold text-[#059669] bg-emerald-50 border border-[#059669]/20 px-1.5 py-0.5 rounded">
                                 À venir
                               </span>
                             )}
@@ -2517,7 +2517,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
           </div>
 
           {/* Right Sidebar (Notion Properties Panel) */}
-          <div className="border-t lg:border-t-0 lg:border-l border-border pt-6 lg:pt-0 lg:pl-6 space-y-6">
+          <div className="border-t lg:border-t-0 lg:border-l border-[#e5e5e0] pt-6 lg:pt-0 lg:pl-6 space-y-6">
             {/* Score v2 — multidimensionnel */}
             {(() => {
               const computed = computeLeadScoreV2(lead);
@@ -2568,12 +2568,12 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
             <QualificationPanel lead={lead} onSave={(fields) => { updateLead(lead.id, fields); fetchDrafts(); }} />
 
             <div>
-              <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-4">{t('lead.properties_title')}</h4>
+              <h4 className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76] mb-4">{t('lead.properties_title')}</h4>
 
               <div className="space-y-4">
                 {/* Status selector */}
                 <div className="grid grid-cols-[100px_1fr] items-center gap-1.5">
-                  <span className="text-[11px] font-medium text-muted-foreground flex items-center gap-1.5">
+                  <span className="text-[11px] font-medium text-[#7a7a76] flex items-center gap-1.5">
                     <Activity className="h-3 w-3" />
                     {t('lead.prop_status')}
                   </span>
@@ -2599,7 +2599,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
 
                 {/* Temperature selector */}
                 <div className="grid grid-cols-[100px_1fr] items-center gap-1.5">
-                  <span className="text-[11px] font-medium text-muted-foreground flex items-center gap-1.5">
+                  <span className="text-[11px] font-medium text-[#7a7a76] flex items-center gap-1.5">
                     <Flame className="h-3 w-3" />
                     {t('lead.prop_temperature')}
                   </span>
@@ -2621,7 +2621,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
 
                 {/* Niche */}
                 <div className="grid grid-cols-[100px_1fr] items-start gap-1.5 py-0.5">
-                  <span className="text-[11px] font-medium text-muted-foreground flex items-center gap-1.5 h-6">
+                  <span className="text-[11px] font-medium text-[#7a7a76] flex items-center gap-1.5 h-6">
                     <Building className="h-3 w-3" />
                     {t('lead.prop_niche')}
                   </span>
@@ -2636,7 +2636,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
 
                 {/* City */}
                 <div className="grid grid-cols-[100px_1fr] items-start gap-1.5 py-0.5">
-                  <span className="text-[11px] font-medium text-muted-foreground flex items-center gap-1.5 h-6">
+                  <span className="text-[11px] font-medium text-[#7a7a76] flex items-center gap-1.5 h-6">
                     <MapPin className="h-3 w-3" />
                     {t('lead.prop_city')}
                   </span>
@@ -2651,7 +2651,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
 
                 {/* Contact Name */}
                 <div className="grid grid-cols-[100px_1fr] items-start gap-1.5 py-0.5">
-                  <span className="text-[11px] font-medium text-muted-foreground flex items-center gap-1.5 h-6">
+                  <span className="text-[11px] font-medium text-[#7a7a76] flex items-center gap-1.5 h-6">
                     <User className="h-3 w-3" />
                     {t('lead.prop_contact')}
                   </span>
@@ -2666,7 +2666,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
 
                 {/* Contact Email */}
                 <div className="grid grid-cols-[100px_1fr] items-start gap-1.5 py-0.5">
-                  <span className="text-[11px] font-medium text-muted-foreground flex items-center gap-1.5 h-6">
+                  <span className="text-[11px] font-medium text-[#7a7a76] flex items-center gap-1.5 h-6">
                     <Mail className="h-3 w-3" />
                     {t('lead.prop_email')}
                   </span>
@@ -2681,7 +2681,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
 
                 {/* Source */}
                 <div className="grid grid-cols-[100px_1fr] items-start gap-1.5 py-0.5">
-                  <span className="text-[11px] font-medium text-muted-foreground flex items-center gap-1.5 h-6">
+                  <span className="text-[11px] font-medium text-[#7a7a76] flex items-center gap-1.5 h-6">
                     <Sparkles className="h-3 w-3" />
                     {t('lead.prop_source')}
                   </span>
@@ -2696,7 +2696,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
 
                 {/* Next action */}
                 <div className="grid grid-cols-[100px_1fr] items-start gap-1.5 py-0.5">
-                  <span className="text-[11px] font-medium text-muted-foreground flex items-center gap-1.5 h-6">
+                  <span className="text-[11px] font-medium text-[#7a7a76] flex items-center gap-1.5 h-6">
                     <ArrowRight className="h-3 w-3" />
                     {t('lead.prop_next_action')}
                   </span>
@@ -2711,7 +2711,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
 
                 {/* Next action date */}
                 <div className="grid grid-cols-[100px_1fr] items-center gap-1.5 py-0.5">
-                  <span className="text-[11px] font-medium text-muted-foreground flex items-center gap-1.5">
+                  <span className="text-[11px] font-medium text-[#7a7a76] flex items-center gap-1.5">
                     <Calendar className="h-3 w-3" />
                     {t('lead.prop_next_action_date')}
                   </span>
@@ -2719,7 +2719,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                     type="date"
                     value={lead.nextActionDate}
                     onChange={(e) => handleSaveProperty('nextActionDate', e.target.value)}
-                    className="h-7 text-xs bg-background py-0.5 px-2"
+                    className="h-7 text-xs bg-[#fafaf8] py-0.5 px-2"
                     disabled={isLocked}
                   />
                 </div>
@@ -2727,23 +2727,23 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
 
               {/* Scripts Contextuels (Phase 3) */}
               {leadPersona && (Object.keys(leadPersona.callScripts || {}).length > 0 || Object.keys(leadPersona.emailTemplates || {}).length > 0) && (
-                <div className="pt-4 border-t border-border mt-4 space-y-3">
-                  <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                <div className="pt-4 border-t border-[#e5e5e0] mt-4 space-y-3">
+                  <h4 className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76] flex items-center gap-1.5">
                     <FileText className="h-3 w-3" />
                     Scripts & Modèles (ICP: {leadPersona.name})
                   </h4>
                   <div className="space-y-2">
                     {Object.entries(leadPersona.callScripts || {}).map(([title, content]) => (
-                      <div key={title} className="p-2 border border-border rounded-md bg-background">
-                        <p className="text-[10px] font-bold text-foreground mb-1">📞 {title}</p>
-                        <p className="text-[10px] text-muted-foreground line-clamp-2">{content}</p>
+                      <div key={title} className="p-2 border border-[#e5e5e0] rounded-md bg-[#fafaf8]">
+                        <p className="text-[10px] font-bold text-[#26251e] mb-1">📞 {title}</p>
+                        <p className="text-[10px] text-[#7a7a76] line-clamp-2">{content}</p>
                         <Button variant="ghost" size="sm" className="h-5 text-[9px] px-2 mt-1" onClick={() => setGeneratedContent(content as string)}>Utiliser</Button>
                       </div>
                     ))}
                     {Object.entries(leadPersona.emailTemplates || {}).map(([title, content]) => (
-                      <div key={title} className="p-2 border border-border rounded-md bg-background">
-                        <p className="text-[10px] font-bold text-foreground mb-1">✉️ {title}</p>
-                        <p className="text-[10px] text-muted-foreground line-clamp-2">{content}</p>
+                      <div key={title} className="p-2 border border-[#e5e5e0] rounded-md bg-[#fafaf8]">
+                        <p className="text-[10px] font-bold text-[#26251e] mb-1">✉️ {title}</p>
+                        <p className="text-[10px] text-[#7a7a76] line-clamp-2">{content}</p>
                         <Button variant="ghost" size="sm" className="h-5 text-[9px] px-2 mt-1" onClick={() => setGeneratedContent(content as string)}>Utiliser</Button>
                       </div>
                     ))}
@@ -2752,8 +2752,8 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
               )}
 
               {/* Assigner à */}
-              <div className="pt-4 border-t border-border mt-4 space-y-2">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+              <div className="pt-4 border-t border-[#e5e5e0] mt-4 space-y-2">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76] flex items-center gap-1.5">
                   <User className="h-3 w-3" />
                   Assigner à
                 </span>
@@ -2765,11 +2765,11 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                   }}
                   disabled={isLocked}
                 >
-                  <SelectTrigger className="h-7 w-full text-xs bg-background">
+                  <SelectTrigger className="h-7 w-full text-xs bg-[#fafaf8]">
                     <SelectValue placeholder="Non assigné" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="__none__" className="text-xs text-muted-foreground">Non assigné</SelectItem>
+                    <SelectItem value="__none__" className="text-xs text-[#7a7a76]">Non assigné</SelectItem>
                     {teamMembers.map((m) => (
                       <SelectItem key={m.id} value={m.id} className="text-xs">
                         {m.full_name || m.email}
@@ -2778,32 +2778,32 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                   </SelectContent>
                 </Select>
                 {lead.assignedTo && (
-                  <p className="text-[10px] text-muted-foreground">
-                    Assigné à : <span className="font-semibold text-foreground">{teamMembers.find(m => m.id === lead.assignedTo)?.full_name || teamMembers.find(m => m.id === lead.assignedTo)?.email || 'Membre'}</span>
+                  <p className="text-[10px] text-[#7a7a76]">
+                    Assigné à : <span className="font-semibold text-[#26251e]">{teamMembers.find(m => m.id === lead.assignedTo)?.full_name || teamMembers.find(m => m.id === lead.assignedTo)?.email || 'Membre'}</span>
                   </p>
                 )}
               </div>
 
               {/* Deal */}
-              <div className="pt-4 border-t border-border mt-4 space-y-3">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+              <div className="pt-4 border-t border-[#e5e5e0] mt-4 space-y-3">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76] flex items-center gap-1.5">
                   <DollarSign className="h-3 w-3" />
                   Deal
                 </span>
                 <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-1">
-                    <label className="text-[9px] uppercase tracking-wider text-muted-foreground font-bold">Montant</label>
+                    <label className="text-[9px] uppercase tracking-wider text-[#7a7a76] font-bold">Montant</label>
                     <Input
                       type="number"
                       value={lead.dealAmount ?? ''}
                       onChange={(e) => updateLead(lead.id, { dealAmount: e.target.value ? Number(e.target.value) : undefined })}
                       placeholder="0"
-                      className="h-7 text-xs bg-background"
+                      className="h-7 text-xs bg-[#fafaf8]"
                       disabled={isLocked}
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[9px] uppercase tracking-wider text-muted-foreground font-bold">Proba. %</label>
+                    <label className="text-[9px] uppercase tracking-wider text-[#7a7a76] font-bold">Proba. %</label>
                     <Input
                       type="number"
                       min={0}
@@ -2811,35 +2811,35 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                       value={lead.dealProbability ?? ''}
                       onChange={(e) => updateLead(lead.id, { dealProbability: e.target.value ? Number(e.target.value) : undefined })}
                       placeholder="0"
-                      className="h-7 text-xs bg-background"
+                      className="h-7 text-xs bg-[#fafaf8]"
                       disabled={isLocked}
                     />
                   </div>
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[9px] uppercase tracking-wider text-muted-foreground font-bold">Date de closing</label>
+                  <label className="text-[9px] uppercase tracking-wider text-[#7a7a76] font-bold">Date de closing</label>
                   <Input
                     type="date"
                     value={lead.dealClosingDate || ''}
                     onChange={(e) => updateLead(lead.id, { dealClosingDate: e.target.value || undefined })}
-                    className="h-7 text-xs bg-background"
+                    className="h-7 text-xs bg-[#fafaf8]"
                     disabled={isLocked}
                   />
                 </div>
                 {/* Campagne */}
                 {campaigns.length > 0 && (
                   <div className="space-y-1">
-                    <label className="text-[9px] uppercase tracking-wider text-muted-foreground font-bold">Campagne</label>
+                    <label className="text-[9px] uppercase tracking-wider text-[#7a7a76] font-bold">Campagne</label>
                     <Select
                       value={lead.campaignId || '__none__'}
                       onValueChange={(v) => updateLead(lead.id, { campaignId: v === '__none__' ? undefined : v })}
                       disabled={isLocked}
                     >
-                      <SelectTrigger className="h-7 w-full text-xs bg-background">
+                      <SelectTrigger className="h-7 w-full text-xs bg-[#fafaf8]">
                         <SelectValue placeholder="Aucune" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="__none__" className="text-xs text-muted-foreground">Aucune campagne</SelectItem>
+                        <SelectItem value="__none__" className="text-xs text-[#7a7a76]">Aucune campagne</SelectItem>
                         {campaigns.map(c => <SelectItem key={c.id} value={c.id} className="text-xs">{c.name}</SelectItem>)}
                       </SelectContent>
                     </Select>
@@ -2847,17 +2847,17 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                 )}
                 {/* Projet */}
                 <div className="space-y-1">
-                  <label className="text-[9px] uppercase tracking-wider text-muted-foreground font-bold">Projet</label>
+                  <label className="text-[9px] uppercase tracking-wider text-[#7a7a76] font-bold">Projet</label>
                   <Select
                     value={lead.projectId || '__none__'}
                     onValueChange={(v) => updateLead(lead.id, { projectId: v === '__none__' ? undefined : v })}
                     disabled={isLocked}
                   >
-                    <SelectTrigger className="h-7 w-full text-xs bg-background">
+                    <SelectTrigger className="h-7 w-full text-xs bg-[#fafaf8]">
                       <SelectValue placeholder="Aucun projet" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="__none__" className="text-xs text-muted-foreground">Aucun projet</SelectItem>
+                      <SelectItem value="__none__" className="text-xs text-[#7a7a76]">Aucun projet</SelectItem>
                       {projects.map(p => (
                         <SelectItem key={p.id} value={p.id} className="text-xs">{p.name}</SelectItem>
                       ))}
@@ -2876,7 +2876,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
 
               {/* Tags */}
               <div className="space-y-2">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76] flex items-center gap-1.5">
                   <Tag className="h-3 w-3" />
                   Tags
                 </p>
@@ -2889,10 +2889,10 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                         tag.startsWith('@')
                           ? "bg-[#059669]/10 text-[#059669] border-[#059669]/30"
                           : ['Intéressé', 'RDV demandé', 'Demande info'].includes(tag)
-                            ? "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800"
+                            ? "bg-blue-50 text-blue-700 border-blue-200"
                             : ['Pas intéressé'].includes(tag)
-                              ? "bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800"
-                              : "bg-[#f4f4f3] text-[#555552] border-[#e5e5e0] dark:bg-secondary dark:text-secondary-foreground dark:border-border"
+                              ? "bg-red-50 text-red-700 border-red-200"
+                              : "bg-[#f4f4f3] text-[#555552] border-[#e5e5e0]"
                       )}
                     >
                       {tag}
@@ -2922,8 +2922,8 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
               <ScriptPanel lead={lead} />
 
               {/* Actions terrain */}
-              <div className="pt-4 border-t border-border mt-4 space-y-2">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Actions terrain</span>
+              <div className="pt-4 border-t border-[#e5e5e0] mt-4 space-y-2">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Actions terrain</span>
                 <div className="flex flex-col gap-2">
                   <Button
                     variant="outline"
@@ -2942,7 +2942,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                   >
                     <GoogleMapsIcon size={14} />
                     Voir sur Google Maps
-                    <ExternalLink className="h-3 w-3 ml-auto text-muted-foreground" />
+                    <ExternalLink className="h-3 w-3 ml-auto text-[#7a7a76]" />
                   </Button>
                   <Button
                     variant="outline"
@@ -2952,7 +2952,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                   >
                     <Tag className="h-3.5 w-3.5 text-emerald-600" />
                     Présenter une offre
-                    <ExternalLink className="h-3 w-3 ml-auto text-muted-foreground" />
+                    <ExternalLink className="h-3 w-3 ml-auto text-[#7a7a76]" />
                   </Button>
                   <Button
                     variant="outline"
@@ -3023,14 +3023,14 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
               </div>
 
               {/* Storefront Photo Section */}
-              <div className="pt-5 border-t border-border mt-5 space-y-2">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+              <div className="pt-5 border-t border-[#e5e5e0] mt-5 space-y-2">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76] flex items-center gap-1.5">
                   <Camera className="h-3 w-3" />
                   {t('lead.photo_section')}
                 </span>
                 
                 {lead.imageUrl ? (
-                  <div className="relative rounded-lg overflow-hidden border border-border group bg-muted aspect-video flex items-center justify-center">
+                  <div className="relative rounded-lg overflow-hidden border border-[#e5e5e0] group bg-[#f4f4f3] aspect-video flex items-center justify-center">
                     <img 
                       src={lead.imageUrl} 
                       alt={t('lead.photo_alt')} 
@@ -3067,12 +3067,12 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                       }
                     }}
                     className={cn(
-                      "border border-dashed border-border hover:border-primary/50 hover:bg-secondary/10 rounded-lg p-6 flex flex-col items-center justify-center gap-1.5 cursor-pointer transition-all",
+                      "border border-dashed border-[#e5e5e0] hover:border-primary/50 hover:bg-secondary/10 rounded-lg p-6 flex flex-col items-center justify-center gap-1.5 cursor-pointer transition-all",
                       isLocked && "cursor-not-allowed opacity-50 hover:bg-transparent hover:border-transparent"
                     )}
                   >
-                    <Camera className="h-5 w-5 text-muted-foreground" />
-                    <span className="text-[10px] font-medium text-muted-foreground">{t('lead.take_photo_btn')}</span>
+                    <Camera className="h-5 w-5 text-[#7a7a76]" />
+                    <span className="text-[10px] font-medium text-[#7a7a76]">{t('lead.take_photo_btn')}</span>
                   </div>
                 )}
               </div>
@@ -3083,22 +3083,22 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
 
       {showProposalBuilder && (
         <div className="fixed inset-0 bg-[#000000]/40 backdrop-blur-xs z-50 flex items-center justify-center p-4 md:p-6 overflow-hidden">
-          <div className="bg-background border border-border rounded-2xl w-full max-w-6xl h-[90vh] flex flex-col shadow-2xl animate-in fade-in zoom-in-95 duration-200 text-foreground">
+          <div className="bg-[#fafaf8] border border-[#e5e5e0] rounded-2xl w-full max-w-6xl h-[90vh] flex flex-col shadow-2xl animate-in fade-in zoom-in-95 duration-200 text-[#26251e]">
             
             {/* Header */}
-            <div className="p-4 border-b border-border/80 flex items-center justify-between bg-card shrink-0">
+            <div className="p-4 border-b border-[#e5e5e0]/80 flex items-center justify-between bg-white shrink-0">
               <div>
-                <h3 className="text-sm font-black uppercase tracking-wider text-foreground flex items-center gap-2">
+                <h3 className="text-sm font-black uppercase tracking-wider text-[#26251e] flex items-center gap-2">
                   <FileOutput className="h-4 w-4 text-[#059669]" />
                   Générateur de Proposition Commerciale
                 </h3>
-                <p className="text-[10px] text-muted-foreground mt-0.5">Personnalisez votre proposition commerciale avant l'exportation PDF.</p>
+                <p className="text-[10px] text-[#7a7a76] mt-0.5">Personnalisez votre proposition commerciale avant l'exportation PDF.</p>
               </div>
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={() => setShowProposalBuilder(false)}
-                className="h-8 w-8 hover:bg-muted rounded-full"
+                className="h-8 w-8 hover:bg-[#f4f4f3] rounded-full"
               >
                 <X className="h-4 w-4" />
               </Button>
@@ -3113,7 +3113,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                   {(['intro', 'problem', 'solution', 'terms'] as const).map(section => (
                     <div key={section} className="space-y-1.5">
                       <div className="flex items-center justify-between">
-                        <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                        <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">
                           {SECTION_LABELS[section]}
                         </label>
                         <button
@@ -3144,7 +3144,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                 {/* Section Prix + Taxes QC */}
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Prix</label>
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Prix</label>
                     <div className="flex items-center gap-2">
                       <input
                         type="number"
@@ -3153,11 +3153,11 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                           ...p,
                           pricing: { ...p.pricing, amount: Number(e.target.value) },
                         }))}
-                        className="w-40 h-8 text-sm font-bold border border-border rounded px-2 bg-background focus:outline-none focus:ring-1 focus:ring-[#059669]/40"
+                        className="w-40 h-8 text-sm font-bold border border-[#e5e5e0] rounded px-2 bg-[#fafaf8] focus:outline-none focus:ring-1 focus:ring-[#059669]/40"
                         placeholder="0"
                         min={0}
                       />
-                      <span className="text-xs text-muted-foreground">CAD</span>
+                      <span className="text-xs text-[#7a7a76]">CAD</span>
                     </div>
                     {proposalSections.pricing.amount > 0 && (
                       <div className="rounded border border-[#e5e5e0] bg-[#f7f7f4] p-3 space-y-1 text-xs">
@@ -3233,56 +3233,56 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                 
                 {/* Section 1: Informations Générales */}
                 <div className="space-y-3">
-                  <h4 className="text-[10px] font-bold uppercase tracking-wider text-primary border-b border-border/60 pb-1">1. Informations Générales</h4>
+                  <h4 className="text-[10px] font-bold uppercase tracking-wider text-[#059669] border-b border-[#e5e5e0]/70 pb-1">1. Informations Générales</h4>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1">
-                      <label className="text-[9px] font-bold uppercase text-muted-foreground">Titre du document</label>
+                      <label className="text-[9px] font-bold uppercase text-[#7a7a76]">Titre du document</label>
                       <Input
                         value={proposalTitle}
                         onChange={(e) => setProposalTitle(e.target.value)}
-                        className="text-xs h-8 bg-card"
+                        className="text-xs h-8 bg-white"
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-[9px] font-bold uppercase text-muted-foreground">Date d'émission</label>
+                      <label className="text-[9px] font-bold uppercase text-[#7a7a76]">Date d'émission</label>
                       <Input
                         type="date"
                         value={proposalDate}
                         onChange={(e) => setProposalDate(e.target.value)}
-                        className="text-xs h-8 bg-card"
+                        className="text-xs h-8 bg-white"
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-[9px] font-bold uppercase text-muted-foreground">Validité (jours)</label>
+                      <label className="text-[9px] font-bold uppercase text-[#7a7a76]">Validité (jours)</label>
                       <Input
                         type="number"
                         value={proposalValidDays}
                         onChange={(e) => setProposalValidDays(Number(e.target.value))}
-                        className="text-xs h-8 bg-card"
+                        className="text-xs h-8 bg-white"
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-[9px] font-bold uppercase text-muted-foreground">Nom du destinataire</label>
+                      <label className="text-[9px] font-bold uppercase text-[#7a7a76]">Nom du destinataire</label>
                       <Input
                         value={proposalRecipientName}
                         onChange={(e) => setProposalRecipientName(e.target.value)}
-                        className="text-xs h-8 bg-card"
+                        className="text-xs h-8 bg-white"
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-[9px] font-bold uppercase text-muted-foreground">Votre entreprise (Expéditeur)</label>
+                      <label className="text-[9px] font-bold uppercase text-[#7a7a76]">Votre entreprise (Expéditeur)</label>
                       <Input
                         value={proposalSenderCompany}
                         onChange={(e) => setProposalSenderCompany(e.target.value)}
-                        className="text-xs h-8 bg-card"
+                        className="text-xs h-8 bg-white"
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-[9px] font-bold uppercase text-muted-foreground">Votre nom</label>
+                      <label className="text-[9px] font-bold uppercase text-[#7a7a76]">Votre nom</label>
                       <Input
                         value={proposalSenderName}
                         onChange={(e) => setProposalSenderName(e.target.value)}
-                        className="text-xs h-8 bg-card"
+                        className="text-xs h-8 bg-white"
                       />
                     </div>
                   </div>
@@ -3291,7 +3291,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                 {/* Section 2: Résumé Exécutif */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-primary">2. Résumé exécutif</label>
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-[#059669]">2. Résumé exécutif</label>
                     <button
                       type="button"
                       onClick={() => {
@@ -3306,19 +3306,19 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                   <Textarea
                     value={proposalSummary}
                     onChange={(e) => setProposalSummary(e.target.value)}
-                    className="text-xs min-h-[70px] bg-card leading-relaxed resize-y"
+                    className="text-xs min-h-[70px] bg-white leading-relaxed resize-y"
                     placeholder="Écrivez le résumé exécutif de la proposition..."
                   />
                 </div>
 
                 {/* Section 3: Services et Tarifs */}
                 <div className="space-y-3">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-primary border-b border-border/60 pb-1 block">3. Choix des services & Tarifs</label>
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-[#059669] border-b border-[#e5e5e0]/70 pb-1 block">3. Choix des services & Tarifs</label>
                   
                   {/* Database/Preset Services List */}
                   <div className="space-y-2.5">
                     {proposalServices.map((svc, idx) => (
-                      <div key={idx} className="border border-border/80 rounded-lg p-3 bg-card flex items-start gap-3">
+                      <div key={idx} className="border border-[#e5e5e0]/80 rounded-lg p-3 bg-white flex items-start gap-3">
                         <input
                           type="checkbox"
                           checked={svc.selected}
@@ -3339,10 +3339,10 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                                 copy[idx].name = e.target.value;
                                 setProposalServices(copy);
                               }}
-                              className="font-bold text-xs bg-transparent border-b border-transparent hover:border-border focus:border-primary focus:outline-none w-full px-1"
+                              className="font-bold text-xs bg-transparent border-b border-transparent hover:border-[#e5e5e0] focus:border-primary focus:outline-none w-full px-1"
                             />
-                            <div className="flex items-center gap-1 shrink-0 bg-background border border-border rounded px-1.5 py-0.5">
-                              <span className="text-[10px] text-muted-foreground">$</span>
+                            <div className="flex items-center gap-1 shrink-0 bg-[#fafaf8] border border-[#e5e5e0] rounded px-1.5 py-0.5">
+                              <span className="text-[10px] text-[#7a7a76]">$</span>
                               <input
                                 type="number"
                                 value={svc.price}
@@ -3362,7 +3362,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                               copy[idx].description = e.target.value;
                               setProposalServices(copy);
                             }}
-                            className="text-[11px] text-muted-foreground bg-transparent border-none resize-none p-1 min-h-[40px] focus:bg-background focus:ring-0 w-full"
+                            className="text-[11px] text-[#7a7a76] bg-transparent border-none resize-none p-1 min-h-[40px] focus:bg-[#fafaf8] focus:ring-0 w-full"
                           />
                         </div>
                       </div>
@@ -3370,14 +3370,14 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                   </div>
 
                   {/* Add Custom Service Line */}
-                  <div className="border border-dashed border-border/80 rounded-lg p-3 space-y-2 bg-muted/10">
-                    <span className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground block">Ajouter un service personnalisé</span>
+                  <div className="border border-dashed border-[#e5e5e0]/80 rounded-lg p-3 space-y-2 bg-[#f4f4f3]/10">
+                    <span className="text-[9px] font-bold uppercase tracking-wider text-[#7a7a76] block">Ajouter un service personnalisé</span>
                     <div className="grid grid-cols-3 gap-2">
                       <Input
                         placeholder="Nom du service..."
                         value={newSvcName}
                         onChange={(e) => setNewSvcName(e.target.value)}
-                        className="text-xs h-8 col-span-2 bg-card"
+                        className="text-xs h-8 col-span-2 bg-white"
                       />
                       <div className="relative">
                         <Input
@@ -3385,16 +3385,16 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                           placeholder="Prix ($)..."
                           value={newSvcPrice}
                           onChange={(e) => setNewSvcPrice(e.target.value)}
-                          className="text-xs h-8 pl-4 bg-card"
+                          className="text-xs h-8 pl-4 bg-white"
                         />
-                        <span className="absolute left-1.5 top-2 text-[10px] text-muted-foreground">$</span>
+                        <span className="absolute left-1.5 top-2 text-[10px] text-[#7a7a76]">$</span>
                       </div>
                     </div>
                     <Textarea
                       placeholder="Description du service..."
                       value={newSvcDesc}
                       onChange={(e) => setNewSvcDesc(e.target.value)}
-                      className="text-xs min-h-[40px] bg-card"
+                      className="text-xs min-h-[40px] bg-white"
                     />
                     <div className="flex justify-end">
                       <Button
@@ -3425,19 +3425,19 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                   {/* Custom Services Added List */}
                   {customServices.length > 0 && (
                     <div className="space-y-1.5">
-                      <span className="text-[9px] font-bold uppercase text-muted-foreground block">Services personnalisés ajoutés</span>
+                      <span className="text-[9px] font-bold uppercase text-[#7a7a76] block">Services personnalisés ajoutés</span>
                       {customServices.map((cs, idx) => (
-                        <div key={idx} className="border border-border/80 rounded-lg p-2.5 bg-[#fbfbfb] flex items-center justify-between gap-3 text-xs text-foreground">
+                        <div key={idx} className="border border-[#e5e5e0]/80 rounded-lg p-2.5 bg-[#fbfbfb] flex items-center justify-between gap-3 text-xs text-[#26251e]">
                           <div>
                             <span className="font-bold">{cs.name}</span>
-                            <span className="text-[10px] text-muted-foreground block truncate max-w-sm">{cs.description}</span>
+                            <span className="text-[10px] text-[#7a7a76] block truncate max-w-sm">{cs.description}</span>
                           </div>
                           <div className="flex items-center gap-2">
                             <span className="font-bold">{cs.price} $</span>
                             <button
                               type="button"
                               onClick={() => setCustomServices(prev => prev.filter((_, i) => i !== idx))}
-                              className="text-muted-foreground hover:text-destructive text-sm"
+                              className="text-[#7a7a76] hover:text-destructive text-sm"
                             >✕</button>
                           </div>
                         </div>
@@ -3448,32 +3448,32 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
 
                 {/* Section 4: Taxes & Conditions */}
                 <div className="space-y-3">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-primary border-b border-border/60 pb-1 block">4. Taxes & Conditions</label>
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-[#059669] border-b border-[#e5e5e0]/70 pb-1 block">4. Taxes & Conditions</label>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1">
-                      <label className="text-[9px] font-bold uppercase text-muted-foreground">Taux de Taxes (%)</label>
+                      <label className="text-[9px] font-bold uppercase text-[#7a7a76]">Taux de Taxes (%)</label>
                       <Input
                         type="number"
                         step="0.001"
                         value={proposalTaxRate}
                         onChange={(e) => setProposalTaxRate(Number(e.target.value))}
-                        className="text-xs h-8 bg-card"
+                        className="text-xs h-8 bg-white"
                       />
                     </div>
                     <div className="space-y-1 col-span-2">
-                      <label className="text-[9px] font-bold uppercase text-muted-foreground">Conditions de règlement</label>
+                      <label className="text-[9px] font-bold uppercase text-[#7a7a76]">Conditions de règlement</label>
                       <Textarea
                         value={proposalPaymentTerms}
                         onChange={(e) => setProposalPaymentTerms(e.target.value)}
-                        className="text-xs min-h-[50px] bg-card resize-y"
+                        className="text-xs min-h-[50px] bg-white resize-y"
                       />
                     </div>
                     <div className="space-y-1 col-span-2">
-                      <label className="text-[9px] font-bold uppercase text-muted-foreground">Appel à l'action d'acceptation</label>
+                      <label className="text-[9px] font-bold uppercase text-[#7a7a76]">Appel à l'action d'acceptation</label>
                       <Textarea
                         value={proposalCallToAction}
                         onChange={(e) => setProposalCallToAction(e.target.value)}
-                        className="text-xs min-h-[50px] bg-card resize-y"
+                        className="text-xs min-h-[50px] bg-white resize-y"
                       />
                     </div>
                   </div>
@@ -3627,9 +3627,9 @@ function DescriptionEditor({ value, onSave }: { value: string; onSave: (v: strin
     return (
       <div className="group relative">
         {value ? (
-          <p className="text-xs text-foreground leading-relaxed">{value}</p>
+          <p className="text-xs text-[#26251e] leading-relaxed">{value}</p>
         ) : (
-          <p className="text-[11px] text-muted-foreground italic">
+          <p className="text-[11px] text-[#7a7a76] italic">
             Analysez le site web pour générer une description commerciale, utilisée ensuite par l&apos;IA (script de visite, brouillons d&apos;emails).
           </p>
         )}
@@ -3748,9 +3748,9 @@ function SocialLinksSection({ lead, onSave }: { lead: Lead; onSave: (fields: Par
   }
 
   return (
-    <div className="rounded-lg border border-border/60 bg-muted/20 p-3.5 space-y-3">
+    <div className="rounded-lg border border-[#e5e5e0]/70 bg-[#f4f4f3]/40 p-3.5 space-y-3">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+        <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">
           <Globe className="h-3 w-3" />Présence en ligne
         </div>
         <button type="button" onClick={() => setEditing(e => !e)} className="text-[10px] text-[#059669] font-bold hover:underline">
@@ -3771,7 +3771,7 @@ function SocialLinksSection({ lead, onSave }: { lead: Lead; onSave: (fields: Par
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={field.icon} alt={field.label} className="w-4 h-4 rounded shrink-0" />
               ) : (
-                <Globe className="w-4 h-4 text-muted-foreground shrink-0" />
+                <Globe className="w-4 h-4 text-[#7a7a76] shrink-0" />
               )}
               <Input
                 value={field.value}
@@ -3856,7 +3856,7 @@ function SocialLinksSection({ lead, onSave }: { lead: Lead; onSave: (fields: Par
             </div>
           ) : igPosts.length > 0 ? (
             <div className="space-y-1.5">
-              <p className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">Derniers posts</p>
+              <p className="text-[9px] font-bold uppercase tracking-wider text-[#7a7a76]">Derniers posts</p>
               <div className="grid grid-cols-3 gap-1">
                 {igPosts.map((img, i) => (
                   <a key={i} href={igUrl && (igUrl.startsWith('http') ? igUrl : `https://${igUrl}`)} target="_blank" rel="noopener noreferrer">
@@ -3871,7 +3871,7 @@ function SocialLinksSection({ lead, onSave }: { lead: Lead; onSave: (fields: Par
               </div>
             </div>
           ) : (
-            <p className="text-[10px] text-muted-foreground italic">Compte privé ou scraping indisponible. <a href={igUrl && (igUrl.startsWith('http') ? igUrl : `https://${igUrl}`)} target="_blank" rel="noopener noreferrer" className="text-[#059669] underline">Voir le profil →</a></p>
+            <p className="text-[10px] text-[#7a7a76] italic">Compte privé ou scraping indisponible. <a href={igUrl && (igUrl.startsWith('http') ? igUrl : `https://${igUrl}`)} target="_blank" rel="noopener noreferrer" className="text-[#059669] underline">Voir le profil →</a></p>
           )}
         </div>
       )}

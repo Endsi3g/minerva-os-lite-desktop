@@ -40,18 +40,18 @@ export function SettingsModelsSection({ data, onChange, isSaving }: Props) {
       isSaving={isSaving}
     >
       {/* Default chat model */}
-      <div className="border border-border rounded-xl p-5 bg-card space-y-3">
+      <div className="border border-[#e5e5e0] rounded-xl p-5 bg-white space-y-3">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-xs font-bold text-foreground">Modèle de chat par défaut</p>
-            <p className="text-[11px] text-muted-foreground mt-0.5">
+            <p className="text-xs font-bold text-[#26251e]">Modèle de chat par défaut</p>
+            <p className="text-[11px] text-[#7a7a76] mt-0.5">
               Sera pré-sélectionné lors du démarrage d'un nouveau chat. Chaque membre peut surcharger ce choix dans ses paramètres.
             </p>
           </div>
           <select
             value={data.defaultChatModel}
             onChange={(e) => onChange({ defaultChatModel: e.target.value })}
-            className="text-xs border border-border rounded-lg px-3 py-1.5 bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary shrink-0"
+            className="text-xs border border-[#e5e5e0] rounded-lg px-3 py-1.5 bg-[#fafaf8] text-[#26251e] focus:outline-none focus:ring-1 focus:ring-primary shrink-0"
           >
             <option value="">Aucun (utiliser le défaut)</option>
             {CHAT_MODELS.map(m => (
@@ -62,18 +62,18 @@ export function SettingsModelsSection({ data, onChange, isSaving }: Props) {
       </div>
 
       {/* Default image model */}
-      <div className="border border-border rounded-xl p-5 bg-card">
+      <div className="border border-[#e5e5e0] rounded-xl p-5 bg-white">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-xs font-bold text-foreground">Modèle de génération d'image</p>
-            <p className="text-[11px] text-muted-foreground mt-0.5">
+            <p className="text-xs font-bold text-[#26251e]">Modèle de génération d'image</p>
+            <p className="text-[11px] text-[#7a7a76] mt-0.5">
               Modèle utilisé pour la génération d'images dans le chat.
             </p>
           </div>
           <select
             value={data.defaultImageModel}
             onChange={(e) => onChange({ defaultImageModel: e.target.value })}
-            className="text-xs border border-border rounded-lg px-3 py-1.5 bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary shrink-0"
+            className="text-xs border border-[#e5e5e0] rounded-lg px-3 py-1.5 bg-[#fafaf8] text-[#26251e] focus:outline-none focus:ring-1 focus:ring-primary shrink-0"
           >
             <option value="">Aucun</option>
             <option value="dall-e-3">DALL-E 3 — OpenAI</option>
@@ -85,13 +85,13 @@ export function SettingsModelsSection({ data, onChange, isSaving }: Props) {
 
       {/* Models by provider */}
       <div>
-        <h3 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-3">Modèles disponibles</h3>
+        <h3 className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76] mb-3">Modèles disponibles</h3>
         <div className="space-y-3">
           {PROVIDERS.map(({ name, models, color }) => (
-            <div key={name} className="border border-border rounded-xl overflow-hidden bg-card">
-              <div className={`px-4 py-2.5 border-b border-border ${color} flex items-center gap-2`}>
-                <span className="text-xs font-bold text-foreground">{name}</span>
-                <span className="text-[10px] text-muted-foreground">· {models.length} modèle(s)</span>
+            <div key={name} className="border border-[#e5e5e0] rounded-xl overflow-hidden bg-white">
+              <div className={`px-4 py-2.5 border-b border-[#e5e5e0] ${color} flex items-center gap-2`}>
+                <span className="text-xs font-bold text-[#26251e]">{name}</span>
+                <span className="text-[10px] text-[#7a7a76]">· {models.length} modèle(s)</span>
               </div>
               <div className="divide-y divide-border">
                 {models.map((id) => {
@@ -100,9 +100,9 @@ export function SettingsModelsSection({ data, onChange, isSaving }: Props) {
                   return (
                     <div key={id} className="flex items-center justify-between px-4 py-3">
                       <div className="flex items-center gap-3">
-                        <span className="text-xs font-semibold text-foreground">{m.name}</span>
+                        <span className="text-xs font-semibold text-[#26251e]">{m.name}</span>
                         {m.tag && (
-                          <span className="text-[9px] font-bold uppercase tracking-wide bg-primary/10 text-primary border border-primary/20 px-1.5 py-0.5 rounded">
+                          <span className="text-[9px] font-bold uppercase tracking-wide bg-[#059669]/10 text-[#059669] border border-[#059669]/20 px-1.5 py-0.5 rounded">
                             {m.tag}
                           </span>
                         )}

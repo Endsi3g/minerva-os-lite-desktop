@@ -29,7 +29,7 @@ export function PipelineKanbanView({ leads }: PipelineKanbanViewProps) {
   }, [updateLeadStatus]);
 
   return (
-    <div className="w-full h-full overflow-x-auto rounded-lg border border-border bg-muted/10 p-4 min-h-[480px]">
+    <div className="w-full h-full overflow-x-auto rounded-lg border border-[#e5e5e0] bg-[#f4f4f3]/10 p-4 min-h-[480px]">
       <div className="flex gap-4 h-full align-stretch">
         {columns.map((column) => (
           <PipelineKanbanColumn

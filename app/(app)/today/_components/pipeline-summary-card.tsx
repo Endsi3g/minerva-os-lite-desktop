@@ -17,17 +17,17 @@ export function PipelineSummaryCard() {
   const wonCount = leads.filter(l => l.status === 'Won').length;
 
   const metrics = [
-    { name: t('today.pipeline_new'), value: newLeadsCount, icon: Users, color: 'text-blue-500 bg-blue-50 dark:bg-blue-950/20' },
-    { name: t('today.pipeline_contacted'), value: contactedCount, icon: BarChart3, color: 'text-amber-500 bg-amber-50 dark:bg-amber-950/20' },
-    { name: t('today.pipeline_meetings'), value: meetingCount, icon: CalendarCheck2, color: 'text-purple-500 bg-purple-50 dark:bg-purple-950/20' },
-    { name: t('today.pipeline_won'), value: wonCount, icon: Trophy, color: 'text-emerald-500 bg-emerald-50 dark:bg-emerald-950/20' },
+    { name: t('today.pipeline_new'), value: newLeadsCount, icon: Users, color: 'text-blue-500 bg-blue-50' },
+    { name: t('today.pipeline_contacted'), value: contactedCount, icon: BarChart3, color: 'text-amber-500 bg-amber-50' },
+    { name: t('today.pipeline_meetings'), value: meetingCount, icon: CalendarCheck2, color: 'text-purple-500 bg-purple-50' },
+    { name: t('today.pipeline_won'), value: wonCount, icon: Trophy, color: 'text-emerald-500 bg-emerald-50' },
   ];
 
   return (
     <Card className="border border-[#e5e5e0] bg-white shadow-none">
       <CardHeader className="flex flex-row items-center justify-between pb-3">
         <div className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/10 text-primary">
+          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-[#059669]/10 text-[#059669]">
             <LayoutDashboard className="h-4 w-4" />
           </div>
           <div>
@@ -39,16 +39,16 @@ export function PipelineSummaryCard() {
       <CardContent>
         <div className="grid grid-cols-2 gap-3">
           {metrics.map((metric, idx) => (
-            <div key={idx} className="flex flex-col gap-1.5 p-3 rounded-lg border border-border/80 bg-secondary/20">
+            <div key={idx} className="flex flex-col gap-1.5 p-3 rounded-lg border border-[#e5e5e0]/80 bg-secondary/20">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider truncate">
+                <span className="text-[10px] font-medium text-[#7a7a76] uppercase tracking-wider truncate">
                   {metric.name}
                 </span>
                 <div className={`flex h-5 w-5 items-center justify-center rounded ${metric.color}`}>
                   <metric.icon className="h-3 w-3" />
                 </div>
               </div>
-              <span className="text-xl font-bold font-sans tracking-tight text-foreground mt-0.5">
+              <span className="text-xl font-bold font-sans tracking-tight text-[#26251e] mt-0.5">
                 {metric.value}
               </span>
             </div>

@@ -28,16 +28,16 @@ export function SettingsNotificationsSection({ data, onChange, isSaving }: Setti
       isSaving={isSaving}
     >
       {/* Channels switches */}
-      <Card className="border border-border bg-card">
+      <Card className="border border-[#e5e5e0] bg-white">
         <CardContent className="p-5 space-y-4">
-          <h3 className="text-xs font-bold text-foreground uppercase tracking-wider">Alertes de prospection</h3>
+          <h3 className="text-xs font-bold text-[#26251e] uppercase tracking-wider">Alertes de prospection</h3>
           
           <div className="space-y-4 pt-1">
             {/* Overdue alerts */}
             <div className="flex items-start justify-between gap-4">
               <div className="space-y-0.5">
-                <span className="text-xs font-bold text-foreground">Rappels d&apos;actions en retard</span>
-                <p className="text-[10px] text-muted-foreground leading-normal">
+                <span className="text-xs font-bold text-[#26251e]">Rappels d&apos;actions en retard</span>
+                <p className="text-[10px] text-[#7a7a76] leading-normal">
                   Reçois une alerte de rappel pour chaque action commerciale (relance, appel) non résolue à l&apos;échéance.
                 </p>
               </div>
@@ -53,8 +53,8 @@ export function SettingsNotificationsSection({ data, onChange, isSaving }: Setti
             {/* Daily Summary */}
             <div className="flex items-start justify-between gap-4">
               <div className="space-y-0.5">
-                <span className="text-xs font-bold text-foreground">Résumé quotidien</span>
-                <p className="text-[10px] text-muted-foreground leading-normal">
+                <span className="text-xs font-bold text-[#26251e]">Résumé quotidien</span>
+                <p className="text-[10px] text-[#7a7a76] leading-normal">
                   Reçois un résumé tous les soirs récapitulant les opportunités chaudes et les tâches programmées pour le lendemain.
                 </p>
               </div>
@@ -70,8 +70,8 @@ export function SettingsNotificationsSection({ data, onChange, isSaving }: Setti
             {/* Weekly report */}
             <div className="flex items-start justify-between gap-4">
               <div className="space-y-0.5">
-                <span className="text-xs font-bold text-foreground">Rapport de performance hebdomadaire</span>
-                <p className="text-[10px] text-muted-foreground leading-normal">
+                <span className="text-xs font-bold text-[#26251e]">Rapport de performance hebdomadaire</span>
+                <p className="text-[10px] text-[#7a7a76] leading-normal">
                   Reçois un bilan de performance de tes taux d&apos;engagement et des opportunités gagnées la semaine passée.
                 </p>
               </div>
@@ -86,21 +86,21 @@ export function SettingsNotificationsSection({ data, onChange, isSaving }: Setti
       </Card>
 
       {/* Timing select box */}
-      <Card className="border border-border bg-card">
+      <Card className="border border-[#e5e5e0] bg-white">
         <CardContent className="p-5 space-y-4">
-          <h3 className="text-xs font-bold text-foreground uppercase tracking-wider">Planification horaire</h3>
-          <p className="text-[11px] text-muted-foreground leading-normal">
+          <h3 className="text-xs font-bold text-[#26251e] uppercase tracking-wider">Planification horaire</h3>
+          <p className="text-[11px] text-[#7a7a76] leading-normal">
             Définis l&apos;heure à laquelle tu souhaites recevoir tes rappels quotidiens (idéal en fin de journée ou début de soirée).
           </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
             <div className="grid gap-1.5">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Heure d&apos;envoi préférée</label>
+              <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Heure d&apos;envoi préférée</label>
               <Select 
                 value={data.digestTime} 
                 onValueChange={(val) => onChange({ digestTime: val })}
               >
-                <SelectTrigger className="text-xs bg-card">
+                <SelectTrigger className="text-xs bg-white">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>

@@ -137,15 +137,15 @@ export function SettingsAutomationsSection() {
       description="Configure les comportements automatiques de Minerva : enrichissement, envoi email, tagging des réponses."
       isSaving={isSaving}
     >
-      <Card className="border border-border bg-card">
+      <Card className="border border-[#e5e5e0] bg-white">
         <CardContent className="p-5 space-y-5">
           {toggles.map(({ key, icon: Icon, label, desc }) => (
             <div key={key} className="flex items-start justify-between gap-4">
               <div className="flex items-start gap-2.5 flex-1 min-w-0">
                 <Icon className="h-4 w-4 text-[#059669] shrink-0 mt-0.5" />
                 <div className="min-w-0">
-                  <p className="text-xs font-semibold text-foreground">{label}</p>
-                  <p className="text-[10px] text-muted-foreground leading-relaxed mt-0.5">{desc}</p>
+                  <p className="text-xs font-semibold text-[#26251e]">{label}</p>
+                  <p className="text-[10px] text-[#7a7a76] leading-relaxed mt-0.5">{desc}</p>
                 </div>
               </div>
               <Switch
@@ -160,22 +160,22 @@ export function SettingsAutomationsSection() {
 
       {/* Email template selector — only shown when auto_email_on_enrichment is enabled */}
       {data.autoEmailOnEnrichment && (
-        <Card className="border border-border bg-card">
+        <Card className="border border-[#e5e5e0] bg-white">
           <CardContent className="p-5 space-y-4">
-            <h3 className="text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-1.5">
+            <h3 className="text-xs font-bold text-[#26251e] uppercase tracking-wider flex items-center gap-1.5">
               <Mail className="h-3.5 w-3.5 text-[#059669]" />
               Configuration de l&apos;email automatique
             </h3>
 
             <div className="space-y-2">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">
                 Template email
               </label>
               <Select
                 value={data.autoEmailTemplateId || '__none__'}
                 onValueChange={(v) => save({ autoEmailTemplateId: v === '__none__' ? '' : v })}
               >
-                <SelectTrigger className="h-8 text-xs bg-card">
+                <SelectTrigger className="h-8 text-xs bg-white">
                   <SelectValue placeholder="Sélectionner un template…" />
                 </SelectTrigger>
                 <SelectContent>
@@ -190,21 +190,21 @@ export function SettingsAutomationsSection() {
                 </SelectContent>
               </Select>
               {templates.length === 0 && (
-                <p className="text-[10px] text-muted-foreground">
+                <p className="text-[10px] text-[#7a7a76]">
                   Aucun template disponible. L&apos;IA générera le contenu automatiquement.
                 </p>
               )}
             </div>
 
             <div className="space-y-2">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">
                 Délai avant envoi
               </label>
               <Select
                 value={String(data.autoEmailDelayHours)}
                 onValueChange={(v) => save({ autoEmailDelayHours: Number(v) })}
               >
-                <SelectTrigger className="h-8 text-xs bg-card">
+                <SelectTrigger className="h-8 text-xs bg-white">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>

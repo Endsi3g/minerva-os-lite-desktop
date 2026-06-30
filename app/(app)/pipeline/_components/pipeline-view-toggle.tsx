@@ -11,15 +11,15 @@ interface PipelineViewToggleProps {
 
 export function PipelineViewToggle({ view, onChange }: PipelineViewToggleProps) {
   return (
-    <div className="flex bg-muted/65 p-1 rounded-lg self-start gap-1 select-none">
+    <div className="flex bg-[#f4f4f3]/65 p-1 rounded-lg self-start gap-1 select-none">
       <button
         type="button"
         onClick={() => onChange('board')}
         className={cn(
           "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold tracking-wide transition-all",
           view === 'board' 
-            ? "bg-card text-foreground shadow-xs border-border/10" 
-            : "text-muted-foreground hover:text-foreground"
+            ? "bg-white text-[#26251e] shadow-xs border-[#e5e5e0]/10" 
+            : "text-[#7a7a76] hover:text-[#26251e]"
         )}
       >
         <Kanban className="h-3.5 w-3.5" />
@@ -31,8 +31,8 @@ export function PipelineViewToggle({ view, onChange }: PipelineViewToggleProps) 
         className={cn(
           "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold tracking-wide transition-all",
           view === 'table' 
-            ? "bg-card text-foreground shadow-xs border-border/10" 
-            : "text-muted-foreground hover:text-foreground"
+            ? "bg-white text-[#26251e] shadow-xs border-[#e5e5e0]/10" 
+            : "text-[#7a7a76] hover:text-[#26251e]"
         )}
       >
         <Table className="h-3.5 w-3.5" />

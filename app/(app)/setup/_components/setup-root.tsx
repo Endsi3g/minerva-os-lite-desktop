@@ -41,7 +41,7 @@ export function SetupRoot() {
         const [settingsRes, googleAccountRes, sequencesRes, teamRes] = await Promise.all([
           supabase
             .from('settings')
-            .select('full_name, company_name')
+            .select('full_name, company_name, google_refresh_token')
             .eq('user_id', user.id)
             .single(),
           supabase
@@ -67,7 +67,7 @@ export function SetupRoot() {
 
         const s = settingsRes.data;
         setProfileDone(!!(s?.full_name && s?.company_name));
-        setGmailDone(!!googleAccountRes.data);
+        setGmailDone(!!googleAccountRes.data || !!s?.google_refresh_token);
         setSequenceDone((sequencesRes.count ?? 0) > 0);
         setTeamDone((teamRes.count ?? 0) > 0);
       } catch {

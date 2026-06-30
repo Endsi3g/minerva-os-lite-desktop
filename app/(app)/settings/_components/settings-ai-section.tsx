@@ -171,14 +171,14 @@ function ApiKeyField({
 
   return (
     <div className="grid gap-1.5">
-      <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{label}</label>
+      <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">{label}</label>
       <div className="flex gap-2">
         <Input
           type="password"
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           placeholder={masked ? `Clé configurée (${masked})` : placeholder}
-          className="text-xs bg-card font-mono"
+          className="text-xs bg-white font-mono"
         />
         <Button type="button" onClick={handleSave} disabled={busy || !draft.trim()}
           className="h-9 px-3 text-xs bg-[#26251e] hover:bg-[#3d3c36] text-white">
@@ -186,7 +186,7 @@ function ApiKeyField({
         </Button>
       </div>
       <div className="flex items-center justify-between">
-        <span className="text-[9px] text-muted-foreground leading-none">{hint}</span>
+        <span className="text-[9px] text-[#7a7a76] leading-none">{hint}</span>
         {masked && (
           <button type="button" onClick={handleDelete} disabled={busy}
             className="text-[9px] font-semibold text-red-600 hover:underline cursor-pointer">
@@ -295,10 +295,10 @@ export function SettingsAiSection({ data, onChange, onSaveKey, onDeleteKey, isSa
       <div className="space-y-6 text-left">
 
         {/* ── Moteur d'IA ── */}
-        <Card className="border border-border bg-card">
+        <Card className="border border-[#e5e5e0] bg-white">
           <CardContent className="p-5 space-y-4">
-            <h3 className="text-xs font-bold text-foreground uppercase tracking-wider">Moteur d'IA</h3>
-            <p className="text-[11px] text-muted-foreground leading-normal">
+            <h3 className="text-xs font-bold text-[#26251e] uppercase tracking-wider">Moteur d'IA</h3>
+            <p className="text-[11px] text-[#7a7a76] leading-normal">
               Claude est le modèle principal de Minerva. OpenRouter donne accès à des alternatives gratuites.
             </p>
 
@@ -310,18 +310,18 @@ export function SettingsAiSection({ data, onChange, onSaveKey, onDeleteKey, isSa
                     className={cn(
                       "text-left p-3 rounded-lg border transition-all flex flex-col gap-1 w-full cursor-pointer",
                       isSelected
-                        ? "border-primary bg-primary/5 text-foreground ring-1 ring-primary/30"
-                        : "border-border/60 bg-card hover:border-border text-muted-foreground"
+                        ? "border-primary bg-[#059669]/5 text-[#26251e] ring-1 ring-primary/30"
+                        : "border-[#e5e5e0]/70 bg-white hover:border-[#e5e5e0] text-[#7a7a76]"
                     )}>
-                    <span className="text-xs font-bold text-foreground">{p.name}</span>
-                    <span className="text-[10px] text-muted-foreground leading-normal">{p.description}</span>
+                    <span className="text-xs font-bold text-[#26251e]">{p.name}</span>
+                    <span className="text-[10px] text-[#7a7a76] leading-normal">{p.description}</span>
                   </button>
                 );
               })}
             </div>
 
             {data.aiProvider === 'openrouter' && (
-              <div className="space-y-4 pt-4 border-t border-border/50">
+              <div className="space-y-4 pt-4 border-t border-[#e5e5e0]/70">
                 <ApiKeyField
                   label="Clé API OpenRouter"
                   placeholder="sk-or-v1-..."
@@ -332,12 +332,12 @@ export function SettingsAiSection({ data, onChange, onSaveKey, onDeleteKey, isSa
                 />
 
                 <div className="grid gap-1.5">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Modèle</label>
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Modèle</label>
                   <Select
                     value={selectedSelectValue}
                     onValueChange={(val) => onChange({ aiModel: val === 'custom' ? '' : val })}
                   >
-                    <SelectTrigger className="text-xs bg-card">
+                    <SelectTrigger className="text-xs bg-white">
                       <SelectValue placeholder="Choisir un modèle..." />
                     </SelectTrigger>
                     <SelectContent>
@@ -351,12 +351,12 @@ export function SettingsAiSection({ data, onChange, onSaveKey, onDeleteKey, isSa
 
                 {isCustomModel && (
                   <div className="grid gap-1.5 pl-2 border-l-2 border-primary/40">
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Identifiant personnalisé</label>
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Identifiant personnalisé</label>
                     <Input
                       value={data.aiModel}
                       onChange={(e) => onChange({ aiModel: e.target.value })}
                       placeholder="meta-llama/llama-3-70b-instruct"
-                      className="text-xs bg-card font-mono"
+                      className="text-xs bg-white font-mono"
                     />
                   </div>
                 )}
@@ -366,11 +366,11 @@ export function SettingsAiSection({ data, onChange, onSaveKey, onDeleteKey, isSa
         </Card>
 
         {/* ── Profils d'autonomie ── */}
-        <Card className="border border-border bg-card">
+        <Card className="border border-[#e5e5e0] bg-white">
           <CardContent className="p-5 space-y-4">
             <div>
-              <h3 className="text-xs font-bold text-foreground uppercase tracking-wider">Profil d'autonomie de l'agent</h3>
-              <p className="text-[11px] text-muted-foreground leading-normal mt-1">
+              <h3 className="text-xs font-bold text-[#26251e] uppercase tracking-wider">Profil d'autonomie de l'agent</h3>
+              <p className="text-[11px] text-[#7a7a76] leading-normal mt-1">
                 Choisissez jusqu&apos;où l&apos;Agent Minerva peut agir seul.
               </p>
             </div>
@@ -390,7 +390,7 @@ export function SettingsAiSection({ data, onChange, onSaveKey, onDeleteKey, isSa
                       "relative text-left p-4 rounded-xl border transition-all flex flex-col gap-3 w-full cursor-pointer",
                       isSelected
                         ? "border-[#059669] bg-[#059669]/5 ring-1 ring-[#059669]/30"
-                        : "border-border/60 bg-card hover:border-border/80"
+                        : "border-[#e5e5e0]/70 bg-white hover:border-[#e5e5e0]/80"
                     )}
                   >
                     {profile.badge && (
@@ -411,7 +411,7 @@ export function SettingsAiSection({ data, onChange, onSaveKey, onDeleteKey, isSa
                     </div>
                     <div className="space-y-1">
                       <p className="text-xs font-bold text-[#26251e]">{profile.label}</p>
-                      <p className="text-[10px] text-muted-foreground leading-normal">{profile.description}</p>
+                      <p className="text-[10px] text-[#7a7a76] leading-normal">{profile.description}</p>
                     </div>
                     <ul className="space-y-1">
                       {profile.behaviors.map((b) => (
@@ -435,11 +435,11 @@ export function SettingsAiSection({ data, onChange, onSaveKey, onDeleteKey, isSa
             )}
 
             {/* Advanced toggle */}
-            <div className="pt-1 border-t border-border/50">
+            <div className="pt-1 border-t border-[#e5e5e0]/70">
               <button
                 type="button"
                 onClick={() => setShowAdvancedAutonomy(v => !v)}
-                className="flex items-center gap-1.5 text-[10px] font-bold text-muted-foreground hover:text-foreground transition-colors"
+                className="flex items-center gap-1.5 text-[10px] font-bold text-[#7a7a76] hover:text-[#26251e] transition-colors"
               >
                 <ChevronDown className={cn("h-3 w-3 transition-transform", showAdvancedAutonomy && "rotate-180")} />
                 Réglages avancés (contrôle par domaine)
@@ -454,12 +454,12 @@ export function SettingsAiSection({ data, onChange, onSaveKey, onDeleteKey, isSa
                     return (
                       <React.Fragment key={key}>
                         {showGroupHeader && (
-                          <p className="text-[9px] font-black uppercase tracking-wider text-muted-foreground pt-1">{group}</p>
+                          <p className="text-[9px] font-black uppercase tracking-wider text-[#7a7a76] pt-1">{group}</p>
                         )}
                         <div className="flex items-center justify-between gap-3">
                           <div className="min-w-0">
-                            <span className="text-xs font-semibold text-foreground block">{label}</span>
-                            <span className="text-[10px] text-muted-foreground">{AUTONOMY_DESCRIPTIONS[currentLevel]}</span>
+                            <span className="text-xs font-semibold text-[#26251e] block">{label}</span>
+                            <span className="text-[10px] text-[#7a7a76]">{AUTONOMY_DESCRIPTIONS[currentLevel]}</span>
                           </div>
                           <Select
                             value={currentLevel}
@@ -467,7 +467,7 @@ export function SettingsAiSection({ data, onChange, onSaveKey, onDeleteKey, isSa
                               onChange({ agentAutonomy: { ...(data.agentAutonomy ?? {}), [key]: val } as AgentAutonomy })
                             }
                           >
-                            <SelectTrigger className="text-xs bg-card w-44 shrink-0">
+                            <SelectTrigger className="text-xs bg-white w-44 shrink-0">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -489,10 +489,10 @@ export function SettingsAiSection({ data, onChange, onSaveKey, onDeleteKey, isSa
         </Card>
 
         {/* ── Ton de prospection ── */}
-        <Card className="border border-border bg-card">
+        <Card className="border border-[#e5e5e0] bg-white">
           <CardContent className="p-5 space-y-4">
-            <h3 className="text-xs font-bold text-foreground uppercase tracking-wider">Ton de prospection</h3>
-            <p className="text-[11px] text-muted-foreground leading-normal">
+            <h3 className="text-xs font-bold text-[#26251e] uppercase tracking-wider">Ton de prospection</h3>
+            <p className="text-[11px] text-[#7a7a76] leading-normal">
               Configure le ton utilisé par le copilote pour générer tes brouillons.
             </p>
             <div className="grid grid-cols-1 gap-2.5 pt-1">
@@ -503,11 +503,11 @@ export function SettingsAiSection({ data, onChange, onSaveKey, onDeleteKey, isSa
                     className={cn(
                       "text-left p-3 rounded-lg border transition-all flex flex-col gap-1 w-full cursor-pointer",
                       isSelected
-                        ? "border-primary bg-primary/5 text-foreground ring-1 ring-primary/30"
-                        : "border-border/60 bg-card hover:border-border text-muted-foreground"
+                        ? "border-primary bg-[#059669]/5 text-[#26251e] ring-1 ring-primary/30"
+                        : "border-[#e5e5e0]/70 bg-white hover:border-[#e5e5e0] text-[#7a7a76]"
                     )}>
-                    <span className="text-xs font-bold text-foreground">{t.name}</span>
-                    <span className="text-[10px] text-muted-foreground leading-normal">{t.description}</span>
+                    <span className="text-xs font-bold text-[#26251e]">{t.name}</span>
+                    <span className="text-[10px] text-[#7a7a76] leading-normal">{t.description}</span>
                   </button>
                 );
               })}
@@ -516,17 +516,17 @@ export function SettingsAiSection({ data, onChange, onSaveKey, onDeleteKey, isSa
         </Card>
 
         {/* ── Personnalisation ── */}
-        <Card className="border border-border bg-card">
+        <Card className="border border-[#e5e5e0] bg-white">
           <CardContent className="p-5 space-y-4">
-            <h3 className="text-xs font-bold text-foreground uppercase tracking-wider">Personnalisation & Profondeur</h3>
+            <h3 className="text-xs font-bold text-[#26251e] uppercase tracking-wider">Personnalisation & Profondeur</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
               <div className="grid gap-1.5">
-                <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Profondeur d'analyse</label>
+                <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Profondeur d'analyse</label>
                 <Select
                   value={data.customization}
                   onValueChange={(val: AiData['customization']) => onChange({ customization: val })}
                 >
-                  <SelectTrigger className="text-xs bg-card"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="text-xs bg-white"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="low" className="text-xs">Standard (rappels de base)</SelectItem>
                     <SelectItem value="medium" className="text-xs">Personnalisé (contact + ville)</SelectItem>
@@ -539,14 +539,14 @@ export function SettingsAiSection({ data, onChange, onSaveKey, onDeleteKey, isSa
         </Card>
 
         {/* ── Intelligence comportementale ── */}
-        <Card className="border border-border bg-card">
+        <Card className="border border-[#e5e5e0] bg-white">
           <CardContent className="p-5 space-y-4">
-            <h3 className="text-xs font-bold text-foreground uppercase tracking-wider">Intelligence comportementale</h3>
+            <h3 className="text-xs font-bold text-[#26251e] uppercase tracking-wider">Intelligence comportementale</h3>
             <div className="space-y-4 pt-1">
               <div className="flex items-start justify-between gap-4">
                 <div className="space-y-0.5">
-                  <span className="text-xs font-bold text-foreground">Analyses hebdomadaires automatiques</span>
-                  <p className="text-[10px] text-muted-foreground leading-normal">
+                  <span className="text-xs font-bold text-[#26251e]">Analyses hebdomadaires automatiques</span>
+                  <p className="text-[10px] text-[#7a7a76] leading-normal">
                     L'IA scanne ton portefeuille le week-end pour dresser un bilan d'opportunités.
                   </p>
                 </div>
@@ -555,8 +555,8 @@ export function SettingsAiSection({ data, onChange, onSaveKey, onDeleteKey, isSa
               <div className="h-px bg-border/50" />
               <div className="flex items-start justify-between gap-4">
                 <div className="space-y-0.5">
-                  <span className="text-xs font-bold text-foreground">Suggestions de relance dans Today</span>
-                  <p className="text-[10px] text-muted-foreground leading-normal">
+                  <span className="text-xs font-bold text-[#26251e]">Suggestions de relance dans Today</span>
+                  <p className="text-[10px] text-[#7a7a76] leading-normal">
                     Actions préconfigurées par l'IA sur les prospects tièdes/froids.
                   </p>
                 </div>
@@ -567,24 +567,24 @@ export function SettingsAiSection({ data, onChange, onSaveKey, onDeleteKey, isSa
         </Card>
 
         {/* ── Directives personnalisées ── */}
-        <Card className="border border-border bg-card">
+        <Card className="border border-[#e5e5e0] bg-white">
           <CardContent className="p-5 space-y-4">
-            <h3 className="text-xs font-bold text-foreground uppercase tracking-wider">Directives Personnalisées</h3>
-            <p className="text-[11px] text-muted-foreground leading-normal">
+            <h3 className="text-xs font-bold text-[#26251e] uppercase tracking-wider">Directives Personnalisées</h3>
+            <p className="text-[11px] text-[#7a7a76] leading-normal">
               Injectées dans chaque conversation avec l'IA pour personnaliser ses réponses.
             </p>
             <div className="space-y-3 pt-1">
               <div className="grid gap-1.5">
-                <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">À propos de vous</label>
+                <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">À propos de vous</label>
                 <textarea rows={3} value={aboutYou} onChange={(e) => setAboutYou(e.target.value)}
                   placeholder="Ex: Je suis consultant en marketing digital pour des PME québécoises..."
-                  className="w-full text-xs p-2.5 bg-white border border-border rounded-xl focus:outline-none focus:ring-1 focus:ring-primary font-sans resize-none" />
+                  className="w-full text-xs p-2.5 bg-white border border-[#e5e5e0] rounded-xl focus:outline-none focus:ring-1 focus:ring-primary font-sans resize-none" />
               </div>
               <div className="grid gap-1.5">
-                <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Instructions au modèle</label>
+                <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Instructions au modèle</label>
                 <textarea rows={3} value={modelInstructions} onChange={(e) => setModelInstructions(e.target.value)}
                   placeholder="Ex: Réponds toujours en français. Sois concis et pratique..."
-                  className="w-full text-xs p-2.5 bg-white border border-border rounded-xl focus:outline-none focus:ring-1 focus:ring-primary font-sans resize-none" />
+                  className="w-full text-xs p-2.5 bg-white border border-[#e5e5e0] rounded-xl focus:outline-none focus:ring-1 focus:ring-primary font-sans resize-none" />
               </div>
               <div className="flex justify-end">
                 <Button onClick={handleSaveInstructions} disabled={savingInstructions}
@@ -598,32 +598,32 @@ export function SettingsAiSection({ data, onChange, onSaveKey, onDeleteKey, isSa
         </Card>
 
         {/* ── Playground ── */}
-        <Card className="border border-border bg-card shadow-xs">
+        <Card className="border border-[#e5e5e0] bg-white shadow-xs">
           <CardContent className="p-5 space-y-4">
-            <h3 className="text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-1.5">
-              <Sparkles className="w-4 h-4 text-primary" />
+            <h3 className="text-xs font-bold text-[#26251e] uppercase tracking-wider flex items-center gap-1.5">
+              <Sparkles className="w-4 h-4 text-[#059669]" />
               Playground d'écriture
             </h3>
-            <p className="text-[11px] text-muted-foreground leading-normal">
+            <p className="text-[11px] text-[#7a7a76] leading-normal">
               Visualisez instantanément le ton de rédaction de vos messages.
             </p>
             <div className="space-y-3.5 pt-1">
               <div className="space-y-1">
-                <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Contexte du prospect</label>
+                <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Contexte du prospect</label>
                 <textarea rows={2} value={playgroundPrompt} onChange={(e) => setPlaygroundPrompt(e.target.value)}
                   placeholder="Ex: Boulangerie L'Épi d'Or..."
-                  className="w-full text-xs p-2.5 bg-white border border-border rounded-xl focus:outline-none focus:ring-1 focus:ring-primary font-sans" />
+                  className="w-full text-xs p-2.5 bg-white border border-[#e5e5e0] rounded-xl focus:outline-none focus:ring-1 focus:ring-primary font-sans" />
               </div>
               <div className="space-y-1">
-                <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block mb-1">Tester avec le ton :</label>
+                <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76] block mb-1">Tester avec le ton :</label>
                 <div className="flex flex-wrap gap-2">
                   {tones.map(t => (
                     <button key={t.id} type="button" onClick={() => setPlaygroundTone(t.id)}
                       className={cn(
                         "px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all cursor-pointer",
                         playgroundTone === t.id
-                          ? "border-primary bg-primary/5 text-foreground ring-1 ring-primary/30"
-                          : "border-border/60 bg-white text-[#555552] hover:bg-slate-50"
+                          ? "border-primary bg-[#059669]/5 text-[#26251e] ring-1 ring-primary/30"
+                          : "border-[#e5e5e0]/70 bg-white text-[#555552] hover:bg-slate-50"
                       )}>
                       {t.name}
                     </button>
@@ -646,8 +646,8 @@ export function SettingsAiSection({ data, onChange, onSaveKey, onDeleteKey, isSa
                   </div>
                   <div className="p-4 space-y-3 text-xs">
                     <div className="flex flex-col gap-0.5 pb-2 border-b border-[#e5e5e0]/40 text-left">
-                      <span className="text-[10px] font-bold text-muted-foreground uppercase">Objet :</span>
-                      <span className="font-semibold text-foreground">{previewDraft.subject}</span>
+                      <span className="text-[10px] font-bold text-[#7a7a76] uppercase">Objet :</span>
+                      <span className="font-semibold text-[#26251e]">{previewDraft.subject}</span>
                     </div>
                     <div className="text-left leading-relaxed text-[#26251e] whitespace-pre-wrap font-sans text-xs pt-1">
                       {previewDraft.body}

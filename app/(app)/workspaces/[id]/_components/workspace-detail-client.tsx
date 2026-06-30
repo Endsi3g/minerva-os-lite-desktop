@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { useReach } from '@/lib/reach-context';
 
 const PRESET_COLORS = [
+  { name: 'Vert Minerva (Original)', hex: '#059669' },
   { name: 'Émeraude', hex: '#10b981' },
   { name: 'Cobalt', hex: '#2563eb' },
   { name: 'Crimson', hex: '#dc2626' },
@@ -47,7 +48,7 @@ export default function WorkspaceDetailClient({ id }: { id: string }) {
       setName(ws.name || '');
       setDescription(ws.description || '');
       setTag(ws.tag || '');
-      setAccentColor(ws.accent_color || '#10b981');
+      setAccentColor(ws.accent_color || '#059669');
       setLogoBase64(ws.logo_base64 || '');
     }
   }, [ws]);
@@ -299,7 +300,7 @@ export default function WorkspaceDetailClient({ id }: { id: string }) {
                   <span className="text-[10px] text-[#7a7a76] font-semibold">Custom HEX :</span>
                   <input
                     type="color"
-                    value={accentColor.startsWith('#') && accentColor.length === 7 ? accentColor : '#10b981'}
+                    value={accentColor.startsWith('#') && accentColor.length === 7 ? accentColor : '#059669'}
                     onChange={(e) => setAccentColor(e.target.value)}
                     className="w-7 h-7 rounded border border-[#e5e5e0] p-0 overflow-hidden cursor-pointer"
                   />
@@ -308,7 +309,7 @@ export default function WorkspaceDetailClient({ id }: { id: string }) {
                     maxLength={7}
                     value={accentColor}
                     onChange={(e) => setAccentColor(e.target.value)}
-                    placeholder="#10b981"
+                    placeholder="#059669"
                     className="w-20 text-xs text-center p-1 bg-white border border-[#e5e5e0] rounded focus:outline-none"
                   />
                 </div>

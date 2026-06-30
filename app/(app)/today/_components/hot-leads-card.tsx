@@ -24,7 +24,7 @@ export function HotLeadsCard() {
     <Card className="border border-[#e5e5e0] bg-white shadow-none">
       <CardHeader className="flex flex-row items-center justify-between pb-3">
         <div className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/10 text-primary">
+          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-[#059669]/10 text-[#059669]">
             <Flame className="h-4 w-4" />
           </div>
           <div>

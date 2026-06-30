@@ -278,7 +278,7 @@ export function SettingsRoot() {
   };
 
   return (
-    <div className="flex flex-col md:flex-row h-full min-h-0 bg-background overflow-hidden">
+    <div className="flex flex-col md:flex-row h-full min-h-0 bg-[#fafaf8] overflow-hidden">
       <SettingsNav section={section} onSectionChange={setSection} />
 
       <div className="flex-1 overflow-y-auto min-h-0 scrollbar-thin">

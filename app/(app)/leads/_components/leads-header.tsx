@@ -244,10 +244,10 @@ export function LeadsHeader() {
 
   return (
     <>
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between pb-2 border-b border-border">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between pb-2 border-b border-[#e5e5e0]">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">Leads</h1>
-          <p className="text-xs text-muted-foreground mt-0.5">
+          <h1 className="text-2xl font-bold tracking-tight text-[#26251e]">Leads</h1>
+          <p className="text-xs text-[#7a7a76] mt-0.5">
             Portefeuille des opportunités de prospection locale ({leads.length} prospect{leads.length !== 1 ? 's' : ''} au total).
           </p>
         </div>
@@ -265,7 +265,7 @@ export function LeadsHeader() {
             <Upload className="h-3.5 w-3.5" />
             Importer CSV
           </Button>
-          <Button asChild size="sm" className="gap-2 bg-primary hover:bg-primary/90">
+          <Button asChild size="sm" className="gap-2 bg-[#059669] hover:bg-[#059669]/90">
             <Link href="/leads/new">
               <Plus className="h-3.5 w-3.5" />
               Nouveau lead
@@ -463,8 +463,8 @@ export function LeadsHeader() {
                     key={contact.id}
                     className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
                       selectedContacts.has(contact.id)
-                        ? 'border-[#059669]/30 bg-emerald-50/40 dark:bg-emerald-950/20'
-                        : 'border-[#e5e5e0] bg-card hover:bg-[#f4f4f3]'
+                        ? 'border-[#059669]/30 bg-emerald-50/40'
+                        : 'border-[#e5e5e0] bg-white hover:bg-[#f4f4f3]'
                     }`}
                   >
                     <input

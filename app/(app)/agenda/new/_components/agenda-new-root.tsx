@@ -93,53 +93,53 @@ export function AgendaNewRoot() {
   ] as const;
 
   return (
-    <div className="h-full overflow-y-auto bg-background">
+    <div className="h-full overflow-y-auto bg-[#fafaf8]">
       <div className="max-w-xl mx-auto px-4 py-6 md:px-6 md:py-8 space-y-6">
 
         {/* Header */}
         <div className="flex items-center gap-3">
           <button
             onClick={() => router.push('/agenda')}
-            className="p-2 rounded-lg border border-border bg-card hover:bg-muted transition-colors"
+            className="p-2 rounded-lg border border-[#e5e5e0] bg-white hover:bg-[#f4f4f3] transition-colors"
           >
-            <ArrowLeft className="h-4 w-4 text-foreground" />
+            <ArrowLeft className="h-4 w-4 text-[#26251e]" />
           </button>
           <div className="flex items-center gap-2.5">
             <div className="h-9 w-9 rounded-xl bg-[#059669]/10 flex items-center justify-center">
               <CalendarDays className="h-4.5 w-4.5 text-[#059669]" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-foreground tracking-tight">Nouveau rendez-vous</h1>
-              <p className="text-xs text-muted-foreground">Planifiez et synchronisez avec votre équipe.</p>
+              <h1 className="text-xl font-bold text-[#26251e] tracking-tight">Nouveau rendez-vous</h1>
+              <p className="text-xs text-[#7a7a76]">Planifiez et synchronisez avec votre équipe.</p>
             </div>
           </div>
         </div>
 
         {/* Form card */}
-        <div className="rounded-xl border border-border bg-card p-5 space-y-4">
+        <div className="rounded-xl border border-[#e5e5e0] bg-white p-5 space-y-4">
           <div className="space-y-1.5">
-            <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Titre</label>
+            <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Titre</label>
             <input
               value={title}
               onChange={e => setTitle(e.target.value)}
               placeholder="Ex : Présentation offre SEO"
               autoFocus
-              className="w-full h-9 text-xs bg-background border border-border rounded-lg px-3 focus:outline-none focus:ring-1 focus:ring-[#059669]"
+              className="w-full h-9 text-xs bg-[#fafaf8] border border-[#e5e5e0] rounded-lg px-3 focus:outline-none focus:ring-1 focus:ring-[#059669]"
             />
           </div>
 
           <div className="grid grid-cols-3 gap-3">
             <div className="space-y-1.5">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Date</label>
-              <input type="date" value={date} onChange={e => setDate(e.target.value)} className="w-full h-9 text-xs bg-background border border-border rounded-lg px-2 focus:outline-none focus:ring-1 focus:ring-[#059669]" />
+              <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Date</label>
+              <input type="date" value={date} onChange={e => setDate(e.target.value)} className="w-full h-9 text-xs bg-[#fafaf8] border border-[#e5e5e0] rounded-lg px-2 focus:outline-none focus:ring-1 focus:ring-[#059669]" />
             </div>
             <div className="space-y-1.5">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Heure</label>
-              <input type="time" value={time} onChange={e => setTime(e.target.value)} className="w-full h-9 text-xs bg-background border border-border rounded-lg px-2 focus:outline-none focus:ring-1 focus:ring-[#059669]" />
+              <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Heure</label>
+              <input type="time" value={time} onChange={e => setTime(e.target.value)} className="w-full h-9 text-xs bg-[#fafaf8] border border-[#e5e5e0] rounded-lg px-2 focus:outline-none focus:ring-1 focus:ring-[#059669]" />
             </div>
             <div className="space-y-1.5">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Durée</label>
-              <select value={duration} onChange={e => setDuration(Number(e.target.value))} className="w-full h-9 text-xs bg-background border border-border rounded-lg px-2 focus:outline-none focus:ring-1 focus:ring-[#059669]">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Durée</label>
+              <select value={duration} onChange={e => setDuration(Number(e.target.value))} className="w-full h-9 text-xs bg-[#fafaf8] border border-[#e5e5e0] rounded-lg px-2 focus:outline-none focus:ring-1 focus:ring-[#059669]">
                 <option value={30}>30 min</option>
                 <option value={60}>1 h</option>
                 <option value={90}>1 h 30</option>
@@ -149,8 +149,8 @@ export function AgendaNewRoot() {
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Lead associé (optionnel)</label>
-            <select value={leadId} onChange={e => setLeadId(e.target.value)} className="w-full h-9 text-xs bg-background border border-border rounded-lg px-2 focus:outline-none focus:ring-1 focus:ring-[#059669]">
+            <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Lead associé (optionnel)</label>
+            <select value={leadId} onChange={e => setLeadId(e.target.value)} className="w-full h-9 text-xs bg-[#fafaf8] border border-[#e5e5e0] rounded-lg px-2 focus:outline-none focus:ring-1 focus:ring-[#059669]">
               <option value="">Aucun</option>
               {leads.slice(0, 200).map(l => (
                 <option key={l.id} value={l.id}>{l.businessName}</option>
@@ -159,20 +159,20 @@ export function AgendaNewRoot() {
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Notes (optionnel)</label>
+            <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Notes (optionnel)</label>
             <textarea
               value={notes}
               onChange={e => setNotes(e.target.value)}
               rows={3}
               placeholder="Ordre du jour, contexte, points à aborder…"
-              className="w-full text-xs bg-background border border-border rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-[#059669] resize-none"
+              className="w-full text-xs bg-[#fafaf8] border border-[#e5e5e0] rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-[#059669] resize-none"
             />
           </div>
         </div>
 
         {/* Options */}
-        <div className="rounded-xl border border-border bg-card p-5 space-y-2">
-          <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">
+        <div className="rounded-xl border border-[#e5e5e0] bg-white p-5 space-y-2">
+          <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-[#7a7a76] mb-1">
             <Clock className="h-3.5 w-3.5" />
             Synchronisation
           </div>
@@ -183,11 +183,11 @@ export function AgendaNewRoot() {
                 key={opt.key}
                 type="button"
                 onClick={() => opt.set(!opt.value)}
-                className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg border border-border bg-background text-left hover:bg-muted transition-colors"
+                className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg border border-[#e5e5e0] bg-[#fafaf8] text-left hover:bg-[#f4f4f3] transition-colors"
               >
-                <Icon className="h-3.5 w-3.5 text-muted-foreground" />
-                <span className="text-xs font-semibold text-foreground flex-1">{opt.label}</span>
-                <span className={cn('h-4 w-4 rounded border flex items-center justify-center shrink-0', opt.value ? 'bg-[#059669] border-[#059669]' : 'border-border')}>
+                <Icon className="h-3.5 w-3.5 text-[#7a7a76]" />
+                <span className="text-xs font-semibold text-[#26251e] flex-1">{opt.label}</span>
+                <span className={cn('h-4 w-4 rounded border flex items-center justify-center shrink-0', opt.value ? 'bg-[#059669] border-[#059669]' : 'border-[#e5e5e0]')}>
                   {opt.value && <Check className="h-3 w-3 text-white" />}
                 </span>
               </button>
@@ -198,7 +198,7 @@ export function AgendaNewRoot() {
         <div className="flex gap-3">
           <button
             onClick={() => router.push('/agenda')}
-            className="flex-1 h-10 rounded-lg border border-border bg-card text-sm font-semibold text-muted-foreground hover:bg-muted transition-colors"
+            className="flex-1 h-10 rounded-lg border border-[#e5e5e0] bg-white text-sm font-semibold text-[#7a7a76] hover:bg-[#f4f4f3] transition-colors"
           >
             Annuler
           </button>

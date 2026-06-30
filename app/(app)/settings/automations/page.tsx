@@ -88,7 +88,7 @@ export default function AutomationsSettingsPage() {
       <div className="w-full px-3 sm:px-4 md:px-8 py-6 md:py-10 space-y-6 relative z-10">
         
         {/* Page header */}
-        <div className="flex items-start justify-between gap-4 pb-4 border-b border-border">
+        <div className="flex items-start justify-between gap-4 pb-4 border-b border-[#e5e5e0]">
           <div>
             <h1 className="text-xl font-bold tracking-tight text-[#26251e] font-sans">{t('automations.title')}</h1>
             <p className="text-xs text-[#807d72] mt-1 max-w-xl">
@@ -110,31 +110,31 @@ export default function AutomationsSettingsPage() {
             {t('automations.loading')}
           </div>
         ) : automations.length === 0 ? (
-          <div className="text-center p-12 text-xs text-[#807d72] font-semibold border border-border rounded-xl bg-white">
+          <div className="text-center p-12 text-xs text-[#807d72] font-semibold border border-[#e5e5e0] rounded-xl bg-white">
             {t('automations.empty')}
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-4">
             {automations.map(auto => (
-              <div key={auto.id} className="border border-border bg-white rounded-xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:border-[#10b981]/40 transition-colors duration-200">
+              <div key={auto.id} className="border border-[#e5e5e0] bg-white rounded-xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:border-[#10b981]/40 transition-colors duration-200">
                 <div className="flex gap-4 items-start">
-                  <div className="mt-1 h-8 w-8 rounded-lg bg-[#f4f4f3] flex items-center justify-center border border-border shrink-0">
+                  <div className="mt-1 h-8 w-8 rounded-lg bg-[#f4f4f3] flex items-center justify-center border border-[#e5e5e0] shrink-0">
                     {renderTriggerIcon(auto.triggerType)}
                   </div>
                   <div>
                     <h3 className="font-bold text-xs text-[#26251e]">{auto.name}</h3>
                     <div className="mt-2 space-y-1.5">
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <div className="flex items-center gap-2 text-xs text-[#7a7a76]">
                         <span className="text-[10px] font-black text-[#26251e] tracking-wider uppercase">{t('automations.si')}</span>
                         <div className="flex flex-wrap gap-1.5">
                           {auto.conditions.map((c, i) => (
-                            <span key={i} className="bg-[#f4f4f3] text-[#26251e] border border-border px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide">
+                            <span key={i} className="bg-[#f4f4f3] text-[#26251e] border border-[#e5e5e0] px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide">
                               {String(c.field)} {c.operator.replace('_', ' ')} {String(c.value || 'vide')}
                             </span>
                           ))}
                         </div>
                       </div>
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <div className="flex items-center gap-2 text-xs text-[#7a7a76]">
                         <span className="text-[10px] font-black text-[#059669] tracking-wider uppercase">{t('automations.alors')}</span>
                         <div className="flex flex-wrap gap-1.5">
                           {auto.actions.map((a, i) => (
@@ -153,7 +153,7 @@ export default function AutomationsSettingsPage() {
                     onClick={() => toggleActive(auto.id, auto.isActive)}
                     className={cn(
                       "flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-[10px] font-bold uppercase tracking-wider transition-colors cursor-pointer bg-transparent",
-                      auto.isActive ? "border-[#059669]/20 text-[#059669] bg-[#059669]/5" : "border-border text-[#807d72]"
+                      auto.isActive ? "border-[#059669]/20 text-[#059669] bg-[#059669]/5" : "border-[#e5e5e0] text-[#807d72]"
                     )}
                   >
                     {auto.isActive ? (
@@ -163,12 +163,12 @@ export default function AutomationsSettingsPage() {
                       </>
                     ) : (
                       <>
-                        <XCircle className="h-3.5 w-3.5 text-muted-foreground" />
+                        <XCircle className="h-3.5 w-3.5 text-[#7a7a76]" />
                         <span>{t('automations.inactive')}</span>
                       </>
                     )}
                   </button>
-                  <Button variant="ghost" size="icon" onClick={() => router.push('/settings/automations/new')} className="h-8 w-8 text-[#807d72] hover:text-[#26251e] border border-transparent hover:border-border rounded-lg">
+                  <Button variant="ghost" size="icon" onClick={() => router.push('/settings/automations/new')} className="h-8 w-8 text-[#807d72] hover:text-[#26251e] border border-transparent hover:border-[#e5e5e0] rounded-lg">
                     <Edit2 className="h-3.5 w-3.5" />
                   </Button>
                   <Button variant="ghost" size="icon" onClick={() => deleteAutomation(auto.id)} className="h-8 w-8 text-[#807d72] hover:text-red-600 border border-transparent hover:border-red-100 rounded-lg">

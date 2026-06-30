@@ -30,14 +30,14 @@ export function SettingsGoalsSection() {
     [goals, leads, tasks]
   );
 
-  const selectClass = "w-full text-xs border border-border rounded-md bg-background px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-primary";
+  const selectClass = "w-full text-xs border border-[#e5e5e0] rounded-md bg-[#fafaf8] px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-primary";
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-sm font-semibold text-foreground">Objectifs & Quotas</h3>
-          <p className="text-xs text-muted-foreground mt-0.5">Suivez vos quotas de prospection par période.</p>
+          <h3 className="text-sm font-semibold text-[#26251e]">Objectifs & Quotas</h3>
+          <p className="text-xs text-[#7a7a76] mt-0.5">Suivez vos quotas de prospection par période.</p>
         </div>
         <Button size="sm" variant="outline" className="text-xs h-8 gap-1.5" onClick={() => setAdding(true)}>
           <Plus className="w-3.5 h-3.5" />
@@ -47,17 +47,17 @@ export function SettingsGoalsSection() {
 
       {/* Add form */}
       {adding && (
-        <div className="border border-border rounded-lg p-4 space-y-3 bg-muted/20">
-          <p className="text-xs font-semibold text-foreground">Nouvel objectif</p>
+        <div className="border border-[#e5e5e0] rounded-lg p-4 space-y-3 bg-[#f4f4f3]/40">
+          <p className="text-xs font-semibold text-[#26251e]">Nouvel objectif</p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
-              <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block mb-1">Métrique</label>
+              <label className="text-[10px] font-semibold text-[#7a7a76] uppercase tracking-wider block mb-1">Métrique</label>
               <select className={selectClass} value={newMetric} onChange={e => setNewMetric(e.target.value as Goal['metric'])}>
                 {Object.entries(METRIC_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
               </select>
             </div>
             <div>
-              <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block mb-1">Cible</label>
+              <label className="text-[10px] font-semibold text-[#7a7a76] uppercase tracking-wider block mb-1">Cible</label>
               <input
                 type="number"
                 min={1}
@@ -67,7 +67,7 @@ export function SettingsGoalsSection() {
               />
             </div>
             <div>
-              <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block mb-1">Période</label>
+              <label className="text-[10px] font-semibold text-[#7a7a76] uppercase tracking-wider block mb-1">Période</label>
               <select className={selectClass} value={newPeriod} onChange={e => setNewPeriod(e.target.value as Goal['period'])}>
                 <option value="week">Semaine</option>
                 <option value="month">Mois</option>
@@ -85,9 +85,9 @@ export function SettingsGoalsSection() {
 
       {/* Goals list */}
       {goals.length === 0 && !adding ? (
-        <div className="border border-dashed border-border rounded-lg p-8 text-center">
-          <Target className="w-8 h-8 text-muted-foreground/50 mx-auto mb-2" />
-          <p className="text-xs text-muted-foreground">Aucun objectif défini. Ajoutez-en un pour suivre votre progression.</p>
+        <div className="border border-dashed border-[#e5e5e0] rounded-lg p-8 text-center">
+          <Target className="w-8 h-8 text-[#7a7a76]/50 mx-auto mb-2" />
+          <p className="text-xs text-[#7a7a76]">Aucun objectif défini. Ajoutez-en un pour suivre votre progression.</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -96,32 +96,32 @@ export function SettingsGoalsSection() {
             const pct = Math.min(100, Math.round((progress / Math.max(goal.target, 1)) * 100));
             const done = pct >= 100;
             return (
-              <div key={goal.id} className="border border-border rounded-lg p-4 bg-card">
+              <div key={goal.id} className="border border-[#e5e5e0] rounded-lg p-4 bg-white">
                 <div className="flex items-center justify-between mb-2">
                   <div>
-                    <span className="text-xs font-semibold text-foreground">{METRIC_LABELS[goal.metric]}</span>
-                    <span className="ml-2 text-[10px] text-muted-foreground">{PERIOD_LABELS[goal.period]}</span>
+                    <span className="text-xs font-semibold text-[#26251e]">{METRIC_LABELS[goal.metric]}</span>
+                    <span className="ml-2 text-[10px] text-[#7a7a76]">{PERIOD_LABELS[goal.period]}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className={cn("text-xs font-bold", done ? "text-emerald-600" : "text-foreground")}>
+                    <span className={cn("text-xs font-bold", done ? "text-emerald-600" : "text-[#26251e]")}>
                       {progress} / {goal.target}
                     </span>
                     <button
                       onClick={() => deleteGoal(goal.id)}
-                      className="text-muted-foreground hover:text-destructive transition-colors"
+                      className="text-[#7a7a76] hover:text-destructive transition-colors"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 </div>
-                <div className="h-2 bg-muted/40 rounded-full overflow-hidden">
+                <div className="h-2 bg-[#f4f4f3]/40 rounded-full overflow-hidden">
                   <div
-                    className={cn("h-full rounded-full transition-all duration-500", done ? "bg-emerald-500" : "bg-primary")}
+                    className={cn("h-full rounded-full transition-all duration-500", done ? "bg-emerald-500" : "bg-[#059669]")}
                     style={{ width: `${pct}%` }}
                   />
                 </div>
                 <div className="flex justify-between mt-1">
-                  <span className="text-[10px] text-muted-foreground">{pct}% atteint</span>
+                  <span className="text-[10px] text-[#7a7a76]">{pct}% atteint</span>
                   {done && <span className="text-[10px] font-bold text-emerald-600">Objectif atteint ✓</span>}
                 </div>
               </div>

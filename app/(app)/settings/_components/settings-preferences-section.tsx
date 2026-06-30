@@ -71,16 +71,16 @@ export function SettingsPreferencesSection({ data, onChange, isSaving }: Setting
       isSaving={isSaving}
     >
       {/* Model Configurations */}
-      <Card className="border border-border bg-card">
+      <Card className="border border-[#e5e5e0] bg-white">
         <CardContent className="p-6 space-y-6">
           
           {/* Default Model */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="space-y-1 max-w-md">
-              <label className="text-xs font-bold text-foreground tracking-wide block">
+              <label className="text-xs font-bold text-[#26251e] tracking-wide block">
                 {t('pref.default_model')}
               </label>
-              <p className="text-[10px] text-muted-foreground leading-normal">
+              <p className="text-[10px] text-[#7a7a76] leading-normal">
                 {t('pref.default_model_desc')}
               </p>
             </div>
@@ -89,7 +89,7 @@ export function SettingsPreferencesSection({ data, onChange, isSaving }: Setting
                 value={data.defaultModel || 'None'} 
                 onValueChange={(val) => onChange({ defaultModel: val })}
               >
-                <SelectTrigger className="text-xs bg-card border-border/80 flex items-center gap-2">
+                <SelectTrigger className="text-xs bg-white border-[#e5e5e0]/80 flex items-center gap-2">
                   <span className="flex items-center gap-1.5 font-medium">
                     <span className="w-3.5 h-3.5 flex items-center justify-center border border-muted-foreground/30 rounded-[4px] text-[8px] font-bold">▢</span>
                     <SelectValue />
@@ -111,10 +111,10 @@ export function SettingsPreferencesSection({ data, onChange, isSaving }: Setting
           {/* Default Image Generation Model */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="space-y-1 max-w-md">
-              <label className="text-xs font-bold text-foreground tracking-wide block">
+              <label className="text-xs font-bold text-[#26251e] tracking-wide block">
                 {t('pref.default_image_model')}
               </label>
-              <p className="text-[10px] text-muted-foreground leading-normal">
+              <p className="text-[10px] text-[#7a7a76] leading-normal">
                 {t('pref.default_image_model_desc')}
               </p>
             </div>
@@ -123,7 +123,7 @@ export function SettingsPreferencesSection({ data, onChange, isSaving }: Setting
                 value={data.defaultImageModel || 'None'} 
                 onValueChange={(val) => onChange({ defaultImageModel: val })}
               >
-                <SelectTrigger className="text-xs bg-card border-border/80 flex items-center gap-2">
+                <SelectTrigger className="text-xs bg-white border-[#e5e5e0]/80 flex items-center gap-2">
                   <span className="flex items-center gap-1.5 font-medium">
                     <span className="w-3.5 h-3.5 flex items-center justify-center border border-muted-foreground/30 rounded-[4px] text-[8px] font-bold">▢</span>
                     <SelectValue />
@@ -144,13 +144,13 @@ export function SettingsPreferencesSection({ data, onChange, isSaving }: Setting
       </Card>
 
       {/* Chat Capabilities */}
-      <Card className="border border-border bg-card">
+      <Card className="border border-[#e5e5e0] bg-white">
         <CardContent className="p-6 space-y-4">
           <div className="space-y-1">
-            <label className="text-xs font-bold text-foreground tracking-wide block">
+            <label className="text-xs font-bold text-[#26251e] tracking-wide block">
               {t('pref.chat_capabilities')}
             </label>
-            <p className="text-[10px] text-muted-foreground leading-normal">
+            <p className="text-[10px] text-[#7a7a76] leading-normal">
               {t('pref.chat_capabilities_desc')}
             </p>
           </div>
@@ -166,20 +166,20 @@ export function SettingsPreferencesSection({ data, onChange, isSaving }: Setting
                   className={cn(
                     "flex items-center justify-between p-3 rounded-lg border text-left transition-all duration-150 group",
                     isChecked
-                      ? "border-primary bg-primary/5 text-foreground ring-1 ring-primary/20"
-                      : "border-border/60 bg-card hover:border-border text-muted-foreground hover:text-foreground"
+                      ? "border-primary bg-[#059669]/5 text-[#26251e] ring-1 ring-primary/20"
+                      : "border-[#e5e5e0]/70 bg-white hover:border-[#e5e5e0] text-[#7a7a76] hover:text-[#26251e]"
                   )}
                 >
                   <span className="flex items-center gap-2 text-xs font-semibold">
-                    <cap.icon className={cn("w-4 h-4 shrink-0 transition-colors", isChecked ? "text-primary" : "text-muted-foreground group-hover:text-foreground")} />
+                    <cap.icon className={cn("w-4 h-4 shrink-0 transition-colors", isChecked ? "text-[#059669]" : "text-[#7a7a76] group-hover:text-[#26251e]")} />
                     <span>{cap.label}</span>
                   </span>
                   
                   <div className={cn(
                     "w-4 h-4 rounded border flex items-center justify-center transition-colors shrink-0",
                     isChecked
-                      ? "bg-primary border-primary text-primary-foreground"
-                      : "border-border bg-card group-hover:border-muted-foreground"
+                      ? "bg-[#059669] border-primary text-white"
+                      : "border-[#e5e5e0] bg-white group-hover:border-muted-foreground"
                   )}>
                     {isChecked && <Check className="w-3 h-3 text-white stroke-[3px]" />}
                   </div>
@@ -191,14 +191,14 @@ export function SettingsPreferencesSection({ data, onChange, isSaving }: Setting
       </Card>
 
       {/* Language Selection */}
-      <Card className="border border-border bg-card">
+      <Card className="border border-[#e5e5e0] bg-white">
         <CardContent className="p-6 space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="space-y-1 max-w-md">
-              <label className="text-xs font-bold text-foreground tracking-wide block">
+              <label className="text-xs font-bold text-[#26251e] tracking-wide block">
                 {t('pref.language')}
               </label>
-              <p className="text-[10px] text-muted-foreground leading-normal">
+              <p className="text-[10px] text-[#7a7a76] leading-normal">
                 {t('pref.language_desc')}
               </p>
             </div>
@@ -207,7 +207,7 @@ export function SettingsPreferencesSection({ data, onChange, isSaving }: Setting
                 value={data.language || 'fr'} 
                 onValueChange={(val: Locale) => handleLanguageChange(val)}
               >
-                <SelectTrigger className="text-xs bg-card border-border/80 flex items-center justify-between">
+                <SelectTrigger className="text-xs bg-white border-[#e5e5e0]/80 flex items-center justify-between">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -228,13 +228,13 @@ export function SettingsPreferencesSection({ data, onChange, isSaving }: Setting
       </Card>
 
       {/* Theme Cards (Langdock Switcher style) */}
-      <Card className="border border-border bg-card">
+      <Card className="border border-[#e5e5e0] bg-white">
         <CardContent className="p-6 space-y-4">
           <div className="space-y-1">
-            <label className="text-xs font-bold text-foreground tracking-wide block">
+            <label className="text-xs font-bold text-[#26251e] tracking-wide block">
               {t('pref.theme')}
             </label>
-            <p className="text-[10px] text-muted-foreground leading-normal">
+            <p className="text-[10px] text-[#7a7a76] leading-normal">
               {t('pref.theme_desc')}
             </p>
           </div>
@@ -246,47 +246,13 @@ export function SettingsPreferencesSection({ data, onChange, isSaving }: Setting
               type="button"
               onClick={() => setTheme('system')}
               className={cn(
-                "relative text-left rounded-xl border overflow-hidden p-1 flex flex-col gap-2 transition-all duration-200 bg-[#fbfbf9]/60 dark:bg-neutral-900/60",
+                "relative text-left rounded-xl border overflow-hidden p-1 flex flex-col gap-2 transition-all duration-200 bg-[#fbfbf9]/60",
                 theme === 'system' 
                   ? "border-primary ring-1 ring-primary/30" 
-                  : "border-border/60 hover:border-border/100"
+                  : "border-[#e5e5e0]/70 hover:border-[#e5e5e0]/100"
               )}
             >
-              <div className="aspect-[1.8/1] rounded-lg border border-border bg-white dark:bg-neutral-950 overflow-hidden relative p-1.5 flex gap-1.5">
-                {/* Sidebar mock */}
-                <div className="w-8 shrink-0 h-full border-r border-[#e5e5e0] dark:border-neutral-800 bg-[#f4f4f3] dark:bg-neutral-900 rounded-l flex flex-col gap-1 p-1">
-                  <div className="w-4 h-1.5 bg-[#10b981]/20 rounded-full" />
-                  <div className="w-5 h-1 bg-border rounded-full" />
-                  <div className="w-3 h-1 bg-border rounded-full" />
-                </div>
-                {/* Content mock */}
-                <div className="flex-1 h-full flex flex-col gap-1 pt-1.5 px-0.5">
-                  <div className="w-10 h-2 bg-neutral-200 dark:bg-neutral-800 rounded-full" />
-                  <div className="w-14 h-1.5 bg-neutral-100 dark:bg-neutral-900 rounded-full" />
-                  <div className="w-8 h-1.5 bg-neutral-100 dark:bg-neutral-900 rounded-full" />
-                </div>
-              </div>
-              <div className="px-3 pb-2.5 pt-1.5 flex items-center justify-between text-xs font-semibold text-foreground">
-                <span className="flex items-center gap-2">
-                  <Monitor className="w-3.5 h-3.5 text-muted-foreground" />
-                  <span>{t('pref.theme_system')}</span>
-                </span>
-                {theme === 'system' && <Check className="w-3.5 h-3.5 text-primary stroke-[3px]" />}
-              </div>
-            </button>
-
-            {/* Light Option */}
-            <button
-              type="button"
-              onClick={() => setTheme('light')}
-              className={cn(
-                "relative text-left rounded-xl border overflow-hidden p-1 flex flex-col gap-2 transition-all duration-200 bg-white",
-                theme === 'light' 
-                  ? "border-primary ring-1 ring-primary/30" 
-                  : "border-border/60 hover:border-border/100"
-              )}
-            >
-              <div className="aspect-[1.8/1] rounded-lg border border-border/80 bg-white overflow-hidden relative p-1.5 flex gap-1.5">
+              <div className="aspect-[1.8/1] rounded-lg border border-[#e5e5e0] bg-white overflow-hidden relative p-1.5 flex gap-1.5">
                 {/* Sidebar mock */}
                 <div className="w-8 shrink-0 h-full border-r border-[#e5e5e0] bg-[#f4f4f3] rounded-l flex flex-col gap-1 p-1">
                   <div className="w-4 h-1.5 bg-[#10b981]/20 rounded-full" />
@@ -300,12 +266,46 @@ export function SettingsPreferencesSection({ data, onChange, isSaving }: Setting
                   <div className="w-8 h-1.5 bg-neutral-100 rounded-full" />
                 </div>
               </div>
-              <div className="px-3 pb-2.5 pt-1.5 flex items-center justify-between text-xs font-semibold text-foreground">
+              <div className="px-3 pb-2.5 pt-1.5 flex items-center justify-between text-xs font-semibold text-[#26251e]">
                 <span className="flex items-center gap-2">
-                  <Sun className="w-3.5 h-3.5 text-muted-foreground" />
+                  <Monitor className="w-3.5 h-3.5 text-[#7a7a76]" />
+                  <span>{t('pref.theme_system')}</span>
+                </span>
+                {theme === 'system' && <Check className="w-3.5 h-3.5 text-[#059669] stroke-[3px]" />}
+              </div>
+            </button>
+
+            {/* Light Option */}
+            <button
+              type="button"
+              onClick={() => setTheme('light')}
+              className={cn(
+                "relative text-left rounded-xl border overflow-hidden p-1 flex flex-col gap-2 transition-all duration-200 bg-white",
+                theme === 'light' 
+                  ? "border-primary ring-1 ring-primary/30" 
+                  : "border-[#e5e5e0]/70 hover:border-[#e5e5e0]/100"
+              )}
+            >
+              <div className="aspect-[1.8/1] rounded-lg border border-[#e5e5e0]/80 bg-white overflow-hidden relative p-1.5 flex gap-1.5">
+                {/* Sidebar mock */}
+                <div className="w-8 shrink-0 h-full border-r border-[#e5e5e0] bg-[#f4f4f3] rounded-l flex flex-col gap-1 p-1">
+                  <div className="w-4 h-1.5 bg-[#10b981]/20 rounded-full" />
+                  <div className="w-5 h-1 bg-border rounded-full" />
+                  <div className="w-3 h-1 bg-border rounded-full" />
+                </div>
+                {/* Content mock */}
+                <div className="flex-1 h-full flex flex-col gap-1 pt-1.5 px-0.5">
+                  <div className="w-10 h-2 bg-neutral-200 rounded-full" />
+                  <div className="w-14 h-1.5 bg-neutral-100 rounded-full" />
+                  <div className="w-8 h-1.5 bg-neutral-100 rounded-full" />
+                </div>
+              </div>
+              <div className="px-3 pb-2.5 pt-1.5 flex items-center justify-between text-xs font-semibold text-[#26251e]">
+                <span className="flex items-center gap-2">
+                  <Sun className="w-3.5 h-3.5 text-[#7a7a76]" />
                   <span>{t('pref.theme_light')}</span>
                 </span>
-                {theme === 'light' && <Check className="w-3.5 h-3.5 text-primary stroke-[3px]" />}
+                {theme === 'light' && <Check className="w-3.5 h-3.5 text-[#059669] stroke-[3px]" />}
               </div>
             </button>
 
@@ -317,7 +317,7 @@ export function SettingsPreferencesSection({ data, onChange, isSaving }: Setting
                 "relative text-left rounded-xl border overflow-hidden p-1 flex flex-col gap-2 transition-all duration-200 bg-neutral-950",
                 theme === 'dark' 
                   ? "border-primary ring-1 ring-primary/30" 
-                  : "border-border/60 hover:border-border/100"
+                  : "border-[#e5e5e0]/70 hover:border-[#e5e5e0]/100"
               )}
             >
               <div className="aspect-[1.8/1] rounded-lg border border-neutral-800 bg-neutral-950 overflow-hidden relative p-1.5 flex gap-1.5">
@@ -339,7 +339,7 @@ export function SettingsPreferencesSection({ data, onChange, isSaving }: Setting
                   <Moon className="w-3.5 h-3.5 text-neutral-400" />
                   <span>{t('pref.theme_dark')}</span>
                 </span>
-                {theme === 'dark' && <Check className="w-3.5 h-3.5 text-primary stroke-[3px]" />}
+                {theme === 'dark' && <Check className="w-3.5 h-3.5 text-[#059669] stroke-[3px]" />}
               </div>
             </button>
 

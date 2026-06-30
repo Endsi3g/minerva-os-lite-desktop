@@ -91,14 +91,14 @@ export default function MemberRolePage() {
 
   if (loading) {
     return (
-      <div className="flex h-full items-center justify-center bg-background">
+      <div className="flex h-full items-center justify-center bg-[#fafaf8]">
         <Loader2 className="h-6 w-6 animate-spin text-[#7a7a76]" />
       </div>
     );
   }
 
   return (
-    <div className="h-full overflow-y-auto bg-background text-[#26251e] font-sans">
+    <div className="h-full overflow-y-auto bg-[#fafaf8] text-[#26251e] font-sans">
       <div className="max-w-2xl mx-auto px-6 sm:px-8 py-10 space-y-7">
 
         {/* Header */}
@@ -124,7 +124,7 @@ export default function MemberRolePage() {
 
         {/* Member identity card */}
         {member && (
-          <div className="border border-[#e5e5e0] rounded-xl p-4 bg-card flex items-center gap-3.5">
+          <div className="border border-[#e5e5e0] rounded-xl p-4 bg-white flex items-center gap-3.5">
             <div className="w-12 h-12 rounded-full overflow-hidden border border-[#e5e5e0] bg-[#e5e5e2] flex items-center justify-center shrink-0">
               {avatar ? (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -198,7 +198,7 @@ export default function MemberRolePage() {
 
         {/* Permission preview */}
         {effectivePerms.length > 0 && (
-          <div className="border border-[#e5e5e0] rounded-xl p-5 bg-card space-y-3">
+          <div className="border border-[#e5e5e0] rounded-xl p-5 bg-white space-y-3">
             <div className="flex items-center justify-between">
               <div className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">
                 Accès accordés

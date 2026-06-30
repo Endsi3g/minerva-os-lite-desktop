@@ -90,12 +90,12 @@ export function FollowUpRow({ lead }: FollowUpRowProps) {
 
   return (
     <>
-      <TableRow className="hover:bg-muted/50 transition-colors">
+      <TableRow className="hover:bg-[#f4f4f3]/80 transition-colors">
         {/* Lead info */}
         <TableCell className="py-3.5 font-medium">
           <div className="flex flex-col gap-0.5">
-            <span className="text-xs font-semibold text-foreground">{lead.businessName}</span>
-            <span className="text-[10px] text-muted-foreground">
+            <span className="text-xs font-semibold text-[#26251e]">{lead.businessName}</span>
+            <span className="text-[10px] text-[#7a7a76]">
               {lead.contactName || 'Sans contact'} • {lead.city}
             </span>
           </div>
@@ -107,10 +107,10 @@ export function FollowUpRow({ lead }: FollowUpRowProps) {
             variant="secondary"
             className={cn(
               'text-[9px] font-semibold tracking-wider uppercase px-2 py-0.5',
-              channel.variant === 'indigo' && 'bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-950/40 dark:text-indigo-300 dark:border-indigo-800',
-              channel.variant === 'purple' && 'bg-purple-50 text-purple-700 border border-purple-200 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-800',
-              channel.variant === 'sky' && 'bg-sky-50 text-sky-700 border border-sky-200 dark:bg-sky-950/40 dark:text-sky-300 dark:border-sky-800',
-              channel.variant === 'neutral' && 'bg-neutral-50 text-neutral-700 border border-neutral-200 dark:bg-neutral-900 dark:text-neutral-300 dark:border-neutral-800',
+              channel.variant === 'indigo' && 'bg-indigo-50 text-indigo-700 border border-indigo-200',
+              channel.variant === 'purple' && 'bg-purple-50 text-purple-700 border border-purple-200',
+              channel.variant === 'sky' && 'bg-sky-50 text-sky-700 border border-sky-200',
+              channel.variant === 'neutral' && 'bg-neutral-50 text-neutral-700 border border-neutral-200',
             )}
           >
             {channel.label}
@@ -118,7 +118,7 @@ export function FollowUpRow({ lead }: FollowUpRowProps) {
         </TableCell>
 
         {/* Last contact */}
-        <TableCell className="py-3.5 text-xs text-muted-foreground max-w-[150px] truncate">
+        <TableCell className="py-3.5 text-xs text-[#7a7a76] max-w-[150px] truncate">
           {lead.notes && lead.notes.length > 0
             ? lead.notes[lead.notes.length - 1].content
             : 'Aucun contact historique'}
@@ -127,7 +127,7 @@ export function FollowUpRow({ lead }: FollowUpRowProps) {
         {/* Next action */}
         <TableCell className="py-3.5 text-xs">
           <div className="flex flex-col gap-0.5 max-w-[200px]">
-            <span className="font-medium text-foreground truncate">{lead.nextAction}</span>
+            <span className="font-medium text-[#26251e] truncate">{lead.nextAction}</span>
             <span className="text-[10px] text-destructive font-medium">Aujourd&apos;hui</span>
           </div>
         </TableCell>
@@ -140,7 +140,7 @@ export function FollowUpRow({ lead }: FollowUpRowProps) {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-7 w-7 text-primary hover:text-primary hover:bg-primary/10"
+                  className="h-7 w-7 text-[#059669] hover:text-[#059669] hover:bg-[#059669]/10"
                   onClick={handleQuickDraft}
                 >
                   <Mail className="h-4 w-4" />
@@ -156,7 +156,7 @@ export function FollowUpRow({ lead }: FollowUpRowProps) {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-7 w-7 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
+                  className="h-7 w-7 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
                   onClick={handleDone}
                 >
                   <Check className="h-4 w-4" />
@@ -172,7 +172,7 @@ export function FollowUpRow({ lead }: FollowUpRowProps) {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-7 w-7 text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/30"
+                  className="h-7 w-7 text-amber-600 hover:text-amber-700 hover:bg-amber-50"
                   onClick={handleSnooze}
                 >
                   <Clock className="h-4 w-4" />
@@ -189,7 +189,7 @@ export function FollowUpRow({ lead }: FollowUpRowProps) {
       {/* Quick draft sheet */}
       <Sheet open={draftOpen} onOpenChange={setDraftOpen}>
         <SheetContent className="w-[420px] sm:w-[500px] flex flex-col gap-0">
-          <SheetHeader className="pb-4 border-b border-border">
+          <SheetHeader className="pb-4 border-b border-[#e5e5e0]">
             <SheetTitle className="text-base font-semibold">Brouillon de relance</SheetTitle>
             <SheetDescription className="text-xs">
               {lead.businessName} — {lead.nextAction}
@@ -198,8 +198,8 @@ export function FollowUpRow({ lead }: FollowUpRowProps) {
 
           <div className="flex-1 py-4 flex flex-col gap-3">
             {loadingDraft ? (
-              <div className="flex flex-col items-center justify-center gap-3 py-12 text-muted-foreground">
-                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+              <div className="flex flex-col items-center justify-center gap-3 py-12 text-[#7a7a76]">
+                <Loader2 className="h-6 w-6 animate-spin text-[#059669]" />
                 <span className="text-xs">Génération en cours…</span>
               </div>
             ) : (

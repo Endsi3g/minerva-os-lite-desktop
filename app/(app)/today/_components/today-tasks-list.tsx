@@ -14,10 +14,10 @@ interface TodayTasksListProps {
 export function TodayTasksList({ tasks, onToggleTodoist, onDeleteTodoist }: TodayTasksListProps) {
   if (tasks.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-8 px-4 text-center rounded-lg border border-dashed border-border bg-card/30">
-        <ClipboardList className="h-6 w-6 text-muted-foreground mb-2 opacity-50" />
-        <h4 className="text-xs font-semibold text-foreground">Aucune tâche pour aujourd&apos;hui</h4>
-        <p className="text-[10px] text-muted-foreground mt-0.5">
+      <div className="flex flex-col items-center justify-center py-8 px-4 text-center rounded-lg border border-dashed border-[#e5e5e0] bg-white/30">
+        <ClipboardList className="h-6 w-6 text-[#7a7a76] mb-2 opacity-50" />
+        <h4 className="text-xs font-semibold text-[#26251e]">Aucune tâche pour aujourd&apos;hui</h4>
+        <p className="text-[10px] text-[#7a7a76] mt-0.5">
           Ajoute des tâches transverses avec le bouton &quot;Nouvelle tâche&quot; ci-dessus.
         </p>
       </div>

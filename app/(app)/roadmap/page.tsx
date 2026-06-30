@@ -478,8 +478,8 @@ const VERIFICATIONS: PhaseVerification[] = [
 
 const PRIORITY_STYLES: Record<Priority, string> = {
   high: 'bg-[#059669]/10 text-[#059669] border-[#059669]/30',
-  medium: 'bg-muted text-muted-foreground border-border',
-  low: 'bg-secondary text-secondary-foreground border-border',
+  medium: 'bg-[#f4f4f3] text-[#7a7a76] border-[#e5e5e0]',
+  low: 'bg-secondary text-secondary-foreground border-[#e5e5e0]',
 };
 
 const PRIORITY_LABEL: Record<Priority, string> = {
@@ -554,16 +554,16 @@ Tu es un développeur senior expert sur ce projet. Avant de commencer l'impléme
 function RoadmapCard({ item, t }: { item: RoadmapItem; t: (k: TranslationKey, fallback?: string) => string }) {
   const { icon: Icon, color } = STATUS_CONFIG[item.status];
   return (
-    <Card className="p-4 border-border bg-card/60 hover:bg-muted/20 transition-colors">
+    <Card className="p-4 border-[#e5e5e0] bg-white/60 hover:bg-[#f4f4f3]/40 transition-colors">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-start gap-2.5 min-w-0">
           <Icon className={cn('h-4 w-4 mt-0.5 shrink-0', color)} />
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap mb-1">
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{item.module}</span>
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-[#7a7a76]">{item.module}</span>
             </div>
-            <p className="text-sm font-semibold text-foreground leading-snug">{item.feature}</p>
-            <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{item.desc}</p>
+            <p className="text-sm font-semibold text-[#26251e] leading-snug">{item.feature}</p>
+            <p className="text-xs text-[#7a7a76] mt-1 leading-relaxed">{item.desc}</p>
           </div>
         </div>
         <Badge variant="outline" className={cn('text-[9px] font-bold uppercase shrink-0 px-2 py-0.5 border', PRIORITY_STYLES[item.priority])}>
@@ -617,7 +617,7 @@ export default function RoadmapPage() {
   ];
 
   return (
-    <div className="h-full overflow-y-auto bg-background">
+    <div className="h-full overflow-y-auto bg-[#fafaf8]">
       <div className="max-w-4xl mx-auto px-4 py-6 md:px-6 md:py-8 space-y-6">
 
         {/* Header */}
@@ -627,8 +627,8 @@ export default function RoadmapPage() {
               <Flag className="h-5 w-5 text-[#059669]" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-foreground">{t('roadmap.title')}</h1>
-              <p className="text-sm text-muted-foreground">{t('roadmap.subtitle')}</p>
+              <h1 className="text-xl font-bold text-[#26251e]">{t('roadmap.title')}</h1>
+              <p className="text-sm text-[#7a7a76]">{t('roadmap.subtitle')}</p>
             </div>
           </div>
           <Button
@@ -648,10 +648,10 @@ export default function RoadmapPage() {
             const count = byStatus(tab.key).length;
             const { icon: Icon, color, label } = STATUS_CONFIG[tab.key];
             return (
-              <div key={tab.key} className="rounded-xl border border-border bg-card/60 p-3 text-center">
+              <div key={tab.key} className="rounded-xl border border-[#e5e5e0] bg-white/60 p-3 text-center">
                 <Icon className={cn('h-4 w-4 mx-auto mb-1', color)} />
-                <div className="text-xl font-bold text-foreground">{count}</div>
-                <div className="text-[10px] text-muted-foreground mt-0.5">{label}</div>
+                <div className="text-xl font-bold text-[#26251e]">{count}</div>
+                <div className="text-[10px] text-[#7a7a76] mt-0.5">{label}</div>
               </div>
             );
           })}
@@ -663,9 +663,9 @@ export default function RoadmapPage() {
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#059669]/15 text-[#059669] text-[10px] font-bold uppercase tracking-wider">
               <Lightbulb className="h-3 w-3" /> Vision v4
             </span>
-            <h2 className="text-sm font-bold text-foreground">OS d&apos;acquisition et d&apos;outreach local-first, exécution quasi autonome</h2>
+            <h2 className="text-sm font-bold text-[#26251e]">OS d&apos;acquisition et d&apos;outreach local-first, exécution quasi autonome</h2>
           </div>
-          <p className="text-xs text-muted-foreground leading-relaxed">
+          <p className="text-xs text-[#7a7a76] leading-relaxed">
             La v4 ne rajoute pas des fonctionnalités isolées — elle <strong>recompose</strong> tout ce qui est déjà livré autour d&apos;un moteur central <em>lead-to-revenue</em> : trouver un lead, l&apos;enrichir, le scorer, l&apos;engager, convertir en RDV, fermer, mesurer. Ads en entrée. Outreach natif dans l&apos;app. Hermes comme opérateur autonome. Attribution complète jusqu&apos;au deal gagné.
           </p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[10px]">
@@ -675,9 +675,9 @@ export default function RoadmapPage() {
               { label: 'P3 · Ads & Inbound', desc: 'Facebook Ads, Google Ads, attribution, speed-to-lead' },
               { label: 'P4 · Hermes Ops', desc: '6 agents autonomes sur tool endpoints contrôlés' },
             ].map((p) => (
-              <div key={p.label} className="rounded-lg border border-[#059669]/15 bg-background/60 p-2.5">
+              <div key={p.label} className="rounded-lg border border-[#059669]/15 bg-[#fafaf8]/60 p-2.5">
                 <div className="font-bold text-[#059669] mb-0.5">{p.label}</div>
-                <div className="text-muted-foreground leading-snug">{p.desc}</div>
+                <div className="text-[#7a7a76] leading-snug">{p.desc}</div>
               </div>
             ))}
           </div>
@@ -685,7 +685,7 @@ export default function RoadmapPage() {
 
         {/* Tabs */}
         <Tabs defaultValue="in_progress">
-          <TabsList className="w-full h-9 bg-muted/50 grid grid-cols-5">
+          <TabsList className="w-full h-9 bg-[#f4f4f3]/80 grid grid-cols-5">
             {tabs.map(tab => {
               const { icon: Icon, label } = STATUS_CONFIG[tab.key];
               return (
@@ -710,7 +710,7 @@ export default function RoadmapPage() {
           {tabs.map(tab => (
             <TabsContent key={tab.key} value={tab.key} className="mt-4 space-y-3">
               {byStatus(tab.key).length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-8">Aucun élément dans cet onglet.</p>
+                <p className="text-sm text-[#7a7a76] text-center py-8">Aucun élément dans cet onglet.</p>
               ) : (
                 byStatus(tab.key).map((item, i) => (
                   <RoadmapCard key={i} item={item} t={t} />
@@ -721,29 +721,29 @@ export default function RoadmapPage() {
 
           {/* Manual verification checklist per release phase */}
           <TabsContent value="verification" className="mt-4 space-y-4">
-            <p className="text-xs text-muted-foreground leading-relaxed">
+            <p className="text-xs text-[#7a7a76] leading-relaxed">
               Vérifications manuelles à effectuer après chaque phase déployée. Cochez mentalement chaque point pour valider la release.
             </p>
             {VERIFICATIONS.map((v, i) => {
               const total = v.checks.length;
               const doneCount = v.checks.filter((_, j) => checkedVerifs[`${v.version}-${j}`]).length;
               return (
-                <Card key={i} className="p-4 border-border bg-card/60 space-y-3">
+                <Card key={i} className="p-4 border-[#e5e5e0] bg-white/60 space-y-3">
                   <div className="flex items-center justify-between gap-2 flex-wrap">
-                    <p className="text-sm font-semibold text-foreground">{v.phase}</p>
+                    <p className="text-sm font-semibold text-[#26251e]">{v.phase}</p>
                     <div className="flex items-center gap-2">
                       <Badge variant="outline" className={cn(
                         'text-[9px] font-bold px-2 py-0.5 border',
                         doneCount === total
                           ? 'border-[#059669]/30 bg-[#059669]/10 text-[#059669]'
-                          : 'border-border bg-muted text-muted-foreground',
+                          : 'border-[#e5e5e0] bg-[#f4f4f3] text-[#7a7a76]',
                       )}>
                         {doneCount}/{total}
                       </Badge>
                       <Badge variant="outline" className="text-[9px] font-bold px-2 py-0.5 border-[#059669]/30 bg-[#059669]/10 text-[#059669]">
                         {v.version}
                       </Badge>
-                      <span className="text-[10px] text-muted-foreground">{v.date}</span>
+                      <span className="text-[10px] text-[#7a7a76]">{v.date}</span>
                     </div>
                   </div>
                   <ul className="space-y-1">
@@ -754,12 +754,12 @@ export default function RoadmapPage() {
                         <li key={j}>
                           <button
                             onClick={() => toggleVerif(key)}
-                            className="w-full flex items-start gap-2 text-xs leading-relaxed text-left rounded-md p-1 hover:bg-muted/40 transition-colors"
+                            className="w-full flex items-start gap-2 text-xs leading-relaxed text-left rounded-md p-1 hover:bg-[#f4f4f3]/70 transition-colors"
                           >
                             {done
                               ? <CheckSquare className="h-3.5 w-3.5 shrink-0 mt-0.5 text-[#059669]" />
                               : <Square className="h-3.5 w-3.5 shrink-0 mt-0.5 text-[#7a7a76]" />}
-                            <span className={cn(done ? 'text-muted-foreground line-through' : 'text-foreground')}>{c}</span>
+                            <span className={cn(done ? 'text-[#7a7a76] line-through' : 'text-[#26251e]')}>{c}</span>
                           </button>
                         </li>
                       );

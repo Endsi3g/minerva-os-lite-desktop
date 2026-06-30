@@ -77,13 +77,13 @@ export function SettingsProspectingSection({ data, onChange, isSaving }: Setting
       isSaving={isSaving}
     >
       {/* Target Niches Tag Manager */}
-      <Card className="border border-border bg-card">
+      <Card className="border border-[#e5e5e0] bg-white">
         <CardContent className="p-5 space-y-4">
-          <h3 className="text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-1.5">
-            <Tag className="h-3.5 w-3.5 text-primary" />
+          <h3 className="text-xs font-bold text-[#26251e] uppercase tracking-wider flex items-center gap-1.5">
+            <Tag className="h-3.5 w-3.5 text-[#059669]" />
             <span>Niches cibles</span>
           </h3>
-          <p className="text-[11px] text-muted-foreground leading-normal">
+          <p className="text-[11px] text-[#7a7a76] leading-normal">
             Ajoute les secteurs d&apos;activité que tu souhaites cibler. Ils apparaîtront dans tes filtres et guides de prospection.
           </p>
           
@@ -93,7 +93,7 @@ export function SettingsProspectingSection({ data, onChange, isSaving }: Setting
               value={newNiche} 
               onChange={(e) => setNewNiche(e.target.value)} 
               placeholder="ex: Boulangerie, Salon de Coiffure..." 
-              className="text-xs bg-card h-8 flex-1"
+              className="text-xs bg-white h-8 flex-1"
             />
             <Button type="submit" size="sm" className="h-8 gap-1">
               <Plus className="h-3.5 w-3.5" />
@@ -107,13 +107,13 @@ export function SettingsProspectingSection({ data, onChange, isSaving }: Setting
               <Badge 
                 key={niche} 
                 variant="secondary" 
-                className="text-[10px] font-bold px-2 py-0.5 rounded flex items-center gap-1 bg-muted text-foreground"
+                className="text-[10px] font-bold px-2 py-0.5 rounded flex items-center gap-1 bg-[#f4f4f3] text-[#26251e]"
               >
                 <span>{niche}</span>
                 <button 
                   type="button" 
                   onClick={() => handleRemoveNiche(niche)} 
-                  className="hover:text-destructive text-muted-foreground ml-0.5"
+                  className="hover:text-destructive text-[#7a7a76] ml-0.5"
                   title={`Supprimer ${niche}`}
                 >
                   <X className="h-2.5 w-2.5" />
@@ -125,13 +125,13 @@ export function SettingsProspectingSection({ data, onChange, isSaving }: Setting
       </Card>
 
       {/* Target Markets (Cities) Tag Manager */}
-      <Card className="border border-border bg-card">
+      <Card className="border border-[#e5e5e0] bg-white">
         <CardContent className="p-5 space-y-4">
-          <h3 className="text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-1.5">
-            <Tag className="h-3.5 w-3.5 text-primary" />
+          <h3 className="text-xs font-bold text-[#26251e] uppercase tracking-wider flex items-center gap-1.5">
+            <Tag className="h-3.5 w-3.5 text-[#059669]" />
             <span>Zones géographiques</span>
           </h3>
-          <p className="text-[11px] text-muted-foreground leading-normal">
+          <p className="text-[11px] text-[#7a7a76] leading-normal">
             Définis tes villes ou régions de prospection pour cibler tes recherches.
           </p>
           
@@ -141,7 +141,7 @@ export function SettingsProspectingSection({ data, onChange, isSaving }: Setting
               value={newCity} 
               onChange={(e) => setNewCity(e.target.value)} 
               placeholder="ex: Lyon, Villeurbanne, Paris..." 
-              className="text-xs bg-card h-8 flex-1"
+              className="text-xs bg-white h-8 flex-1"
             />
             <Button type="submit" size="sm" className="h-8 gap-1">
               <Plus className="h-3.5 w-3.5" />
@@ -155,13 +155,13 @@ export function SettingsProspectingSection({ data, onChange, isSaving }: Setting
               <Badge 
                 key={city} 
                 variant="secondary" 
-                className="text-[10px] font-bold px-2 py-0.5 rounded flex items-center gap-1 bg-muted text-foreground"
+                className="text-[10px] font-bold px-2 py-0.5 rounded flex items-center gap-1 bg-[#f4f4f3] text-[#26251e]"
               >
                 <span>{city}</span>
                 <button 
                   type="button" 
                   onClick={() => handleRemoveCity(city)} 
-                  className="hover:text-destructive text-muted-foreground ml-0.5"
+                  className="hover:text-destructive text-[#7a7a76] ml-0.5"
                   title={`Supprimer ${city}`}
                 >
                   <X className="h-2.5 w-2.5" />
@@ -173,12 +173,12 @@ export function SettingsProspectingSection({ data, onChange, isSaving }: Setting
       </Card>
 
       {/* Services and Outreach parameters Card */}
-      <Card className="border border-border bg-card">
+      <Card className="border border-[#e5e5e0] bg-white">
         <CardContent className="p-5 space-y-5">
           {/* Services Checklist */}
           <div className="space-y-3">
-            <h3 className="text-xs font-bold text-foreground uppercase tracking-wider">Services / Offres vendus</h3>
-            <p className="text-[11px] text-muted-foreground leading-normal">
+            <h3 className="text-xs font-bold text-[#26251e] uppercase tracking-wider">Services / Offres vendus</h3>
+            <p className="text-[11px] text-[#7a7a76] leading-normal">
               Sélectionne les offres commercialisées. L&apos;IA s&apos;appuiera dessus pour orienter l&apos;argumentaire des playbooks.
             </p>
             
@@ -189,7 +189,7 @@ export function SettingsProspectingSection({ data, onChange, isSaving }: Setting
                   checked={data.services.website} 
                   onCheckedChange={(checked) => handleServiceChange('website', !!checked)}
                 />
-                <label htmlFor="srv-web" className="text-xs font-semibold text-foreground cursor-pointer select-none">
+                <label htmlFor="srv-web" className="text-xs font-semibold text-[#26251e] cursor-pointer select-none">
                   Création & Refonte de site Internet (Responsive, Mobile-first)
                 </label>
               </div>
@@ -200,7 +200,7 @@ export function SettingsProspectingSection({ data, onChange, isSaving }: Setting
                   checked={data.services.seoAudit} 
                   onCheckedChange={(checked) => handleServiceChange('seoAudit', !!checked)}
                 />
-                <label htmlFor="srv-seo" className="text-xs font-semibold text-foreground cursor-pointer select-none">
+                <label htmlFor="srv-seo" className="text-xs font-semibold text-[#26251e] cursor-pointer select-none">
                   Optimisation Référencement Local & Audit SEO Google Maps
                 </label>
               </div>
@@ -211,7 +211,7 @@ export function SettingsProspectingSection({ data, onChange, isSaving }: Setting
                   checked={data.services.acquisition} 
                   onCheckedChange={(checked) => handleServiceChange('acquisition', !!checked)}
                 />
-                <label htmlFor="srv-acq" className="text-xs font-semibold text-foreground cursor-pointer select-none">
+                <label htmlFor="srv-acq" className="text-xs font-semibold text-[#26251e] cursor-pointer select-none">
                   Système d&apos;acquisition client automatisé (Click & Collect, Widget de résas)
                 </label>
               </div>
@@ -223,12 +223,12 @@ export function SettingsProspectingSection({ data, onChange, isSaving }: Setting
           {/* Languages of outreach templates */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="grid gap-1.5">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Langues de prospection</label>
+              <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Langues de prospection</label>
               <Select 
                 value={data.language} 
                 onValueChange={(val) => onChange({ language: val })}
               >
-                <SelectTrigger className="text-xs bg-card">
+                <SelectTrigger className="text-xs bg-white">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -243,13 +243,13 @@ export function SettingsProspectingSection({ data, onChange, isSaving }: Setting
       </Card>
 
       {/* Daily email send cap */}
-      <Card className="border border-border bg-card">
+      <Card className="border border-[#e5e5e0] bg-white">
         <CardContent className="p-5 space-y-4">
-          <h3 className="text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-1.5">
-            <Mail className="h-3.5 w-3.5 text-primary" />
+          <h3 className="text-xs font-bold text-[#26251e] uppercase tracking-wider flex items-center gap-1.5">
+            <Mail className="h-3.5 w-3.5 text-[#059669]" />
             <span>Quota d&apos;envoi quotidien</span>
           </h3>
-          <p className="text-[11px] text-muted-foreground leading-normal">
+          <p className="text-[11px] text-[#7a7a76] leading-normal">
             Nombre maximum d&apos;e-mails de séquence envoyés par jour, toutes séquences actives confondues. Les étapes excédentaires sont reportées au lendemain.
           </p>
           <div className="flex items-center gap-3">
@@ -261,7 +261,7 @@ export function SettingsProspectingSection({ data, onChange, isSaving }: Setting
               onChange={(e) => onChange({ dailyEmailLimit: Math.max(1, Math.min(500, Number(e.target.value) || 50)) })}
               className="w-24 text-xs h-8"
             />
-            <span className="text-xs text-muted-foreground">e-mails / jour</span>
+            <span className="text-xs text-[#7a7a76]">e-mails / jour</span>
           </div>
           <div className="flex flex-wrap gap-2 pt-1">
             {[20, 50, 100, 200].map((preset) => (
@@ -271,8 +271,8 @@ export function SettingsProspectingSection({ data, onChange, isSaving }: Setting
                 onClick={() => onChange({ dailyEmailLimit: preset })}
                 className={`text-[10px] font-bold px-2.5 py-1 rounded border transition-colors ${
                   data.dailyEmailLimit === preset
-                    ? 'bg-primary/10 text-primary border-primary/30'
-                    : 'border-border text-muted-foreground hover:border-primary/30 hover:text-primary'
+                    ? 'bg-[#059669]/10 text-[#059669] border-primary/30'
+                    : 'border-[#e5e5e0] text-[#7a7a76] hover:border-primary/30 hover:text-[#059669]'
                 }`}
               >
                 {preset}/jour

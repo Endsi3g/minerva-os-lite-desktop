@@ -173,8 +173,8 @@ export default function NewAutomationPage() {
       <div className="max-w-2xl mx-auto px-8 py-10 space-y-8 relative z-10">
 
         {/* Header */}
-        <div className="flex items-center gap-4 pb-4 border-b border-border">
-          <button onClick={() => router.back()} className="p-2 rounded-lg border border-border hover:bg-[#f4f4f3] transition-colors bg-white text-[#26251e] cursor-pointer">
+        <div className="flex items-center gap-4 pb-4 border-b border-[#e5e5e0]">
+          <button onClick={() => router.back()} className="p-2 rounded-lg border border-[#e5e5e0] hover:bg-[#f4f4f3] transition-colors bg-white text-[#26251e] cursor-pointer">
             <ArrowLeft className="h-4 w-4" />
           </button>
           <div>
@@ -197,10 +197,10 @@ export default function NewAutomationPage() {
                   onClick={() => setTriggerType(t.key)}
                   className={cn(
                     'w-full text-left p-4 rounded-xl border transition-all flex items-start gap-3 bg-white cursor-pointer',
-                    triggerType === t.key ? 'border-[#059669] bg-[#059669]/5' : 'border-border hover:border-neutral-300'
+                    triggerType === t.key ? 'border-[#059669] bg-[#059669]/5' : 'border-[#e5e5e0] hover:border-neutral-300'
                   )}
                 >
-                  <div className={cn('w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5 border border-border', triggerType === t.key ? 'bg-[#059669] text-white border-transparent' : 'bg-[#f4f4f3] text-[#7a7a76]')}>
+                  <div className={cn('w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5 border border-[#e5e5e0]', triggerType === t.key ? 'bg-[#059669] text-white border-transparent' : 'bg-[#f4f4f3] text-[#7a7a76]')}>
                     {t.icon}
                   </div>
                   <div className="flex-1 min-w-0">
@@ -224,21 +224,21 @@ export default function NewAutomationPage() {
               </button>
             </div>
             {conditions.length === 0 && (
-              <div className="text-center py-8 border border-dashed border-border bg-white rounded-xl">
+              <div className="text-center py-8 border border-dashed border-[#e5e5e0] bg-white rounded-xl">
                 <p className="text-xs text-[#807d72] font-semibold">{locale === 'en' ? 'No conditions — rule applies to all leads.' : locale === 'de' ? 'Keine Bedingungen — die Regel gilt für alle Leads.' : "Aucune condition — la règle s'applique à tous les leads."}</p>
                 <button onClick={addCondition} className="mt-2 text-xs font-bold text-[#059669] hover:underline bg-transparent border-0 cursor-pointer">{locale === 'en' ? 'Add condition' : locale === 'de' ? 'Bedingung hinzufügen' : 'Ajouter une condition'}</button>
               </div>
             )}
             {conditions.map((c, i) => (
-              <div key={i} className="flex items-start gap-2 p-3 border border-border rounded-xl bg-white">
-                <select value={c.field} onChange={e => updateCondition(i, { field: e.target.value })} className="flex-1 h-8 border border-border rounded-lg px-2 text-xs font-semibold outline-none focus:ring-1 focus:ring-[#059669] bg-white text-[#26251e]">
+              <div key={i} className="flex items-start gap-2 p-3 border border-[#e5e5e0] rounded-xl bg-white">
+                <select value={c.field} onChange={e => updateCondition(i, { field: e.target.value })} className="flex-1 h-8 border border-[#e5e5e0] rounded-lg px-2 text-xs font-semibold outline-none focus:ring-1 focus:ring-[#059669] bg-white text-[#26251e]">
                   {CONDITION_FIELDS.map(f => <option key={f.key} value={f.key}>{f.label}</option>)}
                 </select>
-                <select value={c.operator} onChange={e => updateCondition(i, { operator: e.target.value as any })} className="flex-1 h-8 border border-border rounded-lg px-2 text-xs font-semibold outline-none focus:ring-1 focus:ring-[#059669] bg-white text-[#26251e]">
+                <select value={c.operator} onChange={e => updateCondition(i, { operator: e.target.value as any })} className="flex-1 h-8 border border-[#e5e5e0] rounded-lg px-2 text-xs font-semibold outline-none focus:ring-1 focus:ring-[#059669] bg-white text-[#26251e]">
                   {CONDITION_OPERATORS.map(o => <option key={o.key} value={o.key}>{o.label}</option>)}
                 </select>
                 {!['is_empty', 'is_not_empty'].includes(c.operator) && (
-                  <input value={c.value ?? ''} onChange={e => updateCondition(i, { value: e.target.value })} placeholder="valeur" className="flex-1 h-8 border border-border rounded-lg px-2 text-xs font-semibold outline-none focus:ring-1 focus:ring-[#059669] bg-white text-[#26251e]" />
+                  <input value={c.value ?? ''} onChange={e => updateCondition(i, { value: e.target.value })} placeholder="valeur" className="flex-1 h-8 border border-[#e5e5e0] rounded-lg px-2 text-xs font-semibold outline-none focus:ring-1 focus:ring-[#059669] bg-white text-[#26251e]" />
                 )}
                 <button onClick={() => removeCondition(i)} className="p-1.5 rounded-lg hover:bg-red-50 text-[#7a7a76] hover:text-red-600 transition-colors border-0 bg-transparent cursor-pointer">
                   <Trash2 className="h-3.5 w-3.5" />
@@ -261,7 +261,7 @@ export default function NewAutomationPage() {
                     onClick={() => !selected ? addAction(a.key) : removeAction(actions.findIndex(x => x.type === a.key))}
                     className={cn(
                       'text-left p-4 rounded-xl border transition-all space-y-1 bg-white cursor-pointer',
-                      selected ? 'border-[#059669] bg-[#059669]/5' : 'border-border hover:border-neutral-300'
+                      selected ? 'border-[#059669] bg-[#059669]/5' : 'border-[#e5e5e0] hover:border-neutral-300'
                     )}
                   >
                     <div className="flex items-center gap-2">
@@ -282,7 +282,7 @@ export default function NewAutomationPage() {
                   const cfg = ACTIONS.find(x => x.key === a.type);
                   if (!cfg?.fields?.length) return null;
                   return (
-                    <div key={i} className="p-4 border border-border rounded-xl bg-white space-y-3">
+                    <div key={i} className="p-4 border border-[#e5e5e0] rounded-xl bg-white space-y-3">
                       <p className="text-xs font-bold text-[#26251e]">{cfg.label}</p>
                       {cfg.fields.map(field => (
                         <div key={field} className="space-y-1">
@@ -293,7 +293,7 @@ export default function NewAutomationPage() {
                             value={a.payload[field] ?? ''}
                             onChange={e => updateActionPayload(i, field, e.target.value)}
                             placeholder={field === 'title' ? 'ex: Relancer le lead' : field === 'message' ? 'ex: Le lead a bougé !' : field === 'dueInDays' ? '3' : field === 'status' ? 'Won' : ''}
-                            className="w-full h-8 border border-border rounded-lg px-3 text-xs font-semibold outline-none focus:ring-1 focus:ring-[#059669] bg-white text-[#26251e]"
+                            className="w-full h-8 border border-[#e5e5e0] rounded-lg px-3 text-xs font-semibold outline-none focus:ring-1 focus:ring-[#059669] bg-white text-[#26251e]"
                           />
                         </div>
                       ))}
@@ -315,12 +315,12 @@ export default function NewAutomationPage() {
                 value={name}
                 onChange={e => setName(e.target.value)}
                 placeholder={t('automations.rule_name_placeholder')}
-                className="w-full h-10 border border-border rounded-xl px-4 text-xs font-semibold outline-none focus:ring-1 focus:ring-[#059669] bg-white text-[#26251e]"
+                className="w-full h-10 border border-[#e5e5e0] rounded-xl px-4 text-xs font-semibold outline-none focus:ring-1 focus:ring-[#059669] bg-white text-[#26251e]"
               />
             </div>
 
             {/* Summary */}
-            <div className="border border-border rounded-xl p-4 space-y-3 bg-[#f4f4f3]/40">
+            <div className="border border-[#e5e5e0] rounded-xl p-4 space-y-3 bg-[#f4f4f3]/40">
               <p className="text-[10px] font-bold uppercase tracking-wider text-[#807d72]">{locale === 'en' ? 'Summary' : locale === 'de' ? 'Zusammenfassung' : 'Résumé'}</p>
               <div className="space-y-2 text-xs font-bold">
                 <div className="flex items-start gap-2">
@@ -361,7 +361,7 @@ export default function NewAutomationPage() {
         )}
 
         {/* Navigation buttons */}
-        <div className="flex items-center justify-between pt-4 border-t border-border">
+        <div className="flex items-center justify-between pt-4 border-t border-[#e5e5e0]">
           <button
             onClick={prev}
             disabled={step === 'trigger'}

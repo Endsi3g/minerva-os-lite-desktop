@@ -108,8 +108,8 @@ function PermissionCell({ value }: { value: boolean | 'partial' }) {
   if (value === true) {
     return (
       <div className="flex justify-center">
-        <div className="w-5 h-5 rounded bg-primary/10 flex items-center justify-center">
-          <Check className="w-3 h-3 text-primary" />
+        <div className="w-5 h-5 rounded bg-[#059669]/10 flex items-center justify-center">
+          <Check className="w-3 h-3 text-[#059669]" />
         </div>
       </div>
     );
@@ -117,13 +117,13 @@ function PermissionCell({ value }: { value: boolean | 'partial' }) {
   if (value === false) {
     return (
       <div className="flex justify-center">
-        <span className="text-[10px] text-muted-foreground font-medium">Non autorisé</span>
+        <span className="text-[10px] text-[#7a7a76] font-medium">Non autorisé</span>
       </div>
     );
   }
   return (
     <div className="flex justify-center">
-      <span className="text-[10px] text-muted-foreground font-medium">Partiel</span>
+      <span className="text-[10px] text-[#7a7a76] font-medium">Partiel</span>
     </div>
   );
 }
@@ -145,13 +145,13 @@ export function SettingsRolesSection() {
         </Link>
       </div>
 
-      <div className="border border-border rounded-xl overflow-hidden bg-card">
+      <div className="border border-[#e5e5e0] rounded-xl overflow-hidden bg-white">
         {/* Header */}
-        <div className="grid grid-cols-[1fr_100px_100px_100px] border-b border-border bg-muted/40">
+        <div className="grid grid-cols-[1fr_100px_100px_100px] border-b border-[#e5e5e0] bg-[#f4f4f3]/40">
           <div className="px-4 py-3" />
           {['Membre', 'Éditeur', 'Admin'].map((role) => (
             <div key={role} className="px-2 py-3 text-center">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{role}</span>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">{role}</span>
             </div>
           ))}
         </div>
@@ -159,17 +159,17 @@ export function SettingsRolesSection() {
         {/* Permission groups */}
         {PERMISSION_GROUPS.map((group) => (
           <div key={group.title}>
-            <div className="px-4 py-2.5 bg-muted/20 border-b border-border">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{group.title}</span>
+            <div className="px-4 py-2.5 bg-[#f4f4f3]/40 border-b border-[#e5e5e0]">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">{group.title}</span>
             </div>
             {group.permissions.map((perm, idx) => (
               <div
                 key={idx}
-                className="grid grid-cols-[1fr_100px_100px_100px] items-center border-b border-border last:border-0 hover:bg-muted/20 transition-colors"
+                className="grid grid-cols-[1fr_100px_100px_100px] items-center border-b border-[#e5e5e0] last:border-0 hover:bg-[#f4f4f3]/40 transition-colors"
               >
                 <div className="px-4 py-3">
-                  <p className="text-xs font-semibold text-foreground">{perm.label}</p>
-                  <p className="text-[10px] text-muted-foreground mt-0.5">{perm.description}</p>
+                  <p className="text-xs font-semibold text-[#26251e]">{perm.label}</p>
+                  <p className="text-[10px] text-[#7a7a76] mt-0.5">{perm.description}</p>
                 </div>
                 <div className="py-3"><PermissionCell value={perm.member} /></div>
                 <div className="py-3"><PermissionCell value={perm.editor} /></div>

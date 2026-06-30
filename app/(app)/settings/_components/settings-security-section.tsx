@@ -59,29 +59,29 @@ export function SettingsSecuritySection() {
       {/* Active sessions */}
       <div className="space-y-2">
         <div className="mb-1">
-          <h3 className="text-xs font-bold text-foreground">Sessions actives</h3>
-          <p className="text-[11px] text-muted-foreground mt-0.5">Gérez vos sessions actives sur tous vos appareils.</p>
+          <h3 className="text-xs font-bold text-[#26251e]">Sessions actives</h3>
+          <p className="text-[11px] text-[#7a7a76] mt-0.5">Gérez vos sessions actives sur tous vos appareils.</p>
         </div>
-        <div className="border border-border rounded-xl overflow-hidden bg-card divide-y divide-border">
+        <div className="border border-[#e5e5e0] rounded-xl overflow-hidden bg-white divide-y divide-border">
           {sessions.map((s) => (
             <div key={s.id} className="flex items-center gap-4 px-5 py-4">
-              <div className="w-9 h-9 rounded-lg bg-muted flex items-center justify-center shrink-0">
-                {isIOS ? <Smartphone className="w-4 h-4 text-muted-foreground" /> : <Monitor className="w-4 h-4 text-muted-foreground" />}
+              <div className="w-9 h-9 rounded-lg bg-[#f4f4f3] flex items-center justify-center shrink-0">
+                {isIOS ? <Smartphone className="w-4 h-4 text-[#7a7a76]" /> : <Monitor className="w-4 h-4 text-[#7a7a76]" />}
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-semibold text-foreground">{s.device} sur {s.os}</span>
+                  <span className="text-xs font-semibold text-[#26251e]">{s.device} sur {s.os}</span>
                   {s.isCurrent && (
                     <span className="text-[9px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded-full">
                       Session actuelle
                     </span>
                   )}
                 </div>
-                <p className="text-[11px] text-muted-foreground mt-0.5">
+                <p className="text-[11px] text-[#7a7a76] mt-0.5">
                   {s.createdAt} · Connecté avec {s.method} {userEmail ? `· ${userEmail}` : ''}
                 </p>
               </div>
-              <button className="p-1.5 rounded-md hover:bg-muted text-muted-foreground transition-colors">
+              <button className="p-1.5 rounded-md hover:bg-[#f4f4f3] text-[#7a7a76] transition-colors">
                 <MoreHorizontal className="w-4 h-4" />
               </button>
             </div>
@@ -91,11 +91,11 @@ export function SettingsSecuritySection() {
 
       {/* Account created */}
       {createdAt && (
-        <div className="border border-border rounded-xl p-5 bg-card flex items-center gap-3">
-          <Shield className="w-4 h-4 text-primary shrink-0" />
+        <div className="border border-[#e5e5e0] rounded-xl p-5 bg-white flex items-center gap-3">
+          <Shield className="w-4 h-4 text-[#059669] shrink-0" />
           <div>
-            <p className="text-xs font-semibold text-foreground">Compte créé le {createdAt}</p>
-            <p className="text-[11px] text-muted-foreground">Aucune activité suspecte détectée.</p>
+            <p className="text-xs font-semibold text-[#26251e]">Compte créé le {createdAt}</p>
+            <p className="text-[11px] text-[#7a7a76]">Aucune activité suspecte détectée.</p>
           </div>
         </div>
       )}

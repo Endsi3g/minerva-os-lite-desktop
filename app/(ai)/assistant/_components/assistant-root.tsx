@@ -108,9 +108,9 @@ function MarkdownRenderer({ content, t }: { content: string; t: any }) {
           const h3 = line.match(/^### (.+)/);
           const h2 = line.match(/^## (.+)/);
           const h1 = line.match(/^# (.+)/);
-          if (h3) { nodes.push(<h3 key={`${i}-${i2}`} className="text-sm font-bold text-foreground mt-2 mb-0.5">{renderInline(h3[1])}</h3>); i2++; continue; }
-          if (h2) { nodes.push(<h2 key={`${i}-${i2}`} className="text-sm font-extrabold text-foreground mt-3 mb-1">{renderInline(h2[1])}</h2>); i2++; continue; }
-          if (h1) { nodes.push(<h1 key={`${i}-${i2}`} className="text-base font-extrabold text-foreground mt-3 mb-1">{renderInline(h1[1])}</h1>); i2++; continue; }
+          if (h3) { nodes.push(<h3 key={`${i}-${i2}`} className="text-sm font-bold text-[#26251e] mt-2 mb-0.5">{renderInline(h3[1])}</h3>); i2++; continue; }
+          if (h2) { nodes.push(<h2 key={`${i}-${i2}`} className="text-sm font-extrabold text-[#26251e] mt-3 mb-1">{renderInline(h2[1])}</h2>); i2++; continue; }
+          if (h1) { nodes.push(<h1 key={`${i}-${i2}`} className="text-base font-extrabold text-[#26251e] mt-3 mb-1">{renderInline(h1[1])}</h1>); i2++; continue; }
 
           // Bullet list
           if (/^[-*]\s/.test(line)) {
@@ -144,7 +144,7 @@ function MarkdownRenderer({ content, t }: { content: string; t: any }) {
 
           // Horizontal rule
           if (/^---+$/.test(line.trim())) {
-            nodes.push(<hr key={`${i}-${i2}`} className="border-border/40 my-2" />);
+            nodes.push(<hr key={`${i}-${i2}`} className="border-[#e5e5e0]/60 my-2" />);
             i2++;
             continue;
           }
@@ -177,7 +177,7 @@ function renderInline(text: string): React.ReactNode {
       return <em key={i} className="italic">{part.slice(1, -1)}</em>;
     }
     if (part.startsWith('`') && part.endsWith('`')) {
-      return <code key={i} className="bg-neutral-100 dark:bg-neutral-800 text-[#cf2d56] px-1 py-0.5 rounded text-[11px] font-mono">{part.slice(1, -1)}</code>;
+      return <code key={i} className="bg-neutral-100 text-[#cf2d56] px-1 py-0.5 rounded text-[11px] font-mono">{part.slice(1, -1)}</code>;
     }
     return part;
   });
@@ -517,14 +517,14 @@ export function AssistantRoot() {
       return (
         <div className="space-y-4">
           <p className="whitespace-pre-wrap">{canvasData.cleanText}</p>
-          <div className="border border-emerald-200/80 bg-emerald-50/30 dark:bg-emerald-950/10 dark:border-emerald-900/30 rounded-xl p-4 flex items-center justify-between gap-4">
+          <div className="border border-emerald-200/80 bg-emerald-50/30 rounded-xl p-4 flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div className="h-9 w-9 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 flex items-center justify-center shrink-0">
+              <div className="h-9 w-9 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">
                 <FileText className="h-5 w-5" />
               </div>
               <div className="min-w-0">
-                <p className="text-xs font-bold text-foreground truncate">{canvasData.title}</p>
-                <p className="text-[10px] text-muted-foreground">{t('assistant.doc_ready_canvas')}</p>
+                <p className="text-xs font-bold text-[#26251e] truncate">{canvasData.title}</p>
+                <p className="text-[10px] text-[#7a7a76]">{t('assistant.doc_ready_canvas')}</p>
               </div>
             </div>
             <Button
@@ -560,7 +560,7 @@ export function AssistantRoot() {
       return (
         <div className="space-y-2">
           {msg.attachedFile && (
-            <div className="inline-flex items-center gap-2 bg-neutral-100 dark:bg-neutral-800 border border-border px-3 py-1.5 rounded-lg text-[11px] font-bold">
+            <div className="inline-flex items-center gap-2 bg-neutral-100 border border-[#e5e5e0] px-3 py-1.5 rounded-lg text-[11px] font-bold">
               <FileText className="h-3.5 w-3.5 text-[#10b981]" />
               <span className="truncate max-w-[150px]">{msg.attachedFile.name}</span>
             </div>
@@ -575,9 +575,9 @@ export function AssistantRoot() {
       <div className="space-y-2">
         {msg.attachedFile?.dataUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={msg.attachedFile.dataUrl} alt={msg.attachedFile.name} className="max-w-[220px] max-h-[220px] rounded-lg border border-border object-cover" />
+          <img src={msg.attachedFile.dataUrl} alt={msg.attachedFile.name} className="max-w-[220px] max-h-[220px] rounded-lg border border-[#e5e5e0] object-cover" />
         ) : msg.attachedFile && (
-          <div className="inline-flex items-center gap-2 bg-neutral-100 dark:bg-neutral-800 border border-border px-3 py-1.5 rounded-lg text-[11px] font-bold">
+          <div className="inline-flex items-center gap-2 bg-neutral-100 border border-[#e5e5e0] px-3 py-1.5 rounded-lg text-[11px] font-bold">
             <FileText className="h-3.5 w-3.5 text-[#10b981]" />
             <span className="truncate max-w-[150px]">{msg.attachedFile.name}</span>
           </div>
@@ -1298,7 +1298,7 @@ export function AssistantRoot() {
                 variant="ghost"
                 size="sm"
                 onClick={handleClearChat}
-                className="h-7 w-7 rounded-full p-0 text-muted-foreground hover:text-[#10b981] transition-colors border border-transparent hover:border-neutral-200"
+                className="h-7 w-7 rounded-full p-0 text-[#7a7a76] hover:text-[#10b981] transition-colors border border-transparent hover:border-neutral-200"
                 title={t('assistant.new_chat')}
               >
                 <Plus className="h-3.5 w-3.5" />
@@ -1309,7 +1309,7 @@ export function AssistantRoot() {
             <div className="flex-1 overflow-y-auto p-2 space-y-4">
               {/* Discussions list */}
               <div className="space-y-1">
-                <div className="px-2 text-[8px] font-bold text-muted-foreground uppercase tracking-wider">{t('assistant.discussions')}</div>
+                <div className="px-2 text-[8px] font-bold text-[#7a7a76] uppercase tracking-wider">{t('assistant.discussions')}</div>
                 {sessions.length === 0 ? (
                   <div className="px-2 py-1.5 text-[9px] text-[#807d72] italic font-semibold">{t('assistant.no_discussions')}</div>
                 ) : (
@@ -1371,7 +1371,7 @@ export function AssistantRoot() {
 
               {/* Documents list */}
               <div className="space-y-1">
-                <div className="px-2 text-[8px] font-bold text-muted-foreground uppercase tracking-wider">{t('assistant.canvas_docs')}</div>
+                <div className="px-2 text-[8px] font-bold text-[#7a7a76] uppercase tracking-wider">{t('assistant.canvas_docs')}</div>
                 {canvasDocs.length === 0 ? (
                   <div className="px-2 py-1.5 text-[9px] text-[#807d72] italic font-semibold">{t('assistant.no_docs')}</div>
                 ) : (
@@ -1439,7 +1439,7 @@ export function AssistantRoot() {
                 size="sm"
                 onClick={() => setIsHistoryOpen(!isHistoryOpen)}
                 className={`h-7 w-7 rounded-full p-0 transition-colors border border-transparent ${
-                  isHistoryOpen ? 'text-[#10b981] bg-emerald-50/70 border-emerald-100' : 'text-muted-foreground hover:text-primary hover:border-neutral-200'
+                  isHistoryOpen ? 'text-[#10b981] bg-emerald-50/70 border-emerald-100' : 'text-[#7a7a76] hover:text-[#059669] hover:border-neutral-200'
                 }`}
                 title={t('assistant.history')}
               >
@@ -1448,9 +1448,9 @@ export function AssistantRoot() {
               <div className="h-6 w-6 rounded-md bg-[#10b981]/15 text-[#10b981] flex items-center justify-center shrink-0 overflow-hidden">
                 <MinervaOwl state="idle" size={20} />
               </div>
-              <span className="text-xs font-bold text-foreground">Minerva AI Assistant</span>
+              <span className="text-xs font-bold text-[#26251e]">Minerva AI Assistant</span>
               {currentSession && (
-                <span className="text-[10px] text-muted-foreground font-bold truncate max-w-[150px] border-l border-neutral-200 pl-2">
+                <span className="text-[10px] text-[#7a7a76] font-bold truncate max-w-[150px] border-l border-neutral-200 pl-2">
                   {currentSession.title}
                 </span>
               )}
@@ -1461,7 +1461,7 @@ export function AssistantRoot() {
                 variant="ghost"
                 size="sm"
                 onClick={handleClearChat}
-                className="text-[10px] h-7 font-bold text-muted-foreground hover:text-[#10b981] gap-1 rounded-full px-2.5 transition-colors border border-transparent hover:border-neutral-100"
+                className="text-[10px] h-7 font-bold text-[#7a7a76] hover:text-[#10b981] gap-1 rounded-full px-2.5 transition-colors border border-transparent hover:border-neutral-100"
                 title={t('assistant.new_chat')}
               >
                 <Plus className="w-3.5 h-3.5" />
@@ -1559,7 +1559,7 @@ export function AssistantRoot() {
 
                         {showModelDropdown && (
                           <div className="absolute right-0 bottom-8 z-50 bg-white border border-[#e6e5e0] rounded-xl py-1 shadow-lg w-52 text-left animate-scale-up">
-                            <div className="px-3 py-1 text-[8px] font-bold text-muted-foreground uppercase tracking-wider">{t('assistant.models_title')}</div>
+                            <div className="px-3 py-1 text-[8px] font-bold text-[#7a7a76] uppercase tracking-wider">{t('assistant.models_title')}</div>
                             {AI_MODELS.map((model) => (
                               <button
                                 key={model.id}
@@ -1658,7 +1658,7 @@ export function AssistantRoot() {
                       <div className={`rounded-2xl px-4 py-2.5 shadow-none ${
                         msg.role === 'user'
                           ? 'bg-neutral-50 text-[#26251e] border border-[#e6e5e0] rounded-tr-none'
-                          : 'bg-white text-foreground rounded-tl-none border-0'
+                          : 'bg-white text-[#26251e] rounded-tl-none border-0'
                       }`}>
                         {renderMessageContent(msg, i)}
                       </div>
@@ -1683,7 +1683,7 @@ export function AssistantRoot() {
                     </div>
                     <div className="bg-white border-0 rounded-2xl rounded-tl-none px-4 py-2.5">
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-semibold text-muted-foreground" style={{
+                        <span className="text-xs font-semibold text-[#7a7a76]" style={{
                           background: 'linear-gradient(90deg, #059669 0%, #10b981 50%, #059669 100%)',
                           backgroundSize: '200% auto',
                           WebkitBackgroundClip: 'text',
@@ -1987,7 +1987,7 @@ export function AssistantRoot() {
                 </button>
                 {showLibraryDropdown && (
                   <div className="absolute right-0 top-8 z-50 bg-white border border-[#e6e5e0] rounded-xl p-3 shadow-lg w-56 animate-scale-up">
-                    <p className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground mb-2">{t('assistant.canvas_library_save_title')}</p>
+                    <p className="text-[9px] font-bold uppercase tracking-wider text-[#7a7a76] mb-2">{t('assistant.canvas_library_save_title')}</p>
                     <input
                       type="text"
                       value={libraryFolderName}
@@ -2048,7 +2048,7 @@ export function AssistantRoot() {
                       <span>{t('assistant.shorter')}</span>
                     </button>
                     <div className="border-t border-neutral-100 my-1" />
-                    <div className="px-3 py-1 text-[8px] font-bold text-muted-foreground uppercase">{t('assistant.tone_header')}</div>
+                    <div className="px-3 py-1 text-[8px] font-bold text-[#7a7a76] uppercase">{t('assistant.tone_header')}</div>
                     {['professional', 'persuasive', 'friendly'].map(toneKey => (
                       <button
                         key={toneKey}
@@ -2249,11 +2249,11 @@ export function AssistantRoot() {
                   <>
                     <p className="text-[10px] font-bold uppercase tracking-wider text-[#807d72]">{t('assistant.canvas_docs')}</p>
                     <div className="flex-1 space-y-1.5 overflow-y-auto max-h-64">
-                      {canvasDocs.length === 0 && <p className="text-[10px] text-muted-foreground italic">{t('assistant.no_docs')}</p>}
+                      {canvasDocs.length === 0 && <p className="text-[10px] text-[#7a7a76] italic">{t('assistant.no_docs')}</p>}
                       {canvasDocs.map(doc => (
                         <button key={doc.id} onClick={() => { setCanvasDoc({ id: doc.id, title: doc.title, content: doc.content, lastSaved: doc.updatedAt }); setCanvasRightPanel('none'); }} className="w-full text-left p-2 rounded hover:bg-neutral-50 text-[10px] border border-neutral-100 transition-colors">
                           <p className="font-bold truncate">{doc.title || t('assistant.untitled_doc')}</p>
-                          <p className="text-muted-foreground font-mono">{new Date(doc.updatedAt).toLocaleDateString(locale === 'de' ? 'de-DE' : locale === 'en' ? 'en-US' : 'fr-FR')}</p>
+                          <p className="text-[#7a7a76] font-mono">{new Date(doc.updatedAt).toLocaleDateString(locale === 'de' ? 'de-DE' : locale === 'en' ? 'en-US' : 'fr-FR')}</p>
                         </button>
                       ))}
                     </div>
@@ -2277,12 +2277,12 @@ export function AssistantRoot() {
 
           {/* Save to Library prompt */}
           {showSaveToLibraryPrompt && (
-            <div className="absolute bottom-4 right-4 z-50 bg-white border border-border shadow-lg rounded-xl p-4 w-72 animate-scale-up">
-              <p className="text-sm font-bold text-foreground mb-1">{t('assistant.library_save_title')}</p>
-              <p className="text-[11px] text-muted-foreground mb-3">{t('assistant.library_save_desc').replace('{title}', editorTitle)}</p>
+            <div className="absolute bottom-4 right-4 z-50 bg-white border border-[#e5e5e0] shadow-lg rounded-xl p-4 w-72 animate-scale-up">
+              <p className="text-sm font-bold text-[#26251e] mb-1">{t('assistant.library_save_title')}</p>
+              <p className="text-[11px] text-[#7a7a76] mb-3">{t('assistant.library_save_desc').replace('{title}', editorTitle)}</p>
               <div className="flex gap-2">
                 <button onClick={handleSaveToLibrary} className="flex-1 py-1.5 text-[11px] font-bold bg-[#059669] text-white rounded-lg hover:bg-[#047857] transition-colors">{t('assistant.yes_add')}</button>
-                <button onClick={() => setShowSaveToLibraryPrompt(false)} className="flex-1 py-1.5 text-[11px] font-bold border border-border rounded-lg hover:bg-muted/50 transition-colors">{t('assistant.no_thanks')}</button>
+                <button onClick={() => setShowSaveToLibraryPrompt(false)} className="flex-1 py-1.5 text-[11px] font-bold border border-[#e5e5e0] rounded-lg hover:bg-[#f4f4f3]/80 transition-colors">{t('assistant.no_thanks')}</button>
               </div>
             </div>
           )}

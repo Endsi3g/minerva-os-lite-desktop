@@ -39,13 +39,13 @@ export function TodayRoot() {
   return (
     <div className="h-full overflow-hidden flex flex-col">
       {/* Tab bar */}
-      <div className="flex items-center gap-1 border-b border-border px-4 pt-3 pb-0 bg-background shrink-0">
+      <div className="flex items-center gap-1 border-b border-[#e5e5e0] px-4 pt-3 pb-0 bg-[#fafaf8] shrink-0">
         <button
           onClick={() => setActiveTab('dashboard')}
           className={`flex items-center gap-1.5 px-3 py-2 text-xs font-semibold border-b-2 transition-all mr-1 ${
             activeTab === 'dashboard'
-              ? 'border-[#059669] text-foreground'
-              : 'border-transparent text-muted-foreground hover:text-foreground'
+              ? 'border-[#059669] text-[#26251e]'
+              : 'border-transparent text-[#7a7a76] hover:text-[#26251e]'
           }`}
         >
           <LayoutDashboard className="h-3.5 w-3.5" />
@@ -55,8 +55,8 @@ export function TodayRoot() {
           onClick={() => setActiveTab('inbox')}
           className={`flex items-center gap-1.5 px-3 py-2 text-xs font-semibold border-b-2 transition-all ${
             activeTab === 'inbox'
-              ? 'border-[#059669] text-foreground'
-              : 'border-transparent text-muted-foreground hover:text-foreground'
+              ? 'border-[#059669] text-[#26251e]'
+              : 'border-transparent text-[#7a7a76] hover:text-[#26251e]'
           }`}
         >
           <Mail className="h-3.5 w-3.5" />

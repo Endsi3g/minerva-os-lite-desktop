@@ -8,7 +8,7 @@ Write-Host "=========================================================" -Foregrou
 Write-Host "Ce script configure le SDK Android local pour votre projet Capacitor."
 Write-Host ""
 
-$appDir = Join-Path $PSScriptRoot "Minerva OS Lite\minerva-os-lite-desktop"
+$appDir = Split-Path -Parent $PSScriptRoot
 
 # 1. Recherche du SDK Android
 $sdkPath = ""

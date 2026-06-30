@@ -38,22 +38,22 @@ export function SettingsWorkspaceGeneralSection({ data, onChange, isSaving }: Pr
       isSaving={isSaving}
     >
       {/* Workspace icon */}
-      <div className="border border-border rounded-xl p-5 bg-card space-y-4">
+      <div className="border border-[#e5e5e0] rounded-xl p-5 bg-white space-y-4">
         <div>
-          <p className="text-xs font-bold text-foreground">Icône de l'espace de travail</p>
-          <p className="text-[11px] text-muted-foreground mt-0.5">Format 1:1 ; PNG ou JPEG ; max 512 Ko</p>
+          <p className="text-xs font-bold text-[#26251e]">Icône de l'espace de travail</p>
+          <p className="text-[11px] text-[#7a7a76] mt-0.5">Format 1:1 ; PNG ou JPEG ; max 512 Ko</p>
         </div>
         <div className="flex items-center gap-4">
-          <div className="w-16 h-16 rounded-xl border-2 border-dashed border-border bg-muted flex items-center justify-center overflow-hidden">
+          <div className="w-16 h-16 rounded-xl border-2 border-dashed border-[#e5e5e0] bg-[#f4f4f3] flex items-center justify-center overflow-hidden">
             {data.workspaceIconBase64 ? (
               <img src={data.workspaceIconBase64} alt="icon" className="w-full h-full object-cover" />
             ) : (
-              <span className="text-2xl font-bold text-muted-foreground">{(data.workspaceName || 'M').charAt(0).toUpperCase()}</span>
+              <span className="text-2xl font-bold text-[#7a7a76]">{(data.workspaceName || 'M').charAt(0).toUpperCase()}</span>
             )}
           </div>
           <button
             onClick={() => iconInputRef.current?.click()}
-            className="flex items-center gap-2 px-4 py-2 border border-border rounded-lg text-xs font-semibold text-foreground hover:bg-muted transition-colors"
+            className="flex items-center gap-2 px-4 py-2 border border-[#e5e5e0] rounded-lg text-xs font-semibold text-[#26251e] hover:bg-[#f4f4f3] transition-colors"
           >
             <Upload className="w-3.5 h-3.5" />
             Télécharger
@@ -63,33 +63,33 @@ export function SettingsWorkspaceGeneralSection({ data, onChange, isSaving }: Pr
       </div>
 
       {/* Workspace name */}
-      <div className="border border-border rounded-xl p-5 bg-card space-y-3">
+      <div className="border border-[#e5e5e0] rounded-xl p-5 bg-white space-y-3">
         <div className="flex items-start justify-between gap-6">
           <div className="flex-1">
-            <label className="text-xs font-bold text-foreground block mb-0.5">Nom de l'espace de travail</label>
-            <p className="text-[11px] text-muted-foreground">Définissez le nom de votre espace de travail.</p>
+            <label className="text-xs font-bold text-[#26251e] block mb-0.5">Nom de l'espace de travail</label>
+            <p className="text-[11px] text-[#7a7a76]">Définissez le nom de votre espace de travail.</p>
           </div>
           <input
             type="text"
             value={data.workspaceName}
             onChange={(e) => onChange({ workspaceName: e.target.value })}
-            className="w-48 text-sm px-3 py-1.5 border border-border rounded-lg focus:outline-none focus:ring-1 focus:ring-primary bg-background text-foreground"
+            className="w-48 text-sm px-3 py-1.5 border border-[#e5e5e0] rounded-lg focus:outline-none focus:ring-1 focus:ring-primary bg-[#fafaf8] text-[#26251e]"
           />
         </div>
       </div>
 
       {/* Company description */}
-      <div className="border border-border rounded-xl p-5 bg-card space-y-3">
+      <div className="border border-[#e5e5e0] rounded-xl p-5 bg-white space-y-3">
         <div>
-          <label className="text-xs font-bold text-foreground block mb-0.5">Description de l'entreprise</label>
-          <p className="text-[11px] text-muted-foreground">Informations générales que les modèles d'IA doivent connaître sur votre entreprise.</p>
+          <label className="text-xs font-bold text-[#26251e] block mb-0.5">Description de l'entreprise</label>
+          <p className="text-[11px] text-[#7a7a76]">Informations générales que les modèles d'IA doivent connaître sur votre entreprise.</p>
         </div>
         <textarea
           placeholder="Entrez des informations générales que les modèles doivent connaître sur votre entreprise..."
           value={data.companyDescription}
           onChange={(e) => onChange({ companyDescription: e.target.value })}
           rows={5}
-          className="w-full text-sm px-3.5 py-2.5 border border-border rounded-lg focus:outline-none focus:ring-1 focus:ring-primary bg-background resize-none text-foreground placeholder:text-muted-foreground"
+          className="w-full text-sm px-3.5 py-2.5 border border-[#e5e5e0] rounded-lg focus:outline-none focus:ring-1 focus:ring-primary bg-[#fafaf8] resize-none text-[#26251e] placeholder:text-[#7a7a76]"
         />
       </div>
 
@@ -98,7 +98,7 @@ export function SettingsWorkspaceGeneralSection({ data, onChange, isSaving }: Pr
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-xs font-bold text-destructive">Supprimer l'espace de travail</p>
-            <p className="text-[11px] text-muted-foreground mt-0.5">
+            <p className="text-[11px] text-[#7a7a76] mt-0.5">
               Cette action est irréversible. Toutes les données associées (leads, agents, tâches, membres) seront définitivement supprimées.
             </p>
           </div>
@@ -117,7 +117,7 @@ export function SettingsWorkspaceGeneralSection({ data, onChange, isSaving }: Pr
               <span className="text-xs font-bold">Êtes-vous sûr ? Cette action est irréversible.</span>
             </div>
             <div className="flex gap-2">
-              <button onClick={() => setShowDeleteConfirm(false)} className="px-3 py-1.5 text-xs border border-border rounded-lg hover:bg-muted transition-colors">
+              <button onClick={() => setShowDeleteConfirm(false)} className="px-3 py-1.5 text-xs border border-[#e5e5e0] rounded-lg hover:bg-[#f4f4f3] transition-colors">
                 Annuler
               </button>
               <button className="px-3 py-1.5 text-xs bg-destructive text-white rounded-lg font-bold hover:bg-destructive/90 transition-colors">

@@ -53,7 +53,7 @@ function KeyRow({
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{label}</label>
+        <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">{label}</label>
         {maskedValue ? (
           <span className="flex items-center gap-1 text-[10px] font-semibold text-emerald-600">
             <Check className="w-3 h-3" />Configurée
@@ -67,11 +67,11 @@ function KeyRow({
 
       {maskedValue ? (
         <div className="flex items-center gap-2">
-          <div className="flex-1 h-9 px-3 bg-muted/40 border border-border rounded-md flex items-center text-xs text-muted-foreground font-mono select-none">
+          <div className="flex-1 h-9 px-3 bg-[#f4f4f3]/40 border border-[#e5e5e0] rounded-md flex items-center text-xs text-[#7a7a76] font-mono select-none">
             {maskedValue}
           </div>
           <Button type="button" variant="ghost" size="sm" onClick={handleDelete} disabled={isDeleting}
-            className="h-9 px-2.5 text-destructive hover:text-destructive hover:bg-destructive/10 border border-border">
+            className="h-9 px-2.5 text-destructive hover:text-destructive hover:bg-destructive/10 border border-[#e5e5e0]">
             <Trash2 className="w-3.5 h-3.5" />
           </Button>
         </div>
@@ -83,11 +83,11 @@ function KeyRow({
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               placeholder={placeholder}
-              className="text-xs bg-card pr-9 font-mono"
+              className="text-xs bg-white pr-9 font-mono"
               onKeyDown={(e) => { if (e.key === 'Enter') handleSave(); }}
             />
             <button type="button" onClick={() => setShow(!show)}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#7a7a76] hover:text-[#26251e] transition-colors">
               {show ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
             </button>
           </div>
@@ -99,7 +99,7 @@ function KeyRow({
       )}
 
       {helpUrl && (
-        <p className="text-[10px] text-muted-foreground">
+        <p className="text-[10px] text-[#7a7a76]">
           Obtenez votre clé sur{' '}
           <a href={helpUrl} target="_blank" rel="noopener noreferrer" className="text-[#059669] hover:underline font-semibold">
             {new URL(helpUrl).hostname}
@@ -117,9 +117,9 @@ export function SettingsApiKeysSection({ data, onSaveKey, onDeleteKey, isSaving 
       description="Connectez OpenRouter pour activer les modèles alternatifs."
       isSaving={isSaving}
     >
-      <Card className="border border-border bg-card">
+      <Card className="border border-[#e5e5e0] bg-white">
         <CardContent className="p-5 space-y-6">
-          <p className="text-xs text-muted-foreground leading-relaxed">
+          <p className="text-xs text-[#7a7a76] leading-relaxed">
             Les clés sont chiffrées côté serveur et ne sont jamais exposées dans le navigateur.
             Seuls les 4 derniers caractères sont affichés comme confirmation.
           </p>

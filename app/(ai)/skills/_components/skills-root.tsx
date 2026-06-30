@@ -114,14 +114,14 @@ export function SkillsRoot() {
       <div className="w-full px-3 sm:px-4 md:px-8 py-6 md:py-10 space-y-6 relative z-10">
 
         {/* Header */}
-        <div className="flex items-start justify-between gap-4 pb-4 border-b border-border flex-wrap">
+        <div className="flex items-start justify-between gap-4 pb-4 border-b border-[#e5e5e0] flex-wrap">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-xl bg-[#059669]/10 flex items-center justify-center">
               <Sparkles className="h-5 w-5 text-[#059669]" />
             </div>
             <div>
               <h1 className="text-xl font-bold text-[#26251e] tracking-tight">{t('skills.title')}</h1>
-              <p className="text-xs text-neutral-500 font-medium">{t('skills.subtitle')}</p>
+              <p className="text-xs text-[#7a7a76] font-medium">{t('skills.subtitle')}</p>
             </div>
           </div>
           <button
@@ -135,7 +135,7 @@ export function SkillsRoot() {
 
         {/* Tabs + search */}
         <div className="flex items-center justify-between gap-3 flex-wrap">
-          <div className="flex items-center gap-0.5 bg-[#f4f4f3] rounded-lg p-0.5 border border-border">
+          <div className="flex items-center gap-0.5 bg-[#f4f4f3] rounded-lg p-0.5 border border-[#e5e5e0]">
             {tabs.map(tb => (
               <button
                 key={tb.key}
@@ -155,7 +155,7 @@ export function SkillsRoot() {
               value={query}
               onChange={e => setQuery(e.target.value)}
               placeholder={t('skills.search')}
-              className="h-9 w-56 pl-8 pr-3 text-xs bg-white border border-border rounded-lg focus:outline-none focus:ring-1 focus:ring-[#059669] text-[#26251e]"
+              className="h-9 w-56 pl-8 pr-3 text-xs bg-white border border-[#e5e5e0] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#059669] text-[#26251e]"
             />
           </div>
         </div>
@@ -188,7 +188,7 @@ export function SkillsRoot() {
         {(tab === 'mine') && (
           <div className="space-y-3">
             {state.customSkills.length === 0 ? (
-              <div className="rounded-xl border border-dashed border-border p-8 text-center bg-white">
+              <div className="rounded-xl border border-dashed border-[#e5e5e0] p-8 text-center bg-white">
                 <Wand2 className="h-6 w-6 text-[#807d72] mx-auto mb-2" />
                 <p className="text-xs font-bold text-[#26251e]">{t('skills.no_mine')}</p>
                 <p className="text-[11px] text-[#807d72] mt-1">{t('skills.no_mine_desc')}</p>
@@ -247,7 +247,7 @@ export function SkillsRoot() {
       {/* Skill Creator modal */}
       {showCreate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={() => setShowCreate(false)}>
-          <div className="bg-white rounded-2xl shadow-xl w-[480px] max-w-[95vw] p-6 space-y-4 animate-in zoom-in-95 duration-150 border border-border" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl shadow-xl w-[480px] max-w-[95vw] p-6 space-y-4 animate-in zoom-in-95 duration-150 border border-[#e5e5e0]" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between">
               <h2 className="text-sm font-bold text-[#26251e] flex items-center gap-2"><Wand2 className="h-4 w-4 text-[#059669]" /> {t('skills.create_title')}</h2>
               <button onClick={() => setShowCreate(false)} className="text-[#807d72] hover:text-[#26251e] bg-transparent border-0 cursor-pointer"><X className="h-4 w-4" /></button>

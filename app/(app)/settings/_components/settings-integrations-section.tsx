@@ -402,8 +402,8 @@ export function SettingsIntegrationsSection() {
         title="Intégrations"
         description="Connecte Minerva Reach à tes outils externes et à ton système principal."
       >
-        <div className="flex items-center justify-center py-12 gap-2 text-xs text-muted-foreground">
-          <RefreshCw className="h-4 w-4 animate-spin text-primary" />
+        <div className="flex items-center justify-center py-12 gap-2 text-xs text-[#7a7a76]">
+          <RefreshCw className="h-4 w-4 animate-spin text-[#059669]" />
           <span>Chargement des intégrations...</span>
         </div>
       </SettingsSectionWrapper>
@@ -418,26 +418,26 @@ export function SettingsIntegrationsSection() {
       <div className="space-y-4">
         
         {/* Gmail Card */}
-        <Card className="border border-border bg-card">
+        <Card className="border border-[#e5e5e0] bg-white">
           <CardContent className="p-5 flex flex-col sm:flex-row items-start justify-between gap-4">
             <div className="flex gap-4 min-w-0">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted/40 shrink-0">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#f4f4f3]/40 shrink-0">
                 <GmailIcon size={20} />
               </div>
               <div className="space-y-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-xs font-bold text-foreground truncate">Gmail & Google Workspace</span>
+                  <span className="text-xs font-bold text-[#26251e] truncate">Gmail & Google Workspace</span>
                   {gmailConnected ? (
-                    <Badge variant="outline" className="text-[9px] font-bold rounded px-1.5 py-0 bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-900/30">
+                    <Badge variant="outline" className="text-[9px] font-bold rounded px-1.5 py-0 bg-emerald-50 text-emerald-700 border-emerald-200">
                       Connecté ({gmailEmail})
                     </Badge>
                   ) : (
-                    <Badge variant="outline" className="text-[9px] font-bold rounded px-1.5 py-0 bg-slate-50 text-slate-500 border-slate-200 dark:bg-slate-900 dark:text-slate-400 dark:border-slate-800">
+                    <Badge variant="outline" className="text-[9px] font-bold rounded px-1.5 py-0 bg-slate-50 text-slate-500 border-slate-200">
                       Non connecté
                     </Badge>
                   )}
                 </div>
-                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                <p className="text-[11px] text-[#7a7a76] leading-relaxed">
                   Lien OAuth direct pour envoyer et programmer tes courriels de prospection en un clic via ton propre compte Gmail.
                 </p>
                 <div className="pt-1 flex flex-wrap gap-x-3 gap-y-1">
@@ -445,16 +445,16 @@ export function SettingsIntegrationsSection() {
                     href="/terms"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-[10px] text-primary underline hover:text-primary/80 font-medium"
+                    className="text-[10px] text-[#059669] underline hover:text-[#059669]/80 font-medium"
                   >
                     Conditions d'utilisation (Terms of Use)
                   </a>
-                  <span className="text-[10px] text-muted-foreground">•</span>
+                  <span className="text-[10px] text-[#7a7a76]">•</span>
                   <a
                     href="/privacy"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-[10px] text-primary underline hover:text-primary/80 font-medium"
+                    className="text-[10px] text-[#059669] underline hover:text-[#059669]/80 font-medium"
                   >
                     Politique de confidentialité (Privacy Policy)
                   </a>
@@ -479,7 +479,7 @@ export function SettingsIntegrationsSection() {
                   variant="default"
                   size="sm"
                   onClick={handleConnectGmail}
-                  className="h-8 text-xs font-semibold px-4 bg-primary hover:bg-primary/95 text-primary-foreground min-w-[110px]"
+                  className="h-8 text-xs font-semibold px-4 bg-[#059669] hover:bg-[#059669]/95 text-white min-w-[110px]"
                 >
                   Se connecter
                 </Button>
@@ -489,7 +489,7 @@ export function SettingsIntegrationsSection() {
         </Card>
 
         {/* SMTP Card */}
-        <Card className="border border-border bg-card">
+        <Card className="border border-[#e5e5e0] bg-white">
           <CardContent className="p-5">
             <button
               type="button"
@@ -497,13 +497,13 @@ export function SettingsIntegrationsSection() {
               className="flex items-start justify-between w-full gap-4 text-left"
             >
               <div className="flex gap-4 min-w-0">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary shrink-0">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#059669]/10 text-[#059669] shrink-0">
                   <Server className="h-5 w-5" />
                 </div>
                 <div className="space-y-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-xs font-bold text-foreground">SMTP générique</span>
-                    <Badge variant="outline" className={`text-[9px] font-bold rounded px-1.5 py-0 ${smtpSaved ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/20 dark:text-emerald-400' : 'bg-slate-50 text-slate-500 border-slate-200 dark:bg-slate-900 dark:text-slate-400 dark:border-slate-800'}`}>
+                    <span className="text-xs font-bold text-[#26251e]">SMTP générique</span>
+                    <Badge variant="outline" className={`text-[9px] font-bold rounded px-1.5 py-0 ${smtpSaved ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-50 text-slate-500 border-slate-200'}`}>
                       {smtpSaved ? `Configuré (${smtpConfig.user || 'SMTP'})` : 'Non configuré'}
                     </Badge>
                     {!isElectron && (
@@ -512,64 +512,64 @@ export function SettingsIntegrationsSection() {
                       </Badge>
                     )}
                   </div>
-                  <p className="text-[11px] text-muted-foreground leading-relaxed">
+                  <p className="text-[11px] text-[#7a7a76] leading-relaxed">
                     Envoie depuis OVH, Proton, Outlook ou tout serveur SMTP. Les identifiants restent sur ton appareil.
                   </p>
                 </div>
               </div>
-              <div className="shrink-0 self-center text-muted-foreground">
+              <div className="shrink-0 self-center text-[#7a7a76]">
                 {smtpExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
               </div>
             </button>
 
             {smtpExpanded && (
-              <div className="mt-4 pt-4 border-t border-border/50 space-y-3 pl-14">
+              <div className="mt-4 pt-4 border-t border-[#e5e5e0]/70 space-y-3 pl-14">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="grid gap-1">
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Serveur SMTP (host)</label>
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Serveur SMTP (host)</label>
                     <Input
                       value={smtpConfig.host}
                       onChange={(e) => setSmtpConfig(c => ({ ...c, host: e.target.value }))}
                       placeholder="smtp.ovh.net"
-                      className="text-xs bg-card h-8"
+                      className="text-xs bg-white h-8"
                     />
                   </div>
                   <div className="grid gap-1">
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Port</label>
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Port</label>
                     <Input
                       value={smtpConfig.port}
                       onChange={(e) => setSmtpConfig(c => ({ ...c, port: e.target.value }))}
                       placeholder="587"
-                      className="text-xs bg-card h-8"
+                      className="text-xs bg-white h-8"
                     />
                   </div>
                   <div className="grid gap-1">
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Adresse email</label>
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Adresse email</label>
                     <Input
                       type="email"
                       value={smtpConfig.user}
                       onChange={(e) => setSmtpConfig(c => ({ ...c, user: e.target.value }))}
                       placeholder="moi@exemple.com"
-                      className="text-xs bg-card h-8"
+                      className="text-xs bg-white h-8"
                     />
                   </div>
                   <div className="grid gap-1">
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Mot de passe</label>
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Mot de passe</label>
                     <Input
                       type="password"
                       value={smtpConfig.pass}
                       onChange={(e) => setSmtpConfig(c => ({ ...c, pass: e.target.value }))}
                       placeholder="••••••••"
-                      className="text-xs bg-card h-8"
+                      className="text-xs bg-white h-8"
                     />
                   </div>
                   <div className="grid gap-1 sm:col-span-2">
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Nom expéditeur</label>
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Nom expéditeur</label>
                     <Input
                       value={smtpConfig.fromName}
                       onChange={(e) => setSmtpConfig(c => ({ ...c, fromName: e.target.value }))}
                       placeholder="Mon Agence"
-                      className="text-xs bg-card h-8"
+                      className="text-xs bg-white h-8"
                     />
                   </div>
                 </div>
@@ -590,7 +590,7 @@ export function SettingsIntegrationsSection() {
                     size="sm"
                     onClick={handleSaveSmtp}
                     disabled={savingSmtp || !smtpConfig.host || !smtpConfig.user}
-                    className="h-8 text-xs font-bold gap-1 bg-primary hover:bg-primary/95 text-primary-foreground"
+                    className="h-8 text-xs font-bold gap-1 bg-[#059669] hover:bg-[#059669]/95 text-white"
                   >
                     {savingSmtp ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
                     Sauvegarder
@@ -602,20 +602,20 @@ export function SettingsIntegrationsSection() {
         </Card>
 
         {/* Scraper Engine Card */}
-        <Card className="border border-border bg-card">
+        <Card className="border border-[#e5e5e0] bg-white">
           <CardContent className="p-5 space-y-4">
             <div className="flex gap-4 min-w-0">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary shrink-0">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#059669]/10 text-[#059669] shrink-0">
                 <Search className="h-5 w-5" />
               </div>
               <div className="space-y-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-xs font-bold text-foreground truncate">Moteur de recherche prospects</span>
-                  <Badge variant="outline" className="text-[9px] font-bold rounded px-1.5 py-0 bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-900/30">
+                  <span className="text-xs font-bold text-[#26251e] truncate">Moteur de recherche prospects</span>
+                  <Badge variant="outline" className="text-[9px] font-bold rounded px-1.5 py-0 bg-emerald-50 text-emerald-700 border-emerald-200">
                     {scraperEngine === 'native' ? 'Natif Actif' : 'Apify Configuré'}
                   </Badge>
                 </div>
-                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                <p className="text-[11px] text-[#7a7a76] leading-relaxed">
                   {"Configure comment l'application recherche et audite les commerces locaux pour ta prospection."}
                 </p>
               </div>
@@ -629,12 +629,12 @@ export function SettingsIntegrationsSection() {
                   onClick={() => setScraperEngine('native')}
                   className={`flex flex-col items-start p-3 rounded-lg border text-left transition-all cursor-pointer ${
                     scraperEngine === 'native'
-                      ? 'border-primary bg-primary/5'
-                      : 'border-border bg-card hover:bg-muted/10'
+                      ? 'border-primary bg-[#059669]/5'
+                      : 'border-[#e5e5e0] bg-white hover:bg-[#f4f4f3]/10'
                   }`}
                 >
-                  <span className="text-xs font-bold text-foreground">Scraper Natif Minerva</span>
-                  <span className="text-[10px] text-muted-foreground mt-1">
+                  <span className="text-xs font-bold text-[#26251e]">Scraper Natif Minerva</span>
+                  <span className="text-[10px] text-[#7a7a76] mt-1">
                     Gratuit & illimité. Interroge OpenStreetMap + crawler SEO en temps réel.
                   </span>
                 </button>
@@ -643,12 +643,12 @@ export function SettingsIntegrationsSection() {
                   onClick={() => setScraperEngine('apify')}
                   className={`flex flex-col items-start p-3 rounded-lg border text-left transition-all cursor-pointer ${
                     scraperEngine === 'apify'
-                      ? 'border-primary bg-primary/5'
-                      : 'border-border bg-card hover:bg-muted/10'
+                      ? 'border-primary bg-[#059669]/5'
+                      : 'border-[#e5e5e0] bg-white hover:bg-[#f4f4f3]/10'
                   }`}
                 >
-                  <span className="text-xs font-bold text-foreground">Apify Google Maps Scraper</span>
-                  <span className="text-[10px] text-muted-foreground mt-1">
+                  <span className="text-xs font-bold text-[#26251e]">Apify Google Maps Scraper</span>
+                  <span className="text-[10px] text-[#7a7a76] mt-1">
                     {"Utilise l'infrastructure cloud d'Apify. Clé API requise."}
                   </span>
                 </button>
@@ -662,7 +662,7 @@ export function SettingsIntegrationsSection() {
                   onClick={() => handleSaveScraper()}
                   disabled={savingApify}
                   size="sm"
-                  className="h-8 text-xs font-bold gap-1 px-4 bg-primary hover:bg-primary/95 text-primary-foreground"
+                  className="h-8 text-xs font-bold gap-1 px-4 bg-[#059669] hover:bg-[#059669]/95 text-white"
                 >
                   {savingApify ? (
                     <RefreshCw className="h-3.5 w-3.5 animate-spin" />
@@ -678,20 +678,20 @@ export function SettingsIntegrationsSection() {
               /* Apify Token form */
               <form onSubmit={handleSaveScraper} className="flex gap-2 pl-14 items-center">
                 <div className="relative flex-1">
-                  <Key className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+                  <Key className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-[#7a7a76]" />
                   <Input
                     type="password"
                     placeholder="Token API Apify (apify_api_...)"
                     value={apifyInput}
                     onChange={(e) => setApifyInput(e.target.value)}
-                    className="pl-8.5 text-xs bg-card h-8.5"
+                    className="pl-8.5 text-xs bg-white h-8.5"
                   />
                 </div>
                 <Button
                   type="submit"
                   size="sm"
                   disabled={savingApify}
-                  className="h-8.5 text-xs font-bold gap-1 px-3 bg-primary hover:bg-primary/95 text-primary-foreground shrink-0"
+                  className="h-8.5 text-xs font-bold gap-1 px-3 bg-[#059669] hover:bg-[#059669]/95 text-white shrink-0"
                 >
                   {savingApify ? (
                     <RefreshCw className="h-3.5 w-3.5 animate-spin" />
@@ -708,38 +708,38 @@ export function SettingsIntegrationsSection() {
         </Card>
 
         {/* HERE Places API Card */}
-        <Card className="border border-border bg-card">
+        <Card className="border border-[#e5e5e0] bg-white">
           <CardContent className="p-5 flex flex-col sm:flex-row items-start justify-between gap-4">
             <div className="flex gap-4 min-w-0 flex-1">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary shrink-0">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#059669]/10 text-[#059669] shrink-0">
                 <Globe className="h-5 w-5" />
               </div>
               <div className="space-y-2 min-w-0 flex-1">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-xs font-bold text-foreground truncate">HERE Places API</span>
+                  <span className="text-xs font-bold text-[#26251e] truncate">HERE Places API</span>
                   {!!hereApiKey ? (
-                    <Badge variant="outline" className="text-[9px] font-bold rounded px-1.5 py-0 bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-900/30">
+                    <Badge variant="outline" className="text-[9px] font-bold rounded px-1.5 py-0 bg-emerald-50 text-emerald-700 border-emerald-200">
                       Configuré
                     </Badge>
                   ) : (
-                    <Badge variant="outline" className="text-[9px] font-bold rounded px-1.5 py-0 bg-slate-50 text-slate-500 border-slate-200 dark:bg-slate-900 dark:text-slate-400 dark:border-slate-800">
+                    <Badge variant="outline" className="text-[9px] font-bold rounded px-1.5 py-0 bg-slate-50 text-slate-500 border-slate-200">
                       Non configuré
                     </Badge>
                   )}
                 </div>
-                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                <p className="text-[11px] text-[#7a7a76] leading-relaxed">
                   Données locales complètes (250 000 req/mois gratuits). Obtenez votre clé gratuite sur{' '}
-                  <a href="https://developer.here.com/" target="_blank" rel="noopener noreferrer" className="text-primary underline">Obtenir une clé gratuite →</a>
+                  <a href="https://developer.here.com/" target="_blank" rel="noopener noreferrer" className="text-[#059669] underline">Obtenir une clé gratuite →</a>
                 </p>
                 <div className="flex gap-2 items-center pt-1">
                   <div className="relative flex-1 max-w-xs">
-                    <Key className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+                    <Key className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-[#7a7a76]" />
                     <Input
                       type="password"
                       placeholder={hereApiKey ? 'here_api_****' : 'Clé HERE Places API'}
                       value={hereApiKey}
                       onChange={(e) => setHereApiKey(e.target.value)}
-                      className="pl-8 text-xs bg-card h-8"
+                      className="pl-8 text-xs bg-white h-8"
                     />
                   </div>
                   <Button
@@ -747,7 +747,7 @@ export function SettingsIntegrationsSection() {
                     size="sm"
                     onClick={handleSaveHere}
                     disabled={savingHere}
-                    className="h-8 text-xs font-bold gap-1 px-3 bg-primary hover:bg-primary/95 text-primary-foreground shrink-0"
+                    className="h-8 text-xs font-bold gap-1 px-3 bg-[#059669] hover:bg-[#059669]/95 text-white shrink-0"
                   >
                     {savingHere ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
                     Enregistrer
@@ -759,38 +759,38 @@ export function SettingsIntegrationsSection() {
         </Card>
 
         {/* Yelp Fusion API Card */}
-        <Card className="border border-border bg-card">
+        <Card className="border border-[#e5e5e0] bg-white">
           <CardContent className="p-5 flex flex-col sm:flex-row items-start justify-between gap-4">
             <div className="flex gap-4 min-w-0 flex-1">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary shrink-0">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#059669]/10 text-[#059669] shrink-0">
                 <Search className="h-5 w-5" />
               </div>
               <div className="space-y-2 min-w-0 flex-1">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-xs font-bold text-foreground truncate">Yelp Fusion API</span>
+                  <span className="text-xs font-bold text-[#26251e] truncate">Yelp Fusion API</span>
                   {!!yelpApiKey ? (
-                    <Badge variant="outline" className="text-[9px] font-bold rounded px-1.5 py-0 bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-900/30">
+                    <Badge variant="outline" className="text-[9px] font-bold rounded px-1.5 py-0 bg-emerald-50 text-emerald-700 border-emerald-200">
                       Configuré
                     </Badge>
                   ) : (
-                    <Badge variant="outline" className="text-[9px] font-bold rounded px-1.5 py-0 bg-slate-50 text-slate-500 border-slate-200 dark:bg-slate-900 dark:text-slate-400 dark:border-slate-800">
+                    <Badge variant="outline" className="text-[9px] font-bold rounded px-1.5 py-0 bg-slate-50 text-slate-500 border-slate-200">
                       Non configuré
                     </Badge>
                   )}
                 </div>
-                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                <p className="text-[11px] text-[#7a7a76] leading-relaxed">
                   Avis, notes et coordonnées des commerces (500 req/jour gratuits). Créez votre app sur{' '}
-                  <a href="https://www.yelp.com/developers" target="_blank" rel="noopener noreferrer" className="text-primary underline">Obtenir une clé gratuite →</a>
+                  <a href="https://www.yelp.com/developers" target="_blank" rel="noopener noreferrer" className="text-[#059669] underline">Obtenir une clé gratuite →</a>
                 </p>
                 <div className="flex gap-2 items-center pt-1">
                   <div className="relative flex-1 max-w-xs">
-                    <Key className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+                    <Key className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-[#7a7a76]" />
                     <Input
                       type="password"
                       placeholder={yelpApiKey ? 'yelp_****' : 'Clé Yelp Fusion API'}
                       value={yelpApiKey}
                       onChange={(e) => setYelpApiKey(e.target.value)}
-                      className="pl-8 text-xs bg-card h-8"
+                      className="pl-8 text-xs bg-white h-8"
                     />
                   </div>
                   <Button
@@ -798,7 +798,7 @@ export function SettingsIntegrationsSection() {
                     size="sm"
                     onClick={handleSaveYelp}
                     disabled={savingYelp}
-                    className="h-8 text-xs font-bold gap-1 px-3 bg-primary hover:bg-primary/95 text-primary-foreground shrink-0"
+                    className="h-8 text-xs font-bold gap-1 px-3 bg-[#059669] hover:bg-[#059669]/95 text-white shrink-0"
                   >
                     {savingYelp ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
                     Enregistrer
@@ -810,28 +810,28 @@ export function SettingsIntegrationsSection() {
         </Card>
 
         {/* Firecrawl Card */}
-        <Card className="border border-border bg-card">
+        <Card className="border border-[#e5e5e0] bg-white">
           <CardContent className="p-5">
             <div className="flex gap-4 min-w-0 mb-4">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary shrink-0">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#059669]/10 text-[#059669] shrink-0">
                 <Globe className="h-5 w-5" />
               </div>
               <div className="space-y-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-xs font-bold text-foreground">Firecrawl (PagesJaunes)</span>
+                  <span className="text-xs font-bold text-[#26251e]">Firecrawl (PagesJaunes)</span>
                   {!!firecrawlApiKey ? (
-                    <Badge variant="outline" className="text-[9px] font-bold rounded px-1.5 py-0 bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-900/30">
+                    <Badge variant="outline" className="text-[9px] font-bold rounded px-1.5 py-0 bg-emerald-50 text-emerald-700 border-emerald-200">
                       Configuré
                     </Badge>
                   ) : (
-                    <Badge variant="outline" className="text-[9px] font-bold rounded px-1.5 py-0 bg-slate-50 text-slate-500 border-slate-200 dark:bg-slate-900 dark:text-slate-400 dark:border-slate-800">
+                    <Badge variant="outline" className="text-[9px] font-bold rounded px-1.5 py-0 bg-slate-50 text-slate-500 border-slate-200">
                       Non configuré
                     </Badge>
                   )}
                 </div>
-                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                <p className="text-[11px] text-[#7a7a76] leading-relaxed">
                   Scraping structuré de PagesJaunes / YellowPages Canada (500 req/mois gratuits).{' '}
-                  <a href="https://firecrawl.dev" target="_blank" rel="noopener noreferrer" className="underline text-primary">
+                  <a href="https://firecrawl.dev" target="_blank" rel="noopener noreferrer" className="underline text-[#059669]">
                     Obtenir une clé gratuite →
                   </a>
                 </p>
@@ -851,7 +851,7 @@ export function SettingsIntegrationsSection() {
                 size="sm"
                 onClick={handleSaveFirecrawl}
                 disabled={savingFirecrawl}
-                className="h-8 text-xs font-semibold px-4 bg-primary hover:bg-primary/95 text-primary-foreground shrink-0"
+                className="h-8 text-xs font-semibold px-4 bg-[#059669] hover:bg-[#059669]/95 text-white shrink-0"
               >
                 {savingFirecrawl ? 'Sauvegarde...' : 'Enregistrer'}
               </Button>
@@ -860,47 +860,47 @@ export function SettingsIntegrationsSection() {
         </Card>
 
         {/* Slack Card */}
-        <Card className="border border-border bg-card">
+        <Card className="border border-[#e5e5e0] bg-white">
           <CardContent className="p-5 space-y-4">
             <div className="flex gap-4 min-w-0">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted/40 shrink-0">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#f4f4f3]/40 shrink-0">
                 <SlackIcon size={20} />
               </div>
               <div className="space-y-1 min-w-0 flex-1">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-xs font-bold text-foreground">Slack</span>
+                  <span className="text-xs font-bold text-[#26251e]">Slack</span>
                   {slackWebhookUrl ? (
                     <Badge variant="outline" className="text-[9px] font-bold rounded px-1.5 py-0 bg-emerald-50 text-emerald-700 border-emerald-200">Configuré</Badge>
                   ) : (
                     <Badge variant="outline" className="text-[9px] font-bold rounded px-1.5 py-0 bg-slate-50 text-slate-500 border-slate-200">Non configuré</Badge>
                   )}
                 </div>
-                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                <p className="text-[11px] text-[#7a7a76] leading-relaxed">
                   Recevez les notifications Minerva (nouveaux leads, visites terrain, mentions) dans un canal Slack via un <strong>Webhook entrant</strong>.{' '}
-                  Créez le vôtre sur <a href="https://api.slack.com/apps" target="_blank" rel="noopener noreferrer" className="text-primary underline">api.slack.com/apps →</a>
+                  Créez le vôtre sur <a href="https://api.slack.com/apps" target="_blank" rel="noopener noreferrer" className="text-[#059669] underline">api.slack.com/apps →</a>
                 </p>
                 <div className="flex gap-2 items-center pt-1">
                   <div className="relative flex-1">
-                    <SlackIcon className="absolute left-2.5 top-2.5 text-muted-foreground" size={14} />
+                    <SlackIcon className="absolute left-2.5 top-2.5 text-[#7a7a76]" size={14} />
                     <input
                       type="url"
                       placeholder="https://hooks.slack.com/services/…"
                       value={slackWebhookUrl}
                       onChange={e => setSlackWebhookUrl(e.target.value)}
-                      className="w-full pl-8 pr-3 h-8 text-xs border border-input rounded-md bg-card focus:outline-none focus:ring-2 focus:ring-primary/30"
+                      className="w-full pl-8 pr-3 h-8 text-xs border border-input rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-primary/30"
                     />
                   </div>
                   <Button type="button" size="sm" variant="outline" onClick={handleTestSlack} disabled={testingSlack} className="h-8 text-xs shrink-0 gap-1">
                     {testingSlack ? <RefreshCw className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
                     Tester
                   </Button>
-                  <Button type="button" size="sm" onClick={handleSaveSlack} disabled={savingSlack} className="h-8 text-xs font-bold px-3 bg-primary hover:bg-primary/95 text-primary-foreground shrink-0 gap-1">
+                  <Button type="button" size="sm" onClick={handleSaveSlack} disabled={savingSlack} className="h-8 text-xs font-bold px-3 bg-[#059669] hover:bg-[#059669]/95 text-white shrink-0 gap-1">
                     {savingSlack ? <RefreshCw className="h-3 w-3 animate-spin" /> : slackSaved ? <Check className="h-3 w-3" /> : null}
                     {slackSaved ? 'Enregistré' : 'Enregistrer'}
                   </Button>
                 </div>
-                <div className="flex items-start gap-1.5 text-[10px] text-muted-foreground bg-muted/40 rounded-lg px-3 py-2">
-                  <AlertCircle className="h-3 w-3 mt-0.5 shrink-0 text-primary" />
+                <div className="flex items-start gap-1.5 text-[10px] text-[#7a7a76] bg-[#f4f4f3]/40 rounded-lg px-3 py-2">
+                  <AlertCircle className="h-3 w-3 mt-0.5 shrink-0 text-[#059669]" />
                   <span>Collez l'URL du Webhook entrant — pas votre token bot. Les notifications sont envoyées automatiquement lors des événements CRM importants.</span>
                 </div>
               </div>
@@ -909,35 +909,35 @@ export function SettingsIntegrationsSection() {
         </Card>
 
         {/* Notion Card */}
-        <Card className="border border-border bg-card">
+        <Card className="border border-[#e5e5e0] bg-white">
           <CardContent className="p-5 space-y-4">
             <div className="flex gap-4 min-w-0">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted/40 shrink-0">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#f4f4f3]/40 shrink-0">
                 <NotionIcon size={20} />
               </div>
               <div className="space-y-1 min-w-0 flex-1">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-xs font-bold text-foreground">Notion</span>
+                  <span className="text-xs font-bold text-[#26251e]">Notion</span>
                   {notionToken ? (
                     <Badge variant="outline" className="text-[9px] font-bold rounded px-1.5 py-0 bg-emerald-50 text-emerald-700 border-emerald-200">Configuré</Badge>
                   ) : (
                     <Badge variant="outline" className="text-[9px] font-bold rounded px-1.5 py-0 bg-slate-50 text-slate-500 border-slate-200">Non configuré</Badge>
                   )}
                 </div>
-                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                <p className="text-[11px] text-[#7a7a76] leading-relaxed">
                   Exportez vos documents Canvas vers une base de données Notion. Créez une intégration sur{' '}
-                  <a href="https://www.notion.so/my-integrations" target="_blank" rel="noopener noreferrer" className="text-primary underline">notion.so/my-integrations →</a>
+                  <a href="https://www.notion.so/my-integrations" target="_blank" rel="noopener noreferrer" className="text-[#059669] underline">notion.so/my-integrations →</a>
                 </p>
                 <div className="space-y-2 pt-1">
                   <div className="flex gap-2 items-center">
                     <div className="relative flex-1">
-                      <Key className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+                      <Key className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-[#7a7a76]" />
                       <input
                         type="password"
                         placeholder={notionToken ? 'secret_****' : "Token d'intégration (secret_…)"}
                         value={notionToken}
                         onChange={e => setNotionToken(e.target.value)}
-                        className="w-full pl-8 pr-3 h-8 text-xs border border-input rounded-md bg-card focus:outline-none focus:ring-2 focus:ring-primary/30"
+                        className="w-full pl-8 pr-3 h-8 text-xs border border-input rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-primary/30"
                         autoComplete="off"
                       />
                     </div>
@@ -948,23 +948,23 @@ export function SettingsIntegrationsSection() {
                   </div>
                   <div className="flex gap-2 items-center">
                     <div className="relative flex-1">
-                      <NotionIcon className="absolute left-2.5 top-2.5 text-muted-foreground" size={14} />
+                      <NotionIcon className="absolute left-2.5 top-2.5 text-[#7a7a76]" size={14} />
                       <input
                         type="text"
                         placeholder="ID de la base de données Notion (optionnel)"
                         value={notionDatabaseId}
                         onChange={e => setNotionDatabaseId(e.target.value)}
-                        className="w-full pl-8 pr-3 h-8 text-xs border border-input rounded-md bg-card focus:outline-none focus:ring-2 focus:ring-primary/30"
+                        className="w-full pl-8 pr-3 h-8 text-xs border border-input rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-primary/30"
                       />
                     </div>
-                    <Button type="button" size="sm" onClick={handleSaveNotion} disabled={savingNotion} className="h-8 text-xs font-bold px-3 bg-primary hover:bg-primary/95 text-primary-foreground shrink-0 gap-1">
+                    <Button type="button" size="sm" onClick={handleSaveNotion} disabled={savingNotion} className="h-8 text-xs font-bold px-3 bg-[#059669] hover:bg-[#059669]/95 text-white shrink-0 gap-1">
                       {savingNotion ? <RefreshCw className="h-3 w-3 animate-spin" /> : notionSaved ? <Check className="h-3 w-3" /> : null}
                       {notionSaved ? 'Enregistré' : 'Enregistrer'}
                     </Button>
                   </div>
                 </div>
-                <div className="flex items-start gap-1.5 text-[10px] text-muted-foreground bg-muted/40 rounded-lg px-3 py-2">
-                  <AlertCircle className="h-3 w-3 mt-0.5 shrink-0 text-primary" />
+                <div className="flex items-start gap-1.5 text-[10px] text-[#7a7a76] bg-[#f4f4f3]/40 rounded-lg px-3 py-2">
+                  <AlertCircle className="h-3 w-3 mt-0.5 shrink-0 text-[#059669]" />
                   <span>Partagez votre base de données avec l'intégration dans Notion (bouton Partager → Inviter), puis copiez son ID depuis l'URL (32 caractères hexadécimaux).</span>
                 </div>
               </div>
@@ -973,7 +973,7 @@ export function SettingsIntegrationsSection() {
         </Card>
 
         {/* Outreach Machine — Smartlead */}
-        <Card className="border border-border bg-card">
+        <Card className="border border-[#e5e5e0] bg-white">
           <CardContent className="p-5 space-y-4">
             <div className="flex items-center gap-3">
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#059669]/10 shrink-0">
@@ -981,19 +981,19 @@ export function SettingsIntegrationsSection() {
               </div>
               <div>
                 <p className="text-sm font-semibold text-[#26251e]">Smartlead — Séquences email</p>
-                <p className="text-[10px] text-muted-foreground">Enrôle automatiquement tes leads dans des campagnes cold email</p>
+                <p className="text-[10px] text-[#7a7a76]">Enrôle automatiquement tes leads dans des campagnes cold email</p>
               </div>
             </div>
             <div className="space-y-2">
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Clé API Smartlead</label>
+                <label className="text-[10px] font-bold text-[#7a7a76] uppercase tracking-wider">Clé API Smartlead</label>
                 <div className="flex gap-2">
-                  <Input value={smartleadApiKey} onChange={e => setSmartleadApiKey(e.target.value)} placeholder="sl_..." type="password" className="h-8 text-xs flex-1 border-border" />
+                  <Input value={smartleadApiKey} onChange={e => setSmartleadApiKey(e.target.value)} placeholder="sl_..." type="password" className="h-8 text-xs flex-1 border-[#e5e5e0]" />
                 </div>
               </div>
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Campaign ID (défaut)</label>
-                <Input value={smartleadCampaignId} onChange={e => setSmartleadCampaignId(e.target.value)} placeholder="123456" className="h-8 text-xs border-border" />
+                <label className="text-[10px] font-bold text-[#7a7a76] uppercase tracking-wider">Campaign ID (défaut)</label>
+                <Input value={smartleadCampaignId} onChange={e => setSmartleadCampaignId(e.target.value)} placeholder="123456" className="h-8 text-xs border-[#e5e5e0]" />
               </div>
               <Button onClick={handleSaveSmartlead} disabled={savingSmartlead} className="h-8 text-xs font-bold bg-[#059669] hover:bg-[#047857] text-white gap-1">
                 {savingSmartlead ? <RefreshCw className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
@@ -1004,7 +1004,7 @@ export function SettingsIntegrationsSection() {
         </Card>
 
         {/* Outreach Machine — Drop Cowboy */}
-        <Card className="border border-border bg-card">
+        <Card className="border border-[#e5e5e0] bg-white">
           <CardContent className="p-5 space-y-4">
             <div className="flex items-center gap-3">
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 shrink-0">
@@ -1012,17 +1012,17 @@ export function SettingsIntegrationsSection() {
               </div>
               <div>
                 <p className="text-sm font-semibold text-[#26251e]">Drop Cowboy — Voicemail</p>
-                <p className="text-[10px] text-muted-foreground">Envoie des voicemails sans sonnerie générés par l'IA (score ≥ 50)</p>
+                <p className="text-[10px] text-[#7a7a76]">Envoie des voicemails sans sonnerie générés par l'IA (score ≥ 50)</p>
               </div>
             </div>
             <div className="space-y-2">
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Nom d'utilisateur</label>
-                <Input value={dropCowboyUsername} onChange={e => setDropCowboyUsername(e.target.value)} placeholder="moncompte" className="h-8 text-xs border-border" />
+                <label className="text-[10px] font-bold text-[#7a7a76] uppercase tracking-wider">Nom d'utilisateur</label>
+                <Input value={dropCowboyUsername} onChange={e => setDropCowboyUsername(e.target.value)} placeholder="moncompte" className="h-8 text-xs border-[#e5e5e0]" />
               </div>
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Clé API Drop Cowboy</label>
-                <Input value={dropCowboyApiKey} onChange={e => setDropCowboyApiKey(e.target.value)} placeholder="dc_..." type="password" className="h-8 text-xs border-border" />
+                <label className="text-[10px] font-bold text-[#7a7a76] uppercase tracking-wider">Clé API Drop Cowboy</label>
+                <Input value={dropCowboyApiKey} onChange={e => setDropCowboyApiKey(e.target.value)} placeholder="dc_..." type="password" className="h-8 text-xs border-[#e5e5e0]" />
               </div>
               <Button onClick={handleSaveDropCowboy} disabled={savingDropCowboy} className="h-8 text-xs font-bold bg-[#059669] hover:bg-[#047857] text-white gap-1">
                 {savingDropCowboy ? <RefreshCw className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
@@ -1033,7 +1033,7 @@ export function SettingsIntegrationsSection() {
         </Card>
 
         {/* AI Inbox */}
-        <Card className="border border-border bg-card">
+        <Card className="border border-[#e5e5e0] bg-white">
           <CardContent className="p-5 space-y-4">
             <div className="flex items-center gap-3">
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-50 shrink-0">
@@ -1041,7 +1041,7 @@ export function SettingsIntegrationsSection() {
               </div>
               <div>
                 <p className="text-sm font-semibold text-[#26251e]">IA Inbox — Réponse autonome</p>
-                <p className="text-[10px] text-muted-foreground">L'IA répond automatiquement si le score de confiance dépasse le seuil</p>
+                <p className="text-[10px] text-[#7a7a76]">L'IA répond automatiquement si le score de confiance dépasse le seuil</p>
               </div>
             </div>
             <div className="space-y-3">
@@ -1058,17 +1058,17 @@ export function SettingsIntegrationsSection() {
                 </button>
               </div>
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                <label className="text-[10px] font-bold text-[#7a7a76] uppercase tracking-wider">
                   Seuil de confiance — {aiInboxConfidenceMin}%
                 </label>
-                <p className="text-[9px] text-muted-foreground">En dessous : brouillon. Au-dessus : envoi automatique.</p>
+                <p className="text-[9px] text-[#7a7a76]">En dessous : brouillon. Au-dessus : envoi automatique.</p>
                 <input
                   type="range" min={50} max={95} step={5}
                   value={aiInboxConfidenceMin}
                   onChange={e => setAiInboxConfidenceMin(Number(e.target.value))}
                   className="w-full accent-[#059669]"
                 />
-                <div className="flex justify-between text-[9px] text-muted-foreground">
+                <div className="flex justify-between text-[9px] text-[#7a7a76]">
                   <span>50% (permissif)</span><span>95% (strict)</span>
                 </div>
               </div>
@@ -1081,20 +1081,20 @@ export function SettingsIntegrationsSection() {
         </Card>
 
         {/* Minerva Sync Card */}
-        <Card className="border border-border bg-card opacity-85">
+        <Card className="border border-[#e5e5e0] bg-white opacity-85">
           <CardContent className="p-5 flex flex-col sm:flex-row items-start justify-between gap-4">
             <div className="flex gap-4 min-w-0">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary shrink-0">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#059669]/10 text-[#059669] shrink-0">
                 <Globe className="h-5 w-5" />
               </div>
               <div className="space-y-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-xs font-bold text-foreground truncate">Minerva OS Sync</span>
-                  <Badge variant="outline" className="text-[9px] font-bold rounded px-1.5 py-0 bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-900/30">
+                  <span className="text-xs font-bold text-[#26251e] truncate">Minerva OS Sync</span>
+                  <Badge variant="outline" className="text-[9px] font-bold rounded px-1.5 py-0 bg-emerald-50 text-emerald-700 border-emerald-200">
                     Natif
                   </Badge>
                 </div>
-                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                <p className="text-[11px] text-[#7a7a76] leading-relaxed">
                   Liaison bidirectionnelle native avec le système d&apos;exploitation Minerva. Vos contacts et vos relances sont synchronisés.
                 </p>
               </div>

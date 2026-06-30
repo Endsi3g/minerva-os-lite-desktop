@@ -132,7 +132,7 @@ function ScoreGauge({ value, label, color = 'stroke-primary' }: { value: number;
   const strokeDashoffset = circumference - (Math.min(100, Math.max(0, value)) / 100) * circumference;
 
   return (
-    <div className="flex flex-col items-center gap-1 bg-muted/30 p-2 rounded-lg border border-border/40">
+    <div className="flex flex-col items-center gap-1 bg-[#f4f4f3]/60 p-2 rounded-lg border border-[#e5e5e0]/60">
       <div className="relative flex items-center justify-center" style={{ width: 44, height: 44 }}>
         <svg className="w-full h-full -rotate-90">
           <circle cx="22" cy="22" r={radius} className="stroke-muted/40 fill-none" strokeWidth={strokeWidth} />
@@ -147,9 +147,9 @@ function ScoreGauge({ value, label, color = 'stroke-primary' }: { value: number;
             strokeLinecap="round"
           />
         </svg>
-        <span className="absolute text-[10px] font-mono font-bold text-foreground">{value}</span>
+        <span className="absolute text-[10px] font-mono font-bold text-[#26251e]">{value}</span>
       </div>
-      <span className="text-[8px] font-semibold text-muted-foreground uppercase tracking-wider text-center">{label}</span>
+      <span className="text-[8px] font-semibold text-[#7a7a76] uppercase tracking-wider text-center">{label}</span>
     </div>
   );
 }
@@ -982,26 +982,26 @@ export function ProspectingRoot() {
   };
 
   return (
-    <div className="flex h-full flex-col overflow-hidden bg-background">
+    <div className="flex h-full flex-col overflow-hidden bg-[#fafaf8]">
       <LeadsSubNav />
       <div className={`flex-1 overflow-y-auto relative pb-6 md:pb-12 ${selectedValidationIds.length > 0 ? 'pb-52 md:pb-12' : ''}`}>
-      <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-0 opacity-30 dark:opacity-15"
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-0 opacity-30"
         style={{ backgroundImage: 'radial-gradient(circle, #a1a1aa 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
       <div className="relative z-10 w-full px-3 py-4 sm:px-4 md:px-6 md:py-6 space-y-4 md:space-y-6">
 
         {/* Header */}
         <div className="space-y-1">
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
-            <Search className="h-5 w-5 text-primary" />
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[#26251e] flex items-center gap-2">
+            <Search className="h-5 w-5 text-[#059669]" />
             Prospection locale
           </h1>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-[#7a7a76]">
             Recherche locale propulsée par Apify. Les données d'OpenStreetMap (OSM) servent de fallback automatique en cas de besoin.
           </p>
         </div>
 
         {/* Search Mode Tabs */}
-        <div className="flex gap-1 p-1 bg-muted/40 border border-border rounded-lg w-full sm:w-auto self-start flex-wrap">
+        <div className="flex gap-1 p-1 bg-[#f4f4f3]/70 border border-[#e5e5e0] rounded-lg w-full sm:w-auto self-start flex-wrap">
           {([
             { id: 'around_me', label: 'Autour de moi', icon: Navigation },
             { id: 'par_ville', label: 'Par ville', icon: MapIcon },
@@ -1023,8 +1023,8 @@ export function ProspectingRoot() {
               disabled={scraping}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
                 searchMode === tab.id
-                  ? 'bg-card text-foreground shadow-sm border border-border'
-                  : 'text-muted-foreground hover:text-foreground'
+                  ? 'bg-white text-[#26251e] shadow-sm border border-[#e5e5e0]'
+                  : 'text-[#7a7a76] hover:text-[#26251e]'
               }`}
             >
               <tab.icon className="h-3.5 w-3.5" />
@@ -1035,10 +1035,10 @@ export function ProspectingRoot() {
 
         <div className="grid grid-cols-1 xl:grid-cols-[1fr_300px] gap-6 min-w-0">
           {/* Config card */}
-          <Card className="min-w-0 border border-border bg-card">
-            <CardHeader className="pb-3 border-b border-border/50">
-              <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-                <Building className="h-4 w-4 text-primary" />Paramètres de recherche
+          <Card className="min-w-0 border border-[#e5e5e0] bg-white">
+            <CardHeader className="pb-3 border-b border-[#e5e5e0]/70">
+              <CardTitle className="text-xs font-bold uppercase tracking-wider text-[#7a7a76] flex items-center gap-1.5">
+                <Building className="h-4 w-4 text-[#059669]" />Paramètres de recherche
               </CardTitle>
             </CardHeader>
             <CardContent className="p-5">
@@ -1050,7 +1050,7 @@ export function ProspectingRoot() {
                   {/* === MODE: PAR ADRESSE === */}
                   {searchMode === 'address' && (
                     <div className="space-y-3">
-                      <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76] flex items-center gap-1.5">
                         <MapPin className="h-3.5 w-3.5" />Adresse de recherche
                       </label>
                       <div className="flex gap-2">
@@ -1059,7 +1059,7 @@ export function ProspectingRoot() {
                           value={geocodeAddress}
                           onChange={e => setGeocodeAddress(e.target.value)}
                           disabled={scraping}
-                          className="text-xs h-9 bg-card flex-1"
+                          className="text-xs h-9 bg-white flex-1"
                         />
                         <Button
                           type="button"
@@ -1072,13 +1072,13 @@ export function ProspectingRoot() {
                       </div>
 
                       {geocodeResult && (
-                        <div className="flex items-center justify-between gap-2 rounded-lg border border-emerald-200 bg-emerald-50 dark:bg-emerald-950/20 dark:border-emerald-800 px-3 py-2">
-                          <div className="flex items-center gap-2 text-xs text-emerald-800 dark:text-emerald-300">
+                        <div className="flex items-center justify-between gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2">
+                          <div className="flex items-center gap-2 text-xs text-emerald-800">
                             <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
                             <div>
                               <span className="font-semibold block">Adresse validée</span>
-                              <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-mono leading-tight block">{geocodeResult.label}</span>
-                              <span className="text-[9px] text-muted-foreground font-mono mt-0.5 block">Coords: {geocodeResult.lat.toFixed(5)}, {geocodeResult.lon.toFixed(5)}</span>
+                              <span className="text-[10px] text-emerald-700 font-mono leading-tight block">{geocodeResult.label}</span>
+                              <span className="text-[9px] text-[#7a7a76] font-mono mt-0.5 block">Coords: {geocodeResult.lat.toFixed(5)}, {geocodeResult.lon.toFixed(5)}</span>
                             </div>
                           </div>
                           <button type="button" onClick={() => { setGeocodeResult(null); setUserLat(null); setUserLon(null); }} className="text-emerald-600 hover:text-emerald-800">
@@ -1088,12 +1088,12 @@ export function ProspectingRoot() {
                       )}
 
                       {geocodeError && (
-                        <div className="flex items-start gap-2 rounded-lg border border-rose-200 bg-rose-50 dark:bg-rose-950/20 px-3 py-2 text-xs text-rose-700 dark:text-rose-300">
+                        <div className="flex items-start gap-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
                           <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
                           <span>{geocodeError}</span>
                         </div>
                       )}
-                      <p className="text-[10px] text-muted-foreground leading-relaxed">
+                      <p className="text-[10px] text-[#7a7a76] leading-relaxed">
                         La recherche s'effectuera dans le rayon configuré autour de cette adresse validée.
                       </p>
                     </div>
@@ -1102,7 +1102,7 @@ export function ProspectingRoot() {
                   {/* === MODE: AUTOUR DE MOI === */}
                   {searchMode === 'around_me' && (
                     <div className="space-y-3">
-                      <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76] flex items-center gap-1.5">
                         <Navigation className="h-3.5 w-3.5" />Géolocalisation
                       </label>
                       {geoStatus === 'idle' && (
@@ -1130,24 +1130,24 @@ export function ProspectingRoot() {
                               { enableHighAccuracy: true, timeout: 10000 }
                             );
                           }}
-                          className="flex items-center gap-2 h-9 px-4 rounded-lg border border-dashed border-primary/40 bg-primary/5 text-primary text-xs font-semibold hover:bg-primary/10 transition-colors disabled:opacity-50"
+                          className="flex items-center gap-2 h-9 px-4 rounded-lg border border-dashed border-primary/40 bg-[#059669]/5 text-[#059669] text-xs font-semibold hover:bg-[#059669]/10 transition-colors disabled:opacity-50"
                         >
                           <Navigation className="h-3.5 w-3.5" />
                           Utiliser ma position GPS
                         </button>
                       )}
                       {geoStatus === 'requesting' && (
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+                        <div className="flex items-center gap-2 text-xs text-[#7a7a76]">
+                          <Loader2 className="h-3.5 w-3.5 animate-spin text-[#059669]" />
                           Demande de position en cours…
                         </div>
                       )}
                       {geoStatus === 'granted' && userLat !== null && userLon !== null && (
-                        <div className="flex items-center justify-between gap-2 rounded-lg border border-emerald-200 bg-emerald-50 dark:bg-emerald-950/20 dark:border-emerald-800 px-3 py-2">
-                          <div className="flex items-center gap-2 text-xs text-emerald-800 dark:text-emerald-300">
+                        <div className="flex items-center justify-between gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2">
+                          <div className="flex items-center gap-2 text-xs text-emerald-800">
                              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
                             <span className="font-semibold">Position détectée</span>
-                            <span className="text-emerald-700 dark:text-emerald-400 font-mono">
+                            <span className="text-emerald-700 font-mono">
                               {userLat.toFixed(5)}, {userLon.toFixed(5)}
                             </span>
                           </div>
@@ -1157,12 +1157,12 @@ export function ProspectingRoot() {
                         </div>
                       )}
                       {(geoStatus === 'denied' || geoStatus === 'error') && (
-                        <div className="flex items-start gap-2 rounded-lg border border-rose-200 bg-rose-50 dark:bg-rose-950/20 px-3 py-2 text-xs text-rose-700 dark:text-rose-300">
+                        <div className="flex items-start gap-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
                           <WifiOff className="h-3.5 w-3.5 shrink-0 mt-0.5" />
                           <span>{geoError}</span>
                         </div>
                       )}
-                      <p className="text-[10px] text-muted-foreground leading-relaxed">
+                      <p className="text-[10px] text-[#7a7a76] leading-relaxed">
                         Les résultats seront centrés sur votre position exacte (GPS) dans un rayon configurable ci-dessous.
                       </p>
                     </div>
@@ -1171,30 +1171,30 @@ export function ProspectingRoot() {
                   {/* Niches multi */}
                   {searchMode !== 'libre' && (
                     <div className="space-y-1.5">
-                      <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">
                         Niches cibles <span className="normal-case font-normal">(multi-sélection)</span>
                       </label>
                       <div className="relative">
                         <button type="button" onClick={() => setNicheDropdownOpen(!nicheDropdownOpen)} disabled={scraping}
-                          className="w-full flex items-center justify-between text-xs rounded-md border border-input bg-card h-9 px-3 focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50 text-left">
-                          <span className="truncate text-muted-foreground">
+                          className="w-full flex items-center justify-between text-xs rounded-md border border-input bg-white h-9 px-3 focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50 text-left">
+                          <span className="truncate text-[#7a7a76]">
                             {selectedNiches.length === 0 ? 'Choisir des niches…' : `${selectedNiches.length} niche${selectedNiches.length > 1 ? 's' : ''} sélectionnée${selectedNiches.length > 1 ? 's' : ''}`}
                           </span>
-                          <ChevronDown className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                          <ChevronDown className="h-3.5 w-3.5 text-[#7a7a76] shrink-0" />
                         </button>
                         {nicheDropdownOpen && (
-                          <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-lg shadow-lg z-20 max-h-64 overflow-y-auto">
-                            <div className="p-2 border-b border-border/60 sticky top-0 bg-card">
+                          <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-[#e5e5e0] rounded-lg shadow-lg z-20 max-h-64 overflow-y-auto">
+                            <div className="p-2 border-b border-[#e5e5e0]/70 sticky top-0 bg-white">
                               <Input placeholder="Rechercher une niche…" value={nicheSearchQuery} onChange={e => setNicheSearchQuery(e.target.value)} className="h-7 text-xs" />
                             </div>
                             <div className="p-1">
                               {filteredNiches.map(n => (
                                 <button type="button" key={n} onClick={() => toggleNiche(n)}
-                                  className="w-full flex items-center gap-2.5 px-2.5 py-1.5 text-xs hover:bg-muted/50 rounded transition-colors text-left">
-                                  <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${selectedNiches.includes(n) ? 'bg-primary border-primary' : 'border-input'}`}>
-                                    {selectedNiches.includes(n) && <Check className="w-2.5 h-2.5 text-primary-foreground" />}
+                                  className="w-full flex items-center gap-2.5 px-2.5 py-1.5 text-xs hover:bg-[#f4f4f3]/80 rounded transition-colors text-left">
+                                  <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${selectedNiches.includes(n) ? 'bg-[#059669] border-primary' : 'border-input'}`}>
+                                    {selectedNiches.includes(n) && <Check className="w-2.5 h-2.5 text-white" />}
                                   </div>
-                                  <span className={selectedNiches.includes(n) ? 'font-semibold text-foreground' : 'text-muted-foreground'}>{n}</span>
+                                  <span className={selectedNiches.includes(n) ? 'font-semibold text-[#26251e]' : 'text-[#7a7a76]'}>{n}</span>
                                 </button>
                               ))}
                             </div>
@@ -1204,7 +1204,7 @@ export function ProspectingRoot() {
                       {selectedNiches.length > 0 && (
                         <div className="flex flex-wrap gap-1.5 pt-0.5">
                           {selectedNiches.map(n => (
-                            <span key={n} className="inline-flex items-center gap-1 bg-primary/10 text-primary text-[10px] font-semibold px-2 py-0.5 rounded-full">
+                            <span key={n} className="inline-flex items-center gap-1 bg-[#059669]/10 text-[#059669] text-[10px] font-semibold px-2 py-0.5 rounded-full">
                               {n}<button type="button" onClick={() => toggleNiche(n)}><X className="w-2.5 h-2.5" /></button>
                             </span>
                           ))}
@@ -1216,30 +1216,30 @@ export function ProspectingRoot() {
                   {/* Cities multi — visible only in par_ville mode */}
                   {searchMode === 'par_ville' && (
                   <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">
                       Villes cibles <span className="normal-case font-normal">(multi-sélection)</span>
                     </label>
                     <div className="relative">
                       <button type="button" onClick={() => setCityDropdownOpen(!cityDropdownOpen)} disabled={scraping}
-                        className="w-full flex items-center justify-between text-xs rounded-md border border-input bg-card h-9 px-3 focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50 text-left">
-                        <span className="truncate text-muted-foreground">
+                        className="w-full flex items-center justify-between text-xs rounded-md border border-input bg-white h-9 px-3 focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50 text-left">
+                        <span className="truncate text-[#7a7a76]">
                           {selectedCities.length === 0 ? 'Choisir des villes…' : selectedCities.join(', ')}
                         </span>
-                        <ChevronDown className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                        <ChevronDown className="h-3.5 w-3.5 text-[#7a7a76] shrink-0" />
                       </button>
                       {cityDropdownOpen && (
-                        <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-lg shadow-lg z-20 max-h-64 overflow-y-auto">
-                          <div className="p-2 border-b border-border/60 sticky top-0 bg-card">
+                        <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-[#e5e5e0] rounded-lg shadow-lg z-20 max-h-64 overflow-y-auto">
+                          <div className="p-2 border-b border-[#e5e5e0]/70 sticky top-0 bg-white">
                             <Input placeholder="Rechercher une ville…" value={citySearchQuery} onChange={e => setCitySearchQuery(e.target.value)} className="h-7 text-xs" />
                           </div>
                           <div className="p-1">
                             {filteredCities.map(c => (
                               <button type="button" key={c} onClick={() => toggleCity(c)}
-                                className="w-full flex items-center gap-2.5 px-2.5 py-1.5 text-xs hover:bg-muted/50 rounded transition-colors text-left">
-                                <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${selectedCities.includes(c) ? 'bg-primary border-primary' : 'border-input'}`}>
-                                  {selectedCities.includes(c) && <Check className="w-2.5 h-2.5 text-primary-foreground" />}
+                                className="w-full flex items-center gap-2.5 px-2.5 py-1.5 text-xs hover:bg-[#f4f4f3]/80 rounded transition-colors text-left">
+                                <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${selectedCities.includes(c) ? 'bg-[#059669] border-primary' : 'border-input'}`}>
+                                  {selectedCities.includes(c) && <Check className="w-2.5 h-2.5 text-white" />}
                                 </div>
-                                <span className={selectedCities.includes(c) ? 'font-semibold text-foreground' : 'text-muted-foreground'}>{c}</span>
+                                <span className={selectedCities.includes(c) ? 'font-semibold text-[#26251e]' : 'text-[#7a7a76]'}>{c}</span>
                               </button>
                             ))}
                           </div>
@@ -1262,12 +1262,12 @@ export function ProspectingRoot() {
                   {/* Free query — visible only in libre mode */}
                   {searchMode === 'libre' && (
                   <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex justify-between">
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76] flex justify-between">
                       <span>Recherche libre</span>
-                      {customQuery && <span className="text-primary italic text-[9px]">Actif</span>}
+                      {customQuery && <span className="text-[#059669] italic text-[9px]">Actif</span>}
                     </label>
-                    <Input placeholder="Ex: Clinique dentaire Laval, plombier urgence Québec…" value={customQuery} onChange={e => setCustomQuery(e.target.value)} disabled={scraping} className="text-xs h-9 bg-card" />
-                    <p className="text-[10px] text-muted-foreground">Saisie libre — la niche et la ville sont extraites du texte brut.</p>
+                    <Input placeholder="Ex: Clinique dentaire Laval, plombier urgence Québec…" value={customQuery} onChange={e => setCustomQuery(e.target.value)} disabled={scraping} className="text-xs h-9 bg-white" />
+                    <p className="text-[10px] text-[#7a7a76]">Saisie libre — la niche et la ville sont extraites du texte brut.</p>
                   </div>
                   )}
 
@@ -1275,41 +1275,41 @@ export function ProspectingRoot() {
 
                   {/* Apify Connection Status */}
                   <div className="space-y-2">
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Moteur de recherche</label>
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Moteur de recherche</label>
                     {apifyConfigured === 'checking' && (
-                      <div className="rounded-xl border border-border bg-card p-4 flex items-center justify-center gap-2 text-xs text-muted-foreground">
-                        <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                      <div className="rounded-xl border border-[#e5e5e0] bg-white p-4 flex items-center justify-center gap-2 text-xs text-[#7a7a76]">
+                        <Loader2 className="h-4 w-4 animate-spin text-[#059669]" />
                         <span>Vérification de la configuration d'Apify...</span>
                       </div>
                     )}
                     {apifyConfigured === true && (
-                      <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 dark:bg-emerald-500/10 p-4 space-y-2">
+                      <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4 space-y-2">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
-                            <span className="text-xs font-bold text-foreground">Recherche locale propulsée par Apify (Google Maps)</span>
+                            <span className="text-xs font-bold text-[#26251e]">Recherche locale propulsée par Apify (Google Maps)</span>
                           </div>
-                          <Badge variant="outline" className="text-[9px] font-bold rounded px-1.5 py-0 bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-900/30">
+                          <Badge variant="outline" className="text-[9px] font-bold rounded px-1.5 py-0 bg-emerald-50 text-emerald-700 border-emerald-200">
                             Connecté
                           </Badge>
                         </div>
-                        <p className="text-[11px] text-muted-foreground leading-relaxed">
+                        <p className="text-[11px] text-[#7a7a76] leading-relaxed">
                           Le scraper Premium Google Places est actif. Vos recherches extrairont directement les données enrichies (sites web, avis, coordonnées GPS).
                         </p>
                       </div>
                     )}
                     {apifyConfigured === false && (
-                      <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 dark:bg-amber-500/10 p-4 space-y-3">
+                      <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4 space-y-3">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" />
-                            <span className="text-xs font-bold text-foreground">Configuration Apify requise</span>
+                            <span className="text-xs font-bold text-[#26251e]">Configuration Apify requise</span>
                           </div>
-                          <Badge variant="outline" className="text-[9px] font-bold rounded px-1.5 py-0 bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/20 dark:text-amber-400 dark:border-amber-900/30">
+                          <Badge variant="outline" className="text-[9px] font-bold rounded px-1.5 py-0 bg-amber-50 text-amber-700 border-amber-200">
                             Clé manquante
                           </Badge>
                         </div>
-                        <p className="text-[11px] text-muted-foreground leading-relaxed">
+                        <p className="text-[11px] text-[#7a7a76] leading-relaxed">
                           Apify est le moteur officiel de recherche locale. Pour commencer à prospecter des établissements avec la puissance de Google Maps, veuillez configurer votre clé API.
                         </p>
                         <div className="pt-1">
@@ -1317,7 +1317,7 @@ export function ProspectingRoot() {
                             type="button"
                             size="sm"
                             variant="outline"
-                            className="text-[11px] h-8 font-semibold border-amber-500/30 hover:bg-amber-500/10 hover:text-amber-800 dark:hover:text-amber-300"
+                            className="text-[11px] h-8 font-semibold border-amber-500/30 hover:bg-amber-500/10 hover:text-amber-800"
                             onClick={() => window.location.href = '/settings'}
                           >
                             <Settings2 className="h-3.5 w-3.5 mr-1" />
@@ -1332,54 +1332,54 @@ export function ProspectingRoot() {
 
                   {/* Filters */}
                   <div className="space-y-3">
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76] flex items-center gap-1.5">
                       <SlidersHorizontal className="h-3.5 w-3.5" />Filtres & Limites
                     </label>
                     <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
                       <div className="space-y-1.5">
-                        <label className="text-[10px] font-medium text-muted-foreground flex justify-between">
+                        <label className="text-[10px] font-medium text-[#7a7a76] flex justify-between">
                           <span>Note minimum</span>
-                          <span className="font-bold text-foreground">{minRating > 0 ? `${minRating}★` : 'Aucune'}</span>
+                          <span className="font-bold text-[#26251e]">{minRating > 0 ? `${minRating}★` : 'Aucune'}</span>
                         </label>
                         <input type="range" min={0} max={5} step={0.5} value={minRating} onChange={e => setMinRating(parseFloat(e.target.value))} disabled={scraping} className="w-full accent-primary h-1.5 cursor-pointer" />
-                        <div className="flex justify-between text-[9px] text-muted-foreground"><span>0</span><span>2.5</span><span>5</span></div>
+                        <div className="flex justify-between text-[9px] text-[#7a7a76]"><span>0</span><span>2.5</span><span>5</span></div>
                       </div>
                       <div className="space-y-1.5">
-                        <label className="text-[10px] font-medium text-muted-foreground flex justify-between">
+                        <label className="text-[10px] font-medium text-[#7a7a76] flex justify-between">
                           <span>Avis minimum</span>
-                          <span className="font-bold text-foreground">{minReviews > 0 ? minReviews : 'Aucun'}</span>
+                          <span className="font-bold text-[#26251e]">{minReviews > 0 ? minReviews : 'Aucun'}</span>
                         </label>
                         <input type="range" min={0} max={500} step={10} value={minReviews} onChange={e => setMinReviews(parseInt(e.target.value))} disabled={scraping} className="w-full accent-primary h-1.5 cursor-pointer" />
-                        <div className="flex justify-between text-[9px] text-muted-foreground"><span>0</span><span>250</span><span>500</span></div>
+                        <div className="flex justify-between text-[9px] text-[#7a7a76]"><span>0</span><span>250</span><span>500</span></div>
                       </div>
                       <div className="space-y-1.5">
-                        <label className="text-[10px] font-medium text-muted-foreground flex justify-between">
+                        <label className="text-[10px] font-medium text-[#7a7a76] flex justify-between">
                           <span>Limite résultats</span>
-                          <span className="font-bold text-foreground">{maxResults}</span>
+                          <span className="font-bold text-[#26251e]">{maxResults}</span>
                         </label>
                         <input type="range" min={10} max={500} step={10} value={maxResults} onChange={e => setMaxResults(parseInt(e.target.value))} disabled={scraping} className="w-full accent-primary h-1.5 cursor-pointer" />
-                        <div className="flex justify-between text-[9px] text-muted-foreground"><span>10</span><span>250</span><span>500</span></div>
+                        <div className="flex justify-between text-[9px] text-[#7a7a76]"><span>10</span><span>250</span><span>500</span></div>
                       </div>
                       <div className="space-y-1.5">
-                        <label className="text-[10px] font-medium text-muted-foreground flex justify-between">
+                        <label className="text-[10px] font-medium text-[#7a7a76] flex justify-between">
                           <span>Rayon OSM</span>
-                          <span className="font-bold text-foreground">{radius >= 1000 ? `${radius / 1000}km` : `${radius}m`}</span>
+                          <span className="font-bold text-[#26251e]">{radius >= 1000 ? `${radius / 1000}km` : `${radius}m`}</span>
                         </label>
                         <input type="range" min={2000} max={50000} step={1000} value={radius} onChange={e => setRadius(parseInt(e.target.value))} disabled={scraping} className="w-full accent-primary h-1.5 cursor-pointer" />
-                        <div className="flex justify-between text-[9px] text-muted-foreground"><span>2km</span><span>25km</span><span>50km</span></div>
+                        <div className="flex justify-between text-[9px] text-[#7a7a76]"><span>2km</span><span>25km</span><span>50km</span></div>
                       </div>
                     </div>
 
                     <div className="flex flex-wrap gap-5 pt-1">
-                      <label className="flex items-center gap-2 text-xs font-medium text-foreground cursor-pointer">
+                      <label className="flex items-center gap-2 text-xs font-medium text-[#26251e] cursor-pointer">
                         <Checkbox checked={excludeExisting} onCheckedChange={c => setExcludeExisting(!!c)} disabled={scraping} />
                         <span>Exclure leads déjà en CRM</span>
                       </label>
-                      <label className="flex items-center gap-2 text-xs font-medium text-foreground cursor-pointer">
+                      <label className="flex items-center gap-2 text-xs font-medium text-[#26251e] cursor-pointer">
                         <Checkbox checked={onlyNoWebsite} onCheckedChange={c => setOnlyNoWebsite(!!c)} disabled={scraping} />
                         <span>Sans site web uniquement</span>
                       </label>
-                      <label className="flex items-center gap-2 text-xs font-medium text-foreground cursor-pointer">
+                      <label className="flex items-center gap-2 text-xs font-medium text-[#26251e] cursor-pointer">
                         <Checkbox checked={onlyWithPhone} onCheckedChange={c => setOnlyWithPhone(!!c)} disabled={scraping} />
                         <span>Avec téléphone uniquement</span>
                       </label>
@@ -1388,13 +1388,13 @@ export function ProspectingRoot() {
 
                   <div className="flex items-center justify-between">
                     {searchMode === 'around_me' && geoStatus !== 'granted' && (
-                      <p className="text-[10px] text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                      <p className="text-[10px] text-amber-600 flex items-center gap-1">
                         <Navigation className="h-3 w-3" />
                         Activez votre position GPS pour lancer la recherche.
                       </p>
                     )}
                     {searchMode === 'address' && !geocodeResult && (
-                      <p className="text-[10px] text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                      <p className="text-[10px] text-amber-600 flex items-center gap-1">
                         <MapPin className="h-3 w-3" />
                         Saisissez et validez une adresse pour activer la recherche.
                       </p>
@@ -1417,14 +1417,14 @@ export function ProspectingRoot() {
               ) : (
                 <div className="space-y-4">
                   {/* Sub-tabs Saisie / Import CSV */}
-                  <div className="flex border-b border-border mb-4">
+                  <div className="flex border-b border-[#e5e5e0] mb-4">
                     <button
                       type="button"
                       onClick={() => setManualImportSubTab('manual')}
                       className={`pb-2 px-4 text-xs font-semibold border-b-2 transition-all ${
                         manualImportSubTab === 'manual'
-                          ? 'border-primary text-foreground font-bold'
-                          : 'border-transparent text-muted-foreground hover:text-foreground'
+                          ? 'border-primary text-[#26251e] font-bold'
+                          : 'border-transparent text-[#7a7a76] hover:text-[#26251e]'
                       }`}
                     >
                       Saisie manuelle
@@ -1434,8 +1434,8 @@ export function ProspectingRoot() {
                       onClick={() => setManualImportSubTab('csv')}
                       className={`pb-2 px-4 text-xs font-semibold border-b-2 transition-all ${
                         manualImportSubTab === 'csv'
-                          ? 'border-primary text-foreground font-bold'
-                          : 'border-transparent text-muted-foreground hover:text-foreground'
+                          ? 'border-primary text-[#26251e] font-bold'
+                          : 'border-transparent text-[#7a7a76] hover:text-[#26251e]'
                       }`}
                     >
                       Import CSV
@@ -1451,7 +1451,7 @@ export function ProspectingRoot() {
                         </div>
                       )}
                       {manualSuccess && (
-                        <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs rounded-lg flex items-start gap-2">
+                        <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 text-xs rounded-lg flex items-start gap-2">
                           <CheckCircle2 className="h-4 w-4 shrink-0 mt-0.5" />
                           <span>{manualSuccess}</span>
                         </div>
@@ -1459,79 +1459,79 @@ export function ProspectingRoot() {
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="space-y-1.5">
-                          <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                          <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">
                             Nom de l'établissement <span className="text-destructive">*</span>
                           </label>
                           <Input
                             placeholder="Ex: Café de la Gare"
                             value={manualName}
                             onChange={e => setManualName(e.target.value)}
-                            className="text-xs h-9 bg-card"
+                            className="text-xs h-9 bg-white"
                           />
                         </div>
 
                         <div className="space-y-1.5">
-                          <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                          <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">
                             Niche / Catégorie <span className="text-destructive">*</span>
                           </label>
                           <Input
                             placeholder="Ex: Restaurant"
                             value={manualNiche}
                             onChange={e => setManualNiche(e.target.value)}
-                            className="text-xs h-9 bg-card"
+                            className="text-xs h-9 bg-white"
                           />
                         </div>
 
                         <div className="space-y-1.5">
-                          <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                          <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">
                             Ville <span className="text-destructive">*</span>
                           </label>
                           <Input
                             placeholder="Ex: Montréal"
                             value={manualCity}
                             onChange={e => setManualCity(e.target.value)}
-                            className="text-xs h-9 bg-card"
+                            className="text-xs h-9 bg-white"
                           />
                         </div>
 
                         <div className="space-y-1.5">
-                          <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                          <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">
                             Adresse complète
                           </label>
                           <Input
                             placeholder="Ex: 456 Rue Principale, Montréal"
                             value={manualAddress}
                             onChange={e => setManualAddress(e.target.value)}
-                            className="text-xs h-9 bg-card"
+                            className="text-xs h-9 bg-white"
                           />
                         </div>
 
                         <div className="space-y-1.5">
-                          <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                          <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">
                             Site Internet
                           </label>
                           <Input
                             placeholder="Ex: https://cafe-gare.ca"
                             value={manualWebsite}
                             onChange={e => setManualWebsite(e.target.value)}
-                            className="text-xs h-9 bg-card"
+                            className="text-xs h-9 bg-white"
                           />
                         </div>
 
                         <div className="space-y-1.5">
-                          <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                          <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">
                             Téléphone
                           </label>
                           <Input
                             placeholder="Ex: +1 514-555-0199"
                             value={manualPhone}
                             onChange={e => setManualPhone(e.target.value)}
-                            className="text-xs h-9 bg-card"
+                            className="text-xs h-9 bg-white"
                           />
                         </div>
 
                         <div className="space-y-1.5">
-                          <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                          <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">
                             Note Google Maps / Avis (0 à 5)
                           </label>
                           <Input
@@ -1542,12 +1542,12 @@ export function ProspectingRoot() {
                             placeholder="Ex: 4.5"
                             value={manualRating || ''}
                             onChange={e => setManualRating(parseFloat(e.target.value) || 0)}
-                            className="text-xs h-9 bg-card"
+                            className="text-xs h-9 bg-white"
                           />
                         </div>
 
                         <div className="space-y-1.5">
-                          <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                          <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">
                             Nombre d'avis
                           </label>
                           <Input
@@ -1556,7 +1556,7 @@ export function ProspectingRoot() {
                             placeholder="Ex: 42"
                             value={manualReviewsCount || ''}
                             onChange={e => setManualReviewsCount(parseInt(e.target.value) || 0)}
-                            className="text-xs h-9 bg-card"
+                            className="text-xs h-9 bg-white"
                           />
                         </div>
                       </div>
@@ -1583,7 +1583,7 @@ export function ProspectingRoot() {
                         </div>
                       )}
 
-                      <div className="border-2 border-dashed border-border/80 hover:border-primary/50 transition-colors rounded-xl p-6 text-center cursor-pointer relative bg-muted/10">
+                      <div className="border-2 border-dashed border-[#e5e5e0]/80 hover:border-primary/50 transition-colors rounded-xl p-6 text-center cursor-pointer relative bg-[#f4f4f3]/10">
                         <input
                           type="file"
                           accept=".csv"
@@ -1592,13 +1592,13 @@ export function ProspectingRoot() {
                           disabled={csvLoading}
                         />
                         <div className="space-y-2">
-                          <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center mx-auto">
+                          <div className="w-10 h-10 rounded-full bg-[#059669]/10 text-[#059669] flex items-center justify-center mx-auto">
                             <Upload className="h-5 w-5" />
                           </div>
-                          <div className="text-xs font-semibold text-foreground">
+                          <div className="text-xs font-semibold text-[#26251e]">
                             {csvFile ? csvFile.name : 'Sélectionner un fichier CSV'}
                           </div>
-                          <p className="text-[10px] text-muted-foreground max-w-xs mx-auto">
+                          <p className="text-[10px] text-[#7a7a76] max-w-xs mx-auto">
                             Colonnes attendues : Nom/Name, Niche/Catégorie, Ville/City. Autres colonnes facultatives : Site web, Téléphone, Note, Avis.
                           </p>
                         </div>
@@ -1607,7 +1607,7 @@ export function ProspectingRoot() {
                       {csvPreview.length > 0 && (
                         <div className="space-y-3 animate-in slide-in-from-top-2 duration-300">
                           <div className="flex items-center justify-between">
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">
                               Aperçu de l'import ({csvPreview.length} prospects)
                             </span>
                             <button
@@ -1622,10 +1622,10 @@ export function ProspectingRoot() {
                             </button>
                           </div>
                           
-                          <div className="border border-border rounded-lg overflow-hidden max-h-48 overflow-y-auto">
+                          <div className="border border-[#e5e5e0] rounded-lg overflow-hidden max-h-48 overflow-y-auto">
                             <table className="w-full text-left border-collapse text-[10px]">
                               <thead>
-                                <tr className="bg-muted border-b border-border font-bold text-muted-foreground">
+                                <tr className="bg-[#f4f4f3] border-b border-[#e5e5e0] font-bold text-[#7a7a76]">
                                   <th className="p-2">Nom</th>
                                   <th className="p-2">Niche</th>
                                   <th className="p-2">Ville</th>
@@ -1634,17 +1634,17 @@ export function ProspectingRoot() {
                               </thead>
                               <tbody className="divide-y divide-border">
                                 {csvPreview.slice(0, 5).map((row, idx) => (
-                                  <tr key={idx} className="hover:bg-muted/30">
+                                  <tr key={idx} className="hover:bg-[#f4f4f3]/60">
                                     <td className="p-2 font-medium truncate max-w-[120px]">{row.businessName}</td>
                                     <td className="p-2 truncate max-w-[100px]">{row.niche}</td>
                                     <td className="p-2">{row.city}</td>
-                                    <td className="p-2 truncate max-w-[120px] text-muted-foreground">{row.website || '-'}</td>
+                                    <td className="p-2 truncate max-w-[120px] text-[#7a7a76]">{row.website || '-'}</td>
                                   </tr>
                                 ))}
                               </tbody>
                             </table>
                             {csvPreview.length > 5 && (
-                              <div className="p-2 text-center text-muted-foreground bg-muted/20 border-t border-border text-[9px] italic">
+                              <div className="p-2 text-center text-[#7a7a76] bg-[#f4f4f3]/40 border-t border-[#e5e5e0] text-[9px] italic">
                                 Et {csvPreview.length - 5} autres lignes...
                               </div>
                             )}
@@ -1675,13 +1675,13 @@ export function ProspectingRoot() {
           </Card>
 
           {/* Legend card */}
-          <Card className="min-w-0 border border-border bg-card">
-            <CardHeader className="pb-3 border-b border-border/50">
-              <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-                <Settings2 className="h-4 w-4 text-primary" />Validation & Scoring
+          <Card className="min-w-0 border border-[#e5e5e0] bg-white">
+            <CardHeader className="pb-3 border-b border-[#e5e5e0]/70">
+              <CardTitle className="text-xs font-bold uppercase tracking-wider text-[#7a7a76] flex items-center gap-1.5">
+                <Settings2 className="h-4 w-4 text-[#059669]" />Validation & Scoring
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-5 space-y-4 text-xs text-muted-foreground leading-relaxed">
+            <CardContent className="p-5 space-y-4 text-xs text-[#7a7a76] leading-relaxed">
               <div className="space-y-2">
                 <p>Chaque prospect détecté passe dans un pipeline de qualification et de notation :</p>
                 <div className="flex items-center gap-2"><span className="w-3.5 h-3.5 rounded bg-emerald-500 text-[9px] text-white flex items-center justify-center font-bold">Q</span> <strong>Score de Qualité :</strong> Pondération globale (complétude, fit, note).</div>
@@ -1701,10 +1701,10 @@ export function ProspectingRoot() {
 
         {/* OSM Empty Warning */}
         {osmWarningMsg && !scraping && (
-          <div className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-800 px-4 py-3 animate-in fade-in">
-            <WifiOff className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-            <p className="text-[11px] text-amber-800 dark:text-amber-300 leading-relaxed">
-              <span className="font-semibold text-foreground">OSM - 0 résultats.</span> {osmWarningMsg}
+          <div className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 animate-in fade-in">
+            <WifiOff className="h-3.5 w-3.5 text-amber-600 shrink-0 mt-0.5" />
+            <p className="text-[11px] text-amber-800 leading-relaxed">
+              <span className="font-semibold text-[#26251e]">OSM - 0 résultats.</span> {osmWarningMsg}
             </p>
             <button onClick={() => setOsmWarningMsg(null)} className="ml-auto text-amber-600"><X className="h-3.5 w-3.5" /></button>
           </div>
@@ -1712,10 +1712,10 @@ export function ProspectingRoot() {
 
         {/* Apify fallback warning */}
         {apifyFallbackMsg && !scraping && (
-          <div className="flex items-start gap-3 rounded-lg border border-border bg-card px-4 py-3">
-            <WifiOff className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5" />
-            <p className="text-[11px] text-muted-foreground leading-relaxed">
-              <span className="font-semibold text-foreground">Apify indisponible :</span> {apifyFallbackMsg}
+          <div className="flex items-start gap-3 rounded-lg border border-[#e5e5e0] bg-white px-4 py-3">
+            <WifiOff className="h-3.5 w-3.5 text-[#7a7a76] shrink-0 mt-0.5" />
+            <p className="text-[11px] text-[#7a7a76] leading-relaxed">
+              <span className="font-semibold text-[#26251e]">Apify indisponible :</span> {apifyFallbackMsg}
             </p>
             <button onClick={() => setApifyFallbackMsg(null)} className="ml-auto"><X className="h-3.5 w-3.5" /></button>
           </div>
@@ -1723,20 +1723,20 @@ export function ProspectingRoot() {
 
         {/* Scrape success / merge alerts */}
         {mergeSuccessMsg && (
-          <Card className="border-emerald-200 bg-emerald-50 dark:bg-emerald-950/20 dark:border-emerald-900/30 p-3.5 flex items-center gap-3">
+          <Card className="border-emerald-200 bg-emerald-50 p-3.5 flex items-center gap-3">
             <CheckCircle className="h-4 w-4 text-emerald-600" />
-            <span className="text-xs font-semibold text-emerald-800 dark:text-emerald-300">{mergeSuccessMsg}</span>
+            <span className="text-xs font-semibold text-emerald-800">{mergeSuccessMsg}</span>
             <button onClick={() => setMergeSuccessMsg(null)} className="ml-auto text-emerald-600"><X className="h-3.5 w-3.5" /></button>
           </Card>
         )}
 
         {/* Scrape Progress indicator */}
         {scraping && (
-          <Card className="border border-primary/20 bg-primary/5">
+          <Card className="border border-[#059669]/20 bg-[#059669]/5">
             <CardContent className="p-6 flex flex-col gap-4">
               <div className="flex items-center gap-3">
-                <Loader2 className="h-5 w-5 text-primary animate-spin" />
-                <span className="text-xs font-semibold text-foreground">
+                <Loader2 className="h-5 w-5 text-[#059669] animate-spin" />
+                <span className="text-xs font-semibold text-[#26251e]">
                   {scrapeStep === 0 && 'Initialisation de l\'agent de recherche Minerva...'}
                   {scrapeStep === 1 && 'Localisation des commerces locaux (OSM / Overpass)...'}
                   {scrapeStep === 2 && 'Extraction des fiches et statistiques de visibilité...'}
@@ -1745,9 +1745,9 @@ export function ProspectingRoot() {
                 </span>
               </div>
               <div className="w-full bg-border h-2 rounded-full overflow-hidden">
-                <div className="bg-primary h-full transition-all duration-500 ease-out rounded-full" style={{ width: `${scrapeProgress}%` }} />
+                <div className="bg-[#059669] h-full transition-all duration-500 ease-out rounded-full" style={{ width: `${scrapeProgress}%` }} />
               </div>
-              <div className="flex justify-between text-[10px] text-muted-foreground font-mono">
+              <div className="flex justify-between text-[10px] text-[#7a7a76] font-mono">
                 <span>Phase {scrapeStep + 1}/5 — {selectedNiches.length} niche(s) × {selectedCities.length} ville(s)</span>
                 <span>{scrapeProgress}%</span>
               </div>
@@ -1757,15 +1757,15 @@ export function ProspectingRoot() {
 
         {/* Search center indicator banner */}
         {searchCenter && !scraping && filteredValidations.length > 0 && (
-          <div className="flex items-center gap-3 rounded-lg border border-border bg-card px-4 py-2.5">
-            <Target className="h-3.5 w-3.5 text-primary shrink-0" />
-            <p className="text-[11px] text-muted-foreground flex-1">
-              <span className="font-semibold text-foreground">Centre de recherche : </span>
+          <div className="flex items-center gap-3 rounded-lg border border-[#e5e5e0] bg-white px-4 py-2.5">
+            <Target className="h-3.5 w-3.5 text-[#059669] shrink-0" />
+            <p className="text-[11px] text-[#7a7a76] flex-1">
+              <span className="font-semibold text-[#26251e]">Centre de recherche : </span>
               {searchCenter.label} · <span className="font-mono">{searchCenter.lat.toFixed(4)}, {searchCenter.lon.toFixed(4)}</span>
               {' — rayon '}
-              <span className="font-semibold text-foreground">{radius >= 1000 ? `${radius / 1000} km` : `${radius} m`}</span>
+              <span className="font-semibold text-[#26251e]">{radius >= 1000 ? `${radius / 1000} km` : `${radius} m`}</span>
             </p>
-            <button type="button" onClick={() => setSortKey('distance_asc')} className="text-[10px] text-primary font-semibold hover:underline shrink-0">
+            <button type="button" onClick={() => setSortKey('distance_asc')} className="text-[10px] text-[#059669] font-semibold hover:underline shrink-0">
               Trier par distance →
             </button>
           </div>
@@ -1773,15 +1773,15 @@ export function ProspectingRoot() {
 
         {/* Validation Inbox UI Layer */}
         <div className="w-full">
-          <Card className="border border-border bg-card w-full">
-          <CardHeader className="pb-3 border-b border-border/50 p-5">
+          <Card className="border border-[#e5e5e0] bg-white w-full">
+          <CardHeader className="pb-3 border-b border-[#e5e5e0]/70 p-5">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-                  <Inbox className="h-4 w-4 text-primary" />
+                <CardTitle className="text-xs font-bold uppercase tracking-wider text-[#7a7a76] flex items-center gap-1.5">
+                  <Inbox className="h-4 w-4 text-[#059669]" />
                   Boîte de Validation de Prospects
                 </CardTitle>
-                <p className="text-[10px] text-muted-foreground mt-0.5">Qualifiez et enrichissez les données brutes avant l'import final.</p>
+                <p className="text-[10px] text-[#7a7a76] mt-0.5">Qualifiez et enrichissez les données brutes avant l'import final.</p>
               </div>
 
               {/* Controls */}
@@ -1789,7 +1789,7 @@ export function ProspectingRoot() {
                 <select
                   value={sortKey}
                   onChange={e => setSortKey(e.target.value as SortKey)}
-                  className="text-[10px] h-8 px-2 rounded-md border border-input bg-card text-foreground"
+                  className="text-[10px] h-8 px-2 rounded-md border border-input bg-white text-[#26251e]"
                 >
                   <option value="default">Plus récents d'abord</option>
                   <option value="quality">Score de qualité ↓</option>
@@ -1808,9 +1808,9 @@ export function ProspectingRoot() {
             </div>
 
             {/* Validation Inbox Tabs & Counts */}
-            <div className="flex gap-2 border-b border-border/50 pt-4 overflow-x-auto flex-nowrap [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <div className="flex gap-2 border-b border-[#e5e5e0]/70 pt-4 overflow-x-auto flex-nowrap [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {([
-                { id: 'to_verify', label: 'À vérifier', count: stats.to_verify, activeColor: 'border-primary text-primary' },
+                { id: 'to_verify', label: 'À vérifier', count: stats.to_verify, activeColor: 'border-primary text-[#059669]' },
                 { id: 'ready', label: 'Prêts à importer', count: stats.ready, activeColor: 'border-emerald-600 text-emerald-600' },
                 { id: 'imported', label: 'Importés', count: stats.imported, activeColor: 'border-blue-600 text-blue-600' },
                 { id: 'ignored', label: 'Ignorés / Faux-positifs', count: stats.ignored, activeColor: 'border-slate-500 text-slate-500' }
@@ -1826,7 +1826,7 @@ export function ProspectingRoot() {
                   className={`text-xs font-bold pb-2 px-1 border-b-2 transition-all flex items-center gap-1.5 shrink-0 ${
                     activeTab === tab.id
                       ? tab.activeColor
-                      : 'border-transparent text-muted-foreground hover:text-foreground'
+                      : 'border-transparent text-[#7a7a76] hover:text-[#26251e]'
                   }`}
                 >
                   {tab.label}
@@ -1841,8 +1841,8 @@ export function ProspectingRoot() {
             {selectedValidationIds.length > 0 && (
               <>
                 {/* Desktop Version */}
-                <div className="hidden md:flex items-center gap-2 bg-muted/40 p-2 rounded-lg border border-border/40 mt-3 animate-in slide-in-from-top-1">
-                  <span className="text-[10px] font-mono text-muted-foreground pl-1">{selectedValidationIds.length} sélectionné(s) :</span>
+                <div className="hidden md:flex items-center gap-2 bg-[#f4f4f3]/70 p-2 rounded-lg border border-[#e5e5e0]/60 mt-3 animate-in slide-in-from-top-1">
+                  <span className="text-[10px] font-mono text-[#7a7a76] pl-1">{selectedValidationIds.length} sélectionné(s) :</span>
                   {activeTab === 'to_verify' && (
                     <>
                       <Button size="sm" onClick={handleBulkValidate} className="h-7 text-[10px] font-semibold bg-emerald-600 hover:bg-emerald-700 text-white gap-1"><Check className="w-3 h-3" />Valider</Button>
@@ -1857,11 +1857,11 @@ export function ProspectingRoot() {
                           role="switch"
                           aria-checked={autoEnrichOnImport}
                           onClick={() => setAutoEnrichOnImport(v => !v)}
-                          className={`relative inline-flex h-4 w-7 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none ${autoEnrichOnImport ? 'bg-[#059669]' : 'bg-muted-foreground/30'}`}
+                          className={`relative inline-flex h-4 w-7 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none ${autoEnrichOnImport ? 'bg-[#059669]' : 'bg-[#f4f4f3]-foreground/30'}`}
                         >
                           <span className={`pointer-events-none block h-3 w-3 rounded-full bg-white shadow-lg ring-0 transition-transform ${autoEnrichOnImport ? 'translate-x-3' : 'translate-x-0'}`} />
                         </button>
-                        <span className="text-[9px] font-semibold text-muted-foreground whitespace-nowrap">Enrichir auto</span>
+                        <span className="text-[9px] font-semibold text-[#7a7a76] whitespace-nowrap">Enrichir auto</span>
                       </div>
                       <Button size="sm" onClick={handleBulkImport} className="h-7 text-[10px] font-semibold bg-[#059669] hover:bg-[#047857] text-white gap-1"><Plus className="w-3 h-3" />Importer dans le CRM</Button>
                       <Button size="sm" onClick={handleBulkIgnore} variant="outline" className="h-7 text-[10px] font-semibold border-rose-200 text-rose-700 bg-rose-50 hover:bg-rose-100 gap-1"><ThumbsDown className="w-3 h-3" />Ignorer</Button>
@@ -1869,7 +1869,7 @@ export function ProspectingRoot() {
                   )}
                   {activeTab === 'ignored' && (
                     <>
-                      <Button size="sm" onClick={handleBulkRestore} className="h-7 text-[10px] font-semibold bg-primary hover:bg-primary/90 text-primary-foreground gap-1"><RefreshCw className="w-3 h-3" />Restaurer</Button>
+                      <Button size="sm" onClick={handleBulkRestore} className="h-7 text-[10px] font-semibold bg-[#059669] hover:bg-[#059669]/90 text-white gap-1"><RefreshCw className="w-3 h-3" />Restaurer</Button>
                       <Button size="sm" onClick={handleBulkDelete} variant="destructive" className="h-7 text-[10px] font-semibold gap-1"><Trash2 className="w-3 h-3" />Supprimer</Button>
                     </>
                   )}
@@ -1879,10 +1879,10 @@ export function ProspectingRoot() {
                 </div>
 
                 {/* Mobile Version (Floating bottom bar) */}
-                <div className="md:hidden fixed bottom-[76px] left-4 right-4 z-50 bg-background/95 backdrop-blur-md border border-border shadow-xl rounded-2xl p-4 flex flex-col gap-3 animate-in fade-in slide-in-from-bottom-5">
-                  <div className="flex items-center justify-between border-b border-border/50 pb-2">
-                    <span className="text-xs font-bold text-foreground">Actions groupées</span>
-                    <span className="text-[10px] font-mono bg-muted px-2 py-0.5 rounded-full text-muted-foreground">{selectedValidationIds.length} sélectionné(s)</span>
+                <div className="md:hidden fixed bottom-[76px] left-4 right-4 z-50 bg-[#fafaf8]/95 backdrop-blur-md border border-[#e5e5e0] shadow-xl rounded-2xl p-4 flex flex-col gap-3 animate-in fade-in slide-in-from-bottom-5">
+                  <div className="flex items-center justify-between border-b border-[#e5e5e0]/70 pb-2">
+                    <span className="text-xs font-bold text-[#26251e]">Actions groupées</span>
+                    <span className="text-[10px] font-mono bg-[#f4f4f3] px-2 py-0.5 rounded-full text-[#7a7a76]">{selectedValidationIds.length} sélectionné(s)</span>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     {activeTab === 'to_verify' && (
@@ -1899,7 +1899,7 @@ export function ProspectingRoot() {
                     )}
                     {activeTab === 'ignored' && (
                       <>
-                        <Button size="sm" onClick={handleBulkRestore} className="w-full h-9 text-xs font-bold bg-primary hover:bg-primary/90 text-primary-foreground gap-1.5"><RefreshCw className="w-3.5 h-3.5" />Restaurer</Button>
+                        <Button size="sm" onClick={handleBulkRestore} className="w-full h-9 text-xs font-bold bg-[#059669] hover:bg-[#059669]/90 text-white gap-1.5"><RefreshCw className="w-3.5 h-3.5" />Restaurer</Button>
                         <Button size="sm" onClick={handleBulkDelete} variant="destructive" className="w-full h-9 text-xs font-bold gap-1.5"><Trash2 className="w-3.5 h-3.5" />Supprimer</Button>
                       </>
                     )}
@@ -1914,12 +1914,12 @@ export function ProspectingRoot() {
           <CardContent className="p-0">
             {sortedValidations.length === 0 ? (
               <div className="p-12 flex flex-col items-center justify-center text-center space-y-3">
-                <div className="p-3 bg-muted rounded-full text-muted-foreground/60">
+                <div className="p-3 bg-[#f4f4f3] rounded-full text-[#7a7a76]/60">
                   <Inbox className="w-6 h-6" />
                 </div>
                 <div className="space-y-1">
-                  <h4 className="text-xs font-bold text-foreground">Inbox vide</h4>
-                  <p className="text-[10px] text-muted-foreground max-w-sm">Aucun prospect dans cet onglet. Utilisez le formulaire de recherche ci-dessus pour récolter et qualifier de nouvelles données.</p>
+                  <h4 className="text-xs font-bold text-[#26251e]">Inbox vide</h4>
+                  <p className="text-[10px] text-[#7a7a76] max-w-sm">Aucun prospect dans cet onglet. Utilisez le formulaire de recherche ci-dessus pour récolter et qualifier de nouvelles données.</p>
                 </div>
               </div>
             ) : (
@@ -1949,7 +1949,7 @@ export function ProspectingRoot() {
                         
                         return (
                           <React.Fragment key={item.id}>
-                            <TableRow className={`hover:bg-muted/30 ${isExpanded ? 'bg-muted/10 border-b-transparent' : ''}`}>
+                            <TableRow className={`hover:bg-[#f4f4f3]/60 ${isExpanded ? 'bg-[#f4f4f3]/10 border-b-transparent' : ''}`}>
                               <TableCell className="text-center pl-4">
                                 <Checkbox
                                   checked={selectedValidationIds.includes(item.id)}
@@ -1965,7 +1965,7 @@ export function ProspectingRoot() {
                                   />
                                 ) : (
                                   <div className="space-y-1 py-1">
-                                    <div className="font-semibold text-xs text-foreground truncate max-w-[320px] flex items-center gap-1.5">
+                                    <div className="font-semibold text-xs text-[#26251e] truncate max-w-[320px] flex items-center gap-1.5">
                                       {item.businessName}
                                       {duplicate && (
                                         <Badge variant="outline" className="bg-rose-50 text-rose-700 border-rose-200 text-[8px] font-extrabold flex items-center gap-0.5">
@@ -1974,9 +1974,9 @@ export function ProspectingRoot() {
                                         </Badge>
                                       )}
                                     </div>
-                                    <div className="text-[10px] text-muted-foreground flex items-center gap-1.5 flex-wrap">
+                                    <div className="text-[10px] text-[#7a7a76] flex items-center gap-1.5 flex-wrap">
                                       <Badge variant="outline" className="text-[8px] font-mono uppercase px-1 py-0 scale-90 -translate-x-0.5">{item.source}</Badge>
-                                      <span className="font-medium text-foreground bg-muted/60 px-1.5 py-0.5 rounded text-[9px]">{item.niche}</span>
+                                      <span className="font-medium text-[#26251e] bg-[#f4f4f3]/60 px-1.5 py-0.5 rounded text-[9px]">{item.niche}</span>
                                       <span>·</span>
                                       <span>{item.city}</span>
                                     </div>
@@ -1995,12 +1995,12 @@ export function ProspectingRoot() {
                                 ) : (
                                   <>
                                     {item.phone ? (
-                                      <div className="flex items-center gap-1 text-[10px] text-foreground"><Phone className="h-3 w-3 text-muted-foreground shrink-0" />{item.phone}</div>
+                                      <div className="flex items-center gap-1 text-[10px] text-[#26251e]"><Phone className="h-3 w-3 text-[#7a7a76] shrink-0" />{item.phone}</div>
                                     ) : (
-                                      <div className="text-[9px] text-muted-foreground italic">Pas de téléphone</div>
+                                      <div className="text-[9px] text-[#7a7a76] italic">Pas de téléphone</div>
                                     )}
                                     {item.website ? (
-                                      <a href={item.website} target="_blank" rel="noopener noreferrer" className="text-[10px] text-primary hover:underline flex items-center gap-1 min-w-0 overflow-hidden max-w-[140px]">
+                                      <a href={item.website} target="_blank" rel="noopener noreferrer" className="text-[10px] text-[#059669] hover:underline flex items-center gap-1 min-w-0 overflow-hidden max-w-[140px]">
                                         <Globe className="h-3 w-3 shrink-0" />
                                         <span className="truncate">{item.website.replace(/https?:\/\/(www\.)?/, '')}</span>
                                       </a>
@@ -2061,7 +2061,7 @@ export function ProspectingRoot() {
                                       <Button
                                         size="sm"
                                         variant="outline"
-                                        className={`h-7 px-2 text-[10px] font-semibold ${isExpanded ? 'bg-muted' : ''}`}
+                                        className={`h-7 px-2 text-[10px] font-semibold ${isExpanded ? 'bg-[#f4f4f3]' : ''}`}
                                         onClick={() => setExpandedValidationId(isExpanded ? null : item.id)}
                                       >
                                         Détails
@@ -2074,13 +2074,13 @@ export function ProspectingRoot() {
 
                             {/* Detailed expansion card */}
                             {isExpanded && (
-                              <TableRow className="bg-muted/10 hover:bg-muted/10 border-b border-border/60">
+                              <TableRow className="bg-[#f4f4f3]/10 hover:bg-[#f4f4f3]/10 border-b border-[#e5e5e0]/70">
                                 <TableCell colSpan={5} className="p-4 pl-12 pr-4">
                                   <div className="grid grid-cols-1 md:grid-cols-12 gap-5">
                                     
                                     {/* Score Indicators (4 circular gauges) */}
-                                    <div className="md:col-span-4 space-y-3 border-r border-border/50 pr-4">
-                                      <h5 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5"><SlidersHorizontal className="w-3.5 h-3.5 text-primary" />Métriques & Scoring</h5>
+                                    <div className="md:col-span-4 space-y-3 border-r border-[#e5e5e0]/70 pr-4">
+                                      <h5 className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76] flex items-center gap-1.5"><SlidersHorizontal className="w-3.5 h-3.5 text-[#059669]" />Métriques & Scoring</h5>
                                       <div className="grid grid-cols-2 gap-2">
                                         <ScoreGauge value={item.completenessScore} label="Complétude" color="stroke-emerald-500" />
                                         <ScoreGauge value={item.localFitScore} label="Alignement" color="stroke-sky-500" />
@@ -2090,28 +2090,28 @@ export function ProspectingRoot() {
                                     </div>
 
                                     {/* SEO Audit & Duplicates check */}
-                                    <div className="md:col-span-5 space-y-3 border-r border-border/50 pr-4">
-                                      <h5 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5"><Info className="w-3.5 h-3.5 text-primary" />Opportunités Commerciales</h5>
-                                      <div className="p-3 bg-muted/40 rounded-lg border border-border/40 text-[11px] text-muted-foreground space-y-2">
+                                    <div className="md:col-span-5 space-y-3 border-r border-[#e5e5e0]/70 pr-4">
+                                      <h5 className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76] flex items-center gap-1.5"><Info className="w-3.5 h-3.5 text-[#059669]" />Opportunités Commerciales</h5>
+                                      <div className="p-3 bg-[#f4f4f3]/70 rounded-lg border border-[#e5e5e0]/60 text-[11px] text-[#7a7a76] space-y-2">
                                         <div className="flex items-start gap-1.5">
                                           <Star className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
                                           <div>
-                                            <p className="font-semibold text-foreground">Évaluation en ligne :</p>
+                                            <p className="font-semibold text-[#26251e]">Évaluation en ligne :</p>
                                             <p>{item.rating > 0 ? `${item.rating}/5 étoiles basées sur ${item.reviewsCount} avis.` : 'Aucune note disponible sur les profils publics.'}</p>
                                           </div>
                                         </div>
-                                        <div className="flex items-start gap-1.5 border-t border-border/30 pt-2">
-                                          <Globe className="w-3.5 h-3.5 text-primary shrink-0 mt-0.5" />
+                                        <div className="flex items-start gap-1.5 border-t border-[#e5e5e0]/30 pt-2">
+                                          <Globe className="w-3.5 h-3.5 text-[#059669] shrink-0 mt-0.5" />
                                           <div>
-                                            <p className="font-semibold text-foreground">Audit de présence web :</p>
+                                            <p className="font-semibold text-[#26251e]">Audit de présence web :</p>
                                             <p>{!item.website ? 'Aucun site web détecté dans la base OSM / Google Maps. Opportunité directe de création.' : `Site actif: ${item.website}`}</p>
                                           </div>
                                         </div>
                                         {item.address && (
-                                          <div className="flex items-start gap-1.5 border-t border-border/30 pt-2">
-                                            <MapPin className="w-3.5 h-3.5 text-muted-foreground shrink-0 mt-0.5" />
+                                          <div className="flex items-start gap-1.5 border-t border-[#e5e5e0]/30 pt-2">
+                                            <MapPin className="w-3.5 h-3.5 text-[#7a7a76] shrink-0 mt-0.5" />
                                             <div>
-                                              <p className="font-semibold text-foreground">Adresse complète :</p>
+                                              <p className="font-semibold text-[#26251e]">Adresse complète :</p>
                                               <p className="font-mono text-[10px]">{item.address}</p>
                                             </div>
                                           </div>
@@ -2122,12 +2122,12 @@ export function ProspectingRoot() {
                                     {/* Merge duplicates section & metadata */}
                                     <div className="md:col-span-3 space-y-3 flex flex-col justify-between">
                                       <div>
-                                        <h5 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5"><GitMerge className="w-3.5 h-3.5 text-primary" />Dédoublonnement</h5>
+                                        <h5 className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76] flex items-center gap-1.5"><GitMerge className="w-3.5 h-3.5 text-[#059669]" />Dédoublonnement</h5>
                                         {duplicate ? (
-                                          <div className="p-2.5 rounded-lg border border-rose-200 bg-rose-50/20 text-[10px] text-muted-foreground space-y-2 mt-1.5">
+                                          <div className="p-2.5 rounded-lg border border-rose-200 bg-rose-50/20 text-[10px] text-[#7a7a76] space-y-2 mt-1.5">
                                             <p className="leading-snug">
                                               Un prospect similaire a été détecté dans {duplicate.type === 'crm' ? 'votre CRM' : 'votre boîte de validation'}{' '}
-                                              (<span className="font-semibold text-foreground">{duplicate.name}</span>).
+                                              (<span className="font-semibold text-[#26251e]">{duplicate.name}</span>).
                                             </p>
                                             <Button
                                               size="sm"
@@ -2140,19 +2140,19 @@ export function ProspectingRoot() {
                                             </Button>
                                           </div>
                                         ) : (
-                                          <p className="text-[10px] text-muted-foreground italic mt-2">Aucun doublon détecté pour ce prospect.</p>
+                                          <p className="text-[10px] text-[#7a7a76] italic mt-2">Aucun doublon détecté pour ce prospect.</p>
                                         )}
                                       </div>
 
                                       <div>
-                                        <h5 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5"><MapIcon className="w-3.5 h-3.5 text-primary" />Contribution OSM</h5>
+                                        <h5 className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76] flex items-center gap-1.5"><MapIcon className="w-3.5 h-3.5 text-[#059669]" />Contribution OSM</h5>
                                         <div className="space-y-1.5 mt-1.5">
                                           {item.originalTags?.osm_id && item.originalTags?.osm_type ? (
                                             <a
                                               href={`https://www.openstreetmap.org/edit?editor=id&${item.originalTags.osm_type}=${item.originalTags.osm_id}`}
                                               target="_blank"
                                               rel="noopener noreferrer"
-                                              className="w-full inline-flex items-center justify-center h-8 rounded-lg border border-primary/20 bg-primary/5 hover:bg-primary/10 text-primary text-[10px] font-bold gap-1 transition-colors"
+                                              className="w-full inline-flex items-center justify-center h-8 rounded-lg border border-[#059669]/20 bg-[#059669]/5 hover:bg-[#059669]/10 text-[#059669] text-[10px] font-bold gap-1 transition-colors"
                                             >
                                               <Edit2 className="w-3 h-3 shrink-0" />
                                               Améliorer sur OSM (iD)
@@ -2171,10 +2171,10 @@ export function ProspectingRoot() {
                                         </div>
                                       </div>
 
-                                      <div className="text-[9px] text-muted-foreground font-mono space-y-0.5 text-right mt-auto">
+                                      <div className="text-[9px] text-[#7a7a76] font-mono space-y-0.5 text-right mt-auto">
                                         <p>Créé le: {new Date(item.createdAt).toLocaleString('fr-CA')}</p>
                                         {item.originalTags && Object.keys(item.originalTags).length > 0 && (
-                                          <p className="text-[9px] text-primary truncate max-w-full">Tags: {Object.keys(item.originalTags).slice(0, 5).join(', ')}</p>
+                                          <p className="text-[9px] text-[#059669] truncate max-w-full">Tags: {Object.keys(item.originalTags).slice(0, 5).join(', ')}</p>
                                         )}
                                       </div>
                                     </div>
@@ -2198,16 +2198,16 @@ export function ProspectingRoot() {
                     const duplicate = getDuplicate(item);
                     
                     return (
-                      <div key={item.id} className={`p-4 flex flex-col gap-3 relative transition-colors ${isExpanded ? 'bg-muted/15' : 'hover:bg-muted/5'}`}>
+                      <div key={item.id} className={`p-4 flex flex-col gap-3 relative transition-colors ${isExpanded ? 'bg-[#f4f4f3]/15' : 'hover:bg-[#f4f4f3]/5'}`}>
                         {isEditing ? (
                           <div className="space-y-3 p-1">
-                            <div className="flex items-center justify-between border-b border-border/50 pb-2">
-                              <span className="text-xs font-bold text-foreground">Modifier le prospect</span>
-                              <span className="text-[10px] text-muted-foreground font-mono">ID: {item.id.slice(0, 8)}</span>
+                            <div className="flex items-center justify-between border-b border-[#e5e5e0]/70 pb-2">
+                              <span className="text-xs font-bold text-[#26251e]">Modifier le prospect</span>
+                              <span className="text-[10px] text-[#7a7a76] font-mono">ID: {item.id.slice(0, 8)}</span>
                             </div>
                             <div className="space-y-2.5">
                               <div className="space-y-1">
-                                <label className="text-[10px] font-bold text-muted-foreground uppercase">Nom de l'établissement</label>
+                                <label className="text-[10px] font-bold text-[#7a7a76] uppercase">Nom de l'établissement</label>
                                 <Input
                                   value={editFields.businessName}
                                   onChange={e => setEditFields(prev => ({ ...prev, businessName: e.target.value }))}
@@ -2215,7 +2215,7 @@ export function ProspectingRoot() {
                                 />
                               </div>
                               <div className="space-y-1">
-                                <label className="text-[10px] font-bold text-muted-foreground uppercase">Téléphone</label>
+                                <label className="text-[10px] font-bold text-[#7a7a76] uppercase">Téléphone</label>
                                 <Input
                                   placeholder="Téléphone"
                                   value={editFields.phone}
@@ -2224,7 +2224,7 @@ export function ProspectingRoot() {
                                 />
                               </div>
                               <div className="space-y-1">
-                                <label className="text-[10px] font-bold text-muted-foreground uppercase">Site Web</label>
+                                <label className="text-[10px] font-bold text-[#7a7a76] uppercase">Site Web</label>
                                 <Input
                                   placeholder="Site Web"
                                   value={editFields.website}
@@ -2233,7 +2233,7 @@ export function ProspectingRoot() {
                                 />
                               </div>
                             </div>
-                            <div className="flex items-center justify-end gap-2 pt-2 border-t border-border/50">
+                            <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#e5e5e0]/70">
                               <Button size="sm" variant="outline" className="h-8 text-xs px-3" onClick={() => setEditingValidationId(null)}>
                                 Annuler
                               </Button>
@@ -2253,13 +2253,13 @@ export function ProspectingRoot() {
                                   className="mt-0.5"
                                 />
                                 <div className="space-y-1 min-w-0">
-                                  <div className="font-semibold text-xs text-foreground leading-snug break-words">
+                                  <div className="font-semibold text-xs text-[#26251e] leading-snug break-words">
                                     {item.businessName}
                                   </div>
                                   <div className="flex items-center gap-1.5 flex-wrap">
                                     <Badge variant="outline" className="text-[8px] font-mono uppercase px-1 py-0">{item.source}</Badge>
-                                    <span className="font-medium text-foreground bg-muted/80 px-1 py-0.5 rounded text-[8px]">{item.niche}</span>
-                                    <span className="text-[9px] text-muted-foreground">{item.city}</span>
+                                    <span className="font-medium text-[#26251e] bg-[#f4f4f3]/80 px-1 py-0.5 rounded text-[8px]">{item.niche}</span>
+                                    <span className="text-[9px] text-[#7a7a76]">{item.city}</span>
                                   </div>
                                 </div>
                               </div>
@@ -2285,7 +2285,7 @@ export function ProspectingRoot() {
                             </div>
 
                             {/* Body */}
-                            <div className="pl-7 space-y-1.5 text-[10px] text-muted-foreground">
+                            <div className="pl-7 space-y-1.5 text-[10px] text-[#7a7a76]">
                               {duplicate && (
                                 <Badge variant="outline" className="bg-rose-50 text-rose-700 border-rose-200 text-[8px] font-extrabold flex items-center gap-0.5 w-fit">
                                   <AlertTriangle className="w-2.5 h-2.5 shrink-0" />
@@ -2294,12 +2294,12 @@ export function ProspectingRoot() {
                               )}
                               <div className="flex flex-col gap-1">
                                 {item.phone ? (
-                                  <div className="flex items-center gap-1.5"><Phone className="h-3.5 w-3.5 text-muted-foreground shrink-0" />{item.phone}</div>
+                                  <div className="flex items-center gap-1.5"><Phone className="h-3.5 w-3.5 text-[#7a7a76] shrink-0" />{item.phone}</div>
                                 ) : (
-                                  <div className="text-[9px] italic text-muted-foreground flex items-center gap-1.5"><Phone className="h-3.5 w-3.5 text-muted-foreground shrink-0 opacity-40" />Pas de téléphone</div>
+                                  <div className="text-[9px] italic text-[#7a7a76] flex items-center gap-1.5"><Phone className="h-3.5 w-3.5 text-[#7a7a76] shrink-0 opacity-40" />Pas de téléphone</div>
                                 )}
                                 {item.website ? (
-                                  <a href={item.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline flex items-center gap-1.5 min-w-0 overflow-hidden max-w-full">
+                                  <a href={item.website} target="_blank" rel="noopener noreferrer" className="text-[#059669] hover:underline flex items-center gap-1.5 min-w-0 overflow-hidden max-w-full">
                                     <Globe className="h-3.5 w-3.5 shrink-0" />
                                     <span className="truncate">{item.website.replace(/https?:\/\/(www\.)?/, '')}</span>
                                   </a>
@@ -2335,7 +2335,7 @@ export function ProspectingRoot() {
                               <Button
                                 size="sm"
                                 variant="outline"
-                                className={`h-7 text-[10px] px-2.5 font-semibold gap-1 ${isExpanded ? 'bg-muted border-muted-foreground/30' : ''}`}
+                                className={`h-7 text-[10px] px-2.5 font-semibold gap-1 ${isExpanded ? 'bg-[#f4f4f3] border-muted-foreground/30' : ''}`}
                                 onClick={() => setExpandedValidationId(isExpanded ? null : item.id)}
                               >
                                 Détails {isExpanded ? '↑' : '↓'}
@@ -2344,10 +2344,10 @@ export function ProspectingRoot() {
 
                             {/* Detailed expansion card */}
                             {isExpanded && (
-                              <div className="pl-7 mt-3 pt-3 border-t border-border/50 space-y-4 animate-in slide-in-from-top-2">
+                              <div className="pl-7 mt-3 pt-3 border-t border-[#e5e5e0]/70 space-y-4 animate-in slide-in-from-top-2">
                                 {/* Score Indicators (4 circular gauges) */}
                                 <div className="space-y-2">
-                                  <h5 className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1"><SlidersHorizontal className="w-3 h-3 text-primary" />Métriques & Scoring</h5>
+                                  <h5 className="text-[9px] font-bold uppercase tracking-wider text-[#7a7a76] flex items-center gap-1"><SlidersHorizontal className="w-3 h-3 text-[#059669]" />Métriques & Scoring</h5>
                                   <div className="grid grid-cols-2 xs:grid-cols-4 gap-2">
                                     <ScoreGauge value={item.completenessScore} label="Complétude" color="stroke-emerald-500" />
                                     <ScoreGauge value={item.localFitScore} label="Alignement" color="stroke-sky-500" />
@@ -2358,27 +2358,27 @@ export function ProspectingRoot() {
 
                                 {/* SEO Audit & Duplicates check */}
                                 <div className="space-y-2">
-                                  <h5 className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1"><Info className="w-3 h-3 text-primary" />Opportunités Commerciales</h5>
-                                  <div className="p-2.5 bg-muted/40 rounded-lg border border-border/30 text-[10px] text-muted-foreground space-y-2">
+                                  <h5 className="text-[9px] font-bold uppercase tracking-wider text-[#7a7a76] flex items-center gap-1"><Info className="w-3 h-3 text-[#059669]" />Opportunités Commerciales</h5>
+                                  <div className="p-2.5 bg-[#f4f4f3]/70 rounded-lg border border-[#e5e5e0]/30 text-[10px] text-[#7a7a76] space-y-2">
                                     <div className="flex items-start gap-1.5">
                                       <Star className="w-3 h-3 text-amber-500 shrink-0 mt-0.5" />
                                       <div>
-                                        <p className="font-semibold text-foreground">Évaluation en ligne :</p>
+                                        <p className="font-semibold text-[#26251e]">Évaluation en ligne :</p>
                                         <p>{item.rating > 0 ? `${item.rating}/5 étoiles basées sur ${item.reviewsCount} avis.` : 'Aucune note disponible sur les profils publics.'}</p>
                                       </div>
                                     </div>
-                                    <div className="flex items-start gap-1.5 border-t border-border/20 pt-2">
-                                      <Globe className="w-3 h-3 text-primary shrink-0 mt-0.5" />
+                                    <div className="flex items-start gap-1.5 border-t border-[#e5e5e0]/20 pt-2">
+                                      <Globe className="w-3 h-3 text-[#059669] shrink-0 mt-0.5" />
                                       <div>
-                                        <p className="font-semibold text-foreground">Audit de présence web :</p>
+                                        <p className="font-semibold text-[#26251e]">Audit de présence web :</p>
                                         <p>{!item.website ? 'Aucun site web détecté dans la base OSM / Google Maps. Opportunité directe de création.' : `Site actif: ${item.website}`}</p>
                                       </div>
                                     </div>
                                     {item.address && (
-                                      <div className="flex items-start gap-1.5 border-t border-border/20 pt-2">
-                                        <MapPin className="w-3 h-3 text-muted-foreground shrink-0 mt-0.5" />
+                                      <div className="flex items-start gap-1.5 border-t border-[#e5e5e0]/20 pt-2">
+                                        <MapPin className="w-3 h-3 text-[#7a7a76] shrink-0 mt-0.5" />
                                         <div>
-                                          <p className="font-semibold text-foreground">Adresse complète :</p>
+                                          <p className="font-semibold text-[#26251e]">Adresse complète :</p>
                                           <p className="font-mono text-[9px] break-all">{item.address}</p>
                                         </div>
                                       </div>
@@ -2389,10 +2389,10 @@ export function ProspectingRoot() {
                                 {/* Merge duplicates section & metadata */}
                                 <div className="grid grid-cols-1 gap-3">
                                   {duplicate && (
-                                    <div className="p-2.5 rounded-lg border border-rose-200 bg-rose-50/20 text-[10px] text-muted-foreground space-y-2">
+                                    <div className="p-2.5 rounded-lg border border-rose-200 bg-rose-50/20 text-[10px] text-[#7a7a76] space-y-2">
                                       <p className="leading-snug">
                                         Un prospect similaire a été détecté dans {duplicate.type === 'crm' ? 'votre CRM' : 'votre boîte de validation'}{' '}
-                                        (<span className="font-semibold text-foreground">{duplicate.name}</span>).
+                                        (<span className="font-semibold text-[#26251e]">{duplicate.name}</span>).
                                       </p>
                                       <Button
                                         size="sm"
@@ -2407,13 +2407,13 @@ export function ProspectingRoot() {
                                   )}
 
                                   <div className="space-y-1.5">
-                                    <h5 className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1"><MapIcon className="w-3 h-3 text-primary" />Contribution OSM</h5>
+                                    <h5 className="text-[9px] font-bold uppercase tracking-wider text-[#7a7a76] flex items-center gap-1"><MapIcon className="w-3 h-3 text-[#059669]" />Contribution OSM</h5>
                                     {item.originalTags?.osm_id && item.originalTags?.osm_type ? (
                                       <a
                                         href={`https://www.openstreetmap.org/edit?editor=id&${item.originalTags.osm_type}=${item.originalTags.osm_id}`}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="w-full inline-flex items-center justify-center h-8 rounded-lg border border-primary/20 bg-primary/5 hover:bg-primary/10 text-primary text-[10px] font-bold gap-1 transition-colors"
+                                        className="w-full inline-flex items-center justify-center h-8 rounded-lg border border-[#059669]/20 bg-[#059669]/5 hover:bg-[#059669]/10 text-[#059669] text-[10px] font-bold gap-1 transition-colors"
                                       >
                                         <Edit2 className="w-3 h-3 shrink-0" />
                                         Améliorer sur OSM (iD)
@@ -2432,7 +2432,7 @@ export function ProspectingRoot() {
                                   </div>
                                 </div>
 
-                                <div className="text-[8px] text-muted-foreground font-mono space-y-0.5 text-right pt-2 border-t border-border/20">
+                                <div className="text-[8px] text-[#7a7a76] font-mono space-y-0.5 text-right pt-2 border-t border-[#e5e5e0]/20">
                                   <p>Créé le: {new Date(item.createdAt).toLocaleString('fr-CA')}</p>
                                   {item.originalTags && Object.keys(item.originalTags).length > 0 && (
                                     <p className="truncate max-w-full">Tags: {Object.keys(item.originalTags).slice(0, 5).join(', ')}</p>
@@ -2454,30 +2454,30 @@ export function ProspectingRoot() {
 
         {/* Import success success badge */}
         {importCount !== null && (
-          <Card className="border-emerald-200 bg-emerald-50 dark:bg-emerald-950/20 dark:border-emerald-900/30 p-4 flex items-center gap-3 animate-in fade-in">
+          <Card className="border-emerald-200 bg-emerald-50 p-4 flex items-center gap-3 animate-in fade-in">
             <div className="h-8 w-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">
               <Check className="h-4 w-4" />
             </div>
             <div>
-              <h4 className="text-xs font-bold text-emerald-800 dark:text-emerald-300">{importCount} prospect(s) importé(s) dans le CRM !</h4>
-              <p className="text-[10px] text-emerald-700 dark:text-emerald-400 mt-0.5">Visibles dans l'onglet CRM principal.</p>
+              <h4 className="text-xs font-bold text-emerald-800">{importCount} prospect(s) importé(s) dans le CRM !</h4>
+              <p className="text-[10px] text-emerald-700 mt-0.5">Visibles dans l'onglet CRM principal.</p>
             </div>
           </Card>
         )}
 
         {/* Scrape History */}
         {jobHistory.length > 0 && (
-          <Card className="border border-border bg-card">
-            <CardHeader className="p-4 pb-2 border-b border-border/50">
+          <Card className="border border-[#e5e5e0] bg-white">
+            <CardHeader className="p-4 pb-2 border-b border-[#e5e5e0]/70">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-                  <History className="h-3.5 w-3.5 text-primary" />
+                <CardTitle className="text-xs font-bold uppercase tracking-wider text-[#7a7a76] flex items-center gap-1.5">
+                  <History className="h-3.5 w-3.5 text-[#059669]" />
                   Historique de prospection ({jobHistory.length})
                 </CardTitle>
                 <button
                   type="button"
                   onClick={() => setShowHistory(h => !h)}
-                  className="text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+                  className="text-[10px] text-[#7a7a76] hover:text-[#26251e] transition-colors"
                 >
                   {showHistory ? 'Masquer' : 'Afficher'}
                 </button>
@@ -2487,17 +2487,17 @@ export function ProspectingRoot() {
               <CardContent className="p-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {jobHistory.map(job => (
-                    <div key={job.id} className="flex items-center gap-3 text-xs p-2 rounded-md border border-border/60 bg-muted/20">
+                    <div key={job.id} className="flex items-center gap-3 text-xs p-2 rounded-md border border-[#e5e5e0]/70 bg-[#f4f4f3]/40">
                       <span className={`w-2 h-2 rounded-full shrink-0 ${job.status === 'completed' ? 'bg-emerald-500' : job.status === 'failed' ? 'bg-red-500' : 'bg-amber-400 animate-pulse'}`} />
                       <div className="flex-1 min-w-0">
-                        <p className="font-semibold truncate text-foreground">{job.niches.join(', ')}</p>
-                        <p className="text-[10px] text-muted-foreground">{job.cities.join(', ')} · {job.sources.join(', ')}</p>
+                        <p className="font-semibold truncate text-[#26251e]">{job.niches.join(', ')}</p>
+                        <p className="text-[10px] text-[#7a7a76]">{job.cities.join(', ')} · {job.sources.join(', ')}</p>
                       </div>
                       <div className="text-right shrink-0">
                         {job.status === 'completed' && <span className="text-emerald-600 font-bold">{job.resultsCount}</span>}
                         {job.status === 'failed' && <span className="text-red-500">Échec</span>}
                         {job.status === 'running' && <span className="text-amber-500">Scrape...</span>}
-                        <p className="text-[8px] text-muted-foreground flex items-center gap-0.5 justify-end mt-0.5">
+                        <p className="text-[8px] text-[#7a7a76] flex items-center gap-0.5 justify-end mt-0.5">
                           <Clock className="w-2.5 h-2.5" />
                           {new Date(job.startedAt).toLocaleDateString('fr-CA', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                         </p>
@@ -2508,7 +2508,7 @@ export function ProspectingRoot() {
                 <button
                   type="button"
                   onClick={() => { setJobHistory([]); localStorage.removeItem(HISTORY_KEY); }}
-                  className="mt-3 text-[10px] text-muted-foreground hover:text-destructive transition-colors"
+                  className="mt-3 text-[10px] text-[#7a7a76] hover:text-destructive transition-colors"
                 >
                   Effacer l'historique
                 </button>

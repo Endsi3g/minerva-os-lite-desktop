@@ -113,7 +113,7 @@ export function TodayGoogleCalendarCard() {
               >
                 <div className="flex items-start gap-2.5 min-w-0">
                   {/* Time pill */}
-                  <span className="shrink-0 text-[10px] font-mono font-bold text-[#059669] bg-emerald-50 dark:bg-emerald-950/30 px-1.5 py-0.5 rounded mt-0.5">
+                  <span className="shrink-0 text-[10px] font-mono font-bold text-[#059669] bg-emerald-50 px-1.5 py-0.5 rounded mt-0.5">
                     {formatTime(ev.start)}
                   </span>
                   <div className="min-w-0">
@@ -131,7 +131,7 @@ export function TodayGoogleCalendarCard() {
                     target="_blank"
                     rel="noopener noreferrer"
                     title="Rejoindre Google Meet"
-                    className="shrink-0 flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold text-[#059669] border border-[#059669]/30 bg-emerald-50 dark:bg-emerald-950/30 hover:bg-emerald-100 transition-colors"
+                    className="shrink-0 flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold text-[#059669] border border-[#059669]/30 bg-emerald-50 hover:bg-emerald-100 transition-colors"
                   >
                     <Video className="h-3 w-3" />
                     Meet

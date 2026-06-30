@@ -57,18 +57,18 @@ export function PipelineKanbanCard({ lead }: PipelineKanbanCardProps) {
     <Card
       draggable
       onDragStart={handleDragStart}
-      className="border border-border bg-card shadow-xs hover:shadow-sm hover:border-border/80 transition-all group/card overflow-hidden cursor-grab active:cursor-grabbing active:opacity-70"
+      className="border border-[#e5e5e0] bg-white shadow-xs hover:shadow-sm hover:border-[#e5e5e0]/80 transition-all group/card overflow-hidden cursor-grab active:cursor-grabbing active:opacity-70"
     >
       <CardContent className="p-3.5 space-y-3">
         {/* Title & Detail Link */}
         <div className="flex items-start justify-between gap-2">
           <Link 
             href={`/leads/${lead.id}`}
-            className="text-xs font-bold text-foreground hover:text-primary transition-colors leading-tight line-clamp-2 pr-1"
+            className="text-xs font-bold text-[#26251e] hover:text-[#059669] transition-colors leading-tight line-clamp-2 pr-1"
           >
             {lead.businessName}
           </Link>
-          <Button asChild variant="ghost" size="icon" className="h-5 w-5 text-muted-foreground hover:text-primary hover:bg-secondary opacity-0 group-hover/card:opacity-100 transition-opacity">
+          <Button asChild variant="ghost" size="icon" className="h-5 w-5 text-[#7a7a76] hover:text-[#059669] hover:bg-secondary opacity-0 group-hover/card:opacity-100 transition-opacity">
             <Link href={`/leads/${lead.id}`}>
               <ArrowUpRight className="h-3 w-3" />
             </Link>
@@ -76,7 +76,7 @@ export function PipelineKanbanCard({ lead }: PipelineKanbanCardProps) {
         </div>
 
         {/* Niche & Location */}
-        <div className="flex flex-col gap-1 text-[10px] text-muted-foreground">
+        <div className="flex flex-col gap-1 text-[10px] text-[#7a7a76]">
           <div className="flex items-center gap-1">
             <span className="truncate">{lead.niche}</span>
           </div>
@@ -106,7 +106,7 @@ export function PipelineKanbanCard({ lead }: PipelineKanbanCardProps) {
                 {lead.score}
               </div>
             )}
-            <span className="text-[9px] text-muted-foreground font-mono">
+            <span className="text-[9px] text-[#7a7a76] font-mono">
               {lead.owner}
             </span>
           </div>
@@ -130,8 +130,8 @@ export function PipelineKanbanCard({ lead }: PipelineKanbanCardProps) {
           <div className={cn(
             "p-2 rounded border text-[10px] leading-normal",
             isOverdue 
-              ? "bg-rose-50/50 border-rose-100 text-rose-800 dark:bg-rose-950/10 dark:border-rose-900/30 dark:text-rose-300"
-              : "bg-secondary/40 border-border/60 text-muted-foreground"
+              ? "bg-rose-50/50 border-rose-100 text-rose-800"
+              : "bg-secondary/40 border-[#e5e5e0]/70 text-[#7a7a76]"
           )}>
             <div className="font-medium truncate">{lead.nextAction}</div>
             {lead.nextActionDate && (
@@ -144,14 +144,14 @@ export function PipelineKanbanCard({ lead }: PipelineKanbanCardProps) {
         )}
 
         {/* Inline Card movement controls */}
-        <div className="flex items-center justify-between pt-2 border-t border-border/50">
+        <div className="flex items-center justify-between pt-2 border-t border-[#e5e5e0]/70">
           {/* Move Left Button */}
           <Button
             variant="ghost"
             size="icon"
             onClick={handleMoveLeft}
             disabled={lead.status === 'New'}
-            className="h-6 w-6 text-muted-foreground hover:text-foreground disabled:opacity-30"
+            className="h-6 w-6 text-[#7a7a76] hover:text-[#26251e] disabled:opacity-30"
           >
             <ChevronLeft className="h-3.5 w-3.5" />
             <span className="sr-only">Reculer d&apos;étape</span>
@@ -165,7 +165,7 @@ export function PipelineKanbanCard({ lead }: PipelineKanbanCardProps) {
                   variant="ghost"
                   size="icon"
                   onClick={handleMarkLost}
-                  className="h-6 w-6 text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/20"
+                  className="h-6 w-6 text-rose-600 hover:text-rose-700 hover:bg-rose-50"
                 >
                   <X className="h-3.5 w-3.5" />
                 </Button>
@@ -182,7 +182,7 @@ export function PipelineKanbanCard({ lead }: PipelineKanbanCardProps) {
             size="icon"
             onClick={handleMoveRight}
             disabled={lead.status === 'Won' || lead.status === 'Lost'}
-            className="h-6 w-6 text-muted-foreground hover:text-foreground disabled:opacity-30"
+            className="h-6 w-6 text-[#7a7a76] hover:text-[#26251e] disabled:opacity-30"
           >
             <ChevronRight className="h-3.5 w-3.5" />
             <span className="sr-only">Avancer d&apos;étape</span>

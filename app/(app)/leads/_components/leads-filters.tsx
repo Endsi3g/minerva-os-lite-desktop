@@ -104,10 +104,10 @@ export function LeadsFilters<TData>({ table, showAssignedToMe, onToggleAssignedT
   const showDropdown = isFocused && !searchQuery && recentSearches.length > 0;
 
   return (
-    <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between py-2 bg-background">
+    <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between py-2 bg-[#fafaf8]">
       {/* Search Input (Left side) */}
       <div className="relative flex-1 max-w-sm" ref={dropdownRef}>
-        <span className="absolute inset-y-0 left-3 flex items-center text-muted-foreground pointer-events-none">
+        <span className="absolute inset-y-0 left-3 flex items-center text-[#7a7a76] pointer-events-none">
           <Search className="h-3.5 w-3.5" />
         </span>
         <Input
@@ -120,7 +120,7 @@ export function LeadsFilters<TData>({ table, showAssignedToMe, onToggleAssignedT
           onKeyDown={(e) => {
             if (e.key === 'Escape') { handleClearSearch(); inputRef.current?.blur(); }
           }}
-          className="pl-9 h-8.5 text-xs bg-card"
+          className="pl-9 h-8.5 text-xs bg-white"
         />
         {searchQuery && (
           <button
@@ -128,7 +128,7 @@ export function LeadsFilters<TData>({ table, showAssignedToMe, onToggleAssignedT
             onClick={handleClearSearch}
             aria-label="Effacer la recherche"
             title="Effacer la recherche"
-            className="absolute inset-y-0 right-3 flex items-center text-muted-foreground hover:text-foreground"
+            className="absolute inset-y-0 right-3 flex items-center text-[#7a7a76] hover:text-[#26251e]"
           >
             <X className="h-3.5 w-3.5" />
           </button>
@@ -172,7 +172,7 @@ export function LeadsFilters<TData>({ table, showAssignedToMe, onToggleAssignedT
             table.getColumn('status')?.setFilterValue(val === 'all' ? undefined : val)
           }
         >
-          <SelectTrigger className="h-8 min-w-[148px] text-xs bg-card">
+          <SelectTrigger className="h-8 min-w-[148px] text-xs bg-white">
             <SelectValue placeholder="Tous les statuts" />
           </SelectTrigger>
           <SelectContent>
@@ -194,7 +194,7 @@ export function LeadsFilters<TData>({ table, showAssignedToMe, onToggleAssignedT
             table.getColumn('temperature')?.setFilterValue(val === 'all' ? undefined : val)
           }
         >
-          <SelectTrigger className="h-8 min-w-[160px] text-xs bg-card">
+          <SelectTrigger className="h-8 min-w-[160px] text-xs bg-white">
             <SelectValue placeholder="Toutes températures" />
           </SelectTrigger>
           <SelectContent>
@@ -212,7 +212,7 @@ export function LeadsFilters<TData>({ table, showAssignedToMe, onToggleAssignedT
             table.getColumn('niche')?.setFilterValue(val === 'all' ? undefined : val)
           }
         >
-          <SelectTrigger className="h-8 min-w-[152px] text-xs bg-card">
+          <SelectTrigger className="h-8 min-w-[152px] text-xs bg-white">
             <SelectValue placeholder="Tous les secteurs" />
           </SelectTrigger>
           <SelectContent>
@@ -232,7 +232,7 @@ export function LeadsFilters<TData>({ table, showAssignedToMe, onToggleAssignedT
             'flex items-center gap-1.5 h-8 px-3 text-xs font-semibold rounded-md border transition-colors',
             showAssignedToMe
               ? 'bg-[#059669] text-white border-[#059669] hover:bg-[#047857]'
-              : 'bg-card border-border text-muted-foreground hover:text-foreground hover:bg-secondary'
+              : 'bg-white border-[#e5e5e0] text-[#7a7a76] hover:text-[#26251e] hover:bg-secondary'
           )}
         >
           <User className="h-3.5 w-3.5" />
@@ -247,7 +247,7 @@ export function LeadsFilters<TData>({ table, showAssignedToMe, onToggleAssignedT
               handleClearFilters();
               if (showAssignedToMe) onToggleAssignedToMe();
             }}
-            className="h-8 px-3 text-xs gap-1.5 text-muted-foreground hover:text-foreground"
+            className="h-8 px-3 text-xs gap-1.5 text-[#7a7a76] hover:text-[#26251e]"
           >
             <X className="h-3.5 w-3.5" />
             <span>Réinitialiser</span>

@@ -74,7 +74,7 @@ export function TodayStatsCard() {
     <Card className="border border-[#e5e5e0] bg-white shadow-none">
       <CardHeader className="flex flex-row items-center justify-between pb-3">
         <div className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/10 text-primary">
+          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-[#059669]/10 text-[#059669]">
             <BarChart3 className="h-4 w-4" />
           </div>
           <div>
@@ -89,10 +89,10 @@ export function TodayStatsCard() {
         <div className="space-y-1.5 text-left">
           <div className="flex items-center justify-between text-xs font-semibold text-[#26251e]">
             <span className="flex items-center gap-1.5">
-              <TrendingUp className="w-3.5 h-3.5 text-primary" />
+              <TrendingUp className="w-3.5 h-3.5 text-[#059669]" />
               <span>Conversion du Tunnel</span>
             </span>
-            <span className="font-mono text-primary font-bold">{conversionRate}%</span>
+            <span className="font-mono text-[#059669] font-bold">{conversionRate}%</span>
           </div>
           <div className="w-full bg-[#f4f4f3] h-2 rounded-full overflow-hidden flex">
             <div 
@@ -107,11 +107,11 @@ export function TodayStatsCard() {
             />
             <div 
               style={{ width: `${totalLeads > 0 ? (qualifiedLeads / totalLeads) * 100 : 0}%` }} 
-              className="bg-primary h-full" 
+              className="bg-[#059669] h-full" 
               title={`Qualifiés/Gagnés: ${qualifiedLeads}`}
             />
           </div>
-          <div className="flex justify-between text-[9px] text-muted-foreground font-semibold">
+          <div className="flex justify-between text-[9px] text-[#7a7a76] font-semibold">
             <span>Nouveaux ({newLeads})</span>
             <span>Contactés ({contactedLeads})</span>
             <span>Qualifiés ({qualifiedLeads})</span>
@@ -138,13 +138,13 @@ export function TodayStatsCard() {
           </div>
           
           {todoistConnected ? (
-            <p className="text-[10px] text-muted-foreground leading-normal">
+            <p className="text-[10px] text-[#7a7a76] leading-normal">
               {todoistTaskCount.total > 0 
                 ? `Il reste ${todoistTaskCount.total} tâches à accomplir aujourd'hui dans votre projet Todoist.` 
                 : 'Toutes les tâches Todoist de votre projet cible ont été complétées !'}
             </p>
           ) : (
-            <p className="text-[10px] text-muted-foreground leading-normal">
+            <p className="text-[10px] text-[#7a7a76] leading-normal">
               Connectez Todoist dans l'onglet Intégrations pour importer automatiquement vos tâches et planifications du jour.
             </p>
           )}
@@ -153,12 +153,12 @@ export function TodayStatsCard() {
         {/* Email Sequences Stats */}
         <div className="border-t border-[#e5e5e0]/60 pt-3 text-left space-y-2">
           <span className="flex items-center gap-1.5 text-xs font-semibold text-[#26251e]">
-            <Mail className="w-3.5 h-3.5 text-primary" />
+            <Mail className="w-3.5 h-3.5 text-[#059669]" />
             <span>Séquences email</span>
           </span>
           {seqStats.total === 0 ? (
-            <p className="text-[10px] text-muted-foreground leading-normal">
-              Aucune séquence active. Créez votre première depuis <a href="/sequences" className="underline text-primary">Séquences email</a>.
+            <p className="text-[10px] text-[#7a7a76] leading-normal">
+              Aucune séquence active. Créez votre première depuis <a href="/sequences" className="underline text-[#059669]">Séquences email</a>.
             </p>
           ) : (
             <div className="grid grid-cols-2 gap-4">
@@ -166,7 +166,7 @@ export function TodayStatsCard() {
                 <span className="text-[9px] font-bold uppercase tracking-wider text-[#7a7a76]">Emails envoyés</span>
                 <span className="text-lg font-bold text-[#26251e] tracking-tight font-sans mt-1">{seqStats.sent}</span>
                 <div className="w-full bg-neutral-200 h-1 rounded-full overflow-hidden mt-1.5">
-                  <div style={{ width: `${seqStats.total > 0 ? (seqStats.sent / seqStats.total) * 100 : 0}%` }} className="bg-primary h-full rounded-full" />
+                  <div style={{ width: `${seqStats.total > 0 ? (seqStats.sent / seqStats.total) * 100 : 0}%` }} className="bg-[#059669] h-full rounded-full" />
                 </div>
               </div>
               <div className="bg-[#fafaf8] border border-[#e5e5e0] rounded-xl p-2.5 flex flex-col justify-between">

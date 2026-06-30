@@ -24,13 +24,13 @@ export function TodayTaskItem({ task, onToggle, onDelete }: TodayTaskItemProps) 
   const getCategoryColor = (cat: Task['category']) => {
     switch (cat) {
       case 'Follow-up':
-        return 'bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-950/30 dark:text-blue-300 dark:border-blue-800';
+        return 'bg-blue-50 text-blue-700 border border-blue-200';
       case 'Preparation':
-        return 'bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/30 dark:text-amber-300 dark:border-amber-800';
+        return 'bg-amber-50 text-amber-700 border border-amber-200';
       case 'Meeting':
-        return 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-300 dark:border-emerald-800';
+        return 'bg-emerald-50 text-emerald-700 border border-emerald-200';
       default:
-        return 'bg-slate-50 text-slate-700 border border-slate-200 dark:bg-slate-900 dark:text-slate-300 dark:border-slate-800';
+        return 'bg-slate-50 text-slate-700 border border-slate-200';
     }
   };
 
@@ -61,7 +61,7 @@ export function TodayTaskItem({ task, onToggle, onDelete }: TodayTaskItemProps) 
   };
 
   return (
-    <div className="flex items-center justify-between p-3 rounded-lg border border-border bg-card/60 hover:bg-muted/30 transition-all group">
+    <div className="flex items-center justify-between p-3 rounded-lg border border-[#e5e5e0] bg-white/60 hover:bg-[#f4f4f3]/60 transition-all group">
       <div className="flex items-start gap-3 min-w-0">
         <Checkbox 
           id={`task-${task.id}`}
@@ -74,14 +74,14 @@ export function TodayTaskItem({ task, onToggle, onDelete }: TodayTaskItemProps) 
             htmlFor={`task-${task.id}`}
             className={cn(
               "text-xs font-semibold cursor-pointer leading-tight select-none",
-              task.completed ? "line-through text-muted-foreground font-normal" : "text-foreground font-medium"
+              task.completed ? "line-through text-[#7a7a76] font-normal" : "text-[#26251e] font-medium"
             )}
           >
             {task.title}
           </label>
           
           {task.description && (
-            <span className="text-[10px] text-muted-foreground leading-normal line-clamp-2 text-left">
+            <span className="text-[10px] text-[#7a7a76] leading-normal line-clamp-2 text-left">
               {task.description}
             </span>
           )}
@@ -114,13 +114,13 @@ export function TodayTaskItem({ task, onToggle, onDelete }: TodayTaskItemProps) 
  
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity">
+            <Button variant="ghost" size="icon" className="h-7 w-7 text-[#7a7a76] opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity">
               <MoreHorizontal className="h-3.5 w-3.5" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-[160px]">
             <DropdownMenuItem onClick={handleMoveToTomorrow} className="text-xs gap-2">
-              <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+              <Calendar className="h-3.5 w-3.5 text-[#7a7a76]" />
               <span>Reporter à demain</span>
             </DropdownMenuItem>
             <DropdownMenuItem onClick={handleMakeUrgent} className="text-xs gap-2">

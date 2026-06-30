@@ -76,25 +76,25 @@ export function PipelineHeader({
   const owners = Array.from(new Set(leads.map((l) => l.owner).filter(Boolean)));
 
   return (
-    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between pb-2 border-b border-border">
+    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between pb-2 border-b border-[#e5e5e0]">
       {/* Title */}
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">Pipeline</h1>
-        <p className="text-xs text-muted-foreground mt-0.5">
+        <h1 className="text-2xl font-bold tracking-tight text-[#26251e]">Pipeline</h1>
+        <p className="text-xs text-[#7a7a76] mt-0.5">
           Suivi visuel et progression de tes opportunités de vente.
         </p>
       </div>
 
       {/* Actions & Filters */}
       <div className="flex flex-wrap items-center gap-2">
-        <div className="flex items-center gap-1.5 text-xs text-muted-foreground mr-1">
+        <div className="flex items-center gap-1.5 text-xs text-[#7a7a76] mr-1">
           <Filter className="h-3.5 w-3.5" />
           <span>Filtrer :</span>
         </div>
 
         {/* Niche selector */}
         <Select value={selectedNiche} onValueChange={onNicheChange}>
-          <SelectTrigger className="h-8.5 w-[140px] text-xs bg-card">
+          <SelectTrigger className="h-8.5 w-[140px] text-xs bg-white">
             <SelectValue placeholder="Tous secteurs" />
           </SelectTrigger>
           <SelectContent>
@@ -109,7 +109,7 @@ export function PipelineHeader({
 
         {/* Owner selector */}
         <Select value={selectedOwner} onValueChange={onOwnerChange}>
-          <SelectTrigger className="h-8.5 w-[140px] text-xs bg-card">
+          <SelectTrigger className="h-8.5 w-[140px] text-xs bg-white">
             <SelectValue placeholder="Tous propriétaires" />
           </SelectTrigger>
           <SelectContent>
@@ -125,7 +125,7 @@ export function PipelineHeader({
         {/* Add Lead Sheet */}
         <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
           <SheetTrigger asChild>
-            <Button size="sm" className="h-8.5 gap-1.5 bg-primary hover:bg-primary/90 text-xs font-semibold">
+            <Button size="sm" className="h-8.5 gap-1.5 bg-[#059669] hover:bg-[#059669]/90 text-xs font-semibold">
               <Plus className="h-3.5 w-3.5" />
               <span>Nouveau lead</span>
             </Button>
@@ -141,7 +141,7 @@ export function PipelineHeader({
 
               <div className="space-y-4">
                 <div className="grid gap-1">
-                  <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Nom du business *</label>
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-[#7a7a76]">Nom du business *</label>
                   <Input 
                     placeholder="Boulangerie L'Épi d'Or" 
                     value={leadForm.businessName}
@@ -152,7 +152,7 @@ export function PipelineHeader({
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-1">
-                    <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Nom du contact</label>
+                    <label className="text-[11px] font-bold uppercase tracking-wider text-[#7a7a76]">Nom du contact</label>
                     <Input 
                       placeholder="Jean Dupont" 
                       value={leadForm.contactName}
@@ -160,7 +160,7 @@ export function PipelineHeader({
                     />
                   </div>
                   <div className="grid gap-1">
-                    <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Email</label>
+                    <label className="text-[11px] font-bold uppercase tracking-wider text-[#7a7a76]">Email</label>
                     <Input 
                       type="email"
                       placeholder="jean.dupont@mail.com" 
@@ -172,7 +172,7 @@ export function PipelineHeader({
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-1">
-                    <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Secteur / Niche</label>
+                    <label className="text-[11px] font-bold uppercase tracking-wider text-[#7a7a76]">Secteur / Niche</label>
                     <Input 
                       placeholder="Boulangerie" 
                       value={leadForm.niche}
@@ -180,7 +180,7 @@ export function PipelineHeader({
                     />
                   </div>
                   <div className="grid gap-1">
-                    <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Ville</label>
+                    <label className="text-[11px] font-bold uppercase tracking-wider text-[#7a7a76]">Ville</label>
                     <Input 
                       placeholder="Lyon" 
                       value={leadForm.city}
@@ -191,7 +191,7 @@ export function PipelineHeader({
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-1">
-                    <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Température</label>
+                    <label className="text-[11px] font-bold uppercase tracking-wider text-[#7a7a76]">Température</label>
                     <Select
                       value={leadForm.temperature}
                       onValueChange={(val: Lead['temperature']) => setLeadForm(prev => ({ ...prev, temperature: val }))}
@@ -207,7 +207,7 @@ export function PipelineHeader({
                     </Select>
                   </div>
                   <div className="grid gap-1">
-                    <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Statut du lead</label>
+                    <label className="text-[11px] font-bold uppercase tracking-wider text-[#7a7a76]">Statut du lead</label>
                     <Select
                       value={leadForm.status}
                       onValueChange={(val: Lead['status']) => setLeadForm(prev => ({ ...prev, status: val }))}
@@ -227,7 +227,7 @@ export function PipelineHeader({
                 </div>
 
                 <div className="grid gap-1">
-                  <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Source</label>
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-[#7a7a76]">Source</label>
                   <Input 
                     placeholder="ex: Google Maps, Prospection Physique" 
                     value={leadForm.source}
@@ -236,7 +236,7 @@ export function PipelineHeader({
                 </div>
 
                 <div className="grid gap-1">
-                  <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Action suivante</label>
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-[#7a7a76]">Action suivante</label>
                   <Input 
                     placeholder="ex: Rappeler pour fixer un créneau" 
                     value={leadForm.nextAction}
@@ -245,7 +245,7 @@ export function PipelineHeader({
                 </div>
 
                 <div className="grid gap-1">
-                  <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Date de l&apos;action</label>
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-[#7a7a76]">Date de l&apos;action</label>
                   <Input 
                     type="date"
                     value={leadForm.nextActionDate}
@@ -254,7 +254,7 @@ export function PipelineHeader({
                 </div>
 
                 <div className="grid gap-1">
-                  <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Notes de terrain / Contexte</label>
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-[#7a7a76]">Notes de terrain / Contexte</label>
                   <Textarea 
                     placeholder="ex: Pas de site mobile, gérant ouvert mais manque de temps." 
                     value={leadForm.notes}
@@ -264,7 +264,7 @@ export function PipelineHeader({
                 </div>
               </div>
 
-              <SheetFooter className="pt-4 border-t border-border">
+              <SheetFooter className="pt-4 border-t border-[#e5e5e0]">
                 <Button type="button" variant="outline" onClick={() => setSheetOpen(false)}>Annuler</Button>
                 <Button type="submit">Enregistrer le prospect</Button>
               </SheetFooter>

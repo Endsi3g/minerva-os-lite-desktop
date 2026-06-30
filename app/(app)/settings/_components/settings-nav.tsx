@@ -59,11 +59,11 @@ export function SettingsNav({ section, onSectionChange }: SettingsNavProps) {
   return (
     <>
       {/* Mobile: full-width select dropdown */}
-      <div className="md:hidden border-b border-border bg-card/40 px-4 py-3 shrink-0">
+      <div className="md:hidden border-b border-[#e5e5e0] bg-white/40 px-4 py-3 shrink-0">
         <select
           value={section}
           onChange={(e) => onSectionChange(e.target.value as SettingsSection)}
-          className="w-full text-xs font-medium bg-background border border-border rounded-lg px-3 py-2 text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+          className="w-full text-xs font-medium bg-[#fafaf8] border border-[#e5e5e0] rounded-lg px-3 py-2 text-[#26251e] focus:outline-none focus:ring-1 focus:ring-primary"
         >
           {groups.map((group) => (
             <optgroup key={group.label} label={group.label}>
@@ -74,15 +74,15 @@ export function SettingsNav({ section, onSectionChange }: SettingsNavProps) {
           ))}
         </select>
         {activeItem && (
-          <p className="text-[10px] text-muted-foreground mt-1.5 px-1">{activeItem.group} › {activeItem.name}</p>
+          <p className="text-[10px] text-[#7a7a76] mt-1.5 px-1">{activeItem.group} › {activeItem.name}</p>
         )}
       </div>
 
       {/* Desktop: sidebar nav */}
-      <nav className="w-56 border-r border-border bg-card/40 p-3 space-y-5 select-none shrink-0 hidden md:block overflow-y-auto">
+      <nav className="w-56 border-r border-[#e5e5e0] bg-white/40 p-3 space-y-5 select-none shrink-0 hidden md:block overflow-y-auto">
         {groups.map((group) => (
           <div key={group.label}>
-            <div className="px-3 py-1 text-[9px] font-bold uppercase tracking-wider text-muted-foreground">
+            <div className="px-3 py-1 text-[9px] font-bold uppercase tracking-wider text-[#7a7a76]">
               {group.label}
             </div>
             <div className="space-y-0.5 mt-1">
@@ -96,8 +96,8 @@ export function SettingsNav({ section, onSectionChange }: SettingsNavProps) {
                     className={cn(
                       'flex items-center gap-2.5 w-full rounded-md px-3 py-1.5 text-xs font-medium tracking-wide transition-colors text-left',
                       isActive
-                        ? 'bg-primary/10 text-primary'
-                        : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+                        ? 'bg-[#059669]/10 text-[#059669]'
+                        : 'text-[#7a7a76] hover:bg-secondary hover:text-[#26251e]'
                     )}
                   >
                     <item.icon className="h-3.5 w-3.5 shrink-0" />
@@ -108,12 +108,12 @@ export function SettingsNav({ section, onSectionChange }: SettingsNavProps) {
             </div>
           </div>
         ))}
-        <div className="pt-4 mt-4 border-t border-border/60 px-3 space-y-2">
+        <div className="pt-4 mt-4 border-t border-[#e5e5e0]/70 px-3 space-y-2">
           <a
             href="/terms"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-[10px] font-semibold text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5"
+            className="text-[10px] font-semibold text-[#7a7a76] hover:text-[#26251e] transition-colors flex items-center gap-1.5"
           >
             <FileText className="h-3.5 w-3.5 shrink-0" />
             <span>Terms of Use</span>
@@ -122,7 +122,7 @@ export function SettingsNav({ section, onSectionChange }: SettingsNavProps) {
             href="/privacy"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-[10px] font-semibold text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5"
+            className="text-[10px] font-semibold text-[#7a7a76] hover:text-[#26251e] transition-colors flex items-center gap-1.5"
           >
             <FileText className="h-3.5 w-3.5 shrink-0" />
             <span>Privacy Policy</span>

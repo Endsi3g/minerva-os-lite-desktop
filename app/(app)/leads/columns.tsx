@@ -26,21 +26,21 @@ interface WorkspaceMember {
 const getStatusStyle = (status: Lead['status']) => {
   switch (status) {
     case 'New':
-      return 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/30 dark:text-blue-300 dark:border-blue-800';
+      return 'bg-blue-50 text-blue-700 border-blue-200';
     case 'Contacted':
-      return 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-300 dark:border-amber-800';
+      return 'bg-amber-50 text-amber-700 border-amber-200';
     case 'Meeting Booked':
-      return 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/30 dark:text-purple-300 dark:border-purple-800';
+      return 'bg-purple-50 text-purple-700 border-purple-200';
     case 'Proposal Sent':
-      return 'bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950/30 dark:text-violet-300 dark:border-violet-800';
+      return 'bg-violet-50 text-violet-700 border-violet-200';
     case 'Negotiation':
-      return 'bg-amber-50 text-amber-600 border-amber-200 dark:bg-amber-950/30 dark:text-amber-300 dark:border-amber-800';
+      return 'bg-amber-50 text-amber-600 border-amber-200';
     case 'Won':
-      return 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-300 dark:border-emerald-800';
+      return 'bg-emerald-50 text-emerald-700 border-emerald-200';
     case 'Lost':
-      return 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/30 dark:text-rose-300 dark:border-rose-800';
+      return 'bg-rose-50 text-rose-700 border-rose-200';
     default:
-      return 'bg-slate-50 text-slate-700 border-slate-200 dark:bg-slate-900 dark:text-slate-300 dark:border-slate-800';
+      return 'bg-slate-50 text-slate-700 border-slate-200';
   }
 };
 
@@ -90,7 +90,7 @@ export function buildColumns(workspaceMembers: WorkspaceMember[], lastVisitedLea
       return (
         <button
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-          className="flex items-center gap-1 hover:text-foreground text-left font-semibold"
+          className="flex items-center gap-1 hover:text-[#26251e] text-left font-semibold"
         >
           Entreprise
           <ArrowUpDown className="h-3 w-3" />
@@ -104,17 +104,17 @@ export function buildColumns(workspaceMembers: WorkspaceMember[], lastVisitedLea
       const isLastVisited = lastVisitedLeadId && row.original.id === lastVisitedLeadId;
       return (
         <div className="flex items-center gap-3 py-1">
-          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-primary text-[10px] font-bold shrink-0">
+          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#059669]/10 text-[#059669] text-[10px] font-bold shrink-0">
             {initial}
           </div>
           <div className="flex flex-col gap-0.5">
             <div className="flex items-center gap-1.5">
-              <span className="text-xs font-semibold text-foreground leading-tight">{name}</span>
+              <span className="text-xs font-semibold text-[#26251e] leading-tight">{name}</span>
               {isLastVisited && (
                 <span className="text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-[#059669]/10 text-[#059669] border border-[#059669]/20 whitespace-nowrap">Récemment visité</span>
               )}
             </div>
-            <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+            <span className="text-[10px] text-[#7a7a76] flex items-center gap-1">
               <MapPin className="h-2.5 w-2.5" />
               {city}
             </span>
@@ -128,7 +128,7 @@ export function buildColumns(workspaceMembers: WorkspaceMember[], lastVisitedLea
     accessorKey: 'niche',
     header: 'Secteur',
     cell: ({ row }) => {
-      return <span className="text-xs text-muted-foreground">{row.getValue('niche')}</span>;
+      return <span className="text-xs text-[#7a7a76]">{row.getValue('niche')}</span>;
     },
   },
   // Contact info
@@ -140,9 +140,9 @@ export function buildColumns(workspaceMembers: WorkspaceMember[], lastVisitedLea
       const email = row.original.contactEmail;
       return (
         <div className="flex flex-col gap-0.5">
-          <span className="text-xs text-foreground font-medium">{name || 'Non spécifié'}</span>
+          <span className="text-xs text-[#26251e] font-medium">{name || 'Non spécifié'}</span>
           {email && (
-            <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+            <span className="text-[10px] text-[#7a7a76] flex items-center gap-1">
               <Mail className="h-2.5 w-2.5" />
               {email}
             </span>
@@ -193,12 +193,12 @@ export function buildColumns(workspaceMembers: WorkspaceMember[], lastVisitedLea
     cell: ({ row }) => {
       const action = row.getValue('nextAction') as string;
       const date = row.original.nextActionDate;
-      if (!action) return <span className="text-xs text-muted-foreground/50 italic">Aucune</span>;
+      if (!action) return <span className="text-xs text-[#7a7a76]/50 italic">Aucune</span>;
       return (
         <div className="flex flex-col gap-0.5 max-w-[180px]">
-          <span className="text-xs text-foreground font-medium truncate">{action}</span>
+          <span className="text-xs text-[#26251e] font-medium truncate">{action}</span>
           {date && (
-            <span className="text-[10px] text-muted-foreground">
+            <span className="text-[10px] text-[#7a7a76]">
               Pour le : {new Date(date).toLocaleDateString('fr-FR')}
             </span>
           )}
@@ -212,7 +212,7 @@ export function buildColumns(workspaceMembers: WorkspaceMember[], lastVisitedLea
     header: ({ column }) => (
       <button
         onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-        className="flex items-center gap-1 hover:text-foreground font-semibold"
+        className="flex items-center gap-1 hover:text-[#26251e] font-semibold"
       >
         <TrendingUp className="h-3 w-3" />
         Score
@@ -226,7 +226,7 @@ export function buildColumns(workspaceMembers: WorkspaceMember[], lastVisitedLea
         : score >= 60
         ? 'bg-[#26251e]/10 text-[#26251e] border-[#26251e]/20'
         : 'bg-[#e5e5e0] text-[#807d72] border-[#e5e5e0]';
-      if (!score) return <span className="text-[10px] text-muted-foreground/40">—</span>;
+      if (!score) return <span className="text-[10px] text-[#7a7a76]/40">—</span>;
       return (
         <div className={`inline-flex items-center justify-center w-10 h-6 rounded border text-[10px] font-black ${colorClass}`}>
           {score}
@@ -240,7 +240,7 @@ export function buildColumns(workspaceMembers: WorkspaceMember[], lastVisitedLea
     header: ({ column }) => (
       <button
         onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-        className="flex items-center gap-1 hover:text-foreground font-semibold"
+        className="flex items-center gap-1 hover:text-[#26251e] font-semibold"
       >
         <TrendingUp className="h-3 w-3" />
         Intent
@@ -254,7 +254,7 @@ export function buildColumns(workspaceMembers: WorkspaceMember[], lastVisitedLea
         : intent >= 50
         ? 'bg-emerald-100 text-emerald-700 border-emerald-200'
         : 'bg-slate-100 text-slate-500 border-slate-200';
-      if (!intent) return <span className="text-[10px] text-muted-foreground/40">—</span>;
+      if (!intent) return <span className="text-[10px] text-[#7a7a76]/40">—</span>;
       return (
         <div className={`inline-flex items-center justify-center w-10 h-6 rounded border text-[10px] font-black ${colorClass}`}>
           {intent}%
@@ -268,7 +268,7 @@ export function buildColumns(workspaceMembers: WorkspaceMember[], lastVisitedLea
     header: ({ column }) => (
       <button
         onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-        className="flex items-center gap-1 hover:text-foreground font-semibold"
+        className="flex items-center gap-1 hover:text-[#26251e] font-semibold"
       >
         <Zap className="h-3 w-3" />
         Opportunité
@@ -284,7 +284,7 @@ export function buildColumns(workspaceMembers: WorkspaceMember[], lastVisitedLea
           : oppScore >= 40
           ? { bg: '#059669' + '1a', text: '#059669', border: '#059669' + '33' }
           : { bg: '#7a7a76' + '1a', text: '#7a7a76', border: '#7a7a76' + '33' };
-      if (oppScore === 0) return <span className="text-[10px] text-muted-foreground/40">—</span>;
+      if (oppScore === 0) return <span className="text-[10px] text-[#7a7a76]/40">—</span>;
       return (
         <Tooltip>
           <TooltipTrigger asChild>
@@ -320,7 +320,7 @@ export function buildColumns(workspaceMembers: WorkspaceMember[], lastVisitedLea
       const lead = row.original;
       return (
         <div className="text-right pr-2">
-          <Button asChild variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-primary hover:bg-primary/5">
+          <Button asChild variant="ghost" size="icon" className="h-7 w-7 text-[#7a7a76] hover:text-[#059669] hover:bg-[#059669]/5">
             <Link href={`/leads/${lead.id}`}>
               <ArrowUpRight className="h-4 w-4" />
             </Link>

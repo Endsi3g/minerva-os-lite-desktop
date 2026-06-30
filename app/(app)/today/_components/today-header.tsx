@@ -91,11 +91,11 @@ export function TodayHeader({ onAestheticToggle }: TodayHeaderProps) {
   };
 
   return (
-    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-border pb-6">
+    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-[#e5e5e0] pb-6">
       {/* Title block */}
       <div>
-        <h1 className="text-3xl font-sans font-bold tracking-tight text-foreground">{t('today.title')}</h1>
-        <p className="text-sm text-muted-foreground mt-1">
+        <h1 className="text-3xl font-sans font-bold tracking-tight text-[#26251e]">{t('today.title')}</h1>
+        <p className="text-sm text-[#7a7a76] mt-1">
           {t('today.subtitle')}
         </p>
       </div>
@@ -107,7 +107,7 @@ export function TodayHeader({ onAestheticToggle }: TodayHeaderProps) {
             variant="outline"
             size="sm"
             onClick={onAestheticToggle}
-            className="gap-2 border-[#10b981]/30 hover:bg-[#10b981]/5 hover:text-[#047857] text-[#047857] dark:text-[#10b981] dark:hover:bg-[#10b981]/10 shrink-0"
+            className="gap-2 border-[#10b981]/30 hover:bg-[#10b981]/5 hover:text-[#047857] text-[#047857] shrink-0"
           >
             <Sparkles className="h-4 w-4 text-[#10b981]" />
             <span>Mode Esthétique</span>
@@ -117,7 +117,7 @@ export function TodayHeader({ onAestheticToggle }: TodayHeaderProps) {
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
             <Button variant="outline" size="sm" className="gap-2">
-              <CheckSquare className="h-4 w-4 text-muted-foreground" />
+              <CheckSquare className="h-4 w-4 text-[#7a7a76]" />
               <span>{t('today.new_task')}</span>
             </Button>
           </DialogTrigger>
@@ -168,7 +168,7 @@ export function TodayHeader({ onAestheticToggle }: TodayHeaderProps) {
         {/* Add Lead Sheet */}
         <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
           <SheetTrigger asChild>
-            <Button size="sm" className="gap-2 bg-primary hover:bg-primary/90">
+            <Button size="sm" className="gap-2 bg-[#059669] hover:bg-[#059669]/90">
               <Plus className="h-4 w-4" />
               <span>{t('today.add_lead')}</span>
             </Button>
@@ -295,7 +295,7 @@ export function TodayHeader({ onAestheticToggle }: TodayHeaderProps) {
                 </div>
               </div>
 
-              <SheetFooter className="pt-4 border-t border-border">
+              <SheetFooter className="pt-4 border-t border-[#e5e5e0]">
                 <Button type="button" variant="outline" onClick={() => setSheetOpen(false)}>{t('today.cancel')}</Button>
                 <Button type="submit">{t('today.save_lead')}</Button>
               </SheetFooter>

@@ -64,10 +64,10 @@ export function LeadsBulkActionsBar<TData>({ table }: LeadsBulkActionsBarProps<T
         </AlertDialogContent>
       </AlertDialog>
 
-      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-card border border-border shadow-xl rounded-lg px-4 py-2.5 flex items-center gap-4 animate-in fade-in slide-in-from-bottom-4 duration-300">
+      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-white border border-[#e5e5e0] shadow-xl rounded-lg px-4 py-2.5 flex items-center gap-4 animate-in fade-in slide-in-from-bottom-4 duration-300">
         {/* Count Info */}
-        <div className="flex items-center gap-2 border-r border-border pr-4 text-xs font-semibold text-foreground">
-          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground text-[10px] font-bold">
+        <div className="flex items-center gap-2 border-r border-[#e5e5e0] pr-4 text-xs font-semibold text-[#26251e]">
+          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#059669] text-white text-[10px] font-bold">
             {selectedCount}
           </span>
           <span>sélectionné{selectedCount > 1 ? 's' : ''}</span>
@@ -77,7 +77,7 @@ export function LeadsBulkActionsBar<TData>({ table }: LeadsBulkActionsBarProps<T
         <div className="flex items-center gap-3">
           {/* Bulk Status Dropdown */}
           <Select onValueChange={(val: Lead['status']) => handleStatusChange(val)}>
-            <SelectTrigger className="h-8 w-[140px] text-xs bg-background">
+            <SelectTrigger className="h-8 w-[140px] text-xs bg-[#fafaf8]">
               <SelectValue placeholder="Changer le statut" />
             </SelectTrigger>
             <SelectContent>
@@ -107,7 +107,7 @@ export function LeadsBulkActionsBar<TData>({ table }: LeadsBulkActionsBarProps<T
             variant="ghost"
             size="sm"
             onClick={() => table.toggleAllPageRowsSelected(false)}
-            className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+            className="h-8 w-8 p-0 text-[#7a7a76] hover:text-[#26251e]"
           >
             <X className="h-4 w-4" />
             <span className="sr-only">Annuler</span>

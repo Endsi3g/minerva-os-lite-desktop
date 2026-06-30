@@ -35,9 +35,9 @@ export function DataTable<TData>({
   if (isLoading) {
     return (
       <div className="space-y-4">
-        <div className="rounded-md border border-border bg-card overflow-x-auto">
+        <div className="rounded-md border border-[#e5e5e0] bg-white overflow-x-auto">
           <Table>
-            <TableHeader className="bg-muted/40">
+            <TableHeader className="bg-[#f4f4f3]/40">
               <TableRow>
                 {Array.from({ length: 6 }).map((_, i) => (
                   <TableHead key={i} className="h-10">
@@ -48,7 +48,7 @@ export function DataTable<TData>({
             </TableHeader>
             <TableBody>
               {Array.from({ length: 8 }).map((_, rowIdx) => (
-                <TableRow key={rowIdx} className="border-b border-border last:border-0">
+                <TableRow key={rowIdx} className="border-b border-[#e5e5e0] last:border-0">
                   {Array.from({ length: 6 }).map((_, colIdx) => (
                     <TableCell key={colIdx} className="py-3 px-4">
                       <Skeleton className={`h-3 ${colIdx === 0 ? 'w-4' : colIdx === 1 ? 'w-28' : colIdx === 2 ? 'w-20' : 'w-14'}`} />
@@ -66,14 +66,14 @@ export function DataTable<TData>({
   return (
     <div className="space-y-4">
       {/* Table Card Grid */}
-      <div className="rounded-md border border-border bg-card overflow-x-auto">
+      <div className="rounded-md border border-[#e5e5e0] bg-white overflow-x-auto">
         <Table>
-          <TableHeader className="bg-muted/40">
+          <TableHeader className="bg-[#f4f4f3]/40">
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => {
                   return (
-                    <TableHead key={header.id} className="h-10 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                    <TableHead key={header.id} className="h-10 text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">
                       {header.isPlaceholder
                         ? null
                         : flexRender(
@@ -92,7 +92,7 @@ export function DataTable<TData>({
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && 'selected'}
-                  className="hover:bg-muted/50 transition-colors border-b border-border last:border-0 cursor-pointer"
+                  className="hover:bg-[#f4f4f3]/70 transition-colors border-b border-[#e5e5e0] last:border-0 cursor-pointer"
                   onClick={(e) => {
                     const target = e.target as HTMLElement;
                     if (
@@ -123,7 +123,7 @@ export function DataTable<TData>({
               <TableRow>
                 <TableCell
                   colSpan={columns.length}
-                  className="h-24 text-center text-xs text-muted-foreground"
+                  className="h-24 text-center text-xs text-[#7a7a76]"
                 >
                   Aucun prospect correspondant aux filtres.
                 </TableCell>
@@ -136,20 +136,20 @@ export function DataTable<TData>({
       {/* Pagination Footer */}
       <div className="flex items-center justify-between px-2 text-xs">
         {/* Selection count */}
-        <div className="flex-1 text-[11px] text-muted-foreground">
+        <div className="flex-1 text-[11px] text-[#7a7a76]">
           {table.getFilteredSelectedRowModel().rows.length} sur{' '}
           {table.getFilteredRowModel().rows.length} ligne(s) sélectionnée(s).
         </div>
 
         {/* Navigation buttons */}
         <div className="flex items-center gap-6 lg:gap-8">
-          <div className="flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
+          <div className="flex items-center gap-1.5 text-[11px] font-medium text-[#7a7a76]">
             <span>Page</span>
-            <span className="font-semibold text-foreground">
+            <span className="font-semibold text-[#26251e]">
               {table.getState().pagination.pageIndex + 1}
             </span>
             <span>sur</span>
-            <span className="font-semibold text-foreground">
+            <span className="font-semibold text-[#26251e]">
               {table.getPageCount() || 1}
             </span>
           </div>

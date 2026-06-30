@@ -17,57 +17,101 @@ export async function GET(req: NextRequest) {
 
   try {
     const today = new Date().toISOString().split('T')[0];
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
 
-    // Find leads where next_action_date is today or earlier and not closed
-    const { data: overdueLeads, error: leadsError } = await supabase
-      .from('leads')
-      .select('id, user_id, workspace_id, business_name')
-      .lte('next_action_date', today)
-      .not('status', 'in', '("Won","Lost")');
+    // Fetch all users settings
+    const { data: settingsRows } = await supabase
+      .from('settings')
+      .select('user_id, workspace_id, reminder_overdue');
 
-    if (leadsError) throw leadsError;
-    if (!overdueLeads || overdueLeads.length === 0) {
+    if (!settingsRows || settingsRows.length === 0) {
       return NextResponse.json({ ok: true, processed: 0 });
     }
 
-    // Group by user_id
-    const byUser: Record<string, { workspaceId: string; count: number }> = {};
-    for (const lead of overdueLeads) {
-      if (!lead.user_id) continue;
-      if (!byUser[lead.user_id]) {
-        byUser[lead.user_id] = { workspaceId: lead.workspace_id || '', count: 0 };
-      }
-      byUser[lead.user_id].count++;
-    }
-
-    // Fetch user settings to check reminder_overdue preference
-    const userIds = Object.keys(byUser);
-    const { data: settingsRows } = await supabase
-      .from('settings')
-      .select('user_id, workspace_id, reminder_overdue, daily_digest, weekly_report')
-      .in('user_id', userIds);
-
     let processed = 0;
-    for (const userId of userIds) {
-      const setting = (settingsRows || []).find((s: any) => s.user_id === userId);
-      // null = treat as not subscribed
-      if (!setting || !setting.reminder_overdue) continue;
 
-      const { count, workspaceId } = byUser[userId];
+    for (const setting of settingsRows) {
+      if (!setting.user_id) continue;
+      // Default to true if not explicitly set to false
+      if (setting.reminder_overdue === false) continue;
+
+      const userId = setting.user_id;
+      const workspaceId = setting.workspace_id;
       const nowStr = new Date().toISOString();
 
-      await supabase.from('notifications').insert({
-        id: crypto.randomUUID(),
-        user_id: userId,
-        workspace_id: setting.workspace_id || workspaceId,
-        type: 'overdue',
-        title: 'Leads en retard',
-        body: `${count} prospect(s) nécessitent une action aujourd'hui.`,
-        link: '/leads',
-        is_read: false,
-        created_at: nowStr,
-        updated_at: nowStr,
-      });
+      // 1. Check for overdue leads (tasks / follow-ups overdue)
+      const { data: overdueLeads } = await supabase
+        .from('leads')
+        .select('id, business_name')
+        .eq('user_id', userId)
+        .lte('next_action_date', today)
+        .not('status', 'in', '("Won","Lost")');
+
+      if (overdueLeads && overdueLeads.length > 0) {
+        await supabase.from('notifications').insert({
+          id: crypto.randomUUID(),
+          user_id: userId,
+          workspace_id: workspaceId,
+          type: 'overdue',
+          title: 'Prospects en retard ⏳',
+          body: `${overdueLeads.length} prospect(s) en attente de relance aujourd'hui.`,
+          link: '/leads',
+          is_read: false,
+          created_at: nowStr,
+          updated_at: nowStr,
+        });
+      }
+
+      // 2. Check for stagnant/rotting leads (no updates in > 7 days)
+      const { data: rottingLeads } = await supabase
+        .from('leads')
+        .select('id, business_name')
+        .eq('user_id', userId)
+        .lt('updated_at', sevenDaysAgo)
+        .in('status', ['Contacted', 'Proposal Sent', 'Negotiation']);
+
+      if (rottingLeads && rottingLeads.length > 0) {
+        // Create individual or aggregated notification
+        const names = rottingLeads.slice(0, 2).map(l => l.business_name).join(', ');
+        const suffix = rottingLeads.length > 2 ? ` et ${rottingLeads.length - 2} autres` : '';
+        await supabase.from('notifications').insert({
+          id: crypto.randomUUID(),
+          user_id: userId,
+          workspace_id: workspaceId,
+          type: 'stale',
+          title: 'Prospects stagnants ⚠️',
+          body: `Attention, certains leads refroidissent (${names}${suffix}). Pas d'activité depuis 7 jours.`,
+          link: '/leads',
+          is_read: false,
+          created_at: nowStr,
+          updated_at: nowStr,
+        });
+      }
+
+      // 3. Inactivity reminder (no new/updated leads in last 3 days)
+      const { data: recentLeads } = await supabase
+        .from('leads')
+        .select('id')
+        .eq('user_id', userId)
+        .gte('updated_at', threeDaysAgo)
+        .limit(1);
+
+      if (!recentLeads || recentLeads.length === 0) {
+        await supabase.from('notifications').insert({
+          id: crypto.randomUUID(),
+          user_id: userId,
+          workspace_id: workspaceId,
+          type: 'reminder',
+          title: 'C’est le moment de prospecter ! 🚀',
+          body: "Vous n'avez pas qualifié de nouveaux leads depuis 3 jours. Lancez un scan de prospection.",
+          link: '/prospecting',
+          is_read: false,
+          created_at: nowStr,
+          updated_at: nowStr,
+        });
+      }
+
       processed++;
     }
 

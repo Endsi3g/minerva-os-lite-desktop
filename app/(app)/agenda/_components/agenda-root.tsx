@@ -211,14 +211,14 @@ export function AgendaRoot() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Calendar */}
-          <div className="lg:col-span-2 rounded-xl border border-border bg-white p-4">
+          <div className="lg:col-span-2 rounded-xl border border-[#e5e5e0] bg-white p-4">
             {/* Nav + view switcher */}
             <div className="flex items-center justify-between mb-4 gap-2">
               <div className="flex items-center gap-2">
-                <button onClick={() => shiftSelected(-1)} className="h-8 w-8 flex items-center justify-center rounded-lg border border-border hover:bg-[#f4f4f3] transition-colors bg-white text-[#26251e] cursor-pointer">
+                <button onClick={() => shiftSelected(-1)} className="h-8 w-8 flex items-center justify-center rounded-lg border border-[#e5e5e0] hover:bg-[#f4f4f3] transition-colors bg-white text-[#26251e] cursor-pointer">
                   <ChevronLeft className="h-4 w-4" />
                 </button>
-                <button onClick={() => shiftSelected(1)} className="h-8 w-8 flex items-center justify-center rounded-lg border border-border hover:bg-[#f4f4f3] transition-colors bg-white text-[#26251e] cursor-pointer">
+                <button onClick={() => shiftSelected(1)} className="h-8 w-8 flex items-center justify-center rounded-lg border border-[#e5e5e0] hover:bg-[#f4f4f3] transition-colors bg-white text-[#26251e] cursor-pointer">
                   <ChevronRight className="h-4 w-4" />
                 </button>
                 <p className="text-xs font-bold text-[#26251e] ml-1">
@@ -229,7 +229,7 @@ export function AgendaRoot() {
                     : new Date(`${selectedDate}T00:00`).toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long' })}
                 </p>
               </div>
-              <div className="flex items-center gap-0.5 bg-[#f4f4f3] rounded-lg p-0.5 border border-border">
+              <div className="flex items-center gap-0.5 bg-[#f4f4f3] rounded-lg p-0.5 border border-[#e5e5e0]">
                 {(['month', 'week', 'day'] as const).map(v => (
                   <button
                     key={v}
@@ -264,7 +264,7 @@ export function AgendaRoot() {
                     onDoubleClick={() => openBooking(key)}
                     className={cn(
                       'aspect-square rounded-lg border p-1 flex flex-col items-center gap-0.5 transition-all text-left bg-transparent cursor-pointer',
-                      isSelected ? 'border-[#059669] bg-[#059669]/5' : 'border-transparent hover:border-border hover:bg-[#f4f4f3]',
+                      isSelected ? 'border-[#059669] bg-[#059669]/5' : 'border-transparent hover:border-[#e5e5e0] hover:bg-[#f4f4f3]',
                     )}
                   >
                     <span className={cn(
@@ -344,7 +344,7 @@ export function AgendaRoot() {
           </div>
 
           {/* Selected day detail */}
-          <div className="rounded-xl border border-border bg-white p-4 space-y-3">
+          <div className="rounded-xl border border-[#e5e5e0] bg-white p-4 space-y-3">
             <div className="flex items-center justify-between">
               <p className="text-xs font-bold text-[#26251e]">
                 {new Date(`${selectedDate}T00:00`).toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long' })}
@@ -363,7 +363,7 @@ export function AgendaRoot() {
             ) : (
               <div className="space-y-2">
                 {selectedTasks.map(taskItem => (
-                  <div key={taskItem.id} className="flex items-start gap-2.5 p-2.5 rounded-lg border border-border bg-white">
+                  <div key={taskItem.id} className="flex items-start gap-2.5 p-2.5 rounded-lg border border-[#e5e5e0] bg-white">
                     <div className="h-7 w-7 rounded-lg flex items-center justify-center shrink-0 bg-[#059669]/10 text-[#059669]">
                       {taskItem.category === 'Meeting' ? <Clock className="h-3.5 w-3.5" /> : <CheckSquare className="h-3.5 w-3.5" />}
                     </div>
@@ -383,7 +383,7 @@ export function AgendaRoot() {
       {showBook && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={() => setShowBook(false)}>
           <div
-            className="bg-white rounded-2xl shadow-xl w-[460px] max-w-[95vw] p-6 space-y-4 animate-in zoom-in-95 duration-150 border border-border"
+            className="bg-white rounded-2xl shadow-xl w-[460px] max-w-[95vw] p-6 space-y-4 animate-in zoom-in-95 duration-150 border border-[#e5e5e0]"
             onClick={e => e.stopPropagation()}
           >
             <div className="flex items-center justify-between">
