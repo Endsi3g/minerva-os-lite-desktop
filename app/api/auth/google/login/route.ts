@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { getBaseUrl } from '@/lib/base-url';
 
 export async function GET(req: NextRequest) {
   try {
@@ -25,7 +26,7 @@ export async function GET(req: NextRequest) {
     
     const state = `${user.id}:${redirectParam}`;
 
-    const redirectUri = `${new URL(req.url).origin}/api/auth/google/callback`;
+    const redirectUri = `${getBaseUrl()}/api/auth/google/callback`;
     const scopes = [
       'https://www.googleapis.com/auth/gmail.send',
       'https://www.googleapis.com/auth/gmail.readonly',

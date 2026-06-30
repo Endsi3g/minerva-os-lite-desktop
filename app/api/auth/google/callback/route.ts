@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { getBaseUrl } from '@/lib/base-url';
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -32,7 +33,7 @@ export async function GET(req: NextRequest) {
 
   const clientId = process.env.GOOGLE_CLIENT_ID;
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-  const callbackUri = `${new URL(req.url).origin}/api/auth/google/callback`;
+  const callbackUri = `${getBaseUrl()}/api/auth/google/callback`;
 
   if (!clientId || !clientSecret || clientId.includes('placeholder')) {
     console.error("Google OAuth credentials missing in environment variables");

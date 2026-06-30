@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { exchangeCodeForTokens } from '@/lib/google/google-auth-service';
+import { getBaseUrl } from '@/lib/base-url';
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -47,8 +48,7 @@ export async function GET(req: NextRequest) {
     
     const workspaceId = workspaces?.[0]?.id;
 
-    const origin = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || new URL(req.url).origin;
-    const redirectUri = `${origin}/api/google/auth/callback`;
+    const redirectUri = `${getBaseUrl()}/api/google/auth/callback`;
     await exchangeCodeForTokens(supabase, code, redirectUri, userId, pack, workspaceId);
 
     return NextResponse.redirect(`${redirectTarget}google_connected`);
