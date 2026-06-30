@@ -18,6 +18,7 @@ import { TodayAestheticCanvas } from './today-aesthetic-canvas';
 import { TodayGoogleCalendarCard } from './today-google-calendar-card';
 import { InboxRoot } from '@/app/(app)/inbox/_components/inbox-root';
 import { AgentFeed } from './agent-feed';
+import { AgentPrioritiesCard } from './agent-priorities-card';
 import { LayoutDashboard, Mail } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
@@ -103,6 +104,9 @@ export function TodayRoot() {
 
           {/* ── Colonne droite : contexte & stats ── */}
           <div className="flex flex-col gap-5">
+            {/* Priorités du jour — leads froids à relancer, alimenté par l'agent */}
+            <AgentPrioritiesCard />
+
             {/* Agent Feed — activité IA temps réel (notifications) */}
             <AgentFeed />
 

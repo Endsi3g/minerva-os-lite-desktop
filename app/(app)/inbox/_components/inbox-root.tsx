@@ -40,6 +40,7 @@ export function InboxRoot() {
 
   const [replyText, setReplyText] = useState('');
   const [sending, setSending] = useState(false);
+  const [classifyingThreadId, setClassifyingThreadId] = useState<string | null>(null);
 
   const fetchThreads = useCallback(async () => {
     if (!activeWorkspace?.id) return;
@@ -124,6 +125,7 @@ export function InboxRoot() {
     setSuggestions([]);
     setReplyText('');
 
+    let messages: import('@/lib/inbox-types').ThreadMessage[] = [];
     try {
       const res = await fetch(getApiUrl(`/api/inbox/thread/${thread.gmailThreadId}`));
       if (!res.ok) {
@@ -131,9 +133,47 @@ export function InboxRoot() {
         return;
       }
       const data = await res.json();
-      setDetailMessages(data.messages || []);
+      messages = data.messages || [];
+      setDetailMessages(messages);
     } finally {
       setDetailLoading(false);
+    }
+
+    // Auto-classify: if thread is linked to a lead and has no AI intent yet, classify silently
+    if (thread.isLeadLinked && thread.leadId && !thread.replyIntent && messages.length > 0) {
+      const lastReply = [...messages].reverse().find(m => !m.isFromUser);
+      if (lastReply) {
+        setClassifyingThreadId(thread.gmailThreadId);
+        try {
+          const res = await fetch(getApiUrl('/api/inbox/classify'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              threadId: thread.gmailThreadId,
+              leadId: thread.leadId,
+              subject: thread.subject,
+              snippet: lastReply.body.slice(0, 800),
+              workspaceId: activeWorkspace?.id,
+            }),
+          });
+          if (res.ok) {
+            const result = await res.json();
+            if (result.intent) {
+              setThreads(prev =>
+                prev.map(t =>
+                  t.gmailThreadId === thread.gmailThreadId
+                    ? { ...t, replyIntent: result.intent, intentConfidence: result.confidence ?? null }
+                    : t
+                )
+              );
+              setSelectedThread(prev =>
+                prev ? { ...prev, replyIntent: result.intent, intentConfidence: result.confidence ?? null } : prev
+              );
+            }
+          }
+        } catch { /* silent — non-blocking */ }
+        finally { setClassifyingThreadId(null); }
+      }
     }
   };
 
@@ -359,6 +399,7 @@ export function InboxRoot() {
             campaigns={campaigns}
             campaignFilter={campaignFilter}
             onCampaignFilterChange={setCampaignFilter}
+            classifyingThreadId={classifyingThreadId}
           />
         </div>
         {/* Detail panel */}

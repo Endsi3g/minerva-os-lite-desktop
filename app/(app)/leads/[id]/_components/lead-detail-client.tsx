@@ -1428,7 +1428,8 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
           leadId: id,
           channel: draftChannel,
           tone: draftTone,
-          instructions: enrichedInstructions
+          instructions: enrichedInstructions,
+          websiteDescription: lead?.websiteDescription || undefined,
         })
       });
       if (!res.ok) {

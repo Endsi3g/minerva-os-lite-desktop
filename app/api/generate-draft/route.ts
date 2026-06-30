@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
 
-    const { leadId, channel = 'Email', tone, instructions = '' } = await req.json();
+    const { leadId, channel = 'Email', tone, instructions = '', websiteDescription: clientWebsiteDescription } = await req.json();
 
     if (!leadId) {
       return NextResponse.json({ error: 'leadId manquant' }, { status: 400 });
@@ -124,8 +124,10 @@ RÈGLES ABSOLUES :
       ? `${settings.ai_system_prompt}\n\n${baseSystemPrompt}`
       : baseSystemPrompt;
 
-    // Website description / context — handle the possible DB column names
+    // Website description — client sends it directly (avoids Electron sync delay),
+    // fallback to DB value for web mode
     const websiteDescription =
+      clientWebsiteDescription ||
       (lead as any).website_description ||
       (lead as any).description ||
       null;

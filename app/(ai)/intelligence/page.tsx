@@ -1,4 +1,4 @@
-import IntelligenceRoot from '@/app/(app)/intelligence/_components/intelligence-root';
+import IntelligenceRoot from '@/app/(ai)/intelligence/_components/intelligence-root';
 
 export const metadata = {
   title: 'Intelligence',

@@ -1,9 +1,9 @@
 'use client';
 
-import { AlertCircle, Filter, Mail, User } from 'lucide-react';
+import { AlertCircle, Filter, Mail, User, Loader2 } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import type { InboxThread } from '@/lib/inbox-types';
+import type { InboxThread, ReplyIntent } from '@/lib/inbox-types';
 import type { Campaign } from '@/lib/reach-context';
 
 type ReplyStatusFilter = 'all' | 'positive' | 'followup' | 'negative';
@@ -14,6 +14,15 @@ const REPLY_STATUS_LABELS: Record<string, { label: string; color: string }> = {
   positive: { label: 'Positif', color: 'bg-[#059669]/10 text-[#059669] border-[#059669]/20' },
   followup: { label: 'À relancer', color: 'bg-[#d97706]/10 text-[#d97706] border-[#d97706]/20' },
   negative: { label: 'Négatif', color: 'bg-[#dc2626]/10 text-[#dc2626] border-[#dc2626]/20' },
+};
+
+const INTENT_LABELS: Record<ReplyIntent, { label: string; color: string }> = {
+  interested:      { label: 'Intéressé',      color: 'bg-[#f0fdf4] text-[#059669] border-[#059669]/30' },
+  scheduling:      { label: 'RDV',             color: 'bg-[#eff6ff] text-[#2563eb] border-[#2563eb]/30' },
+  info_request:    { label: 'Infos demandées', color: 'bg-[#fefce8] text-[#ca8a04] border-[#ca8a04]/30' },
+  objection:       { label: 'Objection',       color: 'bg-[#fff7ed] text-[#ea580c] border-[#ea580c]/30' },
+  not_interested:  { label: 'Pas intéressé',   color: 'bg-[#fef2f2] text-[#dc2626] border-[#dc2626]/30' },
+  other:           { label: 'Autre',            color: 'bg-[#f4f4f3] text-[#7a7a76] border-[#e5e5e0]' },
 };
 
 function relativeTime(isoDate: string): string {
@@ -46,6 +55,7 @@ interface InboxListProps {
   campaigns: Campaign[];
   campaignFilter: string | null;
   onCampaignFilterChange: (id: string | null) => void;
+  classifyingThreadId?: string | null;
 }
 
 export function InboxList({
@@ -62,6 +72,7 @@ export function InboxList({
   campaigns,
   campaignFilter,
   onCampaignFilterChange,
+  classifyingThreadId,
 }: InboxListProps) {
   // Apply filters based on view mode
   const filtered = threads.filter(t => {
@@ -242,6 +253,16 @@ export function InboxList({
                           <User className="h-2 w-2" />
                           Lead
                         </Badge>
+                      )}
+                      {/* AI intent badge — shown when classified, hidden for 'other' */}
+                      {thread.replyIntent && thread.replyIntent !== 'other' && (
+                        <Badge className={`text-[9px] px-1.5 py-0 h-4 border font-semibold ${INTENT_LABELS[thread.replyIntent].color}`}>
+                          {INTENT_LABELS[thread.replyIntent].label}
+                        </Badge>
+                      )}
+                      {/* Classifying spinner */}
+                      {classifyingThreadId === thread.gmailThreadId && (
+                        <Loader2 className="h-3 w-3 animate-spin text-[#059669]" />
                       )}
                       {statusMeta && (
                         <Badge className={`text-[9px] px-1 py-0 h-4 border ${statusMeta.color}`}>

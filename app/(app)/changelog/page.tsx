@@ -62,6 +62,34 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v6.1.0',
+      date: '2026-06-29',
+      titleKey: 'changelog.v3_42_0_title' as TranslationKey,
+      descKey: 'changelog.v3_42_0_desc' as TranslationKey,
+      highlights: [
+        { tag: 'feature', text: 'Relance automatique leads tièdes — bouton "Générer les relances" dans Today : l\'agent détecte les top 3 leads froids (score ≥ 30, inactifs depuis 7j+), génère un brouillon de relance pour chacun et le pousse dans Outreach → Approbations.' },
+        { tag: 'feature', text: 'AgentPrioritiesCard dans Today — remplace le hot-leads-card par les recommandations de l\'agent : top 5 leads tièdes/froids triés par score, badge température, jours d\'inactivité, lien direct vers chaque lead.' },
+        { tag: 'feature', text: 'Badge intent AI sur chaque thread Inbox — l\'agent classifie automatiquement l\'intention de chaque réponse (Intéressé, RDV, Infos demandées, Objection, Pas intéressé) et affiche un badge coloré dans la liste.' },
+        { tag: 'feature', text: 'Auto-classify à l\'ouverture d\'un thread — premier clic sur un thread lié à un lead sans intent : classification silencieuse via /api/inbox/classify, badge mis à jour en temps réel.' },
+        { tag: 'feature', text: 'Endpoint /api/agent/relance — POST focalisé : list_leads_to_follow_up → generateEmailDraft × 3 → drafts table (source=agent, approved=null). Visible immédiatement dans Approbations sans passer par la boucle agent générale.' },
+        { tag: 'feature', text: 'Endpoint /api/inbox/classify — POST autentifié : classifyReply via l\'agent, sauvegarde dans gmail_threads.reply_intent + leads.last_reply_intent, log dans la timeline du lead.' },
+      ],
+    },
+    {
+      version: 'v6.0.0',
+      date: '2026-06-29',
+      titleKey: 'changelog.v3_42_0_title' as TranslationKey,
+      descKey: 'changelog.v3_42_0_desc' as TranslationKey,
+      highlights: [
+        { tag: 'feature', text: 'Minerva AI — nouvelle plateforme dédiée aux fonctionnalités IA : Assistant, Intelligence, Agents, Skills. Accessible via icône dans la topbar de Minerva Reach.' },
+        { tag: 'feature', text: 'Navigation duale — route group (ai) avec layout AI épuré : 4 entrées nav, historique de sessions Assistant dans la sidebar, switch vers Reach en un clic.' },
+        { tag: 'feature', text: 'Switch de plateforme dans la topbar — bouton "Minerva AI" sur Reach, bouton "Minerva Reach" sur AI. Prêt pour subdomains (NEXT_PUBLIC_AI_PLATFORM_URL / NEXT_PUBLIC_REACH_PLATFORM_URL).' },
+        { tag: 'design', text: 'Nav Reach simplifiée — Templates retiré de la nav (accessible dans l\'onglet Outreach → Templates). 6 entrées : Accueil, Leads, Outreach, Carte, Agenda, Équipe.' },
+        { tag: 'fix', text: 'Bug Scrape → Email en mode Electron : websiteDescription transmise directement dans le body POST de generate-draft (contourne le délai de sync SQLite→Supabase).' },
+        { tag: 'fix', text: 'Sidebar Reach : bloc session assistant retiré (code mort depuis déplacement de /assistant vers la plateforme AI). Import nettoyé.' },
+      ],
+    },
+    {
       version: 'v5.3.0',
       date: '2026-06-29',
       titleKey: 'changelog.v3_42_0_title' as TranslationKey,

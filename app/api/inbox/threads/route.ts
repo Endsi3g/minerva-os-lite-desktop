@@ -450,17 +450,39 @@ export async function GET(req: NextRequest) {
 
     const { accessToken, googleEmail } = tokenData;
 
+    let threads: InboxThread[];
+    let needsReauth: boolean;
+
     if (mode === 'all') {
-      const { threads, needsReauth } = await getAllInboxThreads(accessToken, googleEmail, supabase, workspaceId);
-      return NextResponse.json({ threads, needsReauth, isConnected: true });
+      ({ threads, needsReauth } = await getAllInboxThreads(accessToken, googleEmail, supabase, workspaceId));
+    } else if (mode === 'sent') {
+      ({ threads, needsReauth } = await getSentThreads(accessToken, googleEmail, supabase, workspaceId));
+    } else {
+      ({ threads, needsReauth } = await getLeadReplyThreads(accessToken, googleEmail, supabase, workspaceId));
     }
 
-    if (mode === 'sent') {
-      const { threads, needsReauth } = await getSentThreads(accessToken, googleEmail, supabase, workspaceId);
-      return NextResponse.json({ threads, needsReauth, isConnected: true });
+    // Join reply_intent from gmail_threads table (written by classify_reply agent tool)
+    if (threads.length > 0) {
+      const threadIds = threads.map(t => t.gmailThreadId);
+      const { data: intentRows } = await supabase
+        .from('gmail_threads')
+        .select('thread_id, reply_intent, intent_confidence')
+        .in('thread_id', threadIds);
+      if (intentRows && intentRows.length > 0) {
+        const intentMap = new Map<string, { intent: string; confidence: number }>(
+          intentRows.map((r: any) => [r.thread_id, { intent: r.reply_intent, confidence: r.intent_confidence }])
+        );
+        threads = threads.map(t => {
+          const row = intentMap.get(t.gmailThreadId);
+          return row
+            ? { ...t, replyIntent: row.intent as InboxThread['replyIntent'], intentConfidence: row.confidence ?? null }
+            : { ...t, replyIntent: null, intentConfidence: null };
+        });
+      } else {
+        threads = threads.map(t => ({ ...t, replyIntent: null, intentConfidence: null }));
+      }
     }
 
-    const { threads, needsReauth } = await getLeadReplyThreads(accessToken, googleEmail, supabase, workspaceId);
     return NextResponse.json({ threads, needsReauth, isConnected: true });
   } catch (err) {
     console.error('GET /api/inbox/threads error:', err);

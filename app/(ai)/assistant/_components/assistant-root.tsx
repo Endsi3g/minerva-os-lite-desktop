@@ -39,6 +39,7 @@ import {
   Bookmark
 } from 'lucide-react';
 import { MinervaIcon } from '@/components/icons';
+import { MinervaOwl } from '@/components/minerva-owl';
 import { useLanguage } from '@/lib/language-context';
 import {
   dbGetSessions,
@@ -1444,8 +1445,8 @@ export function AssistantRoot() {
               >
                 <History className="w-3.5 h-3.5" />
               </Button>
-              <div className="h-6 w-6 rounded-md bg-[#10b981]/15 text-[#10b981] flex items-center justify-center shrink-0">
-                <MinervaIcon size={14} />
+              <div className="h-6 w-6 rounded-md bg-[#10b981]/15 text-[#10b981] flex items-center justify-center shrink-0 overflow-hidden">
+                <MinervaOwl state="idle" size={20} />
               </div>
               <span className="text-xs font-bold text-foreground">Minerva AI Assistant</span>
               {currentSession && (
@@ -1476,9 +1477,7 @@ export function AssistantRoot() {
               <div className="flex flex-col items-center justify-center min-h-full py-16 px-6 max-w-xl mx-auto space-y-8 animate-scale-up">
                 
                 <div className="flex flex-col items-center text-center space-y-3">
-                  <div className="h-10 w-10 rounded-xl bg-white border border-[#e6e5e0] text-[#10b981] flex items-center justify-center shadow-sm">
-                    <MinervaIcon size={24} />
-                  </div>
+                  <MinervaOwl state="idle" size={80} className="mb-2" />
                   <h1 className="text-3xl tracking-tight text-[#26251e] font-serif font-light font-georgia leading-tight">
                     {t('assistant.still_at_it')}
                   </h1>
@@ -1647,8 +1646,8 @@ export function AssistantRoot() {
                       }`}
                     >
                       {msg.role === 'assistant' ? (
-                        <div className="h-7 w-7 rounded-lg bg-neutral-100 border border-neutral-200 text-[#10b981] flex items-center justify-center shrink-0 mt-0.5">
-                          <MinervaIcon size={16} />
+                        <div className="h-7 w-7 rounded-lg bg-neutral-100 border border-neutral-200 text-[#10b981] flex items-center justify-center shrink-0 mt-0.5 overflow-hidden">
+                          <MinervaOwl state="idle" size={24} />
                         </div>
                       ) : (
                         <div className="h-7 w-7 rounded-full bg-[#26251e] text-white flex items-center justify-center shrink-0 text-[10px] font-bold mt-0.5 select-none">
@@ -1679,8 +1678,8 @@ export function AssistantRoot() {
 
                 {isLoading && (
                   <div className="flex gap-3 max-w-[85%] mr-auto items-center">
-                    <div className="h-7 w-7 rounded-lg bg-emerald-50 border border-emerald-200 text-[#059669] flex items-center justify-center shrink-0 animate-pulse">
-                      <MinervaIcon size={16} />
+                    <div className="h-7 w-7 rounded-lg bg-emerald-50 border border-emerald-200 text-[#059669] flex items-center justify-center shrink-0 overflow-hidden">
+                      <MinervaOwl state="thinking" size={24} />
                     </div>
                     <div className="bg-white border-0 rounded-2xl rounded-tl-none px-4 py-2.5">
                       <div className="flex items-center gap-2">

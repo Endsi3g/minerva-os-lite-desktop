@@ -1,3 +1,5 @@
+export type ReplyIntent = 'interested' | 'not_interested' | 'scheduling' | 'info_request' | 'objection' | 'other';
+
 export interface InboxThread {
   leadId: string | null;
   leadName: string | null;
@@ -14,6 +16,8 @@ export interface InboxThread {
   messageCount: number;
   hasUnread: boolean;
   isLeadLinked: boolean;
+  replyIntent: ReplyIntent | null;
+  intentConfidence: number | null;
 }
 
 export interface ThreadMessage {

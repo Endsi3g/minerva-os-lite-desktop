@@ -31,7 +31,6 @@ import {
   Settings2,
   Globe,
   BarChart3,
-  MessageSquare,
   MessageCircle,
   Megaphone,
   Download,
@@ -39,7 +38,6 @@ import {
   CreditCard,
   HelpCircle,
   Tag,
-  Brain,
   Gift,
   MapPin,
   ShieldCheck,
@@ -60,6 +58,7 @@ import {
   Send,
   MoreHorizontal,
   Home,
+  ArrowLeftRight,
 } from 'lucide-react';
 import { BottomBlur } from '@/components/ui/edge-blur';
 import { cn } from '@/lib/utils';
@@ -83,6 +82,7 @@ import {
 } from '@/lib/onboarding-store';
 import { ALL_MODULES, routeToModule, type PermissionModule } from '@/lib/permissions';
 import { cachedFetch, invalidateClientCache } from '@/lib/fetch-cache';
+import { getPlatformUrl } from '@/lib/platform-utils';
 import { requestNotificationPermission, checkAndSendTaskReminders, checkAndSendLeadReminder } from '@/lib/notification-service';
 import { MinervaOwl } from '@/components/minerva-owl';
 import {
@@ -93,14 +93,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator
 } from '@/components/ui/breadcrumb';
-import {
-  dbGetSessions,
-  dbDeleteSession,
-  dbToggleSessionPin,
-  dbUpdateSessionProject,
-  AssistantSession
-} from '@/app/(app)/assistant/_components/assistant-db';
-import { Pin, PinOff } from 'lucide-react';
+import { Pin } from 'lucide-react';
 import { CalendarDays, UsersRound } from 'lucide-react';
 
 const CURRENT_VERSION = '5.0.0';
@@ -200,12 +193,6 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
   // New states for Minerva OS Lite interactive features
   const [showNewProjectModal, setShowNewProjectModal] = useState(false);
   const [newProjectName, setNewProjectName] = useState('');
-  const [selectedProjectFilter, setSelectedProjectFilter] = useState<string | 'all'>('all');
-  const [linkingSessionId, setLinkingSessionId] = useState<string | null>(null);
-
-  // Assistant sessions for sidebar display
-  const [assistantSessions, setAssistantSessions] = useState<AssistantSession[]>([]);
-  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [onboarding, setOnboarding] = useState({ percent: 12, score: 0 });
   const [completedTasks, setCompletedTasks] = useState<string[]>([]);
 
@@ -429,25 +416,6 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
     }
   }, [pathname]);
 
-  useEffect(() => {
-    if (!contextUser || !activeWorkspace) return;
-    const loadSessions = async () => {
-      const sessions = await dbGetSessions(contextUser.id, activeWorkspace.id);
-      setAssistantSessions(sessions);
-      const stored = localStorage.getItem(`minerva_active_sess_${activeWorkspace.id}`);
-      if (stored) setActiveSessionId(stored);
-    };
-    loadSessions();
-
-    const handleSync = () => {
-      loadSessions();
-    };
-    window.addEventListener('minerva_assistant_sync', handleSync);
-    return () => {
-      window.removeEventListener('minerva_assistant_sync', handleSync);
-    };
-  }, [contextUser, activeWorkspace]);
-
   const toggleCollapse = () => {
     const nextState = !isCollapsed;
     setIsCollapsed(nextState);
@@ -646,15 +614,14 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
     return crumbs;
   };
 
-  // Pinned nav items — Navigation v5 : 6 entrées épurées
+  // Pinned nav items — Navigation v6 : 6 entrées (Templates fusionné dans Outreach)
   const pinnedItems = [
-    { name: 'Accueil',     href: '/today',    icon: Home },
-    { name: 'Leads',       href: '/leads',    icon: Users },
-    { name: 'Outreach',    href: '/outreach', icon: Send },
-    { name: 'Templates',   href: '/email-templates', icon: FileText },
-    { name: 'Carte',       href: '/map',      icon: MapPin },
-    { name: 'Agenda',      href: '/agenda',   icon: CalendarDays },
-    { name: 'Équipe',      href: '/team',     icon: UsersRound },
+    { name: 'Accueil',  href: '/today',    icon: Home },
+    { name: 'Leads',    href: '/leads',    icon: Users },
+    { name: 'Outreach', href: '/outreach', icon: Send },
+    { name: 'Carte',    href: '/map',      icon: MapPin },
+    { name: 'Agenda',   href: '/agenda',   icon: CalendarDays },
+    { name: 'Équipe',   href: '/team',     icon: UsersRound },
   ];
 
   // Collapsible nav categories — vidées en v5 (pages secondaires accessibles par URL directe)
@@ -872,196 +839,6 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
 
         {/* Sidebar Navigation */}
         <div className="flex-1 overflow-y-auto overflow-x-hidden py-3 space-y-4">
-          {(pathname.startsWith('/assistant') || pathname.startsWith('/chat')) && (!isCollapsed ? (
-            <div className="px-3 mb-1 space-y-1">
-              <Link
-                href="/assistant"
-                onClick={() => { setSidebarOpen(false); setActiveSessionId(null); if (activeWorkspace) localStorage.removeItem(`minerva_active_sess_${activeWorkspace.id}`); }}
-                className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-[#10b981] bg-[#10b981]/10 border border-[#10b981]/20 rounded-md hover:bg-[#10b981]/15 transition-all w-full justify-center"
-              >
-                <MessageSquare className="w-3.5 h-3.5 shrink-0" />
-                <span>{t('nav.new_chat')}</span>
-              </Link>
-
-              {/* Global project filter */}
-              <select
-                value={selectedProjectFilter}
-                onChange={(e) => setSelectedProjectFilter(e.target.value)}
-                className="w-full text-[10px] font-bold bg-white border border-[#e5e5e0] rounded-md px-2 py-1 text-[#555552] focus:outline-none focus:ring-1 focus:ring-[#10b981] mb-2 select-none"
-              >
-                <option value="all">📁 Tous les projets</option>
-                {projects.map((proj) => (
-                  <option key={proj.id} value={proj.id}>📁 {proj.name}</option>
-                ))}
-              </select>
-
-              {assistantSessions.length > 0 && (
-                <div className="space-y-0.5 mt-1 max-h-48 overflow-y-auto">
-                  {assistantSessions
-                    .filter((sess) => {
-                      if (selectedProjectFilter === 'all') return true;
-                      return sess.projectId === selectedProjectFilter;
-                    })
-                    .map((sess) => {
-                      const linkedProject = projects.find((p) => p.id === sess.projectId);
-                      return (
-                        <div
-                          key={sess.id}
-                          className={cn(
-                            "group flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-semibold transition-all",
-                            activeSessionId === sess.id
-                              ? "bg-[#10b981]/10 text-[#10b981]"
-                              : "text-[#555552] hover:bg-[#e5e5e2]/60 hover:text-[#26251e]"
-                          )}
-                        >
-                          {sess.pinned && <Pin className="h-2.5 w-2.5 text-amber-500 shrink-0" />}
-                          <Link
-                            href="/assistant"
-                            onClick={() => {
-                              setSidebarOpen(false);
-                              setActiveSessionId(sess.id);
-                              if (activeWorkspace) localStorage.setItem(`minerva_active_sess_${activeWorkspace.id}`, sess.id);
-                              // Dispatch sync event to load session messages
-                              window.dispatchEvent(new CustomEvent('minerva_assistant_sync'));
-                            }}
-                            className="flex-1 truncate text-left"
-                          >
-                            {sess.title}
-                          </Link>
-                          
-                          {/* Small project indicator badge */}
-                          {linkedProject && (
-                            <span 
-                              className="text-[8px] px-1 py-0.5 rounded bg-neutral-200 text-[#555552] max-w-[50px] truncate shrink-0"
-                              title={`Projet : ${linkedProject.name}`}
-                            >
-                              {linkedProject.name}
-                            </span>
-                          )}
-
-                          {/* Link project dropdown selector */}
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <button
-                                onClick={(e) => e.stopPropagation()}
-                                className={cn(
-                                  "text-neutral-400 hover:text-[#10b981] p-0.5 rounded transition-colors shrink-0",
-                                  sess.projectId ? "opacity-100 text-[#10b981]" : "opacity-0 group-hover:opacity-100"
-                                )}
-                                title="Lier à un projet"
-                              >
-                                <Folder className="h-2.5 w-2.5" />
-                              </button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-48 bg-white border border-[#e5e5e0] rounded-md shadow-lg p-1 text-[10px] font-semibold text-[#26251e]">
-                              <DropdownMenuItem
-                                onClick={async (e) => {
-                                  e.stopPropagation();
-                                  await dbUpdateSessionProject(sess.id, null);
-                                  const updated = await dbGetSessions(contextUser!.id, activeWorkspace!.id);
-                                  setAssistantSessions(updated);
-                                  window.dispatchEvent(new CustomEvent('minerva_assistant_sync'));
-                                }}
-                                className="flex items-center gap-1.5 px-2 py-1 hover:bg-neutral-100 rounded cursor-pointer"
-                              >
-                                <Folder className="h-3 w-3 text-neutral-400" />
-                                <span>Aucun projet</span>
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator className="bg-[#e5e5e0] my-1" />
-                              {projects.map((p) => {
-                                const isLinked = sess.projectId === p.id;
-                                return (
-                                  <DropdownMenuItem
-                                    key={p.id}
-                                    onClick={async (e) => {
-                                      e.stopPropagation();
-                                      await dbUpdateSessionProject(sess.id, p.id);
-                                      const updated = await dbGetSessions(contextUser!.id, activeWorkspace!.id);
-                                      setAssistantSessions(updated);
-                                      window.dispatchEvent(new CustomEvent('minerva_assistant_sync'));
-                                    }}
-                                    className="flex items-center justify-between px-2 py-1 hover:bg-neutral-100 rounded cursor-pointer"
-                                  >
-                                    <span className="flex items-center gap-1.5 truncate">
-                                      <Folder className={cn("h-3 w-3", isLinked ? "text-[#10b981]" : "text-neutral-400")} />
-                                      <span className="truncate">{p.name}</span>
-                                    </span>
-                                    {isLinked && <Check className="h-3 w-3 text-[#10b981]" />}
-                                  </DropdownMenuItem>
-                                );
-                              })}
-                              <DropdownMenuSeparator className="bg-[#e5e5e0] my-1" />
-                              <DropdownMenuItem
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setLinkingSessionId(sess.id);
-                                  setShowNewProjectModal(true);
-                                }}
-                                className="flex items-center gap-1.5 px-2 py-1 hover:bg-neutral-100 rounded cursor-pointer font-bold text-[#10b981]"
-                              >
-                                <FolderPlus className="h-3 w-3" />
-                                <span>Créer un projet...</span>
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-
-                          <button
-                            onClick={async (e) => {
-                              e.preventDefault();
-                              if (!activeWorkspace) return;
-                              await dbToggleSessionPin(sess.id, !sess.pinned);
-                              const updated = await dbGetSessions(contextUser!.id, activeWorkspace.id);
-                              setAssistantSessions(updated);
-                              window.dispatchEvent(new CustomEvent('minerva_assistant_sync'));
-                            }}
-                            className="opacity-0 group-hover:opacity-100 text-neutral-400 hover:text-amber-500 transition-opacity p-0.5"
-                            title={sess.pinned ? "Désépingler" : "Épingler"}
-                          >
-                            {sess.pinned ? <PinOff className="h-2.5 w-2.5" /> : <Pin className="h-2.5 w-2.5" />}
-                          </button>
-                          <button
-                            onClick={async (e) => {
-                              e.preventDefault();
-                              if (!activeWorkspace) return;
-                              await dbDeleteSession(activeWorkspace.id, sess.id);
-                              const updated = await dbGetSessions(contextUser!.id, activeWorkspace.id);
-                              setAssistantSessions(updated);
-                              if (activeSessionId === sess.id) {
-                                setActiveSessionId(null);
-                                localStorage.removeItem(`minerva_active_sess_${activeWorkspace.id}`);
-                              }
-                              window.dispatchEvent(new CustomEvent('minerva_assistant_sync'));
-                            }}
-                            className="opacity-0 group-hover:opacity-100 text-neutral-400 hover:text-red-600 transition-opacity p-0.5"
-                            title="Supprimer"
-                          >
-                            <X className="h-2.5 w-2.5" />
-                          </button>
-                        </div>
-                      );
-                    })}
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="px-2 mb-2 flex justify-center">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Link
-                    href="/assistant"
-                    onClick={() => setSidebarOpen(false)}
-                    className="flex h-8 w-8 items-center justify-center rounded-md text-[#10b981] bg-[#10b981]/10 hover:bg-[#10b981]/15 border border-[#10b981]/20 transition-all"
-                  >
-                    <MessageSquare className="w-3.5 h-3.5 shrink-0" />
-                  </Link>
-                </TooltipTrigger>
-                <TooltipContent side="right" className="text-xs bg-[#26251e] text-white">
-                  {t('nav.new_chat')}
-                </TooltipContent>
-              </Tooltip>
-            </div>
-          ))}
-          
           {/* Pinned nav items */}
           <nav className={cn("space-y-[2px]", isCollapsed ? "px-2" : "px-3")}>
             {filteredPinnedItems.map((item) => {
@@ -1423,6 +1200,22 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
 
           {/* Right actions */}
           <div className="flex items-center gap-2">
+            {/* Platform switch — Minerva AI */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Link
+                  href={getPlatformUrl('ai', '/assistant')}
+                  className="h-8 flex items-center gap-1.5 px-2.5 rounded-md border border-[#e5e5e0] text-[10px] font-bold text-[#555552] hover:text-[#26251e] hover:bg-[#f4f4f3] transition-colors"
+                >
+                  <ArrowLeftRight className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">Minerva AI</span>
+                </Link>
+              </TooltipTrigger>
+              <TooltipContent className="text-xs bg-[#26251e] text-white p-2 rounded-lg font-sans border border-neutral-800">
+                Ouvrir Minerva AI (assistant & agents)
+              </TooltipContent>
+            </Tooltip>
+
             <div className="relative w-44 md:block hidden">
               <span className="absolute inset-y-0 left-2 flex items-center text-[#7a7a76]">
                 <Search className="h-3 w-3" />
@@ -1621,10 +1414,10 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
       <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-white/95 backdrop-blur-md border-t border-[#e5e5e0] bottom-nav-safe">
         <div className="flex items-center justify-around h-16 px-4">
           {([
-            { name: 'Accueil', href: '/today', icon: Home },
-            { name: t('nav.prospect'), href: '/prospecting', icon: PenSquare },
-            { name: 'Leads', href: '/leads', icon: Users },
-            { name: 'Assistant', href: '/assistant', icon: Brain },
+            { name: 'Accueil',     href: '/today',      icon: Home },
+            { name: 'Prospects',   href: '/prospecting', icon: PenSquare },
+            { name: 'Leads',       href: '/leads',       icon: Users },
+            { name: 'Outreach',    href: '/outreach',    icon: Send },
           ] as const).map((item) => {
             const isActive = pathname === item.href || (item.href !== '/today' && pathname.startsWith(item.href));
             return (
@@ -1687,8 +1480,8 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
               <p className="text-[10px] font-bold uppercase tracking-widest text-[#7a7a76] px-6 py-2">Navigation</p>
               <div className="grid grid-cols-3 gap-px px-4 pb-6">
                 {[
-                  { name: 'Bibliothèque', href: '/library', icon: Folder },
-                  { name: 'Agents', href: '/agents', icon: Sparkles },
+                  { name: 'Bibliothèque', href: '/library',      icon: Folder },
+                  { name: 'Carte',        href: '/map',          icon: MapPin },
                   { name: 'Intégrations', href: '/integrations', icon: Plug },
                   { name: 'Paramètres', href: '/settings', icon: SettingsIcon },
                   { name: 'Changelog', href: '/changelog', icon: Megaphone },
@@ -1733,15 +1526,8 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
               onKeyDown={async (e) => {
                 if (e.key === 'Enter') {
                   if (newProjectName.trim()) {
-                    const newProj = await createProject(newProjectName.trim());
-                    if (newProj && linkingSessionId) {
-                      await dbUpdateSessionProject(linkingSessionId, newProj.id);
-                      const updated = await dbGetSessions(contextUser!.id, activeWorkspace!.id);
-                      setAssistantSessions(updated);
-                      window.dispatchEvent(new CustomEvent('minerva_assistant_sync'));
-                    }
+                    await createProject(newProjectName.trim());
                     setNewProjectName('');
-                    setLinkingSessionId(null);
                     setShowNewProjectModal(false);
                   }
                 }
@@ -1752,7 +1538,6 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                 variant="ghost"
                 onClick={() => {
                   setNewProjectName('');
-                  setLinkingSessionId(null);
                   setShowNewProjectModal(false);
                 }}
                 className="h-8 text-[#555552]"
@@ -1762,15 +1547,8 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
               <Button
                 onClick={async () => {
                   if (newProjectName.trim()) {
-                    const newProj = await createProject(newProjectName.trim());
-                    if (newProj && linkingSessionId) {
-                      await dbUpdateSessionProject(linkingSessionId, newProj.id);
-                      const updated = await dbGetSessions(contextUser!.id, activeWorkspace!.id);
-                      setAssistantSessions(updated);
-                      window.dispatchEvent(new CustomEvent('minerva_assistant_sync'));
-                    }
+                    await createProject(newProjectName.trim());
                     setNewProjectName('');
-                    setLinkingSessionId(null);
                     setShowNewProjectModal(false);
                   }
                 }}
