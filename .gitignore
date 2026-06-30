@@ -48,3 +48,4 @@ dist/
 # Local debug scratch files
 scratch-*.cjs
 Apify/
+.claude/worktrees/
