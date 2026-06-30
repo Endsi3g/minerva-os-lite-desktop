@@ -19,6 +19,7 @@ import { TodayGoogleCalendarCard } from './today-google-calendar-card';
 import { InboxRoot } from '@/app/(app)/inbox/_components/inbox-root';
 import { AgentFeed } from './agent-feed';
 import { AgentPrioritiesCard } from './agent-priorities-card';
+import { NextBestActionCard } from './next-best-action-card';
 import { LayoutDashboard, Mail } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
@@ -104,6 +105,9 @@ export function TodayRoot() {
 
           {/* ── Colonne droite : contexte & stats ── */}
           <div className="flex flex-col gap-5">
+            {/* Prochaine meilleure action — prescriptif, branchée sur la boucle agent */}
+            <NextBestActionCard />
+
             {/* Priorités du jour — leads froids à relancer, alimenté par l'agent */}
             <AgentPrioritiesCard />
 

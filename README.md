@@ -6,7 +6,7 @@
 
 **CRM de prospection B2B autonome pour entrepreneurs québécois**
 
-[![Version](https://img.shields.io/badge/version-v5.2.0-059669?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-v5.4.0-059669?style=flat-square)](CHANGELOG.md)
 [![Next.js](https://img.shields.io/badge/Next.js-15-black?style=flat-square&logo=next.js)](https://nextjs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178c6?style=flat-square&logo=typescript&logoColor=white)](https://typescriptlang.org)
 [![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-3ecf8e?style=flat-square&logo=supabase&logoColor=white)](https://supabase.com)
@@ -54,7 +54,9 @@ Minerva OS Reach Lite est une plateforme CRM all-in-one conçue pour les entrepr
 | Fonctionnalité | Détail |
 |---|---|
 | **Scraping OSM** | Recherche par niche + ville via l'API Overpass (OpenStreetMap), résultats en temps réel |
+| **Google Places** | Enrichissement via Google Places API — note, avis, horaires, photos, catégories |
 | **Enrichissement IA** | Description du site web, email de contact, réseaux sociaux, score BANT automatique |
+| **Email IA personnalisé** | Génération d'un email de prospection personnalisé par lead (niche, ville, prénom, description site) |
 | **Auto-dedup** | Détection et fusion des leads en doublon avant import |
 | **Scraping nocturne** | Tâche cron quotidienne qui enrichit les leads sans email en arrière-plan |
 | **Score lead** | Score 0–100 basé sur les signaux BANT, actualisé à chaque enrichissement |
@@ -376,7 +378,7 @@ app/
 - **`leads`** — liste complète, filtrée par `activeWorkspace.id`
 - **`tasks`** — tâches avec mapping DB → UI (camelCase)
 - **`aiSuggestions`** — suggestions IA pré-calculées
-- **`workspacesList`** / **`activeWorkspace`** — workspace actif persisté en `localStorage`
+- **`workspacesList`** / **`activeWorkspace`** — workspace actif persisté dans `settings.active_workspace_id` (Supabase) via `adminClient`
 - **`addNotification()`** — push vers la table `notifications` + fan-out équipe
 
 Toutes les mutations sont **optimistes** : mise à jour locale immédiate, puis persistance SQLite ou Supabase.
@@ -577,11 +579,12 @@ Dernières versions :
 
 | Version | Date | Points clés |
 |---------|------|-------------|
-| **v5.2.0** | 2026-06-29 | Agent Minerva (boucle autonome), mémoire d'agent, niveaux d'autonomie, AI Gateway unifié, suppression Groq/Together |
+| **v5.4.0** | 2026-06-29 | Google Places enrichment, email IA personnalisé par lead, sidebar slide + spring animations, tabs mobiles, fix workspace ownership |
+| **v5.3.0** | 2026-06-29 | Outreach Control Center : campagnes + approbations réels, 6 outils agent, autonomie outreach granulaire, badge count |
+| **v5.2.0** | 2026-06-29 | Agent Minerva (boucle autonome perceive→plan→act→log), mémoire d'agent, niveaux d'autonomie par domaine, AI Gateway unifié |
 | **v5.1.0** | 2026-06-29 | Sidebar 6 entrées, fix Google OAuth Inbox, Breadcrumb Leads, Timeline unifiée, pages Rôles dédiées |
 | **v5.0.0** | 2026-06-28 | Navigation Revenue OS, AI Gateway, Agent Feed, Outreach unifié |
-| **v4.5.0** | 2026-06-27 | Automations control center, AI gateway foundations |
-| **v4.3.0** | 2026-06-28 | Perf: inline SVGs, cache server+client, container queries |
+| **v4.3.0** | 2026-06-28 | Perf: inline SVGs, N+1 batch, cache server+client, container queries, type scale |
 
 ---
 

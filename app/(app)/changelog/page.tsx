@@ -62,6 +62,19 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v7.0.0',
+      date: '2026-06-30',
+      titleKey: 'changelog.v3_42_0_title' as TranslationKey,
+      descKey: 'changelog.v3_42_0_desc' as TranslationKey,
+      highlights: [
+        { tag: 'feature', text: 'Prochaine Meilleure Action (NBA) — carte prescriptive en haut de l\'Accueil : Minerva identifie l\'action commerciale la plus urgente du moment (email, tâche, pipeline, séquence), affiche le raisonnement de l\'agent et les signaux justificatifs. Un clic exécute l\'action directement.' },
+        { tag: 'feature', text: 'Exécution contextuelle depuis la carte NBA — generate_email_draft crée un brouillon de relance follow-up immédiatement ; create_task planifie une relance pour demain ; les autres actions (pipeline, séquence, terrain) redirigent vers le bon écran avec message.' },
+        { tag: 'feature', text: 'Dismiss & rotation — bouton "Passer" marque l\'action comme rejetée (approved=false) et charge automatiquement la prochaine action en file. Rafraîchissement manuel disponible.' },
+        { tag: 'feature', text: 'API /api/agent/next-action — GET (48h de fenêtre, join leads), POST (dispatch + mark executed), DELETE (dismiss). Utilise adminClient pour les mises à jour de statut.' },
+        { tag: 'design', text: 'Carte NBA — bordure verte gauche distinctive, label d\'action avec icône typée (Mail, ClipboardList, TrendingUp…), reasoning en italique, signaux en petite typographie, skeleton de chargement, état succès avec lien de navigation.' },
+      ],
+    },
+    {
       version: 'v6.2.0',
       date: '2026-06-29',
       titleKey: 'changelog.v3_42_0_title' as TranslationKey,
