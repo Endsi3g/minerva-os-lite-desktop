@@ -5,19 +5,21 @@
     "app/api/scrape-apify/route.ts": { "maxDuration": 90 },
     "app/api/cron/gmail-check-replies/route.ts": { "maxDuration": 60 },
     "app/api/cron/email-sequences/route.ts": { "maxDuration": 60 },
-    "app/api/cron/daily-digest/route.ts": { "maxDuration": 30 },
+    "app/api/cron/daily-digest/route.ts": { "maxDuration": 60 },
     "app/api/cron/weekly-report/route.ts": { "maxDuration": 30 },
     "app/api/cron/process-queue/route.ts": { "maxDuration": 60 },
     "app/api/cron/enrich-leads/route.ts": { "maxDuration": 300 },
+    "app/api/cron/agent-loop/route.ts": { "maxDuration": 120 },
     "app/api/leads/enrich-batch/route.ts": { "maxDuration": 300 }
   },
   "crons": [
-    { "path": "/api/cron/overdue-check", "schedule": "0 8 * * *" },
-    { "path": "/api/cron/daily-digest", "schedule": "0 20 * * *" },
-    { "path": "/api/cron/weekly-report", "schedule": "0 9 * * 1" },
-    { "path": "/api/cron/email-sequences", "schedule": "0 9 * * *" },
-    { "path": "/api/cron/gmail-check-replies", "schedule": "0 10 * * *" },
-    { "path": "/api/cron/process-queue", "schedule": "0 9 * * 1-5" },
-    { "path": "/api/cron/enrich-leads", "schedule": "0 2 * * *" }
+    { "path": "/api/cron/overdue-check",     "schedule": "0 8 * * *"      },
+    { "path": "/api/cron/agent-loop",        "schedule": "0 */4 * * *"    },
+    { "path": "/api/cron/gmail-check-replies","schedule": "0 */2 * * *"   },
+    { "path": "/api/cron/email-sequences",   "schedule": "0 9 * * *"      },
+    { "path": "/api/cron/daily-digest",      "schedule": "0 18 * * *"     },
+    { "path": "/api/cron/weekly-report",     "schedule": "0 9 * * 1"      },
+    { "path": "/api/cron/process-queue",     "schedule": "0 9 * * 1-5"    },
+    { "path": "/api/cron/enrich-leads",      "schedule": "0 2 * * *"      }
   ]
 }

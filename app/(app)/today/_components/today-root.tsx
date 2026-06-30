@@ -20,6 +20,7 @@ import { InboxRoot } from '@/app/(app)/inbox/_components/inbox-root';
 import { AgentFeed } from './agent-feed';
 import { AgentPrioritiesCard } from './agent-priorities-card';
 import { NextBestActionCard } from './next-best-action-card';
+import { DailyDigestCard } from './daily-digest-card';
 import { LayoutDashboard, Mail } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
@@ -107,6 +108,9 @@ export function TodayRoot() {
           <div className="flex flex-col gap-5">
             {/* Prochaine meilleure action — prescriptif, branchée sur la boucle agent */}
             <NextBestActionCard />
+
+            {/* Résumé du jour — stats temps réel de ce que Minerva a fait */}
+            <DailyDigestCard />
 
             {/* Priorités du jour — leads froids à relancer, alimenté par l'agent */}
             <AgentPrioritiesCard />

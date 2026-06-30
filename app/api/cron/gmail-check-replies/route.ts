@@ -223,7 +223,7 @@ export async function GET(req: NextRequest) {
           })
           .eq('id', lead.id);
 
-        // Create notification
+        // Create reply notification
         await supabase.from('notifications').insert({
           id: crypto.randomUUID(),
           user_id: settings.user_id,
@@ -236,6 +236,50 @@ export async function GET(req: NextRequest) {
           created_at: now,
           updated_at: now,
         });
+
+        // Auto-create Google Calendar event for the appointment
+        if (accessToken) {
+          try {
+            const tomorrow = new Date(Date.now() + 86_400_000);
+            const startDt = new Date(tomorrow);
+            startDt.setHours(10, 0, 0, 0);
+            const endDt = new Date(startDt.getTime() + 60 * 60 * 1000);
+
+            const calRes = await fetch(
+              'https://www.googleapis.com/calendar/v3/calendars/primary/events',
+              {
+                method: 'POST',
+                headers: {
+                  Authorization: `Bearer ${accessToken}`,
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  summary: `RDV — ${lead.business_name}`,
+                  description: `Lead a répondu à votre email de prospection.\n\nPlanifié automatiquement par Minerva.\nLead: /leads/${lead.id}`,
+                  start: { dateTime: startDt.toISOString(), timeZone: 'America/Toronto' },
+                  end: { dateTime: endDt.toISOString(), timeZone: 'America/Toronto' },
+                }),
+              },
+            );
+            if (calRes.ok) {
+              const calData = await calRes.json();
+              await supabase.from('notifications').insert({
+                id: crypto.randomUUID(),
+                user_id: settings.user_id,
+                workspace_id: lead.workspace_id || settings.workspace_id,
+                type: 'calendar_event_created',
+                title: '📅 RDV créé automatiquement',
+                body: `RDV avec ${lead.business_name} ajouté dans Google Calendar pour demain 10h.`,
+                link: calData.htmlLink || `/leads/${lead.id}`,
+                is_read: false,
+                created_at: now,
+                updated_at: now,
+              });
+            }
+          } catch {
+            // Calendar event creation is best-effort — never block
+          }
+        }
 
         totalReplies++;
       } catch {

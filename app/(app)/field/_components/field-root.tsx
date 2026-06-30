@@ -171,6 +171,9 @@ function LeadCard({
           <span className="flex items-center gap-1">
             <MapPin className="h-3 w-3" />
             {lead.city}
+            {(lead as any)._estimated && (
+              <span className="text-[9px] text-[#a3a197] italic">(approx.)</span>
+            )}
           </span>
         )}
         {distance !== null && (
@@ -349,8 +352,9 @@ export function FieldRoot({ planId, refreshToken = '' }: { planId: string; refre
         const coords = QUEBEC_CITY_COORDS[key] || DEFAULT_COORDS;
         lat = applyJitter(coords[0]);
         lng = applyJitter(coords[1]);
+        return { ...lead, _lat: lat, _lng: lng, _estimated: true };
       }
-      return { ...lead, _lat: lat, _lng: lng };
+      return { ...lead, _lat: lat, _lng: lng, _estimated: false };
     });
   }, [orderedLeads]);
 

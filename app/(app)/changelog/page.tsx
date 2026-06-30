@@ -62,6 +62,21 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v8.0.0',
+      date: '2026-06-30',
+      titleKey: 'changelog.v3_42_0_title' as TranslationKey,
+      descKey: 'changelog.v3_42_0_desc' as TranslationKey,
+      highlights: [
+        { tag: 'feature', text: 'Agent autonome toutes les 4h — cron /api/cron/agent-loop tourne automatiquement pour tous les workspaces avec agent_enabled=true. Perceive → Plan (Claude) → Act → Log sans aucune intervention. Actions tracées dans agent_actions avec notifications temps réel.' },
+        { tag: 'feature', text: 'Digest du soir (18h) — /api/cron/daily-digest enrichi : emails envoyés, réponses reçues, RDV créés, actions agent, leads ajoutés. Sauvegarde dans daily_digests + notification in-app + email SMTP si configuré.' },
+        { tag: 'feature', text: 'Carte "Résumé d\'aujourd\'hui" dans Today — stats temps réel via /api/agent/today-stats : 4 KPIs (emails, réponses, RDV, actions agent), liste des 3 dernières actions exécutées avec reasoning.' },
+        { tag: 'feature', text: 'Auto-RDV Google Calendar — gmail-check-replies crée automatiquement un événement Calendar "RDV — {lead}" le lendemain à 10h dès qu\'une réponse business est détectée. Notification in-app + lien Calendar.' },
+        { tag: 'feature', text: 'Gmail check-replies toutes les 2h — fréquence portée de 1× par jour à toutes les 2h pour des détections de réponse quasi temps réel.' },
+        { tag: 'fix', text: 'Field / Carte — badge "(approx.)" sur les leads sans coordonnées GPS exactes, calculés par zone de ville. Clarifie à l\'utilisateur que la position est estimée, pas GPS précise.' },
+        { tag: 'fix', text: 'Automations — action "Envoyer un email" pleinement implémentée dans automations-engine.ts : crée un brouillon depuis le template sélectionné dans la table drafts (source=automation, approved=null) pour approbation dans Outreach.' },
+      ],
+    },
+    {
       version: 'v7.0.0',
       date: '2026-06-30',
       titleKey: 'changelog.v3_42_0_title' as TranslationKey,
