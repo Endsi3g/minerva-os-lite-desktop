@@ -508,28 +508,31 @@ export function FieldRoot({ planId, refreshToken = '' }: { planId: string; refre
   return (
     <div className="h-full overflow-y-auto bg-[#fafaf8]">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-white border-b border-[#e5e5e0] px-4 py-3">
+      <div className="sticky top-0 z-10 bg-white border-b border-[#e5e5e0] px-4 py-3 shadow-xs">
         <div className="flex items-center gap-3">
           <button
             onClick={() => router.push('/map')}
-            className="h-8 w-8 flex items-center justify-center rounded-lg border border-[#e5e5e0] text-[#7a7a76] hover:bg-[#f4f4f3] transition-colors"
+            className="h-8 w-8 flex items-center justify-center rounded-lg border border-[#e5e5e0] text-[#7a7a76] hover:bg-[#f4f4f3] transition-colors shrink-0"
           >
             <ArrowLeft className="h-4 w-4" />
           </button>
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-bold text-[#26251e] flex items-center gap-1.5">
-              <MapPin className="h-3.5 w-3.5 text-[#059669]" />
+            <p className="text-sm font-bold text-[#26251e] flex items-center gap-1.5 leading-none">
+              <MapPin className="h-3.5 w-3.5 text-[#059669] shrink-0" />
               Mode Terrain
+              {totalCount > 0 && (
+                <span className="text-[10px] font-bold text-[#059669] bg-[#059669]/10 px-1.5 py-0.5 rounded-md ml-1">
+                  {visitedCount}/{totalCount}
+                </span>
+              )}
             </p>
-            <p className="text-[10px] text-[#7a7a76]">
-              {visitedCount}/{totalCount} visites
+            <p className="text-[10px] text-[#7a7a76] mt-0.5">
               {remainingDistanceKm !== null ? (
-                ` · Reste ${remainingDistanceKm.toFixed(1)} km (~${remainingDurationMin} min)`
+                `Reste ${remainingDistanceKm.toFixed(1)} km · ~${remainingDurationMin} min`
+              ) : routePlan?.distance_km ? (
+                `${routePlan.distance_km.toFixed(1)} km · ~${routePlan.duration_min} min`
               ) : (
-                <>
-                  {routePlan?.distance_km && ` · ${routePlan.distance_km.toFixed(1)} km`}
-                  {routePlan?.duration_min && ` · ~${routePlan.duration_min} min`}
-                </>
+                'Calcul de l\'itinéraire…'
               )}
             </p>
           </div>
@@ -570,11 +573,18 @@ export function FieldRoot({ planId, refreshToken = '' }: { planId: string; refre
         </div>
 
         {/* Progress bar */}
-        <div className="mt-3 h-1.5 bg-[#e5e5e0] rounded-full overflow-hidden">
-          <div
-            className="h-full bg-[#059669] rounded-full transition-all duration-500"
-            style={{ width: `${progress}%` }}
-          />
+        <div className="mt-3 space-y-1">
+          <div className="flex items-center justify-between">
+            <div className="h-1.5 flex-1 bg-[#e5e5e0] rounded-full overflow-hidden">
+              <div
+                className="h-full bg-[#059669] rounded-full transition-all duration-500"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+            <span className="text-[9px] font-bold text-[#7a7a76] ml-2 shrink-0">
+              {Math.round(progress)}%
+            </span>
+          </div>
         </div>
 
         {/* Outcome summary pills */}

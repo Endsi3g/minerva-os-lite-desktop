@@ -1,10 +1,11 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { 
-  Search, 
+import {
+  Search,
   Plug,
   ChevronDown,
+  ChevronRight,
   Globe,
   CheckCircle2,
   Lock,
@@ -1613,87 +1614,60 @@ export default function IntegrationsPage() {
                   </div>
                 </div>
 
-                {/* Connected Integrations Table */}
-                <div className="border border-[#e5e5e0] rounded-xl overflow-hidden shadow-xs bg-white text-left">
-                  <table className="w-full border-collapse text-xs">
-                    <thead>
-                      <tr className="bg-[#f4f4f3]/40 border-b border-[#e5e5e0] text-[#7a7a76] font-semibold">
-                        <th className="py-2.5 px-4 font-bold flex items-center gap-1 cursor-pointer hover:text-[#26251e]">
-                          <span>{t('integrations.table_name')}</span>
-                          <ChevronDown className="h-3 w-3" />
-                        </th>
-                        <th className="py-2.5 px-4 font-bold">{t('integrations.table_connection_status')}</th>
-                        <th className="py-2.5 px-4 font-bold">{t('integrations.table_assets')}</th>
-                        <th className="py-2.5 px-4 font-bold flex items-center gap-1 cursor-pointer hover:text-[#26251e]">
-                          <span>{t('integrations.table_access')}</span>
-                          <ChevronDown className="h-3 w-3" />
-                        </th>
-                        <th className="py-2.5 px-4 font-bold">Added by</th>
-                        <th className="py-2.5 px-4 font-bold text-right">Action</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-[#e5e5e0]">
-                      {filteredConnected.length === 0 ? (
-                        <tr>
-                          <td colSpan={6} className="py-8 text-center text-xs text-[#7a7a76]">
-                            {t('integrations.no_connected_match')}
-                          </td>
-                        </tr>
-                      ) : (
-                        filteredConnected.map((item) => {
-                          const IconComponent = item.icon;
-                          return (
-                            <tr key={item.id} className="hover:bg-[#f4f4f3]/10 transition-colors">
-                              <td className="py-3 px-4">
-                                <div className="flex items-center gap-3">
-                                  {typeof IconComponent === 'function' ? (
-                                    <IconComponent size={28} className="shrink-0" />
-                                  ) : (
-                                    <div className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center shrink-0">
-                                      <Plug className="w-4 h-4 text-slate-500" />
-                                    </div>
-                                  )}
-                                  <div className="flex flex-col text-left">
-                                    <span className="font-semibold text-sm text-[#26251e]">{resolveItemName(item)}</span>
-                                    <span className="text-[10px] text-[#7a7a76]">{resolveItemAccEmail(item)}</span>
-                                  </div>
-                                </div>
-                              </td>
-                              <td className="py-3 px-4">
-                                <div className="flex items-center gap-1.5">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
-                                  <span className="font-medium text-[#26251e]">{resolveItemStatus(item)}</span>
-                                </div>
-                              </td>
-                              <td className="py-3 px-4 text-[#7a7a76] font-medium text-left">{resolveItemAssets(item)}</td>
-                              <td className="py-3 px-4">
-                                <div className="flex items-center gap-1 bg-[#f4f4f3] px-2 py-0.5 rounded-md text-[10px] font-semibold text-[#555552] w-fit">
-                                  {item.access === 'Private' ? <Lock className="h-2.5 w-2.5" /> : <Globe className="h-2.5 w-2.5 text-[#7a7a76]" />}
-                                  <span>{resolveItemAccess(item)}</span>
-                                </div>
-                              </td>
-                              <td className="py-3 px-4">
-                                <div className="flex flex-col text-left">
-                                  <span className="font-semibold text-[#26251e]">{item.owner}</span>
-                                  <span className="text-[10px] text-[#7a7a76]">{item.email}</span>
-                                </div>
-                              </td>
-                              <td className="py-3 px-4 text-right">
-                                <Button
-                                  onClick={() => setDetailIntegration(item)}
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-7 text-xs font-semibold px-2 text-[#7a7a76] hover:text-[#059669] hover:bg-emerald-50/50"
-                                >
-                                  {t('integrations.configure')}
-                                </Button>
-                              </td>
-                            </tr>
-                          );
-                        })
-                      )}
-                    </tbody>
-                  </table>
+                {/* Connected Integrations — card list */}
+                <div className="space-y-2">
+                  {filteredConnected.length === 0 ? (
+                    <div className="py-10 text-center text-xs text-[#7a7a76] bg-white border border-[#e5e5e0] rounded-xl">
+                      {t('integrations.no_connected_match')}
+                    </div>
+                  ) : (
+                    filteredConnected.map((item) => {
+                      const IconComponent = item.icon;
+                      return (
+                        <div
+                          key={item.id}
+                          className="bg-white border border-[#e5e5e0] rounded-xl px-4 py-3 flex items-center gap-4 hover:border-[#c5c5c0] hover:shadow-xs transition-all group"
+                        >
+                          {/* Icon */}
+                          <div className="w-9 h-9 rounded-xl bg-[#f4f4f3] border border-[#e5e5e0] flex items-center justify-center shrink-0">
+                            {typeof IconComponent === 'function' ? (
+                              <IconComponent size={20} className="shrink-0" />
+                            ) : (
+                              <Plug className="w-4.5 h-4.5 text-[#7a7a76]" />
+                            )}
+                          </div>
+
+                          {/* Name + scope */}
+                          <div className="flex-1 min-w-0 text-left">
+                            <p className="font-bold text-sm text-[#26251e] leading-none">{resolveItemName(item)}</p>
+                            <p className="text-[10px] text-[#7a7a76] mt-0.5 truncate">{resolveItemAccEmail(item)}</p>
+                          </div>
+
+                          {/* Status pill */}
+                          <div className="flex items-center gap-1.5 bg-[#059669]/8 border border-[#059669]/20 px-2.5 py-1 rounded-lg shrink-0">
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#059669] animate-pulse shrink-0" />
+                            <span className="text-[10px] font-bold text-[#059669]">{resolveItemStatus(item)}</span>
+                          </div>
+
+                          {/* Access badge */}
+                          <div className="hidden sm:flex items-center gap-1 bg-[#f4f4f3] px-2 py-1 rounded-md text-[10px] font-semibold text-[#555552] shrink-0">
+                            {item.access === 'Private' ? <Lock className="h-2.5 w-2.5" /> : <Globe className="h-2.5 w-2.5 text-[#7a7a76]" />}
+                            <span>{resolveItemAccess(item)}</span>
+                          </div>
+
+                          {/* Configure */}
+                          <Button
+                            onClick={() => setDetailIntegration(item)}
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 text-xs font-bold px-3 text-[#7a7a76] hover:text-[#059669] hover:bg-[#059669]/8 shrink-0 rounded-lg border border-transparent hover:border-[#059669]/20 transition-all"
+                          >
+                            {t('integrations.configure')}
+                          </Button>
+                        </div>
+                      );
+                    })
+                  )}
                 </div>
 
               </div>
@@ -1768,7 +1742,7 @@ export default function IntegrationsPage() {
                 </div>
 
                 {/* Grid of Available Integrations cards */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {filteredAvailable.length === 0 ? (
                     <div className="col-span-2 py-8 text-center text-xs text-[#7a7a76]">
                       {t('integrations.all_available_connected')}
@@ -1780,24 +1754,33 @@ export default function IntegrationsPage() {
                         <div
                           key={item.id}
                           onClick={() => setDetailIntegration(item)}
-                          className="p-5 border border-[#e5e5e0] hover:border-[#7a7a76] bg-[#f4f4f3]/10 hover:bg-[#f4f4f3]/20 transition-all rounded-xl flex flex-col justify-between h-[160px] shadow-2xs group cursor-pointer"
+                          className="p-4 border border-[#e5e5e0] hover:border-[#059669]/40 bg-white hover:bg-[#f9fdf9] transition-all rounded-xl shadow-2xs group cursor-pointer relative overflow-hidden"
                         >
-                          <div className="space-y-2">
-                            <div className="pb-1 text-left">
+                          <div className="absolute top-0 left-0 w-0 group-hover:w-1 h-full bg-[#059669] transition-all duration-200 rounded-l-xl" />
+                          <div className="flex items-start gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-[#f4f4f3] border border-[#e5e5e0] flex items-center justify-center shrink-0 group-hover:border-[#059669]/20 group-hover:bg-[#059669]/5 transition-colors">
                               {typeof IconComponent === 'function' ? (
-                                <IconComponent size={20} className="text-[#7a7a76]" />
+                                <IconComponent size={22} className="text-[#555552] group-hover:text-[#059669] transition-colors" />
                               ) : (
-                                <Plug className="w-5 h-5 text-[#7a7a76]" />
+                                <Plug className="w-5 h-5 text-[#7a7a76] group-hover:text-[#059669] transition-colors" />
                               )}
                             </div>
-                            <h3 className="font-bold text-sm text-[#26251e] text-left">{resolveItemName(item)}</h3>
-                            <p className="text-[11px] text-[#7a7a76] leading-relaxed text-left">
-                              {resolveItemDescription(item)}
-                            </p>
+                            <div className="flex-1 min-w-0 space-y-1">
+                              <div className="flex items-start justify-between gap-2">
+                                <h3 className="font-bold text-sm text-[#26251e] leading-snug">{resolveItemName(item)}</h3>
+                                <span className="text-[9px] font-bold text-[#7a7a76] bg-[#f4f4f3] border border-[#e5e5e0] px-1.5 py-0.5 rounded-md shrink-0 capitalize">
+                                  {item.category}
+                                </span>
+                              </div>
+                              <p className="text-[11px] text-[#7a7a76] leading-relaxed line-clamp-2">
+                                {resolveItemDescription(item)}
+                              </p>
+                              <div className="flex items-center gap-1 pt-1 text-[#059669] opacity-0 group-hover:opacity-100 transition-opacity">
+                                <span className="text-[10px] font-bold">{t('integrations.connect')}</span>
+                                <ChevronRight className="h-3 w-3" />
+                              </div>
+                            </div>
                           </div>
-                          <span className="text-[10px] font-bold text-[#7a7a76] uppercase tracking-wider group-hover:text-[#26251e] transition-colors mt-2 text-left">
-                            {t('integrations.connect')}
-                          </span>
                         </div>
                       );
                     })
