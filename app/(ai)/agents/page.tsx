@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { Suspense, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
@@ -86,7 +86,7 @@ interface AgentResult {
   totalReviews?: number;
 }
 
-export default function AgentsPage() {
+function AgentsPageInner() {
   useEffect(() => { document.title = 'Agents — Minerva'; }, []);
   const { t } = useLanguage();
   const router = useRouter();
@@ -921,5 +921,13 @@ export default function AgentsPage() {
       </div>
 
     </div>
+  );
+}
+
+export default function AgentsPage() {
+  return (
+    <Suspense>
+      <AgentsPageInner />
+    </Suspense>
   );
 }
