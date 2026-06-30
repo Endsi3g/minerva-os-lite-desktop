@@ -1,5 +1,9 @@
 'use client';
 
+// Required for Next.js static export — token is resolved client-side via useParams()
+export function generateStaticParams() { return []; }
+export const dynamicParams = true;
+
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import {
