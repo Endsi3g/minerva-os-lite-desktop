@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Zap, Plus, Loader2, Trash2, Play, ToggleLeft, ToggleRight, CheckCircle2, AlertCircle, X } from 'lucide-react';
+import { Zap, Plus, Loader2, Trash2, Play, ToggleLeft, ToggleRight, CheckCircle2, AlertCircle, X, ArrowDownLeft, ExternalLink } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface OutboundWebhook {
@@ -148,26 +148,62 @@ export function WebhooksRoot() {
   }
 
   return (
-    <div className="h-full overflow-y-auto">
+    <div className="h-full overflow-y-auto bg-[#fafaf8]">
       <div className="w-full p-3 sm:p-4 md:p-6 space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between gap-4 flex-wrap">
+        <div className="flex items-start justify-between gap-4 flex-wrap border-b border-[#e5e5e0] pb-5">
           <div>
-            <div className="flex items-center gap-2">
-              <Zap className="h-4 w-4 text-[#059669]" />
-              <h1 className="text-base font-bold text-[#26251e]">Webhooks sortants</h1>
+            <div className="flex items-center gap-2 mb-1">
+              <Zap className="h-5 w-5 text-[#059669]" />
+              <h1 className="text-xl font-bold text-[#26251e]">Webhooks</h1>
             </div>
-            <p className="text-xs text-[#7a7a76] mt-0.5">
-              Envoyez des événements Minerva vers n'importe quel système externe (Slack, Make, Zapier, CRM…)
+            <p className="text-xs text-[#7a7a76]">
+              Envoyez des événements Minerva vers des systèmes externes (Slack, Make, Zapier…) ou recevez des événements entrants.
             </p>
           </div>
           <button
             onClick={() => setShowAddForm(true)}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#059669] hover:bg-[#047857] text-white text-xs font-bold transition-colors"
+            className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#059669] hover:bg-[#047857] text-white text-xs font-bold transition-colors shrink-0"
           >
             <Plus className="h-3.5 w-3.5" />
-            Ajouter un webhook
+            Ajouter
           </button>
+        </div>
+
+        {/* Inbound webhooks (pre-configured) */}
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <ArrowDownLeft className="h-3.5 w-3.5 text-[#7a7a76]" />
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Webhooks entrants</p>
+          </div>
+          <div className="bg-white border border-[#e5e5e0] rounded-xl px-4 py-3 flex items-center gap-4">
+            <div className="w-9 h-9 rounded-xl bg-[#059669]/10 border border-[#059669]/20 flex items-center justify-center shrink-0">
+              <Zap className="h-4 w-4 text-[#059669]" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-bold text-[#26251e]">Resend — Événements email</p>
+              <p className="text-[10px] text-[#7a7a76] font-mono truncate">/api/webhooks/resend</p>
+            </div>
+            <div className="flex items-center gap-1.5 bg-[#059669]/8 border border-[#059669]/20 px-2.5 py-1 rounded-lg shrink-0">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#059669] animate-pulse shrink-0" />
+              <span className="text-[10px] font-bold text-[#059669]">Actif</span>
+            </div>
+            <a
+              href="https://resend.com/webhooks"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="h-8 flex items-center gap-1 px-2.5 rounded-lg border border-[#e5e5e0] text-xs font-semibold text-[#555552] hover:bg-[#f4f4f3] transition-colors shrink-0"
+            >
+              <ExternalLink className="h-3 w-3" />
+              Resend
+            </a>
+          </div>
+        </div>
+
+        {/* Divider */}
+        <div className="flex items-center gap-2">
+          <Zap className="h-3.5 w-3.5 text-[#7a7a76]" />
+          <p className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Webhooks sortants</p>
         </div>
 
         {/* Add form */}
@@ -280,25 +316,32 @@ export function WebhooksRoot() {
           </div>
         )}
 
-        {/* Webhooks table */}
+        {/* Webhooks list */}
         {webhooks.length > 0 && (
-          <div className="space-y-3">
+          <div className="space-y-2">
             {webhooks.map((wh) => (
-              <div key={wh.id} className="rounded-xl border border-[#e5e5e0] bg-white p-4 space-y-3 hover:shadow-sm transition-shadow">
+              <div
+                key={wh.id}
+                className={cn(
+                  'rounded-xl border bg-white p-4 space-y-3 transition-all relative overflow-hidden',
+                  wh.active
+                    ? 'border-[#e5e5e0] border-l-[3px] border-l-[#059669]'
+                    : 'border-[#e5e5e0] opacity-75',
+                )}
+              >
                 <div className="flex items-start justify-between gap-2 flex-wrap">
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                       <p className="text-sm font-bold text-[#26251e]">{wh.name}</p>
-                      <span
-                        className={cn(
-                          'text-[10px] font-semibold px-2 py-0.5 rounded-full border',
-                          wh.active
-                            ? 'bg-[#059669]/10 text-[#059669] border-[#059669]/20'
-                            : 'bg-neutral-100 text-neutral-500 border-neutral-200'
-                        )}
-                      >
+                      <div className={cn(
+                        'flex items-center gap-1.5 px-2 py-0.5 rounded-lg border text-[10px] font-bold',
+                        wh.active
+                          ? 'bg-[#059669]/8 text-[#059669] border-[#059669]/20'
+                          : 'bg-neutral-50 text-neutral-400 border-neutral-200'
+                      )}>
+                        {wh.active && <span className="w-1.5 h-1.5 rounded-full bg-[#059669] animate-pulse shrink-0" />}
                         {wh.active ? 'Actif' : 'Inactif'}
-                      </span>
+                      </div>
                     </div>
                     <p className="text-[10px] text-[#7a7a76] mt-0.5 font-mono truncate max-w-sm">{wh.url}</p>
                   </div>

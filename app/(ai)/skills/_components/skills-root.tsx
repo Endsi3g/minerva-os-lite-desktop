@@ -59,30 +59,39 @@ export function SkillsRoot() {
   const SkillCard = ({ id, name, description, builtIn }: { id: string; name: string; description: string; builtIn: boolean }) => {
     const on = isEnabled(id);
     return (
-      <div className="rounded-xl border border-border bg-white p-4 flex flex-col gap-2.5 hover:border-[#10b981]/40 transition-colors duration-200">
+      <div className={cn(
+        'rounded-xl border bg-white p-4 flex flex-col gap-2.5 transition-all duration-200 relative overflow-hidden',
+        on
+          ? 'border-[#e5e5e0] border-l-[3px] border-l-[#059669] shadow-xs'
+          : 'border-[#e5e5e0] hover:border-[#c5c5c0]',
+      )}>
         <div className="flex items-start justify-between gap-2">
-          <div className="h-8 w-8 rounded-lg bg-[#059669]/10 text-[#059669] flex items-center justify-center shrink-0">
+          <div className={cn(
+            'h-8 w-8 rounded-lg flex items-center justify-center shrink-0 transition-colors',
+            on ? 'bg-[#059669]/15 text-[#059669]' : 'bg-[#f4f4f3] text-[#7a7a76]',
+          )}>
             <Sparkles className="h-4 w-4" />
           </div>
           <button
             onClick={() => toggleSkill(id)}
             className={cn(
-              'relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 border-0',
-              on ? 'bg-[#059669]' : 'bg-[#e5e5e0]',
+              'relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full transition-colors duration-200 border-0',
+              on ? 'bg-[#059669]' : 'bg-[#d4d4cf]',
             )}
             aria-label={on ? 'Désactiver' : 'Activer'}
           >
-            <span className={cn('inline-block h-4 w-4 transform rounded-full bg-white shadow transition duration-200', on ? 'translate-x-4' : 'translate-x-0')} />
+            <span className={cn('inline-block h-4 w-4 transform rounded-full bg-white shadow transition duration-200 mt-0.5', on ? 'translate-x-4' : 'translate-x-0.5')} />
           </button>
         </div>
         <div>
-          <p className="text-xs font-bold text-[#26251e] leading-snug">{name}</p>
-          <p className="text-[11px] text-[#807d72] mt-1 leading-relaxed line-clamp-2">{description}</p>
+          <p className={cn('text-xs font-bold leading-snug', on ? 'text-[#26251e]' : 'text-[#555552]')}>{name}</p>
+          <p className="text-[11px] text-[#7a7a76] mt-1 leading-relaxed line-clamp-2">{description}</p>
         </div>
+        {on && <span className="text-[9px] font-bold text-[#059669] uppercase tracking-wider">Actif</span>}
         {!builtIn && (
           <button
             onClick={() => deleteCustomSkill(id)}
-            className="self-start mt-1 inline-flex items-center gap-1 text-[9px] font-bold text-red-600 hover:underline border-0 bg-transparent cursor-pointer"
+            className="self-start mt-0.5 inline-flex items-center gap-1 text-[9px] font-bold text-red-500 hover:text-red-700 hover:underline border-0 bg-transparent cursor-pointer"
           >
             <Trash2 className="h-3 w-3" /> {t('skills.delete')}
           </button>
@@ -154,13 +163,21 @@ export function SkillsRoot() {
         {/* Installed */}
         {(tab === 'all' || tab === 'installed') && (
           <div className="space-y-3">
-            <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-[#807d72]">
-              <Check className="h-3.5 w-3.5 text-[#059669]" /> {t('skills.installed_count')} ({installed.length})
+            <div className="flex items-center gap-2">
+              <div className="w-5 h-5 rounded-md bg-[#059669]/10 flex items-center justify-center">
+                <Check className="h-3 w-3 text-[#059669]" />
+              </div>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-[#26251e]">
+                {t('skills.installed_count')}
+              </span>
+              <span className="text-[10px] font-bold text-[#059669] bg-[#059669]/8 border border-[#059669]/20 px-1.5 py-0.5 rounded-md">
+                {installed.length}
+              </span>
             </div>
             {installed.length === 0 ? (
-              <p className="text-xs text-[#807d72] bg-white border border-border p-4 rounded-xl">{t('skills.no_installed')}</p>
+              <p className="text-xs text-[#7a7a76] bg-white border border-[#e5e5e0] p-4 rounded-xl">{t('skills.no_installed')}</p>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
                 {installed.map(s => <SkillCard key={s.id} {...s} />)}
               </div>
             )}
@@ -189,24 +206,35 @@ export function SkillsRoot() {
 
         {/* Packs */}
         {(tab === 'all' || tab === 'packs') && (
-          <div className="space-y-5">
-            <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-[#807d72]">
+          <div className="space-y-6">
+            <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">
               <Package className="h-3.5 w-3.5" /> {t('skills.packs_title')}
             </div>
             {filteredPacks.map(pack => {
               const Icon = PACK_ICON[pack.id] ?? Package;
+              const installedInPack = pack.skills.filter(s => isEnabled(s.id)).length;
               return (
-                <div key={pack.id} className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <div className="h-7 w-7 rounded-lg bg-[#f4f4f3] border border-border flex items-center justify-center text-[#807d72]">
-                      <Icon className="h-3.5 w-3.5" />
+                <div key={pack.id} className="space-y-3">
+                  <div className="flex items-center gap-3 py-2 border-b border-[#e5e5e0]">
+                    <div className="h-8 w-8 rounded-xl bg-[#f4f4f3] border border-[#e5e5e0] flex items-center justify-center text-[#555552] shrink-0">
+                      <Icon className="h-4 w-4" />
                     </div>
-                    <div>
-                      <p className="text-xs font-bold text-[#26251e]">{pack.name}</p>
-                      <p className="text-[10px] text-[#807d72] font-semibold">{pack.description} · {pack.skills.length} {t('skills.skills_count')}</p>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-[#26251e] leading-none">{pack.name}</p>
+                      <p className="text-[10px] text-[#7a7a76] mt-0.5">{pack.description}</p>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      {installedInPack > 0 && (
+                        <span className="text-[10px] font-bold text-[#059669] bg-[#059669]/8 border border-[#059669]/20 px-2 py-0.5 rounded-lg">
+                          {installedInPack} actif{installedInPack > 1 ? 's' : ''}
+                        </span>
+                      )}
+                      <span className="text-[10px] text-[#7a7a76] font-semibold">
+                        {pack.skills.length} {t('skills.skills_count')}
+                      </span>
                     </div>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
                     {pack.skills.map(s => <SkillCard key={s.id} {...s} />)}
                   </div>
                 </div>
