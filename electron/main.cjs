@@ -84,10 +84,18 @@ function broadcastScrapingStatus() {
 }
 
 function createWindow() {
+  const { width: screenW, height: screenH } = require('electron').screen.getPrimaryDisplay().workAreaSize;
+  const winW = Math.min(Math.max(screenW - 80, 1280), 1600);
+  const winH = Math.min(Math.max(screenH - 60, 800), 1080);
+
   mainWindow = new BrowserWindow({
-    width: 1200,
-    height: 800,
+    width: winW,
+    height: winH,
+    minWidth: 1100,
+    minHeight: 700,
     title: "Minerva OS Reach Lite",
+    show: false,
+    titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
@@ -95,6 +103,11 @@ function createWindow() {
       backgroundThrottling: true,
       preload: path.join(__dirname, 'preload.js')
     }
+  });
+
+  mainWindow.once('ready-to-show', () => {
+    mainWindow.show();
+    if (screenW >= 1440) mainWindow.maximize();
   });
 
   // Hide the default menu bar on Windows

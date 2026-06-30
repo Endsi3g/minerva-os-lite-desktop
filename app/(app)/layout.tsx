@@ -1411,28 +1411,29 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
 
       {/* Mobile Bottom Navigation Bar (hidden on md+) */}
       {/* Bottom Nav — 4 primary tabs + "Plus" sheet */}
+      {/* ── Mobile bottom navigation — mirrors desktop pinned items ── */}
       <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-white/95 backdrop-blur-md border-t border-[#e5e5e0] bottom-nav-safe">
-        <div className="flex items-center justify-around h-16 px-4">
+        <div className="flex items-center justify-around h-16 px-2">
           {([
-            { name: 'Accueil',     href: '/today',      icon: Home },
-            { name: 'Prospects',   href: '/prospecting', icon: PenSquare },
-            { name: 'Leads',       href: '/leads',       icon: Users },
-            { name: 'Outreach',    href: '/outreach',    icon: Send },
-          ] as const).map((item) => {
+            { name: 'Accueil',  href: '/today',    icon: Home },
+            { name: 'Leads',    href: '/leads',    icon: Users },
+            { name: 'Outreach', href: '/outreach', icon: Send },
+            { name: 'Carte',    href: '/map',      icon: MapPin },
+            { name: 'Agenda',   href: '/agenda',   icon: CalendarDays },
+          ] as { name: string; href: string; icon: React.ElementType }[]).map((item) => {
             const isActive = pathname === item.href || (item.href !== '/today' && pathname.startsWith(item.href));
             return (
-              <motion.div key={item.href} whileTap={{ scale: 0.88 }} transition={{ type: 'spring', stiffness: 400, damping: 30 }}>
+              <motion.div key={item.href} whileTap={{ scale: 0.85 }} transition={{ type: 'spring', stiffness: 400, damping: 30 }}>
                 <Link
                   href={item.href}
                   className={cn(
-                    "flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl transition-all duration-150 min-w-0",
+                    "flex flex-col items-center gap-0.5 px-2.5 py-1 rounded-xl transition-all duration-150 min-w-0",
                     isActive ? "text-[#059669]" : "text-[#7a7a76]"
                   )}
                 >
                   <item.icon
                     className={cn("h-[22px] w-[22px] shrink-0 transition-all duration-150", isActive ? "opacity-100" : "opacity-50")}
-                    strokeWidth={isActive ? 2 : 1.5}
-                    fill={isActive ? 'currentColor' : 'none'}
+                    strokeWidth={isActive ? 2.2 : 1.5}
                   />
                   <span className={cn("text-[9px] font-bold tracking-tight leading-tight", isActive ? "opacity-100" : "opacity-50")}>
                     {item.name}
@@ -1444,18 +1445,21 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
 
           {/* Plus tab */}
           <motion.button
-            whileTap={{ scale: 0.88 }}
+            whileTap={{ scale: 0.85 }}
             transition={{ type: 'spring', stiffness: 400, damping: 30 }}
             onClick={() => setMoreSheetOpen(true)}
-            className="flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl min-w-0"
+            className={cn(
+              "flex flex-col items-center gap-0.5 px-2.5 py-1 rounded-xl transition-all duration-150",
+              moreSheetOpen ? "text-[#059669]" : "text-[#7a7a76]"
+            )}
           >
-            <MoreHorizontal className="h-[22px] w-[22px] text-[#7a7a76] opacity-50" strokeWidth={1.5} />
-            <span className="text-[9px] font-bold tracking-tight leading-tight text-[#7a7a76] opacity-50">Plus</span>
+            <MoreHorizontal className={cn("h-[22px] w-[22px]", moreSheetOpen ? "opacity-100" : "opacity-50")} strokeWidth={moreSheetOpen ? 2.2 : 1.5} />
+            <span className={cn("text-[9px] font-bold tracking-tight leading-tight", moreSheetOpen ? "opacity-100" : "opacity-50")}>Plus</span>
           </motion.button>
         </div>
       </nav>
 
-      {/* Bottom sheet "Plus" */}
+      {/* ── Bottom sheet "Plus" — all remaining pages ── */}
       <AnimatePresence>
         {moreSheetOpen && (
           <>
@@ -1477,29 +1481,68 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
               <div className="flex justify-center pt-3 pb-1">
                 <div className="w-10 h-1 rounded-full bg-[#e5e5e0]" />
               </div>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-[#7a7a76] px-6 py-2">Navigation</p>
-              <div className="grid grid-cols-3 gap-px px-4 pb-6">
-                {[
-                  { name: 'Bibliothèque', href: '/library',      icon: Folder },
-                  { name: 'Carte',        href: '/map',          icon: MapPin },
-                  { name: 'Intégrations', href: '/integrations', icon: Plug },
-                  { name: 'Paramètres', href: '/settings', icon: SettingsIcon },
-                  { name: 'Changelog', href: '/changelog', icon: Megaphone },
-                  { name: 'Équipe', href: '/team', icon: Users },
-                ].map(({ name, href, icon: Icon }) => {
+
+              {/* Section principale */}
+              <p className="text-[9px] font-black uppercase tracking-widest text-[#7a7a76] px-5 pt-3 pb-1">Ventes</p>
+              <div className="grid grid-cols-4 gap-0.5 px-3">
+                {([
+                  { name: 'Prospects',    href: '/prospecting',  icon: PenSquare },
+                  { name: 'Pipeline',     href: '/pipeline',     icon: Kanban },
+                  { name: 'Inbox',        href: '/inbox',        icon: Inbox },
+                  { name: 'Terrain',      href: '/field',        icon: MapPin },
+                ] as { name: string; href: string; icon: React.ElementType }[]).map(({ name, href, icon: Icon }) => {
                   const isActive = pathname.startsWith(href);
                   return (
-                    <Link
-                      key={href}
-                      href={href}
-                      onClick={() => setMoreSheetOpen(false)}
-                      className={cn(
-                        "flex flex-col items-center gap-2 p-4 rounded-xl transition-colors",
-                        isActive ? "bg-[#059669]/8 text-[#059669]" : "text-[#555552] hover:bg-[#f4f4f3]"
-                      )}
+                    <Link key={href} href={href} onClick={() => setMoreSheetOpen(false)}
+                      className={cn("flex flex-col items-center gap-1.5 p-3 rounded-xl transition-colors",
+                        isActive ? "bg-[#059669]/8 text-[#059669]" : "text-[#555552] active:bg-[#f4f4f3]")}
                     >
-                      <Icon className="h-6 w-6" strokeWidth={isActive ? 2 : 1.5} />
-                      <span className="text-[10px] font-semibold text-center leading-tight">{name}</span>
+                      <Icon className="h-5 w-5" strokeWidth={isActive ? 2.2 : 1.5} />
+                      <span className="text-[9px] font-semibold text-center leading-tight">{name}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+
+              {/* Section IA */}
+              <p className="text-[9px] font-black uppercase tracking-widest text-[#7a7a76] px-5 pt-3 pb-1">Intelligence</p>
+              <div className="grid grid-cols-4 gap-0.5 px-3">
+                {([
+                  { name: 'Assistant',    href: '/assistant',    icon: Sparkles },
+                  { name: 'Analytics',    href: '/analytics',    icon: BarChart3 },
+                  { name: 'Équipe',       href: '/team',         icon: UsersRound },
+                  { name: 'Agents',       href: '/agents',       icon: Zap },
+                ] as { name: string; href: string; icon: React.ElementType }[]).map(({ name, href, icon: Icon }) => {
+                  const isActive = pathname.startsWith(href);
+                  return (
+                    <Link key={href} href={href} onClick={() => setMoreSheetOpen(false)}
+                      className={cn("flex flex-col items-center gap-1.5 p-3 rounded-xl transition-colors",
+                        isActive ? "bg-[#059669]/8 text-[#059669]" : "text-[#555552] active:bg-[#f4f4f3]")}
+                    >
+                      <Icon className="h-5 w-5" strokeWidth={isActive ? 2.2 : 1.5} />
+                      <span className="text-[9px] font-semibold text-center leading-tight">{name}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+
+              {/* Section réglages */}
+              <p className="text-[9px] font-black uppercase tracking-widest text-[#7a7a76] px-5 pt-3 pb-1">App</p>
+              <div className="grid grid-cols-4 gap-0.5 px-3 pb-6">
+                {([
+                  { name: 'Paramètres',   href: '/settings',     icon: SettingsIcon },
+                  { name: 'Intégrations', href: '/integrations', icon: Plug },
+                  { name: 'Changelog',    href: '/changelog',    icon: Megaphone },
+                  { name: 'Bibliothèque', href: '/library',      icon: Folder },
+                ] as { name: string; href: string; icon: React.ElementType }[]).map(({ name, href, icon: Icon }) => {
+                  const isActive = pathname.startsWith(href);
+                  return (
+                    <Link key={href} href={href} onClick={() => setMoreSheetOpen(false)}
+                      className={cn("flex flex-col items-center gap-1.5 p-3 rounded-xl transition-colors",
+                        isActive ? "bg-[#059669]/8 text-[#059669]" : "text-[#555552] active:bg-[#f4f4f3]")}
+                    >
+                      <Icon className="h-5 w-5" strokeWidth={isActive ? 2.2 : 1.5} />
+                      <span className="text-[9px] font-semibold text-center leading-tight">{name}</span>
                     </Link>
                   );
                 })}
