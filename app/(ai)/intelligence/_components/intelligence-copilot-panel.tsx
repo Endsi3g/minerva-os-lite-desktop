@@ -70,10 +70,10 @@ export function IntelligenceCopilotPanel() {
   const renderResponseText = (text: string) => {
     return text.split('\n').map((line, i) => {
       if (line.startsWith('### ')) {
-        return <h3 key={i} className="text-xs font-bold text-foreground mt-3 mb-1.5 first:mt-0">{line.replace('### ', '')}</h3>;
+        return <h3 key={i} className="text-xs font-bold text-[#26251e] mt-3 mb-1.5 first:mt-0">{line.replace('### ', '')}</h3>;
       }
       if (line.startsWith('#### ')) {
-        return <h4 key={i} className="text-[11px] font-bold text-foreground mt-2 mb-1">{line.replace('#### ', '')}</h4>;
+        return <h4 key={i} className="text-[11px] font-bold text-[#26251e] mt-2 mb-1">{line.replace('#### ', '')}</h4>;
       }
       if (line.startsWith('- ')) {
         const boldRegex = /\*\*(.*?)\*\*/g;
@@ -86,7 +86,7 @@ export function IntelligenceCopilotPanel() {
           if (match.index > lastIndex) {
             parts.push(lineContent.substring(lastIndex, match.index));
           }
-          parts.push(<strong key={match.index} className="text-foreground font-semibold">{match[1]}</strong>);
+          parts.push(<strong key={match.index} className="text-[#26251e] font-semibold">{match[1]}</strong>);
           lastIndex = boldRegex.lastIndex;
         }
         if (lastIndex < lineContent.length) {
@@ -94,29 +94,29 @@ export function IntelligenceCopilotPanel() {
         }
 
         return (
-          <li key={i} className="text-[11px] text-muted-foreground list-disc ml-4 mb-1.5 leading-relaxed">
+          <li key={i} className="text-[11px] text-[#7a7a76] list-disc ml-4 mb-1.5 leading-relaxed">
             {parts.length > 0 ? parts : lineContent}
           </li>
         );
       }
       if (line.startsWith('*') && line.endsWith('*')) {
-        return <p key={i} className="text-[11px] italic text-primary mt-2">{line.replace(/\*/g, '')}</p>;
+        return <p key={i} className="text-[11px] italic text-[#059669] mt-2">{line.replace(/\*/g, '')}</p>;
       }
       if (line.trim() === '') return <div key={i} className="h-1.5" />;
-      return <p key={i} className="text-[11px] text-muted-foreground leading-relaxed mb-1.5">{line}</p>;
+      return <p key={i} className="text-[11px] text-[#7a7a76] leading-relaxed mb-1.5">{line}</p>;
     });
   };
 
   return (
-    <Card className="border border-border bg-card">
-      <CardHeader className="pb-3 border-b border-border/50">
+    <Card className="border border-[#e5e5e0] bg-white">
+      <CardHeader className="pb-3 border-b border-[#e5e5e0]/70">
         <div className="flex items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary">
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#059669]/10 text-[#059669]">
             <MessageSquare className="h-4 w-4" />
           </div>
           <div>
-            <CardTitle className="text-sm font-bold text-foreground">Copilote Minerva</CardTitle>
-            <p className="text-[11px] text-muted-foreground">Demande à ton copilote d&apos;analyser ou de rédiger pour toi.</p>
+            <CardTitle className="text-sm font-bold text-[#26251e]">Copilote Minerva</CardTitle>
+            <p className="text-[11px] text-[#7a7a76]">Demande à ton copilote d&apos;analyser ou de rédiger pour toi.</p>
           </div>
         </div>
       </CardHeader>
@@ -124,37 +124,37 @@ export function IntelligenceCopilotPanel() {
       <CardContent className="p-4 space-y-4">
         {/* Quick query actions */}
         <div className="space-y-1.5">
-          <span className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">Suggestions de requêtes :</span>
+          <span className="text-[9px] font-bold uppercase tracking-wider text-[#7a7a76]">Suggestions de requêtes :</span>
           <div className="flex flex-col gap-1.5">
             <button
               type="button"
               onClick={() => handleSuggestionClick('weekly')}
-              className="text-left text-[11px] text-muted-foreground hover:text-primary hover:bg-primary/5 border border-border/60 hover:border-primary/20 px-2.5 py-1.5 rounded bg-card transition-colors flex items-center justify-between"
+              className="text-left text-[11px] text-[#7a7a76] hover:text-[#059669] hover:bg-[#059669]/5 border border-[#e5e5e0]/70 hover:border-[#059669]/20 px-2.5 py-1.5 rounded bg-white transition-colors flex items-center justify-between"
             >
               <span>📊 Analyse ma semaine de prospection</span>
-              <Sparkle className="h-3 w-3 text-primary shrink-0 opacity-40" />
+              <Sparkle className="h-3 w-3 text-[#059669] shrink-0 opacity-40" />
             </button>
             <button
               type="button"
               onClick={() => handleSuggestionClick('campaigns')}
-              className="text-left text-[11px] text-muted-foreground hover:text-primary hover:bg-primary/5 border border-border/60 hover:border-primary/20 px-2.5 py-1.5 rounded bg-card transition-colors flex items-center justify-between"
+              className="text-left text-[11px] text-[#7a7a76] hover:text-[#059669] hover:bg-[#059669]/5 border border-[#e5e5e0]/70 hover:border-[#059669]/20 px-2.5 py-1.5 rounded bg-white transition-colors flex items-center justify-between"
             >
               <span>💡 Idées de campagnes locales (SEO, Click & Collect)</span>
-              <Sparkle className="h-3 w-3 text-primary shrink-0 opacity-40" />
+              <Sparkle className="h-3 w-3 text-[#059669] shrink-0 opacity-40" />
             </button>
             <button
               type="button"
               onClick={() => handleSuggestionClick('argumentaire')}
-              className="text-left text-[11px] text-muted-foreground hover:text-primary hover:bg-primary/5 border border-border/60 hover:border-primary/20 px-2.5 py-1.5 rounded bg-card transition-colors flex items-center justify-between"
+              className="text-left text-[11px] text-[#7a7a76] hover:text-[#059669] hover:bg-[#059669]/5 border border-[#e5e5e0]/70 hover:border-[#059669]/20 px-2.5 py-1.5 rounded bg-white transition-colors flex items-center justify-between"
             >
               <span className="truncate">🎯 Rédiger argumentaire pour {latestLead.businessName}</span>
-              <Sparkle className="h-3 w-3 text-primary shrink-0 opacity-40" />
+              <Sparkle className="h-3 w-3 text-[#059669] shrink-0 opacity-40" />
             </button>
           </div>
         </div>
 
         {/* Input box */}
-        <form onSubmit={handleSubmit} className="relative rounded-lg border border-border bg-card p-1 focus-within:ring-1 focus-within:ring-ring focus-within:border-ring">
+        <form onSubmit={handleSubmit} className="relative rounded-lg border border-[#e5e5e0] bg-white p-1 focus-within:ring-1 focus-within:ring-ring focus-within:border-ring">
           <Textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -162,15 +162,15 @@ export function IntelligenceCopilotPanel() {
             rows={2}
             className="w-full text-xs bg-transparent border-0 focus-visible:ring-0 focus-visible:ring-offset-0 resize-none min-h-[50px] shadow-none py-1.5 px-2.5"
           />
-          <div className="flex items-center justify-between border-t border-border/40 px-2 py-1.5 bg-muted/10">
-            <span className="text-[9px] text-muted-foreground">
+          <div className="flex items-center justify-between border-t border-[#e5e5e0]/60 px-2 py-1.5 bg-muted/10">
+            <span className="text-[9px] text-[#7a7a76]">
               Presse Entrée pour envoyer
             </span>
             <Button
               type="submit"
               disabled={loading || !input.trim()}
               size="icon"
-              className="h-6 w-6 rounded bg-primary hover:bg-primary/95 text-primary-foreground shrink-0"
+              className="h-6 w-6 rounded bg-[#059669] hover:bg-[#059669]/95 text-white shrink-0"
             >
               <Send className="h-3 w-3" />
             </Button>
@@ -179,14 +179,14 @@ export function IntelligenceCopilotPanel() {
 
         {/* Loading and Results viewport */}
         {loading && (
-          <div className="p-4 rounded-lg border border-border bg-muted/10 flex items-center justify-center gap-2">
-            <RefreshCw className="h-4 w-4 text-primary animate-spin shrink-0" />
-            <span className="text-xs text-muted-foreground">Le copilote Minerva rédige la réponse...</span>
+          <div className="p-4 rounded-lg border border-[#e5e5e0] bg-muted/10 flex items-center justify-center gap-2">
+            <RefreshCw className="h-4 w-4 text-[#059669] animate-spin shrink-0" />
+            <span className="text-xs text-[#7a7a76]">Le copilote Minerva rédige la réponse...</span>
           </div>
         )}
 
         {activeResponse && !loading && (
-          <div className="p-4 rounded-lg border border-border bg-muted/15 max-h-[300px] overflow-y-auto scrollbar-thin animate-in fade-in duration-300">
+          <div className="p-4 rounded-lg border border-[#e5e5e0] bg-muted/15 max-h-[300px] overflow-y-auto scrollbar-thin animate-in fade-in duration-300">
             <div className="space-y-1">
               {renderResponseText(activeResponse)}
             </div>

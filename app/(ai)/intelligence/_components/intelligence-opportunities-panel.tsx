@@ -129,21 +129,21 @@ export function IntelligenceOpportunitiesPanel() {
     : defaultOpportunities;
 
   const getScoreColor = (score: number) => {
-    if (score >= 90) return 'text-emerald-600 bg-emerald-50 border-emerald-100 dark:bg-emerald-950/20 dark:text-emerald-400';
-    if (score >= 80) return 'text-amber-600 bg-amber-50 border-amber-100 dark:bg-amber-950/20 dark:text-amber-400';
-    return 'text-slate-600 bg-slate-50 border-slate-100 dark:bg-slate-900 dark:text-slate-400';
+    if (score >= 90) return 'text-emerald-600 bg-emerald-50 border-emerald-100';
+    if (score >= 80) return 'text-amber-600 bg-amber-50 border-amber-100';
+    return 'text-slate-600 bg-slate-50 border-slate-100';
   };
 
   return (
-    <Card className="border border-border bg-card">
-      <CardHeader className="pb-3 border-b border-border/50">
+    <Card className="border border-[#e5e5e0] bg-white">
+      <CardHeader className="pb-3 border-b border-[#e5e5e0]/70">
         <div className="flex items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary">
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#059669]/10 text-[#059669]">
             <Target className="h-4 w-4" />
           </div>
           <div>
-            <CardTitle className="text-sm font-bold text-foreground">Opportunités Prioritaires</CardTitle>
-            <p className="text-[11px] text-muted-foreground">Comptes à fort potentiel de conversion ciblés par l&apos;IA.</p>
+            <CardTitle className="text-sm font-bold text-[#26251e]">Opportunités Prioritaires</CardTitle>
+            <p className="text-[11px] text-[#7a7a76]">Comptes à fort potentiel de conversion ciblés par l&apos;IA.</p>
           </div>
         </div>
       </CardHeader>
@@ -152,21 +152,21 @@ export function IntelligenceOpportunitiesPanel() {
         {opportunitiesToShow.map((opp) => (
           <div 
             key={opp.id} 
-            className="flex items-start justify-between gap-4 p-3 rounded-lg border border-border/60 bg-card hover:border-border transition-all group/card"
+            className="flex items-start justify-between gap-4 p-3 rounded-lg border border-[#e5e5e0]/70 bg-white hover:border-[#e5e5e0] transition-all group/card"
           >
             <div className="space-y-1.5 flex-1 min-w-0">
               {/* Top metadata */}
               <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="text-xs font-bold text-foreground truncate">{opp.businessName}</span>
-                <span className="text-[9px] text-muted-foreground">• {opp.city}</span>
+                <span className="text-xs font-bold text-[#26251e] truncate">{opp.businessName}</span>
+                <span className="text-[9px] text-[#7a7a76]">• {opp.city}</span>
               </div>
 
               {/* Signal details */}
-              <div className="flex gap-1.5 text-[10px] text-muted-foreground leading-normal">
+              <div className="flex gap-1.5 text-[10px] text-[#7a7a76] leading-normal">
                 {opp.type === 'website' ? (
                   <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-amber-500" />
                 ) : (
-                  <TrendingUp className="h-3.5 w-3.5 shrink-0 text-primary" />
+                  <TrendingUp className="h-3.5 w-3.5 shrink-0 text-[#059669]" />
                 )}
                 <span className="line-clamp-2">{opp.signal}</span>
               </div>
@@ -183,7 +183,7 @@ export function IntelligenceOpportunitiesPanel() {
                 asChild
                 variant="ghost" 
                 size="icon" 
-                className="h-7 w-7 text-muted-foreground hover:text-primary hover:bg-secondary shrink-0 opacity-0 group-hover/card:opacity-100 transition-opacity"
+                className="h-7 w-7 text-[#7a7a76] hover:text-[#059669] hover:bg-secondary shrink-0 opacity-0 group-hover/card:opacity-100 transition-opacity"
               >
                 <Link href={opp.leadId.startsWith('lead-') ? `/leads` : `/leads`}>
                   <ArrowUpRight className="h-4 w-4" />

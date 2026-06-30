@@ -98,32 +98,32 @@ export function IntelligenceInsightsPanel() {
   const getImpactBadge = (impact: Insight['impact']) => {
     switch (impact) {
       case 'High':
-        return 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/30 dark:text-rose-300 dark:border-rose-800';
+        return 'bg-rose-50 text-rose-700 border-rose-200';
       case 'Medium':
-        return 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-300 dark:border-amber-800';
+        return 'bg-amber-50 text-amber-700 border-amber-200';
       default:
-        return 'bg-slate-50 text-slate-700 border-slate-200 dark:bg-slate-900 dark:text-slate-300 dark:border-slate-800';
+        return 'bg-slate-50 text-slate-700 border-slate-200';
     }
   };
 
   return (
-    <Card className="border border-border bg-card relative overflow-hidden">
+    <Card className="border border-[#e5e5e0] bg-white relative overflow-hidden">
       {/* Toast Notification Container */}
       {toastMessage && (
-        <div className="absolute top-3 right-3 z-50 bg-primary text-primary-foreground text-xs font-semibold px-3 py-1.5 rounded-md shadow-lg flex items-center gap-1.5 animate-in fade-in slide-in-from-top-2 duration-200">
+        <div className="absolute top-3 right-3 z-50 bg-[#059669] text-white text-xs font-semibold px-3 py-1.5 rounded-md shadow-lg flex items-center gap-1.5 animate-in fade-in slide-in-from-top-2 duration-200">
           <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
           <span>{toastMessage}</span>
         </div>
       )}
 
-      <CardHeader className="pb-3 border-b border-border/50">
+      <CardHeader className="pb-3 border-b border-[#e5e5e0]/70">
         <div className="flex items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary">
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#059669]/10 text-[#059669]">
             <Sparkles className="h-4 w-4" />
           </div>
           <div>
-            <CardTitle className="text-sm font-bold text-foreground">Analyses & Signaux automatiques</CardTitle>
-            <p className="text-[11px] text-muted-foreground">Patterns détectés par l&apos;IA sur ton portefeuille commercial.</p>
+            <CardTitle className="text-sm font-bold text-[#26251e]">Analyses & Signaux automatiques</CardTitle>
+            <p className="text-[11px] text-[#7a7a76]">Patterns détectés par l&apos;IA sur ton portefeuille commercial.</p>
           </div>
         </div>
       </CardHeader>
@@ -132,15 +132,15 @@ export function IntelligenceInsightsPanel() {
         {insights.map((insight) => {
           const rating = feedback[insight.id];
           return (
-            <div key={insight.id} className="p-3.5 rounded-lg border border-border bg-muted/20 hover:bg-muted/30 transition-colors flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+            <div key={insight.id} className="p-3.5 rounded-lg border border-[#e5e5e0] bg-[#f4f4f3]/40 hover:bg-[#f4f4f3]/60 transition-colors flex flex-col sm:flex-row sm:items-start justify-between gap-3">
               <div className="space-y-1.5 flex-1">
                 <div className="flex items-center gap-2">
-                  <h4 className="text-xs font-bold text-foreground">{insight.title}</h4>
+                  <h4 className="text-xs font-bold text-[#26251e]">{insight.title}</h4>
                   <Badge variant="outline" className={`text-[8px] font-bold tracking-wide rounded px-1.5 py-0 ${getImpactBadge(insight.impact)}`}>
                     Impact {insight.impact === 'High' ? 'Élevé' : insight.impact === 'Medium' ? 'Moyen' : 'Faible'}
                   </Badge>
                 </div>
-                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                <p className="text-[11px] text-[#7a7a76] leading-relaxed">
                   {insight.description}
                 </p>
               </div>
@@ -148,16 +148,16 @@ export function IntelligenceInsightsPanel() {
               {/* Action Buttons */}
               <div className="flex items-center gap-2 sm:self-center shrink-0">
                 {/* Feedback rating controls */}
-                <div className="flex items-center border border-border/60 rounded-md overflow-hidden bg-card shrink-0">
+                <div className="flex items-center border border-[#e5e5e0]/70 rounded-md overflow-hidden bg-white shrink-0">
                   <button
                     type="button"
                     onClick={() => handleFeedback(insight.id, 'up')}
                     aria-label="Utile"
                     title="Insight utile"
-                    className={`p-1.5 transition-colors border-r border-border/40 hover:bg-muted ${
+                    className={`p-1.5 transition-colors border-r border-[#e5e5e0]/60 hover:bg-[#f4f4f3] ${
                       rating === 'up' 
-                        ? 'text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20' 
-                        : 'text-muted-foreground hover:text-foreground'
+                        ? 'text-emerald-600 bg-emerald-50' 
+                        : 'text-[#7a7a76] hover:text-[#26251e]'
                     }`}
                   >
                     <ThumbsUp className="h-3 w-3" />
@@ -167,10 +167,10 @@ export function IntelligenceInsightsPanel() {
                     onClick={() => handleFeedback(insight.id, 'down')}
                     aria-label="Pas utile"
                     title="Insight non utile"
-                    className={`p-1.5 transition-colors hover:bg-muted ${
+                    className={`p-1.5 transition-colors hover:bg-[#f4f4f3] ${
                       rating === 'down' 
-                        ? 'text-rose-600 bg-rose-50 dark:bg-rose-950/20' 
-                        : 'text-muted-foreground hover:text-foreground'
+                        ? 'text-rose-600 bg-rose-50' 
+                        : 'text-[#7a7a76] hover:text-[#26251e]'
                     }`}
                   >
                     <ThumbsDown className="h-3 w-3" />
@@ -178,7 +178,7 @@ export function IntelligenceInsightsPanel() {
                 </div>
 
                 {/* Main Action Link */}
-                <Button asChild size="sm" variant="ghost" className="text-xs h-7.5 gap-1 text-primary hover:bg-primary/5 hover:text-primary">
+                <Button asChild size="sm" variant="ghost" className="text-xs h-7.5 gap-1 text-[#059669] hover:bg-[#059669]/5 hover:text-[#059669]">
                   <Link href={insight.actionHref}>
                     <span>{insight.actionLabel}</span>
                     <ChevronRight className="h-3.5 w-3.5" />

@@ -129,16 +129,16 @@ export function IntelligenceSummariesPanel() {
   };
 
   return (
-    <Card className="border border-border bg-card">
-      <CardHeader className="pb-3 border-b border-border/50">
+    <Card className="border border-[#e5e5e0] bg-white">
+      <CardHeader className="pb-3 border-b border-[#e5e5e0]/70">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#059669]/10 text-[#059669]">
               <BookOpen className="h-4 w-4" />
             </div>
             <div>
-              <CardTitle className="text-sm font-bold text-foreground">Synthèse IA de Portefeuille</CardTitle>
-              <p className="text-[11px] text-muted-foreground">Résumés thématiques générés à partir des données terrain.</p>
+              <CardTitle className="text-sm font-bold text-[#26251e]">Synthèse IA de Portefeuille</CardTitle>
+              <p className="text-[11px] text-[#7a7a76]">Résumés thématiques générés à partir des données terrain.</p>
             </div>
           </div>
 
@@ -149,7 +149,7 @@ export function IntelligenceSummariesPanel() {
             size="icon"
             disabled={generating}
             onClick={handleRegenerate}
-            className="h-7 w-7 text-muted-foreground hover:text-primary shrink-0"
+            className="h-7 w-7 text-[#7a7a76] hover:text-[#059669] shrink-0"
             title="Régénérer la synthèse"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${generating ? 'animate-spin' : ''}`} />
@@ -159,10 +159,10 @@ export function IntelligenceSummariesPanel() {
 
       <CardContent className="p-4 space-y-4">
         {/* Scope Selector dropdown */}
-        <div className="flex items-center justify-between gap-3 bg-muted/30 p-2 rounded-lg border border-border/40">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Périmètre :</span>
+        <div className="flex items-center justify-between gap-3 bg-[#f4f4f3]/60 p-2 rounded-lg border border-[#e5e5e0]/60">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Périmètre :</span>
           <Select value={scope} onValueChange={handleScopeChange}>
-            <SelectTrigger className="h-7.5 w-[160px] text-xs bg-card">
+            <SelectTrigger className="h-7.5 w-[160px] text-xs bg-white">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -176,42 +176,42 @@ export function IntelligenceSummariesPanel() {
         </div>
 
         {/* Output Area */}
-        <div className="relative p-3.5 rounded-lg border border-border bg-muted/15 min-h-[110px] flex flex-col justify-between">
+        <div className="relative p-3.5 rounded-lg border border-[#e5e5e0] bg-muted/15 min-h-[110px] flex flex-col justify-between">
           {generating && (
-            <div className="absolute inset-0 flex items-start justify-start bg-card/20 z-10 backdrop-blur-[1px] rounded-lg">
-              <div className="flex items-center gap-1.5 text-[11px] font-semibold text-primary p-3.5">
+            <div className="absolute inset-0 flex items-start justify-start bg-white/20 z-10 backdrop-blur-[1px] rounded-lg">
+              <div className="flex items-center gap-1.5 text-[11px] font-semibold text-[#059669] p-3.5">
                 <RefreshCw className="h-3.5 w-3.5 animate-spin" />
                 <span>Génération en cours...</span>
               </div>
             </div>
           )}
 
-          <div className="text-[11px] text-muted-foreground leading-relaxed">
+          <div className="text-[11px] text-[#7a7a76] leading-relaxed">
             {streamedText ? (
               <>
                 {streamedText}
                 {generating && (
-                  <span className="inline-block w-0.5 h-3 bg-primary ml-0.5 animate-pulse" />
+                  <span className="inline-block w-0.5 h-3 bg-[#059669] ml-0.5 animate-pulse" />
                 )}
               </>
             ) : !hasGenerated ? (
-              <span className="italic text-muted-foreground/60">
+              <span className="italic text-[#7a7a76]/60">
                 Cliquez sur{' '}
                 <button
                   onClick={handleRegenerate}
-                  className="text-primary hover:underline font-semibold not-italic"
+                  className="text-[#059669] hover:underline font-semibold not-italic"
                 >
                   Générer
                 </button>{' '}
                 pour obtenir une synthèse IA de votre portefeuille.
               </span>
             ) : (
-              <span className="italic text-muted-foreground/60">Aucune synthèse disponible.</span>
+              <span className="italic text-[#7a7a76]/60">Aucune synthèse disponible.</span>
             )}
           </div>
 
-          <div className="flex justify-end gap-1.5 pt-3 border-t border-border/40 mt-3 text-[9px] text-muted-foreground">
-            <Sparkles className="h-3 w-3 text-primary shrink-0" />
+          <div className="flex justify-end gap-1.5 pt-3 border-t border-[#e5e5e0]/60 mt-3 text-[9px] text-[#7a7a76]">
+            <Sparkles className="h-3 w-3 text-[#059669] shrink-0" />
             <span>Généré par IA à partir de vos données réelles</span>
           </div>
         </div>

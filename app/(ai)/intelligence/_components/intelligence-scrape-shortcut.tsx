@@ -231,15 +231,15 @@ export function IntelligenceScrapeShortcut({ onImportComplete }: IntelligenceScr
   };
 
   return (
-    <Card className="border border-border bg-card">
-      <CardHeader className="pb-3 border-b border-border/50">
+    <Card className="border border-[#e5e5e0] bg-white">
+      <CardHeader className="pb-3 border-b border-[#e5e5e0]/70">
         <div className="flex items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary">
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#059669]/10 text-[#059669]">
             <Search className="h-4 w-4" />
           </div>
           <div>
-            <CardTitle className="text-sm font-bold text-foreground">Recherche Google Maps Rapide</CardTitle>
-            <p className="text-[11px] text-muted-foreground">Scrape et identifie instantanément les anomalies SEO locales.</p>
+            <CardTitle className="text-sm font-bold text-[#26251e]">Recherche Google Maps Rapide</CardTitle>
+            <p className="text-[11px] text-[#7a7a76]">Scrape et identifie instantanément les anomalies SEO locales.</p>
           </div>
         </div>
       </CardHeader>
@@ -248,7 +248,7 @@ export function IntelligenceScrapeShortcut({ onImportComplete }: IntelligenceScr
         <form onSubmit={handleStartScrape} className="space-y-3">
           <div className="grid grid-cols-2 gap-2">
             <div className="space-y-1">
-              <label className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">Niche</label>
+              <label className="text-[9px] font-bold uppercase tracking-wider text-[#7a7a76]">Niche</label>
               <select
                 value={selectedNiche}
                 onChange={(e) => {
@@ -256,7 +256,7 @@ export function IntelligenceScrapeShortcut({ onImportComplete }: IntelligenceScr
                   setCustomQuery('');
                 }}
                 disabled={scraping || loadingPrefs}
-                className="w-full text-xs rounded-md border border-input bg-card h-8 px-2 focus:outline-none focus:ring-1 focus:ring-primary"
+                className="w-full text-xs rounded-md border border-input bg-white h-8 px-2 focus:outline-none focus:ring-1 focus:ring-primary"
               >
                 {niches.length > 0 ? (
                   niches.map(n => <option key={n} value={n}>{n}</option>)
@@ -267,7 +267,7 @@ export function IntelligenceScrapeShortcut({ onImportComplete }: IntelligenceScr
             </div>
 
             <div className="space-y-1">
-              <label className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">Ville</label>
+              <label className="text-[9px] font-bold uppercase tracking-wider text-[#7a7a76]">Ville</label>
               <select
                 value={selectedCity}
                 onChange={(e) => {
@@ -275,7 +275,7 @@ export function IntelligenceScrapeShortcut({ onImportComplete }: IntelligenceScr
                   setCustomQuery('');
                 }}
                 disabled={scraping || loadingPrefs}
-                className="w-full text-xs rounded-md border border-input bg-card h-8 px-2 focus:outline-none focus:ring-1 focus:ring-primary"
+                className="w-full text-xs rounded-md border border-input bg-white h-8 px-2 focus:outline-none focus:ring-1 focus:ring-primary"
               >
                 {cities.length > 0 ? (
                   cities.map(c => <option key={c} value={c}>{c}</option>)
@@ -287,13 +287,13 @@ export function IntelligenceScrapeShortcut({ onImportComplete }: IntelligenceScr
           </div>
 
           <div className="space-y-1">
-            <label className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">Recherche personnalisée</label>
+            <label className="text-[9px] font-bold uppercase tracking-wider text-[#7a7a76]">Recherche personnalisée</label>
             <Input
               placeholder="Ex: Restaurant Lyon, Garage Villeurbanne..."
               value={customQuery}
               onChange={(e) => setCustomQuery(e.target.value)}
               disabled={scraping}
-              className="text-xs h-8 bg-card"
+              className="text-xs h-8 bg-white"
             />
           </div>
 
@@ -302,7 +302,7 @@ export function IntelligenceScrapeShortcut({ onImportComplete }: IntelligenceScr
               type="submit" 
               disabled={scraping || loadingPrefs}
               size="sm"
-              className="h-8 text-[11px] font-bold gap-1.5 bg-primary text-primary-foreground hover:bg-primary/95"
+              className="h-8 text-[11px] font-bold gap-1.5 bg-[#059669] text-white hover:bg-[#059669]/95"
             >
               {scraping ? (
                 <>
@@ -321,16 +321,16 @@ export function IntelligenceScrapeShortcut({ onImportComplete }: IntelligenceScr
 
         {/* Loading Progress */}
         {scraping && (
-          <div className="p-3 rounded-lg border border-primary/20 bg-primary/5 flex flex-col gap-2.5 animate-pulse">
+          <div className="p-3 rounded-lg border border-[#059669]/20 bg-[#059669]/5 flex flex-col gap-2.5 animate-pulse">
             <div className="flex items-center gap-2">
-              <Loader2 className="h-3.5 w-3.5 text-primary animate-spin" />
-              <span className="text-[11px] font-semibold text-foreground">
+              <Loader2 className="h-3.5 w-3.5 text-[#059669] animate-spin" />
+              <span className="text-[11px] font-semibold text-[#26251e]">
                 {scrapeSteps[scrapeStep] || "Extraction des données..."}
               </span>
             </div>
             <div className="w-full bg-border h-1.5 rounded-full overflow-hidden">
               <div 
-                className="bg-primary h-full transition-all duration-300 rounded-full" 
+                className="bg-[#059669] h-full transition-all duration-300 rounded-full" 
                 style={{ width: `${scrapeProgress}%` }}
               />
             </div>
@@ -341,8 +341,8 @@ export function IntelligenceScrapeShortcut({ onImportComplete }: IntelligenceScr
         {!scraping && scrapedLeads.length > 0 && (
           <div className="space-y-3.5 pt-1">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
-                <Database className="h-3.5 w-3.5 text-primary" />
+              <span className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76] flex items-center gap-1">
+                <Database className="h-3.5 w-3.5 text-[#059669]" />
                 <span>Résultats ({scrapedLeads.length})</span>
               </span>
               
@@ -361,9 +361,9 @@ export function IntelligenceScrapeShortcut({ onImportComplete }: IntelligenceScr
               </Button>
             </div>
 
-            <div className="rounded-md border border-border overflow-hidden bg-card max-h-[220px] overflow-y-auto scrollbar-thin">
+            <div className="rounded-md border border-[#e5e5e0] overflow-hidden bg-white max-h-[220px] overflow-y-auto scrollbar-thin">
               <Table>
-                <TableHeader className="bg-muted/30 sticky top-0 z-10">
+                <TableHeader className="bg-[#f4f4f3]/60 sticky top-0 z-10">
                   <TableRow>
                     <TableHead className="w-[30px] p-2 text-center">
                       <Checkbox 
@@ -378,7 +378,7 @@ export function IntelligenceScrapeShortcut({ onImportComplete }: IntelligenceScr
                 </TableHeader>
                 <TableBody>
                   {scrapedLeads.map((item) => (
-                    <TableRow key={item.id} className="hover:bg-muted/20">
+                    <TableRow key={item.id} className="hover:bg-[#f4f4f3]/40">
                       <TableCell className="p-2 text-center">
                         <Checkbox 
                           checked={selectedIds.includes(item.id)}
@@ -407,11 +407,11 @@ export function IntelligenceScrapeShortcut({ onImportComplete }: IntelligenceScr
 
         {/* Import Success banner */}
         {importCount !== null && (
-          <div className="p-3 border border-emerald-200 bg-emerald-50 dark:bg-emerald-950/20 dark:border-emerald-900/30 rounded-lg flex items-start gap-2.5 animate-in fade-in duration-300">
-            <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+          <div className="p-3 border border-emerald-200 bg-emerald-50 rounded-lg flex items-start gap-2.5 animate-in fade-in duration-300">
+            <Check className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
             <div>
-              <h4 className="text-[11px] font-bold text-emerald-800 dark:text-emerald-300">{importCount} prospects importés !</h4>
-              <p className="text-[10px] text-emerald-700 dark:text-emerald-400 mt-0.5">
+              <h4 className="text-[11px] font-bold text-emerald-800">{importCount} prospects importés !</h4>
+              <p className="text-[10px] text-emerald-700 mt-0.5">
                 Retrouve-les dans ton CRM local. Les anomalies SEO ont été ajoutées comme opportunités.
               </p>
             </div>

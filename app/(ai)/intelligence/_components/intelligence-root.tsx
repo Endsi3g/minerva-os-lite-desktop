@@ -18,7 +18,7 @@ export function IntelligenceRoot() {
   };
 
   return (
-    <div className="flex h-full flex-col gap-5 p-6 overflow-y-auto min-h-0 bg-background">
+    <div className="flex h-full flex-col gap-5 p-6 overflow-y-auto min-h-0 bg-[#fafaf8]">
       {/* Top Header section */}
       <IntelligenceHeader onRefresh={handleRefresh} />
 

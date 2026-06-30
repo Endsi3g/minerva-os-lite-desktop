@@ -130,39 +130,39 @@ export function IntelligencePlaybooksPanel() {
   const getChannelBadge = (channel: Playbook['channel']) => {
     switch (channel) {
       case 'Email':
-        return 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/20 dark:text-blue-300 dark:border-blue-800';
+        return 'bg-blue-50 text-blue-700 border-blue-200';
       case 'SMS':
-        return 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/20 dark:text-purple-300 dark:border-purple-800';
+        return 'bg-purple-50 text-purple-700 border-purple-200';
       default:
-        return 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/20 dark:text-amber-300 dark:border-amber-800';
+        return 'bg-amber-50 text-amber-700 border-amber-200';
     }
   };
 
   return (
-    <Card className="border border-border bg-card">
-      <CardHeader className="pb-3 border-b border-border/50">
+    <Card className="border border-[#e5e5e0] bg-white">
+      <CardHeader className="pb-3 border-b border-[#e5e5e0]/70">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <div className="flex items-center gap-2">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#059669]/10 text-[#059669]">
               <BookOpen className="h-4 w-4" />
             </div>
             <div>
-              <CardTitle className="text-sm font-bold text-foreground">Playbooks & Modèles de Prospection</CardTitle>
-              <p className="text-[11px] text-muted-foreground">Scripts réutilisables adaptés à tes cibles.</p>
+              <CardTitle className="text-sm font-bold text-[#26251e]">Playbooks & Modèles de Prospection</CardTitle>
+              <p className="text-[11px] text-[#7a7a76]">Scripts réutilisables adaptés à tes cibles.</p>
             </div>
           </div>
         </div>
 
         {/* Custom Tab list switcher */}
-        <div className="flex border-b border-border/50 mt-4 self-start gap-1 p-0.5 bg-muted/50 rounded-lg select-none">
+        <div className="flex border-b border-[#e5e5e0]/70 mt-4 self-start gap-1 p-0.5 bg-muted/50 rounded-lg select-none">
           <button
             type="button"
             onClick={() => setActiveTab('cold')}
             className={cn(
               "px-3 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all",
               activeTab === 'cold'
-                ? "bg-card text-foreground shadow-xs"
-                : "text-muted-foreground hover:text-foreground"
+                ? "bg-white text-[#26251e] shadow-xs"
+                : "text-[#7a7a76] hover:text-[#26251e]"
             )}
           >
             Premier contact
@@ -173,8 +173,8 @@ export function IntelligencePlaybooksPanel() {
             className={cn(
               "px-3 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all",
               activeTab === 'followup'
-                ? "bg-card text-foreground shadow-xs"
-                : "text-muted-foreground hover:text-foreground"
+                ? "bg-white text-[#26251e] shadow-xs"
+                : "text-[#7a7a76] hover:text-[#26251e]"
             )}
           >
             Suivis & Relances
@@ -185,8 +185,8 @@ export function IntelligencePlaybooksPanel() {
             className={cn(
               "px-3 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all",
               activeTab === 'offers'
-                ? "bg-card text-foreground shadow-xs"
-                : "text-muted-foreground hover:text-foreground"
+                ? "bg-white text-[#26251e] shadow-xs"
+                : "text-[#7a7a76] hover:text-[#26251e]"
             )}
           >
             Offres
@@ -200,16 +200,16 @@ export function IntelligencePlaybooksPanel() {
           {playbooks[activeTab]?.map((playbook) => (
             <div 
               key={playbook.id} 
-              className="p-3.5 rounded-lg border border-border/60 hover:border-border transition-all bg-card/40 flex flex-col justify-between gap-3.5"
+              className="p-3.5 rounded-lg border border-[#e5e5e0]/70 hover:border-[#e5e5e0] transition-all bg-white/40 flex flex-col justify-between gap-3.5"
             >
               <div className="space-y-1.5">
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-foreground">{playbook.title}</span>
+                  <span className="text-xs font-bold text-[#26251e]">{playbook.title}</span>
                   <span className={cn("text-[8px] font-bold tracking-wide uppercase border rounded px-1.5 py-0.5", getChannelBadge(playbook.channel))}>
                     {playbook.channel}
                   </span>
                 </div>
-                <p className="text-[11px] text-muted-foreground leading-normal">
+                <p className="text-[11px] text-[#7a7a76] leading-normal">
                   {playbook.description}
                 </p>
               </div>
@@ -219,7 +219,7 @@ export function IntelligencePlaybooksPanel() {
                 <Button 
                   size="sm" 
                   onClick={() => handleUsePlaybook(playbook)}
-                  className="h-7.5 px-3 bg-primary hover:bg-primary/95 text-[10px] font-bold uppercase tracking-wider"
+                  className="h-7.5 px-3 bg-[#059669] hover:bg-[#059669]/95 text-[10px] font-bold uppercase tracking-wider"
                 >
                   <Send className="h-3 w-3 mr-1" />
                   <span>Utiliser pour un lead</span>
@@ -234,8 +234,8 @@ export function IntelligencePlaybooksPanel() {
       <Dialog open={selectedPlaybook !== null} onOpenChange={(open) => !open && setSelectedPlaybook(null)}>
         <DialogContent className="max-w-[480px]">
           <DialogHeader>
-            <DialogTitle className="text-sm font-bold text-foreground">Personnaliser le modèle</DialogTitle>
-            <DialogDescription className="text-xs text-muted-foreground">
+            <DialogTitle className="text-sm font-bold text-[#26251e]">Personnaliser le modèle</DialogTitle>
+            <DialogDescription className="text-xs text-[#7a7a76]">
               Sélectionne un prospect pour générer automatiquement les variables personnalisées.
             </DialogDescription>
           </DialogHeader>
@@ -244,9 +244,9 @@ export function IntelligencePlaybooksPanel() {
             <div className="space-y-4 my-2">
               {/* Select target lead */}
               <div className="grid gap-1">
-                <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Choisir le prospect :</label>
+                <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Choisir le prospect :</label>
                 <Select value={targetLeadId} onValueChange={handleLeadChange}>
-                  <SelectTrigger className="text-xs bg-card">
+                  <SelectTrigger className="text-xs bg-white">
                     <SelectValue placeholder="Sélectionner..." />
                   </SelectTrigger>
                   <SelectContent>
@@ -262,32 +262,32 @@ export function IntelligencePlaybooksPanel() {
               {/* Subject box for Emails */}
               {selectedPlaybook.channel === 'Email' && (
                 <div className="grid gap-1">
-                  <label htmlFor="email-subject-input" className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Objet de l&apos;e-mail :</label>
+                  <label htmlFor="email-subject-input" className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Objet de l&apos;e-mail :</label>
                   <input
                     id="email-subject-input"
                     type="text"
                     value={customizedSubject}
                     onChange={(e) => setCustomizedSubject(e.target.value)}
                     placeholder="Saisir l'objet de l'e-mail..."
-                    className="flex h-9 w-full rounded-md border border-input bg-card px-3 py-1 text-xs shadow-xs transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                    className="flex h-9 w-full rounded-md border border-input bg-white px-3 py-1 text-xs shadow-xs transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-[#7a7a76] focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
                   />
                 </div>
               )}
 
               {/* Body text area */}
               <div className="grid gap-1">
-                <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Contenu du message :</label>
+                <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Contenu du message :</label>
                 <Textarea 
                   value={customizedBody}
                   onChange={(e) => setCustomizedBody(e.target.value)}
                   rows={8}
-                  className="text-xs bg-card resize-none leading-relaxed"
+                  className="text-xs bg-white resize-none leading-relaxed"
                 />
               </div>
             </div>
           )}
 
-          <DialogFooter className="pt-2 border-t border-border mt-2">
+          <DialogFooter className="pt-2 border-t border-[#e5e5e0] mt-2">
             <Button variant="outline" size="sm" onClick={() => setSelectedPlaybook(null)} className="text-xs">
               Annuler
             </Button>
