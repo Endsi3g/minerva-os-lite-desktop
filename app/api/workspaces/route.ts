@@ -25,8 +25,11 @@ export async function GET() {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  // Use admin client for all reads — anon client is blocked by RLS on workspaces
+  const adminClient = getAdminClient();
+
   // Fetch workspaces owned by user
-  const { data: owned, error: ownedErr } = await supabase
+  const { data: owned, error: ownedErr } = await adminClient
     .from('workspaces')
     .select('*')
     .eq('owner_id', user.id);
@@ -34,9 +37,6 @@ export async function GET() {
   if (ownedErr) {
     return NextResponse.json({ error: ownedErr.message }, { status: 500 });
   }
-
-  // Fetch memberships via admin client (bypasses RLS, works even if workspace_id is NULL)
-  const adminClient = getAdminClient();
   const { data: memberships } = await adminClient
     .from('team_members')
     .select('id, workspace_id, workspace_owner_id, joined_at')
