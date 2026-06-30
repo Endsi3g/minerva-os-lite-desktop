@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
 import {
   ArrowLeft, CheckCircle2, Clock, Calendar, X,
   MessageSquare, Loader2, MapPin, Phone, Globe, Star,
-  User, Flame, Camera, Trash2, Users,
+  User, Flame, Camera, Trash2, Users, TrendingUp,
 } from 'lucide-react';
 
 type VisitOutcome = 'visited' | 'absent' | 'meeting_booked' | 'not_interested';
@@ -72,6 +72,7 @@ export default function OutcomeClient() {
   const [meetingDatetime, setMeetingDatetime] = useState('');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [pipelineUpdate, setPipelineUpdate] = useState<string | null>(null);
 
   // Redirect back if lead not found
   useEffect(() => {
@@ -193,7 +194,25 @@ export default function OutcomeClient() {
       }
 
       setSaved(true);
-      setTimeout(() => router.push(`/field/${params.planId}?t=${Date.now()}`), 900);
+
+      // Agent: auto-update pipeline stage based on outcome
+      if (activeWorkspace) {
+        fetch(getApiUrl('/api/agent/field'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            lead_id: lead.id,
+            outcome: selectedOutcome,
+            interest_level: interestLevel ?? null,
+            workspace_id: activeWorkspace.id,
+          }),
+        })
+          .then((r) => r.json())
+          .then((d) => { if (d.updated && d.new_stage) setPipelineUpdate(d.new_stage); })
+          .catch(() => {});
+      }
+
+      setTimeout(() => router.push(`/field/${params.planId}?t=${Date.now()}`), 1400);
     } catch (err) {
       console.error('[outcome]', err);
     } finally {
@@ -440,6 +459,15 @@ export default function OutcomeClient() {
           ) : null}
           {saved ? 'Enregistré !' : saving ? 'Enregistrement…' : selectedOutcome ? `Confirmer — ${OUTCOME_CONFIG[selectedOutcome].label}` : 'Choisissez un résultat'}
         </button>
+
+        {pipelineUpdate && (
+          <div className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-[#059669]/8 border border-[#059669]/20">
+            <TrendingUp className="h-3.5 w-3.5 text-[#059669] shrink-0" />
+            <p className="text-xs font-semibold text-[#059669]">
+              Pipeline mis à jour → <span className="font-bold">{pipelineUpdate}</span>
+            </p>
+          </div>
+        )}
 
         <p className="text-[10px] text-[#7a7a76] text-center flex items-center justify-center gap-1.5">
           <Users className="h-3 w-3" />
