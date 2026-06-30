@@ -2,5 +2,45 @@
   "appId": "com.minerva.reachlite",
   "appName": "Minerva OS Reach Lite",
   "webDir": "out",
-  "bundledWebRuntime": false
+  "server": {
+    "url": "https://minerva-os-lite-desktop.vercel.app",
+    "cleartext": false,
+    "allowNavigation": ["minerva-os-lite-desktop.vercel.app"]
+  },
+  "ios": {
+    "contentInset": "automatic",
+    "backgroundColor": "#ffffff",
+    "preferredContentMode": "mobile",
+    "scrollEnabled": false,
+    "scheme": "minerva"
+  },
+  "android": {
+    "backgroundColor": "#ffffff",
+    "allowMixedContent": false,
+    "captureInput": true,
+    "webContentsDebuggingEnabled": false
+  },
+  "plugins": {
+    "StatusBar": {
+      "style": "DEFAULT",
+      "backgroundColor": "#ffffff",
+      "overlaysWebView": false
+    },
+    "SplashScreen": {
+      "launchShowDuration": 1200,
+      "backgroundColor": "#ffffff",
+      "showSpinner": false,
+      "androidScaleType": "CENTER_CROP",
+      "splashFullScreen": false,
+      "splashImmersive": false
+    },
+    "Keyboard": {
+      "resize": "body",
+      "style": "default",
+      "resizeOnFullScreen": true
+    },
+    "PushNotifications": {
+      "presentationOptions": ["badge", "sound", "alert"]
+    }
+  }
 }
