@@ -24,9 +24,12 @@ import { DailyDigestCard } from './daily-digest-card';
 import { LayoutDashboard, Mail } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
+import { useReach } from '@/lib/reach-context';
+import { updateWidget } from '@/lib/widget-bridge';
 
 export function TodayRoot() {
   const router = useRouter();
+  const { leads, tasks, aiSuggestions, activeWorkspace } = useReach();
   const [showAestheticMode, setShowAestheticMode] = useState(false);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'inbox'>('dashboard');
 
@@ -35,6 +38,34 @@ export function TodayRoot() {
       router.replace('/guide');
     }
   }, [router]);
+
+  // Push fresh data to iOS home screen widget whenever leads/tasks change
+  useEffect(() => {
+    if (!leads.length) return;
+    const today = new Date().toDateString();
+    const hotLeads = leads.filter((l) => (l.score ?? 0) >= 80).length;
+    const tasksToday = tasks.filter(
+      (t) => !t.completed && t.dueDate && new Date(t.dueDate).toDateString() === today
+    ).length;
+    const leadsAddedToday = leads.filter(
+      (l) => l.createdAt && new Date(l.createdAt).toDateString() === today
+    ).length;
+    const topAction = aiSuggestions?.[0];
+    const channelToType = (ch: string): 'call' | 'email' | 'visit' | 'task' => {
+      if (ch === 'Call') return 'call';
+      if (ch === 'Email') return 'email';
+      return 'task';
+    };
+    updateWidget({
+      totalLeads: leads.length,
+      hotLeads,
+      tasksToday,
+      leadsAddedToday,
+      nextActionType: topAction ? channelToType(topAction.suggestedChannel) : '',
+      nextActionLead: topAction?.leadName ?? '',
+      nextActionDetail: topAction?.reasoning ?? '',
+    });
+  }, [leads, tasks, aiSuggestions]);
 
   return (
     <div className="h-full overflow-hidden flex flex-col">
