@@ -6,7 +6,7 @@
 
 **CRM de prospection B2B autonome pour entrepreneurs québécois**
 
-[![Version](https://img.shields.io/badge/version-v5.4.0-059669?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-v8.0.0-059669?style=flat-square)](CHANGELOG.md)
 [![Next.js](https://img.shields.io/badge/Next.js-15-black?style=flat-square&logo=next.js)](https://nextjs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178c6?style=flat-square&logo=typescript&logoColor=white)](https://typescriptlang.org)
 [![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-3ecf8e?style=flat-square&logo=supabase&logoColor=white)](https://supabase.com)
@@ -66,6 +66,7 @@ Minerva OS Reach Lite est une plateforme CRM all-in-one conçue pour les entrepr
 | Fonctionnalité | Détail |
 |---|---|
 | **Séquences multi-étapes** | Délais configurables, personnalisation IA par lead (niche, ville, prénom) |
+| **SMS Twilio** | Envoi SMS via Messaging Service, réception des réponses inbound, logs `sms_messages` |
 | **Inbox Gmail unifiée** | Threads liés aux leads, détection des réponses, classification d'intent IA |
 | **Auto-tagging** | Détection automatique : Intéressé / RDV demandé / Pas intéressé / Hors-scope |
 | **Pipeline Kanban** | Colonnes : New → Contacted → Meeting Booked → Proposal Sent → Negotiation → Won / Lost |
@@ -239,7 +240,8 @@ Chaque appel IA est loggé en fire-and-forget dans `ai_gateway_logs` (via admin 
 | **Base de données** | Supabase (PostgreSQL + RLS) · SQLite (Electron, offline-first) |
 | **Auth** | Supabase Auth (OTP + password) + Google OAuth2 |
 | **IA** | Anthropic Claude (primaire) · OpenRouter (fallback / alternatif) |
-| **Email** | Gmail API (OAuth2) · Nodemailer (SMTP support) |
+| **Email** | Gmail API (OAuth2) · Nodemailer (SMTP Resend) · Resend webhooks (svix) |
+| **SMS** | Twilio Messaging Service · webhooks entrants avec vérification HMAC-SHA1 |
 | **Agenda** | Google Calendar API |
 | **Prospection** | OpenStreetMap Overpass API · Firecrawl (optionnel) |
 | **Desktop** | Electron (macOS/Windows) — export statique + protocole `app://` |
@@ -461,6 +463,13 @@ cp .env.example .env.local
 | `SUPPORT_SMTP_USER` | ⬜ | Login SMTP |
 | `SUPPORT_SMTP_PASS` | ⬜ | Mot de passe SMTP |
 | `SUPPORT_EMAIL` | ⬜ | Adresse de destination des tickets support |
+| `SUPPORT_SMTP_FROM` | ⬜ | Adresse d'expédition (ex : `onboarding@resend.dev` ou domaine vérifié Resend) |
+| `RESEND_WEBHOOK_SECRET` | ⬜ | Secret de signature des webhooks Resend (préfixe `whsec_`) |
+| `TWILIO_ACCOUNT_SID` | ⬜ | Account SID Twilio (commence par `AC`) |
+| `TWILIO_AUTH_TOKEN` | ⬜ | Auth Token Twilio — vérifie les signatures des webhooks entrants |
+| `TWILIO_API_KEY_SID` | ⬜ | API Key SID Twilio (commence par `SK`) — pour envoyer des SMS |
+| `TWILIO_API_KEY_SECRET` | ⬜ | Secret de la clé API Twilio |
+| `TWILIO_MESSAGING_SERVICE_SID` | ⬜ | SID du Messaging Service (commence par `MG`) |
 
 ---
 
@@ -484,6 +493,9 @@ SELECT COUNT(*) FROM workspaces;   -- doit être > 0 en prod
 | `supabase_migration_v4_11_lead_tags.sql` | Tags leads |
 | `supabase_migration_v4_12_proposals.sql` | Table proposals multi-sections |
 | `supabase_migration_v5_agent.sql` | Tables agent (`agent_memory`, `agent_actions`), colonnes autonomie settings, `ai_gateway_logs`, `sequence_enrollments` |
+| `supabase_migration_v6_platform.sql` | Architecture 2 plateformes — layout `(ai)/` |
+| `supabase_migration_v8_email_events.sql` | Table `email_events`, colonne `resend_id` sur `email_queue` |
+| `supabase_migration_v8_sms.sql` | Table `sms_messages` — logs SMS Twilio (entrants + sortants) |
 
 > **Règles absolues :** Ne jamais utiliser `DROP TABLE`, `TRUNCATE`, `DELETE FROM` sans `WHERE` précis, ni `DROP COLUMN` sans backup confirmé. Voir `CLAUDE.md` pour les détails.
 
@@ -524,6 +536,91 @@ Tout changement de schéma Supabase doit être **mirroré** dans `electron/datab
 > - `app/api/auth/google/` → stockage dans `settings.google_*` (flux legacy)
 >
 > L'inbox lit les deux, avec fallback automatique.
+
+---
+
+## Twilio SMS — Configuration
+
+### 1. Variables d'environnement (Vercel)
+
+```
+TWILIO_ACCOUNT_SID=ACbe4def289441404ae8ea0b97f787079e
+TWILIO_AUTH_TOKEN=<auth_token>
+TWILIO_API_KEY_SID=SK16a81692ae567abb55044bbbc6b9da86
+TWILIO_API_KEY_SECRET=<api_key_secret>
+TWILIO_MESSAGING_SERVICE_SID=MG44fe1b54612403c37688b7628c28cff4
+```
+
+### 2. Webhook Twilio (SMS entrants + delivery status)
+
+URL à enregistrer dans [console.twilio.com](https://console.twilio.com) →
+**Develop → Messaging → Services → Minerva OS → Integration** :
+
+```
+https://minerva-os-lite-desktop.vercel.app/api/webhooks/twilio
+```
+
+- **A message comes in** → `POST` → URL ci-dessus
+- **Status Callback** → même URL (le handler détecte automatiquement `MessageStatus`)
+
+> La signature est vérifiée via HMAC-SHA1 avec `TWILIO_AUTH_TOKEN`. En trial, le numéro source est `+12293042345`.
+
+### 3. Envoi d'un SMS
+
+```typescript
+// Client
+const res = await fetch('/api/sms/send', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ to: '+15141234567', body: 'Bonjour !', leadId: lead.id }),
+});
+```
+
+Ou via curl :
+
+```bash
+curl 'https://api.twilio.com/2010-04-01/Accounts/ACbe4def289441404ae8ea0b97f787079e/Messages.json' \
+  -X POST \
+  --data-urlencode 'To=+15141234567' \
+  --data-urlencode 'MessagingServiceSid=MG44fe1b54612403c37688b7628c28cff4' \
+  --data-urlencode 'Body=Bonjour !' \
+  --data-urlencode 'StatusCallback=https://minerva-os-lite-desktop.vercel.app/api/webhooks/twilio' \
+  -u ACbe4def289441404ae8ea0b97f787079e:[AuthToken]
+```
+
+### 4. Migration Supabase
+
+Exécuter `supabase_migration_v8_sms.sql` dans l'éditeur SQL Supabase.
+
+---
+
+## SMTP Email — Configuration (Resend)
+
+Le formulaire de support et les notifications par email utilisent Nodemailer via **Resend SMTP** :
+
+```
+SUPPORT_SMTP_HOST=smtp.resend.com
+SUPPORT_SMTP_PORT=465
+SUPPORT_SMTP_USER=resend
+SUPPORT_SMTP_PASS=<RESEND_API_KEY>   # clé re_xxxxxxxxx
+SUPPORT_EMAIL=quebecsaas@gmail.com
+```
+
+> Port 465 = TLS implicite (`secure: true`). Resend n'a pas de limite de volume et les emails sont délivrés immédiatement.
+
+### Webhooks Resend
+
+Enregistrer dans [resend.com/webhooks](https://resend.com/webhooks) :
+
+```
+https://minerva-os-lite-desktop.vercel.app/api/webhooks/resend
+```
+
+Variable requise dans Vercel :
+
+```
+RESEND_WEBHOOK_SECRET=whsec_<votre_secret>
+```
 
 ---
 
@@ -579,12 +676,12 @@ Dernières versions :
 
 | Version | Date | Points clés |
 |---------|------|-------------|
+| **v8.0.0** | 2026-06-30 | SMS Twilio (envoi + réception), webhooks Resend (livraison email), revue visuelle complète (64 fichiers), design tokens hex app-wide |
+| **v6.0.0** | 2026-06-29 | Architecture 2 plateformes : app/(ai)/ layout, 4 pages IA déplacées, switch topbar, lib/platform-utils.ts |
 | **v5.4.0** | 2026-06-29 | Google Places enrichment, email IA personnalisé par lead, sidebar slide + spring animations, tabs mobiles, fix workspace ownership |
 | **v5.3.0** | 2026-06-29 | Outreach Control Center : campagnes + approbations réels, 6 outils agent, autonomie outreach granulaire, badge count |
 | **v5.2.0** | 2026-06-29 | Agent Minerva (boucle autonome perceive→plan→act→log), mémoire d'agent, niveaux d'autonomie par domaine, AI Gateway unifié |
-| **v5.1.0** | 2026-06-29 | Sidebar 6 entrées, fix Google OAuth Inbox, Breadcrumb Leads, Timeline unifiée, pages Rôles dédiées |
 | **v5.0.0** | 2026-06-28 | Navigation Revenue OS, AI Gateway, Agent Feed, Outreach unifié |
-| **v4.3.0** | 2026-06-28 | Perf: inline SVGs, N+1 batch, cache server+client, container queries, type scale |
 
 ---
 
