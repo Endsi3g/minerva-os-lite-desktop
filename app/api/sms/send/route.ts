@@ -5,9 +5,10 @@ export async function POST(req: NextRequest) {
   const accountSid = process.env.TWILIO_ACCOUNT_SID;
   const apiKeySid = process.env.TWILIO_API_KEY_SID;
   const apiKeySecret = process.env.TWILIO_API_KEY_SECRET;
+  const fromNumber = process.env.TWILIO_FROM_NUMBER;
   const messagingServiceSid = process.env.TWILIO_MESSAGING_SERVICE_SID;
 
-  if (!accountSid || !apiKeySid || !apiKeySecret || !messagingServiceSid) {
+  if (!accountSid || !apiKeySid || !apiKeySecret || (!fromNumber && !messagingServiceSid)) {
     return NextResponse.json({ error: 'Twilio non configuré. Ajouter les variables TWILIO_* dans Vercel.' }, { status: 503 });
   }
 
@@ -21,8 +22,8 @@ export async function POST(req: NextRequest) {
 
   const params = new URLSearchParams({
     To: to,
-    MessagingServiceSid: messagingServiceSid,
     Body: body,
+    ...(fromNumber ? { From: fromNumber } : { MessagingServiceSid: messagingServiceSid! }),
     ...(statusCallback ? { StatusCallback: statusCallback } : {}),
   });
 

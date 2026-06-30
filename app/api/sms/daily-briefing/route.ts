@@ -63,12 +63,14 @@ export async function POST(req: NextRequest) {
   const accountSid = process.env.TWILIO_ACCOUNT_SID!;
   const apiKeySid = process.env.TWILIO_API_KEY_SID!;
   const apiKeySecret = process.env.TWILIO_API_KEY_SECRET!;
+  // Use TWILIO_FROM_NUMBER (trial: +12293042345) or Messaging Service as fallback
+  const fromNumber = process.env.TWILIO_FROM_NUMBER;
   const messagingServiceSid = process.env.TWILIO_MESSAGING_SERVICE_SID!;
 
   const twilioParams = new URLSearchParams({
     To: to,
-    MessagingServiceSid: messagingServiceSid,
     Body: lines,
+    ...(fromNumber ? { From: fromNumber } : { MessagingServiceSid: messagingServiceSid }),
   });
 
   const twilioRes = await fetch(
