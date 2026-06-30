@@ -135,18 +135,14 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: 'activeWorkspaceId requis' }, { status: 400 });
   }
 
-  try {
-    const adminClient = getAdminClient();
-    const { error: upsertError } = await adminClient
-      .from('settings')
-      .upsert({ user_id: user.id, active_workspace_id: activeWorkspaceId }, { onConflict: 'user_id' });
+  const adminClient = getAdminClient();
+  const { error: upsertError } = await adminClient
+    .from('settings')
+    .upsert({ user_id: user.id, active_workspace_id: activeWorkspaceId }, { onConflict: 'user_id' });
 
-    if (upsertError) {
-      // Column may not exist yet (migration pending) — return success anyway, preference will be loaded from memberships
-      return NextResponse.json({ success: true, note: 'preference_pending_migration' });
-    }
-  } catch {
-    return NextResponse.json({ success: true, note: 'preference_pending_migration' });
+  if (upsertError) {
+    console.error('[PATCH /api/workspaces] upsert failed:', upsertError.message);
+    return NextResponse.json({ success: false, error: upsertError.message }, { status: 500 });
   }
 
   return NextResponse.json({ success: true });
@@ -165,11 +161,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Nom du workspace requis' }, { status: 400 });
   }
 
-  const { data: workspace, error: insertError } = await supabase
+  const adminClient = getAdminClient();
+  const { data: workspace, error: insertError } = await adminClient
     .from('workspaces')
     .insert({
       name: name.trim(),
-      owner_id: user.id
+      owner_id: user.id,
     })
     .select()
     .single();
@@ -177,6 +174,11 @@ export async function POST(request: NextRequest) {
   if (insertError) {
     return NextResponse.json({ error: insertError.message }, { status: 500 });
   }
+
+  // Set newly created workspace as active immediately
+  await adminClient
+    .from('settings')
+    .upsert({ user_id: user.id, active_workspace_id: workspace.id }, { onConflict: 'user_id' });
 
   return NextResponse.json({ success: true, workspace }, { status: 201 });
 }

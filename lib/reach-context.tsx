@@ -852,12 +852,15 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
 
         if (active) {
           setActiveWorkspace(active);
-          // Persist choice back to Supabase (fire-and-forget)
-          fetch(getApiUrl('/api/workspaces'), {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ activeWorkspaceId: active.id }),
-          }).catch(() => {});
+          // Only persist if DB had no saved preference (first load or missing column)
+          // — avoids overwriting the correct savedId with the fallback on reload
+          if (!savedId) {
+            fetch(getApiUrl('/api/workspaces'), {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ activeWorkspaceId: active.id }),
+            }).catch(() => {});
+          }
         }
       } else if (res.status !== 401) {
         console.error("Error loading workspaces:", res.status, res.statusText);
@@ -897,11 +900,16 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // Persist preference to Supabase settings (fire-and-forget)
+    // Persist preference to Supabase settings
     fetch(getApiUrl('/api/workspaces'), {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ activeWorkspaceId: ws.id }),
+    }).then(async (r) => {
+      if (!r.ok) {
+        const body = await r.json().catch(() => ({}));
+        console.error('[switchWorkspace] PATCH failed:', body);
+      }
     }).catch(() => {});
   };
 
