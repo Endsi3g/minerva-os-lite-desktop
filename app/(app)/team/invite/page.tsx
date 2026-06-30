@@ -14,6 +14,8 @@ interface InviteStatus {
   email: string;
   status: 'idle' | 'sending' | 'success' | 'error';
   message?: string;
+  invite_link?: string;
+  email_sent?: boolean;
 }
 
 export default function InvitePage() {
@@ -74,8 +76,13 @@ export default function InvitePage() {
         const data = await res.json();
         
         if (res.ok) {
-          setInviteStatuses(prev => prev.map((item, idx) => 
-            idx === i ? { ...item, status: 'success' } : item
+          setInviteStatuses(prev => prev.map((item, idx) =>
+            idx === i ? {
+              ...item,
+              status: 'success',
+              invite_link: data.invite_link,
+              email_sent: data.email_sent,
+            } : item
           ));
         } else {
           setInviteStatuses(prev => prev.map((item, idx) => 
@@ -228,10 +235,21 @@ export default function InvitePage() {
                           </span>
                         )}
                         {item.status === 'success' && (
-                          <span className="text-[10px] text-emerald-700 font-semibold bg-emerald-100 px-2 py-0.5 rounded-md flex items-center gap-0.5">
-                            <Check className="w-3 h-3" />
-                            Réussi
-                          </span>
+                          <div className="flex flex-col items-end gap-1">
+                            <span className="text-[10px] text-emerald-700 font-semibold bg-emerald-100 px-2 py-0.5 rounded-md flex items-center gap-0.5">
+                              <Check className="w-3 h-3" />
+                              {item.email_sent === false ? 'Créé — lien manuel' : 'Invité'}
+                            </span>
+                            {item.email_sent === false && item.invite_link && (
+                              <button
+                                onClick={() => { navigator.clipboard.writeText(item.invite_link!); }}
+                                className="text-[9px] text-[#059669] hover:underline font-medium"
+                                title="Aucun fournisseur email configuré — copiez ce lien et envoyez-le manuellement"
+                              >
+                                📋 Copier le lien d&apos;invitation
+                              </button>
+                            )}
+                          </div>
                         )}
                         {item.status === 'error' && (
                           <span className="text-[10px] text-red-700 font-semibold bg-red-100 px-2 py-0.5 rounded-md flex items-center gap-0.5">

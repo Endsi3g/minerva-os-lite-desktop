@@ -185,7 +185,33 @@ export async function POST(request: NextRequest) {
         console.error('Error sending email via Resend:', sendErr);
       }
     } else {
-      console.warn('RESEND_API_KEY is not set. Email dispatch skipped.');
+      // No Resend key — try SMTP fallback
+      const smtpHost = process.env.SUPPORT_SMTP_HOST;
+      const smtpUser = process.env.SUPPORT_SMTP_USER;
+      const smtpPass = process.env.SUPPORT_SMTP_PASS;
+      if (smtpHost && smtpUser && smtpPass) {
+        try {
+          const nodemailer = await import('nodemailer');
+          const transporter = nodemailer.default.createTransport({
+            host: smtpHost,
+            port: parseInt(process.env.SUPPORT_SMTP_PORT || '587'),
+            secure: parseInt(process.env.SUPPORT_SMTP_PORT || '587') === 465,
+            auth: { user: smtpUser, pass: smtpPass },
+          });
+          await transporter.sendMail({
+            from: `"Minerva OS" <${smtpUser}>`,
+            to: email.toLowerCase(),
+            subject: 'Invitation à rejoindre Minerva OS',
+            html: `<p>Vous avez été invité(e) à rejoindre Minerva OS en tant que <strong>${role}</strong>.</p><p><a href="${actionLink}" style="background:#059669;color:white;padding:10px 20px;border-radius:6px;text-decoration:none;font-weight:bold;">Accepter l'invitation</a></p><p style="color:#7a7a76;font-size:12px;">Lien direct : ${actionLink}</p>`,
+          });
+        } catch (smtpErr) {
+          console.error('[invite] SMTP fallback failed:', smtpErr);
+        }
+      } else {
+        // No email provider at all — return the invite link in the response so
+        // the inviting user can share it manually.
+        console.warn('[invite] No email provider configured (RESEND_API_KEY or SUPPORT_SMTP_*). Returning invite link for manual sharing.');
+      }
     }
 
     // 6. Resolve workspace_id for the invitee membership.
@@ -239,7 +265,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to save invitation' }, { status: 500 });
     }
 
-    return NextResponse.json({ success: true, member }, { status: 201 });
+    const emailProviderConfigured = !!(process.env.RESEND_API_KEY || (process.env.SUPPORT_SMTP_HOST && process.env.SUPPORT_SMTP_USER));
+    return NextResponse.json({
+      success: true,
+      member,
+      // If no email provider, expose the link so the UI can display it for manual sharing
+      invite_link: emailProviderConfigured ? undefined : actionLink,
+      email_sent: emailProviderConfigured,
+    }, { status: 201 });
   } catch (err) {
     console.error('Invite route error:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

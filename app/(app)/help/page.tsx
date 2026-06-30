@@ -141,9 +141,15 @@ export default function HelpPage() {
           message: contactMessage,
         }),
       });
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || `Erreur ${res.status}`);
+        throw new Error(data.error || `Erreur ${res.status}`);
+      }
+      // If SMTP not configured, message was logged server-side only — inform the user
+      if (data.note === 'logged') {
+        setContactError('Message reçu, mais aucun fournisseur email n\'est configuré côté serveur. Contactez directement : support@minervaos.com');
+        setContactSending(false);
+        return;
       }
       setContactSuccess(true);
       setContactName(''); setContactEmail(''); setContactSubject(''); setContactMessage('');
