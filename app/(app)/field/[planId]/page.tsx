@@ -1,6 +1,5 @@
 // Static export: params resolved client-side
 export function generateStaticParams() { return []; }
-export const dynamicParams = true;
 
 export const metadata = {
   title: 'Mode terrain',
