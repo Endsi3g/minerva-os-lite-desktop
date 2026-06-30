@@ -62,6 +62,19 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v6.2.0',
+      date: '2026-06-29',
+      titleKey: 'changelog.v3_42_0_title' as TranslationKey,
+      descKey: 'changelog.v3_42_0_desc' as TranslationKey,
+      highlights: [
+        { tag: 'design', text: '3 profils d\'autonomie agent — Manuel / Contrôlé / Mains libres remplacent les 11 sélecteurs individuels dans Paramètres → Intelligence & IA. Sélection en 1 clic avec badge "Recommandé" sur Contrôlé.' },
+        { tag: 'feature', text: 'Profil Contrôlé (défaut recommandé) — brouillons + relances générés automatiquement, mis en file d\'approbation. Pipeline mis à jour après validation. Séquences et premiers envois restent manuels.' },
+        { tag: 'feature', text: 'Profil Mains libres — l\'agent agit sans confirmation sur l\'ensemble des domaines (emails, pipeline, séquences, terrain).' },
+        { tag: 'feature', text: 'Réglages avancés collapsibles — le panneau de contrôle par domaine reste accessible via "Réglages avancés" pour les cas de configuration personnalisée.' },
+        { tag: 'design', text: 'Indicateur "Configuration personnalisée" — affiché quand l\'autonomy ne correspond à aucun profil preset, avec invitation à choisir un profil standard.' },
+      ],
+    },
+    {
       version: 'v6.1.0',
       date: '2026-06-29',
       titleKey: 'changelog.v3_42_0_title' as TranslationKey,

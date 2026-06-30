@@ -8,7 +8,7 @@ import { SettingsSectionWrapper } from './settings-section-wrapper';
 import { cn } from '@/lib/utils';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
-import { Sparkles, Loader2, Mail } from 'lucide-react';
+import { Sparkles, Loader2, Mail, Hand, Shield, Zap, ChevronDown, Check } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
 export type AutonomyLevel = 'off' | 'suggest' | 'prepare' | 'act_with_approval' | 'auto';
@@ -77,6 +77,71 @@ const AGENT_TOOLS: { key: keyof AgentAutonomy; label: string; group?: string }[]
   { key: 'outreach_pipeline_update', label: 'Pipeline après intent', group: 'Outreach granulaire' },
 ];
 
+// ── Autonomy profiles ─────────────────────────────────────────────────────────
+
+type ProfileId = 'manuel' | 'controle' | 'mains_libres';
+
+const PROFILE_AUTONOMY: Record<ProfileId, AgentAutonomy> = {
+  manuel: {
+    tasks: 'suggest', pipeline: 'suggest', sequences: 'suggest',
+    emails: 'suggest', field: 'suggest',
+    outreach_draft: 'suggest', outreach_initial_send: 'suggest',
+    outreach_followup: 'suggest', outreach_reply: 'suggest',
+    outreach_sequence_pause: 'suggest', outreach_pipeline_update: 'suggest',
+  },
+  controle: {
+    tasks: 'act_with_approval', pipeline: 'act_with_approval',
+    sequences: 'suggest', emails: 'act_with_approval', field: 'suggest',
+    outreach_draft: 'act_with_approval', outreach_initial_send: 'suggest',
+    outreach_followup: 'act_with_approval', outreach_reply: 'suggest',
+    outreach_sequence_pause: 'act_with_approval', outreach_pipeline_update: 'act_with_approval',
+  },
+  mains_libres: {
+    tasks: 'auto', pipeline: 'auto', sequences: 'auto',
+    emails: 'auto', field: 'auto',
+    outreach_draft: 'auto', outreach_initial_send: 'auto',
+    outreach_followup: 'auto', outreach_reply: 'auto',
+    outreach_sequence_pause: 'auto', outreach_pipeline_update: 'auto',
+  },
+};
+
+const PROFILES: { id: ProfileId; label: string; badge?: string; icon: React.ElementType; description: string; behaviors: string[] }[] = [
+  {
+    id: 'manuel',
+    label: 'Manuel',
+    icon: Hand,
+    description: "Vous gardez le contrôle total. L'agent analyse et suggère — vous validez chaque action.",
+    behaviors: ["Suggestions dans le feed agent", "Aucune action sans votre accord", "Idéal pour débuter avec l'agent"],
+  },
+  {
+    id: 'controle',
+    label: 'Contrôlé',
+    badge: 'Recommandé',
+    icon: Shield,
+    description: "L'agent prépare et exécute avec votre validation. Brouillons et relances en file d'approbation.",
+    behaviors: ["Brouillons générés automatiquement", "Relances envoyées après validation", "Pipeline mis à jour après confirmation"],
+  },
+  {
+    id: 'mains_libres',
+    label: 'Mains libres',
+    icon: Zap,
+    description: "L'agent agit de façon totalement autonome. Emails, relances et pipeline gérés sans intervention.",
+    behaviors: ["Emails envoyés sans confirmation", "Pipeline mis à jour en continu", "Séquences gérées automatiquement"],
+  },
+];
+
+const AGENT_TOOL_KEYS = (Object.keys(PROFILE_AUTONOMY.manuel) as (keyof AgentAutonomy)[]);
+
+function detectProfile(autonomy: Partial<AgentAutonomy>): ProfileId | 'custom' {
+  for (const pid of Object.keys(PROFILE_AUTONOMY) as ProfileId[]) {
+    const preset = PROFILE_AUTONOMY[pid];
+    if (AGENT_TOOL_KEYS.every(k => (autonomy[k] ?? 'suggest') === preset[k])) return pid;
+  }
+  return 'custom';
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+
 function ApiKeyField({
   label, placeholder, hint, masked, onSaveKey, onDeleteKey,
 }: {
@@ -134,6 +199,7 @@ function ApiKeyField({
 }
 
 export function SettingsAiSection({ data, onChange, onSaveKey, onDeleteKey, isSaving }: SettingsAiSectionProps) {
+  const [showAdvancedAutonomy, setShowAdvancedAutonomy] = useState(false);
   const [aboutYou, setAboutYou] = useState('');
   const [modelInstructions, setModelInstructions] = useState('');
   const [savingInstructions, setSavingInstructions] = useState(false);
@@ -299,60 +365,125 @@ export function SettingsAiSection({ data, onChange, onSaveKey, onDeleteKey, isSa
           </CardContent>
         </Card>
 
-        {/* ── Niveaux d'autonomie ── */}
+        {/* ── Profils d'autonomie ── */}
         <Card className="border border-border bg-card">
           <CardContent className="p-5 space-y-4">
             <div>
-              <h3 className="text-xs font-bold text-foreground uppercase tracking-wider">Niveaux d'autonomie de l'agent</h3>
+              <h3 className="text-xs font-bold text-foreground uppercase tracking-wider">Profil d'autonomie de l'agent</h3>
               <p className="text-[11px] text-muted-foreground leading-normal mt-1">
-                Définissez ce que l'Agent Minerva peut faire seul, ce qu'il prépare pour vous, et ce qu'il ne touche pas.
+                Choisissez jusqu&apos;où l&apos;Agent Minerva peut agir seul.
               </p>
             </div>
 
-            <div className="space-y-3 pt-1">
-              {AGENT_TOOLS.map(({ key, label, group }, idx) => {
-                const currentLevel = data.agentAutonomy?.[key] ?? 'suggest';
-                const prevGroup = idx > 0 ? AGENT_TOOLS[idx - 1].group : undefined;
-                const showGroupHeader = group && group !== prevGroup;
+            {/* 3 profile cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+              {PROFILES.map((profile) => {
+                const activeProfile = detectProfile(data.agentAutonomy ?? {});
+                const isSelected = activeProfile === profile.id;
+                const Icon = profile.icon;
                 return (
-                  <React.Fragment key={key}>
-                    {showGroupHeader && (
-                      <div className="pt-2">
-                        <p className="text-[9px] font-black uppercase tracking-wider text-muted-foreground">{group}</p>
-                      </div>
+                  <button
+                    key={profile.id}
+                    type="button"
+                    onClick={() => onChange({ agentAutonomy: PROFILE_AUTONOMY[profile.id] })}
+                    className={cn(
+                      "relative text-left p-4 rounded-xl border transition-all flex flex-col gap-3 w-full cursor-pointer",
+                      isSelected
+                        ? "border-[#059669] bg-[#059669]/5 ring-1 ring-[#059669]/30"
+                        : "border-border/60 bg-card hover:border-border/80"
                     )}
-                    <div className="flex items-center justify-between gap-3">
-                    <div className="min-w-0">
-                      <span className="text-xs font-semibold text-foreground block">{label}</span>
-                      <span className="text-[10px] text-muted-foreground leading-none">{AUTONOMY_DESCRIPTIONS[currentLevel]}</span>
+                  >
+                    {profile.badge && (
+                      <span className="absolute top-3 right-3 text-[9px] font-bold uppercase tracking-wider bg-[#059669] text-white px-1.5 py-0.5 rounded-full">
+                        {profile.badge}
+                      </span>
+                    )}
+                    {isSelected && !profile.badge && (
+                      <span className="absolute top-3 right-3">
+                        <Check className="h-3.5 w-3.5 text-[#059669]" />
+                      </span>
+                    )}
+                    <div className={cn(
+                      "flex h-8 w-8 items-center justify-center rounded-lg",
+                      isSelected ? "bg-[#059669]/15 text-[#059669]" : "bg-[#f4f4f3] text-[#7a7a76]"
+                    )}>
+                      <Icon className="h-4 w-4" />
                     </div>
-                    <Select
-                      value={currentLevel}
-                      onValueChange={(val: AutonomyLevel) =>
-                        onChange({ agentAutonomy: { ...(data.agentAutonomy ?? {}), [key]: val } as AgentAutonomy })
-                      }
-                    >
-                      <SelectTrigger className="text-xs bg-card w-48 shrink-0">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {(Object.keys(AUTONOMY_LABELS) as AutonomyLevel[]).map((level) => (
-                          <SelectItem key={level} value={level} className="text-xs">
-                            {AUTONOMY_LABELS[level]}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  </React.Fragment>
+                    <div className="space-y-1">
+                      <p className="text-xs font-bold text-[#26251e]">{profile.label}</p>
+                      <p className="text-[10px] text-muted-foreground leading-normal">{profile.description}</p>
+                    </div>
+                    <ul className="space-y-1">
+                      {profile.behaviors.map((b) => (
+                        <li key={b} className="flex items-start gap-1.5 text-[10px] text-[#555552]">
+                          <span className="mt-[3px] h-1 w-1 rounded-full bg-[#059669]/60 shrink-0" />
+                          {b}
+                        </li>
+                      ))}
+                    </ul>
+                  </button>
                 );
               })}
             </div>
 
-            <div className="pt-2 border-t border-border/50">
-              <p className="text-[10px] text-muted-foreground leading-relaxed">
-                <strong>Suggest</strong> = carte dans le feed · <strong>Préparer</strong> = brouillon prêt à valider · <strong>Auto</strong> = exécution sans intervention
+            {/* Custom indicator */}
+            {detectProfile(data.agentAutonomy ?? {}) === 'custom' && (
+              <p className="text-[10px] text-[#d97706] font-medium flex items-center gap-1">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#d97706] inline-block" />
+                Configuration personnalisée active — choisir un profil ci-dessus pour réinitialiser.
               </p>
+            )}
+
+            {/* Advanced toggle */}
+            <div className="pt-1 border-t border-border/50">
+              <button
+                type="button"
+                onClick={() => setShowAdvancedAutonomy(v => !v)}
+                className="flex items-center gap-1.5 text-[10px] font-bold text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <ChevronDown className={cn("h-3 w-3 transition-transform", showAdvancedAutonomy && "rotate-180")} />
+                Réglages avancés (contrôle par domaine)
+              </button>
+
+              {showAdvancedAutonomy && (
+                <div className="mt-3 space-y-2.5">
+                  {AGENT_TOOLS.map(({ key, label, group }, idx) => {
+                    const currentLevel = data.agentAutonomy?.[key] ?? 'suggest';
+                    const prevGroup = idx > 0 ? AGENT_TOOLS[idx - 1].group : undefined;
+                    const showGroupHeader = group && group !== prevGroup;
+                    return (
+                      <React.Fragment key={key}>
+                        {showGroupHeader && (
+                          <p className="text-[9px] font-black uppercase tracking-wider text-muted-foreground pt-1">{group}</p>
+                        )}
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="min-w-0">
+                            <span className="text-xs font-semibold text-foreground block">{label}</span>
+                            <span className="text-[10px] text-muted-foreground">{AUTONOMY_DESCRIPTIONS[currentLevel]}</span>
+                          </div>
+                          <Select
+                            value={currentLevel}
+                            onValueChange={(val: AutonomyLevel) =>
+                              onChange({ agentAutonomy: { ...(data.agentAutonomy ?? {}), [key]: val } as AgentAutonomy })
+                            }
+                          >
+                            <SelectTrigger className="text-xs bg-card w-44 shrink-0">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {(Object.keys(AUTONOMY_LABELS) as AutonomyLevel[]).map((level) => (
+                                <SelectItem key={level} value={level} className="text-xs">
+                                  {AUTONOMY_LABELS[level]}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </React.Fragment>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
