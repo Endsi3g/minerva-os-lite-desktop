@@ -59,6 +59,7 @@ import {
   MoreHorizontal,
   Home,
   ArrowLeftRight,
+  Gauge,
 } from 'lucide-react';
 import { BottomBlur } from '@/components/ui/edge-blur';
 import { cn } from '@/lib/utils';
@@ -96,7 +97,7 @@ import {
 import { Pin } from 'lucide-react';
 import { CalendarDays, UsersRound } from 'lucide-react';
 
-const CURRENT_VERSION = '5.0.0';
+const CURRENT_VERSION = '8.6.0';
 
 function UpdateBanner() {
   const [visible, setVisible] = useState(false);
@@ -594,6 +595,8 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
       else if (segment === 'inbox') label = 'Boîte de réception';
       else if (segment === 'setup') label = 'Configuration';
       else if (segment === 'personas') label = 'Profils cibles';
+      else if (segment === 'cockpit') label = 'Cockpit';
+      else if (segment === 'command') label = 'Command Center';
 
       if (segments[index - 1] === 'leads' && segment !== 'leads') {
         const lead = leads.find(l => l.id === segment);
@@ -1072,6 +1075,8 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                     <div className="space-y-[2px] pb-1">
                       {[
                         { href: '/guide', icon: Zap, label: 'Guide de démarrage' },
+                        { href: '/cockpit', icon: BarChart2, label: 'Cockpit v7' },
+                        { href: '/command', icon: Gauge, label: 'Command Center v8' },
                         { href: '/analytics', icon: BarChart3, label: 'Statistiques' },
                         { href: '/billing', icon: CreditCard, label: 'Facturation' },
                         { href: '/help', icon: HelpCircle, label: 'Aide & Docs' },
@@ -1509,8 +1514,8 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
               <div className="grid grid-cols-4 gap-0.5 px-3">
                 {([
                   { name: 'Assistant',    href: '/assistant',    icon: Sparkles },
-                  { name: 'Analytics',    href: '/analytics',    icon: BarChart3 },
-                  { name: 'Équipe',       href: '/team',         icon: UsersRound },
+                  { name: 'Cockpit',      href: '/cockpit',      icon: BarChart2 },
+                  { name: 'Command',      href: '/command',      icon: Gauge },
                   { name: 'Agents',       href: '/agents',       icon: Zap },
                 ] as { name: string; href: string; icon: React.ElementType }[]).map(({ name, href, icon: Icon }) => {
                   const isActive = pathname.startsWith(href);

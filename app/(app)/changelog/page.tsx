@@ -62,6 +62,89 @@ export default function ChangelogPage() {
 
   const versions: ChangelogVersion[] = [
     {
+      version: 'v8.6.0',
+      date: '2026-07-01',
+      titleKey: 'changelog.v3_42_0_title' as TranslationKey,
+      descKey: 'changelog.v3_42_0_desc' as TranslationKey,
+      highlights: [
+        { tag: 'feature', text: 'Bilan hebdomadaire automatisé — /api/insights/weekly enrichi avec métriques NBA (taux d\'acceptation, actions exécutées), bookings, réponses positives, velocity pipeline et top niche. WeeklyReportCard dans /cockpit avec cache localStorage.' },
+        { tag: 'feature', text: 'Cron lundi 8h — /api/cron/weekly-report génère et distribue le bilan pour tous les workspaces actifs, stocké comme notification in-app liée à /cockpit.' },
+        { tag: 'feature', text: 'Taux d\'acceptation NBA dans Command Center — métrique "acceptées/suggérées" visible en temps réel dans le panneau de performance.' },
+        { tag: 'design', text: 'WeeklyReportCard — 4 KPIs (NBA %, bookings, réponses positives, leads avancés), badge top niche, rapport IA expandable, skeleton loading + retry.' },
+      ],
+    },
+    {
+      version: 'v8.5.0',
+      date: '2026-07-01',
+      titleKey: 'changelog.v3_42_0_title' as TranslationKey,
+      descKey: 'changelog.v3_42_0_desc' as TranslationKey,
+      highlights: [
+        { tag: 'feature', text: 'Workload Board — /api/team/workload : charge par membre (leads assignés, NBA en attente, SLA dépassés, bookings semaine). Board 3 colonnes dans Équipe → Charge de travail.' },
+        { tag: 'feature', text: 'SLA internes — /api/team/sla détecte les actions dépassant leur sla_due_at, stampe sla_breached_at et notifie l\'équipe. Déclenché automatiquement à l\'ouverture du Command Center.' },
+        { tag: 'feature', text: 'Feed revenus équipe — onglet "Feed revenus" dans Équipe : filtre les événements à valeur commerciale (réponses positives, bookings) avec icônes colorées et horodatage relatif.' },
+        { tag: 'feature', text: 'SmartAssignButton — popover d\'assignation NBA à un membre : POST /api/nba/assign notifie l\'assignataire et met à jour agent_actions.assigned_to.' },
+        { tag: 'design', text: 'Team page — 3 onglets : Équipe (existant), Charge de travail, Feed revenus.' },
+      ],
+    },
+    {
+      version: 'v8.4.0',
+      date: '2026-07-01',
+      titleKey: 'changelog.v3_42_0_title' as TranslationKey,
+      descKey: 'changelog.v3_42_0_desc' as TranslationKey,
+      highlights: [
+        { tag: 'feature', text: 'Closed-loop Reply Positive — /api/triggers/reply-positive : réponse positive détectée → pipeline mis à jour (Meeting Booked, Hot), action book_meeting créée, équipe notifiée. Boucle fermée automatique.' },
+        { tag: 'feature', text: 'Reply-classify enrichi — intent "interested" ou "scheduling" déclenche la closed-loop en parallèle. Backward-compatible sans lead_id.' },
+      ],
+    },
+    {
+      version: 'v8.3.0',
+      date: '2026-07-01',
+      titleKey: 'changelog.v3_42_0_title' as TranslationKey,
+      descKey: 'changelog.v3_42_0_desc' as TranslationKey,
+      highlights: [
+        { tag: 'feature', text: 'Strategy Memory — table strategy_memory avec 3 types de learnings : timing (meilleur jour/niche), canal (email/appel/terrain/niche), campagne (taux de réponse). Algorithme pur dans lib/strategy-memory.ts.' },
+        { tag: 'feature', text: 'Recommandations IA stratégiques — /api/strategy/learnings génère 3 recommandations actionnables via Claude à partir des learnings observés et des niches sous-performantes.' },
+        { tag: 'design', text: 'StrategyMemoryCard dans /cockpit — top 5 apprentissages avec badge type, barre de confiance, taille d\'échantillon. Section "Recommandations IA" expandable (appel LLM lazy).' },
+      ],
+    },
+    {
+      version: 'v8.2.0',
+      date: '2026-07-01',
+      titleKey: 'changelog.v3_42_0_title' as TranslationKey,
+      descKey: 'changelog.v3_42_0_desc' as TranslationKey,
+      highlights: [
+        { tag: 'feature', text: 'Cadence 7 phases — chaque lead suit un cycle : Email initial → Relance → Appel → Terrain → Booking → Proposition → Suivi post-proposition. Phase calculée dynamiquement selon status + activité + réponses.' },
+        { tag: 'feature', text: 'CadenceTimeline dans /leads/[id] — timeline visuelle horizontale (7 étapes) avec phase active en vert, raisonnement et lien "Exécuter maintenant →" vers la bonne surface (outreach/terrain/agenda).' },
+        { tag: 'feature', text: 'Channel Switch automatique — /api/outreach/channel-switch crée un agent_action et patch nba_channel. Déclenché dès email_opens_count ≥ 3 sans réponse.' },
+      ],
+    },
+    {
+      version: 'v8.1.0',
+      date: '2026-07-01',
+      titleKey: 'changelog.v3_42_0_title' as TranslationKey,
+      descKey: 'changelog.v3_42_0_desc' as TranslationKey,
+      highlights: [
+        { tag: 'feature', text: 'Command Center — nouvelle page Pro /command : 4 blocs temps réel (File de priorités, Next Best Actions, Performance, État opératoire). Accessible depuis "Paramètres & Plus" sidebar + mobile "Plus".' },
+        { tag: 'feature', text: 'File de priorités — 4 buckets : Urgent (NBA ≥ 70 ou réponse positive), Opportunité (ouvert 3× sans réponse), Bloqué (stagnation > 7j), À approuver (actions en attente). Max 5 leads par bucket.' },
+        { tag: 'feature', text: 'Filtres niche + canal — dropdowns dynamiques dans la topbar du Command Center. Filtrage local instantané.' },
+        { tag: 'design', text: 'Right sidebar — KPIs temps réel, feed activité agent, 3 alertes signaux, taux d\'acceptation NBA.' },
+      ],
+    },
+    {
+      version: 'v7.1.0',
+      date: '2026-07-01',
+      titleKey: 'changelog.v3_42_0_title' as TranslationKey,
+      descKey: 'changelog.v3_42_0_desc' as TranslationKey,
+      highlights: [
+        { tag: 'feature', text: 'NBA Engine hybride — lib/nba-engine.ts : score 0-100 sur 3 signaux pondérés (délai sans contact ×0.4, engagement email ×0.3, performance niche ×0.3). Actions : email_followup, switch_channel, book_meeting, nurture, pause.' },
+        { tag: 'feature', text: 'agent_insights — apprentissage niche : response_rate, booking_rate, recommended_channel, best_cadence_days. /api/nba/insights recalcule depuis les leads + drafts réels.' },
+        { tag: 'feature', text: '/api/nba/score — batch scoring (GET cache, POST recalcul). /api/nba/explain génère une explication LLM on-demand par lead. /api/nba/automations : 3 triggers contextuels.' },
+        { tag: 'feature', text: 'LeadNbaCard dans /leads/[id] — score badge coloré, action, raisonnement, bouton "Pourquoi ?" (Claude on-demand), recalcul à la demande.' },
+        { tag: 'feature', text: '/cockpit — page pilotage : 4 KPIs, séquences performantes, 3 alertes signaux, liste NBA top 5, StrategyMemoryCard, WeeklyReportCard.' },
+        { tag: 'feature', text: 'V7StrategyModal — onboarding cold start 2 étapes (niche + objectif), seed agent_insights, apparaît une seule fois.' },
+      ],
+    },
+    {
       version: 'v8.0.0',
       date: '2026-06-30',
       titleKey: 'changelog.v3_42_0_title' as TranslationKey,

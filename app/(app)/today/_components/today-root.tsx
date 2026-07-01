@@ -26,6 +26,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { useReach } from '@/lib/reach-context';
 import { updateWidget } from '@/lib/widget-bridge';
+import { V7StrategyModal } from '@/components/v7-strategy-modal';
 
 export function TodayRoot() {
   const router = useRouter();
@@ -175,6 +176,7 @@ export function TodayRoot() {
       )}
     </div>
       )}
+      <V7StrategyModal />
     </div>
   );
 }

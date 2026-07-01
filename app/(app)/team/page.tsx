@@ -9,7 +9,10 @@ import {
   MessageSquare, Send, Link2, Copy, Shield, Star, Eye,
   Smile, ImagePlus,
   Plus, Pencil, LogOut, Palette, ChevronRight,
+  UsersRound, BarChart2, TrendingUp,
 } from 'lucide-react';
+import { WorkloadBoard } from './_components/workload-board';
+import { RevenueFeed } from './_components/revenue-feed';
 import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
 import { useLanguage } from '@/lib/language-context';
@@ -19,6 +22,7 @@ import { PERMISSION_MODULES, DEFAULT_ROLE_PERMISSIONS, type PermissionModule, AL
 
 // ── Types ────────────────────────────────────────────────────────────────────
 type Role = 'admin' | 'editor' | 'viewer';
+type TeamTab = 'members' | 'chat' | 'roles' | 'workload' | 'revenue';
 type Status = 'active' | 'pending';
 type Plan = 'Business' | 'Pro' | 'Free';
 
@@ -56,9 +60,14 @@ export default function TeamPage() {
   const [onlineUserIds, setOnlineUserIds] = useState<Set<string>>(new Set());
   const [currentUser, setCurrentUser] = useState<{ id: string; email: string; name: string; avatar?: string } | null>(null);
   const searchParams = useSearchParams();
-  const [activeTab, setActiveTab] = useState<'members' | 'chat' | 'roles'>(
-    searchParams.get('tab') === 'roles' ? 'roles' : searchParams.get('tab') === 'chat' ? 'chat' : 'members'
-  );
+  const [activeTab, setActiveTab] = useState<TeamTab>(() => {
+    const t = searchParams.get('tab');
+    if (t === 'roles') return 'roles';
+    if (t === 'chat') return 'chat';
+    if (t === 'workload') return 'workload';
+    if (t === 'revenue') return 'revenue';
+    return 'members';
+  });
   const [chatMessage, setChatMessage] = useState('');
   const chatEndRef = useRef<HTMLDivElement>(null);
   const chatInputRef = useRef<HTMLInputElement>(null);
@@ -709,17 +718,18 @@ export default function TeamPage() {
         </div>
 
         {/* ── Tab Bar ── */}
-        <div className="flex gap-1 border-b border-[#e5e5e0] -mx-8 px-8 bg-white/60">
+        <div className="flex gap-1 border-b border-[#e5e5e0] -mx-8 px-8 bg-white/60 overflow-x-auto">
           <button
             onClick={() => setActiveTab('members')}
             className={cn(
-              "px-4 py-2 text-xs font-bold rounded-t-lg border border-b-0 transition-colors",
+              "px-4 py-2 text-xs font-bold rounded-t-lg border border-b-0 transition-colors flex items-center gap-1.5 shrink-0",
               activeTab === 'members'
                 ? 'bg-white border-[#e5e5e0] text-[#26251e]'
                 : 'bg-[#f4f4f3] border-transparent text-[#807d72] hover:text-[#26251e]'
             )}
           >
-            Membres de l&apos;équipe
+            <UsersRound className="w-3.5 h-3.5" />
+            Équipe
           </button>
           <button
             onClick={() => setActiveTab('chat')}
@@ -749,6 +759,30 @@ export default function TeamPage() {
                 {customRoles.length}
               </span>
             )}
+          </button>
+          <button
+            onClick={() => setActiveTab('workload')}
+            className={cn(
+              "px-4 py-2 text-xs font-bold rounded-t-lg border border-b-0 transition-colors flex items-center gap-1.5",
+              activeTab === 'workload'
+                ? 'bg-white border-[#e5e5e0] text-[#26251e]'
+                : 'bg-[#f4f4f3] border-transparent text-[#807d72] hover:text-[#26251e]'
+            )}
+          >
+            <BarChart2 className="w-3.5 h-3.5" />
+            Charge de travail
+          </button>
+          <button
+            onClick={() => setActiveTab('revenue')}
+            className={cn(
+              "px-4 py-2 text-xs font-bold rounded-t-lg border border-b-0 transition-colors flex items-center gap-1.5",
+              activeTab === 'revenue'
+                ? 'bg-white border-[#e5e5e0] text-[#26251e]'
+                : 'bg-[#f4f4f3] border-transparent text-[#807d72] hover:text-[#26251e]'
+            )}
+          >
+            <TrendingUp className="w-3.5 h-3.5" />
+            Feed revenus
           </button>
         </div>
 
@@ -1576,6 +1610,22 @@ export default function TeamPage() {
         </div>
 
         </>}
+
+        {/* ── Workload Tab ── */}
+        {activeTab === 'workload' && activeWorkspace && (
+          <WorkloadBoard workspaceId={activeWorkspace.id} />
+        )}
+
+        {/* ── Revenue Feed Tab ── */}
+        {activeTab === 'revenue' && activeWorkspace && (
+          <div className="rounded-xl border border-[#e5e5e0] bg-white p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <TrendingUp className="h-4 w-4 text-[#059669]" />
+              <h2 className="text-sm font-black text-[#26251e]">Feed revenus</h2>
+            </div>
+            <RevenueFeed workspaceId={activeWorkspace.id} />
+          </div>
+        )}
 
         {/* ── Roles Tab ── */}
         {activeTab === 'roles' && (
