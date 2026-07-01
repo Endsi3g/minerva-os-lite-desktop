@@ -517,8 +517,8 @@ export function CommandRoot() {
                         <Loader2 className="h-3 w-3 animate-spin text-[#7a7a76]" />
                         <span className="text-[10px] text-[#7a7a76]">Chargement…</span>
                       </div>
-                    ) : nextActions && nextActions.pending_actions.length > 0 ? (
-                      nextActions.pending_actions.slice(0, 5).map((action) => (
+                    ) : nextActions && (nextActions.pending_actions ?? []).length > 0 ? (
+                      (nextActions.pending_actions ?? []).slice(0, 5).map((action) => (
                         <div
                           key={action.id}
                           className="flex flex-col gap-1 p-1.5 rounded-lg bg-[#f0fdf9] border border-[#059669]/20"
@@ -541,9 +541,9 @@ export function CommandRoot() {
                     ) : (
                       <p className="text-[10px] text-[#7a7a76] mt-1">Aucune action en attente</p>
                     )}
-                    {nextActions && nextActions.pending_actions.length > 5 && (
+                    {nextActions && (nextActions.pending_actions ?? []).length > 5 && (
                       <p className="text-[9px] font-bold text-[#059669]">
-                        + {nextActions.pending_actions.length - 5} autres
+                        + {(nextActions.pending_actions ?? []).length - 5} autres
                       </p>
                     )}
                   </div>
