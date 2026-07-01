@@ -2,10 +2,21 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { computeNbaScore, getActionLabel, type NbaLead, type NicheInsight } from '@/lib/nba-engine';
 
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+function checkRateLimit(key: string, max: number): boolean {
+  const now = Date.now();
+  const entry = rateLimitMap.get(key);
+  if (!entry || entry.resetAt < now) { rateLimitMap.set(key, { count: 1, resetAt: now + 60_000 }); return true; }
+  if (entry.count >= max) return false;
+  entry.count++;
+  return true;
+}
+
 export async function POST(req: NextRequest) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!checkRateLimit(user.id, 10)) return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 });
 
   const body = await req.json().catch(() => ({}));
   const { lead_id, workspace_id } = body;

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { ErrorBoundary } from '@/components/error-boundary';
 import { motion, AnimatePresence } from 'motion/react';
 import Link from 'next/link';
 import { useReach } from '@/lib/reach-context';
@@ -1555,6 +1556,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
   };
 
   return (
+    <ErrorBoundary>
     <div className="h-full overflow-y-auto">
       <div className="max-w-6xl mx-auto p-6 flex flex-col gap-6">
         
@@ -4390,6 +4392,7 @@ function ComposerPanel({
         </div>
       )}
     </div>
+    </ErrorBoundary>
   );
 }
 

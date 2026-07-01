@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { ErrorBoundary } from '@/components/error-boundary';
 import { TodayHeader } from './today-header';
 import { TodayGoalsCard } from './today-goals-card';
 import { TodayAgendaCard } from './today-agenda-card';
@@ -69,6 +70,7 @@ export function TodayRoot() {
   }, [leads, tasks, aiSuggestions]);
 
   return (
+    <ErrorBoundary>
     <div className="h-full overflow-hidden flex flex-col">
       {/* Tab bar */}
       <div className="flex items-center gap-1 border-b border-[#e5e5e0] px-4 pt-3 pb-0 bg-[#fafaf8] shrink-0">
@@ -178,6 +180,7 @@ export function TodayRoot() {
       )}
       <V7StrategyModal />
     </div>
+    </ErrorBoundary>
   );
 }
 export default TodayRoot;

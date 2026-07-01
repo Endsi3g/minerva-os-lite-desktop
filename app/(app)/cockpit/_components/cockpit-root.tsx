@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { ErrorBoundary } from '@/components/error-boundary';
 import {
   MessageSquareCheck,
   CalendarCheck2,
@@ -12,13 +13,17 @@ import {
   BarChart3,
   ArrowRight,
   Loader2,
+  Telescope,
 } from 'lucide-react';
+import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { useReach } from '@/lib/reach-context';
 import { getApiUrl } from '@/lib/api-helper';
 import { toast } from 'sonner';
 import { StrategyMemoryCard } from './strategy-memory-card';
 import { WeeklyReportCard } from './weekly-report-card';
+import { SlaCard } from './sla-card';
+import { AgentJournal } from './agent-journal';
 
 interface StatCardProps {
   label: string;
@@ -76,6 +81,7 @@ export function CockpitRoot() {
   const [loadingStats, setLoadingStats] = useState(false);
   const [loadingNba, setLoadingNba] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
 
   const positiveReplies = leads.filter((l) => l.replyStatus === 'positive').length;
 
@@ -148,8 +154,7 @@ export function CockpitRoot() {
   }, [activeWorkspace]);
 
   useEffect(() => {
-    fetchTodayStats();
-    fetchNbaLeads();
+    Promise.all([fetchTodayStats(), fetchNbaLeads()]).finally(() => setInitialLoading(false));
   }, [fetchTodayStats, fetchNbaLeads]);
 
   const handleRefresh = async () => {
@@ -214,7 +219,50 @@ export function CockpitRoot() {
     return 'bg-[#fee2e2] text-[#dc2626]';
   };
 
+  if (initialLoading) {
+    return (
+      <div className="h-full overflow-y-auto bg-[#fafaf8]">
+        <div className="max-w-5xl mx-auto flex flex-col gap-6 p-4 sm:p-6 xl:p-8">
+          <div className="h-8 w-48 rounded-lg bg-neutral-200 animate-pulse" />
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="h-24 rounded-xl bg-neutral-200 animate-pulse" />
+            ))}
+          </div>
+          <div className="h-40 rounded-xl bg-neutral-200 animate-pulse" />
+          <div className="h-32 rounded-xl bg-neutral-200 animate-pulse" />
+        </div>
+      </div>
+    );
+  }
+
+  if (leads.length === 0) {
+    return (
+      <ErrorBoundary>
+        <div className="h-full overflow-y-auto bg-[#fafaf8] flex items-center justify-center">
+          <div className="flex flex-col items-center gap-4 text-center max-w-sm p-8">
+            <div className="w-14 h-14 rounded-2xl flex items-center justify-center" style={{ background: '#05966915' }}>
+              <Telescope className="h-7 w-7" style={{ color: '#059669' }} />
+            </div>
+            <div>
+              <h2 className="text-base font-black text-[#26251e]">Votre cockpit est vide</h2>
+              <p className="text-xs text-[#7a7a76] mt-1">Commencez par prospecter des leads pour voir vos scores NBA et performances en temps réel.</p>
+            </div>
+            <Link
+              href="/prospecting"
+              className="inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-xs font-bold text-white transition-colors"
+              style={{ background: '#059669' }}
+            >
+              Scraper des leads <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          </div>
+        </div>
+      </ErrorBoundary>
+    );
+  }
+
   return (
+    <ErrorBoundary>
     <div className="h-full overflow-y-auto bg-[#fafaf8]">
       <div className="max-w-5xl mx-auto flex flex-col gap-6 p-4 sm:p-6 xl:p-8">
 
@@ -384,10 +432,15 @@ export function CockpitRoot() {
           )}
         </div>
 
+        <SlaCard />
+
         <WeeklyReportCard />
+
+        <AgentJournal />
 
       </div>
     </div>
+    </ErrorBoundary>
   );
 }
 

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import Link from 'next/link';
+import { ErrorBoundary } from '@/components/error-boundary';
 import {
   AlertTriangle,
   TrendingUp,
@@ -129,6 +130,7 @@ export function CommandRoot() {
   const [loadingStats, setLoadingStats] = useState(false);
   const [approvingId, setApprovingId] = useState<string | null>(null);
   const [calculatingScores, setCalculatingScores] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
 
   const niches = useMemo(() => {
     const set = new Set<string>();
@@ -277,7 +279,7 @@ export function CommandRoot() {
   }, [fetchNba, fetchNextActions, fetchStats]);
 
   useEffect(() => {
-    refreshAll();
+    refreshAll().finally(() => setInitialLoading(false));
   }, [refreshAll]);
 
   useEffect(() => {
@@ -319,7 +321,23 @@ export function CommandRoot() {
 
   const topNbaLeads = nbaLeads.slice(0, 5);
 
+  if (initialLoading) {
+    return (
+      <div className="flex flex-col h-full bg-[#fafaf8] overflow-hidden">
+        <div className="sticky top-0 z-10 bg-[#fafaf8] border-b border-[#e5e5e0] px-4 sm:px-6 py-3 shrink-0">
+          <div className="h-6 w-40 rounded-lg bg-neutral-200 animate-pulse" />
+        </div>
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 flex flex-col gap-5">
+          <div className="h-32 rounded-xl bg-neutral-200 animate-pulse" />
+          <div className="h-48 rounded-xl bg-neutral-200 animate-pulse" />
+          <div className="h-24 rounded-xl bg-neutral-200 animate-pulse" />
+        </div>
+      </div>
+    );
+  }
+
   return (
+    <ErrorBoundary>
     <div className="flex flex-col h-full bg-[#fafaf8] overflow-hidden">
       {/* Header */}
       <div className="sticky top-0 z-10 bg-[#fafaf8] border-b border-[#e5e5e0] px-4 sm:px-6 py-3 flex items-center justify-between gap-3 shrink-0">
@@ -775,5 +793,6 @@ export function CommandRoot() {
         </div>
       </div>
     </div>
+    </ErrorBoundary>
   );
 }

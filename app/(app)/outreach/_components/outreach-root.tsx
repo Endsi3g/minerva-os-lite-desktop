@@ -140,7 +140,7 @@ function StepEditor({
     condition: <GitBranch className="w-3.5 h-3.5 text-purple-500" />,
     call: <Phone className="w-3.5 h-3.5 text-emerald-500" />,
     sms: <MessageSquare className="w-3.5 h-3.5 text-indigo-500" />,
-    ab_test: <FlaskConical className="w-3.5 h-3.5 text-orange-500" />,
+    ab_test: <FlaskConical className="w-3.5 h-3.5 text-[#7a7a76]" />,
   };
 
   return (
@@ -859,7 +859,7 @@ export function OutreachRoot() {
                           condition: <GitBranch key={s.id} className="w-3 h-3 text-purple-500" />,
                           call: <CheckSquare key={s.id} className="w-3 h-3 text-emerald-500" />,
                           sms: <Mail key={s.id} className="w-3 h-3 text-indigo-500" />,
-                          ab_test: <GitBranch key={s.id} className="w-3 h-3 text-orange-500" />,
+                          ab_test: <GitBranch key={s.id} className="w-3 h-3 text-[#7a7a76]" />,
                         }[s.type] ?? <Mail key={s.id} className="w-3 h-3 text-slate-400" />))}
                       </span>
                     </div>

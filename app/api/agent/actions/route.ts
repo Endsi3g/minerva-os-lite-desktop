@@ -11,13 +11,31 @@ export async function GET(req: NextRequest) {
 
   if (!workspaceId) return NextResponse.json({ error: 'workspace_id required' }, { status: 400 });
 
-  const { data, error } = await supabase
+  const type = req.nextUrl.searchParams.get('type');
+
+  let query = supabase
     .from('agent_actions')
-    .select('id, action_type, lead_id, reasoning, data_signals, result, autonomy_level, executed, suggested, created_at, leads(name, company)')
+    .select('id, action_type, lead_id, reasoning, autonomy_level, executed, approved, suggested, created_at, assigned_to')
     .eq('workspace_id', workspaceId)
     .order('created_at', { ascending: false })
     .limit(limit);
 
+  if (type) query = query.eq('action_type', type);
+
+  const { data: actions, error } = await query;
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ actions: data });
+
+  const leadIds = [...new Set((actions ?? []).map((a: { lead_id: string | null }) => a.lead_id).filter(Boolean))];
+  let leadNames: Record<string, string> = {};
+  if (leadIds.length > 0) {
+    const { data: leads } = await supabase.from('leads').select('id, business_name').in('id', leadIds as string[]);
+    (leads ?? []).forEach((l: { id: string; business_name: string | null }) => { leadNames[l.id] = l.business_name ?? ''; });
+  }
+
+  const rows = (actions ?? []).map((a: Record<string, unknown>) => ({
+    ...a,
+    lead_name: a.lead_id ? (leadNames[a.lead_id as string] ?? null) : null,
+  }));
+
+  return NextResponse.json({ actions: rows });
 }
