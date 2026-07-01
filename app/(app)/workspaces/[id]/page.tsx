@@ -1,7 +1,7 @@
 import dynamic from 'next/dynamic';
 
-const WorkspaceDetailClient = dynamic(() => import('./_components/workspace-detail-client'));
+const WorkspaceDetailWrapper = dynamic(() => import('./_components/workspace-detail-wrapper'));
 
 export function generateStaticParams() { return []; }
 
-export default function Page() { return <WorkspaceDetailClient />; }
+export default function Page() { return <WorkspaceDetailWrapper />; }

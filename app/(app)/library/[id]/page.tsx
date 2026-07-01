@@ -1,7 +1,7 @@
 import dynamic from 'next/dynamic';
 
-const LibraryEditorClient = dynamic(() => import('./_components/library-editor-client'));
+const LibraryEditorWrapper = dynamic(() => import('./_components/library-editor-wrapper'));
 
 export function generateStaticParams() { return []; }
 
-export default function Page() { return <LibraryEditorClient />; }
+export default function Page() { return <LibraryEditorWrapper />; }

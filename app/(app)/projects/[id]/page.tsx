@@ -1,7 +1,7 @@
 import dynamic from 'next/dynamic';
 
-const ProjectDetailRoot = dynamic(() => import('./_components/project-detail-root'));
+const ProjectDetailWrapper = dynamic(() => import('./_components/project-detail-wrapper'));
 
 export function generateStaticParams() { return []; }
 
-export default function Page() { return <ProjectDetailRoot />; }
+export default function Page() { return <ProjectDetailWrapper />; }

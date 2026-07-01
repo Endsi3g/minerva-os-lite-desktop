@@ -1,7 +1,7 @@
 import dynamic from 'next/dynamic';
 
-const LeadDetailClient = dynamic(() => import('./_components/lead-detail-client'));
+const LeadDetailWrapper = dynamic(() => import('./_components/lead-detail-wrapper'));
 
 export function generateStaticParams() { return []; }
 
-export default function Page() { return <LeadDetailClient />; }
+export default function Page() { return <LeadDetailWrapper />; }
