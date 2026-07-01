@@ -3618,6 +3618,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
         </div>
       )}
     </div>
+    </ErrorBoundary>
   );
 }
 
@@ -4392,7 +4393,6 @@ function ComposerPanel({
         </div>
       )}
     </div>
-    </ErrorBoundary>
   );
 }
 
