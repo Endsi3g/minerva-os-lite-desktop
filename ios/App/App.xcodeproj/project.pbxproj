@@ -7,7 +7,12 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		1490353D8FBCCCB77F81BDEC /* MinervaWidgetViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6DA977BBB055507DF9D1682 /* MinervaWidgetViews.swift */; };
+		25675D8E46E7006A0A60642D /* MinervaSharedData.swift in Sources */ = {isa = PBXBuildFile; fileRef = D257B292AB809ED020BB2EAF /* MinervaSharedData.swift */; };
 		2FAD9763203C412B000D30F8 /* config.xml in Resources */ = {isa = PBXBuildFile; fileRef = 2FAD9762203C412B000D30F8 /* config.xml */; };
+		3E8EDB2D63666D6CB44BC640 /* MinervaWidgetProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13AE9920CA9A486F3F07C675 /* MinervaWidgetProvider.swift */; };
+		433962E67BAD8D8A9EE126DE /* MinervaWidgetViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6DA977BBB055507DF9D1682 /* MinervaWidgetViews.swift */; };
+		43663F7530036FE56215AB99 /* MinervaSharedData.swift in Sources */ = {isa = PBXBuildFile; fileRef = D257B292AB809ED020BB2EAF /* MinervaSharedData.swift */; };
 		4D22ABE92AF431CB00220026 /* CapApp-SPM in Frameworks */ = {isa = PBXBuildFile; productRef = 4D22ABE82AF431CB00220026 /* CapApp-SPM */; };
 		50379B232058CBB4000EE86E /* capacitor.config.json in Resources */ = {isa = PBXBuildFile; fileRef = 50379B222058CBB4000EE86E /* capacitor.config.json */; };
 		504EC3081FED79650016851F /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 504EC3071FED79650016851F /* AppDelegate.swift */; };
@@ -15,10 +20,50 @@
 		504EC30F1FED79650016851F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 504EC30E1FED79650016851F /* Assets.xcassets */; };
 		504EC3121FED79650016851F /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 504EC3101FED79650016851F /* LaunchScreen.storyboard */; };
 		50B271D11FEDC1A000F3C39B /* public in Resources */ = {isa = PBXBuildFile; fileRef = 50B271D01FEDC1A000F3C39B /* public */; };
+		5420D4440376BB9F1BA65DC1 /* MinervaWidget.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = 67F2DB49C8C48312E7DDD99B /* MinervaWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, CodeSignOnCopy, ); }; };
+		5DC708FBF57BCD089915A5CE /* MinervaWidgetPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAAE9702CD49648B131992F1 /* MinervaWidgetPlugin.swift */; };
+		63A61934F5F55151C4C578AE /* MinervaWidgetProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13AE9920CA9A486F3F07C675 /* MinervaWidgetProvider.swift */; };
+		65F056B42D06611D649FA54D /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = EDD514EF16B8CA1DECD3786F /* Foundation.framework */; };
+		6AA9B0A195017FCE5B9BC099 /* MinervaWidgetBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2050A59EE7A86FC231D7D4B /* MinervaWidgetBundle.swift */; };
+		7CEA2CF0680B2DF75D696A8E /* MinervaWidgetBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2050A59EE7A86FC231D7D4B /* MinervaWidgetBundle.swift */; };
+		9504FB3A0328417DED856425 /* MinervaWidgetPlugin.m in Sources */ = {isa = PBXBuildFile; fileRef = 0FAB1832BE7BB709F03B18B2 /* MinervaWidgetPlugin.m */; };
+		B0DEFAC1DEB819A8065CE194 /* MinervaSharedData.swift in Sources */ = {isa = PBXBuildFile; fileRef = D257B292AB809ED020BB2EAF /* MinervaSharedData.swift */; };
+		DF77E55F656D30629CC5CAB2 /* .appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = F659DC5C39A3DB65E009870C /* .appex */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		F9989C5DFAC1A6F9406B62B2 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = EDD514EF16B8CA1DECD3786F /* Foundation.framework */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		2106DBEA67068E14D4B4A65D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 504EC2FC1FED79650016851F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = CDEF23E17096455F6C4253F5;
+			remoteInfo = MinervaWidget;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		001631BC0593FB99F3BB4F20 /* Embed App Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				DF77E55F656D30629CC5CAB2 /* .appex in Embed App Extensions */,
+				5420D4440376BB9F1BA65DC1 /* MinervaWidget.appex in Embed App Extensions */,
+			);
+			name = "Embed App Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
+		0FAB1832BE7BB709F03B18B2 /* MinervaWidgetPlugin.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = MinervaWidgetPlugin.m; sourceTree = "<group>"; };
+		13AE9920CA9A486F3F07C675 /* MinervaWidgetProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MinervaWidgetProvider.swift; sourceTree = "<group>"; };
+		1C6C406160665E041844B8D4 /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		1E455173786673C7F433E448 /* App.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; path = App.entitlements; sourceTree = "<group>"; };
 		2FAD9762203C412B000D30F8 /* config.xml */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = config.xml; sourceTree = "<group>"; };
+		4AA13C764F096AC9BC6AAB0F /* MinervaWidget.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; path = MinervaWidget.entitlements; sourceTree = "<group>"; };
 		50379B222058CBB4000EE86E /* capacitor.config.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = capacitor.config.json; sourceTree = "<group>"; };
 		504EC3041FED79650016851F /* App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = App.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		504EC3071FED79650016851F /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
@@ -27,7 +72,14 @@
 		504EC3111FED79650016851F /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		504EC3131FED79650016851F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		50B271D01FEDC1A000F3C39B /* public */ = {isa = PBXFileReference; lastKnownFileType = folder; path = public; sourceTree = "<group>"; };
+		67F2DB49C8C48312E7DDD99B /* MinervaWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = MinervaWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		958DCC722DB07C7200EA8C5F /* debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = debug.xcconfig; path = ../debug.xcconfig; sourceTree = SOURCE_ROOT; };
+		B2050A59EE7A86FC231D7D4B /* MinervaWidgetBundle.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MinervaWidgetBundle.swift; sourceTree = "<group>"; };
+		D257B292AB809ED020BB2EAF /* MinervaSharedData.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MinervaSharedData.swift; sourceTree = "<group>"; };
+		E6DA977BBB055507DF9D1682 /* MinervaWidgetViews.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MinervaWidgetViews.swift; sourceTree = "<group>"; };
+		EAAE9702CD49648B131992F1 /* MinervaWidgetPlugin.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MinervaWidgetPlugin.swift; sourceTree = "<group>"; };
+		EDD514EF16B8CA1DECD3786F /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
+		F659DC5C39A3DB65E009870C /* .appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = .appex; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -39,15 +91,33 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		9560BC87C80C9E9F3EEE8577 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				65F056B42D06611D649FA54D /* Foundation.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		0A76354842A97F2AE9F88625 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				E4B53B601C2AEA4B80EED5B8 /* iOS */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		504EC2FB1FED79650016851F = {
 			isa = PBXGroup;
 			children = (
 				958DCC722DB07C7200EA8C5F /* debug.xcconfig */,
 				504EC3061FED79650016851F /* App */,
 				504EC3051FED79650016851F /* Products */,
+				0A76354842A97F2AE9F88625 /* Frameworks */,
+				73374C225C6F1A4DCD12F89E /* MinervaWidget */,
 			);
 			sourceTree = "<group>";
 		};
@@ -55,6 +125,7 @@
 			isa = PBXGroup;
 			children = (
 				504EC3041FED79650016851F /* App.app */,
+				67F2DB49C8C48312E7DDD99B /* MinervaWidget.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -70,8 +141,32 @@
 				504EC3131FED79650016851F /* Info.plist */,
 				2FAD9762203C412B000D30F8 /* config.xml */,
 				50B271D01FEDC1A000F3C39B /* public */,
+				1E455173786673C7F433E448 /* App.entitlements */,
+				EAAE9702CD49648B131992F1 /* MinervaWidgetPlugin.swift */,
+				0FAB1832BE7BB709F03B18B2 /* MinervaWidgetPlugin.m */,
 			);
 			path = App;
+			sourceTree = "<group>";
+		};
+		73374C225C6F1A4DCD12F89E /* MinervaWidget */ = {
+			isa = PBXGroup;
+			children = (
+				4AA13C764F096AC9BC6AAB0F /* MinervaWidget.entitlements */,
+				1C6C406160665E041844B8D4 /* Info.plist */,
+				B2050A59EE7A86FC231D7D4B /* MinervaWidgetBundle.swift */,
+				13AE9920CA9A486F3F07C675 /* MinervaWidgetProvider.swift */,
+				E6DA977BBB055507DF9D1682 /* MinervaWidgetViews.swift */,
+				D257B292AB809ED020BB2EAF /* MinervaSharedData.swift */,
+			);
+			name = MinervaWidget;
+			sourceTree = "<group>";
+		};
+		E4B53B601C2AEA4B80EED5B8 /* iOS */ = {
+			isa = PBXGroup;
+			children = (
+				EDD514EF16B8CA1DECD3786F /* Foundation.framework */,
+			);
+			name = iOS;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -84,10 +179,12 @@
 				504EC3001FED79650016851F /* Sources */,
 				504EC3011FED79650016851F /* Frameworks */,
 				504EC3021FED79650016851F /* Resources */,
+				001631BC0593FB99F3BB4F20 /* Embed App Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				EFD9427169C530A4430BF11A /* PBXTargetDependency */,
 			);
 			name = App;
 			packageProductDependencies = (
@@ -96,6 +193,23 @@
 			productName = App;
 			productReference = 504EC3041FED79650016851F /* App.app */;
 			productType = "com.apple.product-type.application";
+		};
+		CDEF23E17096455F6C4253F5 /* MinervaWidget */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = E128FA82676BB7F3F9A79F94 /* Build configuration list for PBXNativeTarget "MinervaWidget" */;
+			buildPhases = (
+				0803F88D4294943B64BC8E32 /* Sources */,
+				9560BC87C80C9E9F3EEE8577 /* Frameworks */,
+				1662C54A05978DB187436871 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = MinervaWidget;
+			productName = MinervaWidget;
+			productReference = 67F2DB49C8C48312E7DDD99B /* MinervaWidget.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -109,7 +223,6 @@
 					504EC3031FED79650016851F = {
 						CreatedOnToolsVersion = 9.2;
 						LastSwiftMigration = 1100;
-						ProvisioningStyle = Automatic;
 					};
 				};
 			};
@@ -130,11 +243,19 @@
 			projectRoot = "";
 			targets = (
 				504EC3031FED79650016851F /* App */,
+				CDEF23E17096455F6C4253F5 /* MinervaWidget */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		1662C54A05978DB187436871 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		504EC3021FED79650016851F /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -151,15 +272,38 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		0803F88D4294943B64BC8E32 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				7CEA2CF0680B2DF75D696A8E /* MinervaWidgetBundle.swift in Sources */,
+				3E8EDB2D63666D6CB44BC640 /* MinervaWidgetProvider.swift in Sources */,
+				433962E67BAD8D8A9EE126DE /* MinervaWidgetViews.swift in Sources */,
+				43663F7530036FE56215AB99 /* MinervaSharedData.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		504EC3001FED79650016851F /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 				504EC3081FED79650016851F /* AppDelegate.swift in Sources */,
+				5DC708FBF57BCD089915A5CE /* MinervaWidgetPlugin.swift in Sources */,
+				9504FB3A0328417DED856425 /* MinervaWidgetPlugin.m in Sources */,
+				B0DEFAC1DEB819A8065CE194 /* MinervaSharedData.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		EFD9427169C530A4430BF11A /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = MinervaWidget;
+			target = CDEF23E17096455F6C4253F5 /* MinervaWidget */;
+			targetProxy = 2106DBEA67068E14D4B4A65D /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin PBXVariantGroup section */
 		504EC30B1FED79650016851F /* Main.storyboard */ = {
@@ -181,6 +325,46 @@
 /* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
+		1AF6D5720CF1B80F5D1CAB78 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_ENTITLEMENTS = MinervaWidget/MinervaWidget.entitlements;
+				INFOPLIST_FILE = MinervaWidget/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.minerva.reachlite.MinervaWidget;
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		477CB23389DC589244763AB0 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_ENTITLEMENTS = MinervaWidget/MinervaWidget.entitlements;
+				INFOPLIST_FILE = MinervaWidget/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 14.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.minerva.reachlite.MinervaWidget;
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
 		504EC3141FED79650016851F /* Debug */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 958DCC722DB07C7200EA8C5F /* debug.xcconfig */;
@@ -214,6 +398,15 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_FILE_ACCESS_PICTURE_FOLDER = readwrite;
+				ENABLE_RESOURCE_ACCESS_BLUETOOTH = YES;
+				ENABLE_RESOURCE_ACCESS_CALENDARS = YES;
+				ENABLE_RESOURCE_ACCESS_CAMERA = YES;
+				ENABLE_RESOURCE_ACCESS_CONTACTS = YES;
+				ENABLE_RESOURCE_ACCESS_LOCATION = YES;
+				ENABLE_RESOURCE_ACCESS_PHOTO_LIBRARY = YES;
+				ENABLE_RESOURCE_ACCESS_PRINTING = YES;
+				ENABLE_RESOURCE_ACCESS_USB = YES;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
@@ -271,7 +464,16 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_FILE_ACCESS_PICTURE_FOLDER = readwrite;
 				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_RESOURCE_ACCESS_BLUETOOTH = YES;
+				ENABLE_RESOURCE_ACCESS_CALENDARS = YES;
+				ENABLE_RESOURCE_ACCESS_CAMERA = YES;
+				ENABLE_RESOURCE_ACCESS_CONTACTS = YES;
+				ENABLE_RESOURCE_ACCESS_LOCATION = YES;
+				ENABLE_RESOURCE_ACCESS_PHOTO_LIBRARY = YES;
+				ENABLE_RESOURCE_ACCESS_PRINTING = YES;
+				ENABLE_RESOURCE_ACCESS_USB = YES;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_NO_COMMON_BLOCKS = YES;
@@ -295,9 +497,14 @@
 			baseConfigurationReference = 958DCC722DB07C7200EA8C5F /* debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
+				CODE_SIGN_ENTITLEMENTS = App/App.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
 				INFOPLIST_FILE = App/Info.plist;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.business";
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -307,6 +514,7 @@
 				OTHER_SWIFT_FLAGS = "$(inherited) \"-D\" \"COCOAPODS\" \"-DDEBUG\"";
 				PRODUCT_BUNDLE_IDENTIFIER = com.minerva.reachlite;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -317,9 +525,14 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
+				CODE_SIGN_ENTITLEMENTS = App/App.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
 				INFOPLIST_FILE = App/Info.plist;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.business";
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -328,9 +541,52 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.minerva.reachlite;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		CF8B2957A28185E4840C48D1 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_ENTITLEMENTS = MinervaWidget/MinervaWidget.entitlements;
+				INFOPLIST_FILE = MinervaWidget/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 14.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.minerva.reachlite.MinervaWidget;
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		FEDE4907FD10A40235017047 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_ENTITLEMENTS = MinervaWidget/MinervaWidget.entitlements;
+				INFOPLIST_FILE = MinervaWidget/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.minerva.reachlite.MinervaWidget;
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
 			};
 			name = Release;
 		};
@@ -351,6 +607,15 @@
 			buildConfigurations = (
 				504EC3171FED79650016851F /* Debug */,
 				504EC3181FED79650016851F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		E128FA82676BB7F3F9A79F94 /* Build configuration list for PBXNativeTarget "MinervaWidget" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				FEDE4907FD10A40235017047 /* Release */,
+				1AF6D5720CF1B80F5D1CAB78 /* Debug */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

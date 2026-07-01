@@ -1,5 +1,6 @@
-// Static export wrapper — params resolved client-side
-import PageClient from './page-client';
+import dynamic from 'next/dynamic';
+
+const PageClient = dynamic(() => import('./page-client'));
 
 export function generateStaticParams() { return []; }
 

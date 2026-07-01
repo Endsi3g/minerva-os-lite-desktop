@@ -1,6 +1,7 @@
-// Static export wrapper — params resolved client-side
-import PageClient from './page-client';
+import dynamic from 'next/dynamic';
+
+const BookingClient = dynamic(() => import('./booking-client'));
 
 export function generateStaticParams() { return []; }
 
-export default function Page() { return <PageClient />; }
+export default function Page() { return <BookingClient />; }

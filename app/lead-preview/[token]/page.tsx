@@ -1,5 +1,6 @@
-// Static export wrapper — params resolved client-side
-import LeadPreviewClient from './lead-preview-client';
+import dynamic from 'next/dynamic';
+
+const LeadPreviewClient = dynamic(() => import('./lead-preview-client'));
 
 export function generateStaticParams() { return []; }
 

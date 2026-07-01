@@ -1,16 +1,7 @@
-import ProjectDetailRoot from './_components/project-detail-root';
+import dynamic from 'next/dynamic';
 
-export const metadata = { title: 'Projet' };
+const ProjectDetailRoot = dynamic(() => import('./_components/project-detail-root'));
 
-export function generateStaticParams() {
-  return [{ id: '_placeholder_' }];
-}
+export function generateStaticParams() { return []; }
 
-export default async function ProjectDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }> | { id: string };
-}) {
-  const { id } = 'then' in params ? await params : params;
-  return <ProjectDetailRoot id={id} />;
-}
+export default function Page() { return <ProjectDetailRoot />; }

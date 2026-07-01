@@ -1,15 +1,7 @@
-export const metadata = {
-  title: 'Nouveau lead',
-  description: 'Ajoutez manuellement un nouveau prospect à votre portefeuille.',
-};
+import dynamic from 'next/dynamic';
 
-import NewLeadRoot from './_components/new-lead-root';
+const NewLeadRoot = dynamic(() => import('./_components/new-lead-root'));
 
-export default function NewLeadPage() {
-  return <NewLeadRoot />;
-}
+export function generateStaticParams() { return []; }
 
-// Required for Next.js static export (electron:build / cap:sync)
-export function generateStaticParams() {
-  return [{}];
-}
+export default function Page() { return <NewLeadRoot />; }

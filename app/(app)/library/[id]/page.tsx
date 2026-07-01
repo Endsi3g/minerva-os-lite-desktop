@@ -1,19 +1,7 @@
-import LibraryEditorClient from './_components/library-editor-client';
+import dynamic from 'next/dynamic';
 
-export const metadata = {
-  title: 'Document',
-  description: "Éditeur de document de la bibliothèque Minerva.",
-};
+const LibraryEditorClient = dynamic(() => import('./_components/library-editor-client'));
 
-export function generateStaticParams() {
-  return [{ id: '_placeholder_' }];
-}
+export function generateStaticParams() { return []; }
 
-export default async function LibraryDocumentPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { id } = await params;
-  return <LibraryEditorClient id={id} />;
-}
+export default function Page() { return <LibraryEditorClient />; }
