@@ -65,7 +65,7 @@ async function syncPush() {
   const pendingLeads = await db.all("SELECT * FROM leads WHERE sync_status != 'synced'");
   for (const lead of pendingLeads) {
     if (lead.sync_status === 'pending_insert') {
-      const { id, user_id, business_name, contact_name, contact_email, niche, city, source, status, temperature, next_action, next_action_date, owner, image_url, workspace_id, website, rating, reviews_count, maps_url, latitude, longitude, phone, score, fit_score, intent_score, reply_status } = lead;
+      const { id, user_id, business_name, contact_name, contact_email, niche, city, source, status, temperature, next_action, next_action_date, owner, image_url, workspace_id, website, rating, reviews_count, maps_url, latitude, longitude, phone, score, fit_score, intent_score, reply_status, nba_score, nba_action, nba_reason, nba_channel, nba_computed_at, email_opens_count, email_clicks_count, pipeline_stagnation_days, cadence_phase, cadence_started_at, cadence_updated_at } = lead;
       const { error } = await supabase.from('leads').upsert({
         id,
         user_id,
@@ -92,7 +92,18 @@ async function syncPush() {
         score,
         fit_score,
         intent_score,
-        reply_status
+        reply_status,
+        nba_score: nba_score ?? 0,
+        nba_action: nba_action ?? null,
+        nba_reason: nba_reason ?? null,
+        nba_channel: nba_channel ?? 'email',
+        nba_computed_at: nba_computed_at ?? null,
+        email_opens_count: email_opens_count ?? 0,
+        email_clicks_count: email_clicks_count ?? 0,
+        pipeline_stagnation_days: pipeline_stagnation_days ?? 0,
+        cadence_phase: cadence_phase ?? 'initial_email',
+        cadence_started_at: cadence_started_at ?? null,
+        cadence_updated_at: cadence_updated_at ?? null,
       });
       if (!error) {
         await db.run("UPDATE leads SET sync_status = 'synced' WHERE id = ?", [id]);
@@ -100,7 +111,7 @@ async function syncPush() {
         console.error("Error pushing insert for lead", id, error);
       }
     } else if (lead.sync_status === 'pending_update') {
-      const { id, business_name, contact_name, contact_email, niche, city, source, status, temperature, next_action, next_action_date, owner, image_url, reply_status, website, rating, reviews_count, maps_url, latitude, longitude, phone, score, fit_score, intent_score } = lead;
+      const { id, business_name, contact_name, contact_email, niche, city, source, status, temperature, next_action, next_action_date, owner, image_url, reply_status, website, rating, reviews_count, maps_url, latitude, longitude, phone, score, fit_score, intent_score, nba_score, nba_action, nba_reason, nba_channel, nba_computed_at, email_opens_count, email_clicks_count, pipeline_stagnation_days, cadence_phase, cadence_started_at, cadence_updated_at } = lead;
       const { error } = await supabase.from('leads').update({
         business_name,
         contact_name,
@@ -124,7 +135,18 @@ async function syncPush() {
         phone,
         score,
         fit_score,
-        intent_score
+        intent_score,
+        nba_score: nba_score ?? 0,
+        nba_action: nba_action ?? null,
+        nba_reason: nba_reason ?? null,
+        nba_channel: nba_channel ?? 'email',
+        nba_computed_at: nba_computed_at ?? null,
+        email_opens_count: email_opens_count ?? 0,
+        email_clicks_count: email_clicks_count ?? 0,
+        pipeline_stagnation_days: pipeline_stagnation_days ?? 0,
+        cadence_phase: cadence_phase ?? 'initial_email',
+        cadence_started_at: cadence_started_at ?? null,
+        cadence_updated_at: cadence_updated_at ?? null,
       }).eq('id', id);
       if (!error) {
         await db.run("UPDATE leads SET sync_status = 'synced' WHERE id = ?", [id]);
@@ -754,13 +776,13 @@ async function syncPull() {
     const localLeadsMap = new Map(localLeadsRows.map(l => [l.id, l]));
 
     for (const lead of remoteLeads) {
-      const { id, user_id, business_name, contact_name, contact_email, niche, city, source, status, temperature, next_action, next_action_date, owner, image_url, workspace_id, created_at, updated_at, website, rating, reviews_count, maps_url, latitude, longitude, phone, score, fit_score, intent_score, reply_status } = lead;
+      const { id, user_id, business_name, contact_name, contact_email, niche, city, source, status, temperature, next_action, next_action_date, owner, image_url, workspace_id, created_at, updated_at, website, rating, reviews_count, maps_url, latitude, longitude, phone, score, fit_score, intent_score, reply_status, nba_score, nba_action, nba_reason, nba_channel, nba_computed_at, email_opens_count, email_clicks_count, pipeline_stagnation_days, cadence_phase, cadence_started_at, cadence_updated_at } = lead;
 
       const localLead = localLeadsMap.get(id);
       if (!localLead) {
-        await db.run(`INSERT INTO leads (id, user_id, business_name, contact_name, contact_email, niche, city, source, status, temperature, next_action, next_action_date, owner, image_url, workspace_id, created_at, updated_at, website, rating, reviews_count, maps_url, latitude, longitude, phone, score, fit_score, intent_score, reply_status, sync_status)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced')`,
-          [id, user_id, business_name, contact_name, contact_email, niche, city, source, status, temperature, next_action, next_action_date, owner, image_url, workspace_id, created_at, updated_at, website, rating, reviews_count, maps_url, latitude, longitude, phone, score, fit_score, intent_score, reply_status]
+        await db.run(`INSERT INTO leads (id, user_id, business_name, contact_name, contact_email, niche, city, source, status, temperature, next_action, next_action_date, owner, image_url, workspace_id, created_at, updated_at, website, rating, reviews_count, maps_url, latitude, longitude, phone, score, fit_score, intent_score, reply_status, nba_score, nba_action, nba_reason, nba_channel, nba_computed_at, email_opens_count, email_clicks_count, pipeline_stagnation_days, cadence_phase, cadence_started_at, cadence_updated_at, sync_status)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced')`,
+          [id, user_id, business_name, contact_name, contact_email, niche, city, source, status, temperature, next_action, next_action_date, owner, image_url, workspace_id, created_at, updated_at, website, rating, reviews_count, maps_url, latitude, longitude, phone, score, fit_score, intent_score, reply_status, nba_score ?? 0, nba_action ?? null, nba_reason ?? null, nba_channel ?? 'email', nba_computed_at ?? null, email_opens_count ?? 0, email_clicks_count ?? 0, pipeline_stagnation_days ?? 0, cadence_phase ?? 'initial_email', cadence_started_at ?? null, cadence_updated_at ?? null]
         );
       } else {
         const isRemoteNewer = new Date(updated_at) > new Date(localLead.updated_at || 0);
@@ -769,9 +791,11 @@ async function syncPull() {
           await db.run(`UPDATE leads SET
             user_id = ?, business_name = ?, contact_name = ?, contact_email = ?, niche = ?, city = ?, source = ?,
             status = ?, temperature = ?, next_action = ?, next_action_date = ?, owner = ?, image_url = ?,
-            workspace_id = ?, created_at = ?, updated_at = ?, website = ?, rating = ?, reviews_count = ?, maps_url = ?, latitude = ?, longitude = ?, phone = ?, score = ?, fit_score = ?, intent_score = ?, reply_status = ?, sync_status = 'synced'
+            workspace_id = ?, created_at = ?, updated_at = ?, website = ?, rating = ?, reviews_count = ?, maps_url = ?, latitude = ?, longitude = ?, phone = ?, score = ?, fit_score = ?, intent_score = ?, reply_status = ?,
+            nba_score = ?, nba_action = ?, nba_reason = ?, nba_channel = ?, nba_computed_at = ?, email_opens_count = ?, email_clicks_count = ?, pipeline_stagnation_days = ?,
+            cadence_phase = ?, cadence_started_at = ?, cadence_updated_at = ?, sync_status = 'synced'
             WHERE id = ?`,
-            [user_id, business_name, contact_name, contact_email, niche, city, source, status, temperature, next_action, next_action_date, owner, image_url, workspace_id, created_at, updated_at, website, rating, reviews_count, maps_url, latitude, longitude, phone, score, fit_score, intent_score, reply_status, id]
+            [user_id, business_name, contact_name, contact_email, niche, city, source, status, temperature, next_action, next_action_date, owner, image_url, workspace_id, created_at, updated_at, website, rating, reviews_count, maps_url, latitude, longitude, phone, score, fit_score, intent_score, reply_status, nba_score ?? 0, nba_action ?? null, nba_reason ?? null, nba_channel ?? 'email', nba_computed_at ?? null, email_opens_count ?? 0, email_clicks_count ?? 0, pipeline_stagnation_days ?? 0, cadence_phase ?? 'initial_email', cadence_started_at ?? null, cadence_updated_at ?? null, id]
           );
         }
       }

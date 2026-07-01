@@ -786,6 +786,96 @@ function initDb() {
     // v5.0.0 — source column on tasks/drafts for agent attribution
     db.run(`ALTER TABLE tasks ADD COLUMN source TEXT DEFAULT 'user'`, () => {});
     db.run(`ALTER TABLE drafts ADD COLUMN source TEXT DEFAULT 'user'`, () => {});
+
+    // v7.1.0 — NBA Engine: scoring columns on leads
+    db.run(`ALTER TABLE leads ADD COLUMN nba_score REAL DEFAULT 0`, () => {});
+    db.run(`ALTER TABLE leads ADD COLUMN nba_action TEXT`, () => {});
+    db.run(`ALTER TABLE leads ADD COLUMN nba_reason TEXT`, () => {});
+    db.run(`ALTER TABLE leads ADD COLUMN nba_channel TEXT DEFAULT 'email'`, () => {});
+    db.run(`ALTER TABLE leads ADD COLUMN nba_computed_at TEXT`, () => {});
+    db.run(`ALTER TABLE leads ADD COLUMN email_opens_count INTEGER DEFAULT 0`, () => {});
+    db.run(`ALTER TABLE leads ADD COLUMN email_clicks_count INTEGER DEFAULT 0`, () => {});
+    db.run(`ALTER TABLE leads ADD COLUMN pipeline_stagnation_days INTEGER DEFAULT 0`, () => {});
+
+    // v7.1.0 — NBA strategy onboarding on settings
+    db.run(`ALTER TABLE settings ADD COLUMN v7_strategy_niche TEXT`, () => {});
+    db.run(`ALTER TABLE settings ADD COLUMN v7_strategy_goal TEXT`, () => {});
+    db.run(`ALTER TABLE settings ADD COLUMN v7_strategy_done INTEGER DEFAULT 0`, () => {});
+
+    // v7.1.0 — agent_insights table (niche-level performance learning)
+    db.run(`CREATE TABLE IF NOT EXISTS agent_insights (
+      id TEXT PRIMARY KEY,
+      workspace_id TEXT NOT NULL,
+      niche TEXT NOT NULL,
+      city TEXT,
+      response_rate REAL DEFAULT 0,
+      booking_rate REAL DEFAULT 0,
+      leads_count INTEGER DEFAULT 0,
+      emails_sent INTEGER DEFAULT 0,
+      positive_replies INTEGER DEFAULT 0,
+      bookings INTEGER DEFAULT 0,
+      recommended_channel TEXT DEFAULT 'email',
+      best_cadence_days INTEGER DEFAULT 3,
+      last_computed_at TEXT,
+      created_at TEXT,
+      updated_at TEXT
+    )`, () => {});
+    db.run(`CREATE INDEX IF NOT EXISTS idx_agent_insights_workspace ON agent_insights(workspace_id)`, () => {});
+    db.run(`CREATE INDEX IF NOT EXISTS idx_agent_insights_niche ON agent_insights(workspace_id, niche)`, () => {});
+
+    // v8.2.0 — Cadence orchestration: phase tracking on leads
+    db.run(`ALTER TABLE leads ADD COLUMN cadence_phase TEXT DEFAULT 'initial_email'`, () => {});
+    db.run(`ALTER TABLE leads ADD COLUMN cadence_started_at TEXT`, () => {});
+    db.run(`ALTER TABLE leads ADD COLUMN cadence_updated_at TEXT`, () => {});
+
+    // v8.2.0 — cadence_events table (channel switch log)
+    db.run(`CREATE TABLE IF NOT EXISTS cadence_events (
+      id TEXT PRIMARY KEY,
+      workspace_id TEXT NOT NULL,
+      lead_id TEXT NOT NULL,
+      phase TEXT NOT NULL,
+      channel TEXT NOT NULL,
+      executed_at TEXT,
+      executed_by TEXT,
+      notes TEXT
+    )`, () => {});
+    db.run(`CREATE INDEX IF NOT EXISTS idx_cadence_events_lead ON cadence_events(lead_id)`, () => {});
+    db.run(`CREATE INDEX IF NOT EXISTS idx_cadence_events_workspace ON cadence_events(workspace_id)`, () => {});
+
+    // v8.5.0 — Smart assignment on agent_actions
+    db.run(`ALTER TABLE agent_actions ADD COLUMN assigned_to TEXT`, () => {});
+    db.run(`ALTER TABLE agent_actions ADD COLUMN assignment_reason TEXT`, () => {});
+    db.run(`ALTER TABLE agent_actions ADD COLUMN assigned_at TEXT`, () => {});
+
+    // v8.5.0 — SLA tracking on agent_actions
+    db.run(`ALTER TABLE agent_actions ADD COLUMN sla_due_at TEXT`, () => {});
+    db.run(`ALTER TABLE agent_actions ADD COLUMN sla_breached_at TEXT`, () => {});
+    db.run(`CREATE INDEX IF NOT EXISTS idx_agent_actions_assigned ON agent_actions(assigned_to)`, () => {});
+    db.run(`CREATE INDEX IF NOT EXISTS idx_agent_actions_sla ON agent_actions(sla_due_at)`, () => {});
+
+    // v8.5.0 — SLA config on settings
+    db.run(`ALTER TABLE settings ADD COLUMN sla_hot_lead_hours INTEGER DEFAULT 2`, () => {});
+    db.run(`ALTER TABLE settings ADD COLUMN sla_approval_hours INTEGER DEFAULT 4`, () => {});
+    db.run(`ALTER TABLE settings ADD COLUMN sla_proposal_followup_hours INTEGER DEFAULT 24`, () => {});
+
+    // v8.3.0 — Strategy Memory table
+    db.run(`CREATE TABLE IF NOT EXISTS strategy_memory (
+      id TEXT PRIMARY KEY,
+      workspace_id TEXT NOT NULL,
+      memory_type TEXT NOT NULL,
+      niche TEXT,
+      city TEXT,
+      campaign_id TEXT,
+      insight TEXT NOT NULL,
+      key TEXT NOT NULL,
+      value TEXT NOT NULL,
+      confidence REAL DEFAULT 0.50,
+      sample_size INTEGER DEFAULT 0,
+      created_at TEXT,
+      updated_at TEXT
+    )`, () => {});
+    db.run(`CREATE INDEX IF NOT EXISTS idx_strategy_memory_workspace ON strategy_memory(workspace_id)`, () => {});
+    db.run(`CREATE INDEX IF NOT EXISTS idx_strategy_memory_type ON strategy_memory(workspace_id, memory_type)`, () => {});
   });
 }
 
