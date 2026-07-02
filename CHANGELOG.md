@@ -5,6 +5,27 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [3.51.0] - 2026-07-02 à 07:48
+
+### Corrigé & Amélioré — Notifications, Voix AI, Carte & Nettoyage codebase
+
+#### Notifications Natives Navigateur
+- **Son de confirmation** — Correction du bug AudioContext fermé trop tôt : les sons de confirmation (tâche créée, tâche complétée) sont maintenant bien audibles avec une note douce à 880Hz.
+- **Permission navigateur** — La demande de permission système s'ouvre maintenant dès le premier clic sur la cloche (via `onOpenChange`) et non plus après, ce qui garantit le déclenchement dans un geste utilisateur valide.
+- **Notification tâche** — Chaque tâche créée ou complétée émet maintenant une notification native `Notification` + son simultanément.
+
+#### Voice Tasker & AI Chat
+- **Vraie dictée vocale dans l'Assistant** — Remplacement de la simulation factice par `SpeechRecognition` natif (`continuous: true`, `interimResults: true`) : les résultats s'accumulent en temps réel dans le champ de texte.
+- **Redirection après dictée** — Dicter une tâche depuis la page Tâches stocke le transcript dans `localStorage` et redirige automatiquement vers `/assistant` qui relit et envoie le message au démarrage.
+
+#### Carte Interactive
+- **MapLibre GL CSS** — Import du fichier CSS `maplibre-gl/dist/maplibre-gl.css` manquant : les tuiles, contrôles de navigation et marqueurs s'affichent maintenant correctement.
+
+#### Nettoyage codebase
+- **Suppression des routes dupliquées** — Les dossiers `app/(app)/cockpit/` et `app/(app)/command/` sont supprimés (les composants pilotage sont maintenant dans `app/(app)/today/_components/`).
+- **Migrations SQL organisées** — Tous les fichiers `.sql` déplacés depuis la racine vers `supabase/migrations/`.
+- **Images déplacées** — Tous les fichiers `image*.png` déplacés vers `docs/assets/`.
+
 ## [3.50.0] - 2026-07-02 à 07:36
 
 ### Ajouté — Lancement de Minerva v8 — Revenue OS orchestré (Phase 1)
