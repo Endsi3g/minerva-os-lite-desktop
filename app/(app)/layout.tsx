@@ -350,9 +350,11 @@ Règle absolue : Réponds UNIQUEMENT avec l'objet JSON. Pas de blabla, pas de ma
     return () => clearInterval(interval);
   }, []);
 
-  // Desktop notifications — request permission once, then run daily reminders
+  // Desktop notifications — track permission state live
+  const [notifPermission, setNotifPermission] = useState<NotificationPermission>('default');
   useEffect(() => {
-    requestNotificationPermission();
+    if (typeof window === 'undefined' || !('Notification' in window)) return;
+    setNotifPermission(Notification.permission);
   }, []);
 
   useEffect(() => {
@@ -1491,9 +1493,28 @@ Règle absolue : Réponds UNIQUEMENT avec l'objet JSON. Pas de blabla, pas de ma
 
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="ghost" size="icon" className="text-[#7a7a76] hover:text-[#26251e] h-8 w-8 relative cursor-pointer">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-[#7a7a76] hover:text-[#26251e] h-8 w-8 relative cursor-pointer"
+                  onClick={async () => {
+                    // If permission not yet granted, request it now (user gesture)
+                    if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default') {
+                      const perm = await requestNotificationPermission();
+                      setNotifPermission(perm);
+                      if (perm === 'granted') {
+                        toast.success('Notifications activées ! Vous recevrez vos alertes en temps réel.');
+                      }
+                    }
+                  }}
+                >
                   <Bell className="h-4 w-4" />
-                  {unreadCount > 0 && <span className="absolute top-2 right-2 h-1.5 w-1.5 rounded-full bg-[#10b981]" />}
+                  {/* Priority: orange dot for permission pending > green dot for unread */}
+                  {notifPermission === 'default' ? (
+                    <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-amber-400 border border-white animate-pulse" title="Activer les notifications" />
+                  ) : unreadCount > 0 ? (
+                    <span className="absolute top-2 right-2 h-1.5 w-1.5 rounded-full bg-[#10b981]" />
+                  ) : null}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-80 p-0 text-left bg-white border border-[#e5e5e0] shadow-md rounded-xl font-sans" align="end">

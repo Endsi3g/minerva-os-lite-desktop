@@ -37,11 +37,24 @@ function playNotifSound(type: 'soft' | 'alert' = 'soft') {
 export function sendDesktopNotification(title: string, body: string, options?: { sound?: boolean; soundType?: 'soft' | 'alert' }): void {
   if (typeof window === 'undefined') return;
   const electron = (window as any).electron;
+
   if (electron?.sendNotification) {
+    // Electron: always works natively
     electron.sendNotification(title, body);
-  } else if ('Notification' in window && Notification.permission === 'granted') {
-    new Notification(title, { body, icon: '/icon-192.png' });
+  } else if ('Notification' in window) {
+    if (Notification.permission === 'granted') {
+      new Notification(title, { body, icon: '/icon-192.png' });
+    } else if (Notification.permission === 'default') {
+      // Auto-request permission and fire notification if granted
+      Notification.requestPermission().then(perm => {
+        if (perm === 'granted') {
+          new Notification(title, { body, icon: '/icon-192.png' });
+        }
+      }).catch(() => { /* silently ignore */ });
+    }
+    // 'denied': do nothing
   }
+
   if (options?.sound !== false) {
     playNotifSound(options?.soundType ?? 'soft');
   }
