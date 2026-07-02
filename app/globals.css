@@ -192,6 +192,24 @@
   .maplibregl-popup-tip {
     @apply hidden!;
     }
+  /* MapLibre GL — prevent Tailwind CSS reset from capping raster tile img sizes */
+  .maplibregl-map img,
+  .maplibregl-map canvas {
+    max-width: none !important;
+    max-height: none !important;
+    border: none !important;
+    outline: none !important;
+  }
+  .maplibregl-canvas {
+    position: absolute !important;
+    outline: none !important;
+    border: none !important;
+  }
+  .maplibregl-canvas-container {
+    position: absolute !important;
+    width: 100% !important;
+    height: 100% !important;
+  }
 }
 
 /* Georgia Serif font family */

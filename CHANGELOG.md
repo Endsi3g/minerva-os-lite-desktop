@@ -5,6 +5,25 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [3.52.0] - 2026-07-02
+
+### Corrigé — Notifications actives, Son confirmé, Vocal → Assistant AI, Carte MapLibre fonctionnelle
+
+#### Carte Interactive (MapLibre GL)
+- **Fix CSS tuiles** — Les images de tuiles raster (CartoCDN) étaient bloquées par le reset Tailwind CSS (`max-width: 100%` sur `img`). Ajout d'overrides ciblés `.maplibregl-map img`, `.maplibregl-canvas` et `.maplibregl-canvas-container` avec `max-width: none !important` pour restaurer le rendu complet de la carte.
+- **Canvas MapLibre** — Suppression des `border` et `outline` parasites appliqués par le reset `* {}` de Tailwind sur l'élément `<canvas>`.
+
+#### Notifications Natives & Son
+- **Permission proactive** — `NotificationPermissionPrompt` affiche maintenant une toast interactive après 5 secondes avec un bouton "Activer" qui déclenche `Notification.requestPermission()` dans un geste utilisateur valide (résout le blocage des navigateurs qui refusent la demande hors interaction).
+- **Son déverrouillé** — La création du son de confirmation se fait maintenant depuis le gestionnaire de clic du toast, garantissant que l'`AudioContext` n'est jamais dans un état `suspended` non résolvable.
+- **Notification de test** — Envoi d'une notification native de confirmation immédiatement après l'activation pour valider le canal.
+
+#### Voix AI → Redirection vers l'Assistant
+- **Nouveau flux vocal** — Le dictaphone global (bouton micro de la topbar) stocke maintenant le transcript dans `localStorage` (`minerva_pending_voice_query`) puis redirige automatiquement vers `/assistant`.
+- **Interface simplifiée** — Le panneau flottant montre uniquement le transcript en direct et un champ texte de secours, sans traitement local ni création de tâches en doublon.
+- **Pickup automatique** — La page `/assistant` relit `minerva_pending_voice_query` au démarrage et envoie automatiquement le message comme si l'utilisateur l'avait tapé manuellement.
+- **Nettoyage état** — Suppression des états `isProcessingVoice`, `copilotMessages`, `messagesEndRef`, `executeProposedTasks` devenus inutiles (économie de ~60 lignes de code et d'un appel API redondant).
+
 ## [3.51.0] - 2026-07-02 à 07:48
 
 ### Corrigé & Amélioré — Notifications, Voix AI, Carte & Nettoyage codebase

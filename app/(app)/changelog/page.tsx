@@ -66,6 +66,19 @@ function TagLegend() {
 
 const versions: ChangelogVersion[] = [
   {
+    version: 'v9.1.0',
+    date: '2 juillet 2026',
+    title: 'Fix — Carte, Notifications, Vocal AI & Nettoyage',
+    highlights: [
+      { tag: 'fix', text: 'Carte MapLibre : Les tuiles raster s\'affichent maintenant correctement — fix du reset Tailwind CSS qui bloquait le rendu des images de tiles (max-width: none).' },
+      { tag: 'fix', text: 'Canvas MapLibre : Suppression des bordures et outlines parasites sur l\'élément <canvas> causées par le reset global Tailwind.' },
+      { tag: 'fix', text: 'Notifications natives : La demande de permission s\'affiche maintenant proactivement au démarrage (toast interactif après 5s) au lieu d\'attendre que l\'utilisateur ouvre la cloche.' },
+      { tag: 'fix', text: 'Son de confirmation : L\'AudioContext est maintenant créé depuis un geste utilisateur valide (clic sur "Activer" dans la toast), ce qui déverrouille le son dans tous les navigateurs.' },
+      { tag: 'feature', text: 'Voix → Assistant AI : Le dictaphone global redirige maintenant vers /assistant avec le transcript envoyé automatiquement comme message, au lieu de rester dans un panneau flottant.' },
+      { tag: 'design', text: 'Panneau vocal simplifié : Interface épurée montrant uniquement le transcript en direct et un champ texte de secours.' },
+    ],
+  },
+  {
     version: 'v9.0.0',
     date: '2 juillet 2026 à 07h36',
     title: 'Minerva v8 — Revenue OS orchestré (Consolidation)',
