@@ -350,6 +350,15 @@ Génère UNIQUEMENT le texte final du pitch, sans titres de section ni balises m
             content: customPitch,
             status: 'Draft'
           });
+
+          // Also persist enriched fields on the lead record itself
+          await admin.from('leads').update({
+            decision_maker_name: decisionMakerName || null,
+            decision_maker_role: decisionMakerRole || null,
+            suggested_emails: suggestedEmails.length ? suggestedEmails : null,
+            enriched_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          }).eq('id', leadId);
         }
       } catch (err) {
         console.warn('[enrich-contact] Failed saving call pitch draft in DB:', err);

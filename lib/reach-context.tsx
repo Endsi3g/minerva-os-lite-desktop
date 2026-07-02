@@ -1238,6 +1238,37 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener('minerva_sync_complete', handleRemoteChange);
   }, [user, activeWorkspace, loadData]);
 
+
+  // ── Auto-enrichment ─────────────────────────────────────────────────────────
+  // Semaphore to limit concurrent enrichment calls (max 3 at a time)
+  const enrichingSemaphore = React.useRef(0);
+
+  const autoEnrichLead = React.useCallback(async (leadId: string, website?: string, businessName?: string) => {
+    if (!website && !businessName) return; // nothing to work with
+    if (enrichingSemaphore.current >= 3) return; // back-pressure
+    enrichingSemaphore.current++;
+    try {
+      const res = await fetch('/api/enrich-contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ leadId, website, businessName }),
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      // Patch the lead in state with enriched fields
+      const patch: Partial<Lead> = { enrichedAt: new Date().toISOString() };
+      if (data.decisionMakerName)  patch.decisionMakerName  = data.decisionMakerName;
+      if (data.decisionMakerRole)  patch.decisionMakerRole  = data.decisionMakerRole;
+      if (data.suggestedEmails?.length) patch.suggestedEmails = data.suggestedEmails;
+      // updateLead is defined below — safe to reference since this runs async
+      setLeads(prev => prev.map(l => l.id === leadId ? { ...l, ...patch } : l));
+    } catch {
+      // silently ignore enrichment failures
+    } finally {
+      enrichingSemaphore.current--;
+    }
+  }, []);
+
   const addLead = async (leadData: {
     businessName: string;
     contactName: string;
@@ -1328,6 +1359,8 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
 
         setLeads(prev => [newUiLead, ...prev]);
         electronObj.triggerSync();
+        // Fire-and-forget auto-enrichment
+        void autoEnrichLead(leadId, leadData.website, leadData.businessName);
       } catch (err) {
         console.error("Local addLead error:", err);
       }
@@ -1412,6 +1445,8 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
       if (newDbLead) {
         const newUiLead = mapDbLeadToUi(newDbLead, insertedNotes);
         setLeads(prev => [newUiLead, ...prev]);
+        // Fire-and-forget auto-enrichment
+        void autoEnrichLead(newDbLead.id, leadData.website, leadData.businessName);
       }
     } catch (err: any) {
       console.error('addLead unexpected error:', err?.message ?? JSON.stringify(err));

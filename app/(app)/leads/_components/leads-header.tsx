@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { useReach } from '@/lib/reach-context';
 import { Lead } from '@/lib/mock-data';
-import { Plus, Upload, X, FileText, Check, AlertCircle, Users2, Loader2 } from 'lucide-react';
+import { Plus, Upload, X, FileText, Check, AlertCircle, Users2, Loader2, Trash2, ScanLine } from 'lucide-react';
 import { getApiUrl } from '@/lib/api-helper';
 
 // ─── CSV parser ───────────────────────────────────────────────────────────────
@@ -74,7 +74,7 @@ interface GoogleContact {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function LeadsHeader() {
-  const { leads, addLead } = useReach();
+  const { leads, addLead, deleteLeads } = useReach();
 
   // Google Contacts sheet state
   const [showContactsSheet, setShowContactsSheet] = useState(false);
@@ -161,6 +161,68 @@ export function LeadsHeader() {
       setImportedCount(0);
     }, 1800);
   };
+
+  // ── Deduplication ─────────────────────────────────────────────────────
+
+  /** Compute a completeness score for a lead (higher = more complete) */
+  function completenessScore(l: Lead): number {
+    const fields: (keyof Lead)[] = ['phone', 'contactEmail', 'website', 'city', 'rating', 'decisionMakerName', 'notes'];
+    return fields.filter(f => l[f]).length;
+  }
+
+  /** Normalize phone to digits only */
+  function normPhone(p?: string | null) { return (p || '').replace(/\D/g, ''); }
+  /** Normalize website to bare domain */
+  function normSite(w?: string | null) { return (w || '').toLowerCase().replace(/https?:\/\/(www\.)?/, '').replace(/\/$/, ''); }
+  /** Normalize business name */
+  function normName(n?: string | null) { return (n || '').toLowerCase().trim(); }
+
+  const [showDedupModal, setShowDedupModal] = useState(false);
+  const [dedupGroups, setDedupGroups] = useState<{ keep: Lead; remove: Lead[] }[]>([]);
+  const [dedupRunning, setDedupRunning] = useState(false);
+  const [dedupDone, setDedupDone] = useState(false);
+
+  const runDedupScan = useCallback(() => {
+    const visited = new Set<string>();
+    const groups: { keep: Lead; remove: Lead[] }[] = [];
+
+    for (const lead of leads) {
+      if (visited.has(lead.id)) continue;
+      const pA = normPhone(lead.phone);
+      const wA = normSite(lead.website);
+      const nA = normName(lead.businessName);
+
+      const duplicates = leads.filter(other =>
+        other.id !== lead.id &&
+        !visited.has(other.id) &&
+        (
+          (pA && normPhone(other.phone) === pA) ||
+          (wA && normSite(other.website) === wA) ||
+          (nA && normName(other.businessName) === nA)
+        )
+      );
+
+      if (duplicates.length > 0) {
+        const group = [lead, ...duplicates].sort((a, b) => completenessScore(b) - completenessScore(a));
+        group.forEach(l => visited.add(l.id));
+        groups.push({ keep: group[0], remove: group.slice(1) });
+      }
+    }
+
+    setDedupGroups(groups);
+    setDedupDone(false);
+    setShowDedupModal(true);
+  }, [leads]);
+
+  const handleConfirmDedup = useCallback(async () => {
+    const idsToDelete = dedupGroups.flatMap(g => g.remove.map(l => l.id));
+    if (!idsToDelete.length) { setShowDedupModal(false); return; }
+    setDedupRunning(true);
+    deleteLeads(idsToDelete);
+    setDedupRunning(false);
+    setDedupDone(true);
+    setTimeout(() => setShowDedupModal(false), 1800);
+  }, [dedupGroups, deleteLeads]);
 
   const [showModal, setShowModal] = useState(false);
   const [dragOver, setDragOver] = useState(false);
@@ -252,6 +314,17 @@ export function LeadsHeader() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          {/* Deduplication */}
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-2 border-[#e5e5e0] text-[#26251e] hover:bg-[#f4f4f3]"
+            onClick={runDedupScan}
+            title="Détecter et supprimer les doublons"
+          >
+            <ScanLine className="h-3.5 w-3.5 text-amber-500" />
+            Doublons
+          </Button>
           <Button
             variant="outline"
             size="sm"
@@ -520,6 +593,100 @@ export function LeadsHeader() {
           )}
         </SheetContent>
       </Sheet>
+
+      {/* ── Deduplication Modal ──────────────────────────────────────────── */}
+      {showDedupModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-xl w-[600px] max-w-[95vw] max-h-[85vh] flex flex-col animate-in zoom-in-95 duration-150">
+
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[#e5e5e0] shrink-0">
+              <div className="flex items-center gap-2">
+                <ScanLine className="h-4 w-4 text-amber-500" />
+                <div>
+                  <h3 className="text-sm font-bold text-[#26251e]">Détection des doublons</h3>
+                  <p className="text-xs text-[#7a7a76] mt-0.5">
+                    {dedupGroups.length === 0
+                      ? 'Aucun doublon détecté dans votre CRM 🎉'
+                      : `${dedupGroups.length} groupe${dedupGroups.length > 1 ? 's' : ''} de doublons • ${dedupGroups.reduce((s, g) => s + g.remove.length, 0)} lead${dedupGroups.reduce((s, g) => s + g.remove.length, 0) > 1 ? 's' : ''} à supprimer`}
+                  </p>
+                </div>
+              </div>
+              <button onClick={() => setShowDedupModal(false)} className="p-1.5 rounded-lg hover:bg-[#f4f4f3] text-[#7a7a76] transition-colors">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="flex-1 overflow-y-auto p-5 space-y-4">
+              {dedupGroups.length === 0 ? (
+                <div className="flex flex-col items-center gap-3 py-12 text-center">
+                  <div className="w-12 h-12 rounded-full bg-emerald-50 flex items-center justify-center">
+                    <Check className="w-6 h-6 text-emerald-500" />
+                  </div>
+                  <p className="text-sm font-semibold text-[#26251e]">CRM propre !</p>
+                  <p className="text-xs text-[#7a7a76]">Aucun doublon détecté parmi vos {leads.length} leads.</p>
+                </div>
+              ) : (
+                dedupGroups.map((group, i) => (
+                  <div key={i} className="border border-[#e5e5e0] rounded-xl overflow-hidden">
+                    {/* Keep */}
+                    <div className="flex items-start gap-3 px-4 py-3 bg-emerald-50/50 border-b border-[#e5e5e0]">
+                      <span className="mt-0.5 text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 shrink-0">Conserver</span>
+                      <div className="min-w-0">
+                        <p className="text-xs font-bold text-[#26251e] truncate">{group.keep.businessName}</p>
+                        <p className="text-[10px] text-[#7a7a76] mt-0.5">
+                          {[group.keep.phone, group.keep.website, group.keep.city].filter(Boolean).join(' · ')}
+                        </p>
+                      </div>
+                    </div>
+                    {/* Remove */}
+                    {group.remove.map((lead, j) => (
+                      <div key={j} className="flex items-start gap-3 px-4 py-3 bg-red-50/30 border-b border-[#e5e5e0] last:border-0">
+                        <span className="mt-0.5 text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded bg-red-100 text-red-600 shrink-0 flex items-center gap-1">
+                          <Trash2 className="w-2.5 h-2.5" />Supprimer
+                        </span>
+                        <div className="min-w-0">
+                          <p className="text-xs font-semibold text-[#555552] truncate">{lead.businessName}</p>
+                          <p className="text-[10px] text-[#7a7a76] mt-0.5">
+                            {[lead.phone, lead.website, lead.city].filter(Boolean).join(' · ')}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-end gap-2.5 px-6 py-4 border-t border-[#e5e5e0] shrink-0">
+              <button onClick={() => setShowDedupModal(false)} className="px-4 py-2 text-xs font-semibold text-[#7a7a76] hover:text-[#26251e] transition-colors">
+                Annuler
+              </button>
+              {dedupGroups.length > 0 && (
+                <button
+                  onClick={handleConfirmDedup}
+                  disabled={dedupRunning || dedupDone}
+                  className={`px-5 py-2 text-xs font-bold rounded-lg flex items-center gap-1.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                    dedupDone
+                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                      : 'bg-red-600 hover:bg-red-700 text-white'
+                  }`}
+                >
+                  {dedupRunning ? (
+                    <><Loader2 className="w-3.5 h-3.5 animate-spin" />Suppression...</>
+                  ) : dedupDone ? (
+                    <><Check className="w-3.5 h-3.5" />Doublons supprimés</>
+                  ) : (
+                    <><Trash2 className="w-3.5 h-3.5" />Supprimer {dedupGroups.reduce((s, g) => s + g.remove.length, 0)} doublon{dedupGroups.reduce((s, g) => s + g.remove.length, 0) > 1 ? 's' : ''}</>
+                  )}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
