@@ -5,6 +5,13 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [3.45.0] - 2026-07-02 à 07:07
+
+### Ajouté — Intégration de Cloudflare Workers AI & Nouveau Modèle DeepSeek
+- **Hébergement Cloud Workers AI** — Ajout du support de la plateforme d'intelligence artificielle Cloudflare Workers AI directement dans l'application.
+- **Modèle intelligent DeepSeek V4** — Configuration du modèle `deepseek/deepseek-v4-pro` comme modèle par défaut. Ce modèle offre des réponses ultra-rapides et hautement intelligentes pour planifier vos tâches et converser avec le copilote Minerva.
+- **Sécurisation par jeton** — Utilisation de votre clé d'API Cloudflare et identifiant de compte directement pour s'affranchir de toute configuration technique complexe locale.
+
 ## [3.44.0] - 2026-07-02 à 06:55
 
 ### Ajouté — Assistant Vocal Intelligent (Copilote) & Liste de Tâches Simplifiée

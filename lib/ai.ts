@@ -22,16 +22,26 @@ const OPENROUTER_DEFAULT = 'meta-llama/llama-3.3-70b-instruct:free';
 const getGlobalKeys = () => ({
   openrouterKey: process.env.OPENROUTER_API_KEY || '',
   anthropicKey: process.env.ANTHROPIC_API_KEY || '',
+  cloudflareToken: process.env.CLOUDFLARE_API_TOKEN || 'cfut_l0PDRuG7slPkY2Q9zMAE9qhXzkD15c0sFQa12hS77cc92973',
+  cloudflareAccountId: process.env.CLOUDFLARE_ACCOUNT_ID || '2a6584ba17918eeea6ea4c659abb1782',
 });
 
 export function resolveAIProvider(settings?: AISettings | null) {
   const keys = getGlobalKeys();
+
+  // If Cloudflare Token and Account ID are set, make it the default provider
+  if (keys.cloudflareToken && keys.cloudflareAccountId) {
+    const provider = 'cloudflare';
+    const rawModel = settings?.ai_model;
+    const model = (rawModel && !rawModel.startsWith('claude')) ? rawModel : 'deepseek/deepseek-v4-pro';
+    return { provider, model, apiKey: keys.cloudflareToken };
+  }
+
   const userOpenrouterKey = settings?.openrouter_key || '';
   const openrouterKey = userOpenrouterKey || keys.openrouterKey;
 
-  // OpenRouter is the sole active provider
+  // Otherwise, OpenRouter is the fallback provider
   const provider = 'openrouter';
-
   const rawModel = settings?.ai_model;
   const STALE_MODELS = new Set([
     'openrouter/free', 'meta-llama/llama-3-8b-instruct:free',
@@ -142,6 +152,45 @@ async function callAnthropic(
   return msg.content[0].type === 'text' ? msg.content[0].text.trim() : '';
 }
 
+async function callCloudflare(
+  apiKey: string,
+  accountId: string,
+  model: string,
+  messages: Array<{ role: string; content: string }>,
+  system: string | undefined,
+  opts: Pick<AICallOptions, 'jsonMode' | 'maxTokens' | 'temperature'>,
+): Promise<string> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${apiKey}`,
+  };
+
+  const cfModel = model.startsWith('@cf/') ? model : `@cf/${model}`;
+  const body = {
+    model: cfModel,
+    messages: [
+      ...(system ? [{ role: 'system', content: system }] : []),
+      ...messages,
+    ],
+    max_tokens: opts.maxTokens || 1500,
+    temperature: opts.temperature ?? 0.7,
+  };
+
+  const url = `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/v1/chat/completions`;
+  const resp = await fetch(url, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(body),
+  });
+
+  if (!resp.ok) {
+    const text = await resp.text();
+    throw new Error(`Cloudflare Workers AI error ${resp.status}: ${text}`);
+  }
+  const data = await resp.json();
+  return data.choices?.[0]?.message?.content?.trim() || '';
+}
+
 function doCall(
   provider: string,
   model: string,
@@ -151,6 +200,10 @@ function doCall(
   opts: Pick<AICallOptions, 'jsonMode' | 'maxTokens' | 'temperature'>,
 ): Promise<string> {
   if (provider === 'anthropic') return callAnthropic(apiKey, model, messages, system, opts);
+  if (provider === 'cloudflare') {
+    const keys = getGlobalKeys();
+    return callCloudflare(apiKey, keys.cloudflareAccountId, model, messages, system, opts);
+  }
   return callOpenRouter(apiKey, model, messages, system, opts);
 }
 
@@ -232,6 +285,42 @@ export async function generateStreamCompletion(options: AICallOptions): Promise<
     if (!resp.ok) {
       logCall({ id: requestId, userId: options.userId, provider, model, latencyMs: Date.now() - startTime, success: false });
       throw new Error(`OpenRouter streaming error ${resp.status}`);
+    }
+    logCall({ id: requestId, userId: options.userId, provider, model, latencyMs: Date.now() - startTime, success: true });
+    return new ReadableStream({
+      async start(controller) {
+        const reader = resp.body!.getReader();
+        try { while (true) { const { done, value } = await reader.read(); if (done) break; controller.enqueue(value); } }
+        catch (e) { controller.error(e); }
+        finally { controller.close(); }
+      }
+    });
+  }
+
+  // ── Cloudflare streaming ──────────────────────────────────────────────────
+  if (provider === 'cloudflare') {
+    const keys = getGlobalKeys();
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`,
+    };
+    const cfModel = model.startsWith('@cf/') ? model : `@cf/${model}`;
+    const body = {
+      model: cfModel,
+      messages: [
+        ...(options.system ? [{ role: 'system', content: options.system }] : []),
+        ...messages,
+      ],
+      stream: true,
+      max_tokens: options.maxTokens || 1500,
+      temperature: options.temperature ?? 0.7,
+    };
+
+    const url = `https://api.cloudflare.com/client/v4/accounts/${keys.cloudflareAccountId}/ai/v1/chat/completions`;
+    const resp = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body) });
+    if (!resp.ok) {
+      logCall({ id: requestId, userId: options.userId, provider, model, latencyMs: Date.now() - startTime, success: false });
+      throw new Error(`Cloudflare streaming error ${resp.status}`);
     }
     logCall({ id: requestId, userId: options.userId, provider, model, latencyMs: Date.now() - startTime, success: true });
     return new ReadableStream({
