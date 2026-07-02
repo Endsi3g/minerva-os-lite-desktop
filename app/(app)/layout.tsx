@@ -50,7 +50,6 @@ import {
   ListChecks,
   Target,
   BookOpen,
-  BarChart2,
   Zap,
   ClipboardList,
   Flag,
@@ -58,7 +57,6 @@ import {
   Send,
   MoreHorizontal,
   Home,
-  ArrowLeftRight,
   Gauge,
 } from 'lucide-react';
 import { BottomBlur } from '@/components/ui/edge-blur';
@@ -83,7 +81,6 @@ import {
 } from '@/lib/onboarding-store';
 import { ALL_MODULES, routeToModule, type PermissionModule } from '@/lib/permissions';
 import { cachedFetch, invalidateClientCache } from '@/lib/fetch-cache';
-import { getPlatformUrl } from '@/lib/platform-utils';
 import { requestNotificationPermission, checkAndSendTaskReminders, checkAndSendLeadReminder } from '@/lib/notification-service';
 import { MinervaOwl } from '@/components/minerva-owl';
 import {
@@ -595,8 +592,22 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
       else if (segment === 'inbox') label = 'Boîte de réception';
       else if (segment === 'setup') label = 'Configuration';
       else if (segment === 'personas') label = 'Profils cibles';
-      else if (segment === 'cockpit') label = 'Cockpit';
-      else if (segment === 'command') label = 'Command Center';
+      else if (segment === 'cockpit' || segment === 'command') label = 'Revenue OS';
+      else if (segment === 'tasks') label = 'Tâches';
+      else if (segment === 'activities') label = 'Activités';
+      else if (segment === 'sequences') label = 'Séquences';
+      else if (segment === 'campaigns') label = 'Campagnes';
+      else if (segment === 'playbooks') label = 'Playbooks';
+      else if (segment === 'messages') label = 'Messages';
+      else if (segment === 'services') label = 'Services';
+      else if (segment === 'automations') label = 'Automatisations';
+      else if (segment === 'notifications') label = 'Notifications';
+      else if (segment === 'contacts') label = 'Contacts';
+      else if (segment === 'ads') label = 'Publicité & Attribution';
+      else if (segment === 'acquisition') label = 'Acquisition';
+      else if (segment === 'website-builder') label = 'Créateur de site';
+      else if (segment === 'client-reports') label = 'Rapports client';
+      else if (segment === 'webhooks') label = 'Webhooks';
 
       if (segments[index - 1] === 'leads' && segment !== 'leads') {
         const lead = leads.find(l => l.id === segment);
@@ -627,8 +638,39 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
     { name: 'Équipe',   href: '/team',     icon: UsersRound },
   ];
 
-  // Collapsible nav categories — vidées en v5 (pages secondaires accessibles par URL directe)
-  const navCategories: Array<{ id: string; label: string; items: { name: string; href: string; icon: React.ElementType }[] }> = [];
+  const navCategories: Array<{ id: string; label: string; items: { name: string; href: string; icon: React.ElementType }[] }> = [
+    {
+      id: 'daily',
+      label: 'Quotidien',
+      items: [
+        { name: 'Tâches',       href: '/tasks',         icon: ListChecks },
+        { name: 'Activités',    href: '/activities',    icon: Activity },
+        { name: 'Messages',     href: '/messages',      icon: MessageCircle },
+        { name: 'Contacts',     href: '/contacts',      icon: Users },
+        { name: 'Notifications',href: '/notifications', icon: Bell },
+      ],
+    },
+    {
+      id: 'tools',
+      label: 'Outils outreach',
+      items: [
+        { name: 'Séquences',    href: '/sequences',     icon: Mail },
+        { name: 'Campagnes',    href: '/campaigns',     icon: Megaphone },
+        { name: 'Playbooks',    href: '/playbooks',     icon: BookOpen },
+      ],
+    },
+    {
+      id: 'marketing',
+      label: 'Marketing',
+      items: [
+        { name: 'Publicité',    href: '/ads',            icon: Target },
+        { name: 'Acquisition',  href: '/acquisition',    icon: TrendingUp },
+        { name: 'Site web IA',  href: '/website-builder',icon: Globe },
+        { name: 'Rapports client', href: '/client-reports', icon: FileText },
+        { name: 'Webhooks',     href: '/webhooks',       icon: Zap },
+      ],
+    },
+  ];
 
   // Filter nav items based on user role permissions
   const canShowNavItem = (href: string) => {
@@ -1075,8 +1117,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                     <div className="space-y-[2px] pb-1">
                       {[
                         { href: '/guide', icon: Zap, label: 'Guide de démarrage' },
-                        { href: '/cockpit', icon: BarChart2, label: 'Cockpit v7' },
-                        { href: '/command', icon: Gauge, label: 'Command Center v8' },
+                        { href: '/cockpit', icon: Gauge, label: 'Revenue OS' },
                         { href: '/analytics', icon: BarChart3, label: 'Statistiques' },
                         { href: '/billing', icon: CreditCard, label: 'Facturation' },
                         { href: '/help', icon: HelpCircle, label: 'Aide & Docs' },
@@ -1205,23 +1246,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
 
           {/* Right actions */}
           <div className="flex items-center gap-2">
-            {/* Platform switch — Minerva AI */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Link
-                  href={getPlatformUrl('ai', '/assistant')}
-                  className="h-8 flex items-center gap-1.5 px-2.5 rounded-md border border-[#e5e5e0] text-[10px] font-bold text-[#555552] hover:text-[#26251e] hover:bg-[#f4f4f3] transition-colors"
-                >
-                  <ArrowLeftRight className="h-3.5 w-3.5" />
-                  <span className="hidden sm:inline">Minerva AI</span>
-                </Link>
-              </TooltipTrigger>
-              <TooltipContent className="text-xs bg-[#26251e] text-white p-2 rounded-lg font-sans border border-neutral-800">
-                Ouvrir Minerva AI (assistant & agents)
-              </TooltipContent>
-            </Tooltip>
-
-            <div className="relative w-44 md:block hidden">
+<div className="relative w-44 md:block hidden">
               <span className="absolute inset-y-0 left-2 flex items-center text-[#7a7a76]">
                 <Search className="h-3 w-3" />
               </span>
@@ -1509,13 +1534,38 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                 })}
               </div>
 
+              {/* Section Outils */}
+              <p className="text-[9px] font-black uppercase tracking-widest text-[#7a7a76] px-5 pt-3 pb-1">Outils</p>
+              <div className="grid grid-cols-4 gap-0.5 px-3">
+                {([
+                  { name: 'Tâches',     href: '/tasks',         icon: ListChecks },
+                  { name: 'Contacts',   href: '/contacts',      icon: Users },
+                  { name: 'Notifs',     href: '/notifications', icon: Bell },
+                  { name: 'Messages',   href: '/messages',      icon: MessageCircle },
+                  { name: 'Séquences',  href: '/sequences',     icon: Mail },
+                  { name: 'Campagnes',  href: '/campaigns',     icon: Megaphone },
+                  { name: 'Playbooks',  href: '/playbooks',     icon: BookOpen },
+                  { name: 'Acquisition',href: '/acquisition',   icon: TrendingUp },
+                ] as { name: string; href: string; icon: React.ElementType }[]).map(({ name, href, icon: Icon }) => {
+                  const isActive = pathname.startsWith(href);
+                  return (
+                    <Link key={href} href={href} onClick={() => setMoreSheetOpen(false)}
+                      className={cn("flex flex-col items-center gap-1.5 p-3 rounded-xl transition-colors",
+                        isActive ? "bg-[#059669]/8 text-[#059669]" : "text-[#555552] active:bg-[#f4f4f3]")}
+                    >
+                      <Icon className="h-5 w-5" strokeWidth={isActive ? 2.2 : 1.5} />
+                      <span className="text-[9px] font-semibold text-center leading-tight">{name}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+
               {/* Section IA */}
               <p className="text-[9px] font-black uppercase tracking-widest text-[#7a7a76] px-5 pt-3 pb-1">Intelligence</p>
               <div className="grid grid-cols-4 gap-0.5 px-3">
                 {([
                   { name: 'Assistant',    href: '/assistant',    icon: Sparkles },
-                  { name: 'Cockpit',      href: '/cockpit',      icon: BarChart2 },
-                  { name: 'Command',      href: '/command',      icon: Gauge },
+                  { name: 'Revenue OS',   href: '/cockpit',      icon: Gauge },
                   { name: 'Agents',       href: '/agents',       icon: Zap },
                 ] as { name: string; href: string; icon: React.ElementType }[]).map(({ name, href, icon: Icon }) => {
                   const isActive = pathname.startsWith(href);

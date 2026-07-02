@@ -316,7 +316,9 @@ export function AutomationsRoot() {
   }
 
   return (
-    <div className="w-full min-h-full px-4 sm:px-6 py-6 space-y-6">
+    <div className="relative min-h-full bg-[#fafaf8]">
+      <div className="absolute inset-0 opacity-[0.25] pointer-events-none bg-grid-pattern-20 z-0" />
+      <div className="relative z-10 w-full px-4 sm:px-6 py-6 space-y-6">
       {/* Page header */}
       <div className="flex items-center justify-between">
         <div>
@@ -464,5 +466,6 @@ export function AutomationsRoot() {
         <ActivityLog items={activityLog} />
       </div>
     </div>
+  </div>
   );
 }

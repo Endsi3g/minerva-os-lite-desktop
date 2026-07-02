@@ -30,35 +30,20 @@ export function resolveAIProvider(settings?: AISettings | null) {
   const openrouterKey = userOpenrouterKey || keys.openrouterKey;
   const anthropicKey = keys.anthropicKey;
 
-  const explicitProvider = settings?.ai_provider;
-  const provider = (() => {
-    if (explicitProvider === 'openrouter' && openrouterKey) return 'openrouter';
-    if (explicitProvider === 'anthropic' && anthropicKey) return 'anthropic';
-    if (anthropicKey) return 'anthropic';
-    if (openrouterKey) return 'openrouter';
-    return 'anthropic';
-  })();
+  // OpenRouter is the sole active provider — Anthropic is fallback only when no OpenRouter key
+  const provider = openrouterKey ? 'openrouter' : (anthropicKey ? 'anthropic' : 'openrouter');
 
-  let model = settings?.ai_model || (
-    provider === 'openrouter' ? OPENROUTER_DEFAULT : 'claude-sonnet-4-6'
-  );
+  const rawModel = settings?.ai_model;
+  const STALE_MODELS = new Set([
+    'openrouter/free', 'meta-llama/llama-3-8b-instruct:free',
+    'meta-llama/llama-3.1-8b-instruct:free', 'google/gemma-2-9b-it:free',
+    'qwen/qwen-2-7b-instruct:free', 'llama-3.3-70b-versatile',
+    'meta-llama/Llama-3-70b-chat-hf',
+  ]);
 
-  // Remap deprecated model IDs
-  if (
-    model === 'openrouter/free' ||
-    model === 'meta-llama/llama-3-8b-instruct:free' ||
-    model === 'meta-llama/llama-3.1-8b-instruct:free' ||
-    model === 'google/gemma-2-9b-it:free' ||
-    model === 'qwen/qwen-2-7b-instruct:free' ||
-    model === 'llama-3.3-70b-versatile' ||
-    model === 'meta-llama/Llama-3-70b-chat-hf'
-  ) {
-    model = provider === 'anthropic' ? 'claude-sonnet-4-6' : OPENROUTER_DEFAULT;
-  }
-
-  if (provider === 'openrouter' && model.startsWith('claude')) {
-    model = OPENROUTER_DEFAULT;
-  }
+  let model = (rawModel && !STALE_MODELS.has(rawModel) && !rawModel.startsWith('claude'))
+    ? rawModel
+    : OPENROUTER_DEFAULT;
 
   const apiKey = provider === 'openrouter' ? openrouterKey : anthropicKey;
 

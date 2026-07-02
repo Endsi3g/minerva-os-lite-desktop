@@ -363,6 +363,21 @@ export function MapRoot() {
         {/* Map canvas */}
         <div ref={mapContainer} className="absolute inset-0" />
 
+        {/* Loading overlay while MapLibre style fetches */}
+        {!mapLoaded && (
+          <div className="absolute inset-0 z-30 flex items-center justify-center bg-[#f4f4f3] transition-opacity duration-500">
+            <div className="flex flex-col items-center gap-3 text-center">
+              <div className="relative">
+                <div className="absolute inset-0 rounded-full animate-ping opacity-25" style={{ background: '#059669' }} />
+                <div className="relative w-12 h-12 rounded-xl flex items-center justify-center" style={{ background: '#05966920' }}>
+                  <MapPin className="h-6 w-6" style={{ color: '#059669' }} />
+                </div>
+              </div>
+              <p className="text-xs font-bold text-[#26251e]">Initialisation de la carte…</p>
+            </div>
+          </div>
+        )}
+
         {/* Floating topbar */}
         <div className="absolute top-3 left-3 right-3 z-20 flex items-center gap-2">
           {/* Toggle sidebar */}
@@ -417,9 +432,12 @@ export function MapRoot() {
           </div>
         </div>
 
-        {/* Filters panel */}
+        {/* Filters panel — animated */}
         {showFilters && (
-          <div className="absolute top-14 left-3 z-20 w-72 bg-white rounded-2xl border border-[#e5e5e0] shadow-xl p-4 space-y-4">
+          <div
+            className="absolute top-14 left-3 z-20 w-72 bg-white rounded-2xl border border-[#e5e5e0] shadow-xl p-4 space-y-4"
+            style={{ animation: 'filterPanelIn 0.2s cubic-bezier(0.22,1,0.36,1) both' }}
+          >
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold uppercase tracking-wider text-[#7a7a76]">Filtres</span>
               <button onClick={resetFilters} className="text-[10px] font-bold text-[#059669] hover:underline">

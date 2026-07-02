@@ -534,7 +534,9 @@ export default function AdsRoot() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#fafaf8] p-6 md:p-8">
+    <div className="min-h-screen bg-[#fafaf8] relative">
+      <div className="absolute inset-0 opacity-[0.25] pointer-events-none bg-grid-pattern-20 z-0" />
+      <div className="relative z-10 p-6 md:p-8">
       {/* Page header */}
       <div className="mb-6">
         <h1 className="text-2xl font-black text-[#26251e] tracking-tight">Publicité & Attribution</h1>
@@ -566,5 +568,6 @@ export default function AdsRoot() {
         {activeTab === 'attribution' && <AttributionTab workspaceId={activeWorkspace?.id || ''} />}
       </div>
     </div>
+  </div>
   );
 }

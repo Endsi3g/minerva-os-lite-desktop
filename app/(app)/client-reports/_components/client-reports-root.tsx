@@ -175,8 +175,9 @@ export function ClientReportsRoot() {
   );
 
   return (
-    <div className="h-full overflow-y-auto bg-[#fafaf9] text-[#26251e] selection:bg-[#10b981]/10">
-      <div className="max-w-6xl mx-auto p-6 space-y-6">
+    <div className="h-full overflow-y-auto bg-[#fafaf8] text-[#26251e] selection:bg-[#10b981]/10 relative">
+      <div className="absolute inset-0 opacity-[0.25] pointer-events-none bg-grid-pattern-20 z-0" />
+      <div className="relative z-10 max-w-6xl mx-auto p-6 space-y-6">
         
         {/* Header Dashboard section */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-[#e5e5e0] pb-5">

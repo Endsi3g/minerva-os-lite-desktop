@@ -310,8 +310,9 @@ export default function WebsiteBuilderRoot() {
   const collapseAll = () => setOpenSections(new Set());
 
   return (
-    <div className="min-h-screen bg-[#fafaf8]">
-      <div className="max-w-3xl mx-auto p-6 md:p-8 space-y-8">
+    <div className="min-h-screen bg-[#fafaf8] relative">
+      <div className="absolute inset-0 opacity-[0.25] pointer-events-none bg-grid-pattern-20 z-0" />
+      <div className="relative z-10 max-w-3xl mx-auto p-6 md:p-8 space-y-8">
 
         {/* Header */}
         <div className="space-y-1">

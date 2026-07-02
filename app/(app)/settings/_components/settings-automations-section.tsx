@@ -83,15 +83,14 @@ export function SettingsAutomationsSection() {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      await supabase.from('settings').upsert({
-        user_id: user.id,
+      await supabase.from('settings').update({
         auto_enrich_on_import: next.autoEnrichOnImport,
         auto_enrich_scheduled: next.autoEnrichScheduled,
         auto_email_on_enrichment: next.autoEmailOnEnrichment,
         auto_tag_replies: next.autoTagReplies,
         auto_email_template_id: next.autoEmailTemplateId || null,
         auto_email_delay_hours: next.autoEmailDelayHours,
-      });
+      }).eq('user_id', user.id);
     } catch (err) {
       console.error('Failed to save automation settings', err);
     } finally {

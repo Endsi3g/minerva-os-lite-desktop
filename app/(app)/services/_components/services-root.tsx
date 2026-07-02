@@ -393,8 +393,9 @@ export default function ServicesRoot() {
   const topType = Object.entries(typeCount).sort((a, b) => b[1] - a[1])[0]?.[0] as ServiceType | undefined;
 
   return (
-    <div className="h-full overflow-y-auto bg-[#fafaf9]">
-      <div className="w-full p-3 sm:p-4 md:p-6 flex flex-col gap-6">
+    <div className="h-full overflow-y-auto bg-[#fafaf8] relative">
+      <div className="absolute inset-0 opacity-[0.25] pointer-events-none bg-grid-pattern-20 z-0" />
+      <div className="relative z-10 w-full p-3 sm:p-4 md:p-6 flex flex-col gap-6">
 
         {/* Header */}
         <div className="flex items-start justify-between">

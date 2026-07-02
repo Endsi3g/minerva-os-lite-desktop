@@ -36,7 +36,12 @@ import {
   Paperclip,
   Maximize2,
   Database,
-  Bookmark
+  Bookmark,
+  TrendingUp,
+  Star,
+  BarChart3,
+  Mail,
+  Zap,
 } from 'lucide-react';
 import { MinervaIcon } from '@/components/icons';
 import { MinervaOwl } from '@/components/minerva-owl';
@@ -1473,18 +1478,25 @@ export function AssistantRoot() {
           {/* Message Feed / Chat Window */}
           <div className="flex-1 overflow-y-auto min-h-0 bg-white">
             {messages.length === 0 ? (
-              /* Splash Centered Screen */
-              <div className="flex flex-col items-center justify-center min-h-full py-16 px-6 max-w-xl mx-auto space-y-8 animate-scale-up">
-                
-                <div className="flex flex-col items-center text-center space-y-3">
-                  <MinervaOwl state="idle" size={80} className="mb-2" />
-                  <h1 className="text-3xl tracking-tight text-[#26251e] font-serif font-light font-georgia leading-tight">
-                    {t('assistant.still_at_it')}
+              /* Premium Landing — Claude + Perplexity hybrid */
+              <div className="flex flex-col items-center justify-center min-h-full px-6 max-w-2xl mx-auto animate-scale-up" style={{ paddingTop: '5vh', paddingBottom: '4vh', gap: '1.75rem' }}>
+
+                {/* Hero */}
+                <div className="flex flex-col items-center text-center">
+                  <div className="relative mb-5">
+                    <div className="absolute inset-0 rounded-full blur-2xl opacity-15 scale-150" style={{ background: '#059669' }} />
+                    <MinervaOwl state="idle" size={72} className="relative" />
+                  </div>
+                  <h1 className="text-3xl sm:text-4xl font-black text-[#26251e] tracking-tight leading-tight">
+                    Comment puis-je vous aider ?
                   </h1>
+                  <p className="text-[13px] text-[#7a7a76] mt-2 max-w-xs leading-relaxed">
+                    Analysez votre pipeline, rédigez des emails, préparez vos visites terrain.
+                  </p>
                 </div>
 
-                {/* Central Text Area Card */}
-                <div className="w-full border border-[#e6e5e0] rounded-2xl bg-white shadow-sm flex flex-col p-3 space-y-3 focus-within:border-[#10b981] transition-colors relative z-20 animate-fade-in-up">
+                {/* Search-style input card */}
+                <div className="w-full border border-[#e6e5e0] rounded-2xl bg-white shadow-lg hover:shadow-xl transition-shadow flex flex-col p-4 space-y-3 focus-within:border-[#059669] focus-within:ring-1 focus-within:ring-[#059669]/20 relative z-20 animate-fade-in-up">
                   {attachedFile && (
                     <div className="flex items-center justify-between bg-[#fafaf9] border border-[#e6e5e0]/60 px-3 py-2 rounded-xl text-xs">
                       <div className="flex items-center gap-2 min-w-0">
@@ -1605,17 +1617,27 @@ export function AssistantRoot() {
                   </div>
                 </div>
 
-                {/* Prompt Bubbles Grid */}
-                <div className="w-full px-4 flex flex-wrap items-center justify-center gap-2 max-w-lg mx-auto animate-fade-in-up">
-                  {QUICK_PROMPTS.map((chip) => (
-                    <button
-                      key={chip.label}
-                      onClick={() => handleQuickPromptClick(chip)}
-                      className="bg-white border border-[#e6e5e0] hover:bg-[#f7f7f4] hover:border-[#10b981]/30 hover:text-[#10b981] text-[10.5px] font-bold text-[#555552] px-3.5 py-1.5 rounded-full cursor-pointer transition-all duration-200 active:scale-95 shadow-none"
-                    >
-                      {chip.label}
-                    </button>
-                  ))}
+                {/* Suggestion cards — 2-column grid */}
+                <div className="w-full grid grid-cols-1 sm:grid-cols-2 gap-2 animate-fade-in-up">
+                  {QUICK_PROMPTS.map((chip) => {
+                    const ICONS: Record<string, React.ElementType> = {
+                      pipeline: TrendingUp, email: Mail, priority: Star,
+                      script: MessageSquare, research: Globe, today: Sparkles, report: BarChart3,
+                    };
+                    const Icon = ICONS[chip.key] ?? Zap;
+                    return (
+                      <button
+                        key={chip.label}
+                        onClick={() => handleQuickPromptClick(chip)}
+                        className="flex items-center gap-3 text-left px-3.5 py-3 rounded-xl border border-[#e5e5e0] bg-white hover:bg-[#f7f7f4] hover:border-[#059669]/40 active:scale-[0.98] transition-all group cursor-pointer"
+                      >
+                        <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-colors group-hover:bg-[#05966920]" style={{ background: '#f4f4f3' }}>
+                          <Icon className="h-3.5 w-3.5 text-[#7a7a76] group-hover:text-[#059669] transition-colors" />
+                        </div>
+                        <span className="text-[11px] font-bold text-[#26251e] group-hover:text-[#059669] transition-colors leading-tight">{chip.label}</span>
+                      </button>
+                    );
+                  })}
                 </div>
 
               </div>
