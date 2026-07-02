@@ -2,15 +2,48 @@
 
 export type NotifPayload = { title: string; body: string };
 
-export function sendDesktopNotification(title: string, body: string): void {
+// ── Sound ──────────────────────────────────────────────────────────────────────
+
+function playNotifSound(type: 'soft' | 'alert' = 'soft') {
+  if (typeof window === 'undefined') return;
+  try {
+    const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    if (type === 'soft') {
+      osc.frequency.setValueAtTime(880, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(660, ctx.currentTime + 0.08);
+      gain.gain.setValueAtTime(0.18, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
+    } else {
+      osc.frequency.setValueAtTime(1200, ctx.currentTime);
+      osc.frequency.setValueAtTime(900, ctx.currentTime + 0.07);
+      osc.frequency.setValueAtTime(1200, ctx.currentTime + 0.14);
+      gain.gain.setValueAtTime(0.25, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+    }
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.4);
+    ctx.close();
+  } catch { /* audio blocked by browser policy */ }
+}
+
+// ── Core send ──────────────────────────────────────────────────────────────────
+
+export function sendDesktopNotification(title: string, body: string, options?: { sound?: boolean; soundType?: 'soft' | 'alert' }): void {
   if (typeof window === 'undefined') return;
   const electron = (window as any).electron;
   if (electron?.sendNotification) {
     electron.sendNotification(title, body);
-    return;
-  }
-  if ('Notification' in window && Notification.permission === 'granted') {
+  } else if ('Notification' in window && Notification.permission === 'granted') {
     new Notification(title, { body, icon: '/icon-192.png' });
+  }
+  if (options?.sound !== false) {
+    playNotifSound(options?.soundType ?? 'soft');
   }
 }
 
@@ -22,6 +55,8 @@ export async function requestNotificationPermission(): Promise<NotificationPermi
   if (Notification.permission !== 'default') return Notification.permission;
   return Notification.requestPermission();
 }
+
+// ── Task reminders ─────────────────────────────────────────────────────────────
 
 export function checkAndSendTaskReminders(
   tasks: Array<{ id: string; title: string; dueDate?: string; completed?: boolean }>,
@@ -49,6 +84,7 @@ export function checkAndSendTaskReminders(
     sendDesktopNotification(
       `${overdue.length} tâche${overdue.length > 1 ? 's' : ''} en retard`,
       names + (overdue.length > 2 ? `\n… et ${overdue.length - 2} autres` : ''),
+      { soundType: 'alert' },
     );
   }
 
@@ -60,9 +96,12 @@ export function checkAndSendTaskReminders(
     sendDesktopNotification(
       `${dueToday.length} tâche${dueToday.length > 1 ? 's' : ''} pour aujourd'hui`,
       names,
+      { sound: true },
     );
   }
 }
+
+// ── Lead pipeline reminders ────────────────────────────────────────────────────
 
 export function checkAndSendLeadReminder(
   leads: Array<{ status?: string }>,
@@ -81,12 +120,58 @@ export function checkAndSendLeadReminder(
   }
 }
 
+// ── Lead aging (inactive 7+ days) ─────────────────────────────────────────────
+
+export function checkAndSendLeadAgingAlerts(
+  leads: Array<{ id: string; businessName?: string; status?: string; updatedAt?: string }>,
+): void {
+  const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
+  const now = Date.now();
+  const aging = leads.filter((l) => {
+    if (!l.updatedAt || l.status === 'Won' || l.status === 'Lost') return false;
+    return now - new Date(l.updatedAt).getTime() > SEVEN_DAYS;
+  });
+  if (aging.length === 0) return;
+  const names = aging
+    .slice(0, 3)
+    .map((l) => `• ${l.businessName || 'Lead inconnu'}`)
+    .join('\n');
+  sendDesktopNotification(
+    `${aging.length} lead${aging.length > 1 ? 's' : ''} sans activité depuis 7 jours`,
+    names + (aging.length > 3 ? `\n… et ${aging.length - 3} autres` : ''),
+    { soundType: 'soft' },
+  );
+}
+
+// ── Monthly goal milestones ────────────────────────────────────────────────────
+
+export function checkAndSendGoalMilestone(
+  metric: string,
+  current: number,
+  target: number,
+  previousPct: number,
+): void {
+  const pct = target > 0 ? (current / target) * 100 : 0;
+  const milestones = [25, 50, 75, 100];
+  for (const milestone of milestones) {
+    if (previousPct < milestone && pct >= milestone) {
+      sendDesktopNotification(
+        milestone === 100 ? `🎯 Objectif ${metric} atteint !` : `${milestone}% de l'objectif ${metric}`,
+        milestone === 100
+          ? `Bravo ! ${current} / ${target} — objectif mensuel accompli.`
+          : `${current} / ${target} — continuez comme ça !`,
+        { soundType: milestone === 100 ? 'alert' : 'soft' },
+      );
+      return;
+    }
+  }
+}
+
 // SMS stub — configured externally via SUPPORT_SMTP or Twilio
 export async function sendSmsNotification(
   to: string,
   body: string,
 ): Promise<{ sent: boolean; error?: string }> {
-  // SMS provider not yet configured — log intent only
   console.info('[SMS stub] Would send to', to, ':', body);
   return { sent: false, error: 'SMS provider not configured. Set TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN.' };
 }

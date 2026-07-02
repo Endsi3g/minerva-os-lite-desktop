@@ -6,6 +6,7 @@ import { useReach, type AppNotification } from '@/lib/reach-context';
 import {
   Bell, BellOff, Check, CheckCheck, Info, UserCheck, Clock, FileBarChart,
   MessageCircle, Mail, Rss, AlertTriangle, Filter, Trash2,
+  CalendarClock, AtSign, Target, RefreshCw,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -22,12 +23,17 @@ const TYPE_META: Record<AppNotification['type'], { icon: React.ElementType; labe
   email_sent:      { icon: Mail,         label: 'Email envoyé',    color: 'text-sky-500 bg-sky-50' },
   email_received:  { icon: Mail,         label: 'Email reçu',      color: 'text-teal-500 bg-teal-50' },
   scraping_done:   { icon: Check,        label: 'Scraping',        color: 'text-[#059669] bg-[#059669]/10' },
-  lead_aging:      { icon: Clock,        label: 'Lead inactif',    color: 'text-orange-500 bg-orange-50' },
+  lead_aging:      { icon: Clock,        label: 'Lead inactif',    color: 'text-amber-500 bg-amber-50' },
+  task_due:        { icon: CalendarClock, label: 'Tâche due',       color: 'text-indigo-500 bg-indigo-50' },
+  mention:         { icon: AtSign,       label: 'Mention',          color: 'text-sky-500 bg-sky-50' },
+  goal_milestone:  { icon: Target,       label: 'Objectif',         color: 'text-[#059669] bg-[#059669]/10' },
+  app_update:      { icon: RefreshCw,    label: 'Mise à jour',      color: 'text-purple-500 bg-purple-50' },
 };
 
 const ALL_TYPES: AppNotification['type'][] = [
   'info', 'lead_assigned', 'overdue', 'digest', 'report',
   'team_message', 'email_sent', 'email_received', 'scraping_done', 'lead_aging',
+  'task_due', 'mention', 'goal_milestone', 'app_update',
 ];
 
 function groupByDate(notifs: AppNotification[]): { label: string; items: AppNotification[] }[] {

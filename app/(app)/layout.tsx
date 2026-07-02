@@ -82,6 +82,8 @@ import {
 import { ALL_MODULES, routeToModule, type PermissionModule } from '@/lib/permissions';
 import { cachedFetch, invalidateClientCache } from '@/lib/fetch-cache';
 import { requestNotificationPermission, checkAndSendTaskReminders, checkAndSendLeadReminder } from '@/lib/notification-service';
+import { VersionChecker } from '@/components/version-checker';
+import { NotificationPermissionPrompt } from '@/components/notification-permission-prompt';
 import { MinervaOwl } from '@/components/minerva-owl';
 import {
   Breadcrumb,
@@ -607,6 +609,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
       else if (segment === 'acquisition') label = 'Acquisition';
       else if (segment === 'website-builder') label = 'Créateur de site';
       else if (segment === 'client-reports') label = 'Rapports client';
+      else if (segment === 'performance') label = 'Classement de performance';
       else if (segment === 'webhooks') label = 'Webhooks';
 
       if (segments[index - 1] === 'leads' && segment !== 'leads') {
@@ -651,23 +654,24 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
       ],
     },
     {
+      id: 'marketing',
+      label: 'Marketing',
+      items: [
+        { name: 'Publicité',       href: '/ads',            icon: Target },
+        { name: 'Acquisition',     href: '/acquisition',    icon: TrendingUp },
+        { name: 'Site web IA',     href: '/website-builder',icon: Globe },
+        { name: 'Rapports client', href: '/client-reports', icon: FileText },
+        { name: 'Performance',     href: '/performance',    icon: BarChart3 },
+        { name: 'Webhooks',        href: '/webhooks',       icon: Zap },
+      ],
+    },
+    {
       id: 'tools',
       label: 'Outils outreach',
       items: [
         { name: 'Séquences',    href: '/sequences',     icon: Mail },
         { name: 'Campagnes',    href: '/campaigns',     icon: Megaphone },
         { name: 'Playbooks',    href: '/playbooks',     icon: BookOpen },
-      ],
-    },
-    {
-      id: 'marketing',
-      label: 'Marketing',
-      items: [
-        { name: 'Publicité',    href: '/ads',            icon: Target },
-        { name: 'Acquisition',  href: '/acquisition',    icon: TrendingUp },
-        { name: 'Site web IA',  href: '/website-builder',icon: Globe },
-        { name: 'Rapports client', href: '/client-reports', icon: FileText },
-        { name: 'Webhooks',     href: '/webhooks',       icon: Zap },
       ],
     },
   ];
@@ -1587,6 +1591,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                 {([
                   { name: 'Paramètres',   href: '/settings',     icon: SettingsIcon },
                   { name: 'Intégrations', href: '/integrations', icon: Plug },
+                  { name: 'Performance',  href: '/performance',  icon: BarChart3 },
                   { name: 'Changelog',    href: '/changelog',    icon: Megaphone },
                   { name: 'Bibliothèque', href: '/library',      icon: Folder },
                 ] as { name: string; href: string; icon: React.ElementType }[]).map(({ name, href, icon: Icon }) => {
@@ -1891,6 +1896,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     <ReachProvider>
       <TooltipProvider>
         <AppLayoutContent>{children}</AppLayoutContent>
+        <VersionChecker />
+        <NotificationPermissionPrompt />
       </TooltipProvider>
     </ReachProvider>
   );

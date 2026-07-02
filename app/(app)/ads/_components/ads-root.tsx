@@ -1,32 +1,26 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useLanguage } from '@/lib/language-context';
 import { useReach } from '@/lib/reach-context';
 import { getApiUrl } from '@/lib/api-helper';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import {
-  BarChart3,
-  Zap,
-  Link2,
-  Link2Off,
-  RefreshCw,
-  ChevronRight,
-  ArrowUp,
-  Clock,
-  Target,
-  TrendingUp,
-  Users,
-  AlertTriangle,
-  CheckCircle2,
-  Loader2,
+  BarChart3, Zap, Link2, Link2Off, RefreshCw,
+  ChevronRight, ChevronDown, ArrowUp,
+  Clock, Target, TrendingUp, Users, AlertTriangle,
+  CheckCircle2, Loader2, Copy, Check, Camera,
+  DollarSign, MousePointer, Activity, Sparkles,
+  Globe, Info, MonitorSmartphone,
 } from 'lucide-react';
 import Image from 'next/image';
 import { toast } from 'sonner';
 
-type AdsTab = 'facebook' | 'google' | 'attribution';
+type AdsTab = 'overview' | 'facebook' | 'google' | 'create' | 'history';
 
 interface FbConnection {
   id: string;
@@ -73,18 +67,30 @@ interface AttributionSource {
   avgFirstContactMin: number | null;
 }
 
-function sourceLabel(source: string) {
+interface AdVariation {
+  variation: 'A' | 'B' | 'C';
+  headline: string;
+  description: string;
+  cta: string;
+  hook: string;
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function srcLabel(source: string) {
   const map: Record<string, string> = {
     facebook: 'Facebook Lead Ads',
     google: 'Google Ads',
     organic: 'Organique / OSM',
     osm: 'OpenStreetMap',
     manual: 'Manuel',
+    csv: 'Import CSV',
+    form: 'Formulaire Web',
   };
   return map[source] || source;
 }
 
-function sourceColor(source: string) {
+function srcColor(source: string) {
   const map: Record<string, string> = {
     facebook: 'bg-blue-100 text-blue-700 border-blue-200',
     google: 'bg-red-100 text-red-700 border-red-200',
@@ -95,12 +101,67 @@ function sourceColor(source: string) {
   return map[source] || 'bg-[#f4f4f3] text-[#7a7a76] border-[#e5e5e0]';
 }
 
-function formatMinutes(min: number | null) {
+function fmtMin(min: number | null) {
   if (min === null) return '—';
   if (min < 60) return `${min} min`;
   const h = Math.floor(min / 60);
   const m = min % 60;
   return m > 0 ? `${h}h ${m}m` : `${h}h`;
+}
+
+// ── Shared sub-components ─────────────────────────────────────────────────────
+
+function AccordionSection({ title, children }: { title: string; children: React.ReactNode }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="border border-[#e5e5e0] rounded-2xl overflow-hidden bg-white">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-[#fafaf8] transition-colors"
+      >
+        <span className="text-sm font-bold text-[#26251e]">{title}</span>
+        <ChevronDown className={cn('w-4 h-4 text-[#7a7a76] transition-transform duration-200', open && 'rotate-180')} />
+      </button>
+      {open && (
+        <div className="px-4 pb-4 border-t border-[#e5e5e0]">
+          {children}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CopyBtn({ text, label }: { text: string; label?: string }) {
+  const [copied, setCopied] = useState(false);
+  const go = async () => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast.error('Impossible de copier.');
+    }
+  };
+  return (
+    <button
+      type="button"
+      onClick={go}
+      className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-[#e5e5e0] bg-white text-[#7a7a76] hover:bg-[#f4f4f3] hover:text-[#26251e] text-[10px] font-bold transition-colors"
+    >
+      {copied ? <Check className="w-3 h-3 text-[#059669]" /> : <Copy className="w-3 h-3" />}
+      {label ?? (copied ? 'Copié !' : 'Copier')}
+    </button>
+  );
+}
+
+function CharCount({ value, max }: { value: string; max: number }) {
+  const n = value.length;
+  return (
+    <span className={cn('text-[9px] font-mono font-bold', n > max ? 'text-red-500' : 'text-[#059669]')}>
+      {n}/{max}
+    </span>
+  );
 }
 
 // ── Facebook Tab ─────────────────────────────────────────────────────────────
@@ -125,7 +186,6 @@ function FacebookTab({ workspaceId }: { workspaceId: string }) {
       ]);
       const statusData = await statusRes.json();
       setConnections(statusData.connections || []);
-
       const pagesData = await pagesRes.json();
       setConnected(pagesData.connected || false);
       setPages(pagesData.pages || []);
@@ -136,7 +196,6 @@ function FacebookTab({ workspaceId }: { workspaceId: string }) {
 
   useEffect(() => {
     fetchStatus();
-    // Detect OAuth return
     const url = new URL(window.location.href);
     if (url.searchParams.get('fb') === 'connected') {
       toast.success('Facebook connecté avec succès !');
@@ -156,7 +215,7 @@ function FacebookTab({ workspaceId }: { workspaceId: string }) {
       const { url } = await res.json();
       window.location.href = url;
     } catch {
-      toast.error("Erreur lors de la connexion Facebook.");
+      toast.error('Erreur lors de la connexion Facebook.');
       setConnecting(false);
     }
   };
@@ -205,7 +264,7 @@ function FacebookTab({ workspaceId }: { workspaceId: string }) {
         }),
       });
       if (res.ok) {
-        toast.success(`Formulaire "${form.name}" connecté. Les leads arrivent automatiquement.`);
+        toast.success(`Formulaire "${form.name}" connecté.`);
         fetchStatus();
       } else {
         toast.error('Erreur lors de la connexion du formulaire.');
@@ -221,14 +280,14 @@ function FacebookTab({ workspaceId }: { workspaceId: string }) {
     </div>
   );
 
+  const totalFbLeads = connections.reduce((s, c) => s + c.leads_count, 0);
+
   return (
-    <div className="space-y-6">
-      {/* Header card */}
-      <div className="flex items-center justify-between p-4 rounded-2xl border border-[#e5e5e0] bg-white">
+    <div className="space-y-5">
+      {/* Header */}
+      <div className="flex items-center justify-between p-4 rounded-2xl border border-[#e5e5e0] bg-white shadow-sm">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white font-black text-lg select-none">
-            f
-          </div>
+          <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white font-black text-lg select-none">f</div>
           <div>
             <p className="text-sm font-bold text-[#26251e]">Facebook Lead Ads</p>
             <p className="text-xs text-[#7a7a76]">Ingestion automatique via webhook Meta</p>
@@ -246,10 +305,27 @@ function FacebookTab({ workspaceId }: { workspaceId: string }) {
         ) : (
           <Button onClick={handleConnect} disabled={connecting} className="h-8 bg-blue-600 hover:bg-blue-700 text-white text-xs gap-1.5">
             {connecting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Link2 className="w-3 h-3" />}
-            Connecter Facebook
+            Se connecter avec Facebook
           </Button>
         )}
       </div>
+
+      {/* Stats (when connected) */}
+      {connected && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {[
+            { label: 'Leads reçus', value: totalFbLeads.toString(), icon: <Users className="w-3.5 h-3.5 text-[#059669]" /> },
+            { label: 'Taux conversion', value: '—', icon: <TrendingUp className="w-3.5 h-3.5 text-[#7a7a76]" /> },
+            { label: 'Budget (CAD)', value: '$0.00', icon: <DollarSign className="w-3.5 h-3.5 text-[#7a7a76]" /> },
+            { label: 'Coût par lead', value: '$0.00', icon: <Target className="w-3.5 h-3.5 text-[#7a7a76]" /> },
+          ].map(s => (
+            <div key={s.label} className="p-3 rounded-2xl border border-[#e5e5e0] bg-white space-y-1">
+              <div className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">{s.icon}{s.label}</div>
+              <p className="text-xl font-black text-[#26251e]">{s.value}</p>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Active connections */}
       {connections.length > 0 && (
@@ -259,7 +335,7 @@ function FacebookTab({ workspaceId }: { workspaceId: string }) {
             <div key={conn.id} className="flex items-center justify-between p-3 rounded-xl border border-[#e5e5e0] bg-white">
               <div>
                 <p className="text-xs font-bold text-[#26251e]">{conn.form_name}</p>
-                <p className="text-[10px] text-[#7a7a76]">{conn.page_name} · {conn.leads_count} lead{conn.leads_count > 1 ? 's' : ''}</p>
+                <p className="text-[10px] text-[#7a7a76]">{conn.page_name} · {conn.leads_count} lead{conn.leads_count !== 1 ? 's' : ''}</p>
               </div>
               <Badge className="bg-[#059669]/10 text-[#059669] border-[#059669]/20 text-[9px]">actif</Badge>
             </div>
@@ -267,10 +343,10 @@ function FacebookTab({ workspaceId }: { workspaceId: string }) {
         </div>
       )}
 
-      {/* Step 2: Select page */}
+      {/* Page picker */}
       {connected && pages.length > 0 && (
         <div className="space-y-2">
-          <h3 className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Sélectionner une Page</h3>
+          <h3 className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Étape 2 — Sélectionnez votre Page</h3>
           <div className="space-y-1.5">
             {pages.map(page => (
               <button
@@ -279,9 +355,7 @@ function FacebookTab({ workspaceId }: { workspaceId: string }) {
                 onClick={() => handleSelectPage(page)}
                 className={cn(
                   'w-full flex items-center justify-between p-3 rounded-xl border text-left transition-colors',
-                  selectedPage?.id === page.id
-                    ? 'border-[#059669]/30 bg-[#059669]/5'
-                    : 'border-[#e5e5e0] hover:border-[#059669]/20 bg-white'
+                  selectedPage?.id === page.id ? 'border-[#059669]/30 bg-[#059669]/5' : 'border-[#e5e5e0] hover:border-[#059669]/20 bg-white'
                 )}
               >
                 <span className="text-xs font-semibold text-[#26251e]">{page.name}</span>
@@ -292,38 +366,30 @@ function FacebookTab({ workspaceId }: { workspaceId: string }) {
         </div>
       )}
 
-      {/* Step 3: Select form */}
+      {/* Form picker */}
       {selectedPage && (
         <div className="space-y-2">
-          <h3 className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">
-            Formulaires de {selectedPage.name}
-          </h3>
+          <h3 className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Étape 3 — Formulaires de {selectedPage.name}</h3>
           {loadingForms ? (
             <div className="flex items-center gap-2 p-3 text-xs text-[#7a7a76]">
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />Chargement des formulaires…
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />Chargement…
             </div>
           ) : forms.length === 0 ? (
-            <p className="text-xs text-[#7a7a76] px-1">Aucun formulaire Lead Ads trouvé sur cette page.</p>
+            <p className="text-xs text-[#7a7a76] px-1">Aucun formulaire Lead Ads trouvé.</p>
           ) : (
             forms.map(form => {
-              const isConnected = connections.some(c => c.form_id === form.id);
+              const isConn = connections.some(c => c.form_id === form.id);
               return (
                 <div key={form.id} className="flex items-center justify-between p-3 rounded-xl border border-[#e5e5e0] bg-white">
                   <div>
                     <p className="text-xs font-bold text-[#26251e]">{form.name}</p>
-                    <p className="text-[10px] text-[#7a7a76]">{form.leads_count} leads historiques · {form.status}</p>
+                    <p className="text-[10px] text-[#7a7a76]">{form.leads_count} leads · {form.status}</p>
                   </div>
-                  {isConnected ? (
+                  {isConn ? (
                     <Badge className="bg-[#059669]/10 text-[#059669] border-[#059669]/20 text-[9px]"><CheckCircle2 className="w-2.5 h-2.5 mr-1" />Connecté</Badge>
                   ) : (
-                    <Button
-                      size="sm"
-                      onClick={() => handleConnectForm(form)}
-                      disabled={connectingForm === form.id}
-                      className="h-7 bg-[#059669] hover:bg-[#047857] text-white text-xs gap-1"
-                    >
-                      {connectingForm === form.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Zap className="w-3 h-3" />}
-                      Connecter
+                    <Button size="sm" onClick={() => handleConnectForm(form)} disabled={connectingForm === form.id} className="h-7 bg-[#059669] hover:bg-[#047857] text-white text-xs gap-1">
+                      {connectingForm === form.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Zap className="w-3 h-3" />}Connecter
                     </Button>
                   )}
                 </div>
@@ -333,7 +399,24 @@ function FacebookTab({ workspaceId }: { workspaceId: string }) {
         </div>
       )}
 
-      {/* Webhook info */}
+      {/* Tutorial */}
+      <AccordionSection title="Comment connecter Facebook Lead Ads">
+        <ol className="mt-3 space-y-3">
+          {[
+            'Créez un formulaire Lead Ads dans Meta Business Suite (business.facebook.com)',
+            'Cliquez sur "Se connecter avec Facebook" et autorisez les permissions demandées',
+            'Sélectionnez votre page Facebook puis le formulaire associé à votre campagne',
+            'Les leads arrivent automatiquement dans Minerva via webhook Meta en temps réel',
+          ].map((text, i) => (
+            <li key={i} className="flex items-start gap-3">
+              <span className="shrink-0 w-5 h-5 rounded-full bg-[#059669]/10 text-[#059669] text-[10px] font-black flex items-center justify-center">{i + 1}</span>
+              <p className="text-xs text-[#7a7a76] leading-relaxed">{text}</p>
+            </li>
+          ))}
+        </ol>
+      </AccordionSection>
+
+      {/* Webhook */}
       <div className="p-3 rounded-xl bg-[#f4f4f3] border border-[#e5e5e0] space-y-1">
         <p className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Webhook Meta</p>
         <code className="text-[10px] text-[#26251e] break-all font-mono">
@@ -347,10 +430,22 @@ function FacebookTab({ workspaceId }: { workspaceId: string }) {
 
 // ── Google Ads Tab ────────────────────────────────────────────────────────────
 
-function GoogleAdsTab() {
+const UTM_PARAMS = '?utm_source=google&utm_medium=cpc&utm_campaign={nom_campagne}&gclid={gclid}';
+
+function GoogleAdsTab({ workspaceId }: { workspaceId: string }) {
+  const [googleConnected, setGoogleConnected] = useState(false);
+
+  useEffect(() => {
+    fetch(getApiUrl(`/api/google/auth/status?workspaceId=${workspaceId}`))
+      .then(r => r.json())
+      .then(d => setGoogleConnected(d.connected || false))
+      .catch(() => {});
+  }, [workspaceId]);
+
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between p-4 rounded-2xl border border-[#e5e5e0] bg-white">
+    <div className="space-y-5">
+      {/* Header */}
+      <div className="flex items-center justify-between p-4 rounded-2xl border border-[#e5e5e0] bg-white shadow-sm">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-white border border-[#e5e5e0] flex items-center justify-center overflow-hidden">
             <Image src="https://www.google.com/s2/favicons?domain=ads.google.com&sz=32" alt="Google Ads" width={24} height={24} unoptimized />
@@ -360,38 +455,495 @@ function GoogleAdsTab() {
             <p className="text-xs text-[#7a7a76]">Import UTM + GCLID tracking</p>
           </div>
         </div>
-        <Badge className="bg-amber-50 text-amber-700 border-amber-200 text-[10px]">
-          <AlertTriangle className="w-2.5 h-2.5 mr-1" />Bientôt
-        </Badge>
+        {googleConnected ? (
+          <Badge className="bg-[#059669]/10 text-[#059669] border-[#059669]/20 text-[10px]">
+            <CheckCircle2 className="w-2.5 h-2.5 mr-1" />Connecté
+          </Badge>
+        ) : (
+          <a href={getApiUrl('/api/google/auth/start')} className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg bg-[#26251e] hover:bg-[#3a3930] text-white text-xs font-bold transition-colors">
+            <Globe className="w-3 h-3" />Se connecter avec Google
+          </a>
+        )}
       </div>
 
-      <div className="p-4 rounded-2xl border border-[#e5e5e0] bg-[#fafaf8] space-y-3">
-        <p className="text-xs font-bold text-[#26251e]">Comment ça fonctionne</p>
+      {/* Info banner */}
+      <div className="flex items-start gap-3 p-4 rounded-2xl border border-blue-200 bg-blue-50">
+        <Info className="w-4 h-4 text-blue-600 mt-0.5 shrink-0" />
+        <p className="text-xs text-blue-800 leading-relaxed">
+          Ajoutez les paramètres UTM à vos URLs de destination dans Google Ads. Minerva capte automatiquement la source de chaque lead entrant via vos formulaires.
+        </p>
+      </div>
+
+      {/* Placeholder stats */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {[
+          { label: 'Clics', value: '--', icon: <MousePointer className="w-3.5 h-3.5 text-[#7a7a76]" /> },
+          { label: 'Impressions', value: '--', icon: <Activity className="w-3.5 h-3.5 text-[#7a7a76]" /> },
+          { label: 'CTR', value: '--', icon: <TrendingUp className="w-3.5 h-3.5 text-[#7a7a76]" /> },
+          { label: 'CPC moyen', value: '--', icon: <DollarSign className="w-3.5 h-3.5 text-[#7a7a76]" /> },
+        ].map(s => (
+          <div key={s.label} className="p-3 rounded-2xl border border-[#e5e5e0] bg-white space-y-1">
+            <div className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">{s.icon}{s.label}</div>
+            <p className="text-xl font-black text-[#26251e]">{s.value}</p>
+          </div>
+        ))}
+      </div>
+      {!googleConnected && (
+        <p className="text-[11px] text-[#7a7a76] text-center">Connectez Google Ads pour voir vos statistiques en temps réel</p>
+      )}
+
+      {/* UTM Guide */}
+      <div className="p-4 rounded-2xl border border-[#e5e5e0] bg-white space-y-3">
+        <div className="flex items-center justify-between">
+          <p className="text-xs font-bold text-[#26251e]">Paramètres UTM recommandés</p>
+          <CopyBtn text={UTM_PARAMS} />
+        </div>
+        <div className="p-3 rounded-xl bg-[#f4f4f3] border border-[#e5e5e0]">
+          <code className="text-[10px] font-mono text-[#26251e] break-all leading-relaxed">{UTM_PARAMS}</code>
+        </div>
         <div className="space-y-2">
           {[
-            { icon: <Target className="w-3.5 h-3.5 text-[#059669]" />, text: "Ajoutez les paramètres UTM à vos URLs de destination dans Google Ads" },
-            { icon: <Zap className="w-3.5 h-3.5 text-[#059669]" />, text: "Minerva capte automatiquement utm_source, utm_campaign, gclid à chaque lead entrant" },
-            { icon: <BarChart3 className="w-3.5 h-3.5 text-[#059669]" />, text: "Le dashboard Attribution agrège et compare vos coûts publicitaires vs leads générés" },
-          ].map((step, i) => (
-            <div key={i} className="flex items-start gap-2.5">
-              {step.icon}
-              <p className="text-xs text-[#7a7a76] leading-relaxed">{step.text}</p>
+            { param: 'utm_source', desc: 'google — identifie Google comme source du trafic' },
+            { param: 'utm_medium', desc: 'cpc — identifie le type de campagne (coût par clic)' },
+            { param: 'utm_campaign', desc: '{nom_campagne} — nom de votre campagne Google Ads' },
+            { param: 'gclid', desc: '{gclid} — identifiant de clic Google (auto-rempli)' },
+          ].map(row => (
+            <div key={row.param} className="flex items-start gap-2">
+              <code className="shrink-0 text-[9px] font-mono font-bold text-[#059669] bg-[#059669]/5 px-1.5 py-0.5 rounded">{row.param}</code>
+              <p className="text-[10px] text-[#7a7a76]">{row.desc}</p>
             </div>
           ))}
         </div>
+      </div>
 
-        <div className="mt-2 p-3 bg-white rounded-xl border border-[#e5e5e0]">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76] mb-1.5">Paramètres UTM recommandés</p>
-          <code className="text-[10px] font-mono text-[#26251e] break-all leading-relaxed">
-            ?utm_source=google&utm_medium=cpc&utm_campaign={'{nom_campagne}'}&gclid={'{gclid}'}
-          </code>
+      {/* Tutorial */}
+      <AccordionSection title="Comment connecter Google Ads">
+        <ol className="mt-3 space-y-3">
+          {[
+            'Créez une campagne dans Google Ads (ads.google.com)',
+            'Ajoutez les paramètres UTM à vos URLs de destination (voir guide ci-dessus)',
+            'Connectez votre compte Google via le bouton "Se connecter avec Google"',
+            'Les leads arrivent via vos formulaires avec l\'attribution source automatique',
+            'Consultez le tableau d\'attribution dans l\'onglet Historique & Rapports',
+          ].map((text, i) => (
+            <li key={i} className="flex items-start gap-3">
+              <span className="shrink-0 w-5 h-5 rounded-full bg-[#059669]/10 text-[#059669] text-[10px] font-black flex items-center justify-center">{i + 1}</span>
+              <p className="text-xs text-[#7a7a76] leading-relaxed">{text}</p>
+            </li>
+          ))}
+        </ol>
+      </AccordionSection>
+    </div>
+  );
+}
+
+// ── Overview Tab ──────────────────────────────────────────────────────────────
+
+function OverviewTab({ workspaceId, onTabChange }: { workspaceId: string; onTabChange: (t: AdsTab) => void }) {
+  const { leads } = useReach();
+  const [fbConnected, setFbConnected] = useState(false);
+  const [fbPageName, setFbPageName] = useState('');
+
+  useEffect(() => {
+    fetch(getApiUrl(`/api/ads/facebook?action=pages&workspaceId=${workspaceId}`))
+      .then(r => r.json())
+      .then(d => {
+        setFbConnected(d.connected || false);
+        if (d.pages?.length > 0) setFbPageName(d.pages[0].name);
+      })
+      .catch(() => {});
+  }, [workspaceId]);
+
+  const wonCount = useMemo(() => leads.filter(l => l.status === 'Won').length, [leads]);
+
+  const kpis = [
+    { label: 'Dépenses totales', value: '$0.00 CAD', icon: <DollarSign className="w-3.5 h-3.5" />, note: 'Connectez vos comptes ads' },
+    { label: 'Impressions', value: '0', icon: <Activity className="w-3.5 h-3.5" />, note: 'Placeholder' },
+    { label: 'Clics', value: '0', icon: <MousePointer className="w-3.5 h-3.5" />, note: 'Placeholder' },
+    { label: 'CPC moyen', value: '$0.00', icon: <Target className="w-3.5 h-3.5" />, note: 'Placeholder' },
+    { label: 'ROAS', value: '0.0x', icon: <TrendingUp className="w-3.5 h-3.5" />, note: 'Placeholder' },
+    { label: 'CTR', value: '0.0%', icon: <BarChart3 className="w-3.5 h-3.5" />, note: 'Placeholder' },
+    { label: 'Conversions', value: wonCount.toString(), icon: <CheckCircle2 className="w-3.5 h-3.5 text-[#059669]" />, note: 'Leads gagnés CRM' },
+    { label: 'Coût par lead', value: '$0.00', icon: <Users className="w-3.5 h-3.5" />, note: 'Placeholder' },
+  ];
+
+  return (
+    <div className="space-y-6">
+      {/* Info banner */}
+      <div className="flex items-start gap-3 p-4 rounded-2xl border border-[#059669]/20 bg-[#059669]/5">
+        <Info className="w-4 h-4 text-[#059669] mt-0.5 shrink-0" />
+        <p className="text-xs text-[#059669] leading-relaxed">
+          Connectez Facebook Ads et Google Ads pour voir vos vraies statistiques. Les données ci-dessous sont des indicateurs depuis votre CRM Minerva.
+        </p>
+      </div>
+
+      {/* KPI grid */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {kpis.map(kpi => (
+          <div key={kpi.label} className="p-3 rounded-2xl border border-[#e5e5e0] bg-white space-y-1 hover:border-[#059669]/20 transition-colors">
+            <div className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">
+              {kpi.icon}{kpi.label}
+            </div>
+            <p className="text-xl font-black text-[#26251e]">{kpi.value}</p>
+            <p className="text-[9px] text-[#7a7a76]">{kpi.note}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Connexions actives */}
+      <div className="space-y-3">
+        <h3 className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Connexions actives</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {/* Facebook */}
+          <div className="p-4 rounded-2xl border border-[#e5e5e0] bg-white space-y-3">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center text-white font-black text-base select-none">f</div>
+              <div className="flex-1">
+                <p className="text-sm font-bold text-[#26251e]">Facebook Ads</p>
+                {fbConnected && fbPageName ? (
+                  <p className="text-xs text-[#7a7a76]">{fbPageName}</p>
+                ) : (
+                  <p className="text-xs text-[#7a7a76]">Non connecté</p>
+                )}
+              </div>
+              {fbConnected ? (
+                <Badge className="bg-[#059669]/10 text-[#059669] border-[#059669]/20 text-[9px]">Actif</Badge>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => onTabChange('facebook')}
+                  className="text-[10px] font-bold px-2.5 py-1.5 rounded-lg border border-[#e5e5e0] text-[#7a7a76] hover:border-[#059669]/30 hover:text-[#059669] transition-colors"
+                >
+                  Connecter
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Google */}
+          <div className="p-4 rounded-2xl border border-[#e5e5e0] bg-white space-y-3">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-white border border-[#e5e5e0] flex items-center justify-center overflow-hidden">
+                <Image src="https://www.google.com/s2/favicons?domain=ads.google.com&sz=32" alt="Google" width={20} height={20} unoptimized />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-bold text-[#26251e]">Google Ads</p>
+                <p className="text-xs text-[#7a7a76]">Non connecté</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => onTabChange('google')}
+                className="text-[10px] font-bold px-2.5 py-1.5 rounded-lg border border-[#e5e5e0] text-[#7a7a76] hover:border-[#059669]/30 hover:text-[#059669] transition-colors"
+              >
+                Connecter
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
   );
 }
 
-// ── Attribution Tab ──────────────────────────────────────────────────────────
+// ── Create Tab ────────────────────────────────────────────────────────────────
+
+function CreateTab() {
+  const { leads } = useReach();
+
+  const [inputMode, setInputMode] = useState<'lead' | 'custom'>('lead');
+  const [selectedLeadId, setSelectedLeadId] = useState('');
+  const [customBusiness, setCustomBusiness] = useState('');
+  const [customNiche, setCustomNiche] = useState('');
+  const [customCity, setCustomCity] = useState('');
+  const [customValue, setCustomValue] = useState('');
+  const [platform, setPlatform] = useState<'facebook' | 'google' | 'both'>('facebook');
+  const [adFormat, setAdFormat] = useState('image');
+  const [objective, setObjective] = useState('leads');
+  const [generating, setGenerating] = useState(false);
+  const [variations, setVariations] = useState<AdVariation[] | null>(null);
+  const [previewIdx, setPreviewIdx] = useState(0);
+
+  const selectedLead = leads.find(l => l.id === selectedLeadId);
+
+  const canGenerate = inputMode === 'lead' ? !!selectedLeadId : !!customBusiness;
+
+  const handleGenerate = async () => {
+    setGenerating(true);
+    setVariations(null);
+    try {
+      const biz = inputMode === 'lead' && selectedLead
+        ? `Nom: ${selectedLead.businessName}, Niche: ${selectedLead.niche || 'N/A'}, Ville: ${selectedLead.city || 'N/A'}`
+        : `Nom: ${customBusiness}, Niche: ${customNiche || 'N/A'}, Ville: ${customCity || 'N/A'}, Proposition de valeur: ${customValue || 'N/A'}`;
+
+      const prompt = `Génère 3 variations de publicité pour:
+${biz}
+Plateforme: ${platform}
+Format: ${adFormat}
+Objectif: ${objective}
+
+Retourne UNIQUEMENT ce JSON valide (sans markdown):
+{"variations":[{"variation":"A","headline":"...","description":"...","cta":"...","hook":"..."},{"variation":"B","headline":"...","description":"...","cta":"...","hook":"..."},{"variation":"C","headline":"...","description":"...","cta":"...","hook":"..."}]}
+
+Contraintes: headline max 40 chars, description max 125 chars, cta max 15 chars, hook max 80 chars. Langue: français canadien.`;
+
+      const res = await fetch(getApiUrl('/api/chat'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: [{ role: 'user', content: prompt }],
+          provider: 'openrouter',
+          system: 'Tu es un expert en publicité digitale francophone. Génère uniquement du JSON valide, sans markdown ni explication.',
+        }),
+      });
+
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+      let fullText = '';
+      if (res.body) {
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          fullText += decoder.decode(value, { stream: true });
+        }
+      } else {
+        fullText = await res.text();
+      }
+
+      // Extract JSON
+      const start = fullText.indexOf('{"variations"');
+      const end = fullText.lastIndexOf(']}') + 2;
+      if (start !== -1 && end > start) {
+        const data = JSON.parse(fullText.slice(start, end));
+        if (Array.isArray(data.variations)) {
+          setVariations(data.variations);
+          setPreviewIdx(0);
+        } else {
+          throw new Error('Format invalide');
+        }
+      } else {
+        // Try direct parse
+        const data = JSON.parse(fullText.trim());
+        if (Array.isArray(data.variations)) {
+          setVariations(data.variations);
+          setPreviewIdx(0);
+        } else {
+          throw new Error('Format invalide');
+        }
+      }
+    } catch {
+      toast.error('Erreur de génération. Vérifiez votre connexion et réessayez.');
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const copyVariation = (v: AdVariation) => {
+    const text = `Accroche: ${v.hook}\n\nTitre: ${v.headline}\nDescription: ${v.description}\nCTA: ${v.cta}`;
+    navigator.clipboard.writeText(text).then(() => toast.success(`Variation ${v.variation} copiée !`));
+  };
+
+  const variationColors = ['text-blue-600 border-blue-200 bg-blue-50', 'text-purple-600 border-purple-200 bg-purple-50', 'text-[#059669] border-[#059669]/20 bg-[#059669]/5'];
+
+  return (
+    <div className="space-y-6">
+      {/* Input mode toggle */}
+      <div className="flex items-center gap-1 bg-[#f4f4f3] rounded-xl p-1 border border-[#e5e5e0] w-fit">
+        {(['lead', 'custom'] as const).map(m => (
+          <button
+            key={m}
+            type="button"
+            onClick={() => setInputMode(m)}
+            className={cn('px-4 h-8 rounded-lg text-xs font-bold transition-colors', inputMode === m ? 'bg-white text-[#26251e] shadow-sm' : 'text-[#7a7a76] hover:text-[#26251e]')}
+          >
+            {m === 'lead' ? 'Depuis un lead' : 'Saisie manuelle'}
+          </button>
+        ))}
+      </div>
+
+      {/* Form */}
+      <div className="space-y-4 p-4 rounded-2xl border border-[#e5e5e0] bg-white">
+        {inputMode === 'lead' ? (
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Sélectionner un lead</label>
+            <select
+              value={selectedLeadId}
+              onChange={e => setSelectedLeadId(e.target.value)}
+              className="w-full h-9 px-3 text-xs border border-[#e5e5e0] rounded-xl bg-white text-[#26251e] focus:outline-none focus:ring-1 focus:ring-[#059669] focus:border-[#059669]"
+            >
+              <option value="">— Choisir un lead —</option>
+              {leads.map(l => (
+                <option key={l.id} value={l.id}>
+                  {l.businessName}{l.niche ? ` · ${l.niche}` : ''}{l.city ? ` · ${l.city}` : ''}
+                </option>
+              ))}
+            </select>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Nom de l'entreprise *</label>
+              <Input value={customBusiness} onChange={e => setCustomBusiness(e.target.value)} placeholder="Ex: Plomberie Dubois" className="h-9 text-xs border-[#e5e5e0] focus:border-[#059669]" />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Niche / Secteur</label>
+              <Input value={customNiche} onChange={e => setCustomNiche(e.target.value)} placeholder="Ex: Plomberie" className="h-9 text-xs border-[#e5e5e0] focus:border-[#059669]" />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Ville</label>
+              <Input value={customCity} onChange={e => setCustomCity(e.target.value)} placeholder="Ex: Québec" className="h-9 text-xs border-[#e5e5e0] focus:border-[#059669]" />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Proposition de valeur</label>
+              <Input value={customValue} onChange={e => setCustomValue(e.target.value)} placeholder="Ex: Service rapide 24/7" className="h-9 text-xs border-[#e5e5e0] focus:border-[#059669]" />
+            </div>
+          </div>
+        )}
+
+        {/* Platform */}
+        <div className="space-y-1.5">
+          <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Plateforme</label>
+          <div className="flex gap-2">
+            {([['facebook', 'Facebook'], ['google', 'Google'], ['both', 'Les deux']] as const).map(([val, lbl]) => (
+              <button key={val} type="button" onClick={() => setPlatform(val)}
+                className={cn('px-3 h-8 rounded-xl text-xs font-bold border transition-colors', platform === val ? 'border-[#059669] bg-[#059669]/5 text-[#059669]' : 'border-[#e5e5e0] text-[#7a7a76] hover:border-[#059669]/30')}>
+                {lbl}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Format */}
+        <div className="space-y-1.5">
+          <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Format</label>
+          <div className="flex gap-2 flex-wrap">
+            {([['image', 'Image simple'], ['carousel', 'Carrousel'], ['video', 'Vidéo'], ['story', 'Story']] as const).map(([val, lbl]) => (
+              <button key={val} type="button" onClick={() => setAdFormat(val)}
+                className={cn('px-3 h-8 rounded-xl text-xs font-bold border transition-colors', adFormat === val ? 'border-[#059669] bg-[#059669]/5 text-[#059669]' : 'border-[#e5e5e0] text-[#7a7a76] hover:border-[#059669]/30')}>
+                {lbl}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Objective */}
+        <div className="space-y-1.5">
+          <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Objectif</label>
+          <div className="flex gap-2 flex-wrap">
+            {([['awareness', 'Notoriété'], ['traffic', 'Trafic'], ['leads', 'Leads'], ['conversions', 'Conversions']] as const).map(([val, lbl]) => (
+              <button key={val} type="button" onClick={() => setObjective(val)}
+                className={cn('px-3 h-8 rounded-xl text-xs font-bold border transition-colors', objective === val ? 'border-[#059669] bg-[#059669]/5 text-[#059669]' : 'border-[#e5e5e0] text-[#7a7a76] hover:border-[#059669]/30')}>
+                {lbl}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <Button
+          onClick={handleGenerate}
+          disabled={generating || !canGenerate}
+          className="w-full bg-[#059669] hover:bg-[#047857] text-white gap-2"
+        >
+          {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+          {generating ? 'Génération en cours…' : 'Générer 3 variations'}
+        </Button>
+      </div>
+
+      {/* Variations output */}
+      {variations && variations.length > 0 && (
+        <div className="space-y-4">
+          <h3 className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Variations générées</h3>
+          {variations.map((v, i) => (
+            <div key={v.variation} className="p-4 rounded-2xl border border-[#e5e5e0] bg-white space-y-3">
+              <div className="flex items-center justify-between">
+                <span className={cn('text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full border', variationColors[i])}>
+                  Variation {v.variation}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => copyVariation(v)}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-[#e5e5e0] text-[#7a7a76] hover:bg-[#f4f4f3] text-[10px] font-bold transition-colors"
+                >
+                  <Copy className="w-3 h-3" />Copier tout
+                </button>
+              </div>
+
+              <div className="space-y-2">
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-[9px] font-bold uppercase tracking-wider text-[#7a7a76]">Accroche</span>
+                    <CharCount value={v.hook || ''} max={80} />
+                  </div>
+                  <p className="text-xs text-[#7a7a76] italic">{v.hook}</p>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-[9px] font-bold uppercase tracking-wider text-[#7a7a76]">Titre</span>
+                    <CharCount value={v.headline || ''} max={40} />
+                  </div>
+                  <p className="text-sm font-bold text-[#26251e]">{v.headline}</p>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-[9px] font-bold uppercase tracking-wider text-[#7a7a76]">Description</span>
+                    <CharCount value={v.description || ''} max={125} />
+                  </div>
+                  <p className="text-xs text-[#26251e]">{v.description}</p>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-[9px] font-bold uppercase tracking-wider text-[#7a7a76]">CTA</span>
+                    <CharCount value={v.cta || ''} max={15} />
+                  </div>
+                  <span className="inline-block px-3 py-1 rounded-lg bg-[#059669]/10 text-[#059669] text-xs font-bold">{v.cta}</span>
+                </div>
+              </div>
+            </div>
+          ))}
+
+          {/* Preview */}
+          <div className="space-y-3">
+            <h3 className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Aperçu visuel</h3>
+            <div className="flex gap-2 mb-3">
+              {variations.map((v, i) => (
+                <button
+                  key={v.variation}
+                  type="button"
+                  onClick={() => setPreviewIdx(i)}
+                  className={cn('text-[10px] font-bold px-2.5 py-1 rounded-lg border transition-colors', previewIdx === i ? 'border-[#059669] bg-[#059669]/10 text-[#059669]' : 'border-[#e5e5e0] text-[#7a7a76] hover:border-[#059669]/30')}
+                >
+                  Var. {v.variation}
+                </button>
+              ))}
+            </div>
+            <div className="max-w-xs rounded-2xl border border-[#e5e5e0] bg-white overflow-hidden shadow-sm">
+              <div className="bg-[#f4f4f3] h-40 flex flex-col items-center justify-center gap-2 text-[#7a7a76]">
+                <Camera className="w-7 h-7" />
+                <span className="text-[11px]">Ajoutez votre image ici</span>
+              </div>
+              <div className="p-3 space-y-1.5 border-t border-[#e5e5e0]">
+                <p className="text-[10px] font-bold text-[#7a7a76]">Votre Page · Sponsorisé</p>
+                <p className="text-sm font-bold text-[#26251e]">{variations[previewIdx]?.headline}</p>
+                <p className="text-xs text-[#7a7a76] line-clamp-2">{variations[previewIdx]?.description}</p>
+                <div className="mt-2 pt-2 border-t border-[#e5e5e0]">
+                  <span className="inline-block w-full text-center py-1.5 bg-[#e5e5e0] text-[#26251e] text-xs font-bold rounded-md">
+                    {variations[previewIdx]?.cta || 'En savoir plus'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Attribution Tab (existing logic, preserved) ───────────────────────────────
 
 function AttributionTab({ workspaceId }: { workspaceId: string }) {
   const [summary, setSummary] = useState<AttributionSummary | null>(null);
@@ -420,14 +972,13 @@ function AttributionTab({ workspaceId }: { workspaceId: string }) {
 
   return (
     <div className="space-y-6">
-      {/* KPI row */}
       {summary && (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {[
             { label: 'Leads total', value: summary.totalLeads, icon: <Users className="w-3.5 h-3.5" />, color: 'text-[#26251e]' },
             { label: 'Taux RDV', value: `${summary.meetingRate}%`, icon: <Target className="w-3.5 h-3.5" />, color: 'text-[#059669]' },
-            { label: 'Délai moyen', value: formatMinutes(summary.avgFirstContactMin), icon: <Clock className="w-3.5 h-3.5" />, color: summary.avgFirstContactMin && summary.avgFirstContactMin > 5 ? 'text-red-600' : 'text-[#059669]' },
-            { label: 'Pipeline gagné', value: `${(summary.totalPipeline / 1000).toFixed(1)}k€`, icon: <TrendingUp className="w-3.5 h-3.5" />, color: 'text-[#059669]' },
+            { label: 'Délai moyen', value: fmtMin(summary.avgFirstContactMin), icon: <Clock className="w-3.5 h-3.5" />, color: summary.avgFirstContactMin && summary.avgFirstContactMin > 5 ? 'text-red-600' : 'text-[#059669]' },
+            { label: 'Pipeline gagné', value: `${(summary.totalPipeline / 1000).toFixed(1)}k$`, icon: <TrendingUp className="w-3.5 h-3.5" />, color: 'text-[#059669]' },
           ].map(kpi => (
             <div key={kpi.label} className="p-3 rounded-2xl border border-[#e5e5e0] bg-white space-y-1">
               <div className={cn('flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider', kpi.color)}>
@@ -439,7 +990,6 @@ function AttributionTab({ workspaceId }: { workspaceId: string }) {
         </div>
       )}
 
-      {/* By source table */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <h3 className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Performance par source</h3>
@@ -451,7 +1001,7 @@ function AttributionTab({ workspaceId }: { workspaceId: string }) {
         {bySource.length === 0 ? (
           <div className="text-center py-10 text-sm text-[#7a7a76]">
             Aucune donnée d'attribution disponible.<br />
-            <span className="text-xs">Commencez à enrichir vos leads avec leur source.</span>
+            <span className="text-xs">Enrichissez vos leads avec leur source.</span>
           </div>
         ) : (
           <div className="rounded-2xl border border-[#e5e5e0] overflow-hidden bg-white">
@@ -464,18 +1014,18 @@ function AttributionTab({ workspaceId }: { workspaceId: string }) {
             </div>
             {bySource.map((s, i) => (
               <div key={s.source} className={cn('grid grid-cols-6 gap-2 px-4 py-3 items-center', i < bySource.length - 1 && 'border-b border-[#e5e5e0]')}>
-                <span className={cn('col-span-2 text-[10px] font-bold px-2 py-0.5 rounded-full border w-fit', sourceColor(s.source))}>
-                  {sourceLabel(s.source)}
+                <span className={cn('col-span-2 text-[10px] font-bold px-2 py-0.5 rounded-full border w-fit', srcColor(s.source))}>
+                  {srcLabel(s.source)}
                 </span>
                 <span className="text-right text-xs font-bold text-[#26251e]">{s.total}</span>
                 <span className={cn('text-right text-xs font-bold', s.meetingRate >= 30 ? 'text-[#059669]' : s.meetingRate >= 15 ? 'text-amber-600' : 'text-red-600')}>
                   {s.meetingRate}%
                 </span>
                 <span className={cn('text-right text-xs font-semibold', s.avgFirstContactMin !== null && s.avgFirstContactMin > 5 ? 'text-red-600' : 'text-[#059669]')}>
-                  {formatMinutes(s.avgFirstContactMin)}
+                  {fmtMin(s.avgFirstContactMin)}
                 </span>
                 <span className="text-right text-xs font-bold text-[#26251e]">
-                  {s.pipeline > 0 ? `${(s.pipeline / 1000).toFixed(1)}k€` : '—'}
+                  {s.pipeline > 0 ? `${(s.pipeline / 1000).toFixed(1)}k$` : '—'}
                 </span>
               </div>
             ))}
@@ -483,27 +1033,104 @@ function AttributionTab({ workspaceId }: { workspaceId: string }) {
         )}
       </div>
 
-      {/* Speed-to-lead alert */}
       {summary?.avgFirstContactMin !== null && summary?.avgFirstContactMin !== undefined && summary.avgFirstContactMin > 5 && (
         <div className="flex items-start gap-3 p-4 rounded-2xl border border-red-200 bg-red-50">
-          <AlertTriangle className="w-4 h-4 text-red-600 mt-0.5 flex-shrink-0" />
+          <AlertTriangle className="w-4 h-4 text-red-600 mt-0.5 shrink-0" />
           <div>
             <p className="text-xs font-bold text-red-800">Speed-to-Lead : délai trop élevé</p>
             <p className="text-xs text-red-700 mt-0.5">
-              Délai moyen de {formatMinutes(summary.avgFirstContactMin)} avant le premier contact.
-              Les études montrent qu'un contact en moins de 5 min multiplie la conversion par 9.
+              Délai moyen de {fmtMin(summary.avgFirstContactMin)} avant le premier contact. Un contact en moins de 5 min multiplie la conversion par 9.
             </p>
           </div>
         </div>
       )}
-      {summary?.avgFirstContactMin !== null && summary?.avgFirstContactMin !== undefined && summary.avgFirstContactMin <= 5 && summary.avgFirstContactMin > 0 && (
+      {summary?.avgFirstContactMin !== null && summary?.avgFirstContactMin !== undefined && summary.avgFirstContactMin > 0 && summary.avgFirstContactMin <= 5 && (
         <div className="flex items-start gap-3 p-4 rounded-2xl border border-[#059669]/20 bg-[#059669]/5">
-          <ArrowUp className="w-4 h-4 text-[#059669] mt-0.5 flex-shrink-0" />
+          <ArrowUp className="w-4 h-4 text-[#059669] mt-0.5 shrink-0" />
           <div>
             <p className="text-xs font-bold text-[#059669]">Speed-to-Lead optimal</p>
-            <p className="text-xs text-[#047857] mt-0.5">
-              Délai moyen de {formatMinutes(summary.avgFirstContactMin)} — excellent ! Vous contactez vos leads dans la fenêtre idéale.
-            </p>
+            <p className="text-xs text-[#047857] mt-0.5">Délai moyen de {fmtMin(summary.avgFirstContactMin)} — vous contactez dans la fenêtre idéale.</p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── History Tab ───────────────────────────────────────────────────────────────
+
+type DateRange = '7d' | '30d' | '90d' | 'all';
+
+function HistoryTab({ workspaceId }: { workspaceId: string }) {
+  const { leads } = useReach();
+  const [dateRange, setDateRange] = useState<DateRange>('30d');
+
+  const sourceRows = useMemo(() => {
+    const defs = [
+      { key: 'osm', label: 'OpenStreetMap / Google Maps', color: 'bg-[#059669]' },
+      { key: 'csv', label: 'Import CSV', color: 'bg-purple-500' },
+      { key: 'manual', label: 'Manuel', color: 'bg-[#7a7a76]' },
+      { key: 'form', label: 'Formulaire Web', color: 'bg-blue-500' },
+      { key: 'facebook', label: 'Facebook Ads', color: 'bg-blue-700' },
+      { key: 'google', label: 'Google Ads', color: 'bg-red-500' },
+    ];
+    return defs.map(({ key, label, color }) => {
+      const rows = leads.filter(l => {
+        const s = l.leadSourceType || 'manual';
+        if (key === 'csv') return s === 'csv' || s === 'import';
+        return s === key;
+      });
+      const total = rows.length;
+      const contacted = rows.filter(l => ['Contacted', 'Meeting Booked', 'Proposal Sent', 'Negotiation', 'Won'].includes(l.status)).length;
+      const won = rows.filter(l => l.status === 'Won').length;
+      const rate = total > 0 ? Math.round((won / total) * 100) : 0;
+      return { key, label, color, total, contacted, won, rate };
+    }).filter(r => r.total > 0);
+  }, [leads]);
+
+  return (
+    <div className="space-y-6">
+      {/* Date range filter */}
+      <div className="flex items-center gap-1 bg-[#f4f4f3] rounded-xl p-1 border border-[#e5e5e0] w-fit">
+        {([['7d', '7 jours'], ['30d', '30 jours'], ['90d', '90 jours'], ['all', 'Tout']] as const).map(([val, lbl]) => (
+          <button
+            key={val}
+            type="button"
+            onClick={() => setDateRange(val)}
+            className={cn('px-3 h-7 rounded-lg text-xs font-bold transition-colors', dateRange === val ? 'bg-white text-[#26251e] shadow-sm' : 'text-[#7a7a76] hover:text-[#26251e]')}
+          >
+            {lbl}
+          </button>
+        ))}
+      </div>
+
+      {/* Attribution component */}
+      <AttributionTab workspaceId={workspaceId} />
+
+      {/* Sources table */}
+      {sourceRows.length > 0 && (
+        <div className="space-y-2">
+          <h3 className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Leads par source</h3>
+          <div className="rounded-2xl border border-[#e5e5e0] overflow-hidden bg-white">
+            <div className="grid grid-cols-5 gap-2 px-4 py-2 text-[9px] font-bold uppercase tracking-wider text-[#7a7a76] border-b border-[#e5e5e0] bg-[#fafaf8]">
+              <span className="col-span-2">Source</span>
+              <span className="text-right">Leads</span>
+              <span className="text-right">Gagnés</span>
+              <span className="text-right">Taux conv.</span>
+            </div>
+            {sourceRows.map((row, i) => (
+              <div key={row.key} className={cn('grid grid-cols-5 gap-2 px-4 py-3 items-center', i < sourceRows.length - 1 && 'border-b border-[#e5e5e0]')}>
+                <div className="col-span-2 flex items-center gap-2">
+                  <span className={cn('w-2 h-2 rounded-full shrink-0', row.color)} />
+                  <span className="text-xs font-semibold text-[#26251e] truncate">{row.label}</span>
+                </div>
+                <span className="text-right text-xs font-bold text-[#26251e]">{row.total}</span>
+                <span className="text-right text-xs font-bold text-[#26251e]">{row.won}</span>
+                <span className={cn('text-right text-xs font-bold', row.rate >= 20 ? 'text-[#059669]' : row.rate >= 10 ? 'text-amber-600' : 'text-[#7a7a76]')}>
+                  {row.rate}%
+                </span>
+              </div>
+            ))}
           </div>
         </div>
       )}
@@ -516,58 +1143,63 @@ function AttributionTab({ workspaceId }: { workspaceId: string }) {
 export default function AdsRoot() {
   const { t } = useLanguage();
   const { activeWorkspace } = useReach();
-  const [activeTab, setActiveTab] = useState<AdsTab>('facebook');
+  const [activeTab, setActiveTab] = useState<AdsTab>('overview');
 
-  // Detect tab from URL param
   useEffect(() => {
     const url = new URL(window.location.href);
     const tab = url.searchParams.get('tab') as AdsTab | null;
-    if (tab && ['facebook', 'google', 'attribution'].includes(tab)) {
+    if (tab && ['overview', 'facebook', 'google', 'create', 'history'].includes(tab)) {
       setActiveTab(tab);
     }
   }, []);
 
   const tabs: { key: AdsTab; label: string; icon: React.ReactNode }[] = [
-    { key: 'facebook', label: 'Facebook Lead Ads', icon: <span className="w-4 h-4 flex items-center justify-center font-black text-blue-600 text-base leading-none">f</span> },
-    { key: 'google', label: 'Google Ads', icon: <Target className="w-4 h-4" /> },
-    { key: 'attribution', label: t('attribution.title') || 'Attribution', icon: <BarChart3 className="w-4 h-4" /> },
+    { key: 'overview', label: 'Vue d\'ensemble', icon: <BarChart3 className="w-4 h-4" /> },
+    { key: 'facebook', label: 'Facebook Ads', icon: <span className="w-4 h-4 flex items-center justify-center font-black text-blue-600 text-sm leading-none">f</span> },
+    { key: 'google', label: 'Google Ads', icon: <Globe className="w-4 h-4" /> },
+    { key: 'create', label: 'Créer une pub', icon: <Sparkles className="w-4 h-4" /> },
+    { key: 'history', label: 'Historique', icon: <Clock className="w-4 h-4" /> },
   ];
 
+  const workspaceId = activeWorkspace?.id || '';
+
   return (
-    <div className="min-h-screen bg-[#fafaf8] relative">
+    <div className="h-full overflow-y-auto bg-[#fafaf8] relative">
       <div className="absolute inset-0 opacity-[0.25] pointer-events-none bg-grid-pattern-20 z-0" />
       <div className="relative z-10 p-6 md:p-8">
-      {/* Page header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-black text-[#26251e] tracking-tight">Publicité & Attribution</h1>
-        <p className="text-sm text-[#7a7a76] mt-0.5">Connectez vos sources d'acquisition et analysez la performance de vos campagnes</p>
-      </div>
+        {/* Header */}
+        <div className="mb-6">
+          <h1 className="text-2xl font-black text-[#26251e] tracking-tight">Publicité & Attribution</h1>
+          <p className="text-sm text-[#7a7a76] mt-0.5">Connectez vos sources d'acquisition et analysez la performance de vos campagnes</p>
+        </div>
 
-      {/* Tab bar */}
-      <div className="flex items-center gap-1 bg-[#f4f4f3] rounded-2xl p-1 border border-[#e5e5e0] mb-6 w-full max-w-lg">
-        {tabs.map(({ key, label, icon }) => (
-          <button
-            key={key}
-            type="button"
-            onClick={() => setActiveTab(key)}
-            className={cn(
-              'flex-1 flex items-center justify-center gap-1.5 h-9 rounded-xl text-xs font-bold transition-colors',
-              activeTab === key ? 'bg-white text-[#059669] shadow-sm' : 'text-[#7a7a76] hover:text-[#26251e]'
-            )}
-          >
-            {icon}
-            <span className="hidden sm:inline">{label}</span>
-          </button>
-        ))}
-      </div>
+        {/* Tab bar */}
+        <div className="flex items-center gap-1 bg-[#f4f4f3] rounded-2xl p-1 border border-[#e5e5e0] mb-6 overflow-x-auto">
+          {tabs.map(({ key, label, icon }) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => setActiveTab(key)}
+              className={cn(
+                'flex-1 flex items-center justify-center gap-1.5 h-9 rounded-xl text-xs font-bold transition-colors whitespace-nowrap px-3',
+                activeTab === key ? 'bg-white text-[#059669] shadow-sm' : 'text-[#7a7a76] hover:text-[#26251e]'
+              )}
+            >
+              {icon}
+              <span className="hidden sm:inline">{label}</span>
+            </button>
+          ))}
+        </div>
 
-      {/* Tab content */}
-      <div className="max-w-2xl">
-        {activeTab === 'facebook' && <FacebookTab workspaceId={activeWorkspace?.id || ''} />}
-        {activeTab === 'google' && <GoogleAdsTab />}
-        {activeTab === 'attribution' && <AttributionTab workspaceId={activeWorkspace?.id || ''} />}
+        {/* Content */}
+        <div className="max-w-2xl">
+          {activeTab === 'overview' && <OverviewTab workspaceId={workspaceId} onTabChange={setActiveTab} />}
+          {activeTab === 'facebook' && <FacebookTab workspaceId={workspaceId} />}
+          {activeTab === 'google' && <GoogleAdsTab workspaceId={workspaceId} />}
+          {activeTab === 'create' && <CreateTab />}
+          {activeTab === 'history' && <HistoryTab workspaceId={workspaceId} />}
+        </div>
       </div>
     </div>
-  </div>
   );
 }

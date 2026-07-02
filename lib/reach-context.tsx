@@ -25,7 +25,7 @@ export interface AppNotification {
   id: string;
   userId: string;
   workspaceId: string;
-  type: 'info' | 'lead_assigned' | 'overdue' | 'digest' | 'report' | 'team_message' | 'email_sent' | 'email_received' | 'scraping_done' | 'lead_aging';
+  type: 'info' | 'lead_assigned' | 'overdue' | 'digest' | 'report' | 'team_message' | 'email_sent' | 'email_received' | 'scraping_done' | 'lead_aging' | 'task_due' | 'mention' | 'goal_milestone' | 'app_update';
   title: string;
   body: string;
   link?: string;

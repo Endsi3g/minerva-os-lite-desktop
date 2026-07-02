@@ -1,25 +1,28 @@
 'use client';
 
-import React, { useEffect } from 'react';
-import { Megaphone, Calendar, CheckCircle, Bug, Sparkles, Palette } from 'lucide-react';
-import { useLanguage } from '@/lib/language-context';
-import { TranslationKey } from '@/lib/translations';
+import React, { useEffect, useState } from 'react';
+import { Bug, Sparkles, Palette } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 type HighlightTag = 'fix' | 'feature' | 'design';
-type HighlightItem = string | { tag: HighlightTag; text: string };
+type Lang = 'fr' | 'en' | 'de';
+
+interface HighlightItem {
+  tag: HighlightTag;
+  text: string;
+}
 
 interface ChangelogVersion {
   version: string;
-  date: string;
-  titleKey: TranslationKey;
-  descKey: TranslationKey;
+  date: string;       // pre-formatted French date, e.g. "2 juillet 2026 à 14h30"
+  title: string;      // descriptive title, no version number
   highlights: HighlightItem[];
 }
 
-const TAG_CONFIG: Record<HighlightTag, { label: string; description: string; bg: string; text: string; border: string; icon: React.ElementType }> = {
-  fix:     { label: 'Correctif',  description: 'bug ou problème résolu',      bg: '#fef2f2', text: '#dc2626', border: '#fecaca', icon: Bug      },
-  feature: { label: 'Nouveauté',  description: 'nouvelle fonctionnalité',     bg: '#f0fdf4', text: '#059669', border: '#bbf7d0', icon: Sparkles },
-  design:  { label: 'Design',     description: 'amélioration visuelle ou UX', bg: '#eef2ff', text: '#6366f1', border: '#c7d2fe', icon: Palette  },
+const TAG_CONFIG: Record<HighlightTag, { label: string; bg: string; text: string; border: string; icon: React.ElementType }> = {
+  fix:     { label: 'Correctif',  bg: '#fef2f2', text: '#dc2626', border: '#fecaca', icon: Bug      },
+  feature: { label: 'Nouveauté',  bg: '#f0fdf4', text: '#059669', border: '#bbf7d0', icon: Sparkles },
+  design:  { label: 'Design',     bg: '#eef2ff', text: '#6366f1', border: '#c7d2fe', icon: Palette  },
 };
 
 function TagBadge({ tag }: { tag: HighlightTag }) {
@@ -49,2288 +52,1055 @@ function TagLegend() {
             <cfg.icon className="w-2.5 h-2.5" style={{ color: cfg.text }} strokeWidth={2.5} aria-hidden="true" />
           </span>
           <span className="text-[11px] font-bold text-neutral-700">{cfg.label}</span>
-          <span className="text-[10px] text-neutral-400 hidden sm:inline">— {cfg.description}</span>
+          <span className="text-[10px] text-neutral-400 hidden sm:inline">— {
+            cfg.label === 'Correctif' ? 'bug ou problème résolu' :
+            cfg.label === 'Nouveauté' ? 'nouvelle fonctionnalité' : 'amélioration visuelle ou UX'
+          }</span>
         </span>
       ))}
     </div>
   );
 }
 
+// ─── Versions data ─────────────────────────────────────────────────────────────
+
+const versions: ChangelogVersion[] = [
+  {
+    version: 'v9.0.0',
+    date: '2 juillet 2026 à 14h30',
+    title: 'Navigation complète & nouvelles pages',
+    highlights: [
+      { tag: 'feature', text: 'Toutes vos pages sont maintenant accessibles depuis le menu latéral — Tâches, Séquences, Campagnes, Playbooks, Contacts, Notifications et plus encore.' },
+      { tag: 'feature', text: 'Nouvelle page Contacts : retrouvez tous vos interlocuteurs avec leur email, téléphone et entreprise en un seul endroit.' },
+      { tag: 'feature', text: 'Nouvelle page Notifications : centre de notifications unifié avec filtres par type et historique complet.' },
+      { tag: 'design',  text: "Fond texturé harmonisé sur toutes les pages de l'application pour une expérience visuelle cohérente." },
+      { tag: 'design',  text: 'Barre de chargement améliorée : plus fluide, plus visible, avec effet lumineux lors des navigations.' },
+    ],
+  },
+  {
+    version: 'v8.6.0',
+    date: '1 juillet 2026 à 09h00',
+    title: 'Rapport hebdomadaire automatique',
+    highlights: [
+      { tag: 'feature', text: 'Rapport hebdomadaire automatique : chaque lundi, recevez un résumé de vos actions de la semaine — emails envoyés, réponses reçues, rendez-vous bookés, et vos meilleures opportunités du moment.' },
+      { tag: 'feature', text: 'Livré chaque lundi à 8h : votre rapport est généré automatiquement et apparaît dans vos notifications en tant que résumé cliquable.' },
+      { tag: 'feature', text: 'Taux d\'acceptation NBA : dans votre centre de pilotage, suivez combien de recommandations IA vous avez appliquées cette semaine.' },
+      { tag: 'design',  text: 'Carte de rapport dans Revenue OS : 4 indicateurs clés (score IA, bookings, réponses positives, leads avancés) avec rapport détaillé en un clic.' },
+    ],
+  },
+  {
+    version: 'v8.5.0',
+    date: '1 juillet 2026 à 08h00',
+    title: 'Gestion de la charge d\'équipe',
+    highlights: [
+      { tag: 'feature', text: 'Tableau de charge d\'équipe : voyez en un coup d\'œil qui est surchargé, qui a de la disponibilité, et combien de leads sont assignés à chaque membre.' },
+      { tag: 'feature', text: 'Alertes de délai dépassé : Minerva vous avertit automatiquement quand une action importante dépasse son délai (ex: relance non envoyée depuis 3 jours).' },
+      { tag: 'feature', text: 'Feed revenus équipe : un onglet dédié dans la page Équipe affiche toutes les victoires commerciales — réponses positives, rendez-vous bookés — avec horodatage.' },
+      { tag: 'feature', text: 'Bouton d\'assignation intelligente : assignez une action NBA à un membre en un clic — il reçoit une notification automatique.' },
+      { tag: 'design',  text: 'Page Équipe enrichie : 3 onglets — Membres, Charge de travail, Feed revenus.' },
+    ],
+  },
+  {
+    version: 'v8.4.0',
+    date: '1 juillet 2026 à 07h00',
+    title: 'Détection automatique des réponses positives',
+    highlights: [
+      { tag: 'feature', text: 'Quand un prospect répond positivement, Minerva le détecte automatiquement et met à jour son statut, crée une tâche de booking, et notifie votre équipe — sans aucune action de votre part.' },
+      { tag: 'feature', text: 'Détection d\'intention enrichie : les réponses signalant un intérêt ou une demande de rendez-vous déclenchent toutes les actions commerciales appropriées en boucle fermée.' },
+    ],
+  },
+  {
+    version: 'v8.3.0',
+    date: '1 juillet 2026 à 06h00',
+    title: 'Mémoire stratégique de l\'agent',
+    highlights: [
+      { tag: 'feature', text: 'Mémoire stratégique : Minerva apprend de vos résultats — quelles niches répondent le mieux, quel jour envoyer vos emails, quel canal utiliser pour chaque type de client.' },
+      { tag: 'feature', text: 'Recommandations actionnables : 3 conseils stratégiques générés par l\'IA à partir de vos vrais résultats, visibles dans votre cockpit.' },
+      { tag: 'design',  text: 'Carte Mémoire stratégique dans Revenue OS : top 5 apprentissages avec niveau de confiance et taille d\'échantillon.' },
+    ],
+  },
+  {
+    version: 'v8.2.0',
+    date: '1 juillet 2026 à 05h00',
+    title: 'Parcours client en 7 phases',
+    highlights: [
+      { tag: 'feature', text: 'Chaque lead suit maintenant un parcours en 7 étapes claires : Email initial → Relance → Appel → Visite terrain → Booking → Proposition → Suivi. Minerva calcule la phase de chaque prospect automatiquement.' },
+      { tag: 'feature', text: 'Timeline de progression dans chaque fiche lead : visualisez où en est chaque prospect dans son parcours, avec un bouton "Exécuter maintenant" pour passer à l\'étape suivante.' },
+      { tag: 'feature', text: 'Changement de canal automatique : si un prospect a ouvert 3 emails sans répondre, Minerva suggère de passer à l\'appel ou au terrain.' },
+    ],
+  },
+  {
+    version: 'v8.1.0',
+    date: '1 juillet 2026 à 04h00',
+    title: 'Revenue OS — Centre de pilotage',
+    highlights: [
+      { tag: 'feature', text: 'Command Center (/command) : nouvelle page de pilotage avec 4 blocs en temps réel — File de priorités, Prochaines meilleures actions, Performance, État opératoire.' },
+      { tag: 'feature', text: 'File de priorités intelligente : 4 catégories (Urgent, Opportunité, Bloqué, À approuver) avec les 5 leads les plus importants de chaque catégorie.' },
+      { tag: 'feature', text: 'Filtres niche + canal : filtrez instantanément votre pipeline par secteur ou type de contact.' },
+      { tag: 'design',  text: 'Panneau droite : KPIs temps réel, fil des dernières actions IA, alertes de signaux, taux d\'acceptation des recommandations.' },
+    ],
+  },
+  {
+    version: 'v8.0.0',
+    date: '30 juin 2026 à 20h00',
+    title: 'Agent Minerva autonome',
+    highlights: [
+      { tag: 'feature', text: 'Agent autonome toutes les 4h — l\'agent analyse votre pipeline, choisit les meilleures actions et les exécute automatiquement. Toutes les actions sont tracées avec explication.' },
+      { tag: 'feature', text: 'Digest du soir (18h) — résumé quotidien enrichi : emails envoyés, réponses reçues, RDV créés, actions agent, leads ajoutés. Visible dans les notifications + email si SMTP configuré.' },
+      { tag: 'feature', text: 'Carte "Résumé d\'aujourd\'hui" dans Today — 4 KPIs (emails, réponses, RDV, actions agent) et les 3 dernières actions avec leur raisonnement.' },
+      { tag: 'feature', text: 'RDV Google Calendar automatique — quand une réponse positive est détectée dans Gmail, un RDV est créé automatiquement dans votre agenda pour le lendemain à 10h.' },
+      { tag: 'feature', text: 'Vérification Gmail toutes les 2h — détection quasi temps réel des nouvelles réponses.' },
+      { tag: 'fix',     text: 'Mode Terrain — badge "(approx.)" pour les leads sans coordonnées GPS exactes.' },
+      { tag: 'fix',     text: 'Automations — l\'action "Envoyer un email" crée désormais un brouillon dans la file d\'approbation Outreach.' },
+    ],
+  },
+  {
+    version: 'v7.1.0',
+    date: '30 juin 2026 à 18h00',
+    title: 'Moteur NBA & Cockpit',
+    highlights: [
+      { tag: 'feature', text: 'Moteur NBA hybride — score 0-100 calculé sur 3 signaux : délai sans contact, engagement email, performance de la niche. Actions recommandées : relance email, changement de canal, booking, nurture, pause.' },
+      { tag: 'feature', text: 'Apprentissage par niche — Minerva analyse vos taux de réponse et booking par secteur pour recommander le canal et le timing optimal.' },
+      { tag: 'feature', text: 'Score et explication NBA — 3 endpoints : scoring batch, calcul à la demande, explication IA par lead (bouton "Pourquoi ?" dans chaque fiche).' },
+      { tag: 'feature', text: 'Carte NBA dans chaque fiche lead — score coloré, action recommandée, raisonnement de l\'agent, recalcul en temps réel.' },
+      { tag: 'feature', text: 'Cockpit Revenue OS (/cockpit) — 4 KPIs, séquences performantes, alertes de signaux, top 5 leads NBA.' },
+      { tag: 'feature', text: 'Onboarding stratégique — modal de démarrage 2 étapes (niche + objectif) pour initialiser les recommandations dès la première connexion.' },
+    ],
+  },
+  {
+    version: 'v7.0.0',
+    date: '30 juin 2026 à 16h00',
+    title: 'Prochaine Meilleure Action',
+    highlights: [
+      { tag: 'feature', text: 'Prochaine Meilleure Action (NBA) — carte en haut de l\'Accueil : Minerva identifie l\'action la plus urgente du moment et vous la présente avec son raisonnement et les signaux justificatifs.' },
+      { tag: 'feature', text: 'Exécution en 1 clic — générez un brouillon de relance, planifiez un rappel ou redirigez vers le bon écran selon l\'action recommandée.' },
+      { tag: 'feature', text: 'Bouton "Passer" — marquez une action comme rejetée et chargez automatiquement la suivante dans la file.' },
+      { tag: 'design',  text: 'Carte NBA — bordure verte distinctive, label d\'action avec icône typée, raisonnement en italique, signaux en petite typo.' },
+    ],
+  },
+  {
+    version: 'v6.2.0',
+    date: '29 juin 2026 à 22h00',
+    title: 'Profils d\'autonomie agent',
+    highlights: [
+      { tag: 'design',  text: '3 profils d\'autonomie — Manuel / Contrôlé / Mains libres remplacent les 11 réglages individuels dans Paramètres → Intelligence. Un clic suffit pour configurer l\'agent.' },
+      { tag: 'feature', text: 'Profil Contrôlé (recommandé) — brouillons et relances générés automatiquement, mis en file d\'approbation. Validez avant l\'envoi.' },
+      { tag: 'feature', text: 'Profil Mains libres — l\'agent agit sans confirmation sur tous les domaines.' },
+      { tag: 'feature', text: 'Réglages avancés toujours accessibles via "Réglages avancés" pour les configurations personnalisées.' },
+      { tag: 'design',  text: 'Indicateur "Configuration personnalisée" si aucun profil preset ne correspond.' },
+    ],
+  },
+  {
+    version: 'v6.1.0',
+    date: '29 juin 2026 à 20h00',
+    title: 'Relances automatiques & Intent IA',
+    highlights: [
+      { tag: 'feature', text: 'Relance automatique des leads tièdes — bouton "Générer les relances" dans Today : l\'agent détecte les top 3 leads inactifs depuis 7j+ et génère un brouillon pour chacun dans Outreach → Approbations.' },
+      { tag: 'feature', text: 'Carte Priorités agent dans Today — top 5 leads tièdes/froids triés par score avec badge température et jours d\'inactivité.' },
+      { tag: 'feature', text: 'Badge intent IA sur chaque thread Inbox — classification automatique : Intéressé, RDV, Infos demandées, Objection, Pas intéressé.' },
+      { tag: 'feature', text: 'Auto-classification à l\'ouverture d\'un thread — premier clic → classification silencieuse, badge mis à jour en temps réel.' },
+      { tag: 'feature', text: 'Endpoint /api/agent/relance — génère 3 brouillons de relance en un appel, visibles immédiatement dans Approbations.' },
+      { tag: 'feature', text: 'Endpoint /api/inbox/classify — classification IA + sauvegarde intent + log dans timeline lead.' },
+    ],
+  },
+  {
+    version: 'v6.0.0',
+    date: '29 juin 2026 à 18h00',
+    title: 'Plateforme Minerva AI dédiée',
+    highlights: [
+      { tag: 'feature', text: 'Minerva AI — plateforme dédiée aux fonctionnalités IA : Assistant, Intelligence, Agents, Skills. Accessible via icône dans la topbar.' },
+      { tag: 'feature', text: 'Navigation duale — layout AI épuré avec 4 entrées, historique de sessions dans la sidebar, switch Reach ↔ AI en un clic.' },
+      { tag: 'feature', text: 'Switch de plateforme dans la topbar — bouton "Minerva AI" sur Reach, bouton "Minerva Reach" sur AI. Prêt pour subdomains.' },
+      { tag: 'design',  text: 'Nav Reach simplifiée — 6 entrées : Accueil, Leads, Outreach, Carte, Agenda, Équipe.' },
+      { tag: 'fix',     text: 'Bug Scrape → Email en mode Electron : websiteDescription transmise directement dans le body POST.' },
+      { tag: 'fix',     text: 'Sidebar Reach : bloc session assistant retiré (code mort). Import nettoyé.' },
+    ],
+  },
+  {
+    version: 'v5.3.0',
+    date: '29 juin 2026 à 16h00',
+    title: 'Outreach Control Center',
+    highlights: [
+      { tag: 'feature', text: 'Outreach Control Center — Campagnes et Approbations sont désormais des écrans complets.' },
+      { tag: 'feature', text: 'Écran Campagnes — liste avec KPIs (envoyés, ouvertures, réponses, positifs, RDV), toggle pause/relance, alertes de performance.' },
+      { tag: 'feature', text: 'Écran Approbations — file unifiée brouillons IA + actions agent. Approuver ou Rejeter chaque item avec son raisonnement.' },
+      { tag: 'feature', text: 'Autonomie Outreach granulaire — 6 niveaux indépendants : création brouillons, premier envoi, relances auto, réponse, pause séquence, mise à jour pipeline.' },
+      { tag: 'feature', text: 'Nouveaux outils Agent Minerva — pause/resume séquence, tag lead, classify reply, résumé inbox, suggestion de follow-up.' },
+      { tag: 'feature', text: 'Routes API outreach — enrollments pause/resume, approbations, campagnes, enrollments avec join lead+séquence.' },
+      { tag: 'feature', text: 'Migration Supabase v5_outreach — colonnes source/intent_type/approved sur drafts, current_step/next_send_at/paused_at sur enrollments.' },
+    ],
+  },
+  {
+    version: 'v5.2.0',
+    date: '29 juin 2026 à 14h00',
+    title: 'Agent Minerva & Mémoire IA',
+    highlights: [
+      { tag: 'feature', text: 'Agent Minerva — boucle autonome perceive → plan → act → log. L\'agent analyse le pipeline, choisit les meilleures actions et les exécute selon votre niveau d\'autonomie.' },
+      { tag: 'feature', text: 'Niveaux d\'autonomie par domaine — 5 niveaux (Désactivé → Automatique) configurables pour Tâches, Pipeline, Séquences, Emails et Terrain.' },
+      { tag: 'feature', text: 'Mémoire d\'agent — table agent_memory par workspace. L\'agent mémorise ses apprentissages et les réinjecte à chaque cycle.' },
+      { tag: 'feature', text: 'Journal des actions agent — chaque action tracée avec reasoning et signaux. Approuver ou rejeter depuis l\'interface.' },
+      { tag: 'feature', text: 'AI Gateway unifié — lib/ai.ts unique source de vérité pour tous les appels IA. Fallback automatique Anthropic ↔ OpenRouter.' },
+      { tag: 'fix',     text: 'Suppression de Groq et Together AI — stack IA simplifié : Claude (Anthropic) + OpenRouter.' },
+      { tag: 'feature', text: 'Migration Supabase v5_agent — tables agent_memory, agent_actions, ai_gateway_logs ; colonnes agent_autonomy + agent_enabled.' },
+    ],
+  },
+  {
+    version: 'v5.1.0',
+    date: '29 juin 2026 à 12h00',
+    title: 'Inbox Google & Timeline unifiée',
+    highlights: [
+      { tag: 'fix',     text: 'Sidebar v5 — "Paramètres" retiré des entrées principales. Terrain renommé "Carte".' },
+      { tag: 'feature', text: 'Rôles — page dédiée /settings/roles/new et /team/roles/new pour créer des rôles d\'accès.' },
+      { tag: 'fix',     text: 'Google Inbox — correction critique : getFreshAccessToken utilisait maybeSingle() qui cassait avec plusieurs comptes. Correction avec limit(1).' },
+      { tag: 'fix',     text: 'Breadcrumb Leads — sous-navigation (Liste | Pipeline | Comptes | Prospection | Timeline) affichée sur les pages de la famille Leads.' },
+      { tag: 'feature', text: 'Timeline unifiée — page /leads/timeline avec notifications, tâches, visites terrain, chronologie par date.' },
+      { tag: 'fix',     text: 'Bannière de mise à jour — version mise à jour.' },
+    ],
+  },
+  {
+    version: 'v5.0.0',
+    date: '29 juin 2026 à 10h00',
+    title: 'Navigation v5 & AI Gateway',
+    highlights: [
+      { tag: 'feature', text: 'Navigation v5 — 7 entrées épurées : Accueil, Leads, Outreach, Terrain, Agenda, Équipe, Paramètres.' },
+      { tag: 'feature', text: 'AI Gateway interne — centralise tous les appels IA. Logs persistés dans ai_gateway_logs.' },
+      { tag: 'feature', text: 'Agent Feed sur l\'Accueil — timeline temps réel des actions IA. Polling 30s, liens cliquables vers les leads concernés.' },
+      { tag: 'feature', text: 'Outreach unifié — 5 onglets : Inbox, Séquences, Campagnes, Templates, Approbations.' },
+      { tag: 'feature', text: 'Famille Leads — sous-navigation Liste | Pipeline | Comptes | Prospection | Timeline.' },
+      { tag: 'feature', text: 'Diagnostics IA dans Paramètres — latence par provider, taux succès/fallback, test ping, historique des requêtes.' },
+    ],
+  },
+  {
+    version: 'v4.5.0',
+    date: '28 juin 2026 à 22h00',
+    title: 'Automations & Changelog redesigné',
+    highlights: [
+      { tag: 'design',  text: 'Changelog — badges de type : les étiquettes texte deviennent des icônes circulaires 18px (Bug rouge, Sparkles vert, Palette indigo).' },
+      { tag: 'fix',     text: 'Leads — restauration de l\'arrière-plan crème chaud (#fafaf8) avec superposition de grille.' },
+      { tag: 'feature', text: 'Centre d\'automations (/automations) — 4 cartes avec toggle on/off, bouton "Run maintenant", historique 7 jours.' },
+      { tag: 'feature', text: 'Trigger manuel /api/automations/trigger — déclenche n\'importe quel cron depuis la page Automations.' },
+    ],
+  },
+  {
+    version: 'v4.4.0',
+    date: '28 juin 2026 à 20h00',
+    title: 'Performance & Iconographie',
+    highlights: [
+      { tag: 'design',  text: 'Charts analytics — polish visuel : axes, grilles, tooltips alignés avec la charte graphique (#059669 vert Minerva).' },
+      { tag: 'feature', text: 'Mémoïsation — useMemo et React.memo sur les composants lourds (graphiques, tableaux) pour éliminer les re-renders inutiles.' },
+      { tag: 'design',  text: 'Iconographie unifiée : remplacement des icônes génériques par des variantes Lucide cohérentes.' },
+      { tag: 'feature', text: 'Toasts améliorés : description contextuelle, durée 5s, icône de statut colorée.' },
+      { tag: 'feature', text: 'Titres de page : chaque vue met à jour document.title avec le nom de l\'entité.' },
+    ],
+  },
+  {
+    version: 'v4.3.0',
+    date: '28 juin 2026 à 18h00',
+    title: 'Pipeline enrichi & Propositions',
+    highlights: [
+      { tag: 'feature', text: 'Nouvelles étapes pipeline : "Proposition envoyée" et "Négociation" avec codes couleur (violet + ambre).' },
+      { tag: 'feature', text: 'Onglet Prévisions dans le pipeline : KPIs, graphique barres par mois pondéré, deals à clôturer.' },
+      { tag: 'feature', text: 'Builder de propositions 5 sections avec génération IA par section et calcul taxes QC (TPS 5% + TVQ 9.975%).' },
+      { tag: 'feature', text: 'Export PDF proposition — Electron natif. Web : impression navigateur. Format A4 professionnel.' },
+      { tag: 'feature', text: 'Persistance propositions dans table "proposals". Bouton "Marquer envoyée" automatique.' },
+      { tag: 'feature', text: 'IA par section : génère Présentation, Problème, Solution ou Modalités selon le contexte du lead.' },
+    ],
+  },
+  {
+    version: 'v4.2.0',
+    date: '28 juin 2026 à 16h00',
+    title: 'Performances serveur optimisées',
+    highlights: [
+      { tag: 'design',  text: 'SVG inline — icônes Instagram et Facebook en JSX inline. Zéro requête réseau, rendu immédiat.' },
+      { tag: 'feature', text: 'Singleton admin Supabase — client service-role partagé. Élimine la réinstanciation par requête.' },
+      { tag: 'feature', text: 'Correction N+1 team/members — profils chargés en une seule requête IN au lieu de N requêtes.' },
+      { tag: 'feature', text: 'Cache serveur + client — TTL 30-60s pour /api/team/members et permissions. Invalidation automatique.' },
+    ],
+  },
+  {
+    version: 'v4.1.0',
+    date: '27 juin 2026 à 20h00',
+    title: 'UX fluide & Recherche améliorée',
+    highlights: [
+      { tag: 'design',  text: 'Transitions de page — barre de progression verte fine en haut + fade-in 180ms. Respect prefers-reduced-motion.' },
+      { tag: 'feature', text: 'Skeleton chargement — tableau Leads affiche 8 lignes animées pendant le chargement initial.' },
+      { tag: 'design',  text: 'Polices — correction subset Inter + display: swap pour éliminer les décalages CLS.' },
+      { tag: 'feature', text: 'Recherche leads — debounce 220ms + historique 5 dernières recherches + touche Escape pour effacer.' },
+      { tag: 'feature', text: 'AlertDialog — remplace les window.confirm() natifs. Suppression en masse avec dialog contextuel.' },
+      { tag: 'design',  text: 'Fil d\'Ariane — affiche le vrai nom du business dans la fiche lead (ex: "Cabinet Dentaire Dr. Laurent").' },
+    ],
+  },
+  {
+    version: 'v4.0.0',
+    date: '27 juin 2026 à 18h00',
+    title: 'Automatisation complète',
+    highlights: [
+      { tag: 'feature', text: 'Automatisation complète — enrichissement batch, cron nocturne à 2h, auto-email après enrichissement. L\'app peut prospecter et contacter sans intervention.' },
+      { tag: 'feature', text: 'Tags leads — auto-tags depuis statut CRM et réponses email. Tags libres manuels depuis la fiche lead.' },
+      { tag: 'feature', text: 'Paramètres Automations — 4 toggles : Enrichir à l\'import, Enrichissement nocturne, Email auto, Tagger les réponses.' },
+      { tag: 'feature', text: 'Cron nocturne — /api/cron/enrich-leads tourne à 2h, traite 50 leads non enrichis par workspace.' },
+      { tag: 'fix',     text: 'AI 429 rate limit — retry automatique après 60s pour les appels non-streaming et streaming.' },
+      { tag: 'design',  text: 'Page Prospection responsive — grille xl:grid-cols-[1fr_300px], s\'adapte à la largeur disponible.' },
+    ],
+  },
+  {
+    version: 'v3.47.0',
+    date: '27 juin 2026 à 14h00',
+    title: 'Corrections Google & Interface',
+    highlights: [
+      { tag: 'fix',     text: 'Google auth — getAuthStatus renforcé : si des tokens valides existent, auto-réparation. Plus jamais de demande de reconnexion inutile.' },
+      { tag: 'fix',     text: 'google_tokens upsert — évite les doublons lors d\'une reconnexion.' },
+      { tag: 'fix',     text: 'Intégrations Google — si déjà connecté dans /integrations, toutes les pages le détectent.' },
+      { tag: 'design',  text: 'Fiche lead — layout responsive corrigé : 2 colonnes à xl (≥1280px), padding réduit.' },
+      { tag: 'design',  text: 'Google Calendar (Today) + Gmail/Agenda — GoogleConnectModal centralisé.' },
+      { tag: 'fix',     text: 'AI 429 — message explicite "modèle temporairement saturé, réessaie dans 30-60s".' },
+      { tag: 'design',  text: 'Widget Intelligence — rapport IA rendu en JSX structuré via MarkdownRenderer.' },
+      { tag: 'feature', text: 'Changelog — tags (Fix / Nouveauté / Design) sur tous les highlights. Versions v3.43–v3.46 rétroactivement taguées.' },
+    ],
+  },
+  {
+    version: 'v3.46.0',
+    date: '26 juin 2026 à 22h00',
+    title: 'Inbox & Statistiques',
+    highlights: [
+      { tag: 'fix',     text: 'Inbox Gmail — resolveAccessToken renforcé : auto-réinitialise le statut à "connected" si tokens valides.' },
+      { tag: 'fix',     text: 'Google Maps — bouton converti en electron-safe (shell.openExternal dans Electron).' },
+      { tag: 'fix',     text: 'Couleurs profil agence — bouton "Réinitialiser" pour revenir au vert Minerva (#059669).' },
+      { tag: 'fix',     text: 'Attribution leads projets — picker de projet dans la fiche lead fonctionnel (project_id FK).' },
+      { tag: 'feature', text: 'Templates Email — accessible depuis la sidebar sous "Templates Email" (/email-templates).' },
+      { tag: 'feature', text: 'Notifications — 4 nouveaux types : email_sent, email_received, lead_aging, scraping_done.' },
+      { tag: 'feature', text: 'Page Statistiques (/analytics) — 3 onglets : Vue globale, Prospection, Activité équipe.' },
+    ],
+  },
+  {
+    version: 'v3.45.0',
+    date: '26 juin 2026 à 20h00',
+    title: 'Responsive global',
+    highlights: [
+      { tag: 'design',  text: 'Refonte responsive globale — suppression de toutes les contraintes de largeur fixes sur toutes les pages. Contenu fluide sur tout l\'écran.' },
+      { tag: 'design',  text: 'Padding adaptatif appliqué sur 25+ pages : Today, Leads, Pipeline, Analytics, Prospecting, Settings, etc.' },
+      { tag: 'fix',     text: 'BottomBlur Messages — n\'apparaît plus sur /messages (couvrait l\'input bar).' },
+      { tag: 'design',  text: 'globals.css — overflow-x: hidden sur html/body + classes .page-container et .table-responsive.' },
+    ],
+  },
+  {
+    version: 'v3.44.0',
+    date: '26 juin 2026 à 18h00',
+    title: 'Projets & Leads',
+    highlights: [
+      { tag: 'feature', text: 'Projets — association leads ↔ projets via colonne project_id. Sélecteur dans la fiche lead.' },
+      { tag: 'feature', text: 'Fiche lead — sélecteur "Projet" dans la sidebar droite. Lien direct vers le projet si assigné.' },
+      { tag: 'fix',     text: 'Page projet — compteur et filtre utilisent project_id explicite.' },
+      { tag: 'fix',     text: 'updateLead : projectId → project_id mappé dans les deux chemins (Electron + Supabase).' },
+    ],
+  },
+  {
+    version: 'v3.43.0',
+    date: '25 juin 2026 à 14h00',
+    title: 'Email & OpenRouter',
+    highlights: [
+      { tag: 'fix',     text: 'OpenRouter — modèles Anthropic remappés automatiquement vers meta-llama/llama-3.3-70b-instruct:free.' },
+      { tag: 'feature', text: 'Email — bannière de confirmation après envoi (sujet + destinataire) + notification macOS via Electron.' },
+      { tag: 'fix',     text: 'Panneau outreach — Score V2 (ICP/Engagement) retiré. Voicemail activée dès qu\'un numéro est présent.' },
+      { tag: 'fix',     text: 'Bouton Google Maps — shell.openExternal() dans Electron. Ouvre dans le navigateur système.' },
+      { tag: 'feature', text: 'Inbox — onglet "Envoyés" : fils du label SENT Gmail, liés automatiquement aux leads par email.' },
+      { tag: 'fix',     text: 'Inbox OAuth — resolveAccessToken maybeSingle() + fallback legacy settings + google_accounts.' },
+    ],
+  },
+  {
+    version: 'v3.42.0',
+    date: '24 juin 2026 à 14h00',
+    title: 'Google Places & Animations',
+    highlights: [
+      { tag: 'feature', text: 'Google Places auto-enrichissement : note, avis, résumé IA et top 2 avis récupérés automatiquement (cache 7j). Clé GOOGLE_PLACES_API_KEY requise.' },
+      { tag: 'feature', text: 'Section "Google Insights" dans la fiche lead : rating étoiles, résumé IA, extraits d\'avis.' },
+      { tag: 'feature', text: 'Email IA refondu : 1ère phrase spécifique issue de Google. Sans "J\'espère que tu vas bien" ni "leader".' },
+      { tag: 'design',  text: 'Fiche lead mobile : 8 onglets scrollables horizontalement (overflow-x-auto).' },
+      { tag: 'design',  text: 'Transition fluide entre onglets (AnimatePresence fade + slide 6px, 160ms).' },
+      { tag: 'design',  text: 'Sidebar — slide depuis la gauche : drawer sur mobile, width spring + inner slide sur desktop.' },
+      { tag: 'design',  text: 'Transitions de page globales : AnimatePresence mode=\'wait\' (opacity + y:8→0, 180ms).' },
+      { tag: 'feature', text: 'Migration SQL v4.9 : colonnes google_place_id, google_place_data, google_enriched_at sur leads.' },
+    ],
+  },
+  {
+    version: 'v3.41.0',
+    date: '24 juin 2026 à 10h00',
+    title: 'Navigation & Animations spring',
+    highlights: [
+      { tag: 'design',  text: 'Bottom nav mobile : 4 destinations + sheet "Plus" pour 6 destinations secondaires. Retour tactile spring (scale: 0.88).' },
+      { tag: 'design',  text: 'Icônes sidebar : strokeWidth 1.5 inactif / 2 actif, opacity 60% inactif.' },
+      { tag: 'design',  text: 'Sidebar — accordion "Paramètres & Plus" collapsable AnimatePresence (height: 0→auto, 180ms).' },
+      { tag: 'design',  text: 'Workspace switcher animé : AnimatePresence mode=\'wait\' key={activeWorkspace.id}.' },
+      { tag: 'design',  text: 'Barre de filtres leads plus aérée : gap-3, hauteurs h-8, hover vert #047857.' },
+      { tag: 'design',  text: 'Toutes les animations Framer Motion spring (stiffness 300–400, damping 30, mass 1).' },
+    ],
+  },
+  {
+    version: 'v3.40.0',
+    date: '23 juin 2026 à 22h00',
+    title: 'Smartlead, Voicemail & Bibliothèque',
+    highlights: [
+      { tag: 'feature', text: 'Smartlead sequences : enrôler un lead dans une campagne Smartlead depuis la fiche lead. Score ICP + canaux recommandés.' },
+      { tag: 'feature', text: 'Voicemail Drop Cowboy : script IA ≤80 mots + envoi Ringless Voicemail via API Drop Cowboy.' },
+      { tag: 'feature', text: 'Bibliothèque de preuves (/leverage-library) : CRUD études de cas. L\'IA sélectionne la plus pertinente lors de la génération d\'email.' },
+      { tag: 'feature', text: 'Paramètres → Intégrations : clés Smartlead, Drop Cowboy, IA Inbox (toggle auto-réponse + seuil confiance).' },
+      { tag: 'feature', text: 'Migration SQL v4.8 : tables leverage_library et voicemail_queue + colonnes settings.' },
+    ],
+  },
+  {
+    version: 'v3.39.0',
+    date: '23 juin 2026 à 20h00',
+    title: 'Composer Gmail & DM',
+    highlights: [
+      { tag: 'feature', text: 'Email → Brouillon Gmail : l\'envoi crée un brouillon dans Gmail. Bouton "Sauvegarder" conserve dans la table drafts.' },
+      { tag: 'feature', text: 'Onglet DM (Instagram/Facebook) : composer un message direct, générer un template IA, copier en 1 clic.' },
+      { tag: 'feature', text: 'Description du lead éditable : Textarea avec bouton "Enregistrer" via updateLead.' },
+      { tag: 'feature', text: 'Filtre "Avis minimum" dans le scraper : slider 0–500 avis, filtrage en temps réel.' },
+      { tag: 'feature', text: 'Dernier lead visité en tête de liste avec badge "Récemment visité".' },
+    ],
+  },
+  {
+    version: 'v3.38.0',
+    date: '23 juin 2026 à 18h00',
+    title: 'Réseaux sociaux & Instagram',
+    highlights: [
+      { tag: 'feature', text: 'Réseaux sociaux sur les fiches leads : section Instagram/Facebook/LinkedIn + site web avec icônes SVG natifs.' },
+      { tag: 'feature', text: 'Galerie Instagram : bouton "Voir les posts" scrape le profil, affiche une grille 3×3 des derniers posts.' },
+      { tag: 'feature', text: 'Bibliothèque → Images : upload vers Supabase Storage, galerie avec prévisualisation, copie d\'URL, suppression.' },
+      { tag: 'feature', text: 'Setup agence : le logo importé est sauvegardé dans la bibliothèque. Couleur d\'accent workspace avec aperçu live.' },
+      { tag: 'feature', text: 'Migration SQL v4.7 : colonnes agency_website, agency_logo_url, social_links, table services.' },
+    ],
+  },
+  {
+    version: 'v3.37.0',
+    date: '23 juin 2026 à 16h00',
+    title: 'Composer unifié & Enrichissement',
+    highlights: [
+      { tag: 'feature', text: 'Composer unifié dans la fiche lead : 4 actions — Email (Gmail), Appel (script IA + résultats), Tâche rapide, RDV (booking).' },
+      { tag: 'feature', text: 'Enrichissement v2 : logo (Google Favicons), taille estimée (Claude AI), stack tech (19 technos), score présence web 0-100.' },
+      { tag: 'feature', text: 'Page /ads : 3 onglets — Facebook Lead Ads (OAuth Meta), Google Ads (guide UTM), Attribution marketing.' },
+      { tag: 'feature', text: 'Dashboard Attribution : 4 KPIs + tableau par source (CPL, taux RDV, délai, pipeline).' },
+      { tag: 'feature', text: 'Alerte Speed-to-Lead dynamique : rouge si délai > 5 min, vert si optimal.' },
+    ],
+  },
+  {
+    version: 'v3.36.0',
+    date: '23 juin 2026 à 14h00',
+    title: 'Déduplication & Speed-to-Lead',
+    highlights: [
+      { tag: 'feature', text: 'Déduplication multi-source : détection automatique par domaine, téléphone et nom (algorithme Levenshtein). Tab "Doublons" dans /acquisition.' },
+      { tag: 'feature', text: 'Fusion intelligente : le lead avec le plus de champs remplis devient le principal, les doublons sont archivés.' },
+      { tag: 'feature', text: 'Widget Speed-to-Lead dans /acquisition : timer SLA par lead entrant (vert < 2h, ambre < 24h, rouge > 24h).' },
+      { tag: 'feature', text: 'Nouveaux types séquences multicanales : call, sms, ab_test avec scripts et variantes.' },
+      { tag: 'feature', text: '150+ nouvelles clés i18n (FR/EN/DE) pour les modules v4.5.' },
+    ],
+  },
+  {
+    version: 'v3.35.1',
+    date: '23 juin 2026 à 12h30',
+    title: 'Icônes officielles',
+    highlights: [
+      { tag: 'fix',    text: 'Résolution des bugs d\'icônes géantes (ex: Teams) qui brisaient la mise en page.' },
+      { tag: 'design', text: 'Migration vers les logos officiels @thesvg/react (Gmail, Drive, Maps, Zoom, SharePoint, Teams, Todoist, Notion, Slack, Tasks, Meet).' },
+      { tag: 'design', text: 'Composant Google Contacts haute fidélité.' },
+    ],
+  },
+  {
+    version: 'v3.35.0',
+    date: '23 juin 2026 à 12h00',
+    title: 'Bibliothèque d\'icônes premium',
+    highlights: [
+      { tag: 'design', text: 'Intégration globale de @thesvg/react — icônes officielles hautes fidélité pour tous les services connectés.' },
+      { tag: 'design', text: 'Icônes personnalisées pour Gmail, Google Maps, Google Chat, Drive, Calendar, Slack, GitHub, Todoist, Teams.' },
+      { tag: 'design', text: 'Cartes de configuration dans Paramètres : suppression des arrière-plans colorés au profit de boîtes neutres.' },
+      { tag: 'design', text: 'Fiches lead : logos Gmail, Google Maps, Google Calendar sur les onglets et actions.' },
+    ],
+  },
+  {
+    version: 'v3.34.0',
+    date: '23 juin 2026 à 10h00',
+    title: 'Dashboard premium',
+    highlights: [
+      { tag: 'design', text: 'Alignement esthétique du Dashboard sur la charte graphique premium.' },
+      { tag: 'design', text: 'Suppression des ombres surélevées au profit du design plat et bordures hairline #e5e5e0.' },
+      { tag: 'design', text: 'Arrière-plan grille Cult UI (bg-grid-pattern-20).' },
+      { tag: 'design', text: 'Couleurs accentuation uniformisées en vert émeraude (#059669) sur tous les widgets.' },
+      { tag: 'design', text: 'Mise à jour des 17 widgets du cockpit (objectifs, agenda, séquences, tâches, suggestions IA, stats…).' },
+    ],
+  },
+  {
+    version: 'v3.33.0',
+    date: '23 juin 2026 à 08h00',
+    title: 'Refonte 5 pages clés',
+    highlights: [
+      { tag: 'design', text: 'Refonte Premium : Agenda, Acquisition, Comptes, Skills IA, Automations — conformes à la charte Cult UI.' },
+      { tag: 'design', text: 'Grille bg-grid-pattern-20 harmonisée sur toutes ces pages.' },
+      { tag: 'design', text: 'Suppression des ombres, typographie dense, accents vert #059669 uniformes.' },
+      { tag: 'feature', text: 'i18n complète : textes en dur remplacés par des clés dynamiques (FR/EN/DE).' },
+      { tag: 'feature', text: 'Agenda : calendrier mensuel localisé + vues Semaine/Jour horaires.' },
+    ],
+  },
+  {
+    version: 'v3.32.0',
+    date: '23 juin 2026 à 06h00',
+    title: 'Partage lead & Export Drive',
+    highlights: [
+      { tag: 'fix',     text: 'Lien de partage lead corrigé — share-preview réécrit avec 2 requêtes Supabase séparées. Fonctionne maintenant.' },
+      { tag: 'design',  text: 'Aperçu partagé : note Google (étoiles), badges ville/catégorie, score en vert Minerva.' },
+      { tag: 'feature', text: 'Export Google Drive — documents exportés en Google Docs (HTML→Docs) avec mise en forme complète.' },
+      { tag: 'feature', text: 'Intégrations Google — Google Contacts et Google Tasks ajoutés. Panneau Google Workspace unifié.' },
+      { tag: 'fix',     text: 'Génération de messages — fallback Anthropic Haiku si le modèle configuré échoue.' },
+      { tag: 'feature', text: 'Migration SQL v4.5 — colonnes enrichissement leads + correction RLS table lead_shares.' },
+    ],
+  },
+  {
+    version: 'v3.31.0',
+    date: '22 juin 2026 à 23h55',
+    title: 'Chat images & Nettoyage codebase',
+    highlights: [
+      { tag: 'feature', text: 'Lightbox plein écran dans Messages — cliquer une image ouvre un overlay plein écran.' },
+      { tag: 'feature', text: 'Score v2 auto-persisté — calculé et sauvegardé à l\'ouverture d\'une fiche lead.' },
+      { tag: 'fix',     text: 'Nettoyage codebase — 71 fichiers supprimés (scratch-*.cjs, screenshots, 13 composants démo). Migrations SQL déplacées.' },
+      { tag: 'fix',     text: 'RLS fix documenté — Policies leads_workspace / tasks_workspace identifiées et supprimées. Données restaurées.' },
+    ],
+  },
+  {
+    version: 'v3.30.0',
+    date: '22 juin 2026 à 23h10',
+    title: 'Scoring v2 multidimensionnel',
+    highlights: [
+      { tag: 'feature', text: 'Scoring v2 — Score 0-100 sur 4 axes : ICP Fit, Engagement (pipeline + température), Urgence, Revenu.' },
+      { tag: 'feature', text: 'Carte score dans la fiche lead — 4 barres de progression colorées avec valeurs individuelles /25.' },
+      { tag: 'feature', text: 'API /api/leads/score — calcule et sauvegarde les 4 sous-scores + log score_updated dans lead_events.' },
+      { tag: 'feature', text: 'Migration SQL — 4 nouvelles colonnes : score_icp, score_engagement, score_urgency, score_revenue.' },
+    ],
+  },
+  {
+    version: 'v3.29.0',
+    date: '22 juin 2026 à 22h55',
+    title: 'Images & Emoji dans le chat',
+    highlights: [
+      { tag: 'feature', text: 'Rendu natif des images et GIFs — s\'affichent correctement, clic pour plein écran.' },
+      { tag: 'feature', text: 'Emoji picker — 45 emojis en 3 catégories (Smileys, Gestes, Symboles).' },
+      { tag: 'feature', text: 'Upload image/GIF avec compression auto (max 800px, qualité 70%). Aperçu avant envoi.' },
+      { tag: 'feature', text: 'Queue Processor Outreach — vérifie fenêtre d\'envoi et quota, envoie 1 email HTML par workspace par run.' },
+    ],
+  },
+  {
+    version: 'v3.28.0',
+    date: '23 juin 2026 à 00h05',
+    title: 'Générateur de propositions',
+    highlights: [
+      { tag: 'feature', text: 'Générateur de proposition interactif — sélecteur de services, ajustement de prix en direct, lignes personnalisées.' },
+      { tag: 'feature', text: 'Calculateur financier — Total HT, taxes (14.975% défaut QC) et TTC en temps réel.' },
+      { tag: 'feature', text: 'Aperçu A4 format papier — rendu en direct style impression professionnel.' },
+      { tag: 'feature', text: 'Export PDF natif Desktop via printToPdf Electron.' },
+      { tag: 'feature', text: 'Enrichissement B2B — scraping site, identification du décideur, pitch d\'appel québécois.' },
+    ],
+  },
+  {
+    version: 'v3.27.4',
+    date: '22 juin 2026 à 19h45',
+    title: 'Correctifs OpenRouter & Scraping',
+    highlights: [
+      { tag: 'fix', text: 'Modèles retirés d\'OpenRouter — redirection automatique vers openrouter/free pour éviter les 404.' },
+      { tag: 'fix', text: 'Scraping site web — élimination automatique des balises Markdown brutes en cas de fallback.' },
+      { tag: 'fix', text: 'Paramètres IA — routeur automatique libre d\'OpenRouter proposé par défaut.' },
+    ],
+  },
+  {
+    version: 'v3.27.3',
+    date: '22 juin 2026 à 19h30',
+    title: 'Runtime API Chat',
+    highlights: [
+      { tag: 'fix', text: 'Runtime API Chat — changement de Edge vers Node.js pour résoudre les erreurs de bundle Anthropic SDK.' },
+      { tag: 'fix', text: 'Streaming SSE maintenu sans interruption pour les utilisateurs.' },
+    ],
+  },
+  {
+    version: 'v3.27.2',
+    date: '22 juin 2026 à 19h15',
+    title: 'Migration Next.js 16 Proxy',
+    highlights: [
+      { tag: 'fix', text: 'Migration middleware.ts vers proxy.ts (Next.js 16) — résout les erreurs de bundle Vercel.' },
+      { tag: 'fix', text: 'Bascule vers Node.js natif pour la compatibilité avec toutes les dépendances.' },
+      { tag: 'fix', text: 'Nettoyage config Webpack obsolète dans next.config.ts.' },
+    ],
+  },
+  {
+    version: 'v3.27.1',
+    date: '22 juin 2026 à 18h50',
+    title: 'Configuration Vercel & OpenRouter',
+    highlights: [
+      { tag: 'fix', text: 'OPENROUTER_API_KEY enregistrée sur Vercel (Production, Preview, Development).' },
+      { tag: 'fix', text: 'Clé OpenRouter ajoutée dans .env.production.local pour les tests locaux.' },
+      { tag: 'fix', text: 'Liaison IA opérationnelle et validée.' },
+    ],
+  },
+  {
+    version: 'v3.27.0',
+    date: '22 juin 2026 à 22h45',
+    title: 'Moteur IA unifié',
+    highlights: [
+      { tag: 'feature', text: 'lib/ai.ts — moteur IA prenant en charge OpenRouter, Anthropic avec cascade intelligente des clés API.' },
+      { tag: 'feature', text: 'Streaming SSE standardisé — format delta OpenAI pour compatibilité client.' },
+      { tag: 'feature', text: 'Refactoring 10 routes d\'API vers le helper unifié.' },
+      { tag: 'feature', text: 'SQLite Electron — colonnes openrouter_key, ai_provider, ai_model avec sync bidirectionnel Supabase.' },
+      { tag: 'fix',     text: 'Correctifs TypeScript — déstructuration contextUser + typage index traductions. Compilation réussie.' },
+    ],
+  },
+  {
+    version: 'v3.26.0',
+    date: '22 juin 2026 à 20h00',
+    title: 'Centre d\'acquisition',
+    highlights: [
+      { tag: 'feature', text: 'Centre d\'Acquisition (/acquisition) — tour de contrôle des leads entrants, filtrables par source. Badge SLA coloré.' },
+      { tag: 'feature', text: 'Actions rapides — "Qualifier" passe un lead de New → Contacted sans ouvrir la fiche.' },
+      { tag: 'feature', text: 'Timeline unifiée par lead — historique chronologique dans la fiche lead (lead_events + événements synthétiques).' },
+      { tag: 'feature', text: 'Colonnes DB : lead_source_type, utm_*, Table lead_events. Migration SQL v4.1 incluse.' },
+    ],
+  },
+  {
+    version: 'v3.25.0',
+    date: '22 juin 2026 à 18h00',
+    title: 'Temps réel & Présence en ligne',
+    highlights: [
+      { tag: 'feature', text: 'Leads & Tâches en temps réel — Supabase Realtime déclenche des mises à jour immédiates sans rechargement.' },
+      { tag: 'feature', text: 'Présence en ligne — détection des membres connectés avec page active et avatar.' },
+      { tag: 'feature', text: 'Edge Runtime — /api/chat, /api/integrations/slack et notion en Edge Runtime Vercel.' },
+      { tag: 'feature', text: 'Web Push (Service Worker) — gestion push + notificationclick. Endpoint /api/push/subscribe.' },
+    ],
+  },
+  {
+    version: 'v3.24.0',
+    date: '22 juin 2026 à 16h00',
+    title: 'Canvas WYSIWYG & Fenêtre flottante',
+    highlights: [
+      { tag: 'feature', text: 'Canvas TipTap — éditeur de texte riche style Word/Notion. Gras, Italique, Titres sans écrire du Markdown.' },
+      { tag: 'feature', text: 'Fenêtre flottante — bouton "Détacher" : canvas déplaçable par glisser-déposer. "Ancrer" le ramène.' },
+      { tag: 'feature', text: 'Sauvegarde directe dans la Bibliothèque — bouton "Bibliothèque" dans l\'en-tête.' },
+      { tag: 'design',  text: 'Indicateur de réflexion — icône Minerva pulse pendant la génération IA.' },
+      { tag: 'feature', text: 'Points de contrôle — marque-page sur chaque message pour restaurer la conversation.' },
+    ],
+  },
+  {
+    version: 'v3.23.0',
+    date: '22 juin 2026 à 14h30',
+    title: 'Slack & Notion connecteurs',
+    highlights: [
+      { tag: 'feature', text: 'Slack connector — webhook entrant dans Paramètres. Toutes les notifications poussées dans votre canal.' },
+      { tag: 'feature', text: 'Notion connector — token + ID de base pour exporter les documents Canvas vers Notion.' },
+      { tag: 'feature', text: 'Claude Sonnet par défaut — modèle assistant mis à jour. Plus de réponses simulées.' },
+      { tag: 'fix',     text: 'Boutons Services — derniers boutons oranges corrigés en vert (#047857).' },
+    ],
+  },
+  {
+    version: 'v3.22.0',
+    date: '22 juin 2026 à 12h56',
+    title: 'Comptes / Entreprises vue 360°',
+    highlights: [
+      { tag: 'feature', text: 'Comptes / Entreprises (/accounts) — leads groupés par entreprise. Vue détaillée par compte : contacts, pipeline cumulé, visites terrain et notes.' },
+      { tag: 'feature', text: 'Accès rapide depuis la sidebar dans la section CRM.' },
+    ],
+  },
+  {
+    version: 'v3.21.0',
+    date: '22 juin 2026 à 12h52',
+    title: 'Galerie de preuves de visite',
+    highlights: [
+      { tag: 'feature', text: 'Galerie des preuves (/field/gallery) — photos terrain regroupées par mois, avec résultat, contact, niveau d\'intérêt et aperçu plein écran.' },
+      { tag: 'feature', text: 'Accessible depuis Mode Terrain — bouton "Preuves" dans l\'en-tête de tournée.' },
+    ],
+  },
+  {
+    version: 'v3.20.0',
+    date: '22 juin 2026 à 12h48',
+    title: 'Agenda : vues Semaine & Jour',
+    highlights: [
+      { tag: 'feature', text: 'Vues Semaine et Jour — grille horaire 7h–20h avec rendez-vous placés à leur heure.' },
+      { tag: 'feature', text: 'Création rapide — cliquez sur un créneau horaire pour planifier un RDV à cette heure.' },
+    ],
+  },
+  {
+    version: 'v3.19.0',
+    date: '22 juin 2026 à 12h45',
+    title: 'Skills partagées & Contexte CRM',
+    highlights: [
+      { tag: 'feature', text: 'Skills partagées par équipe — compétences activées partagées au niveau du workspace.' },
+      { tag: 'feature', text: '@ contexte CRM dans le chat — tapez @ pour injecter vos vrais leads, pipeline, tâches.' },
+    ],
+  },
+  {
+    version: 'v3.18.0',
+    date: '22 juin 2026 à 12h37',
+    title: 'Roadmap mise à jour',
+    highlights: [
+      { tag: 'feature', text: 'Roadmap — tout ce qui a été livré (v3.0→v3.17) marqué "Disponible".' },
+      { tag: 'feature', text: 'Onglet "Prévu" : intégrations Slack/Notion/SharePoint, Comptes/Entreprises, timeline unifiée.' },
+    ],
+  },
+  {
+    version: 'v3.17.0',
+    date: '22 juin 2026 à 12h25',
+    title: 'Vision & Qualité du code',
+    highlights: [
+      { tag: 'feature', text: 'Modèle Vision — joindre une image dans l\'Assistant ; envoyée à un modèle vision, aperçu dans la conversation.' },
+      { tag: 'feature', text: 'Google Connect dans Intégrations — design soigné deux volets depuis la page Intégrations.' },
+      { tag: 'fix',     text: 'Qualité — résolution des 262 erreurs ESLint. Lint : 0 erreur.' },
+    ],
+  },
+  {
+    version: 'v3.16.0',
+    date: '22 juin 2026 à 11h51',
+    title: 'Vert partout — Zéro orange',
+    highlights: [
+      { tag: 'design', text: 'Balayage global — tout l\'orange de l\'application (28 fichiers) remplacé par le vert de marque.' },
+      { tag: 'design', text: 'DESIGN.md et CLAUDE.md — vert #059669 défini comme unique accent par défaut.' },
+    ],
+  },
+  {
+    version: 'v3.15.0',
+    date: '22 juin 2026 à 11h44',
+    title: 'Accent vert harmonisé',
+    highlights: [
+      { tag: 'design', text: 'Pages Aujourd\'hui, Agenda, Services, Configuration, Automations — orange → vert de marque.' },
+    ],
+  },
+  {
+    version: 'v3.14.0',
+    date: '22 juin 2026 à 11h41',
+    title: 'Page Skills en vert',
+    highlights: [
+      { tag: 'design', text: 'Page Skills — accent orange → vert de marque.' },
+      { tag: 'design', text: 'Puces de compétences @ dans le chat — accent vert.' },
+    ],
+  },
+  {
+    version: 'v3.13.0',
+    date: '22 juin 2026 à 11h35',
+    title: 'Skills cloud',
+    highlights: [
+      { tag: 'feature', text: 'Skills synchronisées dans Supabase — disponibles sur tous vos appareils.' },
+      { tag: 'feature', text: 'Compétences par défaut auto-initialisées à la première utilisation.' },
+    ],
+  },
+  {
+    version: 'v3.12.0',
+    date: '22 juin 2026 à 11h23',
+    title: 'Nouvelle page Skills',
+    highlights: [
+      { tag: 'feature', text: 'Page Skills — activez des compétences IA par packs (Ventes, Marketing, Produit, Données, Opérations, Support).' },
+      { tag: 'feature', text: 'Créateur de compétences — créez vos propres compétences avec instructions sur mesure.' },
+      { tag: 'feature', text: '@ dans le chat — insérez une compétence pour injecter ses instructions dans la requête.' },
+    ],
+  },
+  {
+    version: 'v3.11.0',
+    date: '22 juin 2026 à 11h16',
+    title: 'Titres IA & Modèle confirmé',
+    highlights: [
+      { tag: 'feature', text: 'Titres de discussion générés par l\'IA à partir du premier échange.' },
+      { tag: 'feature', text: 'Modèle IA confirmé — "Minerva AI (Llama 3.3 70B)" via OpenRouter, provider transmis explicitement.' },
+    ],
+  },
+  {
+    version: 'v3.10.0',
+    date: '22 juin 2026 à 11h11',
+    title: 'Connexion Google fiabilisée',
+    highlights: [
+      { tag: 'feature', text: 'Nouvelle fenêtre de connexion Google — design soigné en deux volets, réutilisable depuis l\'inbox.' },
+      { tag: 'fix',     text: 'URI de redirection OAuth canonique — évite les erreurs "redirect_uri_mismatch".' },
+    ],
+  },
+  {
+    version: 'v3.9.0',
+    date: '22 juin 2026 à 01h23',
+    title: 'Page de prise de RDV',
+    highlights: [
+      { tag: 'feature', text: 'Page dédiée /agenda/new — titre, date, heure, durée, lead associé, notes, synchronisation Google.' },
+      { tag: 'design',  text: 'Agenda — charte graphique respectée (tokens couleurs, rayons, typographie).' },
+    ],
+  },
+  {
+    version: 'v3.8.0',
+    date: '22 juin 2026 à 01h19',
+    title: 'Roadmap cochable & Notifications',
+    highlights: [
+      { tag: 'feature', text: 'Vérifications cochables dans la Roadmap — compteur d\'avancement par phase (état sauvegardé).' },
+      { tag: 'feature', text: 'Notification quotidienne des relances suggérées par l\'intelligence comportementale.' },
+    ],
+  },
+  {
+    version: 'v3.7.0',
+    date: '22 juin 2026 à 01h14',
+    title: 'Notifications de mention & Plein écran',
+    highlights: [
+      { tag: 'feature', text: 'Notifications de mention — @mention dans le chat d\'équipe → notification automatique.' },
+      { tag: 'feature', text: 'Images en plein écran dans le chat d\'équipe.' },
+    ],
+  },
+  {
+    version: 'v3.6.0',
+    date: '22 juin 2026 à 00h46',
+    title: 'Intelligence comportementale activée',
+    highlights: [
+      { tag: 'feature', text: 'Intelligence comportementale — bilans hebdomadaires + relances suggérées désormais pleinement fonctionnels.' },
+      { tag: 'feature', text: 'Bilans hebdomadaires — IA génère un résumé d\'opportunités (leads à relancer) le week-end.' },
+      { tag: 'feature', text: 'Relances suggérées dans Today — email de réactivation, appel, audit de site avec création de tâche en 1 clic.' },
+    ],
+  },
+  {
+    version: 'v3.5.0',
+    date: '22 juin 2026 à 00h41',
+    title: 'Activité équipe & Services',
+    highlights: [
+      { tag: 'feature', text: 'Activité de l\'équipe — widget temps réel des événements workspace (nouveaux leads, deals, tâches terminées).' },
+      { tag: 'design',  text: 'Services & Tarifs — conformité charte (typographie unifiée).' },
+      { tag: 'design',  text: 'Automations — icônes propres (plus d\'emojis), couleurs alignées.' },
+    ],
+  },
+  {
+    version: 'v3.4.0',
+    date: '22 juin 2026 à 00h35',
+    title: 'Canvas automatique & OpenRouter',
+    highlights: [
+      { tag: 'feature', text: 'Canvas automatique — l\'assistant ouvre le Canvas seul quand il rédige un document substantiel.' },
+      { tag: 'feature', text: 'OpenRouter intégré — clé configurée, modèles accessibles de façon fiable.' },
+      { tag: 'feature', text: 'Modèle Vision (texte + image) — nouveau modèle sélectionnable dans l\'assistant.' },
+    ],
+  },
+  {
+    version: 'v3.3.0',
+    date: '22 juin 2026 à 00h29',
+    title: 'Boîte de réception réparée',
+    highlights: [
+      { tag: 'fix',     text: 'Inbox — détection Google corrigée : reconnue quelle que soit la méthode de connexion. Fils Gmail affichés.' },
+      { tag: 'fix',     text: 'Lecture des fils — détail et suggestions IA fonctionnent quelle que soit la connexion.' },
+      { tag: 'design',  text: 'Conformité design — écran de connexion inbox conforme à DESIGN.md.' },
+    ],
+  },
+  {
+    version: 'v3.2.0',
+    date: '22 juin 2026 à 00h22',
+    title: 'Nouveau Agenda',
+    highlights: [
+      { tag: 'feature', text: 'Calendrier mensuel complet accessible en permanence depuis la sidebar.' },
+      { tag: 'feature', text: 'Prise de rendez-vous — cliquez sur une date pour créer un RDV (titre, heure, durée, lead associé).' },
+      { tag: 'feature', text: 'Notification automatique de l\'équipe à chaque nouveau RDV.' },
+      { tag: 'feature', text: 'Synchronisation Google Agenda — ajout direct si Google est connecté.' },
+      { tag: 'feature', text: 'Tâche Todoist automatique — création à l\'heure du rendez-vous si configuré.' },
+    ],
+  },
+  {
+    version: 'v3.1.0',
+    date: '22 juin 2026 à 00h16',
+    title: 'Mode Terrain amélioré',
+    highlights: [
+      { tag: 'fix',     text: 'Compte-rendu de visite — page "Enregistrer le passage" scrollable. Bouton Confirmer toujours atteignable.' },
+      { tag: 'feature', text: 'Champs Contact rencontré + Niveau d\'intérêt (Chaud / Tiède / Froid).' },
+      { tag: 'feature', text: 'Photo preuve — joindre une photo de la visite comme preuve.' },
+      { tag: 'feature', text: 'Notification automatique de l\'équipe à la confirmation d\'un passage.' },
+    ],
+  },
+  {
+    version: 'v3.0.0',
+    date: '22 juin 2026 à 00h08',
+    title: 'Base solide v3.0',
+    highlights: [
+      { tag: 'fix',     text: 'Correctif date changelog — "Invalid Date" résolu.' },
+      { tag: 'design',  text: 'Page Gérer le rôle refondue — look premium : carte membre, 3 niveaux d\'accès, aperçu des modules.' },
+      { tag: 'feature', text: 'Mode Terrain — "Prochain arrêt", lien Google Maps, bouton "Prévenir l\'équipe", conformité DESIGN.md.' },
+      { tag: 'feature', text: 'Website Scraper IA — extraction + description commerciale par IA, réinjectée dans scripts et emails.' },
+      { tag: 'feature', text: 'Notifications équipe fonctionnelles — /api/notifications/team diffuse à tous les membres actifs.' },
+      { tag: 'fix',     text: 'Membres en double corrigés — déduplication par utilisateur, propriétaire n\'apparaît plus deux fois.' },
+      { tag: 'feature', text: 'Chat équipe enrichi — emoji picker, images/GIF, avatars réels des membres.' },
+    ],
+  },
+  {
+    version: 'v2.99.0',
+    date: '21 juin 2026 à 23h59',
+    title: 'Statuts membres & Présence',
+    highlights: [
+      { tag: 'feature', text: 'Statuts membres — Invité (en attente), A rejoint, Accès app. Badge "En attente" ambré.' },
+      { tag: 'feature', text: 'Présence en ligne — point vert + label "● En ligne" pour les membres actifs.' },
+      { tag: 'feature', text: 'Toast de bienvenue — notification temps réel quand un membre rejoint le workspace.' },
+    ],
+  },
+  {
+    version: 'v2.98.0',
+    date: '21 juin 2026 à 23h40',
+    title: 'Carte, Automations & Notifications',
+    highlights: [
+      { tag: 'fix',     text: 'Carte — clic lead dans la sidebar → flyTo immédiat sans double-clic.' },
+      { tag: 'fix',     text: 'Automation — "Nouvelle Règle" redirige vers builder 4 étapes.' },
+      { tag: 'feature', text: 'Notifications desktop — rappels quotidiens (tâches en retard, pipeline vide). Electron + Web.' },
+      { tag: 'feature', text: 'Mode Terrain /field/[plan]/prepare/[lead] — script IA, notes précédentes, formulaire pré-notes.' },
+      { tag: 'feature', text: 'Templates email — CRUD complet, A/B test, tags, tokens variables, stats.' },
+    ],
+  },
+  {
+    version: 'v2.97.0',
+    date: '21 juin 2026 à 18h00',
+    title: 'Booking public & Rôles équipe',
+    highlights: [
+      { tag: 'feature', text: 'Page publique /book/[username] — calendrier, créneaux freebusy Google, formulaire, confirmation animée.' },
+      { tag: 'feature', text: '/team/member/[id] — assigner rôle défaut ou rôle custom avec 19 toggles, prévisualisation des accès.' },
+      { tag: 'fix',     text: 'Fixes Supabase — migration v296 : 8 colonnes/tables manquantes. order by invited_at corrigé.' },
+    ],
+  },
+  {
+    version: 'v2.96.0',
+    date: '21 juin 2026 à 12h00',
+    title: 'Invitation & Rôles personnalisés',
+    highlights: [
+      { tag: 'design',  text: 'Page /join redesignée — animations CSS, avatar workspace, confetti, badge rôle, modules accessibles.' },
+      { tag: 'feature', text: 'Quitter une équipe — bouton visible pour les non-propriétaires. Accès révoqué immédiatement.' },
+      { tag: 'feature', text: 'Realtime team pages — refresh automatique à l\'invitation ou à l\'arrivée d\'un membre.' },
+      { tag: 'feature', text: 'Sidebar filtrée par rôle — /api/team/my-permissions masque les entrées inaccessibles.' },
+      { tag: 'feature', text: 'Rôles personnalisés — onglet "Rôles & Permissions" dans /team : CRUD complet de rôles (nom, couleur, 19 modules).' },
+    ],
+  },
+  {
+    version: 'v2.95.0',
+    date: '21 juin 2026',
+    title: 'Facturation & Partage lead',
+    highlights: [
+      { tag: 'feature', text: 'Facturation — module complet 5 onglets : Abonnement, Forfaits, Utilisation, Paiement, Factures.' },
+      { tag: 'feature', text: 'Lead partage public — lien /lead-preview/[token] accessible sans compte. Page lecture seule.' },
+      { tag: 'feature', text: 'Token invite sécurisé — redirect chain propre /join/[token] → login → retour /join/[token].' },
+      { tag: 'feature', text: 'Plans Minerva — 4 plans : Gratuit, Pro (29$/mois), Business (79$/mois), Entreprise.' },
+    ],
+  },
+  {
+    version: 'v2.94.0',
+    date: '21 juin 2026',
+    title: 'Canvas & Invitations par lien',
+    highlights: [
+      { tag: 'feature', text: 'Canvas — boutons fonctionnels : Notes horodatées, Historique de documents, Taille de texte (S/M/L).' },
+      { tag: 'feature', text: 'Canvas — Save to Library après chaque export (HTML / MD / TXT).' },
+      { tag: 'feature', text: 'Services & Tarifs — 3 onglets : Catalogue, Forfaits, Devis (export HTML imprimable).' },
+      { tag: 'feature', text: 'Invitations par lien — token unique à partager. Page /join/[token] pour l\'acceptation.' },
+      { tag: 'feature', text: 'IA — 7 Action Pills avec prompts contextuels (vrais leads, pipeline, tâches en retard).' },
+    ],
+  },
+  {
+    version: 'v2.93.0',
+    date: '21 juin 2026',
+    title: 'Fiche lead enrichie & Kanban DnD',
+    highlights: [
+      { tag: 'feature', text: 'Fiche lead — étoiles (rating), avis, téléphone cliquable, site web, lien Google Maps directement visibles.' },
+      { tag: 'feature', text: 'Pipeline Kanban drag & drop natif (HTML5). Colonne cible surlignée. Flèches ← → toujours disponibles.' },
+      { tag: 'feature', text: 'Carte — clic lead → FlyTo animé (zoom 15). Auto-route OSRM dès 2+ waypoints (debounce 900ms).' },
+      { tag: 'feature', text: 'Today — onglet "Boîte de réception" pour accéder à Gmail sans quitter Today.' },
+    ],
+  },
+];
+
+// ─── Main Component ─────────────────────────────────────────────────────────────
+
 export default function ChangelogPage() {
   useEffect(() => { document.title = 'Changelog — Minerva'; }, []);
-  const { t } = useLanguage();
 
-  const versions: ChangelogVersion[] = [
-    {
-      version: 'v8.6.0',
-      date: '2026-07-01',
-      titleKey: 'changelog.v3_42_0_title' as TranslationKey,
-      descKey: 'changelog.v3_42_0_desc' as TranslationKey,
-      highlights: [
-        { tag: 'feature', text: 'Bilan hebdomadaire automatisé — /api/insights/weekly enrichi avec métriques NBA (taux d\'acceptation, actions exécutées), bookings, réponses positives, velocity pipeline et top niche. WeeklyReportCard dans /cockpit avec cache localStorage.' },
-        { tag: 'feature', text: 'Cron lundi 8h — /api/cron/weekly-report génère et distribue le bilan pour tous les workspaces actifs, stocké comme notification in-app liée à /cockpit.' },
-        { tag: 'feature', text: 'Taux d\'acceptation NBA dans Command Center — métrique "acceptées/suggérées" visible en temps réel dans le panneau de performance.' },
-        { tag: 'design', text: 'WeeklyReportCard — 4 KPIs (NBA %, bookings, réponses positives, leads avancés), badge top niche, rapport IA expandable, skeleton loading + retry.' },
-      ],
-    },
-    {
-      version: 'v8.5.0',
-      date: '2026-07-01',
-      titleKey: 'changelog.v3_42_0_title' as TranslationKey,
-      descKey: 'changelog.v3_42_0_desc' as TranslationKey,
-      highlights: [
-        { tag: 'feature', text: 'Workload Board — /api/team/workload : charge par membre (leads assignés, NBA en attente, SLA dépassés, bookings semaine). Board 3 colonnes dans Équipe → Charge de travail.' },
-        { tag: 'feature', text: 'SLA internes — /api/team/sla détecte les actions dépassant leur sla_due_at, stampe sla_breached_at et notifie l\'équipe. Déclenché automatiquement à l\'ouverture du Command Center.' },
-        { tag: 'feature', text: 'Feed revenus équipe — onglet "Feed revenus" dans Équipe : filtre les événements à valeur commerciale (réponses positives, bookings) avec icônes colorées et horodatage relatif.' },
-        { tag: 'feature', text: 'SmartAssignButton — popover d\'assignation NBA à un membre : POST /api/nba/assign notifie l\'assignataire et met à jour agent_actions.assigned_to.' },
-        { tag: 'design', text: 'Team page — 3 onglets : Équipe (existant), Charge de travail, Feed revenus.' },
-      ],
-    },
-    {
-      version: 'v8.4.0',
-      date: '2026-07-01',
-      titleKey: 'changelog.v3_42_0_title' as TranslationKey,
-      descKey: 'changelog.v3_42_0_desc' as TranslationKey,
-      highlights: [
-        { tag: 'feature', text: 'Closed-loop Reply Positive — /api/triggers/reply-positive : réponse positive détectée → pipeline mis à jour (Meeting Booked, Hot), action book_meeting créée, équipe notifiée. Boucle fermée automatique.' },
-        { tag: 'feature', text: 'Reply-classify enrichi — intent "interested" ou "scheduling" déclenche la closed-loop en parallèle. Backward-compatible sans lead_id.' },
-      ],
-    },
-    {
-      version: 'v8.3.0',
-      date: '2026-07-01',
-      titleKey: 'changelog.v3_42_0_title' as TranslationKey,
-      descKey: 'changelog.v3_42_0_desc' as TranslationKey,
-      highlights: [
-        { tag: 'feature', text: 'Strategy Memory — table strategy_memory avec 3 types de learnings : timing (meilleur jour/niche), canal (email/appel/terrain/niche), campagne (taux de réponse). Algorithme pur dans lib/strategy-memory.ts.' },
-        { tag: 'feature', text: 'Recommandations IA stratégiques — /api/strategy/learnings génère 3 recommandations actionnables via Claude à partir des learnings observés et des niches sous-performantes.' },
-        { tag: 'design', text: 'StrategyMemoryCard dans /cockpit — top 5 apprentissages avec badge type, barre de confiance, taille d\'échantillon. Section "Recommandations IA" expandable (appel LLM lazy).' },
-      ],
-    },
-    {
-      version: 'v8.2.0',
-      date: '2026-07-01',
-      titleKey: 'changelog.v3_42_0_title' as TranslationKey,
-      descKey: 'changelog.v3_42_0_desc' as TranslationKey,
-      highlights: [
-        { tag: 'feature', text: 'Cadence 7 phases — chaque lead suit un cycle : Email initial → Relance → Appel → Terrain → Booking → Proposition → Suivi post-proposition. Phase calculée dynamiquement selon status + activité + réponses.' },
-        { tag: 'feature', text: 'CadenceTimeline dans /leads/[id] — timeline visuelle horizontale (7 étapes) avec phase active en vert, raisonnement et lien "Exécuter maintenant →" vers la bonne surface (outreach/terrain/agenda).' },
-        { tag: 'feature', text: 'Channel Switch automatique — /api/outreach/channel-switch crée un agent_action et patch nba_channel. Déclenché dès email_opens_count ≥ 3 sans réponse.' },
-      ],
-    },
-    {
-      version: 'v8.1.0',
-      date: '2026-07-01',
-      titleKey: 'changelog.v3_42_0_title' as TranslationKey,
-      descKey: 'changelog.v3_42_0_desc' as TranslationKey,
-      highlights: [
-        { tag: 'feature', text: 'Command Center — nouvelle page Pro /command : 4 blocs temps réel (File de priorités, Next Best Actions, Performance, État opératoire). Accessible depuis "Paramètres & Plus" sidebar + mobile "Plus".' },
-        { tag: 'feature', text: 'File de priorités — 4 buckets : Urgent (NBA ≥ 70 ou réponse positive), Opportunité (ouvert 3× sans réponse), Bloqué (stagnation > 7j), À approuver (actions en attente). Max 5 leads par bucket.' },
-        { tag: 'feature', text: 'Filtres niche + canal — dropdowns dynamiques dans la topbar du Command Center. Filtrage local instantané.' },
-        { tag: 'design', text: 'Right sidebar — KPIs temps réel, feed activité agent, 3 alertes signaux, taux d\'acceptation NBA.' },
-      ],
-    },
-    {
-      version: 'v7.1.0',
-      date: '2026-07-01',
-      titleKey: 'changelog.v3_42_0_title' as TranslationKey,
-      descKey: 'changelog.v3_42_0_desc' as TranslationKey,
-      highlights: [
-        { tag: 'feature', text: 'NBA Engine hybride — lib/nba-engine.ts : score 0-100 sur 3 signaux pondérés (délai sans contact ×0.4, engagement email ×0.3, performance niche ×0.3). Actions : email_followup, switch_channel, book_meeting, nurture, pause.' },
-        { tag: 'feature', text: 'agent_insights — apprentissage niche : response_rate, booking_rate, recommended_channel, best_cadence_days. /api/nba/insights recalcule depuis les leads + drafts réels.' },
-        { tag: 'feature', text: '/api/nba/score — batch scoring (GET cache, POST recalcul). /api/nba/explain génère une explication LLM on-demand par lead. /api/nba/automations : 3 triggers contextuels.' },
-        { tag: 'feature', text: 'LeadNbaCard dans /leads/[id] — score badge coloré, action, raisonnement, bouton "Pourquoi ?" (Claude on-demand), recalcul à la demande.' },
-        { tag: 'feature', text: '/cockpit — page pilotage : 4 KPIs, séquences performantes, 3 alertes signaux, liste NBA top 5, StrategyMemoryCard, WeeklyReportCard.' },
-        { tag: 'feature', text: 'V7StrategyModal — onboarding cold start 2 étapes (niche + objectif), seed agent_insights, apparaît une seule fois.' },
-      ],
-    },
-    {
-      version: 'v8.0.0',
-      date: '2026-06-30',
-      titleKey: 'changelog.v3_42_0_title' as TranslationKey,
-      descKey: 'changelog.v3_42_0_desc' as TranslationKey,
-      highlights: [
-        { tag: 'feature', text: 'Agent autonome toutes les 4h — cron /api/cron/agent-loop tourne automatiquement pour tous les workspaces avec agent_enabled=true. Perceive → Plan (Claude) → Act → Log sans aucune intervention. Actions tracées dans agent_actions avec notifications temps réel.' },
-        { tag: 'feature', text: 'Digest du soir (18h) — /api/cron/daily-digest enrichi : emails envoyés, réponses reçues, RDV créés, actions agent, leads ajoutés. Sauvegarde dans daily_digests + notification in-app + email SMTP si configuré.' },
-        { tag: 'feature', text: 'Carte "Résumé d\'aujourd\'hui" dans Today — stats temps réel via /api/agent/today-stats : 4 KPIs (emails, réponses, RDV, actions agent), liste des 3 dernières actions exécutées avec reasoning.' },
-        { tag: 'feature', text: 'Auto-RDV Google Calendar — gmail-check-replies crée automatiquement un événement Calendar "RDV — {lead}" le lendemain à 10h dès qu\'une réponse business est détectée. Notification in-app + lien Calendar.' },
-        { tag: 'feature', text: 'Gmail check-replies toutes les 2h — fréquence portée de 1× par jour à toutes les 2h pour des détections de réponse quasi temps réel.' },
-        { tag: 'fix', text: 'Field / Carte — badge "(approx.)" sur les leads sans coordonnées GPS exactes, calculés par zone de ville. Clarifie à l\'utilisateur que la position est estimée, pas GPS précise.' },
-        { tag: 'fix', text: 'Automations — action "Envoyer un email" pleinement implémentée dans automations-engine.ts : crée un brouillon depuis le template sélectionné dans la table drafts (source=automation, approved=null) pour approbation dans Outreach.' },
-      ],
-    },
-    {
-      version: 'v7.0.0',
-      date: '2026-06-30',
-      titleKey: 'changelog.v3_42_0_title' as TranslationKey,
-      descKey: 'changelog.v3_42_0_desc' as TranslationKey,
-      highlights: [
-        { tag: 'feature', text: 'Prochaine Meilleure Action (NBA) — carte prescriptive en haut de l\'Accueil : Minerva identifie l\'action commerciale la plus urgente du moment (email, tâche, pipeline, séquence), affiche le raisonnement de l\'agent et les signaux justificatifs. Un clic exécute l\'action directement.' },
-        { tag: 'feature', text: 'Exécution contextuelle depuis la carte NBA — generate_email_draft crée un brouillon de relance follow-up immédiatement ; create_task planifie une relance pour demain ; les autres actions (pipeline, séquence, terrain) redirigent vers le bon écran avec message.' },
-        { tag: 'feature', text: 'Dismiss & rotation — bouton "Passer" marque l\'action comme rejetée (approved=false) et charge automatiquement la prochaine action en file. Rafraîchissement manuel disponible.' },
-        { tag: 'feature', text: 'API /api/agent/next-action — GET (48h de fenêtre, join leads), POST (dispatch + mark executed), DELETE (dismiss). Utilise adminClient pour les mises à jour de statut.' },
-        { tag: 'design', text: 'Carte NBA — bordure verte gauche distinctive, label d\'action avec icône typée (Mail, ClipboardList, TrendingUp…), reasoning en italique, signaux en petite typographie, skeleton de chargement, état succès avec lien de navigation.' },
-      ],
-    },
-    {
-      version: 'v6.2.0',
-      date: '2026-06-29',
-      titleKey: 'changelog.v3_42_0_title' as TranslationKey,
-      descKey: 'changelog.v3_42_0_desc' as TranslationKey,
-      highlights: [
-        { tag: 'design', text: '3 profils d\'autonomie agent — Manuel / Contrôlé / Mains libres remplacent les 11 sélecteurs individuels dans Paramètres → Intelligence & IA. Sélection en 1 clic avec badge "Recommandé" sur Contrôlé.' },
-        { tag: 'feature', text: 'Profil Contrôlé (défaut recommandé) — brouillons + relances générés automatiquement, mis en file d\'approbation. Pipeline mis à jour après validation. Séquences et premiers envois restent manuels.' },
-        { tag: 'feature', text: 'Profil Mains libres — l\'agent agit sans confirmation sur l\'ensemble des domaines (emails, pipeline, séquences, terrain).' },
-        { tag: 'feature', text: 'Réglages avancés collapsibles — le panneau de contrôle par domaine reste accessible via "Réglages avancés" pour les cas de configuration personnalisée.' },
-        { tag: 'design', text: 'Indicateur "Configuration personnalisée" — affiché quand l\'autonomy ne correspond à aucun profil preset, avec invitation à choisir un profil standard.' },
-      ],
-    },
-    {
-      version: 'v6.1.0',
-      date: '2026-06-29',
-      titleKey: 'changelog.v3_42_0_title' as TranslationKey,
-      descKey: 'changelog.v3_42_0_desc' as TranslationKey,
-      highlights: [
-        { tag: 'feature', text: 'Relance automatique leads tièdes — bouton "Générer les relances" dans Today : l\'agent détecte les top 3 leads froids (score ≥ 30, inactifs depuis 7j+), génère un brouillon de relance pour chacun et le pousse dans Outreach → Approbations.' },
-        { tag: 'feature', text: 'AgentPrioritiesCard dans Today — remplace le hot-leads-card par les recommandations de l\'agent : top 5 leads tièdes/froids triés par score, badge température, jours d\'inactivité, lien direct vers chaque lead.' },
-        { tag: 'feature', text: 'Badge intent AI sur chaque thread Inbox — l\'agent classifie automatiquement l\'intention de chaque réponse (Intéressé, RDV, Infos demandées, Objection, Pas intéressé) et affiche un badge coloré dans la liste.' },
-        { tag: 'feature', text: 'Auto-classify à l\'ouverture d\'un thread — premier clic sur un thread lié à un lead sans intent : classification silencieuse via /api/inbox/classify, badge mis à jour en temps réel.' },
-        { tag: 'feature', text: 'Endpoint /api/agent/relance — POST focalisé : list_leads_to_follow_up → generateEmailDraft × 3 → drafts table (source=agent, approved=null). Visible immédiatement dans Approbations sans passer par la boucle agent générale.' },
-        { tag: 'feature', text: 'Endpoint /api/inbox/classify — POST autentifié : classifyReply via l\'agent, sauvegarde dans gmail_threads.reply_intent + leads.last_reply_intent, log dans la timeline du lead.' },
-      ],
-    },
-    {
-      version: 'v6.0.0',
-      date: '2026-06-29',
-      titleKey: 'changelog.v3_42_0_title' as TranslationKey,
-      descKey: 'changelog.v3_42_0_desc' as TranslationKey,
-      highlights: [
-        { tag: 'feature', text: 'Minerva AI — nouvelle plateforme dédiée aux fonctionnalités IA : Assistant, Intelligence, Agents, Skills. Accessible via icône dans la topbar de Minerva Reach.' },
-        { tag: 'feature', text: 'Navigation duale — route group (ai) avec layout AI épuré : 4 entrées nav, historique de sessions Assistant dans la sidebar, switch vers Reach en un clic.' },
-        { tag: 'feature', text: 'Switch de plateforme dans la topbar — bouton "Minerva AI" sur Reach, bouton "Minerva Reach" sur AI. Prêt pour subdomains (NEXT_PUBLIC_AI_PLATFORM_URL / NEXT_PUBLIC_REACH_PLATFORM_URL).' },
-        { tag: 'design', text: 'Nav Reach simplifiée — Templates retiré de la nav (accessible dans l\'onglet Outreach → Templates). 6 entrées : Accueil, Leads, Outreach, Carte, Agenda, Équipe.' },
-        { tag: 'fix', text: 'Bug Scrape → Email en mode Electron : websiteDescription transmise directement dans le body POST de generate-draft (contourne le délai de sync SQLite→Supabase).' },
-        { tag: 'fix', text: 'Sidebar Reach : bloc session assistant retiré (code mort depuis déplacement de /assistant vers la plateforme AI). Import nettoyé.' },
-      ],
-    },
-    {
-      version: 'v5.3.0',
-      date: '2026-06-29',
-      titleKey: 'changelog.v3_42_0_title' as TranslationKey,
-      descKey: 'changelog.v3_42_0_desc' as TranslationKey,
-      highlights: [
-        { tag: 'feature', text: 'Outreach Control Center — Campagnes et Approbations sont désormais des écrans complets (remplacent les placeholders "Bientôt disponible").' },
-        { tag: 'feature', text: 'Écran Campagnes — liste des campagnes actives/pausées avec KPIs (envoyés, ouvertures, réponses, positifs, RDV), toggle pause/relance par campagne, alertes de performance.' },
-        { tag: 'feature', text: 'Écran Approbations — file d\'attente unifiée brouillons IA + actions agent. Chaque item affiche reasoning, signaux IA, et boutons Approuver / Rejeter. Badge de count dans l\'onglet.' },
-        { tag: 'feature', text: 'Autonomie Outreach granulaire — 6 niveaux d\'autonomie indépendants : création brouillons, premier envoi, relances auto, réponse aux réponses, pause séquence, mise à jour pipeline après intent.' },
-        { tag: 'feature', text: 'Nouveaux outils Agent Minerva — pause_sequence, resume_sequence, tag_lead, classify_reply, summarize_inbox, suggest_follow_up s\'ajoutent aux 7 outils existants.' },
-        { tag: 'feature', text: 'API routes outreach — POST enrollments/pause|resume, GET/PATCH approvals, GET/POST/PATCH campaigns, GET enrollments with lead+sequence join.' },
-        { tag: 'feature', text: 'Migration Supabase v5_outreach — colonnes source/intent_type/approved sur drafts, current_step/next_send_at/paused_at sur enrollments, stats et alert sur campaigns, outreach_tags sur leads.' },
-      ],
-    },
-    {
-      version: 'v5.2.0',
-      date: '2026-06-29',
-      titleKey: 'changelog.v3_42_0_title' as TranslationKey,
-      descKey: 'changelog.v3_42_0_desc' as TranslationKey,
-      highlights: [
-        { tag: 'feature', text: 'Agent Minerva — boucle autonome perceive → plan → act → log. L\'agent analyse le pipeline, choisit les meilleures actions et les exécute selon vos niveaux d\'autonomie configurés.' },
-        { tag: 'feature', text: 'Niveaux d\'autonomie par domaine — 5 niveaux (Désactivé / Suggérer / Préparer / Exécuter avec validation / Automatique) configurables indépendamment pour Tâches, Pipeline, Séquences, Emails et Terrain.' },
-        { tag: 'feature', text: 'Mémoire d\'agent — table agent_memory par workspace. L\'agent mémorise ses apprentissages (niches performantes, signaux de conversion, décisions passées) et les réinjecte à chaque cycle.' },
-        { tag: 'feature', text: 'Journal des actions agent — agent_actions trace chaque action avec reasoning (pourquoi) et data_signals (signaux utilisés). Chaque action peut être approuvée ou rejetée par l\'utilisateur.' },
-        { tag: 'feature', text: 'AI Gateway unifié — lib/ai.ts est désormais la seule source de vérité pour tous les appels IA : logging fire-and-forget, fallback automatique Anthropic ↔ OpenRouter, résolution du provider.' },
-        { tag: 'fix', text: 'Suppression de Groq et Together AI — le stack IA est simplifié à deux providers : Claude (Anthropic, primaire) et OpenRouter (alternatif/fallback). Interface Settings nettoyée en conséquence.' },
-        { tag: 'feature', text: 'Migration Supabase v5_agent — tables agent_memory, agent_actions, ai_gateway_logs ; colonnes agent_autonomy + agent_enabled dans settings ; table sequence_enrollments.' },
-      ],
-    },
-    {
-      version: 'v5.1.0',
-      date: '2026-06-29',
-      titleKey: 'changelog.v3_42_0_title' as TranslationKey,
-      descKey: 'changelog.v3_42_0_desc' as TranslationKey,
-      highlights: [
-        { tag: 'fix', text: 'Sidebar v5 — "Paramètres" retiré des entrées principales (il est déjà accessible en bas de sidebar). Terrain renommé "Carte" — pointe directement vers /field.' },
-        { tag: 'feature', text: 'Rôles — page dédiée de création /settings/roles/new et /team/roles/new. Modal de création remplacé par navigation vers page dédiée.' },
-        { tag: 'fix', text: 'Google Inbox — fix critique : getAuthStatus et getFreshAccessToken utilisaient maybeSingle() qui cassait avec plusieurs comptes Google. Correction avec limit(1). Reload automatique après OAuth redirect.' },
-        { tag: 'fix', text: 'Breadcrumb Leads — LeadsSubNav (Liste | Pipeline | Comptes | Prospection | Timeline) affichée sur /pipeline, /accounts, /prospecting. Breadcrumb reconnaît les pages de la famille Leads.' },
-        { tag: 'feature', text: 'Timeline unifiée — page complète /leads/timeline avec notifications, tâches, visites terrain, chronologie par date, filtres par type d\'événement.' },
-        { tag: 'fix', text: 'Bannière de mise à jour — version mise à jour vers v5.0.0.' },
-      ],
-    },
-    {
-      version: 'v5.0.0',
-      date: '2026-06-29',
-      titleKey: 'changelog.v3_42_0_title' as TranslationKey,
-      descKey: 'changelog.v3_42_0_desc' as TranslationKey,
-      highlights: [
-        { tag: 'feature', text: 'Navigation v5 — 7 entrées épurées : Accueil, Leads, Outreach, Terrain, Agenda, Équipe, Paramètres. Les pages secondaires restent accessibles par URL directe.' },
-        { tag: 'feature', text: 'AI Gateway interne (Vercel) — /api/ai/gateway/* centralise tous les appels IA. Endpoints : completions, health, status, wake, providers, logs/:requestId. Logs persistés dans ai_gateway_logs.' },
-        { tag: 'feature', text: 'Agent Feed sur l\'Accueil — timeline temps réel des actions IA depuis la table notifications. Polling 30s, liens cliquables vers les leads concernés.' },
-        { tag: 'feature', text: 'Outreach unifié — page /outreach avec 5 onglets : Inbox (Gmail), Séquences, Campagnes, Templates, Approbations (human-in-the-loop).' },
-        { tag: 'feature', text: 'Famille Leads — sous-navigation Liste | Pipeline | Comptes | Prospection | Timeline. Toutes les surfaces commerciales depuis une entrée.' },
-        { tag: 'feature', text: 'Diagnostics IA dans Paramètres — latence par provider, taux succès/fallback, test ping manuel de la gateway, historique des requêtes.' },
-      ],
-    },
-    {
-      version: 'v4.5.0',
-      date: '2026-06-28',
-      titleKey: 'changelog.v3_42_0_title' as TranslationKey,
-      descKey: 'changelog.v3_42_0_desc' as TranslationKey,
-      highlights: [
-        { tag: 'design', text: 'Changelog — badges de type remplacés : les étiquettes texte (Fix / Nouveauté / Design) deviennent des icônes circulaires 18px (Bug rouge, Sparkles vert, Palette indigo). Légende TagLegend placée entre l\'en-tête et la timeline.' },
-        { tag: 'fix', text: 'Leads — restauration de l\'arrière-plan crème chaud (#fafaf8) avec superposition de grille. Correction d\'une régression qui avait remplacé le fond par du blanc uni.' },
-        { tag: 'feature', text: 'Centre d\'automations (/automations) — 4 cartes d\'automation avec toggle on/off, bouton "Run maintenant", historique 7 jours. Polling 30s, badge "En cours" animé.' },
-        { tag: 'feature', text: 'Trigger manuel /api/automations/trigger — déclenche n\'importe quel cron (enrich-leads, gmail-replies, email-sequences, weekly-report) depuis la page Automations.' },
-        { tag: 'design', text: 'README complet — sections produit et développeur : setup, variables d\'env, architecture dual-store, crons Vercel, Google OAuth, commandes build.' },
-      ],
-    },
-    {
-      version: 'v4.4.0',
-      date: '2026-06-28',
-      titleKey: 'changelog.v3_42_0_title' as TranslationKey,
-      descKey: 'changelog.v3_42_0_desc' as TranslationKey,
-      highlights: [
-        { tag: 'design', text: 'Charts analytics — polish visuel complet : axes, grilles, tooltips et couleurs alignés avec le design system (#059669 vert Minerva).' },
-        { tag: 'feature', text: 'Mémoïsation des re-renders sur les composantes lourdes (graphiques, tableaux) via useMemo et React.memo pour éliminer les calculs redondants.' },
-        { tag: 'design', text: 'Iconographie unifiée : remplacement des icônes génériques par des variantes Lucide cohérentes avec la charte visuelle.' },
-        { tag: 'feature', text: 'Messages toast améliorés : description contextuelle, durée 5 secondes, icône de statut colorée.' },
-        { tag: 'feature', text: 'Titres de page clients : chaque vue (lead, projet, campagne) met à jour document.title avec le nom de l\'entité pour un meilleur historique navigateur.' },
-      ],
-    },
-    {
-      version: 'v4.3.0',
-      date: '2026-06-28',
-      titleKey: 'changelog.v3_42_0_title' as TranslationKey,
-      descKey: 'changelog.v3_42_0_desc' as TranslationKey,
-      highlights: [
-        { tag: 'feature', text: 'Nouvelles étapes pipeline : "Proposition envoyée" et "Négociation" entre Meeting Booked et Won. 2 nouvelles colonnes Kanban avec codes couleur (violet #7c3aed et ambre #d97706).' },
-        { tag: 'feature', text: 'Onglet Prévisions dans le pipeline : KPIs (taux de closing, valeur moy. deal, pipeline 30j pondéré), graphique barres par mois pondéré par probabilité, tableau des deals à clôturer.' },
-        { tag: 'feature', text: 'Builder de propositions multi-sections : 5 sections éditables (Présentation, Problème identifié, Solution proposée, Prix QC, Modalités) avec génération IA par section. Calcul taxes QC automatique (TPS 5% + TVQ 9.975%).' },
-        { tag: 'feature', text: 'Export PDF proposition — Electron : dialogue de sauvegarde natif. Web : impression navigateur. Format A4 professionnel avec en-tête vert Minerva.' },
-        { tag: 'feature', text: 'Persistance propositions : table "proposals" sauvegarde chaque section. Bouton "Marquer envoyée" passe le lead en "Proposition envoyée" automatiquement.' },
-        { tag: 'feature', text: 'IA par section de proposition : /api/proposals/generate-section génère Présentation, Problème identifié, Solution proposée ou Modalités en contexte du lead (niche, ville, description site).' },
-      ],
-    },
-    {
-      version: 'v4.2.0',
-      date: '2026-06-28',
-      titleKey: 'changelog.v3_42_0_title' as TranslationKey,
-      descKey: 'changelog.v3_42_0_desc' as TranslationKey,
-      highlights: [
-        { tag: 'design', text: 'SVG inline — icônes Instagram et Facebook converties de requêtes HTTP externes vers des composants JSX inline. Zéro requête réseau supplémentaire sur la fiche lead, rendu immédiat.' },
-        { tag: 'feature', text: 'Singleton admin Supabase — client service-role partagé entre toutes les requêtes serveur. Élimine la réinstanciation par requête et réduit l\'overhead de connexion.' },
-        { tag: 'feature', text: 'Correction N+1 team/members — profils chargés en une seule requête IN (user_id) au lieu de N requêtes individuelles. Idem pour les ownerName des workspaces.' },
-        { tag: 'feature', text: 'Cache serveur (lib/server-cache.ts) + cache client (lib/fetch-cache.ts) — TTL 30-60s pour /api/team/members et /api/team/my-permissions. Invalidation automatique sur mutation.' },
-      ],
-    },
-    {
-      version: 'v4.1.0',
-      date: '2026-06-27',
-      titleKey: 'changelog.v3_42_0_title' as TranslationKey,
-      descKey: 'changelog.v3_42_0_desc' as TranslationKey,
-      highlights: [
-        { tag: 'design', text: 'Transitions de page — suppression du loader/blur overlay, remplacé par une barre de progression verte fine (#059669) en haut de l\'écran + fade-in 180ms sur le contenu. Respect de prefers-reduced-motion.' },
-        { tag: 'feature', text: 'Skeleton chargement — tableau Leads affiche 8 lignes animées (pulse) pendant le chargement initial des données, grâce au flag isDataReady exposé par ReachContext.' },
-        { tag: 'design', text: 'Polices — correction du subset Inter (suppression de "sans-serif" invalide) + display: swap sur Inter et JetBrains Mono pour éliminer les décalages de mise en page (CLS) au chargement.' },
-        { tag: 'feature', text: 'Recherche leads — debounce 220ms (plus d\'appel à chaque frappe). Historique des recherches récentes (max 5, localStorage) affiché dans un dropdown au focus sur le champ vide. Suppression individuelle de chaque terme. Touche Escape pour effacer.' },
-        { tag: 'feature', text: 'AlertDialog — nouveau composant (radix-ui AlertDialog) remplace les window.confirm() natifs du navigateur. Suppression en masse de leads : dialog avec titre, description de conséquence et bouton libellé par l\'action ("Supprimer les N prospects").' },
-        { tag: 'design', text: 'Fil d\'Ariane — sur la fiche lead (/leads/[id]), le breadcrumb affiche maintenant le vrai nom du business (ex. "Cabinet Dentaire Dr. Laurent") au lieu de "Details", avec troncature à 28 caractères.' },
-      ],
-    },
-    {
-      version: 'v4.0.0',
-      date: '2026-06-27',
-      titleKey: 'changelog.v3_42_0_title' as TranslationKey,
-      descKey: 'changelog.v3_42_0_desc' as TranslationKey,
-      highlights: [
-        { tag: 'feature', text: 'Automatisation complète — enrichissement batch (/api/leads/enrich-batch), cron nocturne à 2h, auto-email après enrichissement. L\'app peut prospecter et contacter des leads sans intervention.' },
-        { tag: 'feature', text: 'Tags leads — champ tags[] sur chaque lead. Auto-tags depuis statut CRM (@Contacté, @Gagné, @RDV fixé, @Perdu) et depuis les réponses email classifiées (Intéressé, RDV demandé, Pas intéressé, Demande info, Absent). Tags libres manuels depuis la fiche lead.' },
-        { tag: 'feature', text: 'Paramètres Automations — nouveau panneau dédié avec 4 toggles : Enrichir à l\'import, Enrichissement nocturne, Email auto après enrichissement, Tagger les réponses. Sélecteur de template email et délai configurable.' },
-        { tag: 'feature', text: 'Cron enrichissement nocturne — /api/cron/enrich-leads tourne à 2h chaque nuit, traite jusqu\'à 50 leads non enrichis par workspace avec auto_enrich_scheduled activé.' },
-        { tag: 'fix', text: 'AI 429 rate limit — retry automatique après 60 secondes pour les appels non-streaming et streaming. Plus de crash immédiat sur modèle saturé.' },
-        { tag: 'design', text: 'Page Prospection responsive — grille principale xl:grid-cols-[1fr_300px], min-w-0 sur les colonnes. La page s\'adapte maintenant à la largeur disponible quelle que soit l\'état de la sidebar.' },
-      ],
-    },
-    {
-      version: 'v3.47.0',
-      date: '2026-06-27',
-      titleKey: 'changelog.v3_42_0_title' as TranslationKey,
-      descKey: 'changelog.v3_42_0_desc' as TranslationKey,
-      highlights: [
-        { tag: 'fix', text: 'Google auth (systémique) — getAuthStatus renforcé : si status="error" mais des tokens valides existent, l\'état est auto-réparé à "connected". Plus jamais l\'app ne demande de reconnecter Google après une session normale. Fallback sur settings.google_* (tokens legacy) si google_accounts est absent.' },
-        { tag: 'fix', text: 'google_tokens upsert — utilise onConflict: "account_id" pour éviter les doublons lors d\'une reconnexion (cause silencieuse de mauvais tokens retournés par maybeSingle).' },
-        { tag: 'fix', text: 'Intégrations Google — si déjà connecté dans /integrations, toutes les pages (Inbox, Today, fiche lead Gmail, Agenda, etc.) le détectent sans redemander une autorisation.' },
-        { tag: 'design', text: 'Fiche lead — layout responsive corrigé : grid passe en 2 colonnes à xl (≥1280px) au lieu de lg (≥1024px), padding réduit à p-4/p-6, gap entre onglets réduit à gap-1. L\'onglet Outreach ne clippe plus même avec la sidebar étendue.' },
-        { tag: 'design', text: 'Google Calendar (Today) + Gmail/Agenda (fiche lead) — remplacent les boutons de connexion bruts par le GoogleConnectModal centralisé (même UX que la page Intégrations).' },
-        { tag: 'fix', text: 'AI 429 rate limit — message d\'erreur explicite : "Le modèle IA est temporairement saturé. Réessaie dans 30–60 secondes…" au lieu du message technique brut.' },
-        { tag: 'design', text: 'Widget Intelligence comportementale — rapport IA rendu en JSX structuré via MarkdownRenderer (## en-têtes, listes à puces vertes, **gras**, *italique*) au lieu de whitespace-pre-line.' },
-        { tag: 'feature', text: 'Changelog — système de tags (Fix / Nouveauté / Design) avec badges colorés sur tous les highlights. Versions v3.43–v3.46 rétroactivement taguées.' },
-      ],
-    },
-    {
-      version: 'v3.46.0',
-      date: '2026-06-26',
-      titleKey: 'changelog.v3_42_0_title' as TranslationKey,
-      descKey: 'changelog.v3_42_0_desc' as TranslationKey,
-      highlights: [
-        { tag: 'fix', text: 'Inbox Gmail — resolveAccessToken renforcé avec un 3ème chemin direct sur google_tokens qui contourne le statut error et auto-réinitialise le statut à connected. Le badge "Connecter Google" ne réapparaît plus après reconnexion.' },
-        { tag: 'fix', text: 'Google Maps — le lien inline <a> converti en bouton electron-safe (openExternal dans Electron, window.open en web). Plus de blocage dans l\'app desktop.' },
-        { tag: 'fix', text: 'Couleurs profil agency — bouton "Réinitialiser" ajouté à côté de "Modifier" pour revenir au vert Minerva (#059669) en un clic, avec retrait immédiat du CSS var --sidebar-primary.' },
-        { tag: 'fix', text: 'Attribution leads projets — le picker de projet dans la fiche lead fonctionne correctement (project_id FK, supabase migration v4.3).' },
-        { tag: 'feature', text: 'Templates Email — maintenant accessible depuis la sidebar sous "Templates Email" (/email-templates), plus seulement dans les Paramètres.' },
-        { tag: 'feature', text: 'Notifications — 4 nouveaux types : email_sent, email_received, lead_aging, scraping_done. Notif in-app + macOS native après envoi depuis le composer. Détection des nouvelles réponses de leads dans l\'inbox (dédup localStorage). Alerte quotidienne si des leads sont inactifs depuis 7+ jours.' },
-        { tag: 'feature', text: 'Page Statistiques (/analytics) — 3 onglets : Vue globale (KPI cards, funnel coloré, top niches & villes), Prospection, Activité équipe. Composants existants réutilisés.' },
-      ],
-    },
-    {
-      version: 'v3.45.0',
-      date: '2026-06-26',
-      titleKey: 'changelog.v3_42_0_title' as TranslationKey,
-      descKey: 'changelog.v3_42_0_desc' as TranslationKey,
-      highlights: [
-        { tag: 'design', text: 'Refonte responsive globale — suppression de toutes les contraintes de largeur fixes (max-w-5xl, max-w-4xl, max-w-3xl, max-w-6xl) sur toutes les pages. Le contenu s\'étale de manière fluide sur tout l\'écran disponible.' },
-        { tag: 'design', text: 'Today, Leads, Pipeline, Analytics, Prospecting, Billing, Campaigns, Webhooks, Sequences, Skills, Agenda, Activities, Services, Ops, Team, Integrations, Personas, Playbooks, Projects, Acquisition, Settings, Download, Help, Client Reports, Field Gallery — padding adaptatif appliqué sur toutes ces pages.' },
-        { tag: 'fix', text: 'BottomBlur Messages — le BottomBlur global (fixed, 64px) ne s\'affiche plus sur /messages. Il couvrait l\'input bar et le bas du chat, les rendant inaccessibles.' },
-        { tag: 'design', text: 'globals.css — overflow-x: hidden sur html et body pour éliminer les scrollbars parasites. Nouvelles classes : .page-container et .table-responsive.' },
-      ],
-    },
-    {
-      version: 'v3.44.0',
-      date: '2026-06-26',
-      titleKey: 'changelog.v3_42_0_title' as TranslationKey,
-      descKey: 'changelog.v3_42_0_desc' as TranslationKey,
-      highlights: [
-        { tag: 'feature', text: 'Projets — association explicite leads ↔ projets : colonne project_id UUID sur les leads (migration v4.3). Les leads s\'assignent via un sélecteur dans la fiche lead.' },
-        { tag: 'feature', text: 'Fiche lead — nouveau sélecteur "Projet" dans la sidebar droite (sous Campagne). Lien direct vers la page du projet si assigné.' },
-        { tag: 'fix', text: 'Page projet — le compteur et le filtre utilisent project_id explicite (plus de fausse correspondance par texte).' },
-        { tag: 'fix', text: 'updateLead : projectId → project_id mappé dans les deux chemins (Electron SQLite et Supabase). Migration SQL v4.3 incluse.' },
-      ],
-    },
-    {
-      version: 'v3.43.0',
-      date: '2026-06-25',
-      titleKey: 'changelog.v3_42_0_title' as TranslationKey,
-      descKey: 'changelog.v3_42_0_desc' as TranslationKey,
-      highlights: [
-        { tag: 'fix', text: 'OpenRouter — les modèles Anthropic (claude-*) sont remappés automatiquement vers meta-llama/llama-3.3-70b-instruct:free. L\'assistant IA ne renvoie plus d\'erreur de modèle.' },
-        { tag: 'feature', text: 'Email — bannière verte de confirmation après envoi (sujet + destinataire), toast 5s, notification native macOS via Electron.' },
-        { tag: 'fix', text: 'Panneau outreach — Score V2 (ICP/Engagement) retiré. La voicemail est activée dès qu\'un numéro est renseigné.' },
-        { tag: 'fix', text: 'Bouton Google Maps — utilise shell.openExternal() dans Electron (IPC open-external + preload). Ouvre dans le navigateur système.' },
-        { tag: 'feature', text: 'Inbox — onglet "Envoyés" : récupère les fils du label SENT dans Gmail, liés automatiquement aux leads par email.' },
-        { tag: 'fix', text: 'Inbox OAuth — resolveAccessToken utilise maybeSingle() (ne crash plus), essaie d\'abord legacy settings, puis google_accounts/google_tokens. Fin du faux "Connecter Google".' },
-      ],
-    },
-    {
-      version: 'v3.42.0',
-      date: '2026-06-24',
-      titleKey: 'changelog.v3_42_0_title' as TranslationKey,
-      descKey: 'changelog.v3_42_0_desc' as TranslationKey,
-      highlights: [
-        "Google Places auto-enrichissement : note, nombre d'avis, résumé IA Google et top 2 avis clients récupérés automatiquement à l'ouverture de chaque fiche lead (cache 7 jours). Clé GOOGLE_PLACES_API_KEY requise.",
-        "Section 'Google Insights' dans la fiche lead : affichée entre les réseaux sociaux et les onglets — rating étoiles, résumé IA, extraits d'avis.",
-        "Email IA refondu : 1ère phrase = détail SPÉCIFIQUE issu de Google (résumé IA ou avis client). Interdit : 'J'espère que tu vas bien', 'En tant que leader'. Ton ami qui a vraiment fait ses recherches.",
-        "Fiche lead mobile : 8 onglets scrollables horizontalement sans troncature (overflow-x-auto, whitespace-nowrap, shrink-0).",
-        "Transition fluide entre onglets de la fiche lead (AnimatePresence fade + slide 6px, 160ms ease).",
-        "Sidebar — slide depuis la gauche : mobile = motion.x -240→0 (vrai drawer), desktop = width spring + inner slide synchronisé. Icône toggle rotation 180° spring.",
-        "Transitions de page globales : AnimatePresence mode='wait' sur le slot {children} (opacity + y:8→0, 180ms). Remplace l'animation CSS statique.",
-        "Migration SQL v4.9 : colonnes google_place_id, google_place_data (JSONB), google_enriched_at sur la table leads.",
-      ],
-    },
-    {
-      version: 'v3.41.0',
-      date: '2026-06-24',
-      titleKey: 'changelog.v3_41_0_title' as TranslationKey,
-      descKey: 'changelog.v3_41_0_desc' as TranslationKey,
-      highlights: [
-        "Bottom nav mobile : réduit de 7 à 4 destinations (Accueil, Prospecter, Leads, Assistant) avec retour tactile spring (scale: 0.88). Sheet '+ Plus' pour 6 destinations secondaires avec AnimatePresence slide.",
-        "Icônes sidebar : strokeWidth 1.5 inactif / 2 actif, fill='currentColor' quand actif, opacity 60% inactif — poids optique aligné à la hauteur de ligne.",
-        "Sidebar — accordion 'Paramètres & Plus' : footer collapsable AnimatePresence (height: 0→auto, 180ms ease). Remplace la liste statique.",
-        "Workspace switcher animé : AnimatePresence mode='wait' key={activeWorkspace.id} — fade + slide vertical à chaque changement de workspace.",
-        "Barre de filtres leads plus aérée : gap-3, hauteurs unifiées h-8, min-w ajustés. Correction du hover sur 'Mes leads' (orange → vert #047857).",
-        "Toutes les animations Framer Motion spring (stiffness 300–400, damping 30, mass 1). Imports depuis 'motion/react' (paquet motion v12.40).",
-      ],
-    },
-    {
-      version: 'v3.40.0',
-      date: '2026-06-23',
-      titleKey: 'changelog.v3_40_0_title' as TranslationKey,
-      descKey: 'changelog.v3_40_0_desc' as TranslationKey,
-      highlights: [
-        "Smartlead sequences : onglet 'Outreach' dans chaque fiche lead — bouton Enroller envoie le lead à la campagne Smartlead configurée via API. Score ICP + canaux recommandés (email / voicemail si score ≥ 50).",
-        "Voicemail Drop Cowboy : génération de script IA ≤80 mots (~30s) + envoi Ringless Voicemail via API Drop Cowboy. Nécessite numéro de téléphone.",
-        "Bibliothèque de preuves (/leverage-library) : CRUD études de cas — titre, niche cible, headline résultat, snippet email. L'IA sélectionne automatiquement la plus pertinente lors de la génération d'email.",
-        "Paramètres → Intégrations : cartes Smartlead (API key + campaign ID), Drop Cowboy (username + API key), IA Inbox (toggle auto-réponse + slider seuil de confiance 0-100).",
-        "Migration SQL v4.8 : tables leverage_library et voicemail_queue avec RLS ; colonnes settings smartlead_api_key, smartlead_campaign_id, drop_cowboy_username, drop_cowboy_api_key, ai_inbox_auto_reply, ai_inbox_confidence_min.",
-      ],
-    },
-    {
-      version: 'v3.39.0',
-      date: '2026-06-23',
-      titleKey: 'changelog.v3_39_0_title' as TranslationKey,
-      descKey: 'changelog.v3_39_0_desc' as TranslationKey,
-      highlights: [
-        "Composer — Email → Brouillon Gmail : l'envoi d'email crée désormais un brouillon dans Gmail (jamais envoyé automatiquement) + bouton 'Sauvegarder' conserve le texte dans l'app (table drafts).",
-        "Composer — Onglet DM (Instagram/Facebook) : rédiger un message direct, choisir la plateforme, générer un template IA, copier en 1 clic, accéder directement au profil, sauvegarder comme brouillon.",
-        "Description du lead éditable : remplace l'affichage read-only par un Textarea éditable avec bouton 'Enregistrer' qui sauvegarde via updateLead (Supabase/SQLite).",
-        "Filtre 'Avis minimum' dans le scraper (prospecting) : slider 0–500 avis, filtrage en temps réel sur reviewsCount, grille de filtres passée en 4 colonnes.",
-        "Dernier lead visité en tête de liste : le lead ouvert en dernier est automatiquement remonté en première ligne de la liste des leads, avec badge 'Récemment visité' vert.",
-        "Migration SQL v4.7 (addendum) : colonnes subject + draft_type sur la table drafts ; SQLite schema mis à jour (ALTER TABLE safe).",
-        "Modèle OpenRouter mis à jour : meta-llama/llama-3.3-70b-instruct:free remplace le modèle deprecated 3.1-8b ; remapping automatique des anciens slugs.",
-      ],
-    },
-    {
-      version: 'v3.38.0',
-      date: '2026-06-23',
-      titleKey: 'changelog.v3_38_0_title' as TranslationKey,
-      descKey: 'changelog.v3_38_0_desc' as TranslationKey,
-      highlights: [
-        "Réseaux sociaux sur les fiches leads : section dédiée Instagram/Facebook/LinkedIn + site web dans le panneau principal (mode édition toggle), icônes SVG natifs.",
-        "Galerie Instagram : bouton 'Voir les posts' scrape le profil Instagram via Firecrawl + fallback HTML mobile, affiche une grille 3×3 des derniers posts dans la fiche lead.",
-        "Bibliothèque → Images : upload d'images vers Supabase Storage (bucket 'library-assets'), galerie avec prévisualisation, copie d'URL en 1 clic, suppression.",
-        "Setup agence amélioré : l'analyse de site web met maintenant à jour le nom + logo du workspace (sidebar) directement via l'API, services importés avec parsing de prix (string → numérique).",
-        "Logo agence → Documents : le logo importé est sauvegardé dans la bibliothèque (dossier 'Agence') comme document de type 'blank' avec imageUrl.",
-        "Couleur d'accent workspace : modal de sélection avec aperçu live (bouton, outline, texte), détecte automatiquement les couleurs du site de l'agence, alerte sur les risques esthétiques.",
-        "Migration SQL v4.7 : colonnes agency_website, agency_logo_url, agency_brand_colors, ai_agency_prompt dans settings ; social_links (jsonb) dans leads ; table services avec RLS ; instructions bucket library-assets.",
-      ],
-    },
-    {
-      version: 'v3.37.0',
-      date: '2026-06-23',
-      titleKey: 'changelog.v3_37_0_title' as TranslationKey,
-      descKey: 'changelog.v3_37_0_desc' as TranslationKey,
-      highlights: [
-        "Composer unifié dans la fiche lead : 4 actions en 1 panneau — Email (envoi direct Gmail), Appel (script IA + 3 résultats), Tâche rapide (catégorie + date), RDV (lien de booking).",
-        "Enrichissement avancé v2 : logo détecté via Google Favicons, taille estimée par Claude AI (solo/small/medium/large), stack tech (19 technos : WordPress, Shopify, Next.js, Stripe, Calendly…), score de présence web 0-100.",
-        "Page dédiée /ads avec 3 onglets : Facebook Lead Ads (OAuth Meta réel, sélection page + formulaire, webhook temps réel), Google Ads (guide UTM/GCLID), Attribution marketing.",
-        "Dashboard Attribution : 4 KPIs (leads total, taux RDV, délai moyen Speed-to-Lead, pipeline gagné) + tableau par source (CPL, taux RDV, délai, pipeline).",
-        "Alerte Speed-to-Lead dynamique : rouge si délai > 5 min, vert si optimal — avec message contextualisé sur l'impact de la réactivité.",
-        "Migration SQL v4.6 : table fb_connections (RLS), nouvelles colonnes leads pour attribution (lead_source_type, utm_*, first_contact_at, deal_amount) et enrichissement (enriched_logo, company_size_estimate, tech_stack, web_presence_score).",
-      ],
-    },
-    {
-      version: 'v3.36.0',
-      date: '2026-06-23',
-      titleKey: 'changelog.v3_36_0_title' as TranslationKey,
-      descKey: 'changelog.v3_36_0_desc' as TranslationKey,
-      highlights: [
-        "Moteur de déduplication multi-source : détection automatique des leads similaires par domaine, téléphone et nom (algorithme Levenshtein). Tab « Doublons » dans /acquisition avec groupes, score de similarité et bouton Fusionner.",
-        "Fusion intelligente (most-complete wins) : le lead avec le plus de champs remplis devient le principal, les doublons sont archivés avec traçabilité des IDs fusionnés.",
-        "Widget Speed-to-Lead dans /acquisition : alerte visuelle pour chaque lead entrant avec timer SLA (vert < 2h, ambre < 24h, rouge > 24h) et bouton Répondre direct.",
-        "Nouveaux types de données v4.5 : isDuplicate, duplicateGroupId, mergedFromIds, fbAdsetId, fbAdId, gclid, enrichedLogo, companySizeEstimate, techStack, replyClassification.",
-        "Nouveaux types séquences multicanales : call, sms, ab_test avec callScript, smsText, abVariants, pauseOnReply dans mock-data.ts.",
-        "150+ nouvelles clés i18n (FR/EN/DE) pour tous les modules v4.5 : dedup, ads, attribution, sla, enrich, composer, outreach.",
-      ],
-    },
-    {
-      version: 'v3.35.1',
-      date: '2026-06-23',
-      titleKey: 'changelog.v3_35_1_title' as TranslationKey,
-      descKey: 'changelog.v3_35_1_desc' as TranslationKey,
-      highlights: [
-        "Résolution des bugs visuels liés aux icônes géantes (comme Teams) qui brisaient la mise en page de l'application en s'assurant du bon dimensionnement des composants SVG.",
-        "Migration complète de la page Intégrations vers les logos officiels de @thesvg/react (Gmail, Drive, Maps, Zoom, SharePoint, Teams, Todoist, Notion, Slack, Tasks, Meet).",
-        "Création d'un composant d'icône premium haute fidélité pour Google Contacts."
-      ],
-    },
-    {
-      version: 'v3.35.0',
-      date: '2026-06-23',
-      titleKey: 'changelog.v3_35_0_title' as TranslationKey,
-      descKey: 'changelog.v3_35_0_desc' as TranslationKey,
-      highlights: [
-        "Intégration globale de la bibliothèque d'icônes @thesvg/react pour remplacer systématiquement les icônes génériques/par défaut.",
-        "Ajout de composants d'icônes personnalisés haute fidélité pour Gmail, Google Maps, Google Chat, Google Drive, Google Calendar, Google Chrome, Slack, GitHub, Todoist et Microsoft Teams.",
-        "Mise à jour esthétique des cartes de configuration et d'intégration dans les Paramètres avec suppression des arrière-plans colorés au profit de boîtes neutres épurées.",
-        "Refonte visuelle et interactive des fiches lead pour inclure les nouveaux logos Gmail, Google Maps et Google Calendar sur les onglets et les actions d'engagement.",
-        "Remplacement des indicateurs d'agenda sur le Dashboard principal par la nouvelle icône Google Calendar premium."
-      ],
-    },
-    {
-      version: 'v3.34.0',
-      date: '2026-06-23',
-      titleKey: 'changelog.v3_34_0_title' as TranslationKey,
-      descKey: 'changelog.v3_34_0_desc' as TranslationKey,
-      highlights: [
-        "Alignement esthétique du Dashboard (Today) sur la charte graphique premium de l'application.",
-        "Suppression complète des ombres surélevées (shadow-sm) au profit d'un design plat (flat styling) et de bordures hairline fines (#e5e5e0).",
-        "Remplacement du motif d'arrière-plan par la grille Cult UI linéaire (bg-grid-pattern-20).",
-        "Harmonisation des couleurs d'accentuation en vert émeraude (#059669) sur les widgets, cartes, et jauges de progression.",
-        "Mise à jour et nettoyage de l'ensemble des 17 widgets et cartes d'action du cockpit (objectifs, agenda, calendar, séquences, tâches, focus, suggestions IA, statistiques, etc.)."
-      ],
-    },
-    {
-      version: 'v3.33.0',
-      date: '2026-06-23',
-      titleKey: 'changelog.v3_33_0_title' as TranslationKey,
-      descKey: 'changelog.v3_33_0_desc' as TranslationKey,
-      highlights: [
-        "Refonte Premium UI/UX de 5 pages clés : Agenda, Centre d'Acquisition, Comptes / Entreprises, Skills IA, et la configuration des Automations (liste et création de règles).",
-        "Intégration du motif de grille Cult UI (bg-grid-pattern-20) sur l'ensemble de ces pages pour assurer une texture visuelle haut de gamme cohérente avec la charte graphique.",
-        "Mise en conformité stricte avec DESIGN.md : suppression de toutes les ombres surélevées au profit de bordures hairline fines (#e5e5e0), typographie dense (text-xs, uppercase labels) et uniformisation des accents vert émeraude (#059669).",
-        "Internationalisation complète (i18n) : élimination de tous les textes en français codés en dur dans les pages redessinées au profit de clés i18n dynamiques localisées en français, anglais et allemand dans lib/translations.ts.",
-        "Amélioration de l'Agenda : calendrier mensuel dynamique localisé par locale utilisateur et vues Semaine/Jour horaires stylisées.",
-        "Simplification visuelle des widgets : refonte des cartes de statistiques d'Acquisition et des profils de compétences avec interrupteurs premium."
-      ],
-    },
-    {
-      version: 'v3.32.0',
-      date: '2026-06-23',
-      titleKey: 'changelog.v3_32_0_title' as TranslationKey,
-      descKey: 'changelog.v3_32_0_desc' as TranslationKey,
-      highlights: [
-        "Lien de partage lead corrigé — share-preview réécrit avec deux requêtes Supabase séparées (plus de join PostgREST instable). Le lien public fonctionne maintenant sans erreur.",
-        "Aperçu partagé amélioré — affichage de la note Google (étoiles) et du nombre d'avis, badges ville/catégorie, score en vert Minerva.",
-        "Export Google Drive — documents exportés en Google Docs (HTML→Docs) avec mise en forme : titre, date, sections colorées, pied de page Minerva. Fini le fichier .txt brut.",
-        "Intégrations Google — ajout de Google Contacts et Google Tasks dans la liste. Nouveau panneau Google Workspace en tête de la section 'Disponibles' avec statut en temps réel de chaque service.",
-        "Génération de messages — fallback Anthropic Haiku avant le contenu mock : si le modèle configuré échoue, Claude Haiku prend le relais. Le DM simulé n'est plus le premier recours.",
-        "Migration SQL v4.5 — Ajout des colonnes d'enrichissement sur la table leads (reviews_count, maps_url, photos, social_links, scores v2) et correction de la structure et des permissions RLS de la table lead_shares."
-      ],
-    },
-    {
-      version: 'v3.31.0',
-      date: '2026-06-22 · 23h55',
-      titleKey: 'changelog.v3_31_0_title' as TranslationKey,
-      descKey: 'changelog.v3_31_0_desc' as TranslationKey,
-      highlights: [
-        "Lightbox plein écran dans Messages — Cliquer une image ouvre maintenant un overlay plein écran identique à l'onglet Chat Équipe (fond noir/blur, bouton ✕, clic extérieur pour fermer).",
-        "Score v2 auto-persisté — À l'ouverture d'une fiche lead, si les sous-scores ne sont pas encore en base, l'API /api/leads/score est appelée automatiquement et les 4 dimensions sont sauvegardées.",
-        "Nettoyage codebase — 71 fichiers supprimés (scratch-*.cjs, screenshots, 13 composants démo). Migrations SQL déplacées dans supabase/migrations/. contexts/ fusionné dans lib/.",
-        "RLS fix documenté — Policies leads_workspace / tasks_workspace / documents_workspace référençant workspace_members (table inexistante) identifiées et supprimées. Données restaurées.",
-        "README mis à jour — Architecture v3.31.0 avec arborescence complète, badges version, structure supabase/.",
-      ],
-    },
-    {
-      version: 'v3.30.0',
-      date: '2026-06-22 · 23h10',
-      titleKey: 'changelog.v3_30_0_title' as TranslationKey,
-      descKey: 'changelog.v3_30_0_desc' as TranslationKey,
-      highlights: [
-        "Scoring v2 multidimensionnel — Score total 0-100 décomposé en 4 axes : ICP Fit (données), Engagement (pipeline + température), Urgence (prochaine action + fraîcheur), Revenu (taille business + enrichissement).",
-        "Carte score dans la fiche lead — 4 barres de progression colorées (vert / bleu / amber / violet) avec valeurs individuelles /25 et score total /100.",
-        "API /api/leads/score — Calcule et sauvegarde les 4 sous-scores + log un événement score_updated dans lead_events.",
-        "Migration SQL (supabase_migration_v4_scoring_v2.sql) — 4 nouvelles colonnes : score_icp, score_engagement, score_urgency, score_revenue. Index sur score DESC.",
-        "Support Electron — ALTER TABLE automatique pour les 4 nouvelles colonnes dans database.cjs.",
-        "Backwards compatible — computeLeadScore() (v1) délègue maintenant à computeLeadScoreV2().total.",
-        "Roadmap — Scoring v2 passé de planned → available.",
-      ],
-    },
-    {
-      version: 'v3.29.0',
-      date: '2026-06-22 · 22h55',
-      titleKey: 'changelog.v3_29_0_title' as TranslationKey,
-      descKey: 'changelog.v3_29_0_desc' as TranslationKey,
-      highlights: [
-        "Rendu natif des images et GIFs — Les images envoyées dans le chat (format [[img]]) s'affichent maintenant correctement. Clic pour ouvrir en plein écran.",
-        "Emoji picker intégré — Bouton sourire dans la barre de saisie ouvre un picker avec 45 emojis répartis en 3 catégories (Smileys, Gestes, Symboles).",
-        "Upload image/GIF avec compression auto — Bouton trombone ouvre le sélecteur de fichier. Les images sont compressées (max 800px, qualité 70%) avant envoi, les GIFs sont envoyés tels quels.",
-        "Aperçu avant envoi — Une vignette de prévisualisation s'affiche au-dessus de la barre d'input avec option d'annulation.",
-        "Input repositionné — La barre de saisie est maintenant au-dessus du blur bas de page (padding-bottom: 20px) avec design intégré (emoji + image + texte + send dans un seul conteneur).",
-        "Queue Processor Outreach (cron toutes les 15 min) — Vérifie la fenêtre d'envoi et le quota journalier, envoie 1 email HTML par workspace par run via Gmail API, avance automatiquement l'enrollment séquence.",
-        "Migration lead_shares — Table manquante créée (supabase_migration_v4_lead_shares.sql). À appliquer dans le SQL editor Supabase.",
-      ],
-    },
-    {
-      version: 'v3.28.0',
-      date: '2026-06-23 · 00h05',
-      titleKey: 'changelog.v3_28_0_title' as TranslationKey,
-      descKey: 'changelog.v3_28_0_desc' as TranslationKey,
-      highlights: [
-        "Générateur de proposition interactif — Création d'une interface de configuration pour choisir les services, ajuster les prix et les descriptions en direct, et ajouter des lignes d'offres personnalisées.",
-        "Calculateur financier en temps réel — Calcul instantané du Total HT, du taux de taxes (entièrement ajustable, ex : 14,975% par défaut au Québec) et du montant TTC final.",
-        "Live Preview Papier S&W — Affichage d'un aperçu en temps réel au format A4 selon un style d'impression minimaliste noir & blanc haute fidélité.",
-        "Exportation PDF native Desktop — Liaison du générateur de proposition au service native Electron printToPdf pour archiver le document dans le CRM et générer le fichier localement.",
-        "Enrichissement B2B avancé & Pitch 2026 — Le bouton Enrichir déclenche maintenant le scraping du site web, identifie le décideur (nom, rôle, courriel) et rédige un pitch d'appel québécois court et pertinent.",
-        "Correctif du partage de leads — Résolution du message 'Lead not found' lors de la création d'un lien de partage de prospect en corrigeant la requête d'attributs de la base de données.",
-        "Nettoyage automatique du Markdown — Suppression des astérisques et balises de titre brutes dans les aperçus des brouillons et des scripts générés pour une meilleure lisibilité."
-      ],
-    },
-    {
-      version: 'v3.27.4',
-      date: '2026-06-22 · 19h45',
-      titleKey: 'changelog.v3_27_4_title' as TranslationKey,
-      descKey: 'changelog.v3_27_4_desc' as TranslationKey,
-      highlights: [
-        "Résolution des modèles retirés d'OpenRouter — Liaison et redirection automatique du modèle obsolète llama-3-8b-instruct:free vers le modèle de routage dynamique openrouter/free pour éviter les erreurs 404.",
-        "Nettoyage du scraping de site web — Correction de l'affichage en cas de fallback (échec de l'IA) : élimination automatique des balises d'images et liens Markdown bruts du contenu textuel.",
-        "Mise à jour des sélections de paramètres — Les menus de préférences et de configuration de l'IA proposent désormais le routeur automatique libre d'OpenRouter par défaut.",
-      ],
-    },
-    {
-      version: 'v3.27.3',
-      date: '2026-06-22 · 19h30',
-      titleKey: 'changelog.v3_27_3_title' as TranslationKey,
-      descKey: 'changelog.v3_27_3_desc' as TranslationKey,
-      highlights: [
-        "Bascule du runtime de l'API Chat — Changement du runtime de l'endpoint api/chat d'Edge à Node.js (nodejs) pour résoudre les erreurs de bundle de l'SDK Anthropic.",
-        "Maintien de la compatibilité streaming — Le routeur d'API continue de diffuser en flux (ReadableStream SSE) sans interruption pour les utilisateurs finaux.",
-      ],
-    },
-    {
-      version: 'v3.27.2',
-      date: '2026-06-22 · 19h15',
-      titleKey: 'changelog.v3_27_2_title' as TranslationKey,
-      descKey: 'changelog.v3_27_2_desc' as TranslationKey,
-      highlights: [
-        "Migration Next.js 16 Proxy — Migration de middleware.ts vers la nouvelle convention proxy.ts de Next.js 16 pour résoudre les erreurs de bundle sur Vercel.",
-        "Compatibilité runtime Node.js — Bascule automatique de la logique de routage et de session sur le runtime Node.js natif pour la compatibilité avec toutes les dépendances.",
-        "Nettoyage de configuration — Suppression de la configuration de secours Webpack obsolète dans next.config.ts.",
-      ],
-    },
-    {
-      version: 'v3.27.1',
-      date: '2026-06-22 · 18h50',
-      titleKey: 'changelog.v3_27_1_title' as TranslationKey,
-      descKey: 'changelog.v3_27_1_desc' as TranslationKey,
-      highlights: [
-        "Configuration globale sur Vercel — Enregistrement et écriture de la variable d'environnement OPENROUTER_API_KEY sur les environnements de Production, Preview, et Development.",
-        "Environnement local à jour — Ajout de la clé OpenRouter globale dans le fichier .env.production.local pour les tests et exécutions locales.",
-        "Connexion IA opérationnelle — Validation de la liaison dynamique de la clé OpenRouter avec les fonctionnalités d'intelligence artificielle de l'application.",
-      ],
-    },
-    {
-      version: 'v3.27.0',
-      date: '2026-06-22 · 22h45',
-      titleKey: 'changelog.v3_27_0_title' as TranslationKey,
-      descKey: 'changelog.v3_27_0_desc' as TranslationKey,
-      highlights: [
-        "Moteur IA unifié — Création de lib/ai.ts prenant en charge OpenRouter, Anthropic, Groq et Together.ai avec cascade intelligente des clés API (Settings utilisateur > Variables d'environnement).",
-        "Streaming SSE standardisé — Conversion des flux Anthropic vers le format de delta OpenAI (choices[0].delta.content) pour assurer la compatibilité avec le client frontend.",
-        "Refactoring complet des endpoints — 10 routes d'API réécrites pour appeler le helper unifié (chat, brouillons d'e-mails, exécution d'agents, scripts de vente, qualification, enrichissement de contacts, etc.).",
-        "Replication locale native Electron — Ajout des colonnes de configuration openrouter_key, ai_provider et ai_model dans SQLite (database.cjs) et synchronisation bidirectionnelle Supabase (sync.cjs).",
-        "Correctifs TypeScript & compilation — Correction de la déstructuration de contextUser dans outreach-root.tsx et typage de l'index de traduction dans language-context.tsx. Projet compilé avec succès.",
-      ],
-    },
-    {
-      version: 'v3.26.0',
-      date: '2026-06-22 · 20h00',
-      titleKey: 'changelog.v3_26_0_title' as TranslationKey,
-      descKey: 'changelog.v3_26_0_desc' as TranslationKey,
-      highlights: [
-        "Centre d'Acquisition (/acquisition) — Tour de contrôle de tous les leads entrants, filtrables par source (OSM / Maps, CSV, Manuel, Formulaire). Badge SLA coloré (vert < 2h, ambre < 24h, rouge > 24h) pour piloter la vitesse de traitement.",
-        "Actions rapides sur la liste — Bouton « Qualifier » pour passer un lead de New → Contacted sans ouvrir la fiche. Accès direct au détail via « Voir ».",
-        "Timeline unifiée par lead — Nouvel onglet « Timeline » dans la fiche lead : historique chronologique mixant les événements Supabase (lead_events) et les événements synthétiques (création, notes). Icônes codées par couleur par type d'événement.",
-        "Colonnes DB — lead_source_type (osm/csv/manual/form/facebook/google/import), utm_source, utm_medium, utm_campaign, utm_content ajoutés sur leads. Table lead_events créée (Supabase + SQLite). Migration SQL v4.1 incluse.",
-      ],
-    },
-    {
-      version: 'v3.25.0',
-      date: '2026-06-22 · 18h00',
-      titleKey: 'changelog.v3_25_0_title' as TranslationKey,
-      descKey: 'changelog.v3_25_0_desc' as TranslationKey,
-      highlights: [
-        "Leads & Tâches en temps réel — Supabase Realtime déclenche des mises à jour immédiates de vos leads et tâches sans rechargement de page : INSERT, UPDATE et DELETE propagés instantanément à tous les onglets ouverts (mode web uniquement).",
-        "Présence en ligne — Contexte PresenceProvider prêt à l'emploi : détection des membres connectés au workspace, avec page active et avatar. Le composant OnlineIndicator affiche les collègues en ligne dans la barre latérale.",
-        "Edge Runtime sur les routes clés — /api/chat, /api/integrations/slack et /api/integrations/notion tournent maintenant en Edge Runtime Vercel pour une latence globale réduite.",
-        "Web Push (Service Worker) — sw.js enregistré dans /public : gestion des événements push et notificationclick. L'endpoint /api/push/subscribe stocke les abonnements avec upsert (pas de doublons).",
-        "Migration SQL v3.25.0 — Nouvelle table push_subscriptions (RLS activé), REPLICA IDENTITY FULL sur leads et tasks pour activer les DELETE en Realtime.",
-      ],
-    },
-    {
-      version: 'v3.24.0',
-      date: '2026-06-22 · 16h00',
-      titleKey: 'changelog.v3_24_0_title' as TranslationKey,
-      descKey: 'changelog.v3_24_0_desc' as TranslationKey,
-      highlights: [
-        "Canvas WYSIWYG (TipTap) — L'éditeur Canvas est maintenant un vrai éditeur de texte riche style Word/Notion : boutons Gras, Italique, Titres fonctionnent sans écrire une seule ligne de Markdown. Le Markdown généré par l'IA est converti automatiquement en mise en forme.",
-        "Fenêtre flottante — Bouton « Détacher » dans l'en-tête du Canvas : la fenêtre devient un overlay flottant déplaçable par glisser-déposer. « Ancrer » la ramène à sa position initiale.",
-        "Sauvegarde directe dans la Bibliothèque — Bouton « Bibliothèque » dans l'en-tête : enregistre le document dans /library avec choix du dossier, sans avoir à exporter d'abord.",
-        "Indicateur de réflexion animé — L'icône Minerva pulse et un texte shimmer « Minerva réfléchit… » remplace les simples points pendant la génération IA.",
-        "Points de contrôle — Icône marque-page sur chaque message assistant : créer un checkpoint et restaurer la conversation à cet état en un clic.",
-      ],
-    },
-    {
-      version: 'v3.23.0',
-      date: '2026-06-22 · 14h30',
-      titleKey: 'changelog.v3_23_0_title' as TranslationKey,
-      descKey: 'changelog.v3_23_0_desc' as TranslationKey,
-      highlights: [
-        "Slack connector — Collez un Webhook entrant Slack dans Paramètres → Intégrations ; toutes les notifications Minerva (leads, visites, mentions) sont poussées dans votre canal automatiquement.",
-        "Notion connector — Collez un token d'intégration Notion + ID de base de données pour pouvoir exporter vos documents Canvas vers Notion.",
-        "Claude Sonnet par défaut — Le modèle Claude Sonnet (Anthropic) est maintenant le modèle par défaut dans le chat IA. Plus de réponses simulées si ANTHROPIC_API_KEY est configuré.",
-        "Boutons verts partout — Les derniers boutons oranges sur la page Services ont été corrigés en vert (#047857).",
-      ],
-    },
-    {
-      version: 'v3.22.0',
-      date: '2026-06-22 · 12h56',
-      titleKey: 'changelog.v3_22_0_title' as TranslationKey,
-      descKey: 'changelog.v3_22_0_desc' as TranslationKey,
-      highlights: [
-        "Comptes / Entreprises (vue 360°) — Nouvelle page /accounts qui regroupe les leads par entreprise (domaine ou nom). Vue détaillée par compte : contacts, pipeline cumulé, visites terrain et notes.",
-        "Accès rapide — Lien « Comptes » dans la section CRM & Prospection de la barre latérale.",
-      ],
-    },
-    {
-      version: 'v3.21.0',
-      date: '2026-06-22 · 12h52',
-      titleKey: 'changelog.v3_21_0_title' as TranslationKey,
-      descKey: 'changelog.v3_21_0_desc' as TranslationKey,
-      highlights: [
-        "Galerie des preuves de visite — Nouvelle page /field/gallery : toutes les photos jointes aux comptes-rendus terrain, regroupées par mois, avec résultat, contact, niveau d'intérêt et aperçu plein écran.",
-        "Accès depuis le Mode Terrain — Bouton « Preuves » dans l'en-tête de la tournée. Visible par toute l'équipe (données du workspace).",
-      ],
-    },
-    {
-      version: 'v3.20.0',
-      date: '2026-06-22 · 12h48',
-      titleKey: 'changelog.v3_20_0_title' as TranslationKey,
-      descKey: 'changelog.v3_20_0_desc' as TranslationKey,
-      highlights: [
-        "Agenda — Vues Semaine et Jour — Basculez entre Mois / Semaine / Jour. Les vues Semaine et Jour affichent une grille horaire (7h–20h) avec les rendez-vous placés à leur heure.",
-        "Création rapide par créneau — Cliquez sur un créneau horaire pour planifier un rendez-vous à cette heure.",
-      ],
-    },
-    {
-      version: 'v3.19.0',
-      date: '2026-06-22 · 12h45',
-      titleKey: 'changelog.v3_19_0_title' as TranslationKey,
-      descKey: 'changelog.v3_19_0_desc' as TranslationKey,
-      highlights: [
-        "Skills partagées par équipe — Les compétences activées et personnalisées sont désormais partagées au niveau du workspace : toute l'équipe voit et utilise les mêmes.",
-        "@ contexte CRM dans le chat — Tapez @ dans l'Assistant pour injecter des données réelles : tous les leads, le pipeline par statut, les leads chauds ou les tâches en cours.",
-      ],
-    },
-    {
-      version: 'v3.18.0',
-      date: '2026-06-22 · 12h37',
-      titleKey: 'changelog.v3_18_0_title' as TranslationKey,
-      descKey: 'changelog.v3_18_0_desc' as TranslationKey,
-      highlights: [
-        "Roadmap à jour — Tout ce qui a été livré (v3.0 → v3.17) est désormais marqué « Disponible » : Agenda, Skills, Canvas auto, Vision, scraper site, intelligence comportementale, chat enrichi, connexion Google, thème vert, etc.",
-        "Reste à faire — Onglet « Prévu » : intégrations Slack/Notion/SharePoint, Comptes/Entreprises, timeline unifiée.",
-        "Backlog rafraîchi — Skills partagées, @ contexte CRM, vues semaine/jour de l'agenda, galerie de preuves, QA E2E, réécriture des refs React.",
-      ],
-    },
-    {
-      version: 'v3.17.0',
-      date: '2026-06-22 · 12h25',
-      titleKey: 'changelog.v3_17_0_title' as TranslationKey,
-      descKey: 'changelog.v3_17_0_desc' as TranslationKey,
-      highlights: [
-        "Modèle Vision fonctionnel — Vous pouvez désormais joindre une image dans l'Assistant ; elle est envoyée à un modèle de vision et l'aperçu s'affiche dans la conversation.",
-        "Fenêtre de connexion Google sur Intégrations — Le design soigné à deux volets s'affiche aussi depuis la page Intégrations (Gmail, Agenda, Drive).",
-        "Qualité du code — Résolution des 262 erreurs ESLint (correctifs réels + règles expérimentales du React Compiler ramenées au bon niveau). Lint : 0 erreur.",
-      ],
-    },
-    {
-      version: 'v3.16.0',
-      date: '2026-06-22 · 11h51',
-      titleKey: 'changelog.v3_16_0_title' as TranslationKey,
-      descKey: 'changelog.v3_16_0_desc' as TranslationKey,
-      highlights: [
-        "Vert partout — Balayage global : tout l'orange de l'application (28 fichiers) a été remplacé par le vert de marque. Plus aucune page n'utilise d'orange.",
-        "Charte mise à jour — DESIGN.md et CLAUDE.md définissent désormais le vert #059669 comme unique accent par défaut de l'application.",
-      ],
-    },
-    {
-      version: 'v3.15.0',
-      date: '2026-06-22 · 11h44',
-      titleKey: 'changelog.v3_15_0_title' as TranslationKey,
-      descKey: 'changelog.v3_15_0_desc' as TranslationKey,
-      highlights: [
-        "Accent vert harmonisé — Les pages Aujourd'hui, Agenda, Services & Tarifs, Configuration et Automatisations passent de l'orange au vert de marque, conformément à la charte graphique.",
-      ],
-    },
-    {
-      version: 'v3.14.0',
-      date: '2026-06-22 · 11h41',
-      titleKey: 'changelog.v3_14_0_title' as TranslationKey,
-      descKey: 'changelog.v3_14_0_desc' as TranslationKey,
-      highlights: [
-        "Page Skills en vert — L'accent de la page Skills passe du orange au vert de marque, conformément à la charte graphique (DESIGN.md).",
-        "Puces de compétences cohérentes — Les compétences sélectionnées via @ dans le chat affichent désormais l'accent vert.",
-      ],
-    },
-    {
-      version: 'v3.13.0',
-      date: '2026-06-22 · 11h35',
-      titleKey: 'changelog.v3_13_0_title' as TranslationKey,
-      descKey: 'changelog.v3_13_0_desc' as TranslationKey,
-      highlights: [
-        "Skills synchronisées dans le cloud — Vos compétences activées et personnalisées sont désormais stockées dans Supabase (et non plus localement), donc disponibles sur tous vos appareils.",
-        "Compétences par défaut conservées — Les compétences de démarrage sont automatiquement initialisées à la première utilisation.",
-      ],
-    },
-    {
-      version: 'v3.12.0',
-      date: '2026-06-22 · 11h23',
-      titleKey: 'changelog.v3_12_0_title' as TranslationKey,
-      descKey: 'changelog.v3_12_0_desc' as TranslationKey,
-      highlights: [
-        "Nouvelle page Skills — Activez des compétences IA organisées en packs (Ventes, Marketing, Produit, Données, Opérations, Support) pour étendre les capacités de l'assistant.",
-        "Créateur de compétences — Créez vos propres compétences avec des instructions sur mesure ; elles s'ajoutent à vos compétences activées.",
-        "@ dans le chat IA — Tapez @ dans l'assistant pour insérer une compétence activée : ses instructions sont injectées dans la requête (puces de compétences affichées).",
-        "Barre latérale — Nouvel élément « Skills » dans la section Intelligence IA.",
-      ],
-    },
-    {
-      version: 'v3.11.0',
-      date: '2026-06-22 · 11h16',
-      titleKey: 'changelog.v3_11_0_title' as TranslationKey,
-      descKey: 'changelog.v3_11_0_desc' as TranslationKey,
-      highlights: [
-        "Titres de discussion par l'IA — Le titre de chaque nouvelle conversation de l'assistant est désormais généré automatiquement par l'IA à partir du premier échange.",
-        "Modèle IA confirmé — L'assistant utilise le modèle « Minerva AI (Llama 3.3 70B) » via OpenRouter ; le fournisseur est transmis explicitement à chaque requête pour garantir la connexion.",
-      ],
-    },
-    {
-      version: 'v3.10.0',
-      date: '2026-06-22 · 11h11',
-      titleKey: 'changelog.v3_10_0_title' as TranslationKey,
-      descKey: 'changelog.v3_10_0_desc' as TranslationKey,
-      highlights: [
-        "Nouvelle fenêtre de connexion Google — Design soigné en deux volets (avantages + aperçu d'intégration) réutilisable, affichée depuis la boîte de réception.",
-        "Connexion Google fiabilisée — L'URI de redirection OAuth utilise désormais le domaine canonique de l'application, évitant les erreurs « redirect_uri_mismatch » liées aux domaines de prévisualisation.",
-      ],
-    },
-    {
-      version: 'v3.9.0',
-      date: '2026-06-22 · 01h23',
-      titleKey: 'changelog.v3_9_0_title' as TranslationKey,
-      descKey: 'changelog.v3_9_0_desc' as TranslationKey,
-      highlights: [
-        "Page dédiée de prise de rendez-vous — Le bouton « Nouveau RDV » ouvre désormais une page complète (/agenda/new) avec titre, date, heure, durée, lead associé, notes et options de synchronisation.",
-        "Conformité design — La page Agenda respecte la charte graphique (tokens de couleurs, rayons, typographie).",
-      ],
-    },
-    {
-      version: 'v3.8.0',
-      date: '2026-06-22 · 01h19',
-      titleKey: 'changelog.v3_8_0_title' as TranslationKey,
-      descKey: 'changelog.v3_8_0_desc' as TranslationKey,
-      highlights: [
-        "Vérifications cochables — Dans la Roadmap, chaque vérification manuelle peut être marquée comme faite ; un compteur d'avancement s'affiche par phase (état sauvegardé).",
-        "Notifications relances IA — Une notification quotidienne signale les relances suggérées par l'intelligence comportementale (en plus du bilan hebdomadaire déjà notifié).",
-        "Documentation — CLAUDE.md mis à jour avec les nouvelles pages (Agenda, Skills, Inbox, Field) et le fonctionnement des jetons Google / fournisseurs IA.",
-      ],
-    },
-    {
-      version: 'v3.7.0',
-      date: '2026-06-22 · 01h14',
-      titleKey: 'changelog.v3_7_0_title' as TranslationKey,
-      descKey: 'changelog.v3_7_0_desc' as TranslationKey,
-      highlights: [
-        "Notifications de mention — Lorsqu'un membre vous @mentionne dans le chat d'équipe, vous recevez désormais une notification automatique.",
-        "Images en plein écran — Cliquez sur n'importe quelle image partagée dans le chat d'équipe pour l'ouvrir en grand (plein écran), accessible à tous les membres.",
-      ],
-    },
-    {
-      version: 'v3.6.0',
-      date: '2026-06-22 · 00h46',
-      titleKey: 'changelog.v3_6_0_title' as TranslationKey,
-      descKey: 'changelog.v3_6_0_desc' as TranslationKey,
-      highlights: [
-        "Intelligence comportementale activée — Les deux options des paramètres IA sont désormais pleinement fonctionnelles et persistées.",
-        "Bilans hebdomadaires automatiques — L'IA scanne votre portefeuille le week-end et génère un bilan d'opportunités (leads à relancer, recommandations), visible sur le tableau de bord et dans les notifications.",
-        "Relances suggérées — Le tableau de bord propose des actions préconfigurées pour vos prospects tièdes et froids (email de réactivation, appel, audit de site) avec création de tâche en un clic.",
-      ],
-    },
-    {
-      version: 'v3.5.0',
-      date: '2026-06-22 · 00h41',
-      titleKey: 'changelog.v3_5_0_title' as TranslationKey,
-      descKey: 'changelog.v3_5_0_desc' as TranslationKey,
-      highlights: [
-        "Activité de l'équipe — Nouveau widget sur le tableau de bord qui liste en temps réel les vrais événements du workspace (nouveaux leads, deals gagnés, tâches terminées).",
-        "Services & Tarifs — Mise en conformité avec la charte graphique (typographie unifiée).",
-        "Automatisations — Icônes de déclencheurs remplacées par des icônes propres (au lieu d'emojis), couleurs alignées à la charte.",
-        "Intégrations planifiées — Slack, Notion, SharePoint, Meeting recorder et Webhooks site web sont désormais listés dans la Roadmap (onglet Prévu) en attendant leur activation.",
-      ],
-    },
-    {
-      version: 'v3.4.0',
-      date: '2026-06-22 · 00h35',
-      titleKey: 'changelog.v3_4_0_title' as TranslationKey,
-      descKey: 'changelog.v3_4_0_desc' as TranslationKey,
-      highlights: [
-        "Canvas automatique — L'assistant IA ouvre désormais le Canvas tout seul lorsqu'il rédige un document substantiel (rapport, proposition, email long, script, plan d'action) et y écrit directement.",
-        "OpenRouter intégré — Clé OpenRouter ajoutée à l'environnement : l'app peut utiliser les modèles OpenRouter de façon fiable, sans remplacer le moteur IA par défaut.",
-        "Modèle Vision (texte + image) — Nouveau modèle « Vision » sélectionnable dans l'assistant pour traiter texte et images.",
-        "Stabilité IA — Le choix du fournisseur est désormais explicite : les scripts et brouillons basés sur Claude continuent de fonctionner sans interférence.",
-      ],
-    },
-    {
-      version: 'v3.3.0',
-      date: '2026-06-22 · 00h29',
-      titleKey: 'changelog.v3_3_0_title' as TranslationKey,
-      descKey: 'changelog.v3_3_0_desc' as TranslationKey,
-      highlights: [
-        "Boîte de réception réparée — La page détectait mal la connexion Google : elle reconnaît maintenant les deux méthodes de connexion (ancienne et nouvelle), donc vos fils Gmail s'affichent dès que Google est connecté.",
-        "Lecture des fils — Le détail d'une conversation et les suggestions de réponse IA fonctionnent quel que soit le mode de connexion Google.",
-        "Conformité design — L'écran de connexion de la boîte de réception suit DESIGN.md (icônes au lieu d'emojis, jetons de couleurs unifiés).",
-      ],
-    },
-    {
-      version: 'v3.2.0',
-      date: '2026-06-22 · 00h22',
-      titleKey: 'changelog.v3_2_0_title' as TranslationKey,
-      descKey: 'changelog.v3_2_0_desc' as TranslationKey,
-      highlights: [
-        "Nouvelle page Agenda — Un calendrier mensuel complet accessible en permanence depuis la barre latérale (élément épinglé, jamais masqué).",
-        "Prise de rendez-vous — Cliquez sur une date pour créer un rendez-vous : titre, heure, durée et lead associé.",
-        "Notification d'équipe — Chaque rendez-vous créé notifie automatiquement les membres de l'équipe.",
-        "Synchronisation Google Agenda — Option pour ajouter le rendez-vous directement à votre Google Calendar (si Google est connecté).",
-        "Tâche Todoist automatique — Option pour créer une tâche Todoist à l'heure du rendez-vous (si Todoist est configuré).",
-        "Barre latérale — Les 5 destinations principales (Aujourd'hui, Agenda, Prospection, Leads, Équipe) restent toujours visibles.",
-      ],
-    },
-    {
-      version: 'v3.1.0',
-      date: '2026-06-22 · 00h16',
-      titleKey: 'changelog.v3_1_0_title' as TranslationKey,
-      descKey: 'changelog.v3_1_0_desc' as TranslationKey,
-      highlights: [
-        "Compte-rendu de visite (Mode Terrain) — La page « Enregistrer le passage » défile désormais entièrement : le bouton Confirmer est toujours atteignable (correctif du blocage de scroll).",
-        "Plus de contexte pour l'équipe — Ajout des champs « Contact rencontré » et « Niveau d'intérêt » (Chaud / Tiède / Froid) pour que chaque membre comprenne le résultat d'un passage.",
-        "Photo preuve — Possibilité de joindre une photo (devanture, carte de visite, contact) prise depuis la caméra ou importée, comme preuve de la visite.",
-        "Notification automatique de l'équipe — À la confirmation d'un passage, tous les membres reçoivent une notification résumant le résultat, le contact et la note.",
-        "Onglet Vérification dans la Roadmap — Nouvelle section listant les vérifications manuelles à faire après chaque phase de mise à jour.",
-      ],
-    },
-    {
-      version: 'v3.0.0',
-      date: '2026-06-22 · 00h08',
-      titleKey: 'changelog.v3_0_0_title' as TranslationKey,
-      descKey: 'changelog.v3_0_0_desc' as TranslationKey,
-      highlights: [
-        "Correctif date changelog — La date de publication s'affichait « Invalid Date » : le parseur normalise désormais les formats personnalisés (« · » et « 23h19 ») avant l'affichage.",
-        "Page Gérer le rôle refondue — Look premium conforme à DESIGN.md : carte membre avec photo, 3 niveaux d'accès (Administrateur / Éditeur / Observateur), aperçu des modules avec icônes lucide, accent orange.",
-        "Mode Terrain approfondi — Mise en avant du « Prochain arrêt », lien d'itinéraire (directions Google Maps) par lead, bouton « Prévenir l'équipe » du départ en tournée, et conformité DESIGN.md (icônes lucide, rounded-xl, font-bold).",
-        "Website Scraper IA — Bouton « Scraper le site » sur la fiche lead : extraction du contenu (Firecrawl + fallback HTML), génération d'une description commerciale par IA, stockée et réinjectée dans les scripts de visite et brouillons d'emails.",
-        "Notifications d'équipe fonctionnelles — Nouvel endpoint service-role /api/notifications/team : « Notifier l'équipe » diffuse réellement la notification à tous les membres actifs (et plus seulement à l'expéditeur).",
-        "Membres en double corrigés — Déduplication des lignes team_members par utilisateur (l'actif prime sur l'invité en attente), le propriétaire n'apparaît plus deux fois.",
-        "Chat d'équipe enrichi — Le menu de mention @ s'ancre au-dessus du champ (ne masque plus le texte saisi), ajout d'un sélecteur d'emojis et de l'envoi d'images / GIF, et les avatars des messages reflètent la vraie photo de chaque membre.",
-        "Localisation de l'Assistant IA — Traduction complète de l'interface en français, anglais et allemand, sélectionnable dynamiquement.",
-        "Messagerie d'Équipe — Synchronisation du schéma team_messages et activation du temps réel (Realtime).",
-        "Avatars de Présence — Photos des utilisateurs en ligne affichées en haut à droite au lieu de simples initiales.",
-      ],
-    },
-    {
-      version: 'v2.99.0',
-      date: '2026-06-21 · 23h59',
-      titleKey: 'changelog.v2_99_0_title' as TranslationKey,
-      descKey: 'changelog.v2_99_0_desc' as TranslationKey,
-      highlights: [
-        "Statuts membres enrichis — Distinction claire entre Invité (en attente), A rejoint (membre_user_id défini) et Accès app (badge vert). Badge 'En attente' ambré pour les invitations non acceptées.",
-        "Présence en ligne — Point vert sur l'avatar + label '• En ligne' pour les membres actuellement actifs dans l'application (Supabase Presence channel).",
-        "Toast de bienvenue — Notification toast en temps réel quand un membre accepte une invitation et rejoint le workspace (détection Supabase Realtime UPDATE pending → active).",
-        "Date d'arrivée — La date effective d'acceptation de l'invitation (joined_at) est affichée dans la liste des membres actifs.",
-      ],
-    },
-    {
-      version: 'v2.98.0',
-      date: '2026-06-21 · 23h40',
-      titleKey: 'changelog.v2_98_0_title' as TranslationKey,
-      descKey: 'changelog.v2_98_0_desc' as TranslationKey,
-      highlights: [
-        "Fix map carte — Clic sur un lead dans la sidebar vole immédiatement vers le marqueur (flyTo) sans nécessiter de double-clic ou de dézoom.",
-        "Fix automation — Bouton 'Nouvelle Règle' redirige vers /settings/automations/new, un builder 4 étapes : déclencheur, conditions, actions, confirmation + sauvegarde.",
-        "Notifications desktop — Service lib/notification-service.ts : permission demandée au lancement, rappels quotidiens (tâches en retard, tâches du jour, pipeline vide). Electron : sendNotification via IPC. Web : window.Notification API. SMS stub codé (non configuré).",
-        "Terrain — Page /field/[plan]/prepare/[lead] : script de visite généré par IA (Claude Haiku), notes précédentes du lead, formulaire de pré-notes sauvegardé, bouton 'Notifier l'équipe'. Boutons Préparer → et Enregistrer → dans chaque carte lead.",
-        "Templates email — Page /settings/email-templates : CRUD complet, A/B test variante B, tags, tokens variables ({{prenom}} etc.), stats envois/ouvertures/clics. Table email_templates Supabase.",
-        "Google Contacts — lib/google/google-contacts-service.ts : listContacts, createContact, importContactsAsLeads. API /api/google/contacts (GET liste, POST import/create). Scope contacts.readonly ajouté au pack OAuth.",
-      ],
-    },
-    {
-      version: 'v2.97.0',
-      date: '2026-06-21 · 18h00',
-      titleKey: 'changelog.v2_97_0_title' as TranslationKey,
-      descKey: 'changelog.v2_97_0_desc' as TranslationKey,
-      highlights: [
-        "Page publique /book/[username] — calendrier sélection de date, grille de créneaux avec freebusy Google Calendar, formulaire nom/email/notes, confirmation animée.",
-        "APIs Booking — /api/booking/settings (GET/POST config), /api/booking/slots (créneaux + freebusy), /api/booking/appointments (POST public + GET auth).",
-        "Page /team/member/[id] — assigner rôle défaut (admin/éditeur/observateur) ou rôle custom, créer rôle inline avec 19 toggles, prévisualisation des accès.",
-        "Fixes Supabase — migration v296 : 8 colonnes/tables manquantes (email_sequences, booking_settings, workspace_roles, etc.). order by invited_at corrigé dans members API.",
-        "Services & Tarifs — badges type remplacés par hex literals (DESIGN.md compliance).",
-      ],
-    },
-    {
-      version: 'v2.96.0',
-      date: '2026-06-21 · 12h00',
-      titleKey: 'changelog.v2_96_0_title' as TranslationKey,
-      descKey: 'changelog.v2_96_0_desc' as TranslationKey,
-      highlights: [
-        "Page /join redesignée — Animations CSS fluides, avatar workspace avec ring pulsant, confetti burst à l'acceptation, badge rôle avec icône + description, liste des modules accessibles par rôle. Mobile-first, support thème sombre via bg orbs.",
-        "Quitter une équipe — Bouton 'Quitter l'équipe' visible pour les non-propriétaires. API POST /api/team/leave supprime la ligne team_members et révoque l'accès workspace immédiatement. Le propriétaire ne peut pas quitter son propre workspace.",
-        "Realtime team pages — Supabase realtime subscription sur la table team_members : les deux pages d'équipe se rafraîchissent automatiquement quand un membre est invité ou rejoint.",
-        "Sidebar filtrée par rôle — GET /api/team/my-permissions résout les permissions effectives (rôle défaut ou rôle personnalisé). La sidebar masque les entrées de navigation auxquelles l'utilisateur n'a pas accès selon son rôle.",
-        "Rôles personnalisés — Onglet 'Rôles & Permissions' dans /team : visualisation des 3 rôles défaut (admin/editor/viewer) avec leurs modules. CRUD complet de rôles personnalisés (nom, couleur, 19 toggles modules). Stockés dans la table workspace_roles Supabase.",
-      ],
-    },
-    {
-      version: 'v2.95.0',
-      date: '2026-06-21',
-      titleKey: 'changelog.v2_95_0_title' as TranslationKey,
-      descKey: 'changelog.v2_95_0_desc' as TranslationKey,
-      highlights: [
-        "Facturation (BillingSDK) — Module complet 5 onglets : Abonnement (TrialExpiryCard + SubscriptionManagement + PaymentFailure), Forfaits (PricingTableTwo avec 4 plans Minerva), Utilisation (UsageMeter live + DetailedUsageTable), Paiement (PaymentMethodSelector + UpcomingCharges), Factures (InvoiceHistory).",
-        "Lead partage public — Bouton 'Partager' dans la fiche lead génère un lien /lead-preview/[token] accessible sans compte. Page de preview lecture seule : nom, email, téléphone, adresse, catégorie, score, site web.",
-        "Token invite sécurisé — Suppression de tout usage localStorage pour les tokens d'invitation. Redirect chain propre : /join/[token] → /login?next=/join/[token] → retour /join/[token] après connexion.",
-        "Middleware étendu — /join/[token] et /lead-preview/[token] sont désormais des pages publiques (pas de redirect login).",
-        "Plans Minerva — billingsdk-config.ts reconfiguré avec 4 plans spécifiques : Gratuit (0$), Pro (29$/mois), Business (79$/mois), Entreprise (sur devis).",
-      ],
-    },
-    {
-      version: 'v2.94.0',
-      date: '2026-06-21',
-      titleKey: 'changelog.v2_94_0_title' as TranslationKey,
-      descKey: 'changelog.v2_94_0_desc' as TranslationKey,
-      highlights: [
-        "Canvas — 3 boutons fonctionnels : Notes (annotations horodatées), Historique (documents récents cliquables) et Taille de texte (S / M / L) dans le panneau latéral droit.",
-        "Canvas — Collapse automatique : la sidebar historique se rétracte quand le canvas est ouvert pour maximiser l'espace d'édition.",
-        "Canvas — Save to Library : après chaque export (HTML / MD / TXT), une alerte propose de déposer le document dans la Bibliothèque.",
-        "Services & Tarifs — Refonte complète : 3 onglets — Catalogue (CRUD + templates IA par niche), Forfaits (groupes de services avec prix réduit + badge 'Recommandé'), Devis (sélection de services + infos client → export HTML imprimable).",
-        "Équipes — Invitations par lien : bouton 'Lien' génère un token unique à partager sans email. Page /join/[token] pour l'acceptation. Fonctionne aussi bien que l'invitation email classique.",
-        "IA — Action Pills CRM : les 7 pills de l'assistant génèrent maintenant des prompts contextuels avec vos vrais leads, pipeline, leads chauds, niches et tâches en retard.",
-      ],
-    },
-    {
-      version: 'v2.93.0',
-      date: '2026-06-21',
-      titleKey: 'changelog.v2_93_0_title' as TranslationKey,
-      descKey: 'changelog.v2_93_0_desc' as TranslationKey,
-      highlights: [
-        "Fiche lead enrichie : étoiles (rating), nombre d'avis, téléphone cliquable, lien site web et lien Google Maps maintenant visibles directement sous le titre, depuis les données importées OSM/Google.",
-        "Pipeline Kanban drag & drop : glisser-déposer natif (HTML5) pour déplacer les leads entre colonnes. La colonne cible se met en surbrillance pendant le survol. Les flèches ← → sont toujours disponibles.",
-        "Carte — Clic lead → FlyTo : cliquer sur un marqueur de lead (mode normal ou mode route) navigue directement vers ce lead sur la carte (zoom 15, flyTo animé).",
-        "Carte — Auto-route OSRM : dès que 2+ waypoints sont ajoutés (ou 1+ en mode GPS), les 3 variantes d'itinéraire sont calculées automatiquement sans appuyer sur 'Calculer'. Debounce 900ms pour les ajouts rapides.",
-        "Board/Today — Onglet Boîte de réception : nouvel onglet 'Boîte de réception' dans le Dashboard principal pour accéder à Gmail sans quitter la vue Today.",
-        "Inbox — Lien configuration : lien 'Configurer votre e-mail →' affiché sous le message 'Aucun fil de discussion' quand la boîte est vide et non connectée.",
-      ],
-    },
-    {
-      version: 'v2.92.0',
-      date: '2026-06-21',
-      titleKey: 'changelog.v2_92_0_title' as TranslationKey,
-      descKey: 'changelog.v2_92_0_desc' as TranslationKey,
-      highlights: [
-        "GPS suivi continu (watchPosition) pendant la planification de route : le marqueur bleu se déplace en temps réel quand vous bougez. Bouton toggle pour activer/désactiver le suivi — label '● GPS actif — Arrêter le suivi'.",
-        "Badge 'Le plus rapide' affiché automatiquement sur la variante d'itinéraire (Commerciale / Plus court / Personnalisé) qui a la durée totale la plus faible après le calcul OSRM.",
-        "Icônes Clock et Route ajoutées aux données km/min sur les boutons de variantes (style inspiré de l'exemple OSRM multi-routes).",
-        "Fix critique : outcome-client.tsx avait isElectron hardcodé à false — corrigé avec la vraie détection window.electron pour que les outcomes terrain fonctionnent correctement en mode Electron.",
-      ],
-    },
-    {
-      version: 'v2.91.0',
-      date: '2026-06-20',
-      titleKey: 'changelog.v2_91_0_title' as TranslationKey,
-      descKey: 'changelog.v2_91_0_desc' as TranslationKey,
-      highlights: [
-        "Page /tasks : nouvelle page centrale pour toutes les tâches du workspace — vue liste triée (non-complétées en premier) + vue agenda calendrier avec indicateurs visuels par date.",
-        "Filtres tâches : Toutes / Aujourd'hui / En attente / Complétées + filtre par catégorie (Relance, Préparation, RDV, Général). Formulaire d'ajout intégré (titre + catégorie + date d'échéance).",
-        "Page /roadmap : cartographie produit en 4 onglets (Disponible / En cours / Prévu / Backlog) avec 22 fonctionnalités documentées, badges priorité et compteurs par statut.",
-        "Sidebar : liens 'Tâches' dans la section CRM & Prospection et 'Roadmap' dans la section Plateforme — visibles pour toute l'équipe.",
-      ],
-    },
-    {
-      version: 'v2.90.0',
-      date: '2026-06-20',
-      titleKey: 'changelog.v2_90_0_title' as TranslationKey,
-      descKey: 'changelog.v2_90_0_desc' as TranslationKey,
-      highlights: [
-        "Fix clipping mobile : la barre flottante d'actions groupées (bulk actions) était positionnée à bottom-6 (24px) et s'affichait derrière la bottom navigation bar (64px). Corrigé à bottom-[76px] pour apparaître au-dessus.",
-        "Fix padding responsive : l'espacement intérieur du widget Boîte de Validation est réduit sur mobile (px-3 au lieu de p-6) pour éviter tout débordement horizontal sur petits écrans.",
-        "Scroll dynamique : quand la barre flottante d'actions est active sur mobile, le conteneur scrollable ajoute automatiquement pb-52 pour que le dernier prospect reste scrollable au-dessus de la barre.",
-      ],
-    },
-    {
-      version: 'v2.89.0',
-      date: '2026-06-20',
-      titleKey: 'changelog.v2_89_0_title' as TranslationKey,
-      descKey: 'changelog.v2_89_0_desc' as TranslationKey,
-      highlights: [
-        "Fix Apify pipeline : réduction des timeouts (acteur 90s → 55s, AbortSignal 85s → 60s) pour garantir que les résultats Apify arrivent dans la fenêtre Vercel. Ajout de `/api/prospect/search` dans vercel.json avec maxDuration 120s.",
-        "Erreurs Apify visibles : quand Apify échoue et bascule sur OSM, un toast orange affiche maintenant le message d'erreur exact (ex: 'HTTP 402 Payment Required', timeout, token invalide) — fini les erreurs silencieuses.",
-        "Erreurs d'insertion visibles : si l'insert Supabase échoue dans addLeadValidations (RLS, réseau, schéma), un toast rouge s'affiche immédiatement — les leads manquants ne sont plus silencieux.",
-        "Boutons /ops/prospecting fonctionnels : 'Traiter' redirige vers /prospecting, 'Voir' redirige vers /campaigns et /sequences.",
-      ],
-    },
-    {
-      version: 'v2.88.0',
-      date: '2026-06-20',
-      titleKey: 'changelog.v2_88_0_title' as TranslationKey,
-      descKey: 'changelog.v2_88_0_desc' as TranslationKey,
-      highlights: [
-        "Page /projects : création d'une page liste complète pour tous les projets — grille de cartes avec nom, date de création et nombre de leads liés, état vide avec CTA, création rapide inline, lien vers la vue détail.",
-        "Classement Performance : suppression des 4 profils fictifs (Julien Tremblay, Sophie Royer, Marc-André Fortin, Élise Dupont) de l'onglet 'Réseau Global' — seuls les vrais membres de l'équipe apparaissent désormais dans le classement.",
-        "Onglet Réseau Global : remplacement des données simulées par un placeholder 'Classement réseau bientôt disponible' (honnête et sans données inventées).",
-      ],
-    },
-    {
-      version: 'v2.87.0',
-      date: '2026-06-20',
-      titleKey: 'changelog.v2_87_0_title' as TranslationKey,
-      descKey: 'changelog.v2_87_0_desc' as TranslationKey,
-      highlights: [
-        "Flux d'invitation d'équipe entièrement corrigé : l'invité rejoint désormais le bon workspace (workspace_id fixé dans team_members, endpoint accept-invite créé, onboarding détecte ?invited=true et saute l'étape de création de workspace).",
-        "Système de notifications toast (Sonner) : remplacement de 27 appels alert() bloquants par des toasts non-intrusifs dans Settings, Leads, Intégrations, Today Canvas et Intelligence.",
-        "Today Canvas : mode 'données réelles' activé par défaut (les vraies stats de votre CRM s'affichent dès l'ouverture).",
-        "Sécurité API renforcée : CRON_SECRET null-safe dans 4 routes cron, token HERMES_SERVICE_TOKEN sans fallback hardcodé.",
-        "Page Facturation : remplacement des fausses factures par une page 'Bientôt disponible' — plus de données fictives affichées.",
-        "Page /ops : redirection automatique vers /ops/prospecting (plus de 404 à la racine).",
-        "Help > Vidéos : section 'à venir' propre à la place des liens '#' non fonctionnels.",
-        "vercel.json : ajout de maxDuration (30–60s) pour les 4 routes cron (évite les timeouts Vercel en production).",
-      ],
-    },
-    {
-      version: 'v2.86.0',
-      date: '2026-06-20 10:15',
-      titleKey: 'changelog.v2_86_0_title' as TranslationKey,
-      descKey: 'changelog.v2_86_0_desc' as TranslationKey,
-      highlights: [
-        "Terminal de Cockpit Animé : Remplacement du flux statique par un terminal interactif à onglets (inbox, automation, leads) avec exécution simulée de commandes CLI.",
-        "Page dédiée aux Playbooks : Le bouton Voir les détails redirige vers la page `/playbooks/[slug]/view` reprenant la structure complète du Drawer.",
-        "Correction du Scraper Apify : Résolution du message 'Apify indisponible' en adaptant le payload pour `compass/crawler-google-places` et en assouplissant la vérification du token.",
-        "Ajustement du Flou de bas de page : Ajout d'espaces de sécurité `pb-24` pour garantir la lisibilité des éléments inférieurs.",
-        "Correction Build Vercel : Migration des paramètres de routes dynamiques vers l'API async (Promise<params>) requise par Next.js 16 — résout l'erreur TypeScript RouteHandlerConfig sur /api/google/drive/files/[id] et /api/google/places/details/[placeId]."
-      ],
-    },
-    {
-      version: 'v2.85.0',
-      date: '2026-06-20 09:30',
-      titleKey: 'changelog.v2_85_0_title' as TranslationKey,
-      descKey: 'changelog.v2_85_0_desc' as TranslationKey,
-      highlights: [
-        "Intégration Google Workspace Modulaire : Unification des connecteurs Gmail, Calendar, Meet et Drive dans un calque de services backend sécurisé.",
-        "Autorisation progressive OAuth : Flux de consentement dynamique demandant le minimum de scopes initialement, puis incrémentant la portée (ex: accès aux documents Drive) via include_granted_scopes=true sans déconnecter les services existants.",
-        "Base de données relationnelle : Tables synchronisées (google_accounts, google_tokens, google_scope_grants, drive_files, meet_sessions, calendar_links) supportant la réplication offline-first SQLite locale d'Electron.",
-        "Connecteurs séparés et modulaires : Pages d'intégration granulaires pour activer/désactiver individuellement chaque service Google (Gmail, Agenda, Drive, Meet) avec statut et permissions en temps réel.",
-        "Service Google Places API : Couche premium d'enrichissement géographique et prospection de prospects locaux via Places API (New) avec clé API serveur."
-      ],
-    },
-    {
-      version: 'v2.84.0',
-      date: '2026-06-20',
-      titleKey: 'changelog.v2_84_0_title' as TranslationKey,
-      descKey: 'changelog.v2_84_0_desc' as TranslationKey,
-      highlights: [
-        "Planificateur de Tournées (Field Route Planner) : Refonte de la page de la carte avec un layout moderne à 3 panneaux (étapes à gauche, carte au centre, résumé financier à droite).",
-        "Trois Variantes de Tournées : Choix instantané entre l'Optimisation Commerciale (Hot d'abord), l'Itinéraire le plus court (heuristique TSP géographique pure) et l'Ordre personnalisé (drag & drop manuel).",
-        "Régulateurs Temporels : Configuration de l'heure de départ, de la durée moyenne de visite et des types de départ/destination (GPS, premier lead, boucle de retour, dernier lead).",
-        "Calculs Métiers CRM : Calcul du Chiffre d'Affaires potentiel cumulé et du taux de priorité pour chaque variante, avec enregistrement direct de la tournée dans route_plans.",
-        "Recalcul en Direct Mode Terrain : Intégration du GPS live (watchPosition) et recalcul dynamique automatique de l'itinéraire restant et des ETAs à chaque étape de la tournée."
-      ],
-    },
-    {
-      version: 'v2.83.0',
-      date: '2026-06-20',
-      titleKey: 'changelog.v2_83_0_title' as TranslationKey,
-      descKey: 'changelog.v2_83_0_desc' as TranslationKey,
-      highlights: [
-        "Prospection Unifiée : Transition d'un modèle multi-sources exposé vers une interface unifiée propulsée par Apify (Google Maps) pour une expérience haut de gamme.",
-        "Simplification UX : Suppression des sélecteurs complexes de providers (OSM, Yelp, 411, PagesJaunes, Firecrawl) pour une interface épurée avec un seul bouton d'action.",
-        "Statut de Connexion Apify : Indication visuelle claire du statut (Connecté / Non configuré) avec un CTA d'onboarding direct vers la configuration des intégrations.",
-        "Fallback Silencieux Serveur : Intégration d'OpenStreetMap (OSM) et du générateur québécois en tant que fallbacks transparents en arrière-plan en cas de souci d'API Apify.",
-        "Scoring Côté Serveur : Calcul et enrichissement dynamiques des indicateurs de pertinence (Quality, Opportunity, Proximity) directement par la route d'API unifiée.",
-      ],
-    },
-    {
-      version: 'v2.82.0',
-      date: '2026-06-19',
-      titleKey: 'changelog.v2_82_0_title' as TranslationKey,
-      descKey: 'changelog.v2_82_0_desc' as TranslationKey,
-      highlights: [
-        "Profils Agents Structurés : Chaque fiche agent affiche désormais ses instructions système, modèle IA, créativité, type d'entrée (formulaire ou prompt), actions activées et base de connaissances dans des cartes premium séparées.",
-        "Mode Édition Complet : Les agents personnalisés ont un bouton Modifier déverrouillant un formulaire d'édition complet identique à la page de création — nom, avatar, instructions, modèle, créativité, actions et labels.",
-        "Architecture IA Visuelle : Barre de créativité animée (Déterministe → Créatif), badge de modèle (Rapide / Recommandé / Puissant) et indicateur de niveau de créativité textuel.",
-        "Champs de Formulaire Enrichis : Aperçu interactif des champs de formulaire avec types colorés (Texte, Sélection, Date…) et options visibles directement sur la fiche agent.",
-        "Actions & Outils Visuels : Toutes les actions de l'agent (Recherche web, Audit GMB, Analyse données…) affichées avec état actif/inactif visuel et icônes distinctes.",
-        "Agents Intégrés Enrichis : Metadata statique complète ajoutée pour Audit GMB, Pitcheur Québécois, Radar Réputation et Lucifee (instructions, modèle, créativité, actions réelles).",
-      ],
-    },
-    {
-      version: 'v2.81.0',
-      date: '2026-06-19',
-      titleKey: 'changelog.v2_81_0_title' as TranslationKey,
-      descKey: 'changelog.v2_81_0_desc' as TranslationKey,
-      highlights: [
-        "Saisie manuelle : Formulaire dédié pour ajouter des prospects individuellement dans la boîte de validation.",
-        "Import CSV local : Lecteur de fichier CSV client avec détection automatique intelligente de colonnes.",
-        "Scores client-side : Calcul instantané de complétude, local fit et opportunité pour les leads importés.",
-        "Message OSM permanent : Avertissement sur la couverture de la base de données pour orienter la prospection.",
-        "Layout Côte-à-Côte : Grille responsive affichant la liste de validation et la carte côte à côte sur grand écran.",
-        "Carte Sticky : Rendu de la carte en mode collant lors du défilement vertical de la liste des prospects."
-      ],
-    },
-    {
-      version: 'v2.80.0',
-      date: '2026-06-19',
-      titleKey: 'changelog.v2_80_0_title' as TranslationKey,
-      descKey: 'changelog.v2_80_0_desc' as TranslationKey,
-      highlights: [
-        "Architecture Direct-Cloud : Déclassement de la base offline-first SQLite locale d'Electron.",
-        "Supabase en temps réel : CRUD direct depuis l'application desktop (leads, tâches, notes, campagnes, Goals).",
-        "Spotlight & Tray : Recherche Spotlight et widgets réécrits pour interroger directement la base cloud.",
-        "Assistant IA & Canvas Cloud : Sessions, messages et documents persistés sur le cloud avec sécurité RLS."
-      ],
-    },
-    {
-      version: 'v2.79.0',
-      date: '2026-06-19',
-      titleKey: 'changelog.v2_79_0_title' as TranslationKey,
-      descKey: 'changelog.v2_79_0_desc' as TranslationKey,
-      highlights: [
-        "Normalisation Téléphone & URLs : Nettoyage automatique des sites web et formatage +1 (514) 555-0199.",
-        "Scores d'opportunités : Calcul automatique client/serveur de complétude, local fit, proximité et opportunité.",
-        "Inbox de Validation : Interface en 4 onglets persistée localement dans SQLite/Supabase avec panel de scores HSL premium.",
-        "Géocodage d'adresse gratuit : Saisie et géocodage textuel d'adresse de recherche via Nominatim OpenStreetMap.",
-        "Raccourcis OSM & Doublons : Redirection vers l'éditeur OSM iD et fusion intelligente de doublons CRM/Inbox en un clic.",
-        "Actions en bloc : Validation, exclusion, CRM import et suppression en masse des prospects."
-      ],
-    },
-    {
-      version: 'v2.78.0',
-      date: '2026-06-19',
-      titleKey: 'changelog.v2_78_0_title' as TranslationKey,
-      descKey: 'changelog.v2_78_0_desc' as TranslationKey,
-      highlights: [
-        "3 modes de recherche : Autour de moi (géolocalisation GPS navigateur), Par ville (liste Québec), Libre (texte brut).",
-        "Overpass around:radius,lat,lon avec coordonnées GPS réelles — fini le centre-ville approximatif.",
-        "Bannière 'Centre de recherche' après scrape : label + coordonnées + rayon + raccourci 'Trier par distance'.",
-        "Tri Haversine par distance depuis le centre de recherche (km). Option de tri visible uniquement après un scrape géolocalisé.",
-        "Bouton 'Lancer la recherche' désactivé en mode GPS tant que la permission n'est pas accordée."
-      ],
-    },
-    {
-      version: 'v2.77.0',
-      date: '2026-06-19',
-      titleKey: 'changelog.v2_77_0_title' as TranslationKey,
-      descKey: 'changelog.v2_77_0_desc' as TranslationKey,
-      highlights: [
-        "Compétence Minerva (`SKILL.md`) : raccourcis et configuration intégrés pour interroger le CRM Minerva directement à partir d'Hermes.",
-        "Client d'aide Python (`minerva_client.py`) : utilitaire sécurisé avec jeton d'authentification pour piloter les actions CRM en ligne de commande.",
-        "Panneau d'administration Hermes : interface utilisateur visuelle et guides d'installation rapide ajoutés à l'onglet API des paramètres.",
-        "Déploiement Cloud & VPS : configurations Docker Compose et guide pas-à-pas pour l'exécution H24 d'Hermes Gateway."
-      ],
-    },
-    {
-      version: 'v2.76.0',
-      date: '2026-06-19',
-      titleKey: 'changelog.v2_76_0_title' as TranslationKey,
-      descKey: 'changelog.v2_76_0_desc' as TranslationKey,
-      highlights: [
-        "Intégration d'Hermes Agent ⚡ : couche agent autonome au-dessus des flux CRM et simulations d'actions agentiques hautes-fidélités.",
-        "Résolution de l'erreur OSM : mise à jour du domaine de repli par défaut vers l'URL active et sécurisation du parsing JSON contre les retours HTML.",
-        "Refonte de l'Assistant IA : transition vers l'accent vert émeraude du CRM, puces d'actions adaptatives connectées au CRM et animations fluides."
-      ],
-    },
-    {
-      version: 'v2.75.0',
-      date: '2026-06-19',
-      titleKey: 'changelog.v2_75_0_title' as TranslationKey,
-      descKey: 'changelog.v2_75_0_desc' as TranslationKey,
-      highlights: [
-        "Filtrage intelligent des réponses (Inbox & Cron) : analyse automatique du sujet, de l'expéditeur et des en-têtes (ex. Auto-Submitted) pour éliminer les messages non professionnels.",
-        "Exclusion des bounces et messages d'absence (Out of Office) : évite le déclenchement d'automations inappropriées ou la modification automatique des statuts de leads.",
-        "Stabilité du CRM : seules les réponses réelles de prospects humains modifient le statut et notifient l'équipe."
-      ],
-    },
-    {
-      version: 'v2.74.0',
-      date: '2026-06-19',
-      titleKey: 'changelog.v2_74_0_title' as TranslationKey,
-      descKey: 'changelog.v2_74_0_desc' as TranslationKey,
-      highlights: [
-        "Refonte de l'Assistant IA : interface moderne avec bulles de conversation soignées, sélecteur de modèle dynamique et support pour Hermes Agent ⚡.",
-        "Éditeur de documents Canvas : panneau d'édition latéral fluide pour modifier, formater et exporter des documents générés par l'IA (Markdown, HTML, Texte).",
-        "Page Conditions d'utilisation : conformité d'accès public intégrée à l'application (/terms).",
-        "Icônes transparentes de la marque : icône de marque icon-192.png nettoyée sans arrière-plan."
-      ],
-    },
-    {
-      version: 'v2.73.0',
-      date: '2026-06-19',
-      titleKey: 'changelog.v2_73_0_title' as TranslationKey,
-      descKey: 'changelog.v2_73_0_desc' as TranslationKey,
-      highlights: [
-        "Option d'authentification Google : bouton de connexion rapide lié à Supabase Auth.",
-        "Téléchargement d'image & Partage réseaux sociaux : export des graphiques du Mode Esthétique en PNG/JPEG via html-to-image et intégration Web Share.",
-        "Bannière globale de mise à jour : notification esthétique informant l'utilisateur des nouveautés.",
-        "Gestion unverified app warning : aides et guides pour la synchronisation Gmail."
-      ],
-    },
-    {
-      version: 'v2.72.0',
-      date: '2026-06-19',
-      titleKey: 'changelog.v2_72_0_title' as TranslationKey,
-      descKey: 'changelog.v2_72_0_desc' as TranslationKey,
-      highlights: [
-        "Bypass Supabase Google OAuth : route d'API personnalisée stockant les jetons localement dans les paramètres de base de données.",
-        "Redirection dynamique : prise en charge du paramètre state pour renvoyer l'utilisateur vers son point d'origine.",
-        "Nouveau favicon vert de marque.",
-        "Mode Esthétique (LARP) : cockpit Today personnalisable avec thèmes de style (Crème, Émeraude, Charbon) et ratios de capture (1:1, 16:9, 9:16)."
-      ],
-    },
-    {
-      version: 'v2.71.0',
-      date: '2026-06-19',
-      titleKey: 'changelog.v2_71_0_title' as TranslationKey,
-      descKey: 'changelog.v2_71_0_desc' as TranslationKey,
-      highlights: [
-        "Leaderboard gamifié : classement de performance avec divisions de ligue (Bronze, Argent, Or, Platine).",
-        "OTP anti-bot d'invitations : page d'acceptation sécurisée.",
-        "Partage public bibliothèque : accès public en lecture seule aux documents et répertoires.",
-        "Outils bulk-actions dans la bibliothèque.",
-        "Graphique d'activité hebdomadaire Recharts sur l'accueil."
-      ],
-    },
-    {
-      version: 'v2.70.0',
-      date: '2026-06-18',
-      titleKey: 'changelog.v2_70_0_title' as TranslationKey,
-      descKey: 'changelog.v2_70_0_desc' as TranslationKey,
-      highlights: [
-        "Mode Terrain sans Modales : Remplacement complet du modal d'outcome par des pages dédiées (/field/[planId]/outcome/[leadId]).",
-        "RDV pris (meeting_booked) : Passage automatique du statut à 'Won' (Deal) + création d'une tâche 'Appel de closing' pour le lendemain.",
-        "Absent (absent) : Création automatique d'une séquence de relance e-mail 'Passé vous voir' (e-mail J+0 + appel J+3) si e-mail disponible, plus tâche de rappel à J+2.",
-        "Synchronisation bidirectionnelle : Mise à jour de sync.cjs pour synchroniser les tournées (route_plans) et les fiches de visite (field_visits) entre SQLite et Supabase.",
-        "Endpoint de passage en ligne : Ajout de la route API /api/route-plans/visits gérant les passages terrain et leurs automations associées."
-      ],
-    },
-    {
-      version: 'v2.64.0',
-      date: '2026-06-18',
-      titleKey: 'changelog.v2_59_0_title' as TranslationKey,
-      descKey: 'changelog.v2_57_0_desc' as TranslationKey,
-      highlights: [
-        "/playbooks : 10 templates de prospection complets (persona ICP, preset de scraping, séquence email, script d'appel, modèle de proposition). Déployer un playbook crée une vraie campagne dans le CRM.",
-        '/integrations/forms : Webhooks inbound Typeform, Tally, Webflow, Framer — chaque soumission crée automatiquement un lead taggé source=inbound_form avec URL webhook unique.',
-        '/client-reports/[id] : Portail client avec KPIs réels par workspace (leads, RDV, deals gagnés, MRR/ARR estimé, taux de conversion) — basé sur les données Supabase.',
-        '/webhooks : Webhooks sortants avec 5 types d\'événements, bouton Tester, gestion active/inactif. Tables inbound_webhooks et outbound_webhooks ajoutées en base.',
-        'Sidebar : Playbooks et Rapports clients dans CRM & Prospection, Webhooks dans Plateforme.',
-      ],
-    },
-    {
-      version: 'v2.63.0',
-      date: '2026-06-18',
-      titleKey: 'changelog.v2_59_0_title' as TranslationKey,
-      descKey: 'changelog.v2_57_0_desc' as TranslationKey,
-      highlights: [
-        'Firecrawl + PagesJaunes/YellowPages.ca : extraction IA structurée des fiches d\'entreprises (500 req/mois gratuits sur firecrawl.dev, clé configurable dans Paramètres → Intégrations).',
-        '411.ca : scraping direct HTML sans clé — best-effort, données variables selon disponibilité du rendu HTML.',
-        'Boîte de réception déplacée au-dessus de Campagnes dans la sidebar (priorité inbox-first).',
-        'Schéma Supabase + SQLite : colonne firecrawl_api_key ajoutée à la table settings.',
-        '@mendable/firecrawl-js 4.28.0 installé et câblé au scraper multi-sources.',
-      ],
-    },
-    {
-      version: 'v2.62.0',
-      date: '2026-06-18',
-      titleKey: 'changelog.v2_59_0_title' as TranslationKey,
-      descKey: 'changelog.v2_57_0_desc' as TranslationKey,
-      highlights: [
-        'Yelp Fusion API : nouvelle source de prospection — 500 req/jour gratuites, clé configurable dans Paramètres → Intégrations → Yelp Fusion API.',
-        'HERE Places API : source la plus complète — 250 000 req/mois gratuites, fonctionne pour TOUS les types de business (services, commerces, artisans).',
-        'Les deux sources retournent des données réelles : nom, adresse, téléphone, note, coordonnées GPS.',
-        'Sources Yelp et HERE s\'activent automatiquement dans Prospection dès que la clé est configurée.',
-        'Interface prospection : badge "Clé configurée" ou "Clé manquante → Paramètres" selon l\'état de configuration.',
-      ],
-    },
-    {
-      version: 'v2.61.0',
-      date: '2026-06-18',
-      titleKey: 'changelog.v2_59_0_title' as TranslationKey,
-      descKey: 'changelog.v2_57_0_desc' as TranslationKey,
-      highlights: [
-        'DuckDuckGo cassé — DDG retournait une page bot-challenge côté serveur (0 résultats depuis des semaines). Code supprimé.',
-        'Métiers de service (plombier, électricien, peintre…) : ajout d\'une recherche par nom de métier dans Overpass pour compléter les tags OSM absents.',
-        'Miroirs Overpass en parallèle (Promise.any) — 3x plus rapide, élimine les timeouts séquentiels de 90s.',
-        'maxDuration Vercel : scrape-maps=60s, scrape-apify=90s — résout les coupures à 10s sur plan Hobby.',
-        'Banner ambre quand OSM retourne 0 résultats avec lien direct vers la config des clés API.',
-      ],
-    },
-    {
-      version: 'v2.60.0',
-      date: '2026-06-18',
-      titleKey: 'changelog.v2_59_0_title' as TranslationKey,
-      descKey: 'changelog.v2_57_0_desc' as TranslationKey,
-      highlights: [
-        'Page /map : carte invisible résolue — coordonnées center inversées corrigées ([lat,lng] → [lng,lat] conforme MapLibre).',
-        'ResizeObserver ajouté au composant Map — map.resize() automatique quand la CSS height arrive après l\'init du canvas.',
-        'Déploiement Vercel : ERR_PNPM_OUTDATED_LOCKFILE résolu — pnpm-lock.yaml commité.',
-        'Apify : réponses HTML (page d\'erreur auth) détectées avant JSON.parse — message d\'erreur actionnable affiché.',
-      ],
-    },
-    {
-      version: 'v2.59.0',
-      date: '2026-06-17',
-      titleKey: 'changelog.v2_59_0_title',
-      descKey: 'changelog.v2_59_0_desc',
-      highlights: [
-        'Leads table : overflow-x-auto — défilement horizontal sur mobile au lieu de colonnes tronquées.',
-        'Agents workspace : le panneau de paramètres passe de fixe w-96 à pleine largeur sur mobile, empilé verticalement (max-h-[40vh]).',
-        'Inbox : navigation mobile complète — liste seule → sélection → panneau de détail seul, avec bouton retour ← dans l\'en-tête.',
-        'InboxList : largeur fixe w-[340px] remplacée par w-full sur mobile, md:w-[340px] sur tablette+.',
-        'Settings : nav latérale `hidden md:block` remplacée par un `<select>` avec groupes d\'options sur mobile — toutes les sections accessibles.',
-        'Settings root : flex-col sur mobile, flex-row sur md+ pour s\'adapter à la nav dropdown.',
-      ],
-    },
-    {
-      version: 'v2.58.0',
-      date: '2026-06-17',
-      titleKey: 'changelog.v2_58_0_title',
-      descKey: 'changelog.v2_58_0_desc',
-      highlights: [
-        'Agents IA GMB Audit et Radar Réputation : remplacent Math.random() par de vraies réponses Anthropic/Groq/Together/OpenRouter.',
-        'Nouvelle route API /api/agents/run : exécute les agents built-in et personnalisés via le provider IA configuré dans les Paramètres.',
-        'Le score GMB est désormais extrait directement du rapport AI (regex sur **Score GMB :** N/100).',
-        'Agents personnalisés utilisés maintenant le champ instructions comme system prompt pour appels IA réels.',
-        'Log d\'exécution en temps réel pendant l\'appel IA (steps animés en parallèle).',
-        'Fallback gracieux : message d\'erreur dans le résultat si le provider IA est inaccessible.',
-      ],
-    },
-    {
-      version: 'v2.57.0',
-      date: '2026-06-17',
-      titleKey: 'changelog.v2_57_0_title',
-      descKey: 'changelog.v2_57_0_desc',
-      highlights: [
-        'OSM/Overpass tourne TOUJOURS en parallèle, même quand Apify est sélectionné — garantit des leads même en cas d\'échec Apify.',
-        'Logique Apify-interne supprimée de scrape-maps : la source "Google Maps / OSM" est désormais exclusivement Overpass, sans confusion.',
-        'Gestion d\'erreur par source (per-fetch .catch()) : un échec Apify n\'empêche plus d\'obtenir les résultats OSM.',
-        'Bannière informative si Apify échoue : raison + lien "Vérifier la clé →".',
-        'Page Personas conforme DESIGN.md : bg-background, bg-card border-border, aucune shadow sur cards, hovers #e5e5e2, CTA vert CRM.',
-        'Correction build Vercel : types API (SeoAuditResult, InboxThread, ThreadMessage) extraits vers lib/ pour respecter la server boundary Next.js.',
-      ],
-    },
-    {
-      version: 'v2.54.0',
-      date: '2026-06-17',
-      titleKey: 'changelog.v2_54_0_title',
-      descKey: 'changelog.v2_54_0_desc',
-      highlights: [
-        'Nouvelle page /personas : création et gestion des profils cibles (ICP — Ideal Customer Profile).',
-        'Chaque profil définit des niches cibles, des villes cibles et des critères de scoring personnalisés (6 sliders 0–40 pts).',
-        'Critères configurables : aucun site web, note < 3.5★, < 10 avis, température Chaud, niche correspondante, ville correspondante.',
-        'Carte de profil : comptage des leads correspondants en temps réel + score moyen de compatibilité.',
-        'Hook usePersonas() : localStorage pour Electron, Supabase pour web — aucune donnée perdue.',
-        'scoreLeadByPersona() exporté depuis lib/lead-scoring.ts pour usage dans leads/pipeline.',
-        'Sidebar CRM : nouvelle entrée "Profils cibles (ICP)" avec icône Target.',
-      ],
-    },
-    {
-      version: 'v2.51.0',
-      date: '2026-06-17',
-      titleKey: 'changelog.v2_51_0_title',
-      descKey: 'changelog.v2_51_0_desc',
-      highlights: [
-        'Barre KPI revenue en haut du Pipeline : pipeline brut $, forecast pondéré (montant × probabilité %), deals gagnés et compteur de deals actifs.',
-        'Barre de progression empilée par statut : Contacté (bleu), RDV fixé (ambre), Gagné (vert) — proportions visuelles du pipeline.',
-        'La barre revenue est masquée automatiquement si aucun lead n\'a de deal renseigné.',
-        'Compatibilité complète avec les filtres niche/propriétaire existants (barre calculée sur les leads filtrés).',
-      ],
-    },
-    {
-      version: 'v2.56.1',
-      date: '2026-06-17',
-      titleKey: 'changelog.v2_56_1_title',
-      descKey: 'changelog.v2_56_1_desc',
-      highlights: [
-        'Suppression définitive de generateRealisticLeads() — le scraper ne retourne plus jamais de leads fictifs en fallback.',
-        'Les résultats OSM et DDG/annuaires ont rating=0 et reviewsCount=0 quand la donnée n\'est pas disponible, au lieu de valeurs aléatoires inventées.',
-        'Le filtre "Note minimum" ignore désormais les leads sans note (rating=0) au lieu de les exclure à tort.',
-        'Audit SEO corrigé : "Note non disponible" au lieu de "Note 0/5 très faible" pour les résultats OSM.',
-        'Réponse API enrichie quand 0 résultat : message explicatif sans jamais générer de faux leads.',
-      ],
-    },
-    {
-      version: 'v2.56.0',
-      date: '2026-06-17',
-      titleKey: 'changelog.v2_56_0_title',
-      descKey: 'changelog.v2_56_0_desc',
-      highlights: [
-        'Nouvelle page /setup : checklist interactive de 6 étapes basée sur l\'état réel de l\'app (aucune donnée fictive).',
-        'Détection automatique : profil, Gmail, premier lead, séquence email, objectifs mensuels, membre équipe.',
-        'Barre de progression et état "Tout est prêt" avec lien vers /today quand les étapes obligatoires sont complètes.',
-        'Mini-bannière sur /today : progression compacte + bouton "Continuer" vers /setup, dismissible via localStorage.',
-        'Sidebar : nouvelle entrée "Configuration" dans la section Plateforme (icône ListChecks).',
-      ],
-    },
-    {
-      version: 'v2.55.0',
-      date: '2026-06-17',
-      titleKey: 'changelog.v2_55_0_title',
-      descKey: 'changelog.v2_55_0_desc',
-      highlights: [
-        'Barre d\'actions rapides par thread : changez le statut du lead (Contacté, RDV Booké, Gagné, Perdu) sans quitter l\'inbox.',
-        'Dialog "Créer un deal" : montant estimé, probabilité (%) et date de clôture — sauvegardés directement sur la fiche lead.',
-        'Dialog "Ajouter une tâche de follow-up" : titre pré-rempli avec le nom du lead, date d\'échéance configurable.',
-        'Filtre par campagne dans la liste : chips horizontaux affichant uniquement les campagnes ayant des threads liés.',
-        'InboxThread enrichi avec leadStatus et campaignId (requête leads enrichie côté API).',
-        'addTask accepte désormais un dueDate optionnel (défaut : aujourd\'hui).',
-      ],
-    },
-    {
-      version: 'v2.53.0',
-      date: '2026-06-17',
-      titleKey: 'changelog.v2_53_0_title',
-      descKey: 'changelog.v2_53_0_desc',
-      highlights: [
-        'Bannière d\'objectifs mensuels pleine largeur : barres de progression compactes pour chaque quota configuré.',
-        'Carte "Emails planifiés" : étapes de séquences prévues aujourd\'hui avec canal, nom du lead et heure d\'envoi.',
-        'Flux d\'activité récente : fusionnel d\'activities Supabase + notifications réply_detected/lead_assigned des dernières 24h.',
-        'Nouveau layout cockpit 2 colonnes : actions du jour (gauche) + contexte & stats (droite).',
-        'Extraction de computeProgress / METRIC_LABELS / PERIOD_LABELS dans lib/goal-utils.ts (partagé entre Today et Settings).',
-      ],
-    },
-    {
-      version: 'v2.50.0',
-      date: '2026-06-17',
-      titleKey: 'changelog.v2_50_0_title',
-      descKey: 'changelog.v2_50_0_desc',
-      highlights: [
-        'Nouvelle page /inbox : liste des threads Gmail liés aux leads avec snippet, compteur de messages et point vert (non lu).',
-        'Onglets de filtrage client-side : Tous / Réponses positives / À relancer / Négatifs (reply_status).',
-        'Panel de détail : corps des messages décodés en base64url, bulles de conversation côté envoyeur/reçu.',
-        'Suggestions IA de réponse via Claude Haiku (3 options) + 3 presets de réponse rapide.',
-        'reply_status : nouvelle colonne sur leads, dual-store SQLite + Supabase, mise à jour via updateLead.',
-        'Banner de ré-authentification Gmail si le scope gmail.readonly est manquant (utilisateurs existants).',
-      ],
-    },
-    {
-      version: 'v2.44.0',
-      date: '2026-06-17',
-      titleKey: 'changelog.v2_44_0_title',
-      descKey: 'changelog.v2_44_0_desc',
-      highlights: [
-        'Quota d\'envoi quotidien configurable dans Paramètres > Prospection (défaut : 50 e-mails/jour).',
-        'Le cron de séquences vérifie le quota par utilisateur avant chaque envoi — les étapes excédentaires sont reportées.',
-        'Presets rapides : 20 / 50 / 100 / 200 e-mails par jour.',
-        'Les étapes de canal non-Email (Appel, LinkedIn, SMS) sont automatiquement ignorées par le cron d\'envoi.',
-      ],
-    },
-    {
-      version: 'v2.43.0',
-      date: '2026-06-17',
-      titleKey: 'changelog.v2_43_0_title',
-      descKey: 'changelog.v2_43_0_desc',
-      highlights: [
-        'Séquences multi-canal : chaque étape peut être un Email, un Appel téléphonique, un message LinkedIn DM ou un SMS.',
-        'Sélecteur de canal par étape dans le modal de création — badge coloré distinct par canal.',
-        'Pour les étapes non-Email (Appel, LinkedIn, SMS) : champ de corps adapté + rappel automatique de tâche manuelle à J+délai.',
-        'Affichage du canal dans la liste des étapes d\'une séquence existante (badge + libellé spécifique).',
-      ],
-    },
-    {
-      version: 'v2.42.0',
-      date: '2026-06-17',
-      titleKey: 'changelog.v2_42_0_title',
-      descKey: 'changelog.v2_42_0_desc',
-      highlights: [
-        'Personnalisation des e-mails : section "Variables" dépliable dans le compositeur IA.',
-        '4 presets rapides : {{probleme_principal}}, {{concurrent_exemple}}, {{offre_principale}}, {{objectif_client}}.',
-        'Variables injectées automatiquement dans le prompt IA lors de la génération du brouillon.',
-        'Substitution client-side des variables dans les instructions avant envoi à l\'API.',
-      ],
-    },
-    {
-      version: 'v2.41.0',
-      date: '2026-06-17',
-      titleKey: 'changelog.v2_41_0_title',
-      descKey: 'changelog.v2_41_0_desc',
-      highlights: [
-        'Badge de sync en temps réel dans la topbar (Electron uniquement).',
-        'Indique le nombre de modifications en attente de synchronisation avec le cloud.',
-        'Icône de rechargement animée (spinner), tooltip explicatif, couleur ambre pour attirer l\'attention.',
-        'Polling SQLite toutes les 5 secondes — disparaît automatiquement quand tout est synchronisé.',
-      ],
-    },
-    {
-      version: 'v2.40.0',
-      date: '2026-06-17',
-      titleKey: 'changelog.v2_40_0_title',
-      descKey: 'changelog.v2_40_0_desc',
-      highlights: [
-        'Historique des scrapes : chaque scrape est enregistré en local (localStorage) avec niches, villes, sources et résultats.',
-        'Section "Historique" dépliable en bas de la page Prospection.',
-        'Statuts visuels : en cours (orange), terminé (vert) ou échoué (rouge).',
-        'Bouton "Effacer l\'historique" pour réinitialiser.',
-      ],
-    },
-    {
-      version: 'v2.39.0',
-      date: '2026-06-17',
-      titleKey: 'changelog.v2_39_0_title',
-      descKey: 'changelog.v2_39_0_desc',
-      highlights: [
-        'Objectifs & Quotas : nouvelle section dans Paramètres → Outils → Objectifs.',
-        '4 métriques disponibles : leads créés, contactés, gagnés, e-mails envoyés.',
-        'Périodicité semaine ou mois. Barre de progression avec indicateur "Objectif atteint".',
-        'Données dual-store (SQLite Electron + Supabase web).',
-      ],
-    },
-    {
-      version: 'v2.38.0',
-      date: '2026-06-17',
-      titleKey: 'changelog.v2_38_0_title',
-      descKey: 'changelog.v2_38_0_desc',
-      highlights: [
-        'Analytics avancés : 4 nouvelles sections de breakdown (par niche, ville, propriétaire, campagne).',
-        'Chaque breakdown affiche : total leads, leads contactés, gagnés et taux de conversion.',
-        'Graphiques à barres horizontales avec deux niveaux (activité totale + taux de conversion en vert).',
-        'Top 8 entrées par catégorie, triées par volume décroissant.',
-      ],
-    },
-    {
-      version: 'v2.37.0',
-      date: '2026-06-17',
-      titleKey: 'changelog.v2_37_0_title',
-      descKey: 'changelog.v2_37_0_desc',
-      highlights: [
-        'Tracking Gmail : l\'envoi via Gmail API sauvegarde maintenant le threadId sur le lead.',
-        'Cron quotidien (10h) : détecte automatiquement les réponses à vos e-mails de prospection.',
-        'Détection de réponse : si le prospect répond, le statut passe à "Meeting Booked" + notification créée.',
-        'Notification en temps réel : "Réponse détectée — [Prospect] a répondu à votre e-mail."',
-      ],
-    },
-    {
-      version: 'v2.36.0',
-      date: '2026-06-17',
-      titleKey: 'changelog.v2_36_0_title',
-      descKey: 'changelog.v2_36_0_desc',
-      highlights: [
-        'Pipeline Kanban : champ deal (montant + probabilité %) affiché sur chaque carte si renseigné.',
-        'Colonne Kanban : total pipeline deal en bas de colonne si au moins un deal.',
-        'Fiche lead — section "Deal" : montant, probabilité %, date de closing éditable inline.',
-        'Fiche lead — sélecteur "Campagne" : assigne un lead à une campagne directement depuis la fiche.',
-      ],
-    },
-    {
-      version: 'v2.35.0',
-      date: '2026-06-17',
-      titleKey: 'changelog.v2_35_0_title',
-      descKey: 'changelog.v2_35_0_desc',
-      highlights: [
-        'Nouvelle page /campaigns : liste des campagnes avec KPIs (total, contactés, gagnés), statut (active/pause/terminée/brouillon).',
-        'Page /campaigns/[id] : onglets Vue d\'ensemble, Leads, Analytics — pipeline par statut + taux de conversion.',
-        'Nouvelle page /activities : timeline chronologique de toutes les interactions (emails, notes, appels, tâches, leads créés).',
-        'Sidebar : nouvelle section "CRM & Prospection" regroupant Campagnes, Pipeline, Activités.',
-        'ReachContext : Campaign interface + addCampaign/updateCampaign/deleteCampaign dual-store (SQLite + Supabase).',
-      ],
-    },
-    {
-      version: 'v2.34.0',
-      date: '2026-06-17',
-      titleKey: 'changelog.v2_34_0_title',
-      descKey: 'changelog.v2_34_0_desc',
-      highlights: [
-        'Panneau "Qualification" sur chaque fiche lead : Fit score (maturité digitale) + Intent score (signal d\'intérêt), barre de progression colorée.',
-        'Checkboxes BANT (Budget / Authority / Need / Timing) sauvegardées en temps réel.',
-        'Champ "Décideur" (nom + rôle) avec suggestion IA via Claude Haiku.',
-        'Emails suggérés heuristiques (info@, contact@, prénom.nom@) cliquables pour définir l\'email principal.',
-        'API /api/enrich-contact + extension schéma DB (campagnes, activités, goals, scrape_jobs anticipés).',
-      ],
-    },
-    {
-      version: 'v2.33.0',
-      date: '2026-06-17',
-      titleKey: 'changelog.v2_33_0_title',
-      descKey: 'changelog.v2_33_0_desc',
-      highlights: [
-        'Page Aide — formulaire de contact support : useReach().user remplace auth.getUser() (une requête Supabase en moins).',
-        'Sélecteur de catégorie (Bug / Fonctionnalité / Facturation / Compte / Autre) préfixé dans le sujet de l\'email.',
-        'Phase 13 complète : support entièrement câblé sans appel auth direct.',
-      ],
-    },
-    {
-      version: 'v2.32.0',
-      date: '2026-06-17',
-      titleKey: 'changelog.v2_32_0_title',
-      descKey: 'changelog.v2_32_0_desc',
-      highlights: [
-        'Assistant IA : persistance localStorage des messages (rechargement de page conserve l\'historique).',
-        'Bouton "Effacer" (Trash2) affiché dans le header quand une conversation est en cours.',
-        'Quick prompts contextuels en français (relance, pipeline, email, analyse hebdo).',
-        'TreeMascot : états idle/thinking/writing/searching pilotés par le streaming IA.',
-      ],
-    },
-    {
-      version: 'v2.31.0',
-      date: '2026-06-17',
-      titleKey: 'changelog.v2_31_0_title',
-      descKey: 'changelog.v2_31_0_desc',
-      highlights: [
-        'Analytics : 2 nouveaux KPIs réels — "Leads CRM" (total) et "Clients gagnés" (statut Won). 6 KPI cards au total.',
-        'Graphique "Pipeline par statut" : barres horizontales colorées par statut (New/Contacted/RDV/Gagné/Perdu) + taux de conversion en bas.',
-        'Graphique d\'activité renommé (Leads créés + Tâches complétées au lieu de "Chat/Agent Messages"). Labels précis dans les tooltips.',
-        'Import Lead: `Lead` importé depuis mock-data dans analytics-dashboard pour le typage des statuts.',
-      ],
-    },
-    {
-      version: 'v2.30.0',
-      date: '2026-06-17',
-      titleKey: 'changelog.v2_30_0_title',
-      descKey: 'changelog.v2_30_0_desc',
-      highlights: [
-        'Table `agent_reviews` ajoutée à SQLite (Electron) — les avis persistent localement et sont écrits dans Supabase en mode web.',
-        'agent-detail-root : utilise `useReach().user` au lieu de `auth.getUser()` ; bouton "Publier" avec état de chargement.',
-        'creator-profile-root : utilise `useReach().user` au lieu de `auth.getUser()`.',
-        'Avis écrits dans Supabase `agent_reviews` (web) ou SQLite `agent_reviews` (Electron) avec fallback localStorage.',
-      ],
-    },
-    {
-      version: 'v2.29.0',
-      date: '2026-06-17',
-      titleKey: 'changelog.v2_29_0_title',
-      descKey: 'changelog.v2_29_0_desc',
-      highlights: [
-        'Optimisation Supabase : 7 requêtes séquentielles → Promise.all (1 batch parallèle), 6 appels IPC Electron → Promise.all. Temps de chargement divisé par ~4.',
-        'Exposition de `user` dans ReachContext : les composants ne font plus de `auth.getUser()` individuellement — TodayTasksCard, TodayStatsCard, Integrations, Layout utilisent `useReach().user`.',
-        'Aujourd\'hui — bouton "Relance rapide" dans le tableau des prospects : génère un brouillon via /api/generate-draft et l\'affiche dans un Sheet éditable avec copie en un clic.',
-        'Fix filtre follow-up : les leads sans `nextActionDate` ne remontaient plus dans le tableau des relances (bug chaîne vide <= date).',
-      ],
-    },
-    {
-      version: 'v2.28.0',
-      date: '2026-06-17',
-      titleKey: 'changelog.v2_28_0_title',
-      descKey: 'changelog.v2_28_0_desc',
-      highlights: [
-        'Icônes SVG dédiées : TodoistIcon (rouge #DB4035), ApifyIcon (bleu hexagone), NotionIcon (monochrome), SlackIcon (#E01E5A).',
-        'Nouvelles intégrations disponibles : Apify scraper Google Places, Notion (bases de données), Slack (notifications canaux).',
-        'Panel de détail : étapes "Comment utiliser" spécifiques par intégration (token, config, usage) au lieu de 3 étapes génériques.',
-        'Import manifeste JSON : validation authType (whitelist none/key/oauth/bearer/basic) et endpoints (doit être un tableau).',
-      ],
-    },
-    {
-      version: 'v2.27.0',
-      date: '2026-06-17',
-      titleKey: 'changelog.v2_27_0_title',
-      descKey: 'changelog.v2_27_0_desc',
-      highlights: [
-        'Scraping multi-source combiné : OSM/Overpass, Yelp, PagesJaunes, 411.ca et Apify tournent en parallèle et leurs résultats sont fusionnés + dédupliqués.',
-        'Multi-niche & Multi-ville : sélectionnez plusieurs niches et plusieurs villes — une requête Overpass par niche×ville (Promise.allSettled).',
-        '65+ villes du Québec dans la base de coordonnées OSM, 40+ filtres OSM mappés (tatoueur, ostéo, couvreur, notaire, architecte, hôtel, bijouterie, école, etc.).',
-        'Rayon configurable 2–50 km, limite 500 résultats, nouvelle source 411.ca, dédup renforcée nom+ville+téléphone.',
-        'UI : tri par opportunité/note/avis, export CSV UTF-8 BOM, badge source par ligne, analyse par source/ville, carte MapLibre avec popup.',
-      ],
-    },
-    {
-      version: 'v2.26.0',
-      date: '2026-06-17',
-      titleKey: 'changelog.v2_26_0_title',
-      descKey: 'changelog.v2_26_0_desc',
-      highlights: [
-        'Séquences email : page /sequences avec création/gestion de séquences multi-étapes, table email_sequences + email_sequence_steps Supabase.',
-        'Cron Vercel : déclenchement quotidien 09h00 des étapes de séquences via /api/cron/email-sequences avec rafraîchissement automatique du token Gmail.',
-        'Aujourd\'hui : bouton "Reporter à demain" fonctionnel (updateTask dual-store), "Marquer urgent" préfixe [URGENT], statistiques séquences réelles (envoyés/en attente).',
-        'Navigation : entrée "Séquences email" câblée dans la sidebar (icône Mail), traductions FR/EN/DE.',
-        'Fix : export map-root — default export ajouté, erreur TypeScript Supabase corrigée dans le cron.',
-      ],
-    },
-    {
-      version: 'v2.25.0',
-      date: '2026-06-17',
-      titleKey: 'changelog.v2_25_0_title',
-      descKey: 'changelog.v2_25_0_desc',
-      highlights: [
-        'i18n — Page Welcome : tous les textes (titre, promo code, onglets workspace/chat, pourcentage, labels) passent par t() en FR/EN/DE.',
-        'i18n — Page Aujourd\'hui : en-têtes du tableau de relances (Prospect/Canal/Dernier Contact/Action Suivante/Actions) et message vide traduits.',
-        'i18n — Sidebar : placeholder "Recherche globale..." et label nav "Leads" harmonisés dans les 3 langues (EN était "Search").',
-        'Bibliothèque : assignation réelle des fichiers aux dossiers — hover sur une carte → bouton ⋮ → "Déplacer vers un dossier". Clic sur ligne dossier → filtre les docs affichés avec badge ×.',
-        'Bibliothèque : compteur réel de fichiers par dossier + badge folder_name sur les miniatures de prévisualisation. SQL requis : ALTER TABLE documents ADD COLUMN IF NOT EXISTS folder_name text;',
-      ],
-    },
-    {
-      version: 'v2.24.0',
-      date: '2026-06-17',
-      titleKey: 'changelog.v2_24_0_title',
-      descKey: 'changelog.v2_24_0_desc',
-      highlights: [
-        'Onboarding : panneau noir animé supprimé, formulaire full-screen centré sur fond blanc avec switcher de langue FR/EN en haut à droite.',
-        'Avatar sync : sauvegarder une photo de profil dans Paramètres met à jour immédiatement l\'icône topbar sans reload (localStorage + StorageEvent).',
-        'Leads — Proposition PDF : bouton "Générer une proposition PDF" dans le détail d\'un lead. Génère une proposition commerciale complète avec services, TVA 15 % (Québec), validité 30 jours.',
-        'Audit SEO — Export PDF : bouton "Exporter en PDF" sur la page /audit. Rapport brandé Minerva OS avec score coloré et recommandations.',
-        'Vercel Analytics (<Analytics />) et SpeedInsights (<SpeedInsights />) activés dans le root layout. Google OAuth configuré côté Vercel et .env.local.',
-      ],
-    },
-    {
-      version: 'v2.23.0',
-      date: '2026-06-17',
-      titleKey: 'changelog.v2_23_0_title',
-      descKey: 'changelog.v2_23_0_desc',
-      highlights: [
-        'Audit SEO technique réel : nouvelle page /audit avec analyse complète du site web d\'un lead (HTTPS, balise viewport, title + description + longueurs, temps de chargement, Google Analytics, Facebook Pixel). Score 0-100 coloré par niveau.',
-        'Mode batch : "Auditer mon portefeuille" lance automatiquement l\'audit pour tous les leads ayant un site web, avec tableau de résultats et concurrence limitée à 3 requêtes simultanées.',
-        'Carte interactive des leads /map : tous les leads du CRM sont visualisés sur une carte du Québec, avec marqueurs colorés par température (rouge/orange/bleu/gris sans-site), filtres sidebar, recherche et popup de détail.',
-        'Score d\'opportunité : colonne "Opportunité" dans le tableau des leads et indicateur dans le panneau de détail. Algorithme pur basé sur l\'absence de site (+30), la note (<3.5 → +20), le nombre d\'avis (<10 → +15) et la température Hot (+5).',
-        'Intelligence — synthèses IA réelles : le panneau de synthèse est maintenant câblé sur /api/chat en streaming réel (SSE). Plus de templates statiques — l\'IA génère une analyse stratégique à partir de ton portefeuille réel.',
-      ],
-    },
-    {
-      version: 'v2.22.2',
-      date: '2026-06-17',
-      titleKey: 'changelog.v2_22_2_title',
-      descKey: 'changelog.v2_22_2_desc',
-      highlights: [
-        'Chat IA : OpenRouter est désormais utilisé automatiquement dès que la clé est configurée dans Paramètres — plus besoin que le flag ai_provider soit explicitement positionné sur "openrouter".',
-        'Prospection : la source Apify s\'active correctement quand la clé apify_api_... est sauvegardée dans Paramètres > Intégrations (corrige une mauvaise lecture de colonne : apify_api_key → apify_token).',
-      ],
-    },
-    {
-      version: 'v2.22.1',
-      date: '2026-06-17',
-      titleKey: 'changelog.v2_22_1_title',
-      descKey: 'changelog.v2_22_1_desc',
-      highlights: [
-        'Fix canal de présence Supabase Realtime sur la page de détail d\'un lead — erreur "cannot add presence callbacks after subscribe()" corrigée via un suffixe aléatoire par mount (React Strict Mode).',
-        'Import CSV remplacé par un vrai glisser-déposer : zone de dépôt, prévisualisation tabulaire des lignes détectées, import en lot avec barre de progression.',
-        'Page Nouveau lead : upload de logo de l\'entreprise (base64), champ téléphone, sélecteurs natifs stylisés (température, statut, membre assigné) cohérents avec le design system.',
-      ],
-    },
-    {
-      version: 'v2.22.0',
-      date: '2026-06-17',
-      titleKey: 'changelog.v2_22_0_title',
-      descKey: 'changelog.v2_22_0_desc',
-      highlights: [
-        'Agents: cliquer sur GPT-4o affiche une modal "Clé API requise" expliquant qu\'une clé OpenRouter est nécessaire, avec bouton "Configurer la clé" → Paramètres et "Sélectionner quand même".',
-        'Bibliothèque: insertion d\'images dans l\'éditeur TipTap — bouton dans la toolbar, upload depuis le disque, stocké en base64 dans le document.',
-        'Services: bannière d\'erreur visible lorsque l\'insert/update échoue (ex. table manquante) avec message explicatif et référence à DEPLOYMENT.md.',
-        'Invitations équipe: quand l\'utilisateur a déjà un compte Supabase, on retrouve son user_id via l\'API admin et le membre est créé avec status "active" immédiatement.',
-        'API team/members: corrigé l\'ordre par "created_at" (était "invited_at" qui n\'existe pas, causant des erreurs silencieuses).',
-        'DEPLOYMENT.md: ajout du SQL de création de la table "services" dans le script de setup Supabase.',
-      ],
-    },
-    {
-      version: 'v2.21.0',
-      date: '2026-06-17',
-      titleKey: 'changelog.v2_21_0_title',
-      descKey: 'changelog.v2_21_0_desc',
-      highlights: [
-        'Critical fix: removed non-existent image_url column from Supabase leads insert — adding leads no longer crashes.',
-        'Get Started: all 8 onboarding tasks translated to French with direct navigation to the relevant page on click.',
-        'Welcome page: progress bar now updates in real time using useRef + useEffect instead of a callback ref that only fired on mount.',
-        'Sidebar Today section: replaced hardcoded mock files with real leads from ReachContext; shows nothing if no leads exist.',
-        'Team chat: profile avatars now displayed in message bubbles; @mention autocomplete with member list filter.',
-        'Analytics: GitHub-style activity heatmap (8starlabs component) tracking days with at least one lead created or task completed over the last 12 months.',
-        'Library editor: "Partager" button opens a share modal with a copyable link; automatically sets is_shared=true on the document.',
-        'DESIGN.md: full design system documentation (colors, typography, spacing, component patterns, animation, i18n rules).',
-        'DEPLOYMENT.md: step-by-step deployment guide for a 100% free production stack (Supabase + Vercel + Cloudflare).',
-        'README: full rewrite reflecting v2.21.0 feature set, architecture, security model, and roadmap.',
-      ],
-    },
-    {
-      version: 'v2.20.0',
-      date: '2026-06-17',
-      titleKey: 'changelog.v2_20_0_title',
-      descKey: 'changelog.v2_20_0_desc',
-      highlights: [
-        'Agent creation flow: "Add input field" now opens a full Langdock-style modal with 8 field types (Text, Multi-line, Number, Select, Email, Checkbox, Date, File), optional description, and required toggle.',
-        'Field type badges are color-coded per type (gray/blue/orange/purple/emerald/teal/yellow/red) in the agent creation UI.',
-        'Live preview panel updated for all 8 field types including checkbox, date picker (jj/mm/aaaa), select dropdown, and file attach button.',
-        'Settings: grouped navigation (Compte / Espace de travail / Gestion des utilisateurs / Outils) matching Langdock architecture.',
-        'New settings sections: Instructions personnalisées, Sécurité (active sessions), Vue d\'ensemble workspace, Général workspace (icon upload, danger zone), Facturation (3-plan comparison).',
-        'New settings sections: Modèles IA (default chat + image model, providers list), Personnalisations (brand color, bg image, workspace logo toggle, chat disclaimer, info boxes).',
-        'New settings sections: API workspace (cost/budget, monthly limit, workspace ID, API key management), Membres (invite + manage members table), Groupes (create/search/delete groups), Rôles (permission matrix for Member/Editor/Admin).',
-      ],
-    },
-    {
-      version: 'v2.17.0',
-      date: '2026-06-17',
-      titleKey: 'changelog.v2_17_0_title',
-      descKey: 'changelog.v2_17_0_desc',
-      highlights: [
-        'Chat page: dot pattern background, always-visible input bar at the bottom, backdrop-blur header/footer.',
-        'Settings: prominent "Sauvegarder" button in the Profile section header.',
-        'Settings: new dedicated API Keys section to manage OpenRouter, Groq, and Together AI keys with masked display and one-click delete.',
-        'Agent detail page: custom banner image upload (stored locally) and inline description editing via hover pencil icon.',
-        'Library: 4 entrepreneur templates (Business plan, GMB Audit, Prospecting email, Weekly report) in the create grid.',
-        'Library document cards now show a content text preview instead of a plain icon.',
-        'Library editor: PDF export button (browser print dialog) added alongside the existing Markdown export.'
-      ]
-    },
-    {
-      version: 'v2.16.0',
-      date: '2026-06-17',
-      titleKey: 'changelog.v2_16_0_title',
-      descKey: 'changelog.v2_16_0_desc',
-      highlights: [
-        'Welcome page moved into the (app) layout — inherits the real sidebar and topbar; 10% promo incentive (MINERVA10) unlocked on 100% task completion.',
-        'Today page simplified: 6 essential cards (Agenda, Tasks, Follow-ups, Focus, Projects, Stats) with Cult UI dot pattern background.',
-        'Sidebar restructured: 5 permanently pinned items + 3 collapsible categories (Intelligence IA, Données & Fichiers, Plateforme).',
-        'Prospecting — 25 Montreal niches with multi-select picker and search; result limiter slider (5–100); no-website filter.',
-        '4 scraping sources with live availability indicators: Google Maps/OSM, Yelp, PagesJaunes, Apify (requires API key).',
-        'Map markers enriched: color-coded by status (red = no website, orange = low rating, green = ok), popup shows address + phone.',
-        'Fixed Supabase presence error on lead detail page by calling removeChannel() in the useEffect cleanup.'
-      ]
-    },
-    {
-      version: 'v2.15.0',
-      date: '2026-06-16',
-      titleKey: 'changelog.v2_15_0_title',
-      descKey: 'changelog.v2_15_0_desc',
-      highlights: [
-        'New /assistant page: full AI assistant chat with stats dashboard (active leads, pending tasks, projects, weekly leads).',
-        'Animated TreeMascot SVG component — idle / thinking / writing / searching states — integrated in /chat and /assistant.',
-        'Analytics dashboard now aggregates real lead and task data instead of seeded random mock values.',
-        'Contact support form at /help with a dedicated /api/support/contact SMTP route (nodemailer, graceful no-SMTP fallback).'
-      ]
-    },
-    {
-      version: 'v2.14.0',
-      date: '2026-06-16',
-      titleKey: 'changelog.v2_14_0_title',
-      descKey: 'changelog.v2_14_0_desc',
-      highlights: [
-        'Integrations detail panel: intermediate view with description and "How to use" steps before opening the full editor.',
-        'JSON manifest import for custom integrations — validates name, description, authType, endpoints.',
-        'Agent store detail pages (/agents/[id]) with star ratings, written reviews, and creator info.',
-        'Creator profile pages (/agents/creator/[userId]) showing bio, role, company, and published agents.'
-      ]
-    },
-    {
-      version: 'v2.13.0',
-      date: '2026-06-16',
-      titleKey: 'changelog.v2_13_0_title',
-      descKey: 'changelog.v2_13_0_desc',
-      highlights: [
-        'Unified today agenda card merging tasks due today and leads with nextActionDate = today (done/snooze actions).',
-        'Projects card on the Today dashboard showing active projects with direct links.',
-        'Apify Google Maps Scraper added as a fourth prospecting source with min-rating and "exclude existing CRM leads" filters.',
-        'Agent auto-launch via ?launch=id URL param — navigates directly into the agent workspace.'
-      ]
-    },
-    {
-      version: 'v2.12.3',
-      date: '2026-06-16',
-      titleKey: 'changelog.v2_12_3_title',
-      descKey: 'changelog.v2_12_3_desc',
-      highlights: [
-        'Sidebar project items are now clickable links routing to /projects/[id].',
-        'Dedicated project detail page listing associated library files and chat threads.'
-      ]
-    },
-    {
-      version: 'v2.12.2',
-      date: '2026-06-16',
-      titleKey: 'changelog.v2_12_2_title',
-      descKey: 'changelog.v2_12_2_desc',
-      highlights: [
-        'Real-time team chat powered by Supabase Realtime — messages delivered instantly across sessions.',
-        'New messaging tab in /team with per-workspace message history and dual-store SQLite/Supabase persistence.'
-      ]
-    },
-    {
-      version: 'v2.12.1',
-      date: '2026-06-16',
-      titleKey: 'changelog.v2_12_1_title',
-      descKey: 'changelog.v2_12_1_desc',
-      highlights: [
-        'Fully functional notification system with a bell icon in the topbar and unread count badge.',
-        'Vercel Cron routes for overdue task/lead reminders, daily digest, and weekly performance report.',
-        'Notifications delivered in real time via Supabase Realtime subscription filtered by user and workspace.'
-      ]
-    },
-    {
-      version: 'v2.12.0',
-      date: '2026-06-16',
-      titleKey: 'changelog.v2_12_0_title',
-      descKey: 'changelog.v2_12_0_desc',
-      highlights: [
-        'System dark theme enabled (enableSystem: true) and full dark-mode token sweep across all pages.',
-        'Complete i18n coverage for /integrations and /agents — all visible strings use t() keys in fr/en/de.',
-        'User avatar (base64 upload) and bio field in profile settings, stored in SQLite and Supabase.',
-        'Leads enriched with website, Google Maps rating, review count, photos, social links, and team member assignment.',
-        'Dedicated /leads/new creation page replacing the previous modal sheet.',
-        'New /services page: CRUD catalog of offered services/audits, linked from the lead detail view.'
-      ]
-    },
-    {
-      version: 'v2.11.1',
-      date: '2026-06-16',
-      titleKey: 'changelog.v2_11_1_title',
-      descKey: 'changelog.v2_11_1_desc',
-      highlights: [
-        'Fixed all 8 remaining TS7006 implicit-any TypeScript errors flagged after the v2.11.0 audit.',
-        'pnpm typecheck now passes with 0 errors.'
-      ]
-    },
-    {
-      version: 'v2.11.0',
-      date: '2026-06-16',
-      titleKey: 'changelog.v2_11_0_title',
-      descKey: 'changelog.v2_11_0_desc',
-      highlights: [
-        'AI provider keys (OpenRouter, Groq, Together.ai) are now masked end-to-end — never returned in clear text to the browser or cached in localStorage.',
-        'Hardened /api/team/members and /api/team/invite with explicit workspace-membership checks before returning or mutating data.',
-        'New dedicated pages: /integrations/import (catalog + JSON import) and /help/guides/[slug] (six real step-by-step guides).',
-        'Removed every dead link, inert menu, and placeholder alert across /team, /welcome, /integrations and /billing.',
-        'Consolidated duplicated lead-temperature badge logic into lib/lead-badges.ts and removed an unused mock export.'
-      ]
-    },
-    {
-      version: 'v2.10.0',
-      date: '2026-06-16',
-      titleKey: 'changelog.v2_10_0_title',
-      descKey: 'changelog.v2_10_0_desc',
-      highlights: [
-        'Interactive Quebec map for geolocated prospecting.',
-        'Custom AI agents marketplace.',
-        'TipTap-based rich text editor for the library.'
-      ]
-    },
-    {
-      version: 'v2.9.1',
-      date: '2026-06-15',
-      titleKey: 'changelog.v2_9_1_title',
-      descKey: 'changelog.v2_9_1_desc',
-      highlights: [
-        'New profile step in the onboarding flow.',
-        'Dynamically generated user avatar.',
-        'AI-generated email signature.'
-      ]
-    },
-    {
-      version: 'v2.9.0',
-      date: '2026-06-15',
-      titleKey: 'changelog.v2_9_0_title',
-      descKey: 'changelog.v2_9_0_desc',
-      highlights: [
-        'Persisted lead scoring.',
-        'Generic SMTP configuration beyond Gmail.',
-        'New prospecting dashboard.',
-        'Groq and Together.ai provider support.',
-        'New /billing and /help pages.'
-      ]
-    },
-    {
-      version: 'v2.8.0',
-      date: '2026-06-15',
-      titleKey: 'changelog.v2_8_0_title',
-      descKey: 'changelog.v2_8_0_desc',
-      highlights: [
-        'Upgraded to Electron 43 with macOS 26 Tahoe support.'
-      ]
-    },
-    {
-      version: 'v2.7.0',
-      date: '2026-06-15',
-      titleKey: 'changelog.v2_7_0_title',
-      descKey: 'changelog.v2_7_0_desc',
-      highlights: [
-        'Real-time presence and anti-collision handling for shared data.',
-        'JIT-less main-process restart mechanism fixing a recurring macOS Sequoia crash.'
-      ]
-    },
-    {
-      version: 'v2.5.x',
-      date: '2026-06-14',
-      titleKey: 'changelog.v2_5_x_title',
-      descKey: 'changelog.v2_5_x_desc',
-      highlights: [
-        'Replaced orange with green across the whole UI; Welcome is now the home screen, Today remains in the sidebar.',
-        'Disabled concurrent V8 JIT (--jitless) to eliminate a recurring EXC_BREAKPOINT crash on macOS 26.',
-        'Disabled Chromium background networking to mitigate a DCHECK crash.',
-        'Auto-recovery from renderer crashes during navigation; removed an OOM-causing heap cap.'
-      ]
-    },
-    {
-      version: 'v2.4.0',
-      date: '2026-06-14',
-      titleKey: 'changelog.v2_4_0_title',
-      descKey: 'changelog.v2_4_0_desc',
-      highlights: [
-        'Landing page extracted to the root route.',
-        'Fixed onboarding flow and startup theme flash.'
-      ]
-    },
-    {
-      version: 'v2.3.0',
-      date: '2026-06-14',
-      titleKey: 'changelog.v2_3_0_title',
-      descKey: 'changelog.v2_3_0_desc',
-      highlights: [
-        'New system tray popover widget with glassmorphism design.',
-        'On-demand scraping trigger and SQLite task check from the tray.'
-      ]
-    },
-    {
-      version: 'v2.1.0',
-      date: '2026-06-13',
-      titleKey: 'changelog.v2_1_0_title',
-      descKey: 'changelog.v2_1_0_desc',
-      highlights: [
-        'Capacitor native-bridge for iOS/Android.',
-        'Android platform configuration and Fastlane CI/CD workflows.'
-      ]
-    },
-    {
-      version: 'v2.0.0',
-      date: '2026-06-13',
-      titleKey: 'changelog.v2_0_0_title',
-      descKey: 'changelog.v2_0_0_desc',
-      highlights: [
-        'Electron system tray icon and window close-to-tray behavior.',
-        'Native application menu shortcuts and auto-updater.'
-      ]
-    },
-    {
-      version: 'v1.4.0',
-      date: '2026-06-12',
-      titleKey: 'changelog.v1_4_0_title',
-      descKey: 'changelog.v1_4_0_desc',
-      highlights: [
-        'Announcements & Version Timeline page (/changelog) integrated in the sidebar footer.',
-        'Lucide Megaphone action button with dynamic pathname focus state.',
-        'Fully localized product updates catalog in French, English, and German.'
-      ]
-    },
-    {
-      version: 'v1.3.0',
-      date: '2026-06-12',
-      titleKey: 'changelog.v1_3_0_title',
-      descKey: 'changelog.v1_3_0_desc',
-      highlights: [
-        'Rebuilt the Members list table to match the premium Langdock layout exactly.',
-        'Added real plan text column and usage_count integer column to Supabase database schema.',
-        'Interactive inline selectors to toggle user roles (Admin, Editor, Viewer) and plans (Business, Pro, Free).',
-        'Search bar filter, filter icon triggers, and CSV data spreadsheet exporter.',
-        'Circular envelope avatar shapes for pending members and custom Invited badges.',
-        'Floating success toast alert notification popups dismissing automatically after invite events.'
-      ]
-    },
-    {
-      version: 'v1.2.0',
-      date: '2026-06-11',
-      titleKey: 'changelog.v1_2_0_title',
-      descKey: 'changelog.v1_2_0_desc',
-      highlights: [
-        'Interactive date range popover calendar widget supporting ranges and single selections.',
-        'KPI report metrics cards displaying active users, total agents, total workflows, and groups.',
-        'Responsive ApexCharts showing active users logs and stacked column graphs for chat messages vs. agent calls.',
-        'One-click download button for analytics datasets in CSV format.'
-      ]
-    },
-    {
-      version: 'v1.1.0',
-      date: '2026-06-11',
-      titleKey: 'changelog.v1_1_0_title',
-      descKey: 'changelog.v1_1_0_desc',
-      highlights: [
-        'Interactive side-by-side Canvas panel to draft, preview, format, and edit rich documents dynamically.',
-        'Starting greeting assistant layout displaying suggestion cards and files attachment previews.',
-        'Model selection popovers and active tool selectors (Canvas, web search, search tools).'
-      ]
-    },
-    {
-      version: 'v1.0.0',
-      date: '2026-06-10',
-      titleKey: 'changelog.v1_0_0_title',
-      descKey: 'changelog.v1_0_0_desc',
-      highlights: [
-        'Refactored the core application settings (AI section, notifications) to use native Shadcn UI Switch elements.',
-        'Language context provider translation maps supporting English, French, and German locales.',
-        'Expandable onboarding progress checklist tracking workspace setup completion scores.'
-      ]
-    }
-  ];
+  const [lang, setLang] = useState<Lang>('fr');
+
+  useEffect(() => {
+    const stored = localStorage.getItem('minerva_changelog_lang') as Lang | null;
+    if (stored && ['fr', 'en', 'de'].includes(stored)) setLang(stored);
+  }, []);
+
+  const setLanguage = (l: Lang) => {
+    setLang(l);
+    localStorage.setItem('minerva_changelog_lang', l);
+  };
 
   return (
-    <div className="h-full overflow-y-auto bg-neutral-50/40 text-neutral-800 font-sans selection:bg-blue-500/10">
-      <div className="max-w-3xl mx-auto px-8 pt-10 pb-24 space-y-8">
+    <div className="h-full overflow-y-auto bg-[#fafaf8] text-[#26251e] relative">
+      <div className="absolute inset-0 opacity-[0.25] pointer-events-none bg-grid-pattern-20 z-0" />
+      <div className="relative z-10 max-w-3xl mx-auto px-4 pb-20 pt-8 space-y-8">
 
         {/* ── Header ── */}
-        <div className="flex items-start gap-4">
-          <div className="w-10 h-10 rounded-lg bg-neutral-900 text-white flex items-center justify-center shrink-0 shadow-xs">
-            <Megaphone className="w-5 h-5" />
-          </div>
+        <div className="space-y-4">
           <div className="space-y-1">
-            <h1 className="text-2xl font-bold text-neutral-900 tracking-tight">
-              {t('changelog.title')}
-            </h1>
-            <p className="text-xs text-neutral-500 font-medium">
-              {t('changelog.subtitle')}
+            <h1 className="text-2xl font-black tracking-tight text-[#26251e]">Nouveautés</h1>
+            <p className="text-sm text-[#7a7a76]">
+              Toutes les mises à jour de Minerva OS, des plus récentes aux plus anciennes.
             </p>
           </div>
+
+          {/* Language selector */}
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Langue</span>
+            <div className="flex bg-[#e5e5e0]/60 p-0.5 rounded-lg">
+              {(['fr', 'en', 'de'] as Lang[]).map((l) => (
+                <button
+                  key={l}
+                  onClick={() => setLanguage(l)}
+                  className={cn(
+                    "px-3 py-1 text-[11px] font-bold rounded-md transition-all cursor-pointer uppercase",
+                    lang === l
+                      ? "bg-white text-[#26251e] shadow-xs"
+                      : "text-[#7a7a76] hover:text-[#26251e]"
+                  )}
+                >
+                  {l}
+                </button>
+              ))}
+            </div>
+            {lang !== 'fr' && (
+              <span className="text-[10px] text-[#7a7a76] italic">
+                {lang === 'en' ? 'English version coming soon' : 'Deutsche Version demnächst'}
+              </span>
+            )}
+          </div>
+
+          <TagLegend />
         </div>
 
-        {/* ── Tag legend ── */}
-        <TagLegend />
+        {/* ── Timeline ── */}
+        <div className="relative">
+          {/* Vertical line */}
+          <div className="absolute left-0 top-0 bottom-0 w-px bg-[#e5e5e0] ml-[3px]" />
 
-        {/* ── Timeline Timeline ── */}
-        <div className="relative border-l border-neutral-200/80 ml-5 pl-8 space-y-8 py-2">
-          {versions.map((ver) => {
-            // Normalize custom date formats so Date can parse them:
-            //   "2026-06-21 · 23h19" → "2026-06-21 23:19"
-            //   "2026-06-20 10:15"   → unchanged (already parseable)
-            const normalizedDate = ver.date
-              .replace(/\s*·\s*/, ' ')
-              .replace(/(\d{1,2})h(\d{2})/, '$1:$2')
-              .trim();
-            const dateObj = new Date(normalizedDate);
-            const isValid = !Number.isNaN(dateObj.getTime());
-            const formattedDate = isValid
-              ? dateObj.toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })
-              : ver.date;
-            const hasTime = /\d{1,2}[:h]\d{2}/.test(ver.date) || ver.date.includes('T');
-            const formattedTime = isValid && hasTime
-              ? dateObj.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
-              : '';
+          <div className="space-y-10 pl-8">
+            {versions.map((v) => (
+              <div key={v.version} className="relative">
+                {/* Timeline dot */}
+                <div className="absolute -left-8 top-[3px] w-[7px] h-[7px] rounded-full bg-[#059669] border-2 border-[#fafaf8]" />
 
-            return (
-              <div key={ver.version} className="relative group">
+                {/* Date — no version chip */}
+                <p className="text-[11px] font-bold text-[#7a7a76] mb-1 select-none">
+                  {v.date}
+                </p>
 
-                {/* Timeline node dot */}
-                <div className="absolute -left-[41px] top-1.5 w-6 h-6 rounded-full bg-white border-2 border-neutral-300 flex items-center justify-center transition-colors group-hover:border-neutral-900 z-10">
-                  <div className="w-2 h-2 rounded-full bg-neutral-300 group-hover:bg-neutral-900 transition-colors" />
-                </div>
+                {/* Entry title */}
+                <h2 className="text-base font-black text-[#26251e] mb-3 leading-snug">
+                  {v.title}
+                </h2>
 
-                {/* Content Card */}
-                <div className="bg-white border border-neutral-200/60 rounded-xl p-6 shadow-2xs hover:border-neutral-300 transition-all space-y-4">
-
-                  {/* Card Header metadata */}
-                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-neutral-100 pb-3">
-                    <div className="flex items-center gap-2">
-                      <span className="bg-neutral-900 text-white text-[9px] font-extrabold uppercase px-2.5 py-0.5 rounded-full select-none tracking-wider">
-                        {ver.version}
-                      </span>
-                      <span className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider">
-                        {t('changelog.version')}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center gap-1.5 text-[10px] text-neutral-400 font-bold uppercase tracking-wider">
-                      <Calendar className="w-3.5 h-3.5" />
-                      <span>
-                        {t('changelog.released')} {formattedDate}
-                        {formattedTime ? ` à ${formattedTime}` : ''}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Body Content */}
-                  <div className="space-y-1.5 text-left">
-                    <h3 className="text-sm font-extrabold text-neutral-950 tracking-tight leading-snug">
-                      {t(ver.titleKey, ver.version)}
-                    </h3>
-                    <p className="text-xs text-neutral-600 font-medium leading-relaxed">
-                      {t(ver.descKey)}
-                    </p>
-                  </div>
-
-                  {/* Highlights Bullet List */}
-                  <ul className="space-y-2 pt-1 border-t border-neutral-50">
-                    {ver.highlights.map((h, i) => {
-                      const isTagged = typeof h !== 'string';
-                      const text = isTagged ? h.text : h;
-                      return (
-                        <li key={i} className="flex items-start gap-2 text-[11px] text-neutral-500 font-semibold leading-normal">
-                          <CheckCircle className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" />
-                          {isTagged && <TagBadge tag={(h as { tag: HighlightTag; text: string }).tag} />}
-                          <span>{text}</span>
-                        </li>
-                      );
-                    })}
+                {/* Highlights */}
+                {lang !== 'fr' ? (
+                  <p className="text-xs text-[#7a7a76] italic bg-[#e5e5e0]/30 rounded-lg px-3 py-2 w-fit">
+                    {lang === 'en' ? '[EN coming soon]' : '[DE coming soon]'}
+                  </p>
+                ) : (
+                  <ul className="space-y-2">
+                    {v.highlights.map((h, i) => (
+                      <li key={i} className="flex items-start gap-2.5">
+                        <TagBadge tag={h.tag} />
+                        <span className="text-[13px] text-[#26251e] leading-relaxed">{h.text}</span>
+                      </li>
+                    ))}
                   </ul>
-
-                </div>
-
+                )}
               </div>
-            );
-          })}
+            ))}
+          </div>
         </div>
 
+        {/* ── Footer ── */}
+        <div className="text-center text-xs text-[#7a7a76] pt-8 border-t border-[#e5e5e0]">
+          Minerva OS Lite • Mis à jour en continu
+        </div>
       </div>
     </div>
   );

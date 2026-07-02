@@ -1,530 +1,751 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useReach } from "@/lib/reach-context";
-import { createClient } from "@/lib/supabase/client";
+import Link from "next/link";
 import {
-  Trophy,
   Users,
-  Percent,
-  TrendingUp,
-  Award,
-  ChevronRight,
-  Shield,
-  Briefcase,
-  X,
-  Target,
-  Sparkles,
   Search,
+  FileText,
+  Mail,
+  Phone,
+  MapPin,
+  Share2,
+  Download,
+  Star,
   CheckCircle2,
-  XCircle,
-  BarChart2,
-  Flame,
+  Clock,
+  Plus,
+  Trash2,
+  ChevronRight,
+  BarChart3,
+  ClipboardList,
+  MessageSquare,
+  ArrowUpRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
+import type { Lead, Task } from "@/lib/mock-data";
 
-interface LeaderboardItem {
+// ── Types ──────────────────────────────────────────────────────────────────────
+
+interface Livrable {
   id: string;
-  name: string;
-  email: string;
-  role: string;
-  avatarUrl?: string;
-  totalLeads: number;
-  wonLeads: number;
-  lostLeads: number;
-  revenue: number;
-  efficiency: number; // Conversion rate %
-  skills: { name: string; level: number }[];
-  projects: string[];
+  service: string;
+  description: string;
+  prix: number;
+  dateLivraison: string;
 }
 
-export function ClientReportsRoot() {
-  const { user: currentUser, leads, workspacesList } = useReach();
-  const [activeTab, setActiveTab] = useState<"members" | "everyone">("members");
-  const [teamMembers, setTeamMembers] = useState<any[]>([]);
-  const [currentUserProfile, setCurrentUserProfile] = useState<{
-    fullName: string;
-    companyName: string;
-    avatarBase64?: string | null;
-  } | null>(null);
-  const [selectedUser, setSelectedUser] = useState<LeaderboardItem | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
+// ── Helpers ────────────────────────────────────────────────────────────────────
 
-  const supabase = createClient();
-
-  // Fetch team members & current user profile
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        // Fetch current user settings
-        if (currentUser?.id) {
-          const { data: settings } = await supabase
-            .from("settings")
-            .select("full_name, company_name, avatar_base64")
-            .eq("user_id", currentUser.id)
-            .maybeSingle();
-
-          if (settings) {
-            setCurrentUserProfile({
-              fullName: settings.full_name || currentUser.email?.split("@")[0] || "Moi",
-              companyName: settings.company_name || "",
-              avatarBase64: settings.avatar_base64,
-            });
-          }
-        }
-
-        // Fetch workspace team members
-        const res = await fetch("/api/team/members");
-        if (res.ok) {
-          const data = await res.json();
-          setTeamMembers(data.members || []);
-        }
-      } catch (err) {
-        console.error("Error fetching leaderboard data:", err);
-      }
-    };
-    fetchData();
-  }, [currentUser]);
-
-  // Division calculator based on won leads
-  const getDivision = (won: number) => {
-    if (won >= 31) return { name: "Platine", style: "from-blue-400 to-indigo-600 text-white border-blue-300 shadow-[0_0_12px_rgba(99,102,241,0.2)]", badge: "Platine ✨" };
-    if (won >= 16) return { name: "Or", style: "from-amber-300 to-yellow-500 text-white border-amber-200 shadow-[0_0_10px_rgba(245,158,11,0.2)]", badge: "Or 🏆" };
-    if (won >= 6) return { name: "Argent", style: "from-slate-300 to-slate-400 text-white border-slate-200", badge: "Argent 🥈" };
-    return { name: "Bronze", style: "from-emerald-400 to-amber-600 text-white border-emerald-300", badge: "Bronze 🥉" };
-  };
-
-  // Calculate statistics for a user
-  const getStatsForUser = (userId: string | null, isCurrentUser: boolean) => {
-    const userLeads = leads.filter((lead) => {
-      if (isCurrentUser) {
-        return lead.owner === "Moi" || !lead.assignedTo || lead.assignedTo === currentUser?.id;
-      }
-      return lead.assignedTo === userId;
-    });
-
-    const total = userLeads.length;
-    const won = userLeads.filter((l) => l.status === "Won").length;
-    const lost = userLeads.filter((l) => l.status === "Lost").length;
-    const revenue = userLeads
-      .filter((l) => l.status === "Won")
-      .reduce((sum, l) => sum + (l.dealAmount || 1500), 0);
-    const efficiency = total > 0 ? Math.round((won / total) * 100) : 0;
-
-    return { total, won, lost, revenue, efficiency };
-  };
-
-  // Construct real members list
-  const realLeaderboard: LeaderboardItem[] = [];
-
-  // Add Current User
-  if (currentUser) {
-    const stats = getStatsForUser(currentUser.id, true);
-    realLeaderboard.push({
-      id: currentUser.id,
-      name: currentUserProfile?.fullName || currentUser.email?.split("@")[0] || "Moi",
-      email: currentUser.email || "",
-      role: "Propriétaire",
-      avatarUrl: currentUserProfile?.avatarBase64 || undefined,
-      totalLeads: stats.total,
-      wonLeads: stats.won,
-      lostLeads: stats.lost,
-      revenue: stats.revenue,
-      efficiency: stats.efficiency,
-      skills: [
-        { name: "Closing", level: 85 },
-        { name: "Prospection locale", level: 90 },
-        { name: "Audit SEO", level: 75 },
-      ],
-      projects: ["Campagne Resto Montréal", "Local Scraping Québec"],
-    });
+function formatDate(dateStr: string | undefined): string {
+  if (!dateStr) return "—";
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    return format(d, "d MMMM yyyy", { locale: fr });
+  } catch {
+    return dateStr;
   }
+}
 
-  // Add other team members
-  teamMembers.forEach((member) => {
-    // Avoid duplicating current user if they are listed in members
-    if (member.member_user_id === currentUser?.id) return;
+function formatDateLong(dateStr: string | undefined): string {
+  if (!dateStr) return "—";
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    return format(d, "d MMMM yyyy 'à' HH'h'mm", { locale: fr });
+  } catch {
+    return dateStr;
+  }
+}
 
-    const stats = getStatsForUser(member.member_user_id, false);
-    realLeaderboard.push({
-      id: member.id,
-      name: member.profile?.full_name || member.email.split("@")[0],
-      email: member.email,
-      role: member.role === "admin" ? "Administrateur" : member.role === "editor" ? "Éditeur" : "Lecteur",
-      avatarUrl: undefined,
-      totalLeads: stats.total,
-      wonLeads: stats.won,
-      lostLeads: stats.lost,
-      revenue: stats.revenue,
-      efficiency: stats.efficiency,
-      skills: [
-        { name: "Génération de leads", level: 80 },
-        { name: "Cold Email", level: 75 },
-        { name: "Copywriting", level: 70 },
-      ],
-      projects: ["Outreach Boulangeries", "Audit Cliniques Dentaires"],
-    });
-  });
+const NOTE_TYPE_CONFIG = {
+  visit:   { icon: MapPin,        label: "Visite",   color: "text-emerald-600",  bg: "bg-emerald-50" },
+  call:    { icon: Phone,         label: "Appel",    color: "text-sky-600",      bg: "bg-sky-50"     },
+  email:   { icon: Mail,          label: "Email",    color: "text-violet-600",   bg: "bg-violet-50"  },
+  general: { icon: MessageSquare, label: "Note",     color: "text-[#807d72]",   bg: "bg-neutral-50" },
+} as const;
 
-  const sortedLeaderboard = [...realLeaderboard].sort((a, b) => b.wonLeads - a.wonLeads);
+// ── Sub-components ─────────────────────────────────────────────────────────────
 
-  const filteredLeaderboard = sortedLeaderboard.filter(
-    (item) =>
-      item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.role.toLowerCase().includes(searchQuery.toLowerCase())
+function StatCard({ label, value, sub }: { label: string; value: string; sub?: string }) {
+  return (
+    <div className="bg-white border border-[#e5e5e0] rounded-xl p-4 space-y-1">
+      <p className="text-[10px] font-bold uppercase tracking-wider text-[#807d72]">{label}</p>
+      <p className="text-lg font-black text-[#26251e] truncate">{value}</p>
+      {sub && <p className="text-[10px] text-[#807d72]">{sub}</p>}
+    </div>
+  );
+}
+
+// ── Main Component ──────────────────────────────────────────────────────────────
+
+export function ClientReportsRoot() {
+  const { leads, tasks, addTask } = useReach();
+
+  // Only Won leads = clients
+  const clients = [...leads]
+    .filter((l) => l.status === "Won")
+    .sort((a, b) => (b.dealAmount || 0) - (a.dealAmount || 0));
+
+  const [selectedClient, setSelectedClient] = useState<Lead | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [copiedLink, setCopiedLink] = useState(false);
+
+  // Livrables stored per lead in localStorage
+  const [livrables, setLivrables] = useState<Livrable[]>([]);
+  const [livrableForm, setLivrableForm] = useState({ service: "", description: "", prix: "", dateLivraison: "" });
+
+  // Prochaines étapes quick-add
+  const [newStep, setNewStep] = useState({ title: "", dueDate: "" });
+
+  const filteredClients = clients.filter(
+    (c) =>
+      c.businessName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      c.city?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      c.contactName?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  // Load livrables from localStorage on client change
+  useEffect(() => {
+    if (!selectedClient) return;
+    try {
+      const raw = localStorage.getItem(`minerva_livrables_${selectedClient.id}`);
+      setLivrables(raw ? JSON.parse(raw) : []);
+    } catch {
+      setLivrables([]);
+    }
+    setLivrableForm({ service: "", description: "", prix: "", dateLivraison: "" });
+    setNewStep({ title: "", dueDate: "" });
+  }, [selectedClient?.id]);
+
+  const saveLivrables = useCallback(
+    (updated: Livrable[]) => {
+      if (!selectedClient) return;
+      setLivrables(updated);
+      localStorage.setItem(`minerva_livrables_${selectedClient.id}`, JSON.stringify(updated));
+    },
+    [selectedClient]
+  );
+
+  const addLivrable = () => {
+    if (!livrableForm.service.trim()) return;
+    const entry: Livrable = {
+      id: Date.now().toString(),
+      service: livrableForm.service.trim(),
+      description: livrableForm.description.trim(),
+      prix: parseFloat(livrableForm.prix) || 0,
+      dateLivraison: livrableForm.dateLivraison,
+    };
+    saveLivrables([...livrables, entry]);
+    setLivrableForm({ service: "", description: "", prix: "", dateLivraison: "" });
+  };
+
+  const removeLivrable = (id: string) => {
+    saveLivrables(livrables.filter((l) => l.id !== id));
+  };
+
+  const handleCopyLink = () => {
+    if (!selectedClient) return;
+    const link = `${window.location.origin}/review/${selectedClient.id}`;
+    navigator.clipboard.writeText(link).then(() => {
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 2000);
+    });
+  };
+
+  const handleExportPDF = () => {
+    window.print();
+  };
+
+  const handleAddStep = () => {
+    if (!selectedClient || !newStep.title.trim()) return;
+    addTask(newStep.title.trim(), "General", newStep.dueDate || undefined);
+    setNewStep({ title: "", dueDate: "" });
+  };
+
+  // Tasks for selected client — Task has no leadId; show workspace tasks filtered by title match to client name
+  const clientTasks = selectedClient
+    ? tasks.filter((t) => t.title.toLowerCase().includes(selectedClient.businessName.toLowerCase()))
+    : [];
+  const pendingTasks = clientTasks.filter((t) => !t.completed);
+  const doneTasks = clientTasks.filter((t) => t.completed);
+
+  // KPIs from notes
+  const clientNotes = selectedClient?.notes || [];
+  const notesCount = clientNotes.length;
+  const callsCount = clientNotes.filter((n) => n.type === "call").length;
+  const emailsCount = clientNotes.filter((n) => n.type === "email").length;
+  const visitsCount = clientNotes.filter((n) => n.type === "visit").length;
+
+  // Total livrables value
+  const totalLivrables = livrables.reduce((sum, l) => sum + l.prix, 0);
+
   return (
-    <div className="h-full overflow-y-auto bg-[#fafaf8] text-[#26251e] selection:bg-[#10b981]/10 relative">
+    <div className="h-full flex overflow-hidden bg-[#fafaf8] text-[#26251e] relative">
+      {/* Grid background */}
       <div className="absolute inset-0 opacity-[0.25] pointer-events-none bg-grid-pattern-20 z-0" />
-      <div className="relative z-10 max-w-6xl mx-auto p-6 space-y-6">
-        
-        {/* Header Dashboard section */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-[#e5e5e0] pb-5">
-          <div>
-            <div className="flex items-center gap-2">
-              <Trophy className="h-5 w-5 text-[#10b981]" />
-              <h1 className="text-xl font-bold font-sans tracking-tight">Classement de performance</h1>
-            </div>
-            <p className="text-xs text-[#807d72] mt-1">
-              Gamification d'équipe : suivez vos performances de prospection et comparez-vous aux meilleurs.
-            </p>
-          </div>
 
-          {/* Quick Metrics */}
-          <div className="flex gap-4">
-            <div className="bg-white border border-[#e5e5e0] rounded-xl px-4 py-2 flex items-center gap-3">
-              <Flame className="w-5 h-5 text-amber-500" />
-              <div>
-                <span className="text-[10px] uppercase font-bold text-[#807d72] block">Total Gagné</span>
-                <span className="font-bold text-sm">
-                  {realLeaderboard.reduce((sum, item) => sum + item.wonLeads, 0)} leads
-                </span>
-              </div>
-            </div>
-            <div className="bg-white border border-[#e5e5e0] rounded-xl px-4 py-2 flex items-center gap-3">
-              <TrendingUp className="w-5 h-5 text-[#10b981]" />
-              <div>
-                <span className="text-[10px] uppercase font-bold text-[#807d72] block">Revenu Estimé</span>
-                <span className="font-bold text-sm text-[#10b981]">
-                  {realLeaderboard.reduce((sum, item) => sum + item.revenue, 0).toLocaleString("fr-CA")} $
-                </span>
-              </div>
-            </div>
+      {/* ── Left panel: Client list ── */}
+      <aside className="relative z-10 hidden md:flex flex-col w-72 shrink-0 border-r border-[#e5e5e0] bg-[#f4f4f3] overflow-hidden print:hidden">
+        {/* Panel header */}
+        <div className="p-4 border-b border-[#e5e5e0] space-y-3">
+          <div className="flex items-center gap-2">
+            <Users className="h-4 w-4 text-[#059669]" />
+            <h2 className="text-xs font-bold text-[#26251e] uppercase tracking-wider">Vos clients</h2>
+            <span className="ml-auto text-[10px] font-semibold text-[#807d72] bg-[#e5e5e0] rounded-full px-2 py-0.5">
+              {clients.length}
+            </span>
           </div>
-        </div>
-
-        {/* Filters and Search */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          {/* Tabs Selector */}
-          <div className="flex bg-[#e5e5e0]/60 p-1 rounded-xl w-fit">
-            <button
-              onClick={() => setActiveTab("members")}
-              className={cn(
-                "px-4 py-2 text-xs font-semibold rounded-lg transition-all cursor-pointer flex items-center gap-1.5",
-                activeTab === "members"
-                  ? "bg-white text-[#26251e] shadow-xs"
-                  : "text-[#807d72] hover:text-[#26251e]"
-              )}
-            >
-              <Users className="w-3.5 h-3.5" />
-              Membres d'équipe
-            </button>
-            <button
-              onClick={() => setActiveTab("everyone")}
-              className={cn(
-                "px-4 py-2 text-xs font-semibold rounded-lg transition-all cursor-pointer flex items-center gap-1.5",
-                activeTab === "everyone"
-                  ? "bg-white text-[#26251e] shadow-xs"
-                  : "text-[#807d72] hover:text-[#26251e]"
-              )}
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              Réseau Global
-            </button>
-          </div>
-
-          {/* Search bar */}
-          <div className="relative max-w-xs w-full">
-            <Search className="absolute left-3 top-2.5 h-4 w-4 text-[#807d72]" />
+          {/* Search */}
+          <div className="relative">
+            <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-[#807d72]" />
             <input
               type="text"
-              placeholder="Rechercher un membre..."
+              placeholder="Rechercher un client..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 pr-4 py-2 w-full text-xs bg-white border border-[#e5e5e0] rounded-xl focus:outline-none focus:border-[#10b981] transition-colors"
+              className="w-full pl-8 pr-3 py-2 text-xs bg-white border border-[#e5e5e0] rounded-lg focus:outline-none focus:border-[#059669] transition-colors"
             />
           </div>
         </div>
 
-        {/* Leaderboard Table Container */}
-        {activeTab === "everyone" ? (
-          <div className="bg-white border border-[#e5e5e0] rounded-2xl p-12 text-center shadow-xs space-y-3">
-            <BarChart2 className="w-10 h-10 text-[#807d72]/30 mx-auto" />
-            <p className="text-sm font-semibold text-[#26251e]">Classement réseau bientôt disponible</p>
-            <p className="text-xs text-[#807d72] max-w-sm mx-auto">
-              Les performances des utilisateurs Minerva à travers le réseau seront visibles ici.
-              En attendant, suivez votre équipe dans l&apos;onglet <strong>Membres d&apos;équipe</strong>.
-            </p>
+        {/* Client list */}
+        <div className="flex-1 overflow-y-auto divide-y divide-[#e5e5e0]/60">
+          {filteredClients.length === 0 ? (
+            <div className="p-6 text-center space-y-2">
+              <Users className="h-8 w-8 text-[#807d72]/30 mx-auto" />
+              <p className="text-xs text-[#807d72]">
+                {clients.length === 0
+                  ? "Aucun client gagné pour l'instant"
+                  : "Aucun résultat"}
+              </p>
+              {clients.length === 0 && (
+                <Link href="/leads" className="text-[10px] text-[#059669] hover:underline font-semibold">
+                  Voir vos prospects →
+                </Link>
+              )}
+            </div>
+          ) : (
+            filteredClients.map((client) => (
+              <button
+                key={client.id}
+                onClick={() => setSelectedClient(client)}
+                className={cn(
+                  "w-full text-left px-4 py-3 hover:bg-[#e5e5e0]/40 transition-colors group",
+                  selectedClient?.id === client.id && "bg-[#059669]/8 border-r-2 border-[#059669]"
+                )}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-bold text-[#26251e] truncate">{client.businessName}</p>
+                    <p className="text-[10px] text-[#807d72] truncate mt-0.5">{client.contactName}</p>
+                    <p className="text-[10px] text-[#807d72] truncate">{client.city}</p>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <span className="text-[10px] font-bold text-[#059669] bg-[#059669]/10 px-1.5 py-0.5 rounded-full block">
+                      Gagné
+                    </span>
+                    {client.dealAmount && (
+                      <p className="text-[10px] font-semibold text-[#26251e] mt-1">
+                        {client.dealAmount.toLocaleString("fr-CA")} $
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </button>
+            ))
+          )}
+        </div>
+      </aside>
+
+      {/* ── Right panel: Report ── */}
+      <main className="relative z-10 flex-1 overflow-y-auto">
+        {!selectedClient ? (
+          /* Empty state */
+          <div className="h-full flex flex-col items-center justify-center gap-4 p-8 text-center">
+            <div className="w-16 h-16 rounded-2xl bg-[#e5e5e0]/60 border border-[#e5e5e0] flex items-center justify-center">
+              <Users className="h-8 w-8 text-[#807d72]/50" />
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm font-bold text-[#26251e]">Sélectionnez un client pour voir son rapport</p>
+              <p className="text-xs text-[#807d72]">
+                {clients.length === 0
+                  ? "Marquez un prospect comme \"Gagné\" pour le retrouver ici."
+                  : `${clients.length} client${clients.length > 1 ? "s" : ""} disponible${clients.length > 1 ? "s" : ""} dans le panneau gauche.`}
+              </p>
+            </div>
+            {clients.length === 0 && (
+              <Link
+                href="/leads"
+                className="text-xs font-semibold text-[#059669] hover:text-[#047857] flex items-center gap-1"
+              >
+                Voir vos prospects <ArrowUpRight className="h-3.5 w-3.5" />
+              </Link>
+            )}
           </div>
         ) : (
-        <div className="bg-white border border-[#e5e5e0] rounded-2xl overflow-hidden shadow-xs">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-[#e5e5e0] bg-[#fafaf9] text-[#807d72] text-[10px] font-bold uppercase tracking-wider">
-                  <th className="py-4 px-6 text-center w-16">Pos</th>
-                  <th className="py-4 px-4">Utilisateur</th>
-                  <th className="py-4 px-4">Division</th>
-                  <th className="py-4 px-4 text-center">Taux Eff.</th>
-                  <th className="py-4 px-4 text-center">Gagnés</th>
-                  <th className="py-4 px-4 text-center">Perdus</th>
-                  <th className="py-4 px-4 text-right">CA Généré</th>
-                  <th className="py-4 px-6 text-right w-12"></th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#e5e5e0] text-xs font-medium">
-                {filteredLeaderboard.length === 0 ? (
-                  <tr>
-                    <td colSpan={8} className="py-12 text-center text-[#807d72]">
-                      <BarChart2 className="w-8 h-8 text-[#807d72]/40 mx-auto mb-2" />
-                      Aucun membre trouvé dans cette catégorie.
-                    </td>
-                  </tr>
-                ) : (
-                  filteredLeaderboard.map((item, idx) => {
-                    const division = getDivision(item.wonLeads);
-                    const rank = idx + 1;
-                    const isCurrentUserRow = item.id === currentUser?.id;
+          <div className="p-6 space-y-6 max-w-4xl mx-auto">
 
-                    return (
-                      <tr
-                        key={item.id}
-                        onClick={() => setSelectedUser(item)}
-                        className={cn(
-                          "hover:bg-[#fafaf9] transition-colors cursor-pointer group",
-                          isCurrentUserRow && "bg-[#10b981]/5 hover:bg-[#10b981]/10"
-                        )}
-                      >
-                        {/* Rank Position column */}
-                        <td className="py-4 px-6 text-center font-bold text-sm">
-                          {rank === 1 ? (
-                            <span className="inline-flex w-7 h-7 rounded-full bg-yellow-100 border border-yellow-300 text-yellow-800 items-center justify-center text-xs animate-pulse">🥇</span>
-                          ) : rank === 2 ? (
-                            <span className="inline-flex w-7 h-7 rounded-full bg-slate-100 border border-slate-300 text-slate-800 items-center justify-center text-xs">🥈</span>
-                          ) : rank === 3 ? (
-                            <span className="inline-flex w-7 h-7 rounded-full bg-emerald-100 border border-emerald-300 text-emerald-800 items-center justify-center text-xs">🥉</span>
-                          ) : (
-                            <span className="text-[#807d72]">{rank}</span>
-                          )}
-                        </td>
-
-                        {/* Name & Avatar Column */}
-                        <td className="py-4 px-4">
-                          <div className="flex items-center gap-3">
-                            {item.avatarUrl ? (
-                              // eslint-disable-next-line @next/next/no-img-element
-                              <img
-                                src={item.avatarUrl}
-                                alt={item.name}
-                                className="w-8 h-8 rounded-full border border-[#e5e5e0] object-cover"
-                              />
-                            ) : (
-                              <div className="w-8 h-8 rounded-full bg-neutral-100 border border-[#e5e5e0] flex items-center justify-center text-neutral-600 font-bold uppercase text-[10px]">
-                                {item.name.substring(0, 2)}
-                              </div>
-                            )}
-                            <div>
-                              <p className="font-bold text-[#26251e] flex items-center gap-1.5">
-                                {item.name}
-                                {isCurrentUserRow && (
-                                  <span className="text-[9px] bg-[#10b981]/15 text-[#059669] px-1.5 py-0.5 rounded-full font-bold">
-                                    Vous
-                                  </span>
-                                )}
-                              </p>
-                              <p className="text-[10px] text-[#807d72]">{item.role}</p>
-                            </div>
-                          </div>
-                        </td>
-
-                        {/* Division Badge column */}
-                        <td className="py-4 px-4">
-                          <span
-                            className={cn(
-                              "px-2.5 py-1 rounded-full text-[10px] font-bold border bg-gradient-to-r select-none",
-                              division.style
-                            )}
-                          >
-                            {division.badge}
-                          </span>
-                        </td>
-
-                        {/* Efficiency conversion rate */}
-                        <td className="py-4 px-4 text-center">
-                          <div className="flex items-center justify-center gap-1">
-                            <span className="font-bold text-[#26251e]">{item.efficiency}%</span>
-                            <Percent className="w-3 h-3 text-[#807d72]" />
-                          </div>
-                        </td>
-
-                        {/* Won leads */}
-                        <td className="py-4 px-4 text-center text-[#059669] font-bold">
-                          {item.wonLeads}
-                        </td>
-
-                        {/* Lost leads */}
-                        <td className="py-4 px-4 text-center text-red-500 font-medium">
-                          {item.lostLeads}
-                        </td>
-
-                        {/* Revenue column */}
-                        <td className="py-4 px-4 text-right font-bold text-[#26251e]">
-                          {item.revenue.toLocaleString("fr-CA")} $
-                        </td>
-
-                        {/* Action column link indicator */}
-                        <td className="py-4 px-6 text-right">
-                          <ChevronRight className="w-4 h-4 text-[#807d72] group-hover:text-[#10b981] group-hover:translate-x-0.5 transition-all" />
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-        )}
-
-        {/* User Detail modal */}
-        {selectedUser && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 backdrop-blur-xs p-4 animate-fade-in">
-            <div className="bg-white border border-[#e5e5e0] rounded-2xl max-w-md w-full shadow-2xl overflow-hidden relative animate-in zoom-in-95 duration-200">
-              
-              {/* Header profile gradient card */}
-              <div className="bg-[#fafaf9] border-b border-[#e5e5e0] p-6 flex items-start justify-between">
-                <div className="flex items-center gap-4">
-                  {selectedUser.avatarUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={selectedUser.avatarUrl}
-                      alt={selectedUser.name}
-                      className="w-14 h-14 rounded-full border-2 border-white shadow-sm object-cover"
-                    />
-                  ) : (
-                    <div className="w-14 h-14 rounded-full bg-neutral-100 border border-[#e5e5e0] flex items-center justify-center text-neutral-600 font-bold uppercase text-sm">
-                      {selectedUser.name.substring(0, 2)}
-                    </div>
-                  )}
-                  <div>
-                    <h3 className="font-bold text-base text-[#26251e]">
-                      {selectedUser.name}
-                    </h3>
-                    <p className="text-xs text-[#807d72]">{selectedUser.role}</p>
-                    <p className="text-[10px] text-[#807d72] mt-0.5">{selectedUser.email}</p>
-                  </div>
-                </div>
-                
-                <button
-                  onClick={() => setSelectedUser(null)}
-                  className="p-1 rounded-lg hover:bg-[#e5e5e0]/60 text-[#807d72] hover:text-[#26251e] transition-colors cursor-pointer"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
-              {/* Statistics & Division progress content */}
-              <div className="p-6 space-y-6">
-                
-                {/* Division and Trophy badges */}
-                <div className="space-y-2">
-                  <h4 className="text-[10px] font-bold uppercase tracking-wider text-[#807d72] flex items-center gap-1.5">
-                    <Award className="w-3.5 h-3.5 text-[#10b981]" />
-                    Trophée de Division Minerva
-                  </h4>
-                  <div className="bg-[#fafaf9] border border-[#e5e5e0] rounded-xl p-3.5 flex items-center justify-between">
-                    <div>
-                      <p className="text-xs font-bold text-[#26251e]">
-                        Division Actuelle : {getDivision(selectedUser.wonLeads).name}
-                      </p>
-                      <p className="text-[10px] text-[#807d72] mt-0.5">
-                        {selectedUser.wonLeads} deals gagnés enregistrés.
-                      </p>
-                    </div>
-                    <span
-                      className={cn(
-                        "px-3 py-1 rounded-full text-[10px] font-bold border bg-gradient-to-r select-none",
-                        getDivision(selectedUser.wonLeads).style
-                      )}
-                    >
-                      {getDivision(selectedUser.wonLeads).badge}
+            {/* ── Client Header ── */}
+            <div className="bg-white border border-[#e5e5e0] rounded-2xl p-6 space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                <div className="space-y-2 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h1 className="text-xl font-black text-[#26251e] truncate">{selectedClient.businessName}</h1>
+                    <span className="text-[10px] font-bold text-[#059669] bg-[#059669]/10 border border-[#059669]/20 px-2 py-0.5 rounded-full shrink-0">
+                      Gagné ✓
                     </span>
                   </div>
-                </div>
 
-                {/* KPI Metrics */}
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="bg-neutral-50 border border-neutral-100 rounded-xl p-3 text-center">
-                    <span className="text-[9px] uppercase font-bold text-[#807d72] block">Total Leads</span>
-                    <span className="font-bold text-sm text-[#26251e]">{selectedUser.totalLeads}</span>
-                  </div>
-                  <div className="bg-emerald-50/50 border border-emerald-100 rounded-xl p-3 text-center">
-                    <span className="text-[9px] uppercase font-bold text-[#807d72] block">Gagnés</span>
-                    <span className="font-bold text-sm text-[#059669]">{selectedUser.wonLeads}</span>
-                  </div>
-                  <div className="bg-neutral-50 border border-neutral-100 rounded-xl p-3 text-center">
-                    <span className="text-[9px] uppercase font-bold text-[#807d72] block">Taux Convers.</span>
-                    <span className="font-bold text-sm text-[#26251e]">{selectedUser.efficiency}%</span>
-                  </div>
-                </div>
-
-                {/* Skills indicators */}
-                <div className="space-y-3">
-                  <h4 className="text-[10px] font-bold uppercase tracking-wider text-[#807d72] flex items-center gap-1.5">
-                    <Shield className="w-3.5 h-3.5 text-[#10b981]" />
-                    Compétences & Forces Clés
-                  </h4>
-                  <div className="space-y-2.5">
-                    {selectedUser.skills.map((skill) => (
-                      <div key={skill.name} className="space-y-1">
-                        <div className="flex justify-between text-[11px]">
-                          <span className="font-semibold text-[#26251e]">{skill.name}</span>
-                          <span className="text-[#807d72]">{skill.level}%</span>
-                        </div>
-                        <div className="h-1.5 bg-neutral-100 rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-[#10b981] rounded-full transition-all duration-500"
-                            style={{ width: `${skill.level}%` }}
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Active campaigns & projects */}
-                <div className="space-y-2.5">
-                  <h4 className="text-[10px] font-bold uppercase tracking-wider text-[#807d72] flex items-center gap-1.5">
-                    <Briefcase className="w-3.5 h-3.5 text-[#10b981]" />
-                    Projets Actifs Assignés
-                  </h4>
-                  <div className="flex flex-wrap gap-1.5">
-                    {selectedUser.projects.map((proj) => (
-                      <span
-                        key={proj}
-                        className="bg-neutral-100 border border-neutral-200 text-[#26251e] px-2 py-0.5 rounded-md text-[10px]"
-                      >
-                        {proj}
+                  <div className="flex flex-wrap gap-3 text-xs text-[#807d72]">
+                    {selectedClient.contactName && (
+                      <span className="flex items-center gap-1">
+                        <Users className="h-3.5 w-3.5" />
+                        {selectedClient.contactName}
                       </span>
-                    ))}
+                    )}
+                    {selectedClient.contactEmail && (
+                      <span className="flex items-center gap-1">
+                        <Mail className="h-3.5 w-3.5" />
+                        {selectedClient.contactEmail}
+                      </span>
+                    )}
+                    {selectedClient.phone && (
+                      <span className="flex items-center gap-1">
+                        <Phone className="h-3.5 w-3.5" />
+                        {selectedClient.phone}
+                      </span>
+                    )}
+                    {selectedClient.city && (
+                      <span className="flex items-center gap-1">
+                        <MapPin className="h-3.5 w-3.5" />
+                        {selectedClient.city}
+                      </span>
+                    )}
                   </div>
+
+                  <div className="flex items-center gap-3 flex-wrap">
+                    {selectedClient.dealAmount && (
+                      <span className="text-sm font-black text-[#26251e] bg-[#f4f4f3] border border-[#e5e5e0] px-3 py-1 rounded-full">
+                        {selectedClient.dealAmount.toLocaleString("fr-CA")} $ CAD
+                      </span>
+                    )}
+                    {selectedClient.dealClosingDate && (
+                      <span className="text-xs text-[#807d72]">
+                        Conclu le {formatDate(selectedClient.dealClosingDate)}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Action buttons */}
+                <div className="flex gap-2 shrink-0">
+                  <button
+                    onClick={handleCopyLink}
+                    className={cn(
+                      "flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl border transition-all cursor-pointer",
+                      copiedLink
+                        ? "bg-[#059669]/10 border-[#059669]/30 text-[#059669]"
+                        : "bg-white border-[#e5e5e0] text-[#555552] hover:border-[#059669] hover:text-[#059669]"
+                    )}
+                    title="Copier le lien de partage"
+                  >
+                    <Share2 className="h-3.5 w-3.5" />
+                    {copiedLink ? "Lien copié !" : "Partager"}
+                  </button>
+                  <button
+                    onClick={handleExportPDF}
+                    className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl border border-[#e5e5e0] bg-white text-[#555552] hover:border-[#26251e] hover:text-[#26251e] transition-all cursor-pointer print:hidden"
+                    title="Exporter en PDF"
+                  >
+                    <Download className="h-3.5 w-3.5" />
+                    Export PDF
+                  </button>
                 </div>
               </div>
             </div>
+
+            {/* ── Tabs ── */}
+            <Tabs defaultValue="rapport" className="space-y-4">
+              <TabsList className="bg-[#e5e5e0]/60 p-1 rounded-xl w-full sm:w-fit">
+                <TabsTrigger value="rapport" className="text-xs font-semibold rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-xs">
+                  Rapport
+                </TabsTrigger>
+                <TabsTrigger value="livrables" className="text-xs font-semibold rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-xs">
+                  Livrables
+                </TabsTrigger>
+                <TabsTrigger value="historique" className="text-xs font-semibold rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-xs">
+                  Historique
+                </TabsTrigger>
+                <TabsTrigger value="etapes" className="text-xs font-semibold rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-xs">
+                  Prochaines étapes
+                </TabsTrigger>
+              </TabsList>
+
+              {/* ─── Rapport Tab ─── */}
+              <TabsContent value="rapport" className="space-y-5">
+                {/* 4 stat cards */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <StatCard
+                    label="Valeur du deal"
+                    value={selectedClient.dealAmount ? `${selectedClient.dealAmount.toLocaleString("fr-CA")} $` : "N/A"}
+                    sub="CAD"
+                  />
+                  <StatCard
+                    label="Score lead"
+                    value={selectedClient.score ? `${selectedClient.score}/100` : "N/A"}
+                    sub={selectedClient.score && selectedClient.score >= 70 ? "Excellent" : selectedClient.score && selectedClient.score >= 40 ? "Bon potentiel" : "—"}
+                  />
+                  <StatCard
+                    label="Niche"
+                    value={selectedClient.niche || "—"}
+                    sub={selectedClient.city || undefined}
+                  />
+                  <StatCard
+                    label="Date client"
+                    value={selectedClient.dealClosingDate ? formatDate(selectedClient.dealClosingDate) : "—"}
+                    sub="Date de clôture"
+                  />
+                </div>
+
+                {/* Satisfaction widget */}
+                <div className="bg-white border border-[#e5e5e0] rounded-2xl p-5 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Star className="h-4 w-4 text-[#059669]" />
+                    <h3 className="text-xs font-bold text-[#26251e] uppercase tracking-wider">Satisfaction client</h3>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="flex gap-0.5">
+                      {[1, 2, 3, 4, 5].map((i) => (
+                        <Star key={i} className="h-5 w-5 fill-amber-400 text-amber-400" />
+                      ))}
+                    </div>
+                    <span className="text-sm font-black text-[#26251e]">5 / 5</span>
+                  </div>
+                  <p className="text-xs text-[#807d72] italic">
+                    Évaluation client à venir — partagez le lien de rapport pour recueillir un avis.
+                  </p>
+                </div>
+
+                {/* KPIs section */}
+                <div className="bg-white border border-[#e5e5e0] rounded-2xl p-5 space-y-4">
+                  <div className="flex items-center gap-2">
+                    <BarChart3 className="h-4 w-4 text-[#059669]" />
+                    <h3 className="text-xs font-bold text-[#26251e] uppercase tracking-wider">KPIs du parcours</h3>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <div className="text-center p-3 rounded-xl bg-[#fafaf8] border border-[#e5e5e0]">
+                      <p className="text-2xl font-black text-[#26251e]">{notesCount}</p>
+                      <p className="text-[10px] font-semibold text-[#807d72] uppercase tracking-wider mt-0.5">Interactions</p>
+                    </div>
+                    <div className="text-center p-3 rounded-xl bg-sky-50 border border-sky-100">
+                      <p className="text-2xl font-black text-sky-600">{callsCount}</p>
+                      <p className="text-[10px] font-semibold text-[#807d72] uppercase tracking-wider mt-0.5">Appels</p>
+                    </div>
+                    <div className="text-center p-3 rounded-xl bg-violet-50 border border-violet-100">
+                      <p className="text-2xl font-black text-violet-600">{emailsCount}</p>
+                      <p className="text-[10px] font-semibold text-[#807d72] uppercase tracking-wider mt-0.5">Emails</p>
+                    </div>
+                    <div className="text-center p-3 rounded-xl bg-emerald-50 border border-emerald-100">
+                      <p className="text-2xl font-black text-emerald-600">{visitsCount}</p>
+                      <p className="text-[10px] font-semibold text-[#807d72] uppercase tracking-wider mt-0.5">Visites</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Next steps preview */}
+                {pendingTasks.length > 0 && (
+                  <div className="bg-white border border-[#e5e5e0] rounded-2xl p-5 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <ClipboardList className="h-4 w-4 text-[#059669]" />
+                      <h3 className="text-xs font-bold text-[#26251e] uppercase tracking-wider">Prochaines étapes</h3>
+                    </div>
+                    <div className="space-y-2">
+                      {pendingTasks.slice(0, 2).map((task) => (
+                        <div key={task.id} className="flex items-start gap-2.5 p-3 rounded-xl bg-[#fafaf8] border border-[#e5e5e0]">
+                          <Clock className="h-3.5 w-3.5 text-[#807d72] shrink-0 mt-0.5" />
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xs font-semibold text-[#26251e] truncate">{task.title}</p>
+                            {task.dueDate && (
+                              <p className="text-[10px] text-[#807d72]">{formatDate(task.dueDate)}</p>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </TabsContent>
+
+              {/* ─── Livrables Tab ─── */}
+              <TabsContent value="livrables" className="space-y-4">
+                <div className="bg-white border border-[#e5e5e0] rounded-2xl overflow-hidden">
+                  {/* Add form */}
+                  <div className="p-5 border-b border-[#e5e5e0] space-y-3 bg-[#fafaf8]">
+                    <h3 className="text-xs font-bold text-[#26251e] uppercase tracking-wider flex items-center gap-1.5">
+                      <Plus className="h-3.5 w-3.5 text-[#059669]" />
+                      Ajouter un livrable
+                    </h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <input
+                        type="text"
+                        placeholder="Service (ex: Site web, SEO, Branding...)"
+                        value={livrableForm.service}
+                        onChange={(e) => setLivrableForm((f) => ({ ...f, service: e.target.value }))}
+                        className="text-xs px-3 py-2 border border-[#e5e5e0] rounded-lg bg-white focus:outline-none focus:border-[#059669] transition-colors"
+                      />
+                      <input
+                        type="text"
+                        placeholder="Description courte"
+                        value={livrableForm.description}
+                        onChange={(e) => setLivrableForm((f) => ({ ...f, description: e.target.value }))}
+                        className="text-xs px-3 py-2 border border-[#e5e5e0] rounded-lg bg-white focus:outline-none focus:border-[#059669] transition-colors"
+                      />
+                      <input
+                        type="number"
+                        placeholder="Prix (CAD)"
+                        value={livrableForm.prix}
+                        onChange={(e) => setLivrableForm((f) => ({ ...f, prix: e.target.value }))}
+                        className="text-xs px-3 py-2 border border-[#e5e5e0] rounded-lg bg-white focus:outline-none focus:border-[#059669] transition-colors"
+                      />
+                      <input
+                        type="date"
+                        value={livrableForm.dateLivraison}
+                        onChange={(e) => setLivrableForm((f) => ({ ...f, dateLivraison: e.target.value }))}
+                        className="text-xs px-3 py-2 border border-[#e5e5e0] rounded-lg bg-white focus:outline-none focus:border-[#059669] transition-colors"
+                      />
+                    </div>
+                    <button
+                      onClick={addLivrable}
+                      disabled={!livrableForm.service.trim()}
+                      className="text-xs font-bold px-4 py-2 bg-[#059669] hover:bg-[#047857] text-white rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                    >
+                      Ajouter le livrable
+                    </button>
+                  </div>
+
+                  {/* Livrables table */}
+                  {livrables.length === 0 ? (
+                    <div className="p-10 text-center space-y-2">
+                      <FileText className="h-8 w-8 text-[#807d72]/30 mx-auto" />
+                      <p className="text-xs text-[#807d72]">Aucun livrable enregistré pour ce client.</p>
+                      <p className="text-[10px] text-[#807d72]">Ajoutez les services livrés ci-dessus.</p>
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left border-collapse text-xs">
+                        <thead>
+                          <tr className="bg-[#fafaf9] border-b border-[#e5e5e0] text-[#807d72] text-[10px] font-bold uppercase tracking-wider">
+                            <th className="px-5 py-3">Service</th>
+                            <th className="px-5 py-3">Description</th>
+                            <th className="px-5 py-3">Date livraison</th>
+                            <th className="px-5 py-3 text-right">Prix CAD</th>
+                            <th className="px-4 py-3 w-10"></th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-[#e5e5e0]/60">
+                          {livrables.map((l) => (
+                            <tr key={l.id} className="hover:bg-[#fafaf8] transition-colors">
+                              <td className="px-5 py-3 font-semibold text-[#26251e]">{l.service}</td>
+                              <td className="px-5 py-3 text-[#807d72]">{l.description || "—"}</td>
+                              <td className="px-5 py-3 text-[#807d72]">{l.dateLivraison ? formatDate(l.dateLivraison) : "—"}</td>
+                              <td className="px-5 py-3 text-right font-bold text-[#26251e]">
+                                {l.prix > 0 ? `${l.prix.toLocaleString("fr-CA")} $` : "—"}
+                              </td>
+                              <td className="px-4 py-3">
+                                <button
+                                  onClick={() => removeLivrable(l.id)}
+                                  className="p-1 text-[#807d72] hover:text-red-500 transition-colors cursor-pointer"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                        {totalLivrables > 0 && (
+                          <tfoot>
+                            <tr className="border-t-2 border-[#e5e5e0] bg-[#f0fdf4]">
+                              <td colSpan={3} className="px-5 py-3 text-xs font-bold text-[#059669] uppercase tracking-wider">
+                                Total valeur livrée
+                              </td>
+                              <td className="px-5 py-3 text-right text-sm font-black text-[#059669]">
+                                {totalLivrables.toLocaleString("fr-CA")} $
+                              </td>
+                              <td />
+                            </tr>
+                          </tfoot>
+                        )}
+                      </table>
+                    </div>
+                  )}
+                </div>
+              </TabsContent>
+
+              {/* ─── Historique Tab ─── */}
+              <TabsContent value="historique" className="space-y-3">
+                {clientNotes.length === 0 ? (
+                  <div className="bg-white border border-[#e5e5e0] rounded-2xl p-10 text-center space-y-2">
+                    <MessageSquare className="h-8 w-8 text-[#807d72]/30 mx-auto" />
+                    <p className="text-xs font-semibold text-[#26251e]">Aucune interaction enregistrée</p>
+                    <p className="text-[10px] text-[#807d72]">
+                      Ajoutez des notes (appels, emails, visites) depuis la fiche lead.
+                    </p>
+                    <Link
+                      href={`/leads/${selectedClient.id}`}
+                      className="text-[10px] text-[#059669] hover:underline font-semibold"
+                    >
+                      Ouvrir la fiche lead →
+                    </Link>
+                  </div>
+                ) : (
+                  <div className="bg-white border border-[#e5e5e0] rounded-2xl overflow-hidden">
+                    <div className="p-5 border-b border-[#e5e5e0]">
+                      <h3 className="text-xs font-bold text-[#26251e] uppercase tracking-wider">
+                        Toutes les interactions — {clientNotes.length} au total
+                      </h3>
+                    </div>
+                    <div className="divide-y divide-[#e5e5e0]/60">
+                      {[...clientNotes]
+                        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                        .map((note) => {
+                          const cfg = NOTE_TYPE_CONFIG[note.type] || NOTE_TYPE_CONFIG.general;
+                          const Icon = cfg.icon;
+                          return (
+                            <div key={note.id} className="flex gap-4 px-5 py-4 hover:bg-[#fafaf8] transition-colors">
+                              <div className={cn("w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-0.5", cfg.bg)}>
+                                <Icon className={cn("h-3.5 w-3.5", cfg.color)} />
+                              </div>
+                              <div className="min-w-0 flex-1 space-y-1">
+                                <div className="flex items-center justify-between gap-2">
+                                  <span className={cn("text-[10px] font-bold uppercase tracking-wider", cfg.color)}>
+                                    {cfg.label}
+                                  </span>
+                                  <span className="text-[10px] text-[#807d72] shrink-0">
+                                    {formatDateLong(note.createdAt)}
+                                  </span>
+                                </div>
+                                <p className="text-xs text-[#26251e] leading-relaxed">{note.content}</p>
+                              </div>
+                            </div>
+                          );
+                        })}
+                    </div>
+                  </div>
+                )}
+              </TabsContent>
+
+              {/* ─── Prochaines étapes Tab ─── */}
+              <TabsContent value="etapes" className="space-y-4">
+                {/* Quick add */}
+                <div className="bg-white border border-[#e5e5e0] rounded-2xl p-5 space-y-3">
+                  <h3 className="text-xs font-bold text-[#26251e] uppercase tracking-wider flex items-center gap-1.5">
+                    <Plus className="h-3.5 w-3.5 text-[#059669]" />
+                    Ajouter une étape
+                  </h3>
+                  <div className="flex gap-2 flex-col sm:flex-row">
+                    <input
+                      type="text"
+                      placeholder="Titre de l'étape..."
+                      value={newStep.title}
+                      onChange={(e) => setNewStep((s) => ({ ...s, title: e.target.value }))}
+                      onKeyDown={(e) => e.key === "Enter" && handleAddStep()}
+                      className="flex-1 text-xs px-3 py-2 border border-[#e5e5e0] rounded-lg bg-white focus:outline-none focus:border-[#059669] transition-colors"
+                    />
+                    <input
+                      type="date"
+                      value={newStep.dueDate}
+                      onChange={(e) => setNewStep((s) => ({ ...s, dueDate: e.target.value }))}
+                      className="text-xs px-3 py-2 border border-[#e5e5e0] rounded-lg bg-white focus:outline-none focus:border-[#059669] transition-colors w-full sm:w-40"
+                    />
+                    <button
+                      onClick={handleAddStep}
+                      disabled={!newStep.title.trim()}
+                      className="text-xs font-bold px-4 py-2 bg-[#059669] hover:bg-[#047857] text-white rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer shrink-0"
+                    >
+                      Ajouter
+                    </button>
+                  </div>
+                </div>
+
+                {/* Pending tasks */}
+                {pendingTasks.length > 0 && (
+                  <div className="bg-white border border-[#e5e5e0] rounded-2xl overflow-hidden">
+                    <div className="px-5 py-3 border-b border-[#e5e5e0] bg-[#fafaf8]">
+                      <p className="text-[10px] font-bold text-[#26251e] uppercase tracking-wider">
+                        En attente — {pendingTasks.length}
+                      </p>
+                    </div>
+                    <div className="divide-y divide-[#e5e5e0]/60">
+                      {pendingTasks.map((task) => (
+                        <div key={task.id} className="flex items-center gap-3 px-5 py-3">
+                          <Clock className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-semibold text-[#26251e] truncate">{task.title}</p>
+                            {task.dueDate && (
+                              <p className="text-[10px] text-[#807d72]">{formatDate(task.dueDate)}</p>
+                            )}
+                          </div>
+                          <span className="text-[10px] font-semibold text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full shrink-0">
+                            À faire
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Done tasks */}
+                {doneTasks.length > 0 && (
+                  <div className="bg-white border border-[#e5e5e0] rounded-2xl overflow-hidden">
+                    <div className="px-5 py-3 border-b border-[#e5e5e0] bg-[#fafaf8]">
+                      <p className="text-[10px] font-bold text-[#26251e] uppercase tracking-wider">
+                        Terminées — {doneTasks.length}
+                      </p>
+                    </div>
+                    <div className="divide-y divide-[#e5e5e0]/60">
+                      {doneTasks.map((task) => (
+                        <div key={task.id} className="flex items-center gap-3 px-5 py-3 opacity-60">
+                          <CheckCircle2 className="h-3.5 w-3.5 text-[#059669] shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-semibold text-[#26251e] truncate line-through">{task.title}</p>
+                          </div>
+                          <span className="text-[10px] font-semibold text-[#059669] bg-[#059669]/10 border border-[#059669]/20 px-2 py-0.5 rounded-full shrink-0">
+                            Fait ✓
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {clientTasks.length === 0 && (
+                  <div className="bg-white border border-[#e5e5e0] rounded-2xl p-10 text-center space-y-2">
+                    <ClipboardList className="h-8 w-8 text-[#807d72]/30 mx-auto" />
+                    <p className="text-xs font-semibold text-[#26251e]">Aucune étape planifiée</p>
+                    <p className="text-[10px] text-[#807d72]">
+                      Ajoutez des étapes ci-dessus pour organiser le suivi de ce client.
+                    </p>
+                  </div>
+                )}
+              </TabsContent>
+            </Tabs>
           </div>
         )}
-      </div>
+      </main>
+
+      {/* Print styles */}
+      <style jsx global>{`
+        @media print {
+          aside, .print\\:hidden { display: none !important; }
+          main { overflow: visible !important; }
+        }
+      `}</style>
     </div>
   );
 }

@@ -43,8 +43,8 @@ const STATUS_LABELS: Record<string, string> = {
   Lost: 'Perdu',
 };
 
-// Carto positron — no API key required
-const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json';
+// OpenFreeMap — free, no API key, CORS-open, replaces Carto (blocked on Vercel)
+const MAP_STYLE = 'https://tiles.openfreemap.org/styles/liberty';
 
 // City-level fallback coordinates (Québec)
 const CITY_COORDS: Record<string, [number, number]> = {
