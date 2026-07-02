@@ -12,6 +12,13 @@
 -- Si un compte = 0 → STOP, vérifier que la bonne DB est ciblée
 -- ============================================================
 
+-- ── 0. team_members — colonnes manquantes ───────────────────────────────────
+ALTER TABLE team_members ADD COLUMN IF NOT EXISTS invited_at    TIMESTAMPTZ DEFAULT NOW();
+ALTER TABLE team_members ADD COLUMN IF NOT EXISTS invite_token  TEXT;
+
+-- Backfill invited_at si la table a des lignes sans valeur
+UPDATE team_members SET invited_at = NOW() WHERE invited_at IS NULL;
+
 -- ── 1. leads — colonnes de tracking réponses ────────────────────────────────
 ALTER TABLE leads ADD COLUMN IF NOT EXISTS reply_detected_at TIMESTAMPTZ;
 ALTER TABLE leads ADD COLUMN IF NOT EXISTS reply_status       TEXT DEFAULT 'none';

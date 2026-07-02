@@ -328,8 +328,10 @@ export default function TeamPage() {
       } else {
         triggerToast(`Erreur: ${data.error || 'Impossible de générer le lien'}`);
       }
-    } catch {
-      triggerToast('Erreur réseau');
+    } catch (err) {
+      console.error('[generateLink] fetch error:', err);
+      // Try to get raw text for better diagnosis
+      triggerToast('Erreur réseau — vérifiez la console');
     } finally {
       setGeneratingLink(false);
     }
