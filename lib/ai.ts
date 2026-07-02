@@ -33,7 +33,7 @@ export function resolveAIProvider(settings?: AISettings | null) {
   if (keys.cloudflareToken && keys.cloudflareAccountId) {
     const provider = 'cloudflare';
     const rawModel = settings?.ai_model;
-    const model = (rawModel && !rawModel.startsWith('claude')) ? rawModel : 'deepseek/deepseek-v4-pro';
+    const model = (rawModel && !rawModel.startsWith('claude')) ? rawModel : 'google/gemma-4-26b-a4b-it';
     return { provider, model, apiKey: keys.cloudflareToken };
   }
 

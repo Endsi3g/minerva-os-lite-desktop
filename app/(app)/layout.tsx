@@ -97,7 +97,7 @@ import {
 import { Pin } from 'lucide-react';
 import { CalendarDays, UsersRound } from 'lucide-react';
 
-const CURRENT_VERSION = '8.8.0';
+const CURRENT_VERSION = '8.9.0';
 
 function UpdateBanner() {
   const [visible, setVisible] = useState(false);
@@ -337,11 +337,20 @@ Règle absolue : Réponds uniquement en JSON valide sans enrobage markdown.`;
 
       let responseObj;
       try {
-        const cleanJson = data.content.trim().replace(/^```json/, '').replace(/```$/, '').trim();
+        let cleanContent = data.content;
+        if (cleanContent.includes('</think>')) {
+          cleanContent = cleanContent.split('</think>').pop() || '';
+        }
+        const cleanJson = cleanContent.trim().replace(/^```json/, '').replace(/```$/, '').trim();
         responseObj = JSON.parse(cleanJson);
       } catch {
+        // Strip out <think> tags for fallback display content too
+        let cleanText = data.content;
+        if (cleanText.includes('</think>')) {
+          cleanText = cleanText.split('</think>').pop() || '';
+        }
         responseObj = {
-          reply: data.content,
+          reply: cleanText.trim(),
           tasks: [],
           needsConfirmation: false
         };

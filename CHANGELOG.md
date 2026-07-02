@@ -5,6 +5,12 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [3.46.0] - 2026-07-02 à 07:33
+
+### Ajouté — Modèle Google Gemma 4 & Tolérance aux Balises de Raisonnement
+- **Intégration de Google Gemma 4** — Bascule par défaut vers le modèle `@cf/google/gemma-4-26b-a4b-it` de Cloudflare Workers AI pour de meilleures performances dans les réponses et le respect du format JSON.
+- **Robustesse de l'analyse** — Ajout d'un filtre nettoyant les balises de raisonnement `<think>...</think>` (utilisées par les modèles comme DeepSeek R1). Cela évite les erreurs d'analyse du format et garantit que le Copilote affiche toujours la réponse finale proprement.
+
 ## [3.45.0] - 2026-07-02 à 07:07
 
 ### Ajouté — Intégration de Cloudflare Workers AI & Nouveau Modèle DeepSeek
