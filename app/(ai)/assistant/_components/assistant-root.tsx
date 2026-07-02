@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { useReach } from '@/lib/reach-context';
 import { useSkills } from '@/lib/use-skills';
 import { getApiUrl } from '@/lib/api-helper';
+import { toast } from 'sonner';
 import { 
   X,
   Sparkles,
@@ -264,7 +265,7 @@ export function AssistantRoot() {
 
   // Voice Interaction Simulation
   const [isRecording, setIsRecording] = useState(false);
-  const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const recordingIntervalRef = useRef<any>(null);
 
   // Canvas State
   const [isCanvasOpen, setIsCanvasOpen] = useState(false);
@@ -399,6 +400,19 @@ export function AssistantRoot() {
     return () => {
       window.removeEventListener('minerva_assistant_sync', handleSync);
     };
+  }, [userId, workspaceId]);
+
+  // Check for pending voice task queries redirect from other pages
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const pendingText = localStorage.getItem('minerva_pending_voice_query');
+    if (pendingText?.trim()) {
+      localStorage.removeItem('minerva_pending_voice_query');
+      // Wait a tiny bit for DB session init to finalize
+      setTimeout(() => {
+        handleSend(pendingText);
+      }, 500);
+    }
   }, [userId, workspaceId]);
 
   // Scroll to bottom on message updates
@@ -1123,23 +1137,58 @@ export function AssistantRoot() {
     }
   };
 
-  // Voice Recording simulation
+  // Real browser SpeechRecognition integration
   const startRecording = () => {
-    setIsRecording(true);
-    let dots = '';
-    const baseText = t('assistant.recording_in_progress').replace(/\.*$/, '');
-    recordingIntervalRef.current = setInterval(() => {
-      dots = dots.length >= 3 ? '' : dots + '.';
-      setInput(`${baseText}${dots}`);
-    }, 500);
+    if (typeof window === 'undefined') return;
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      toast.error("La dictée vocale n'est pas supportée par votre navigateur.");
+      return;
+    }
+
+    try {
+      const rec = new SpeechRecognition();
+      rec.lang = 'fr-FR';
+      rec.interimResults = true;
+      rec.continuous = true;
+      rec.maxAlternatives = 1;
+
+      rec.onstart = () => {
+        setIsRecording(true);
+      };
+
+      rec.onresult = (event: any) => {
+        const text = Array.from(event.results)
+          .map((res: any) => res[0].transcript)
+          .join('');
+        setInput(text);
+      };
+
+      rec.onerror = (e: any) => {
+        console.error("Speech recognition error:", e);
+        setIsRecording(false);
+        if (e.error === 'not-allowed') {
+          toast.error("Accès au microphone refusé.");
+        }
+      };
+
+      rec.onend = () => {
+        setIsRecording(false);
+      };
+
+      recordingIntervalRef.current = rec;
+      rec.start();
+    } catch (err) {
+      console.error(err);
+      setIsRecording(false);
+    }
   };
 
   const stopRecording = () => {
     setIsRecording(false);
-    if (recordingIntervalRef.current) {
-      clearInterval(recordingIntervalRef.current);
+    if (recordingIntervalRef.current && typeof recordingIntervalRef.current.stop === 'function') {
+      recordingIntervalRef.current.stop();
     }
-    setInput(t('assistant.recorded_value_placeholder'));
   };
 
   // Copy document text

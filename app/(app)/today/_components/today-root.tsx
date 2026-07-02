@@ -23,11 +23,11 @@ import { AgentPrioritiesCard } from './agent-priorities-card';
 import { NextBestActionCard } from './next-best-action-card';
 import { DailyDigestCard } from './daily-digest-card';
 
-// Cockpit / Pilotage cards
-import { StrategyMemoryCard } from '@/app/(app)/cockpit/_components/strategy-memory-card';
-import { WeeklyReportCard } from '@/app/(app)/cockpit/_components/weekly-report-card';
-import { SlaCard } from '@/app/(app)/cockpit/_components/sla-card';
-import { AgentJournal } from '@/app/(app)/cockpit/_components/agent-journal';
+// Cockpit / Pilotage cards (moved to today component workspace)
+import { StrategyMemoryCard } from './strategy-memory-card';
+import { WeeklyReportCard } from './weekly-report-card';
+import { SlaCard } from './sla-card';
+import { AgentJournal } from './agent-journal';
 import { MinervaOwl } from '@/components/minerva-owl';
 
 import {

@@ -67,14 +67,32 @@ function TagLegend() {
 const versions: ChangelogVersion[] = [
   {
     version: 'v9.0.0',
-    date: '2 juillet 2026 à 14h30',
-    title: 'Navigation complète & nouvelles pages',
+    date: '2 juillet 2026 à 07h36',
+    title: 'Minerva v8 — Revenue OS orchestré (Consolidation)',
     highlights: [
-      { tag: 'feature', text: 'Toutes vos pages sont maintenant accessibles depuis le menu latéral — Tâches, Séquences, Campagnes, Playbooks, Contacts, Notifications et plus encore.' },
-      { tag: 'feature', text: 'Nouvelle page Contacts : retrouvez tous vos interlocuteurs avec leur email, téléphone et entreprise en un seul endroit.' },
-      { tag: 'feature', text: 'Nouvelle page Notifications : centre de notifications unifié avec filtres par type et historique complet.' },
-      { tag: 'design',  text: "Fond texturé harmonisé sur toutes les pages de l'application pour une expérience visuelle cohérente." },
-      { tag: 'design',  text: 'Barre de chargement améliorée : plus fluide, plus visible, avec effet lumineux lors des navigations.' },
+      { tag: 'feature', text: 'Consolidation du Cockpit : Fusion complète de Today, Cockpit, Command Center et Agent Feed sous un écran unique (/today).' },
+      { tag: 'feature', text: 'Onglets Opérations, Inbox, et Pilotage stratégique : Regroupe agenda, tâches, boîte mail et rapports stratégiques/mémoire IA au même endroit.' },
+      { tag: 'feature', text: 'Tunnel 7 Phases : Visualisez la répartition visuelle de vos prospects le long du parcours commercial canonique.' },
+      { tag: 'feature', text: "Outreach Control Center : File d'approbations de l'agent directement dans le cockpit pour valider les brouillons d'un clic." },
+      { tag: 'feature', text: 'Redirections automatiques : Les routes /cockpit et /command redirigent maintenant proprement vers /today.' },
+    ],
+  },
+  {
+    version: 'v8.9.0',
+    date: '2 juillet 2026 à 07h33',
+    title: 'Modèle Google Gemma 4 & Tolérance think',
+    highlights: [
+      { tag: 'feature', text: 'Google Gemma 4 : Configuration du modèle @cf/google/gemma-4-26b-a4b-it par défaut pour des réponses et un format JSON rapides et respectés.' },
+      { tag: 'fix',     text: 'Filtre think : Nettoyage automatique des balises <think>...</think> pour éviter les plantages de format JSON avec les modèles de raisonnement.' },
+    ],
+  },
+  {
+    version: 'v8.8.0',
+    date: '2 juillet 2026 à 07h07',
+    title: 'Hébergement Cloudflare Workers AI',
+    highlights: [
+      { tag: 'feature', text: 'Cloudflare Workers AI : Support complet de la plateforme Workers AI native pour exécuter les requêtes et les flux de streaming.' },
+      { tag: 'feature', text: 'Modèle DeepSeek : Intégration du modèle deepseek/deepseek-v4-pro par défaut avec token de sécurisation cloud.' },
     ],
   },
   {

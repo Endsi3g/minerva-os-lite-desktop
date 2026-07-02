@@ -81,7 +81,7 @@ import {
 } from '@/lib/onboarding-store';
 import { ALL_MODULES, routeToModule, type PermissionModule } from '@/lib/permissions';
 import { cachedFetch, invalidateClientCache } from '@/lib/fetch-cache';
-import { requestNotificationPermission, checkAndSendTaskReminders, checkAndSendLeadReminder, checkAndSendLeadAgingAlerts } from '@/lib/notification-service';
+import { requestNotificationPermission, sendDesktopNotification, checkAndSendTaskReminders, checkAndSendLeadReminder, checkAndSendLeadAgingAlerts } from '@/lib/notification-service';
 import { VersionChecker } from '@/components/version-checker';
 import { toast } from 'sonner';
 import { NotificationPermissionPrompt } from '@/components/notification-permission-prompt';
@@ -1590,22 +1590,21 @@ Règle absolue : Réponds uniquement en JSON valide sans enrobage markdown.`;
               </Tooltip>
             )}
 
-            <Popover>
+            <Popover onOpenChange={async (open) => {
+              if (open && typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default') {
+                const perm = await requestNotificationPermission();
+                setNotifPermission(perm);
+                if (perm === 'granted') {
+                  toast.success('Notifications activées ! Vous recevrez vos alertes en temps réel.');
+                  sendDesktopNotification("Notifications activées", "Vous recevrez vos alertes et sons de confirmation sur Minerva.", { sound: true });
+                }
+              }
+            }}>
               <PopoverTrigger asChild>
                 <Button
                   variant="ghost"
                   size="icon"
                   className="text-[#7a7a76] hover:text-[#26251e] h-8 w-8 relative cursor-pointer"
-                  onClick={async () => {
-                    // If permission not yet granted, request it now (user gesture)
-                    if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default') {
-                      const perm = await requestNotificationPermission();
-                      setNotifPermission(perm);
-                      if (perm === 'granted') {
-                        toast.success('Notifications activées ! Vous recevrez vos alertes en temps réel.');
-                      }
-                    }
-                  }}
                 >
                   <Bell className="h-4 w-4" />
                   {/* Priority: orange dot for permission pending > green dot for unread */}

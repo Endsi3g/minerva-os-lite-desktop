@@ -1459,6 +1459,13 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
     if (!currentTask) return;
 
     const nextCompleted = !currentTask.completed;
+    if (nextCompleted) {
+      sendDesktopNotification(
+        "Tâche complétée",
+        `La tâche "${currentTask.title}" a été marquée comme terminée.`,
+        { sound: true, soundType: 'soft' }
+      );
+    }
     const electronObj = typeof window !== 'undefined' && (window as any).electron ? (window as any).electron : null;
 
     if (electronObj) {
@@ -1497,6 +1504,11 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
 
   const addTask = async (title: string, category: Task['category'], dueDate?: string) => {
     if (!user || !activeWorkspace) return;
+    sendDesktopNotification(
+      "Tâche créée",
+      `La tâche "${title}" a été ajoutée.`,
+      { sound: true, soundType: 'soft' }
+    );
     const electronObj = typeof window !== 'undefined' && (window as any).electron ? (window as any).electron : null;
 
     if (electronObj) {

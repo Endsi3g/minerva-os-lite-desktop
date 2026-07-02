@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import maplibregl from 'maplibre-gl';
+import 'maplibre-gl/dist/maplibre-gl.css';
 import { useReach } from '@/lib/reach-context';
 import { Lead } from '@/lib/mock-data';
 import { getApiUrl } from '@/lib/api-helper';

@@ -179,12 +179,14 @@ export default function TasksRoot() {
       rec.onresult = async (event: any) => {
         const text = event.results[0][0].transcript;
         if (text?.trim()) {
-          setIsProcessingVoice(true);
-          toast.promise(processVoiceTask(text), {
-            loading: "Analyse de la dictée par l'IA...",
-            success: (task) => `Tâche créée : "${task.title}" (${CATEGORY_LABELS[task.category as Task['category']] || task.category})`,
-            error: (err) => `Erreur lors de la création : ${err.message}`
-          });
+          // Store voice query in localStorage
+          localStorage.setItem('minerva_pending_voice_query', text);
+          // Clean up state
+          setIsRecording(false);
+          setIsProcessingVoice(false);
+          toast.success("Redirection vers l'Assistant IA...");
+          // Redirect to Assistant page
+          window.location.href = '/assistant';
         }
       };
 
