@@ -10,6 +10,7 @@ import type { InboxThread, ThreadMessage } from '@/lib/inbox-types';
 import type { Lead } from '@/lib/mock-data';
 import { Mail, Check, Inbox, Users, Archive, RefreshCw, Send } from 'lucide-react';
 import { GoogleConnectModal } from '@/components/google-connect-modal';
+import { OutreachNavBar } from '@/components/outreach-nav-bar';
 
 type ReplyStatusFilter = 'all' | 'positive' | 'followup' | 'negative';
 type UnreadFilter = 'all' | 'unread' | 'leads';
@@ -328,6 +329,7 @@ export function InboxRoot() {
 
   return (
     <div className="flex h-full flex-col overflow-hidden bg-white">
+      <OutreachNavBar />
       {/* View mode tabs */}
       <div className="flex items-center gap-0 border-b border-[#e5e5e0] bg-[#fafaf8] px-4 shrink-0">
         <button

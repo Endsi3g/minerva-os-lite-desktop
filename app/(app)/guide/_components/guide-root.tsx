@@ -4,16 +4,16 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'motion/react';
 import Link from 'next/link';
+import { MinervaOwl } from '@/components/minerva-owl';
 import {
-  Sparkles, Users, Mail, MapPin, TrendingUp, ChevronRight, ChevronLeft,
-  CheckCircle2, Circle, ArrowRight, Zap, Target, DollarSign, BookOpen,
+  Users, Mail, MapPin, ChevronRight, ChevronLeft,
+  CheckCircle2, Circle, ArrowRight, Zap, Target, BookOpen
 } from 'lucide-react';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
 interface Slide {
-  icon: React.ReactNode;
-  color: string;
+  mascotState: 'idle' | 'thinking' | 'prospecting' | 'sending' | 'success' | 'connected' | 'analyse' | 'debugging' | 'update';
   title: string;
   subtitle: string;
   points: { icon: string; text: string }[];
@@ -33,8 +33,7 @@ interface CheckItem {
 
 const SLIDES: Slide[] = [
   {
-    icon: <Sparkles className="h-10 w-10 text-white" />,
-    color: '#059669',
+    mascotState: 'idle',
     title: 'Bienvenue sur Minerva',
     subtitle: 'Ton système de vente terrain — maîtrisé en 10 minutes.',
     points: [
@@ -45,12 +44,11 @@ const SLIDES: Slide[] = [
     ],
   },
   {
-    icon: <Users className="h-10 w-10 text-white" />,
-    color: '#2563eb',
+    mascotState: 'analyse',
     title: 'Leads & Pipeline',
     subtitle: 'Tes prospects organisés du premier contact au contrat signé.',
     points: [
-      { icon: '➕', text: 'Ajoute des leads manuellement ou scrappe-les depuis la Carte (Google Maps / OpenStreetMap).' },
+      { icon: '➕', text: 'Ajoute des leads manuellement ou scrappe-les depuis la Carte.' },
       { icon: '📊', text: 'Suis leur statut : Nouveau → Contacté → RDV → Proposition → Gagné.' },
       { icon: '🗂️', text: 'Visualise ton pipeline en Kanban ou tableau. Drag & drop pour changer de statut.' },
       { icon: '💼', text: 'Chaque fiche lead contient ses notes, emails, tâches et propositions commerciales.' },
@@ -58,12 +56,11 @@ const SLIDES: Slide[] = [
     cta: { label: 'Voir les Leads', href: '/leads' },
   },
   {
-    icon: <Mail className="h-10 w-10 text-white" />,
-    color: '#7c3aed',
+    mascotState: 'thinking',
     title: 'Outreach & IA',
     subtitle: "L'IA prospecte pour toi — emails personnalisés en 1 clic.",
     points: [
-      { icon: '✍️', text: "Ouvre la fiche d'un lead → \"Générer un brouillon\" → email prêt en 5 secondes." },
+      { icon: '✍', text: "Ouvre la fiche d'un lead → \"Générer un brouillon\" → email prêt en 5 secondes." },
       { icon: '🧠', text: "L'IA utilise : le site web du prospect, ses avis Google, tes notes terrain." },
       { icon: '📧', text: 'Connecte Gmail pour envoyer directement depuis Minerva (Inbox).' },
       { icon: '⚙️', text: 'Configure ton style commercial dans Paramètres → IA pour des messages encore plus pertinents.' },
@@ -71,22 +68,20 @@ const SLIDES: Slide[] = [
     cta: { label: 'Configurer l\'IA', href: '/settings/ai/setup' },
   },
   {
-    icon: <MapPin className="h-10 w-10 text-white" />,
-    color: '#d97706',
+    mascotState: 'prospecting',
     title: 'Carte & Terrain',
     subtitle: 'Tes clients sont là, dehors. Va les voir.',
     points: [
       { icon: '🗺️', text: 'La Carte affiche tous tes leads géolocalisés avec leurs statuts (couleurs).' },
-      { icon: '🚶', text: "Planifie tes tournées de walk-ins : clique sur un lead → ouvre sa fiche → note le résultat." },
+      { icon: '🚶', text: "Planifie tes tournées de walk-ins : clique sur un lead → note le résultat." },
       { icon: '🔍', text: 'Filtre par statut, score et secteur pour cibler les zones à fort potentiel.' },
       { icon: '📍', text: 'Le bouton \"Planifier des visites\" te mène directement dans le flow Terrain.' },
     ],
     cta: { label: 'Ouvrir la Carte', href: '/map' },
   },
   {
-    icon: <DollarSign className="h-10 w-10 text-white" />,
-    color: '#059669',
-    title: 'Gagner de l\'argent avec Minerva',
+    mascotState: 'success',
+    title: 'Gagner avec Minerva',
     subtitle: 'De la prospection au contrat en 48h — voici le process.',
     points: [
       { icon: '1️⃣', text: 'Scrape → Ajoute 10-20 leads depuis la Carte (restaurants, salons, cliniques…).' },
@@ -119,7 +114,7 @@ const CHECK_ITEMS: CheckItem[] = [
     label: 'Configure ton assistant IA',
     description: 'Réponds à 8 questions pour que l\'IA écrive dans ton style.',
     href: '/settings/ai/setup',
-    icon: <Sparkles className="h-4 w-4" />,
+    icon: <Target className="h-4 w-4" />,
     time: '5 min',
   },
   {
@@ -206,11 +201,13 @@ export function GuideRoot() {
   const allDone = CHECK_ITEMS.every(item => checked.has(item.id));
 
   return (
-    <div className="min-h-full bg-[#f7f7f5] flex flex-col">
+    <div className="min-h-full bg-[#fbfbfa] flex flex-col relative overflow-y-auto">
+      {/* Premium background grid */}
+      <div className="absolute inset-0 opacity-[0.25] pointer-events-none bg-grid-pattern-20 z-0" />
 
-      {/* Top progress bar (slides phase) */}
+      {/* Top thin progress indicator bar (slides phase) */}
       {phase === 'slides' && (
-        <div className="h-1 bg-[#e5e5e0] w-full">
+        <div className="h-1 bg-[#e6e6e2] w-full z-10 shrink-0">
           <motion.div
             className="h-full bg-[#059669]"
             animate={{ width: `${progress}%` }}
@@ -219,57 +216,68 @@ export function GuideRoot() {
         </div>
       )}
 
-      <div className="flex-1 flex flex-col items-center justify-center px-4 py-8">
+      <div className="flex-1 flex flex-col items-center justify-center px-4 py-12 md:py-16 relative z-10">
         <AnimatePresence mode="wait" initial={false}>
 
           {phase === 'slides' && (
             <motion.div
               key={`slide-${slideIndex}`}
-              initial={{ opacity: 0, x: direction * 40 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: direction * -40 }}
-              transition={{ duration: 0.22, ease: [0.4, 0, 0.2, 1] }}
-              className="w-full max-w-2xl"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
+              transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+              className="w-full max-w-xl"
             >
-              {/* Slide card */}
-              <div className="bg-white rounded-3xl border border-[#e5e5e0] shadow-sm overflow-hidden">
-                {/* Header band */}
-                <div
-                  className="px-8 pt-8 pb-6 flex flex-col items-center text-center"
-                  style={{ background: `linear-gradient(135deg, ${slide.color}18 0%, ${slide.color}08 100%)` }}
-                >
-                  <div
-                    className="h-16 w-16 rounded-2xl flex items-center justify-center mb-4 shadow-sm"
-                    style={{ backgroundColor: slide.color }}
-                  >
-                    {slide.icon}
+              {/* Premium Minimalist Card */}
+              <div className="bg-white/85 backdrop-blur-md rounded-[32px] border border-[#e6e6e2] shadow-[0_24px_50px_-12px_rgba(38,37,30,0.06)] overflow-hidden flex flex-col">
+                
+                {/* Mascot Frame */}
+                <div className="pt-10 pb-4 flex flex-col items-center text-center">
+                  <div className="relative w-28 h-28 mx-auto flex items-center justify-center mb-4">
+                    {/* Pulsing ring */}
+                    <div className="absolute inset-0 rounded-full bg-[#059669]/5 animate-ping opacity-60" />
+                    {/* Dashed outer border */}
+                    <div className="absolute inset-0 rounded-full border border-[#e6e6e2] border-dashed" />
+                    {/* Mascot */}
+                    <div className="w-20 h-20 relative z-10">
+                      <MinervaOwl state={slide.mascotState} />
+                    </div>
                   </div>
-                  <h1 className="text-2xl font-bold text-[#26251e] mb-1">{slide.title}</h1>
-                  <p className="text-sm text-[#7a7a76] max-w-md">{slide.subtitle}</p>
+
+                  <h1 className="text-xl sm:text-2xl font-black tracking-tight text-[#26251e] px-6">
+                    {slide.title}
+                  </h1>
+                  <p className="text-xs sm:text-sm text-[#7a7a76] font-medium max-w-sm mt-1.5 px-6">
+                    {slide.subtitle}
+                  </p>
                 </div>
 
-                {/* Points */}
-                <div className="px-8 py-6 space-y-3">
+                {/* Points list */}
+                <div className="px-6 sm:px-8 py-4 space-y-3">
                   {slide.points.map((point, i) => (
                     <motion.div
                       key={i}
                       initial={{ opacity: 0, y: 8 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: i * 0.06 + 0.1 }}
-                      className="flex items-start gap-3 p-3 rounded-xl bg-[#f7f7f5]"
+                      transition={{ delay: i * 0.05 + 0.1 }}
+                      className="flex items-start gap-3 p-3.5 rounded-2xl bg-[#fafaf8] border border-[#f0f0ed] hover:border-[#059669]/20 hover:bg-[#059669]/[0.02] transition-all group"
                     >
-                      <span className="text-base shrink-0 mt-0.5">{point.icon}</span>
-                      <p className="text-sm text-[#26251e] leading-relaxed">{point.text}</p>
+                      <span className="text-base shrink-0 mt-0.5 group-hover:scale-110 transition-transform">
+                        {point.icon}
+                      </span>
+                      <p className="text-xs sm:text-sm text-[#26251e] leading-relaxed font-medium">
+                        {point.text}
+                      </p>
                     </motion.div>
                   ))}
                 </div>
 
                 {/* Optional CTA */}
                 {slide.cta && (
-                  <div className="px-8 pb-4">
+                  <div className="px-6 sm:px-8 pb-3 text-center">
                     <Link
                       href={slide.cta.href}
-                      className="flex items-center gap-1.5 text-xs font-semibold text-[#059669] hover:text-[#047857] transition-colors"
+                      className="inline-flex items-center gap-1.5 text-xs font-bold text-[#059669] hover:text-[#047857] transition-all bg-[#059669]/5 hover:bg-[#059669]/10 px-3 py-1.5 rounded-full"
                     >
                       {slide.cta.label}
                       <ArrowRight className="h-3.5 w-3.5" />
@@ -278,14 +286,18 @@ export function GuideRoot() {
                 )}
 
                 {/* Nav footer */}
-                <div className="px-8 py-5 border-t border-[#e5e5e0] flex items-center justify-between">
+                <div className="px-6 sm:px-8 py-5 border-t border-[#f0f0ed] flex items-center justify-between mt-4">
                   {/* Dots */}
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-2">
                     {SLIDES.map((_, i) => (
                       <button
                         key={i}
                         onClick={() => goToSlide(i)}
-                        className={`rounded-full transition-all ${i === slideIndex ? 'w-5 h-2 bg-[#059669]' : 'w-2 h-2 bg-[#e5e5e0] hover:bg-[#c5c5c0]'}`}
+                        className={`rounded-full transition-all duration-300 ${
+                          i === slideIndex
+                            ? 'w-5 h-2 bg-[#059669]'
+                            : 'w-2 h-2 bg-[#e6e6e2] hover:bg-[#c5c5c0]'
+                        }`}
                       />
                     ))}
                   </div>
@@ -295,7 +307,7 @@ export function GuideRoot() {
                     {slideIndex > 0 && (
                       <button
                         onClick={prevSlide}
-                        className="flex items-center gap-1 px-4 py-2 rounded-xl text-sm font-semibold text-[#7a7a76] hover:text-[#26251e] hover:bg-[#f0f0ed] transition-colors"
+                        className="flex items-center gap-1 px-3 py-2 rounded-xl text-xs font-bold text-[#7a7a76] hover:text-[#26251e] hover:bg-[#f0f0ed] transition-colors"
                       >
                         <ChevronLeft className="h-4 w-4" />
                         Précédent
@@ -303,23 +315,29 @@ export function GuideRoot() {
                     )}
                     <button
                       onClick={nextSlide}
-                      className="flex items-center gap-1.5 px-5 py-2 rounded-xl text-sm font-bold text-white transition-colors"
+                      className="flex items-center gap-1.5 px-4.5 py-2.5 rounded-xl text-xs font-bold text-white transition-all shadow-sm hover:shadow active:scale-95"
                       style={{ backgroundColor: '#059669' }}
                       onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#047857')}
                       onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#059669')}
                     >
                       {slideIndex < SLIDES.length - 1 ? (
-                        <>Suivant <ChevronRight className="h-4 w-4" /></>
+                        <>
+                          Suivant
+                          <ChevronRight className="h-4 w-4" />
+                        </>
                       ) : (
-                        <>Passer à l&apos;action <Zap className="h-4 w-4" /></>
+                        <>
+                          Passer à l&apos;action
+                          <Zap className="h-4 w-4 animate-pulse" />
+                        </>
                       )}
                     </button>
                   </div>
                 </div>
               </div>
 
-              <p className="text-center text-xs text-[#b0b0aa] mt-4">
-                {slideIndex + 1} / {SLIDES.length} — Tu peux naviguer librement entre les slides
+              <p className="text-center text-[10px] sm:text-xs text-[#b0b0aa] font-semibold mt-5">
+                Slide {slideIndex + 1} de {SLIDES.length}
               </p>
             </motion.div>
           )}
@@ -327,27 +345,32 @@ export function GuideRoot() {
           {phase === 'checklist' && (
             <motion.div
               key="checklist"
-              initial={{ opacity: 0, y: 24 }}
+              initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
-              className="w-full max-w-2xl"
+              className="w-full max-w-xl"
             >
               {/* Header */}
-              <div className="text-center mb-6">
-                <div className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-[#059669] mb-3 shadow-sm">
-                  <BookOpen className="h-7 w-7 text-white" />
+              <div className="text-center mb-8">
+                <div className="relative w-24 h-24 mx-auto flex items-center justify-center mb-3">
+                  <div className="absolute inset-0 rounded-full border border-[#059669]/15 border-dashed animate-spin-slow" />
+                  <div className="w-16 h-16">
+                    <MinervaOwl state={allDone ? 'success' : 'idle'} />
+                  </div>
                 </div>
-                <h1 className="text-2xl font-bold text-[#26251e]">À toi de jouer</h1>
-                <p className="text-sm text-[#7a7a76] mt-1">6 actions pour maîtriser Minerva et faire tes premiers euros.</p>
+                <h1 className="text-2xl font-black tracking-tight text-[#26251e]">À toi de jouer</h1>
+                <p className="text-xs sm:text-sm text-[#7a7a76] font-medium mt-1">
+                  6 actions simples pour configurer ton espace et démarrer.
+                </p>
               </div>
 
-              {/* Progress bar */}
-              <div className="mb-5">
-                <div className="flex items-center justify-between text-xs text-[#7a7a76] mb-1.5">
+              {/* Minimalist Progress track */}
+              <div className="mb-6 bg-white/70 backdrop-blur-md rounded-2xl border border-[#e6e6e2] p-4">
+                <div className="flex items-center justify-between text-xs font-bold text-[#26251e] mb-2">
                   <span>{checked.size} / {CHECK_ITEMS.length} complétées</span>
-                  <span>{Math.round((checked.size / CHECK_ITEMS.length) * 100)}%</span>
+                  <span className="text-[#059669]">{Math.round((checked.size / CHECK_ITEMS.length) * 100)}%</span>
                 </div>
-                <div className="h-2 rounded-full bg-[#e5e5e0] overflow-hidden">
+                <div className="h-1.5 rounded-full bg-[#f0f0ed] overflow-hidden">
                   <motion.div
                     className="h-full rounded-full bg-[#059669]"
                     animate={{ width: `${(checked.size / CHECK_ITEMS.length) * 100}%` }}
@@ -356,8 +379,8 @@ export function GuideRoot() {
                 </div>
               </div>
 
-              {/* Items */}
-              <div className="space-y-2 mb-6">
+              {/* Interactive Checklist list */}
+              <div className="space-y-2.5 mb-6">
                 {CHECK_ITEMS.map((item, i) => {
                   const done = checked.has(item.id);
                   return (
@@ -365,38 +388,49 @@ export function GuideRoot() {
                       key={item.id}
                       initial={{ opacity: 0, y: 8 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: i * 0.05 }}
-                      className={`flex items-center gap-3 p-4 rounded-2xl border transition-all ${done ? 'bg-[#f0faf6] border-[#059669]/30' : 'bg-white border-[#e5e5e0] hover:border-[#c5c5c0]'}`}
+                      transition={{ delay: i * 0.04 }}
+                      className={`flex items-center gap-3 p-4 rounded-2xl border transition-all ${
+                        done
+                          ? 'bg-[#f0faf6]/80 border-[#059669]/20 shadow-none'
+                          : 'bg-white/85 border-[#e6e6e2] hover:border-[#059669]/40 shadow-[0_4px_12px_rgba(38,37,30,0.01)] hover:shadow-[0_8px_20px_rgba(38,37,30,0.03)]'
+                      }`}
                     >
-                      {/* Check toggle */}
+                      {/* Check box toggle */}
                       <button
                         onClick={() => toggleCheck(item.id)}
-                        className="shrink-0 transition-transform hover:scale-110"
+                        className="shrink-0 transition-transform active:scale-95"
                       >
-                        {done
-                          ? <CheckCircle2 className="h-5 w-5 text-[#059669]" />
-                          : <Circle className="h-5 w-5 text-[#c5c5c0]" />
-                        }
+                        {done ? (
+                          <CheckCircle2 className="h-5 w-5 text-[#059669]" />
+                        ) : (
+                          <Circle className="h-5 w-5 text-[#c5c5c0] hover:text-[#059669] transition-colors" />
+                        )}
                       </button>
 
-                      {/* Content */}
+                      {/* Content details */}
                       <div className="flex-1 min-w-0">
-                        <p className={`text-sm font-semibold ${done ? 'line-through text-[#7a7a76]' : 'text-[#26251e]'}`}>
+                        <p
+                          className={`text-xs sm:text-sm font-bold transition-all ${
+                            done ? 'line-through text-[#807d72]' : 'text-[#26251e]'
+                          }`}
+                        >
                           {item.label}
                         </p>
-                        <p className="text-xs text-[#7a7a76] mt-0.5">{item.description}</p>
+                        <p className="text-[10px] sm:text-xs text-[#7a7a76] font-medium mt-0.5 truncate">
+                          {item.description}
+                        </p>
                       </div>
 
-                      {/* Time badge */}
-                      <span className="text-xs text-[#7a7a76] bg-[#f0f0ed] px-2 py-0.5 rounded-full font-medium shrink-0">
+                      {/* Time info */}
+                      <span className="text-[10px] text-[#7a7a76] bg-[#f0f0ed] px-2 py-0.5 rounded-full font-bold shrink-0">
                         {item.time}
                       </span>
 
-                      {/* Link */}
+                      {/* Navigate button */}
                       <Link
                         href={item.href}
-                        className="shrink-0 h-7 w-7 flex items-center justify-center rounded-lg bg-[#f0f0ed] hover:bg-[#059669] hover:text-white text-[#7a7a76] transition-colors"
-                        title={`Aller vers ${item.label}`}
+                        className="shrink-0 h-7 w-7 flex items-center justify-center rounded-lg bg-[#f0f0ed] hover:bg-[#059669] hover:text-white text-[#7a7a76] transition-all active:scale-95"
+                        title={`Accéder à : ${item.label}`}
                       >
                         <ArrowRight className="h-3.5 w-3.5" />
                       </Link>
@@ -405,11 +439,14 @@ export function GuideRoot() {
                 })}
               </div>
 
-              {/* Footer */}
+              {/* Controls Footer */}
               <div className="flex items-center justify-between">
                 <button
-                  onClick={() => { setPhase('slides'); setSlideIndex(4); }}
-                  className="text-xs text-[#7a7a76] hover:text-[#26251e] transition-colors flex items-center gap-1"
+                  onClick={() => {
+                    setPhase('slides');
+                    setSlideIndex(4);
+                  }}
+                  className="text-xs font-bold text-[#7a7a76] hover:text-[#26251e] transition-colors flex items-center gap-1"
                 >
                   <ChevronLeft className="h-3.5 w-3.5" />
                   Revoir les slides
@@ -417,10 +454,10 @@ export function GuideRoot() {
 
                 <button
                   onClick={finish}
-                  className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold text-white transition-all ${allDone ? 'shadow-md scale-105' : ''}`}
-                  style={{ backgroundColor: '#059669' }}
-                  onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#047857')}
-                  onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#059669')}
+                  className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-bold text-white transition-all shadow-sm ${
+                    allDone ? 'shadow-md scale-105 bg-[#059669]' : 'bg-[#26251e] hover:bg-neutral-800'
+                  }`}
+                  style={allDone ? { backgroundColor: '#059669' } : {}}
                 >
                   {allDone ? (
                     <>
@@ -429,7 +466,7 @@ export function GuideRoot() {
                     </>
                   ) : (
                     <>
-                      Accéder à l&apos;app
+                      Accéder au Dashboard
                       <ArrowRight className="h-4 w-4" />
                     </>
                   )}
@@ -440,9 +477,9 @@ export function GuideRoot() {
                 <motion.p
                   initial={{ opacity: 0, y: 4 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="text-center text-xs text-[#059669] font-semibold mt-3"
+                  className="text-center text-xs text-[#059669] font-bold mt-4"
                 >
-                  🎉 Tu es prêt(e) ! Bonne prospection.
+                  🎉 Félicitations ! Tu es fin prêt(e) pour prospecter.
                 </motion.p>
               )}
             </motion.div>
@@ -451,14 +488,14 @@ export function GuideRoot() {
         </AnimatePresence>
       </div>
 
-      {/* Skip link */}
+      {/* Slide skip action button */}
       {phase === 'slides' && (
-        <div className="pb-4 text-center">
+        <div className="pb-6 text-center relative z-10 shrink-0">
           <button
             onClick={() => setPhase('checklist')}
-            className="text-xs text-[#b0b0aa] hover:text-[#7a7a76] transition-colors"
+            className="text-xs font-bold text-[#b0b0aa] hover:text-[#7a7a76] transition-colors"
           >
-            Passer les slides →
+            Passer l&apos;introduction →
           </button>
         </div>
       )}

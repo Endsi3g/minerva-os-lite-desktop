@@ -9,9 +9,258 @@ import { cn } from '@/lib/utils';
 import {
   Clock, Check, Eye, GitMerge, AlertTriangle, Loader2, RefreshCw,
   Zap, Globe, Phone, Building2, ChevronRight, TrendingUp,
-  Users, DollarSign, Target, BarChart3, ArrowDown,
+  Users, DollarSign, Target, BarChart3, ArrowDown, Plus,
 } from 'lucide-react';
 import { getApiUrl } from '@/lib/api-helper';
+import { toast } from 'sonner';
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+
+// ─── Create Lead Form ─────────────────────────────────────────────────────────
+
+const COMMON_NICHES = [
+  'Restauration', 'Immobilier', 'Santé / Bien-être', 'Marketing digital',
+  'E-commerce', 'Construction / BTP', 'Éducation / Formation', 'Juridique',
+  'Finance / Comptabilité', 'Transport / Logistique', 'Tech / SaaS', 'Autre',
+];
+
+const LEAD_STATUSES: { value: Lead['status']; label: string }[] = [
+  { value: 'New', label: 'Nouveau' },
+  { value: 'Contacted', label: 'Contacté' },
+  { value: 'Meeting Booked', label: 'RDV planifié' },
+  { value: 'Proposal Sent', label: 'Proposition' },
+  { value: 'Won', label: 'Gagné' },
+  { value: 'Lost', label: 'Perdu' },
+];
+
+interface CreateLeadForm {
+  businessName: string;
+  contactName: string;
+  contactEmail: string;
+  phone: string;
+  city: string;
+  niche: string;
+  website: string;
+  status: Lead['status'];
+  score: number;
+  notes: string;
+}
+
+const DEFAULT_FORM: CreateLeadForm = {
+  businessName: '',
+  contactName: '',
+  contactEmail: '',
+  phone: '',
+  city: '',
+  niche: '',
+  website: '',
+  status: 'New',
+  score: 50,
+  notes: '',
+};
+
+function CreateLeadDialog({ open, onClose, onCreated }: { open: boolean; onClose: () => void; onCreated: () => void }) {
+  const { addLead } = useReach();
+  const [form, setForm] = useState<CreateLeadForm>(DEFAULT_FORM);
+  const [submitting, setSubmitting] = useState(false);
+
+  const set = (field: keyof CreateLeadForm, value: string | number) =>
+    setForm(prev => ({ ...prev, [field]: value }));
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.businessName.trim()) return;
+    setSubmitting(true);
+    try {
+      await (addLead as (data: Parameters<typeof addLead>[0]) => Promise<void>)({
+        businessName: form.businessName.trim(),
+        contactName: form.contactName.trim(),
+        contactEmail: form.contactEmail.trim() || undefined,
+        phone: form.phone.trim() || undefined,
+        city: form.city.trim(),
+        niche: form.niche.trim(),
+        website: form.website.trim() || undefined,
+        status: form.status,
+        temperature: 'Warm',
+        source: 'manual',
+        nextAction: '',
+        nextActionDate: '',
+        notes: form.notes.trim() || undefined,
+        score: form.score,
+      });
+      toast.success('Lead créé !');
+      setForm(DEFAULT_FORM);
+      onCreated();
+      onClose();
+    } catch {
+      toast.error('Erreur lors de la création du lead.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={v => { if (!v) onClose(); }}>
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="text-sm font-bold text-[#26251e]">Créer un lead manuellement</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4 pt-2">
+          {/* Business name (required) */}
+          <div className="space-y-1">
+            <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">
+              Nom de l'entreprise <span className="text-red-500">*</span>
+            </label>
+            <Input
+              required
+              value={form.businessName}
+              onChange={e => set('businessName', e.target.value)}
+              placeholder="Ex : Boulangerie Martin"
+              className="h-9 text-xs"
+            />
+          </div>
+
+          {/* Contact name */}
+          <div className="space-y-1">
+            <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Nom du contact</label>
+            <Input
+              value={form.contactName}
+              onChange={e => set('contactName', e.target.value)}
+              placeholder="Ex : Jean Martin"
+              className="h-9 text-xs"
+            />
+          </div>
+
+          {/* Email + Phone row */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Email</label>
+              <Input
+                type="email"
+                value={form.contactEmail}
+                onChange={e => set('contactEmail', e.target.value)}
+                placeholder="email@exemple.com"
+                className="h-9 text-xs"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Téléphone</label>
+              <Input
+                type="tel"
+                value={form.phone}
+                onChange={e => set('phone', e.target.value)}
+                placeholder="+1 514 000 0000"
+                className="h-9 text-xs"
+              />
+            </div>
+          </div>
+
+          {/* City + Niche row */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Ville</label>
+              <Input
+                value={form.city}
+                onChange={e => set('city', e.target.value)}
+                placeholder="Ex : Montréal"
+                className="h-9 text-xs"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Secteur / Niche</label>
+              <Select value={form.niche} onValueChange={v => set('niche', v)}>
+                <SelectTrigger className="h-9 text-xs">
+                  <SelectValue placeholder="Choisir…" />
+                </SelectTrigger>
+                <SelectContent>
+                  {COMMON_NICHES.map(n => (
+                    <SelectItem key={n} value={n} className="text-xs">{n}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Website */}
+          <div className="space-y-1">
+            <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Site web</label>
+            <Input
+              type="url"
+              value={form.website}
+              onChange={e => set('website', e.target.value)}
+              placeholder="https://exemple.com"
+              className="h-9 text-xs"
+            />
+          </div>
+
+          {/* Status + Score row */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Statut</label>
+              <Select value={form.status} onValueChange={v => set('status', v as Lead['status'])}>
+                <SelectTrigger className="h-9 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {LEAD_STATUSES.map(s => (
+                    <SelectItem key={s.value} value={s.value} className="text-xs">{s.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">
+                Score <span className="text-[#7a7a76] font-normal normal-case tracking-normal">(0–100)</span>
+              </label>
+              <Input
+                type="number"
+                min={0}
+                max={100}
+                value={form.score}
+                onChange={e => set('score', Math.min(100, Math.max(0, parseInt(e.target.value) || 0)))}
+                className="h-9 text-xs"
+              />
+            </div>
+          </div>
+
+          {/* Notes */}
+          <div className="space-y-1">
+            <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Notes (optionnel)</label>
+            <Textarea
+              value={form.notes}
+              onChange={e => set('notes', e.target.value)}
+              placeholder="Contexte, source, informations utiles…"
+              rows={3}
+              className="text-xs resize-none"
+            />
+          </div>
+
+          {/* Actions */}
+          <div className="flex justify-end gap-2 pt-1">
+            <Button type="button" variant="ghost" onClick={onClose} className="h-8 text-xs">
+              Annuler
+            </Button>
+            <Button
+              type="submit"
+              disabled={submitting || !form.businessName.trim()}
+              className="h-8 text-xs font-bold bg-[#059669] hover:bg-[#047857] text-white"
+            >
+              {submitting ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Plus className="h-3.5 w-3.5 mr-1" />}
+              Créer le lead
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 // ─── SLA Helper ──────────────────────────────────────────────────────────────
 
@@ -808,6 +1057,7 @@ export default function AcquisitionRoot() {
   const [acqTab, setAcqTab] = useState<AcqTab>('dashboard');
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>('all');
   const [sortMode, setSortMode] = useState<SortMode>('recent');
+  const [createOpen, setCreateOpen] = useState(false);
 
   const now = Date.now();
   const stats = useMemo(() => {
@@ -914,6 +1164,18 @@ export default function AcquisitionRoot() {
         {/* ── Tab: Dashboard ── */}
         {acqTab === 'dashboard' && (
           <div className="space-y-5">
+            {/* Dashboard sub-header with create button */}
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-bold text-[#7a7a76] uppercase tracking-wider">Tableau de bord</p>
+              <button
+                type="button"
+                onClick={() => setCreateOpen(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#059669] hover:bg-[#047857] text-white text-xs font-bold transition-colors"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Créer un lead
+              </button>
+            </div>
             {/* Stat cards */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               <StatCard label="Total leads" value={stats.total} />
@@ -1048,6 +1310,13 @@ export default function AcquisitionRoot() {
         {/* ── Tab: Goals ── */}
         {acqTab === 'goals' && <GoalsTab leads={leads} />}
       </div>
+
+      {/* Create Lead Dialog */}
+      <CreateLeadDialog
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        onCreated={() => {}}
+      />
     </div>
   );
 }

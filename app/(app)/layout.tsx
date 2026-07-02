@@ -931,8 +931,9 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
           {!isCollapsed && (
             <div className="px-3 space-y-1">
               {filteredNavCategories.map((cat) => {
-                const isCatCollapsed = collapsedCategories[cat.id] ?? true;
                 const hasCatActive = cat.items.some(item => pathname.startsWith(item.href));
+                // Auto-expand the category that contains the active page
+                const isCatCollapsed = hasCatActive ? false : (collapsedCategories[cat.id] ?? true);
                 return (
                   <div key={cat.id} className="space-y-[2px]">
                     <button
@@ -945,7 +946,16 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                       <span>{cat.label}</span>
                       <ChevronDown className={cn("h-3 w-3 transition-transform duration-200", isCatCollapsed && "-rotate-90")} />
                     </button>
+                    <AnimatePresence initial={false}>
                     {!isCatCollapsed && (
+                      <motion.div
+                        key="cat-items"
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.18, ease: [0.4, 0, 0.2, 1] }}
+                        className="overflow-hidden"
+                      >
                       <div className="space-y-[2px]">
                         {cat.items.map((item) => {
                           const isActive = pathname.startsWith(item.href);
@@ -971,7 +981,9 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                           );
                         })}
                       </div>
+                      </motion.div>
                     )}
+                    </AnimatePresence>
                   </div>
                 );
               })}

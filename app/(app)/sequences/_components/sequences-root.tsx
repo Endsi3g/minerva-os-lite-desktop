@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useReach } from '@/lib/reach-context';
+import { OutreachNavBar } from '@/components/outreach-nav-bar';
 import { getApiUrl } from '@/lib/api-helper';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -191,7 +192,9 @@ export function SequencesRoot() {
   const totalCount = (seq: Sequence) => seq.email_sequence_steps.length;
 
   return (
-    <div className="h-full overflow-y-auto bg-[#fafaf8] relative">
+    <div className="flex flex-col h-full overflow-hidden">
+      <OutreachNavBar />
+      <div className="flex-1 overflow-y-auto bg-[#fafaf8] relative">
       <div className="absolute inset-0 opacity-[0.25] pointer-events-none bg-grid-pattern-20 z-0" />
       <div className="relative z-10 w-full p-3 sm:p-4 md:p-8 space-y-6">
         {/* Header */}
@@ -511,6 +514,7 @@ export function SequencesRoot() {
           </div>
         </div>
       )}
+    </div>
     </div>
   );
 }

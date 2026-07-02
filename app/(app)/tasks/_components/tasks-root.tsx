@@ -38,9 +38,13 @@ import {
   Trash2,
   AlertCircle,
   ChevronDown,
+  Mic,
+  MicOff,
+  Loader2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, isToday, parseISO } from 'date-fns';
+import { toast } from 'sonner';
 
 type FilterType = 'all' | 'today' | 'pending' | 'done';
 type ViewType = 'list' | 'calendar';
@@ -148,6 +152,118 @@ export default function TasksRoot() {
   const [filter, setFilter] = useState<FilterType>('all');
   const [categoryFilter, setCategoryFilter] = useState<CategoryType>('All');
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+
+  // Voice recognition and recording state
+  const [isRecording, setIsRecording] = useState(false);
+  const [isProcessingVoice, setIsProcessingVoice] = useState(false);
+  const recognitionRef = React.useRef<any>(null);
+
+  const startRecording = () => {
+    if (typeof window === 'undefined') return;
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      toast.error("La dictée vocale n'est pas supportée par votre navigateur.");
+      return;
+    }
+
+    try {
+      const rec = new SpeechRecognition();
+      rec.lang = 'fr-FR';
+      rec.interimResults = false;
+      rec.maxAlternatives = 1;
+
+      rec.onstart = () => {
+        setIsRecording(true);
+      };
+
+      rec.onresult = async (event: any) => {
+        const text = event.results[0][0].transcript;
+        if (text?.trim()) {
+          setIsProcessingVoice(true);
+          toast.promise(processVoiceTask(text), {
+            loading: "Analyse de la dictée par l'IA...",
+            success: (task) => `Tâche créée : "${task.title}" (${CATEGORY_LABELS[task.category as Task['category']] || task.category})`,
+            error: (err) => `Erreur lors de la création : ${err.message}`
+          });
+        }
+      };
+
+      rec.onerror = (e: any) => {
+        console.error("Speech recognition error:", e);
+        setIsRecording(false);
+        if (e.error === 'not-allowed') {
+          toast.error("Accès au microphone refusé.");
+        } else {
+          toast.error(`Erreur de dictée: ${e.error}`);
+        }
+      };
+
+      rec.onend = () => {
+        setIsRecording(false);
+      };
+
+      recognitionRef.current = rec;
+      rec.start();
+    } catch (err) {
+      console.error(err);
+      setIsRecording(false);
+    }
+  };
+
+  const stopRecording = () => {
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+    }
+  };
+
+  const processVoiceTask = async (text: string) => {
+    try {
+      const todayStr = new Date().toISOString().split('T')[0];
+      const systemPrompt = `Tu es un assistant qui extrait des tâches de prospection à partir d'une dictée vocale.
+Aujourd'hui nous sommes le ${todayStr}.
+Analyse la transcription audio fournie par l'utilisateur et renvoie UNIQUEMENT un objet JSON valide avec les clés suivantes :
+- "title": Titre clair et court de la tâche (ex: "Appeler Jean de la Boulangerie")
+- "dueDate": Date d'échéance au format YYYY-MM-DD (ex: s'il dit "demain", calcule la date. Si aucune date n'est spécifiée, renvoie null)
+- "category": Une des catégories suivantes uniquement : "General", "Follow-up", "Preparation", "Meeting" (si l'utilisateur dit "rdv" ou "rencontre", choisis "Meeting". S'il dit "relance" ou "appeler", choisis "Follow-up")
+
+Règle absolue : Réponds UNIQUEMENT avec l'objet JSON. Pas de blabla, pas de markdown, pas de balises.`;
+
+      const res = await fetch('/api/ai/gateway/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: [{ role: 'user', content: text }],
+          system: systemPrompt,
+          max_tokens: 256
+        })
+      });
+
+      if (!res.ok) throw new Error("Erreur serveur API");
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+
+      let taskObj;
+      try {
+        const cleanJson = data.content.trim().replace(/^```json/, '').replace(/```$/, '').trim();
+        taskObj = JSON.parse(cleanJson);
+      } catch {
+        taskObj = {
+          title: text,
+          dueDate: null,
+          category: 'General'
+        };
+      }
+
+      if (!taskObj.title) {
+        taskObj.title = text;
+      }
+
+      addTask(taskObj.title, taskObj.category || 'General', taskObj.dueDate || undefined);
+      return taskObj;
+    } finally {
+      setIsProcessingVoice(false);
+    }
+  };
 
   // Add task form state
   const [newTitle, setNewTitle] = useState('');
@@ -257,13 +373,35 @@ export default function TasksRoot() {
 
         {/* Add task form */}
         <div className="flex flex-col sm:flex-row gap-2 p-3 rounded-xl border border-border bg-card/40">
-          <Input
-            placeholder={t('tasks.new_task_placeholder')}
-            value={newTitle}
-            onChange={e => setNewTitle(e.target.value)}
-            onKeyDown={handleKeyDown}
-            className="h-8 text-sm flex-1"
-          />
+          <div className="relative flex-1 flex items-center">
+            <Input
+              placeholder={t('tasks.new_task_placeholder')}
+              value={newTitle}
+              onChange={e => setNewTitle(e.target.value)}
+              onKeyDown={handleKeyDown}
+              className="h-8 text-sm pr-9 flex-1"
+            />
+            {/* Pulsing Dictaphone Mic Button */}
+            <button
+              onClick={isRecording ? stopRecording : startRecording}
+              disabled={isProcessingVoice}
+              className={cn(
+                "absolute right-2 p-1.5 rounded-full transition-all duration-300",
+                isRecording 
+                  ? "bg-red-500 hover:bg-red-600 text-white animate-pulse" 
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted"
+              )}
+              title="Dicter une tâche avec l'IA"
+            >
+              {isProcessingVoice ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : isRecording ? (
+                <MicOff className="w-3.5 h-3.5" />
+              ) : (
+                <Mic className="w-3.5 h-3.5" />
+              )}
+            </button>
+          </div>
           <Select value={newCategory} onValueChange={v => setNewCategory(v as Task['category'])}>
             <SelectTrigger className="h-8 w-36 text-xs">
               <SelectValue />

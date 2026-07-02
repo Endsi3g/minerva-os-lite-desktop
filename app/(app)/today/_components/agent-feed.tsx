@@ -181,6 +181,8 @@ export function AgentFeed() {
   const [items, setItems] = useState<FeedItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [runningLoop, setRunningLoop] = useState(false);
+  const [loopError, setLoopError] = useState<string | null>(null);
+  const [tableMissing, setTableMissing] = useState(false);
   const [filter, setFilter] = useState<'all' | 'agent' | 'notif'>('all');
 
   const load = useCallback(async () => {
@@ -190,7 +192,7 @@ export function AgentFeed() {
 
     const workspaceId = localStorage.getItem('minerva_active_workspace_id');
 
-    const [{ data: notifs }, { data: actions }] = await Promise.all([
+    const [{ data: notifs }, actionsResult] = await Promise.all([
       supabase
         .from('notifications')
         .select('id, type, title, body, link, created_at')
@@ -204,8 +206,13 @@ export function AgentFeed() {
             .eq('workspace_id', workspaceId)
             .order('created_at', { ascending: false })
             .limit(15)
-        : Promise.resolve({ data: [] }),
+        : Promise.resolve({ data: [], error: null }),
     ]);
+    // Detect missing table (migration not run yet)
+    if ((actionsResult as any).error?.code === '42P01') {
+      setTableMissing(true);
+    }
+    const { data: actions } = actionsResult;
 
     const notifItems: NotifItem[] = (notifs ?? []).map((n: any) => ({ kind: 'notif' as const, ...n }));
     const actionItems: AgentActionItem[] = (actions ?? []).map((a: any) => ({
@@ -248,9 +255,16 @@ export function AgentFeed() {
 
   const handleRunLoop = async () => {
     setRunningLoop(true);
+    setLoopError(null);
     try {
-      await fetch(getApiUrl('/api/agent/loop'), { method: 'POST' });
+      const res = await fetch(getApiUrl('/api/agent/loop'), { method: 'POST' });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: 'Erreur réseau' }));
+        setLoopError(err.error || 'Erreur lors du cycle agent');
+      }
       await load();
+    } catch {
+      setLoopError('Impossible de joindre l\'agent. Vérifiez votre connexion.');
     } finally {
       setRunningLoop(false);
     }
@@ -330,11 +344,27 @@ export function AgentFeed() {
         </div>
       )}
 
+      {/* Migration warning */}
+      {tableMissing && (
+        <div className="mx-4 mt-3 p-3 rounded-xl bg-amber-50 border border-amber-200 text-[10px] text-amber-800">
+          <p className="font-bold mb-0.5">⚠️ Migration requise</p>
+          <p>La table <code>agent_actions</code> n'existe pas encore. Exécutez <code>supabase_migration_v10_ensure_agent_tables.sql</code> dans votre projet Supabase pour activer l'agent.</p>
+        </div>
+      )}
+
+      {/* Loop error */}
+      {loopError && (
+        <div className="mx-4 mt-2 p-2.5 rounded-xl bg-red-50 border border-red-200 text-[10px] text-red-700 font-medium">
+          {loopError}
+        </div>
+      )}
+
       {/* Items */}
       {filtered.length === 0 ? (
         <div className="px-4 py-8 text-center">
           <Bot className="h-6 w-6 text-[#e5e5e0] mx-auto mb-2" />
           <p className="text-xs text-[#7a7a76]">Aucune activité récente.</p>
+          <p className="text-[10px] text-[#7a7a76] mt-1">L'agent analyse votre pipeline et propose des actions. Configurez son autonomie dans Paramètres → Agent.</p>
           <button
             onClick={handleRunLoop}
             disabled={runningLoop}

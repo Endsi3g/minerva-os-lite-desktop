@@ -17,6 +17,7 @@ import { StrategyMemoryCard } from './strategy-memory-card';
 import { WeeklyReportCard } from './weekly-report-card';
 import { SlaCard } from './sla-card';
 import { AgentJournal } from './agent-journal';
+import { MinervaOwl } from '@/components/minerva-owl';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -81,14 +82,14 @@ function StatCard({ label, value, sub, icon: Icon, accent = '#059669' }: {
   label: string; value: string | number; sub?: string; icon: React.ElementType; accent?: string;
 }) {
   return (
-    <div className="bg-white border border-[#e5e5e0] rounded-xl p-4 flex flex-col gap-3">
-      <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: `${accent}15` }}>
-        <Icon className="h-4 w-4" style={{ color: accent }} />
+    <div className="bg-white/80 backdrop-blur-md border border-[#e6e6e2] rounded-2xl p-5 flex flex-col gap-3.5 shadow-[0_4px_12px_rgba(38,37,30,0.01)] hover:shadow-[0_8px_20px_rgba(38,37,30,0.03)] transition-all">
+      <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: `${accent}12` }}>
+        <Icon className="h-4.5 w-4.5" style={{ color: accent }} />
       </div>
       <div>
-        <p className="text-[28px] font-black text-[#26251e] leading-none tracking-tight">{value}</p>
-        <p className="text-[10px] font-bold text-[#7a7a76] mt-1.5 uppercase tracking-wider">{label}</p>
-        {sub && <p className="text-[10px] text-[#a3a197] mt-0.5">{sub}</p>}
+        <p className="text-3xl font-black text-[#26251e] leading-none tracking-tight">{value}</p>
+        <p className="text-[10px] font-bold text-[#7a7a76] mt-2 uppercase tracking-wider">{label}</p>
+        {sub && <p className="text-[10px] text-[#807d72] mt-1 font-medium">{sub}</p>}
       </div>
     </div>
   );
@@ -122,7 +123,7 @@ function ChannelBadge({ channel }: { channel: string | null }) {
 
 function BucketCard({ children }: { children: React.ReactNode }) {
   return (
-    <div className="rounded-xl border border-[#e5e5e0] bg-white p-3 flex flex-col gap-2 min-h-[120px]">
+    <div className="rounded-2xl border border-[#e6e6e2] bg-white p-4.5 flex flex-col gap-3 min-h-[140px] shadow-[0_4px_12px_rgba(38,37,30,0.01)] hover:shadow-[0_8px_20px_rgba(38,37,30,0.03)] transition-all">
       {children}
     </div>
   );
@@ -357,26 +358,32 @@ export function CockpitRoot() {
   // ── Render ──
   return (
     <ErrorBoundary>
-      <div className="flex flex-col h-full bg-[#fafaf8] overflow-hidden">
+      <div className="flex flex-col h-full bg-[#fafaf8] overflow-hidden relative">
+        {/* Background Grid */}
+        <div className="absolute inset-0 opacity-[0.22] pointer-events-none bg-grid-pattern-20 z-0" />
 
         {/* ── Sticky Header ── */}
-        <div className="sticky top-0 z-10 bg-[#fafaf8] border-b border-[#e5e5e0] shrink-0">
-          <div className="flex items-center justify-between gap-3 px-4 sm:px-6 py-3">
-            <div className="flex items-center gap-2.5">
-              <Gauge className="h-5 w-5 text-[#059669] shrink-0" />
-              <span className="text-lg font-black text-[#26251e] leading-none">Revenue OS</span>
-              <span className="hidden sm:inline text-[10px] font-bold text-[#7a7a76] bg-[#e5e5e0] rounded px-1.5 py-0.5">v8.6</span>
+        <div className="sticky top-0 z-10 bg-[#fafaf8]/80 backdrop-blur-md border-b border-[#e6e6e2] shrink-0 relative">
+          <div className="flex items-center justify-between gap-3 px-4 sm:px-6 py-3.5">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 relative">
+                <MinervaOwl state="analyse" />
+              </div>
+              <div>
+                <span className="text-lg font-black text-[#26251e] leading-none block">Revenue OS</span>
+                <span className="text-[10px] text-[#7a7a76] font-bold">Pilotage & Optimisation B2B</span>
+              </div>
             </div>
             <div className="flex items-center gap-2 shrink-0">
               {tab === 'operations' && (
                 <>
                   <select value={selectedNiche} onChange={(e) => setSelectedNiche(e.target.value)}
-                    className="text-xs border border-[#e5e5e0] rounded-lg px-2.5 py-1.5 bg-white text-[#26251e] focus:outline-none focus:ring-1 focus:ring-[#059669]">
+                    className="text-xs border border-[#e6e6e2] rounded-lg px-2.5 py-1.5 bg-white text-[#26251e] focus:outline-none focus:ring-1 focus:ring-[#059669]">
                     <option value="">Toutes niches</option>
                     {niches.map((n) => <option key={n} value={n}>{n}</option>)}
                   </select>
                   <select value={selectedChannel} onChange={(e) => setSelectedChannel(e.target.value)}
-                    className="text-xs border border-[#e5e5e0] rounded-lg px-2.5 py-1.5 bg-white text-[#26251e] focus:outline-none focus:ring-1 focus:ring-[#059669]">
+                    className="text-xs border border-[#e6e6e2] rounded-lg px-2.5 py-1.5 bg-white text-[#26251e] focus:outline-none focus:ring-1 focus:ring-[#059669]">
                     <option value="">Tous canaux</option>
                     <option value="email">Email</option>
                     <option value="call">Appel</option>
@@ -385,7 +392,7 @@ export function CockpitRoot() {
                 </>
               )}
               <button onClick={handleRefresh} disabled={refreshing}
-                className="flex items-center gap-1.5 rounded-lg bg-[#059669] hover:bg-[#047857] disabled:opacity-60 px-3 py-1.5 text-xs font-bold text-white transition-colors">
+                className="flex items-center gap-1.5 rounded-lg bg-[#059669] hover:bg-[#047857] disabled:opacity-60 px-3 py-1.5 text-xs font-bold text-white transition-all hover:scale-[1.02] active:scale-[0.98] shadow-sm">
                 {refreshing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
                 <span className="hidden sm:inline">Actualiser</span>
               </button>
@@ -393,13 +400,13 @@ export function CockpitRoot() {
           </div>
 
           {/* ── Tabs ── */}
-          <div className="flex border-b border-[#e5e5e0] px-4 sm:px-6">
+          <div className="flex border-b border-[#e6e6e2] px-4 sm:px-6">
             {([
               { id: 'operations', label: 'Opérations', icon: Gauge },
               { id: 'pilotage', label: 'Pilotage stratégique', icon: BarChart3 },
             ] as { id: Tab; label: string; icon: React.ElementType }[]).map(({ id, label, icon: Icon }) => (
               <button key={id} onClick={() => setTab(id)}
-                className={cn('flex items-center gap-1.5 px-4 py-2.5 text-xs font-bold border-b-2 transition-colors',
+                className={cn('flex items-center gap-1.5 px-4 py-3 text-xs font-bold border-b-2 transition-all mr-1',
                   tab === id ? 'border-[#059669] text-[#059669]' : 'border-transparent text-[#7a7a76] hover:text-[#26251e]')}>
                 <Icon className="h-3.5 w-3.5" />
                 {label}
@@ -410,7 +417,7 @@ export function CockpitRoot() {
 
         {/* ── Tab: Opérations ── */}
         {tab === 'operations' && (
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto relative z-10">
             <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-5 p-4 sm:p-6">
 
               {/* Left */}
@@ -648,7 +655,7 @@ export function CockpitRoot() {
 
         {/* ── Tab: Pilotage stratégique ── */}
         {tab === 'pilotage' && (
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto relative z-10">
             <div className="max-w-5xl mx-auto flex flex-col gap-6 p-4 sm:p-6">
 
               {/* KPI row */}
@@ -660,7 +667,7 @@ export function CockpitRoot() {
               </div>
 
               {/* Séquences performantes */}
-              <div className="bg-white border border-[#e5e5e0] rounded-xl p-4">
+              <div className="bg-white/80 backdrop-blur-md border border-[#e6e6e2] rounded-2xl p-5 shadow-sm">
                 <div className="flex items-center gap-2 mb-4">
                   <BarChart3 className="h-4 w-4 text-[#059669]" />
                   <h2 className="text-xs font-bold text-[#26251e] uppercase tracking-wider">Séquences performantes</h2>
@@ -685,34 +692,34 @@ export function CockpitRoot() {
               </div>
 
               {/* Signaux d'alerte */}
-              <div className="bg-white border border-[#e5e5e0] rounded-xl p-4">
+              <div className="bg-white/80 backdrop-blur-md border border-[#e6e6e2] rounded-2xl p-5 shadow-sm">
                 <div className="flex items-center gap-2 mb-4">
                   <AlertTriangle className="h-4 w-4 text-[#059669]" />
                   <h2 className="text-xs font-bold text-[#26251e] uppercase tracking-wider">Signaux d&apos;alerte</h2>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <div className="rounded-lg border border-[#e5e5e0] p-3 flex flex-col gap-2">
-                    <p className="text-xs font-semibold text-[#26251e]">Taux de réponse par niche</p>
+                  <div className="rounded-xl border border-[#e6e6e2] p-4 flex flex-col gap-2 bg-white/50">
+                    <p className="text-xs font-bold text-[#26251e]">Taux de réponse par niche</p>
                     <p className="text-[10px] text-[#7a7a76]">Analyse les performances par secteur</p>
                     <button onClick={handleAnalyzeInsights} className="mt-auto flex items-center gap-1 text-[11px] font-bold text-[#059669] hover:text-[#047857] transition-colors">
                       Analyser <ArrowRight className="h-3 w-3" />
                     </button>
                   </div>
-                  <div className="rounded-lg border border-[#e5e5e0] p-3 flex flex-col gap-2">
-                    <p className="text-xs font-semibold text-[#26251e]">Leads ouverts sans réponse</p>
-                    <p className="text-[28px] font-black text-[#26251e] leading-none">{openNoReply}</p>
+                  <div className="rounded-xl border border-[#e6e6e2] p-4 flex flex-col gap-2 bg-white/50">
+                    <p className="text-xs font-bold text-[#26251e]">Leads ouverts sans réponse</p>
+                    <p className="text-3xl font-black text-[#26251e] leading-none">{openNoReply}</p>
                     <p className="text-[10px] text-[#7a7a76]">3+ ouvertures sans reply détecté</p>
                   </div>
-                  <div className="rounded-lg border border-[#e5e5e0] p-3 flex flex-col gap-2">
-                    <p className="text-xs font-semibold text-[#26251e]">Stagnation pipeline</p>
-                    <p className="text-[28px] font-black text-[#26251e] leading-none">{stagnantLeads}</p>
+                  <div className="rounded-xl border border-[#e6e6e2] p-4 flex flex-col gap-2 bg-white/50">
+                    <p className="text-xs font-bold text-[#26251e]">Stagnation pipeline</p>
+                    <p className="text-3xl font-black text-[#26251e] leading-none">{stagnantLeads}</p>
                     <p className="text-[10px] text-[#7a7a76]">Leads non mis à jour depuis 7j+</p>
                   </div>
                 </div>
               </div>
 
               {/* NBA actions en attente */}
-              <div className="bg-white border border-[#e5e5e0] rounded-xl p-4">
+              <div className="bg-white/80 backdrop-blur-md border border-[#e6e6e2] rounded-2xl p-5 shadow-sm">
                 <div className="flex items-center gap-2 mb-4">
                   <Zap className="h-4 w-4 text-[#059669]" />
                   <h2 className="text-xs font-bold text-[#26251e] uppercase tracking-wider">Actions NBA en attente</h2>

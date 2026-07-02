@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminClient } from '@/lib/supabase/admin';
+import { sendEmail } from '@/lib/email-service';
+import { emailWeeklyDigest } from '@/lib/email-templates';
 
 export const runtime = 'nodejs';
 
@@ -41,6 +43,37 @@ export async function GET(req: NextRequest) {
         link: '/cockpit',
         is_read: false,
       });
+
+      // Send weekly digest email if the user has an email address
+      // (fetch user email from auth via service role)
+      try {
+        const { data: authUser } = await admin.auth.admin.getUserById(s.user_id);
+        const userEmail = authUser?.user?.email;
+        if (userEmail) {
+          const weekNumber = Math.ceil(
+            (new Date().getTime() - new Date(new Date().getFullYear(), 0, 1).getTime()) /
+              (7 * 24 * 60 * 60 * 1000),
+          );
+          const digestHtml = emailWeeklyDigest({
+            recipientName: s.full_name ?? '',
+            stats: {
+              newLeads: data.metrics?.newLeadsThisWeek ?? 0,
+              contacted: data.metrics?.bookingsThisWeek ?? 0,
+              won: data.metrics?.positiveRepliesThisWeek ?? 0,
+              revenue: 0,
+            },
+            weekNumber,
+          });
+          await sendEmail({
+            to: userEmail,
+            subject: `Votre rapport de la semaine — Minerva`,
+            html: digestHtml,
+          });
+        }
+      } catch (emailErr) {
+        // Non-fatal — in-app notification already inserted above
+        console.warn('[weekly-report] Failed to send digest email:', emailErr);
+      }
 
       processed++;
     } catch { continue; }

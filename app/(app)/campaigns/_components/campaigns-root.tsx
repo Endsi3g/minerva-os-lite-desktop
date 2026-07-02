@@ -3,6 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { useReach, type Campaign } from '@/lib/reach-context';
+import { OutreachNavBar } from '@/components/outreach-nav-bar';
 import { Megaphone, Plus, Play, Pause, CheckCircle2, FileEdit, Trash2, Calendar, MapPin, Tag } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -34,7 +35,9 @@ export function CampaignsRoot() {
   };
 
   return (
-    <div className="h-full overflow-y-auto bg-[#fafaf8] relative">
+    <div className="flex flex-col h-full overflow-hidden">
+      <OutreachNavBar />
+      <div className="flex-1 overflow-y-auto bg-[#fafaf8] relative">
       <div className="absolute inset-0 opacity-[0.25] pointer-events-none bg-grid-pattern-20 z-0" />
       <div className="relative z-10 w-full p-3 sm:p-4 md:p-6 space-y-6">
         {/* Header */}
@@ -152,6 +155,7 @@ export function CampaignsRoot() {
             );
           })}
         </div>
+      </div>
       </div>
     </div>
   );

@@ -148,6 +148,7 @@ interface ReachContextType {
     latitude?: number;
     longitude?: number;
     phone?: string;
+    score?: number;
   }) => void;
   toggleTask: (id: string) => void;
   addTask: (title: string, category: Task['category'], dueDate?: string) => void;
@@ -1260,6 +1261,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
     latitude?: number;
     longitude?: number;
     phone?: string;
+    score?: number;
   }) => {
     if (!user || !activeWorkspace) return;
     const electronObj = typeof window !== 'undefined' && (window as any).electron ? (window as any).electron : null;
@@ -1269,7 +1271,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
         const leadId = crypto.randomUUID();
         const nowStr = new Date().toISOString();
 
-        const leadScore = computeLeadScore({
+        const leadScore = leadData.score ?? computeLeadScore({
           notes: leadData.notes ? [{ id: '', leadId: leadId, type: 'general', content: leadData.notes, createdAt: nowStr }] : [],
           source: leadData.source
         });
@@ -1362,6 +1364,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
       latitude: leadData.latitude ?? null,
       longitude: leadData.longitude ?? null,
       phone: leadData.phone || null,
+      ...(leadData.score !== undefined ? { score: leadData.score } : {}),
     };
 
     try {

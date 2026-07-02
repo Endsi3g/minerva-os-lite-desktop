@@ -43,8 +43,24 @@ const STATUS_LABELS: Record<string, string> = {
   Lost: 'Perdu',
 };
 
-// OpenFreeMap — free, no API key, CORS-open, replaces Carto (blocked on Vercel)
-const MAP_STYLE = 'https://tiles.openfreemap.org/styles/liberty';
+// CartoDB Positron (Light) raster tiles — works everywhere, no API key, extremely premium and clean
+const MAP_STYLE: maplibregl.StyleSpecification = {
+  version: 8,
+  sources: {
+    carto: {
+      type: 'raster',
+      tiles: [
+        'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+        'https://b.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+        'https://c.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+        'https://d.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png'
+      ],
+      tileSize: 256,
+      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> © <a href="https://carto.com/attributions">CARTO</a>',
+    },
+  },
+  layers: [{ id: 'carto', type: 'raster', source: 'carto' }],
+};
 
 // City-level fallback coordinates (Québec)
 const CITY_COORDS: Record<string, [number, number]> = {
@@ -70,7 +86,7 @@ function resolveCoords(lead: Lead): [number, number] | null {
   const key = (lead.city || '').toLowerCase().trim();
   const c = CITY_COORDS[key];
   if (c) return [applyJitter(c[0]), applyJitter(c[1])];
-  return null;
+  return [applyJitter(DEFAULT_COORDS[0]), applyJitter(DEFAULT_COORDS[1])];
 }
 
 type EnrichedLead = Lead & { _lat: number; _lng: number; _estimated: boolean };
