@@ -282,12 +282,14 @@ export function TimelineRoot({ leadId: filterLeadId, hideSubNav }: TimelineRootP
 
     // ── 4. Agent actions ──────────────────────────────────────────────────────
     try {
+      const { data: settingsRow } = await supabase.from('settings').select('workspace_id, active_workspace_id').eq('user_id', user.id).maybeSingle();
+      const agentWsId = settingsRow?.workspace_id || settingsRow?.active_workspace_id;
       let q = supabase
         .from('agent_actions')
         .select('id, action_type, lead_id, reasoning, data_signals, result, autonomy_level, executed, created_at')
-        .eq('workspace_id', (await supabase.from('settings').select('workspace_id').eq('user_id', user.id).maybeSingle()).data?.workspace_id || '')
         .order('created_at', { ascending: false })
         .limit(50);
+      if (agentWsId) q = (q as any).eq('workspace_id', agentWsId);
       if (filterLeadId) q = q.eq('lead_id', filterLeadId);
 
       const { data: actions } = await q;

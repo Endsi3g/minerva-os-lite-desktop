@@ -82,7 +82,7 @@ CREATE POLICY "nom de la policy" ON nom_table FOR ALL
     )
   );
 ```
-Ne jamais référencer `settings.workspace_id` (cette colonne n'existe pas).
+`settings.workspace_id` est la colonne du workspace principal de l'utilisateur (ajoutée en migration v3.52). Toujours préférer `active_workspace_id` pour le workspace actuellement sélectionné ; en fallback : `workspace_id || active_workspace_id`. Ne jamais passer une chaîne vide `""` à un filtre UUID — utiliser `undefined` ou un guard `if (!wsId) return`.
 
 ---
 
