@@ -97,7 +97,7 @@ import {
 import { Pin } from 'lucide-react';
 import { CalendarDays, UsersRound } from 'lucide-react';
 
-const CURRENT_VERSION = '8.6.0';
+const CURRENT_VERSION = '8.7.0';
 
 function UpdateBanner() {
   const [visible, setVisible] = useState(false);
@@ -167,7 +167,40 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
   const [isRecordingVoice, setIsRecordingVoice] = useState(false);
   const [isProcessingVoice, setIsProcessingVoice] = useState(false);
   const [voiceTranscript, setVoiceTranscript] = useState('');
+  const [inputText, setInputText] = useState('');
   const globalRecognitionRef = React.useRef<any>(null);
+  const isRecordingVoiceRef = React.useRef(false);
+  const messagesEndRef = React.useRef<HTMLDivElement | null>(null);
+
+  interface ChatMessage {
+    role: 'user' | 'assistant';
+    content: string;
+    proposedTasks?: Array<{
+      title: string;
+      category: 'Follow-up' | 'Preparation' | 'General' | 'Meeting';
+      dueDate?: string;
+    }>;
+    executed?: boolean;
+  }
+
+  const [copilotMessages, setCopilotMessages] = useState<ChatMessage[]>([
+    {
+      role: 'assistant',
+      content: "Bonjour ! Je suis Minerva AI. Dites-moi ce que vous souhaitez planifier, relancer ou créer (vous pouvez dicter de longues listes de tâches), et je m'occupe de tout."
+    }
+  ]);
+
+  // Keep ref synced for onend closure
+  useEffect(() => {
+    isRecordingVoiceRef.current = isRecordingVoice;
+  }, [isRecordingVoice]);
+
+  // Auto-scroll messages
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [copilotMessages]);
 
   const startVoiceTasker = () => {
     if (typeof window === 'undefined') return;
@@ -178,13 +211,17 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
     }
 
     setShowVoiceTasker(true);
-    setVoiceTranscript('');
     setIsRecordingVoice(true);
 
     try {
+      if (globalRecognitionRef.current) {
+        try { globalRecognitionRef.current.abort(); } catch {}
+      }
+
       const rec = new SpeechRecognition();
       rec.lang = 'fr-FR';
       rec.interimResults = true;
+      rec.continuous = true;
       rec.maxAlternatives = 1;
 
       rec.onresult = (event: any) => {
@@ -196,14 +233,20 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
 
       rec.onerror = (e: any) => {
         console.error("Global speech recognition error:", e);
-        setIsRecordingVoice(false);
         if (e.error === 'not-allowed') {
           toast.error("Accès au microphone refusé.");
+          setIsRecordingVoice(false);
         }
       };
 
       rec.onend = () => {
-        setIsRecordingVoice(false);
+        if (isRecordingVoiceRef.current) {
+          try {
+            rec.start();
+          } catch (e) {
+            console.error("Failed to restart speech recognition:", e);
+          }
+        }
       };
 
       globalRecognitionRef.current = rec;
@@ -215,46 +258,76 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
   };
 
   const stopVoiceTasker = () => {
+    setIsRecordingVoice(false);
     if (globalRecognitionRef.current) {
       globalRecognitionRef.current.stop();
     }
-    setIsRecordingVoice(false);
   };
 
   const cancelVoiceTasker = () => {
+    setIsRecordingVoice(false);
     if (globalRecognitionRef.current) {
       globalRecognitionRef.current.abort();
     }
-    setIsRecordingVoice(false);
     setShowVoiceTasker(false);
     setVoiceTranscript('');
+    setInputText('');
   };
 
-  const submitVoiceTask = async () => {
-    if (!voiceTranscript.trim()) {
-      setShowVoiceTasker(false);
-      return;
+  const sendCopilotMessage = async (textToSend?: string) => {
+    const rawText = textToSend || voiceTranscript || inputText;
+    if (!rawText.trim()) return;
+
+    if (isRecordingVoice) {
+      stopVoiceTasker();
     }
 
+    const newMsg: ChatMessage = { role: 'user', content: rawText.trim() };
+    const updatedMessages = [...copilotMessages, newMsg];
+    setCopilotMessages(updatedMessages);
+    setVoiceTranscript('');
+    setInputText('');
     setIsProcessingVoice(true);
+
     try {
       const todayStr = new Date().toISOString().split('T')[0];
-      const systemPrompt = `Tu es un assistant qui extrait des tâches de prospection à partir d'une dictée vocale.
+      const systemPrompt = `Tu es "Minerva AI", un assistant virtuel intelligent intégré dans le CRM. Ton rôle est d'aider l'utilisateur à gérer ses tâches via une interface conversationnelle (texte ou dictée vocale).
 Aujourd'hui nous sommes le ${todayStr}.
-Analyse la transcription audio fournie par l'utilisateur et renvoie UNIQUEMENT un objet JSON valide avec les clés suivantes :
-- "title": Titre clair et court de la tâche (ex: "Appeler Jean de la Boulangerie")
-- "dueDate": Date d'échéance au format YYYY-MM-DD (ex: s'il dit "demain", calcule la date. Si aucune date n'est spécifiée, renvoie null)
-- "category": Une des catégories suivantes uniquement : "General", "Follow-up", "Preparation", "Meeting" (si l'utilisateur dit "rdv" ou "rencontre", choisis "Meeting". S'il dit "relance" ou "appeler", choisis "Follow-up")
 
-Règle absolue : Réponds UNIQUEMENT avec l'objet JSON. Pas de blabla, pas de markdown, pas de balises.`;
+Tu peux proposer de créer des tâches. Pour cela, si l'utilisateur exprime l'intention d'ajouter, de noter, de planifier ou de séparer plusieurs tâches, extrais-les soigneusement et renvoie TOUJOURS un objet JSON valide contenant :
+1. "reply": Ton message textuel de réponse (en français direct et professionnel, pas de jargon pompeux, s'adresser avec respect et efficacité). Demande confirmation s'il y a des tâches à valider.
+2. "tasks": Une liste de tâches à créer. Chaque tâche doit avoir :
+   - "title": Titre clair et précis (ex: "Appeler Jean de la Boulangerie").
+   - "category": Une des catégories suivantes uniquement : "General", "Follow-up", "Preparation", "Meeting".
+   - "dueDate": Date au format YYYY-MM-DD (calcule la date par rapport à aujourd'hui, ex: "demain" -> calcule demain, ou renvoie null si non spécifié).
+3. "needsConfirmation": true si tu demandes à l'utilisateur de confirmer la création de ces tâches, ou false si tu réponds simplement à une question ou donnes un conseil de planification.
+
+Format de réponse attendu : Tu dois TOUJOURS répondre sous la forme d'un objet JSON valide contenant "reply", "tasks" (un tableau), et "needsConfirmation" (un booléen).
+
+Exemple de format de réponse :
+{
+  "reply": "J'ai préparé les 2 tâches suivantes pour vous. Souhaitez-vous que je les ajoute au CRM ?",
+  "tasks": [
+    { "title": "Envoyer le contrat à Marie", "category": "Follow-up", "dueDate": "2026-07-03" },
+    { "title": "Préparer la présentation client", "category": "Preparation", "dueDate": "2026-07-06" }
+  ],
+  "needsConfirmation": true
+}
+
+Règle absolue : Réponds uniquement en JSON valide sans enrobage markdown.`;
+
+      const apiMessages = updatedMessages.map(m => ({
+        role: m.role,
+        content: m.content
+      }));
 
       const res = await fetch('/api/ai/gateway/completions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          messages: [{ role: 'user', content: voiceTranscript }],
+          messages: apiMessages,
           system: systemPrompt,
-          max_tokens: 256
+          max_tokens: 1024
         })
       });
 
@@ -262,32 +335,49 @@ Règle absolue : Réponds UNIQUEMENT avec l'objet JSON. Pas de blabla, pas de ma
       const data = await res.json();
       if (data.error) throw new Error(data.error);
 
-      let taskObj;
+      let responseObj;
       try {
         const cleanJson = data.content.trim().replace(/^```json/, '').replace(/```$/, '').trim();
-        taskObj = JSON.parse(cleanJson);
+        responseObj = JSON.parse(cleanJson);
       } catch {
-        taskObj = {
-          title: voiceTranscript,
-          dueDate: null,
-          category: 'General'
+        responseObj = {
+          reply: data.content,
+          tasks: [],
+          needsConfirmation: false
         };
       }
 
-      if (!taskObj.title) {
-        taskObj.title = voiceTranscript;
-      }
-
-      addTask(taskObj.title, taskObj.category || 'General', taskObj.dueDate || undefined);
-      toast.success(`Tâche créée : "${taskObj.title}"`);
-      setShowVoiceTasker(false);
-      setVoiceTranscript('');
+      setCopilotMessages(prev => [...prev, {
+        role: 'assistant',
+        content: responseObj.reply || "Désolé, je n'ai pas pu analyser votre message.",
+        proposedTasks: responseObj.tasks || [],
+        executed: false
+      }]);
     } catch (err: any) {
       console.error(err);
-      toast.error(`Erreur de traitement : ${err.message}`);
+      toast.error(`Erreur : ${err.message}`);
+      setCopilotMessages(prev => [...prev, {
+        role: 'assistant',
+        content: `Désolé, une erreur s'est produite lors de l'analyse : ${err.message}`
+      }]);
     } finally {
       setIsProcessingVoice(false);
     }
+  };
+
+  const executeProposedTasks = (messageIndex: number) => {
+    const msg = copilotMessages[messageIndex];
+    if (!msg || !msg.proposedTasks || msg.executed) return;
+
+    msg.proposedTasks.forEach(t => {
+      addTask(t.title, t.category || 'General', t.dueDate || undefined);
+    });
+
+    setCopilotMessages(prev => prev.map((m, idx) => 
+      idx === messageIndex ? { ...m, executed: true } : m
+    ));
+
+    toast.success(`${msg.proposedTasks.length} tâche(s) créée(s) avec succès !`);
   };
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -2058,73 +2148,149 @@ Règle absolue : Réponds UNIQUEMENT avec l'objet JSON. Pas de blabla, pas de ma
         </div>
       )}
 
-      {/* Global Voice Tasker Overlay */}
+      {/* Global Voice Tasker / AI Copilot Overlay */}
       {showVoiceTasker && (
-        <div className="fixed bottom-6 right-6 z-[120] w-80 bg-white/95 backdrop-blur-md border border-[#e6e6e2] rounded-[24px] shadow-[0_24px_50px_-12px_rgba(38,37,30,0.08)] p-5 animate-in slide-in-from-bottom-5 duration-200 text-left">
-          <div className="flex items-center justify-between pb-3 border-b border-[#f0f0ed] mb-4">
+        <div className="fixed bottom-6 right-6 z-[120] w-[380px] h-[520px] flex flex-col bg-white/95 backdrop-blur-md border border-[#e6e6e2] rounded-[24px] shadow-[0_24px_50px_-12px_rgba(38,37,30,0.08)] p-5 animate-in slide-in-from-bottom-5 duration-200 text-left">
+          
+          {/* Header */}
+          <div className="flex items-center justify-between pb-3 border-b border-[#f0f0ed] mb-3 shrink-0">
             <div className="flex items-center gap-2">
-              <span className="relative flex h-2 w-2">
+              <span className="relative flex h-2.5 w-2.5">
                 {isRecordingVoice && (
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
                 )}
-                <span className={cn("relative inline-flex rounded-full h-2 w-2", isRecordingVoice ? "bg-red-500" : "bg-neutral-300")}></span>
+                <span className={cn("relative inline-flex rounded-full h-2.5 w-2.5", isRecordingVoice ? "bg-red-500" : "bg-emerald-500")}></span>
               </span>
-              <p className="text-xs font-black text-[#26251e] uppercase tracking-wider">
-                {isRecordingVoice ? "Enregistrement..." : "Dictée vocale"}
-              </p>
+              <div>
+                <p className="text-xs font-black text-[#26251e] uppercase tracking-wider">Minerva Copilot AI</p>
+                <p className="text-[10px] text-[#7a7a76] font-semibold mt-0.5">
+                  {isRecordingVoice ? "Microphone actif (parlez en continu)" : "En ligne • Modèle Cloud"}
+                </p>
+              </div>
             </div>
             <button
               onClick={cancelVoiceTasker}
-              className="text-[#7a7a76] hover:text-[#26251e] p-1 rounded-lg hover:bg-neutral-100 transition-colors"
+              className="text-[#7a7a76] hover:text-[#26251e] p-1.5 rounded-lg hover:bg-neutral-100 transition-colors"
             >
               <X className="h-3.5 w-3.5" />
             </button>
           </div>
 
-          <div className="space-y-4">
-            <div className="min-h-[70px] max-h-28 overflow-y-auto bg-neutral-50/50 border border-neutral-100 rounded-xl p-3 text-xs text-[#26251e] font-semibold leading-relaxed">
-              {voiceTranscript || <span className="text-[#a3a197] italic font-medium">Parlez maintenant pour dicter votre tâche...</span>}
-            </div>
-
-            <div className="flex items-center justify-end gap-2 pt-1">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={cancelVoiceTasker}
-                disabled={isProcessingVoice}
-                className="h-8 text-xs font-bold text-[#7a7a76]"
+          {/* Messages List Area */}
+          <div className="flex-1 overflow-y-auto space-y-3.5 pr-1 mb-3 flex flex-col min-h-0">
+            {copilotMessages.map((msg, idx) => (
+              <div
+                key={idx}
+                className={cn(
+                  "flex flex-col gap-1 max-w-[85%]",
+                  msg.role === 'user' ? "self-end items-end" : "self-start items-start"
+                )}
               >
-                Annuler
-              </Button>
-              {isRecordingVoice ? (
-                <Button
-                  size="sm"
-                  onClick={stopVoiceTasker}
-                  className="h-8 text-xs bg-red-500 hover:bg-red-600 text-white font-bold animate-pulse flex items-center"
+                <div
+                  className={cn(
+                    "rounded-2xl px-3 py-2 text-xs leading-relaxed font-semibold shadow-xs",
+                    msg.role === 'user'
+                      ? "bg-[#059669] text-white rounded-br-none"
+                      : "bg-neutral-100 text-[#26251e] rounded-bl-none border border-[#e5e5e0]"
+                  )}
                 >
-                  <MicOff className="h-3 w-3 mr-1.5" />
-                  Arrêter
-                </Button>
-              ) : (
-                <Button
-                  size="sm"
-                  onClick={submitVoiceTask}
-                  disabled={isProcessingVoice || !voiceTranscript.trim()}
-                  className="h-8 text-xs bg-[#059669] hover:bg-[#047857] text-white font-bold flex items-center gap-1.5"
+                  {msg.content}
+                </div>
+
+                {msg.proposedTasks && msg.proposedTasks.length > 0 && (
+                  <div className="mt-2 w-full space-y-2 border border-[#e5e5e0] rounded-xl p-2.5 bg-white shadow-xs">
+                    <p className="text-[10px] font-bold text-[#7a7a76] uppercase tracking-wider mb-1.5 flex items-center gap-1">
+                      <ListChecks className="w-3.5 h-3.5 text-amber-500" /> Tâches à ajouter ({msg.proposedTasks.length})
+                    </p>
+                    <div className="space-y-1.5 max-h-36 overflow-y-auto pr-0.5">
+                      {msg.proposedTasks.map((task, tIdx) => (
+                        <div key={tIdx} className="p-2 border border-neutral-100 rounded-lg bg-neutral-50 flex items-center justify-between gap-2">
+                          <div className="min-w-0">
+                            <p className="text-[11px] font-bold text-[#26251e] truncate">{task.title}</p>
+                            <div className="flex items-center gap-1.5 text-[9px] text-[#7a7a76] font-semibold mt-0.5">
+                              <span className="px-1.5 py-0.5 rounded bg-neutral-200/60 text-neutral-700">{task.category}</span>
+                              {task.dueDate && <span>📅 {task.dueDate}</span>}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {!msg.executed ? (
+                      <Button
+                        size="sm"
+                        onClick={() => executeProposedTasks(idx)}
+                        className="w-full h-8 text-[11px] bg-[#059669] hover:bg-[#047857] text-white font-bold flex items-center justify-center gap-1.5 mt-2 shadow-sm rounded-lg"
+                      >
+                        <Check className="w-3.5 h-3.5" />
+                        <span>Créer les tâches</span>
+                      </Button>
+                    ) : (
+                      <div className="text-[10px] font-bold text-[#059669] bg-emerald-50 border border-emerald-200/50 rounded-lg p-1.5 text-center mt-2 flex items-center justify-center gap-1">
+                        <Check className="w-3.5 h-3.5" /> Tâches créées avec succès
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            ))}
+            <div ref={messagesEndRef} />
+          </div>
+
+          {/* Input Bar */}
+          <div className="space-y-2 shrink-0">
+            {/* Live voice feedback box when recording */}
+            {isRecordingVoice && (
+              <div className="p-2.5 rounded-xl bg-red-50/50 border border-red-100 text-[10px] text-red-600 font-semibold animate-pulse flex items-center justify-between">
+                <span className="truncate pr-2">Dictée : {voiceTranscript || "Parlez maintenant..."}</span>
+                <span className="h-1.5 w-1.5 rounded-full bg-red-500 shrink-0 animate-ping" />
+              </div>
+            )}
+
+            <div className="relative flex items-center gap-2">
+              <input
+                type="text"
+                value={inputText}
+                onChange={(e) => setInputText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    void sendCopilotMessage();
+                  }
+                }}
+                disabled={isProcessingVoice}
+                placeholder={isRecordingVoice ? "Écoutez..." : "Écrivez ou cliquez sur le micro..."}
+                className="w-full text-xs font-semibold bg-neutral-50 border border-[#e5e5e0] focus:border-[#059669]/40 focus:ring-1 focus:ring-[#059669]/40 rounded-xl py-2 px-3 pr-16 focus:outline-hidden text-[#26251e] disabled:opacity-50"
+              />
+
+              <div className="absolute right-1.5 flex items-center gap-1">
+                {/* Voice toggle */}
+                <button
+                  onClick={isRecordingVoice ? stopVoiceTasker : startVoiceTasker}
+                  disabled={isProcessingVoice}
+                  className={cn(
+                    "p-1.5 rounded-lg border transition-all cursor-pointer",
+                    isRecordingVoice
+                      ? "border-red-200 bg-red-50 text-red-500 hover:bg-red-100"
+                      : "border-[#e5e5e0] bg-white text-[#7a7a76] hover:text-[#059669]"
+                  )}
+                  title={isRecordingVoice ? "Arrêter la dictée" : "Démarrer la dictée"}
+                >
+                  {isRecordingVoice ? <MicOff className="w-3.5 h-3.5" /> : <Mic className="w-3.5 h-3.5" />}
+                </button>
+
+                {/* Send */}
+                <button
+                  onClick={() => void sendCopilotMessage()}
+                  disabled={isProcessingVoice || (!inputText.trim() && !voiceTranscript.trim())}
+                  className="p-1.5 rounded-lg bg-[#059669] hover:bg-[#047857] text-white disabled:opacity-50 transition-all cursor-pointer"
                 >
                   {isProcessingVoice ? (
-                    <>
-                      <Loader2 className="w-3 h-3 animate-spin" />
-                      <span>Analyse...</span>
-                    </>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
                   ) : (
-                    <>
-                      <Check className="w-3.5 h-3.5" />
-                      <span>Créer la tâche</span>
-                    </>
+                    <Send className="w-3.5 h-3.5" />
                   )}
-                </Button>
-              )}
+                </button>
+              </div>
             </div>
           </div>
         </div>

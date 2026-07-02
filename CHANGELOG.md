@@ -5,6 +5,15 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [3.44.0] - 2026-07-02 à 06:55
+
+### Ajouté — Assistant Vocal Intelligent (Copilote) & Liste de Tâches Simplifiée
+- **Enregistrement en continu** — Correction d'un problème qui coupait le micro après quelques mots. Vous pouvez désormais dicter de longues phrases ou listes sans interruption.
+- **Discussion interactive avec l'IA** — Une nouvelle fenêtre de messagerie vous permet de parler ou d'écrire directement à l'intelligence artificielle de Minerva.
+- **Planification intelligente** — L'IA comprend vos demandes complexes (ex: "planifie de relancer Jean demain"), extrait automatiquement les tâches, calcule les dates, et vous présente une liste claire pour validation.
+- **Bouton vert de confirmation** — Permet de valider et de créer toutes les tâches détectées en un seul clic.
+- **Connexion Cloud via OpenRouter** — Utilisation automatique de modèles d'IA distants pour garantir une exécution rapide et sans configuration complexe sur votre ordinateur.
+
 ## [3.36.0] - 2026-06-23
 
 ### Ajouté — 7 Nouvelles Intégrations (Maps, Docs, Meeting, Scraping)
