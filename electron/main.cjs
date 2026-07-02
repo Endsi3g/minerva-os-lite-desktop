@@ -29,6 +29,9 @@ let scraperInterval = null;
 let updateTimeout = null;
 
 app.setName('Minerva OS Reach Lite');
+if (app.setAppUserModelId) {
+  app.setAppUserModelId('group.com.minerva.reachlite');
+}
 
 // Keep the main process alive on unhandled errors — log and continue
 process.on('uncaughtException', (err) => {

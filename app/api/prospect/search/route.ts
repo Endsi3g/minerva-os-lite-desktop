@@ -753,7 +753,7 @@ export async function POST(req: NextRequest) {
         const perSearch = Math.ceil(maxResults / searchTerms.length);
 
         const apifyRes = await fetch(
-          `https://api.apify.com/v2/acts/compass~crawler-google-places/run-sync-get-dataset-items?token=${apifyToken}&timeout=55&memory=1024`,
+          `https://api.apify.com/v2/acts/compass~crawler-google-places/run-sync-get-dataset-items?token=${apifyToken}&timeout=7&memory=1024`,
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -765,7 +765,7 @@ export async function POST(req: NextRequest) {
               countryCode: 'ca',
               scrapeWebsite: false,
             }),
-            signal: AbortSignal.timeout(60000), // abort before Vercel function limit
+            signal: AbortSignal.timeout(8000), // abort before Vercel function limit
           }
         );
 

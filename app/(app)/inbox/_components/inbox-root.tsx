@@ -11,6 +11,7 @@ import type { Lead } from '@/lib/mock-data';
 import { Mail, Check, Inbox, Users, Archive, RefreshCw, Send } from 'lucide-react';
 import { GoogleConnectModal } from '@/components/google-connect-modal';
 import { OutreachNavBar } from '@/components/outreach-nav-bar';
+import { sendDesktopNotification } from '@/lib/notification-service';
 
 type ReplyStatusFilter = 'all' | 'positive' | 'followup' | 'negative';
 type UnreadFilter = 'all' | 'unread' | 'leads';
@@ -70,9 +71,7 @@ export function InboxRoot() {
             body: newReplies.length === 1 ? (newReplies[0].subject || 'Nouvel email') : newReplies.map(t => t.fromName || t.contactEmail).join(', '),
             link: '/inbox',
           });
-          if ((window as any).electron?.sendNotification) {
-            (window as any).electron.sendNotification('Nouvelle réponse', newReplies.length === 1 ? `De : ${newReplies[0].fromName || newReplies[0].contactEmail}` : `${newReplies.length} réponses non lues`);
-          }
+          sendDesktopNotification('Nouvelle réponse', newReplies.length === 1 ? `De : ${newReplies[0].fromName || newReplies[0].contactEmail}` : `${newReplies.length} réponses non lues`);
         }
         const allSeen = [...Array.from(seen), ...incoming.map(t => t.gmailThreadId)];
         localStorage.setItem(seenKey, JSON.stringify(allSeen.slice(-200)));

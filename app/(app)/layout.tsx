@@ -72,7 +72,7 @@ import { signout } from '@/app/login/actions';
 import { MinervaIcon } from '@/components/icons';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
-import { User as UserIcon } from 'lucide-react';
+import { User as UserIcon, Mic, MicOff } from 'lucide-react';
 import {
   getOnboardingProgress,
   getOnboardingState,
@@ -81,8 +81,9 @@ import {
 } from '@/lib/onboarding-store';
 import { ALL_MODULES, routeToModule, type PermissionModule } from '@/lib/permissions';
 import { cachedFetch, invalidateClientCache } from '@/lib/fetch-cache';
-import { requestNotificationPermission, checkAndSendTaskReminders, checkAndSendLeadReminder } from '@/lib/notification-service';
+import { requestNotificationPermission, checkAndSendTaskReminders, checkAndSendLeadReminder, checkAndSendLeadAgingAlerts } from '@/lib/notification-service';
 import { VersionChecker } from '@/components/version-checker';
+import { toast } from 'sonner';
 import { NotificationPermissionPrompt } from '@/components/notification-permission-prompt';
 import { MinervaOwl } from '@/components/minerva-owl';
 import {
@@ -159,7 +160,135 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
   const { t } = useLanguage();
   
   // Workspace Context
-  const { user: contextUser, activeWorkspace, workspacesList, switchWorkspace, leads, tasks, notifications, unreadCount, markNotificationRead, markAllNotificationsRead, projects, createProject } = useReach();
+  const { user: contextUser, activeWorkspace, workspacesList, switchWorkspace, leads, tasks, notifications, unreadCount, markNotificationRead, markAllNotificationsRead, projects, createProject, addTask, addNotification } = useReach();
+
+  // Global Voice Tasker states
+  const [showVoiceTasker, setShowVoiceTasker] = useState(false);
+  const [isRecordingVoice, setIsRecordingVoice] = useState(false);
+  const [isProcessingVoice, setIsProcessingVoice] = useState(false);
+  const [voiceTranscript, setVoiceTranscript] = useState('');
+  const globalRecognitionRef = React.useRef<any>(null);
+
+  const startVoiceTasker = () => {
+    if (typeof window === 'undefined') return;
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      toast.error("La dictée vocale n'est pas supportée par votre navigateur.");
+      return;
+    }
+
+    setShowVoiceTasker(true);
+    setVoiceTranscript('');
+    setIsRecordingVoice(true);
+
+    try {
+      const rec = new SpeechRecognition();
+      rec.lang = 'fr-FR';
+      rec.interimResults = true;
+      rec.maxAlternatives = 1;
+
+      rec.onresult = (event: any) => {
+        const text = Array.from(event.results)
+          .map((res: any) => res[0].transcript)
+          .join('');
+        setVoiceTranscript(text);
+      };
+
+      rec.onerror = (e: any) => {
+        console.error("Global speech recognition error:", e);
+        setIsRecordingVoice(false);
+        if (e.error === 'not-allowed') {
+          toast.error("Accès au microphone refusé.");
+        }
+      };
+
+      rec.onend = () => {
+        setIsRecordingVoice(false);
+      };
+
+      globalRecognitionRef.current = rec;
+      rec.start();
+    } catch (err) {
+      console.error(err);
+      setIsRecordingVoice(false);
+    }
+  };
+
+  const stopVoiceTasker = () => {
+    if (globalRecognitionRef.current) {
+      globalRecognitionRef.current.stop();
+    }
+    setIsRecordingVoice(false);
+  };
+
+  const cancelVoiceTasker = () => {
+    if (globalRecognitionRef.current) {
+      globalRecognitionRef.current.abort();
+    }
+    setIsRecordingVoice(false);
+    setShowVoiceTasker(false);
+    setVoiceTranscript('');
+  };
+
+  const submitVoiceTask = async () => {
+    if (!voiceTranscript.trim()) {
+      setShowVoiceTasker(false);
+      return;
+    }
+
+    setIsProcessingVoice(true);
+    try {
+      const todayStr = new Date().toISOString().split('T')[0];
+      const systemPrompt = `Tu es un assistant qui extrait des tâches de prospection à partir d'une dictée vocale.
+Aujourd'hui nous sommes le ${todayStr}.
+Analyse la transcription audio fournie par l'utilisateur et renvoie UNIQUEMENT un objet JSON valide avec les clés suivantes :
+- "title": Titre clair et court de la tâche (ex: "Appeler Jean de la Boulangerie")
+- "dueDate": Date d'échéance au format YYYY-MM-DD (ex: s'il dit "demain", calcule la date. Si aucune date n'est spécifiée, renvoie null)
+- "category": Une des catégories suivantes uniquement : "General", "Follow-up", "Preparation", "Meeting" (si l'utilisateur dit "rdv" ou "rencontre", choisis "Meeting". S'il dit "relance" ou "appeler", choisis "Follow-up")
+
+Règle absolue : Réponds UNIQUEMENT avec l'objet JSON. Pas de blabla, pas de markdown, pas de balises.`;
+
+      const res = await fetch('/api/ai/gateway/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: [{ role: 'user', content: voiceTranscript }],
+          system: systemPrompt,
+          max_tokens: 256
+        })
+      });
+
+      if (!res.ok) throw new Error("Erreur serveur API");
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+
+      let taskObj;
+      try {
+        const cleanJson = data.content.trim().replace(/^```json/, '').replace(/```$/, '').trim();
+        taskObj = JSON.parse(cleanJson);
+      } catch {
+        taskObj = {
+          title: voiceTranscript,
+          dueDate: null,
+          category: 'General'
+        };
+      }
+
+      if (!taskObj.title) {
+        taskObj.title = voiceTranscript;
+      }
+
+      addTask(taskObj.title, taskObj.category || 'General', taskObj.dueDate || undefined);
+      toast.success(`Tâche créée : "${taskObj.title}"`);
+      setShowVoiceTasker(false);
+      setVoiceTranscript('');
+    } catch (err: any) {
+      console.error(err);
+      toast.error(`Erreur de traitement : ${err.message}`);
+    } finally {
+      setIsProcessingVoice(false);
+    }
+  };
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [checkingWelcome, setCheckingWelcome] = useState(true);
@@ -235,6 +364,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
     localStorage.setItem(NOTIF_KEY, today);
     checkAndSendTaskReminders(tasks ?? []);
     checkAndSendLeadReminder(leads ?? []);
+    checkAndSendLeadAgingAlerts(leads ?? []);
   }, [leads, tasks]);
 
 
@@ -1262,7 +1392,16 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
 
           {/* Right actions */}
           <div className="flex items-center gap-2">
-<div className="relative w-44 md:block hidden">
+            {/* Global Voice Tasker Mic Button */}
+            <button
+              onClick={startVoiceTasker}
+              className="flex h-8 w-8 items-center justify-center rounded-md border border-[#e5e5e0] bg-white text-[#7a7a76] hover:text-[#059669] hover:bg-[#fafaf8] hover:border-[#059669]/30 transition-all cursor-pointer shrink-0"
+              title="Dicter une tâche globale"
+            >
+              <Mic className="h-3.5 w-3.5" />
+            </button>
+
+            <div className="relative w-44 md:block hidden">
               <span className="absolute inset-y-0 left-2 flex items-center text-[#7a7a76]">
                 <Search className="h-3 w-3" />
               </span>
@@ -1893,6 +2032,78 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
             <div className="flex items-center justify-between text-[9px] text-[#7a7a76] font-semibold pt-2 border-t border-[#e5e5e0]/60">
               <span>Appuyez sur <kbd className="border bg-neutral-50 px-1 rounded">Échap</kbd> pour fermer</span>
               <span>Minerva OS Spotlight</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Global Voice Tasker Overlay */}
+      {showVoiceTasker && (
+        <div className="fixed bottom-6 right-6 z-[120] w-80 bg-white/95 backdrop-blur-md border border-[#e6e6e2] rounded-[24px] shadow-[0_24px_50px_-12px_rgba(38,37,30,0.08)] p-5 animate-in slide-in-from-bottom-5 duration-200 text-left">
+          <div className="flex items-center justify-between pb-3 border-b border-[#f0f0ed] mb-4">
+            <div className="flex items-center gap-2">
+              <span className="relative flex h-2 w-2">
+                {isRecordingVoice && (
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                )}
+                <span className={cn("relative inline-flex rounded-full h-2 w-2", isRecordingVoice ? "bg-red-500" : "bg-neutral-300")}></span>
+              </span>
+              <p className="text-xs font-black text-[#26251e] uppercase tracking-wider">
+                {isRecordingVoice ? "Enregistrement..." : "Dictée vocale"}
+              </p>
+            </div>
+            <button
+              onClick={cancelVoiceTasker}
+              className="text-[#7a7a76] hover:text-[#26251e] p-1 rounded-lg hover:bg-neutral-100 transition-colors"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
+
+          <div className="space-y-4">
+            <div className="min-h-[70px] max-h-28 overflow-y-auto bg-neutral-50/50 border border-neutral-100 rounded-xl p-3 text-xs text-[#26251e] font-semibold leading-relaxed">
+              {voiceTranscript || <span className="text-[#a3a197] italic font-medium">Parlez maintenant pour dicter votre tâche...</span>}
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={cancelVoiceTasker}
+                disabled={isProcessingVoice}
+                className="h-8 text-xs font-bold text-[#7a7a76]"
+              >
+                Annuler
+              </Button>
+              {isRecordingVoice ? (
+                <Button
+                  size="sm"
+                  onClick={stopVoiceTasker}
+                  className="h-8 text-xs bg-red-500 hover:bg-red-600 text-white font-bold animate-pulse flex items-center"
+                >
+                  <MicOff className="h-3 w-3 mr-1.5" />
+                  Arrêter
+                </Button>
+              ) : (
+                <Button
+                  size="sm"
+                  onClick={submitVoiceTask}
+                  disabled={isProcessingVoice || !voiceTranscript.trim()}
+                  className="h-8 text-xs bg-[#059669] hover:bg-[#047857] text-white font-bold flex items-center gap-1.5"
+                >
+                  {isProcessingVoice ? (
+                    <>
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                      <span>Analyse...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Check className="w-3.5 h-3.5" />
+                      <span>Créer la tâche</span>
+                    </>
+                  )}
+                </Button>
+              )}
             </div>
           </div>
         </div>
