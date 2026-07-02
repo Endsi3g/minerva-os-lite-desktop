@@ -1,10 +1,5 @@
-import { CockpitRoot } from './_components/cockpit-root';
-
-export const metadata = {
-  title: 'Revenue OS',
-  description: 'Pilotez vos opérations commerciales et votre stratégie en temps réel.',
-};
+import { redirect } from 'next/navigation';
 
 export default function CockpitPage() {
-  return <CockpitRoot />;
+  redirect('/today?tab=pilotage');
 }

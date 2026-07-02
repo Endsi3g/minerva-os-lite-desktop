@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import { TodayRoot } from './_components/today-root';
 import { ErrorBoundary } from '@/components/error-boundary';
 
@@ -9,7 +10,9 @@ export const metadata = {
 export default function TodayPage() {
   return (
     <ErrorBoundary>
-      <TodayRoot />
+      <Suspense fallback={<div className="p-8 text-xs text-[#7a7a76]">Chargement du cockpit...</div>}>
+        <TodayRoot />
+      </Suspense>
     </ErrorBoundary>
   );
 }

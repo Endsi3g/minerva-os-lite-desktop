@@ -5,6 +5,15 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [3.50.0] - 2026-07-02 à 07:36
+
+### Ajouté — Lancement de Minerva v8 — Revenue OS orchestré (Phase 1)
+- **Consolidation du Cockpit** — Fusion de Today, Cockpit, Command Center et Agent Feed sous une seule et unique route d'atterrissage `/today`.
+- **Système d'onglets unifié** — Navigation fluide entre les onglets **Opérations** (agenda, priorités, actions NBA), **Inbox** (messages), et **Pilotage stratégique** (mémoire IA, rapports hebdomadaires, SLAs, journal d'activité de l'agent).
+- **Parcours client en 7 phases** — Ajout d'une barre de progression visuelle comptabilisant en temps réel la répartition de vos prospects le long du tunnel commercial canonique (Nouveau → Relance → Appel → RDV → Proposition → Négociation → Gagné).
+- **Outreach Control Center** — Intégration de la file d'approbations de l'agent au sein du cockpit pour valider en un clic les brouillons d'emails ou relances planifiées.
+- **Redirection automatique** — Suppression des doublons d'interfaces en redirigeant dynamiquement `/cockpit` et `/command` vers `/today`.
+
 ## [3.46.0] - 2026-07-02 à 07:33
 
 ### Ajouté — Modèle Google Gemma 4 & Tolérance aux Balises de Raisonnement

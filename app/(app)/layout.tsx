@@ -1364,7 +1364,7 @@ Règle absolue : Réponds uniquement en JSON valide sans enrobage markdown.`;
                     <div className="space-y-[2px] pb-1">
                       {[
                         { href: '/guide', icon: Zap, label: 'Guide de démarrage' },
-                        { href: '/cockpit', icon: Gauge, label: 'Revenue OS' },
+                        { href: '/today?tab=pilotage', icon: Gauge, label: 'Revenue OS' },
                         { href: '/analytics', icon: BarChart3, label: 'Statistiques' },
                         { href: '/billing', icon: CreditCard, label: 'Facturation' },
                         { href: '/help', icon: HelpCircle, label: 'Aide & Docs' },
@@ -1840,7 +1840,7 @@ Règle absolue : Réponds uniquement en JSON valide sans enrobage markdown.`;
               <div className="grid grid-cols-4 gap-0.5 px-3">
                 {([
                   { name: 'Assistant',    href: '/assistant',    icon: Sparkles },
-                  { name: 'Revenue OS',   href: '/cockpit',      icon: Gauge },
+                  { name: 'Revenue OS',   href: '/today?tab=pilotage',      icon: Gauge },
                   { name: 'Agents',       href: '/agents',       icon: Zap },
                 ] as { name: string; href: string; icon: React.ElementType }[]).map(({ name, href, icon: Icon }) => {
                   const isActive = pathname.startsWith(href);
