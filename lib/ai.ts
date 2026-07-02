@@ -28,10 +28,9 @@ export function resolveAIProvider(settings?: AISettings | null) {
   const keys = getGlobalKeys();
   const userOpenrouterKey = settings?.openrouter_key || '';
   const openrouterKey = userOpenrouterKey || keys.openrouterKey;
-  const anthropicKey = keys.anthropicKey;
 
-  // OpenRouter is the sole active provider — Anthropic is fallback only when no OpenRouter key
-  const provider = openrouterKey ? 'openrouter' : (anthropicKey ? 'anthropic' : 'openrouter');
+  // OpenRouter is the sole active provider
+  const provider = 'openrouter';
 
   const rawModel = settings?.ai_model;
   const STALE_MODELS = new Set([
@@ -45,9 +44,7 @@ export function resolveAIProvider(settings?: AISettings | null) {
     ? rawModel
     : OPENROUTER_DEFAULT;
 
-  const apiKey = provider === 'openrouter' ? openrouterKey : anthropicKey;
-
-  return { provider, model, apiKey };
+  return { provider, model, apiKey: openrouterKey };
 }
 
 // ── Logging ───────────────────────────────────────────────────────────────────
@@ -158,13 +155,6 @@ function doCall(
 }
 
 function getFallback(primary: string): { provider: string; model: string; apiKey: string } | null {
-  const keys = getGlobalKeys();
-  if (primary === 'anthropic' && keys.openrouterKey) {
-    return { provider: 'openrouter', model: OPENROUTER_DEFAULT, apiKey: keys.openrouterKey };
-  }
-  if (primary === 'openrouter' && keys.anthropicKey) {
-    return { provider: 'anthropic', model: 'claude-sonnet-4-6', apiKey: keys.anthropicKey };
-  }
   return null;
 }
 
