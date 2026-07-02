@@ -53,7 +53,7 @@ export async function listLeadsToFollowUp(
 
   const { data } = await ctx.supabase
     .from('leads')
-    .select('id, name, company, status, score, last_contacted_at, pipeline_stage')
+    .select('id, business_name, niche, status, score, last_contacted_at, pipeline_stage')
     .eq('workspace_id', ctx.workspaceId)
     .not('status', 'eq', 'Client')
     .not('status', 'eq', 'Perdu')

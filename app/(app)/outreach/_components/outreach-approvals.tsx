@@ -19,7 +19,7 @@ interface ApprovalDraft {
   intent_type: string | null;
   source: string;
   created_at: string;
-  leads: { id: string; name: string; company: string } | null;
+  leads: { id: string; business_name: string; niche: string } | null;
 }
 
 interface ApprovalAction {
@@ -32,7 +32,7 @@ interface ApprovalAction {
   autonomy_level: string;
   outreach_type: string | null;
   created_at: string;
-  leads: { id: string; name: string; company: string } | null;
+  leads: { id: string; business_name: string; niche: string } | null;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -75,7 +75,7 @@ function DraftCard({
   busy: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
-  const leadLabel = draft.leads ? `${draft.leads.name} · ${draft.leads.company}` : 'Lead inconnu';
+  const leadLabel = draft.leads ? `${draft.leads.business_name} · ${draft.leads.niche}` : 'Lead inconnu';
   const intentLabel = INTENT_LABELS[draft.intent_type ?? ''] ?? 'Email';
 
   return (
@@ -143,7 +143,7 @@ function ActionCard({
   busy: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
-  const leadLabel = action.leads ? `${action.leads.name} · ${action.leads.company}` : null;
+  const leadLabel = action.leads ? `${action.leads.business_name} · ${action.leads.niche}` : null;
   const label = ACTION_LABELS[action.action_type] ?? action.action_type;
 
   return (

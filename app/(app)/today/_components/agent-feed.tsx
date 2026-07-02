@@ -202,7 +202,7 @@ export function AgentFeed() {
       workspaceId
         ? supabase
             .from('agent_actions')
-            .select('id, action_type, lead_id, reasoning, data_signals, result, autonomy_level, executed, suggested, approved, created_at, leads(name, company)')
+            .select('id, action_type, lead_id, reasoning, data_signals, result, autonomy_level, executed, suggested, approved, created_at, leads(business_name, niche)')
             .eq('workspace_id', workspaceId)
             .order('created_at', { ascending: false })
             .limit(15)
@@ -228,8 +228,8 @@ export function AgentFeed() {
       suggested: a.suggested,
       approved: a.approved,
       created_at: a.created_at,
-      lead_name: a.leads?.name,
-      lead_company: a.leads?.company,
+      lead_name: (a.leads as any)?.business_name,
+      lead_company: (a.leads as any)?.niche,
     }));
 
     const merged: FeedItem[] = [...notifItems, ...actionItems].sort(

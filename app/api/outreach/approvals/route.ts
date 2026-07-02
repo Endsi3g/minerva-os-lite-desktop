@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
   const [{ data: agentActions }, { data: drafts }] = await Promise.all([
     supabase
       .from('agent_actions')
-      .select('id, action_type, lead_id, reasoning, data_signals, result, autonomy_level, outreach_type, created_at, leads(id, name, company)')
+      .select('id, action_type, lead_id, reasoning, data_signals, result, autonomy_level, outreach_type, created_at, leads(id, business_name, niche)')
       .eq('workspace_id', workspaceId)
       .eq('executed', false)
       .is('approved', null)
@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
 
     supabase
       .from('drafts')
-      .select('id, lead_id, subject, body, intent_type, source, created_at, leads(id, name, company)')
+      .select('id, lead_id, subject, body, intent_type, source, created_at, leads(id, business_name, niche)')
       .eq('workspace_id', workspaceId)
       .eq('source', 'agent')
       .is('approved', null)

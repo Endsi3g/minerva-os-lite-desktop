@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
       id, lead_id, sequence_id, status, enrolled_at, enrolled_by,
       current_step, next_send_at, paused_at, paused_reason,
       total_opens, total_replies, last_sent_at,
-      leads(id, name, company, status, score),
+      leads(id, business_name, niche, status, score),
       sequence_templates(id, name, steps)
     `)
     .eq('workspace_id', workspaceId)

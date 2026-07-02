@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
 
   // List top cold leads (7 day threshold, score >= 30, max 3)
   const coldLeads = await listLeadsToFollowUp(ctx, { threshold_days: 7, min_score: 30 });
-  const targets = coldLeads.slice(0, 3) as Array<{ id: string; name: string; company: string; score: number }>;
+  const targets = coldLeads.slice(0, 3) as Array<{ id: string; business_name: string; niche: string; score: number }>;
 
   if (targets.length === 0) {
     return NextResponse.json({ drafted: 0, leads: [], message: 'Aucun lead froid à relancer.' });
@@ -70,8 +70,8 @@ export async function POST(req: NextRequest) {
       const result = await generateEmailDraft(ctx, { lead_id: lead.id, template_type: 'follow_up' });
       drafted.push({
         lead_id: lead.id,
-        lead_name: lead.name,
-        company: lead.company,
+        lead_name: lead.business_name,
+        company: lead.niche,
         draft_id: result.draft_id as string,
         subject: result.subject as string,
       });
