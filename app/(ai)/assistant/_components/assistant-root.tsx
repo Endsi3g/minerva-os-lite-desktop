@@ -361,9 +361,12 @@ export function AssistantRoot() {
       setCanvasDocs(docsList);
 
       const storedSessId = localStorage.getItem(`minerva_active_sess_${workspaceId}`);
-      const activeSess = sessList.find(s => s.id === storedSessId);
+      // Prefer stored session, fall back to most recently updated session so
+      // messages are never "lost" just because localStorage was cleared
+      const activeSess = sessList.find(s => s.id === storedSessId) ?? sessList[0] ?? null;
       if (activeSess) {
         setCurrentSession(activeSess);
+        localStorage.setItem(`minerva_active_sess_${workspaceId}`, activeSess.id);
         const msgs = await dbGetMessages(activeSess.id);
         setMessages(msgs);
       } else {

@@ -282,8 +282,8 @@ export function TimelineRoot({ leadId: filterLeadId, hideSubNav }: TimelineRootP
 
     // ── 4. Agent actions ──────────────────────────────────────────────────────
     try {
-      const { data: settingsRow } = await supabase.from('settings').select('workspace_id, active_workspace_id').eq('user_id', user.id).maybeSingle();
-      const agentWsId = settingsRow?.workspace_id || settingsRow?.active_workspace_id;
+      const { data: settingsRow } = await supabase.from('settings').select('active_workspace_id').eq('user_id', user.id).maybeSingle();
+      const agentWsId = settingsRow?.active_workspace_id || localStorage.getItem('minerva_active_workspace_id');
       let q = supabase
         .from('agent_actions')
         .select('id, action_type, lead_id, reasoning, data_signals, result, autonomy_level, executed, created_at')

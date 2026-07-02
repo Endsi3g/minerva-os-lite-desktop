@@ -853,8 +853,12 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
 
         if (active) {
           setActiveWorkspace(active);
-          // Only persist if DB had no saved preference (first load or missing column)
-          // — avoids overwriting the correct savedId with the fallback on reload
+          // Always write to localStorage so components that read
+          // minerva_active_workspace_id directly never get an empty value
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('minerva_active_workspace_id', active.id);
+          }
+          // Only persist to DB if there was no saved preference yet
           if (!savedId) {
             fetch(getApiUrl('/api/workspaces'), {
               method: 'PATCH',
@@ -882,6 +886,9 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
     }
 
     setActiveWorkspace(ws);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('minerva_active_workspace_id', ws.id);
+    }
     window.dispatchEvent(new Event('minerva_workspace_changed'));
 
     const electronObj = typeof window !== 'undefined' && (window as any).electron ? (window as any).electron : null;
