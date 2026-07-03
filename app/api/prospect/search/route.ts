@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
-export const maxDuration = 90; // Vercel function timeout set to 90s
+export const maxDuration = 59; // 59s — safe on all Vercel plans (Hobby cap = 60s)
+export const dynamic = 'force-dynamic'; // always server-rendered, never statically cached
 
 interface ApifyPlace {
   title?: string;

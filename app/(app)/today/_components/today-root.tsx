@@ -28,7 +28,7 @@ import { StrategyMemoryCard } from './strategy-memory-card';
 import { WeeklyReportCard } from './weekly-report-card';
 import { SlaCard } from './sla-card';
 import { AgentJournal } from './agent-journal';
-import { MinervaOwl } from '@/components/minerva-owl';
+import { BarChart2 } from 'lucide-react';
 
 import {
   LayoutDashboard,
@@ -81,6 +81,66 @@ interface NbaLead {
   nba_reason: string | null;
   nba_channel: string | null;
 }
+
+// ── Pilotage Stratégique ──────────────────────────────────────────────────────
+
+function PilotageTab({ leads, tasks }: { leads: any[]; tasks: any[] }) {
+  const totalLeads = leads.length;
+  const clients = leads.filter(l => l.status === 'Client' || l.status === 'Won').length;
+  const activeLeads = leads.filter(l => l.status !== 'Client' && l.status !== 'Won' && l.status !== 'Perdu').length;
+  const doneTasks = tasks.filter(t => t.completed || t.status === 'completed').length;
+
+  const kpis = [
+    { icon: Users,        label: 'Leads actifs',   value: activeLeads, color: '#059669', bg: '#f0fdf4' },
+    { icon: CheckCircle2, label: 'Tâches réalisées', value: doneTasks,   color: '#2563eb', bg: '#eff6ff' },
+    { icon: TrendingUp,   label: 'Clients gagnés',  value: clients,     color: '#7c3aed', bg: '#f5f3ff' },
+    { icon: Gauge,        label: 'Total pipeline',  value: totalLeads,  color: '#d97706', bg: '#fffbeb' },
+  ];
+
+  return (
+    <div className="flex flex-col gap-6 p-4 sm:p-6 md:p-8 min-h-0">
+      {/* Header */}
+      <div className="flex items-center gap-3 border-b border-[#e5e5e0] pb-5">
+        <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-[#059669]/10 shrink-0">
+          <BarChart2 className="h-5 w-5 text-[#059669]" />
+        </div>
+        <div>
+          <h2 className="text-xl font-bold text-[#26251e] leading-tight">Pilotage stratégique</h2>
+          <p className="text-xs text-[#7a7a76] mt-0.5">Mémoire, performance et charge d'équipe en temps réel</p>
+        </div>
+      </div>
+
+      {/* KPI bar */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {kpis.map(({ icon: Icon, label, value, color, bg }) => (
+          <div key={label} className="flex items-center gap-3 rounded-xl border border-[#e5e5e0] bg-white px-4 py-3 shadow-xs">
+            <div className="flex items-center justify-center w-8 h-8 rounded-lg shrink-0" style={{ background: bg }}>
+              <Icon className="h-4 w-4" style={{ color }} />
+            </div>
+            <div className="min-w-0">
+              <p className="text-xl font-bold text-[#26251e] leading-none">{value}</p>
+              <p className="text-[10px] text-[#7a7a76] mt-0.5 truncate">{label}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Two-column grid */}
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+        <div className="flex flex-col gap-5">
+          <StrategyMemoryCard />
+          <WeeklyReportCard />
+        </div>
+        <div className="flex flex-col gap-5">
+          <SlaCard />
+          <AgentJournal />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Main TodayRoot ─────────────────────────────────────────────────────────────
 
 export function TodayRoot() {
   const router = useRouter();
@@ -448,33 +508,7 @@ export function TodayRoot() {
             )}
 
             {activeTab === 'pilotage' && (
-              <div className="flex flex-col gap-5 p-4 sm:p-6 md:p-8">
-                {/* Strategy Header */}
-                <div className="flex items-center gap-3 border-b border-[#e5e5e0] pb-5">
-                  <div className="w-10 h-10 shrink-0">
-                    <MinervaOwl state="analyse" />
-                  </div>
-                  <div>
-                    <h2 className="text-2xl font-sans font-bold text-[#26251e]">Pilotage stratégique</h2>
-                    <p className="text-xs text-[#7a7a76] mt-0.5">Pilotez et analysez la mémoire, la performance et la charge d'équipe</p>
-                  </div>
-                </div>
-
-                {/* Two Column Strategy layout */}
-                <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-                  {/* Left Column */}
-                  <div className="flex flex-col gap-5">
-                    <StrategyMemoryCard />
-                    <WeeklyReportCard />
-                  </div>
-
-                  {/* Right Column */}
-                  <div className="flex flex-col gap-5">
-                    <SlaCard />
-                    <AgentJournal />
-                  </div>
-                </div>
-              </div>
+              <PilotageTab leads={leads} tasks={tasks} />
             )}
           </div>
         </div>

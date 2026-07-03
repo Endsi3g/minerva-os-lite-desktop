@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useReach } from '@/lib/reach-context';
 import {
@@ -179,8 +179,13 @@ export function TimelineRoot({ leadId: filterLeadId, hideSubNav }: TimelineRootP
   const [filter, setFilter] = useState<EventType | 'all'>('all');
 
   // Build a map from lead_id → lead_name for agent actions
+  // Must be memoized — inline Object.fromEntries creates a new object every render,
+  // which makes `load` (useCallback below) recreate every render → infinite loop.
   const { leads } = useReach();
-  const leadNameMap = Object.fromEntries(leads.map(l => [l.id, l.businessName]));
+  const leadNameMap = useMemo(
+    () => Object.fromEntries(leads.map(l => [l.id, l.businessName])),
+    [leads],
+  );
 
   const load = useCallback(async () => {
     setLoading(true);

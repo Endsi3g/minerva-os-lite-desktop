@@ -569,10 +569,19 @@ export function ProspectingRoot() {
       const cities = selectedCities.length > 0 ? selectedCities : ['Montréal'];
 
       const checkResponseJson = async (r: Response) => {
-        const contentType = r.headers.get('content-type');
-        if (!r.ok || !contentType || !contentType.includes('application/json')) {
-          const text = await r.text();
-          throw new Error(text.slice(0, 80) || `HTTP error ${r.status}`);
+        const contentType = r.headers.get('content-type') ?? '';
+        if (!r.ok || !contentType.includes('application/json')) {
+          const text = await r.text().catch(() => '');
+          // Never show raw HTML to the user — extract a clean message
+          if (text.trim().startsWith('<')) {
+            throw new Error(`Erreur serveur ${r.status} — réessayez dans quelques instants`);
+          }
+          try {
+            const json = JSON.parse(text);
+            throw new Error(json.error || `HTTP ${r.status}`);
+          } catch {
+            throw new Error(text.slice(0, 100) || `Erreur serveur ${r.status}`);
+          }
         }
         return r.json();
       };
