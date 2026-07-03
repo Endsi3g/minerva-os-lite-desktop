@@ -152,6 +152,18 @@ function MarkdownRenderer({ content, t }: { content: string; t: any }) {
             continue;
           }
 
+          // Blockquote — strip "> " prefix, render as clean text (common in AI email drafts)
+          if (/^>\s?/.test(line)) {
+            const bqText = line.replace(/^>\s?/, '');
+            nodes.push(
+              bqText.trim()
+                ? <p key={`${i}-${i2}`} className="whitespace-pre-wrap">{renderInline(bqText)}</p>
+                : <div key={`${i}-${i2}`} className="h-1" />
+            );
+            i2++;
+            continue;
+          }
+
           // Horizontal rule
           if (/^---+$/.test(line.trim())) {
             nodes.push(<hr key={`${i}-${i2}`} className="border-[#e5e5e0]/60 my-2" />);
@@ -527,6 +539,10 @@ export function AssistantRoot() {
   const [canvasFontSize, setCanvasFontSize] = useState<'sm' | 'base' | 'lg'>('base');
   const [showSaveToLibraryPrompt, setShowSaveToLibraryPrompt] = useState(false);
   const [lastExportedContent, setLastExportedContent] = useState<{ title: string; content: string } | null>(null);
+
+  // Hermès orchestrator state
+  const [hermesSteps, setHermesSteps] = useState<Array<{ type: string; content?: string; tool?: string; params?: any }>>([]);
+  const [hermesRunning, setHermesRunning] = useState(false);
 
   // Canvas float state
   const [isCanvasFloating, setIsCanvasFloating] = useState(false);
@@ -1049,6 +1065,87 @@ Important : ne génère un bloc action QUE si l'utilisateur demande explicitemen
       skillInstructions ? `## Compétences activées\n${skillInstructions}` : '',
       contextText ? `## Contexte CRM (données réelles du workspace)\n${contextText}` : '',
     ].filter(Boolean).join('\n\n');
+
+    // Hermès detection: complex CRM tasks that need the orchestrator agent
+    const hermesKeywords = [
+      'campagne', 'campaign', 'séquence', 'sequence', 'envoyer à tous', 'send to all',
+      'envoyer des emails', 'send emails', 'enrolle', 'enroll', 'place une campagne',
+      'créer une campagne', 'create campaign', 'leads avec site', 'leads with website',
+      'tous mes leads', 'all my leads', 'automatise', 'automate',
+    ];
+    const isHermesTask = !fileToAttach && hermesKeywords.some(kw => trimmed.toLowerCase().includes(kw));
+
+    if (isHermesTask) {
+      // Route to Hermès orchestrator and stream steps into chat
+      const hermesMsg: Message = { role: 'assistant', content: '' };
+      const hermesIdx = history.length;
+      setMessages([...history, hermesMsg]);
+      setHermesRunning(true);
+      setHermesSteps([]);
+
+      try {
+        const hRes = await fetch(getApiUrl('/api/agent/hermes'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ task: trimmed, workspace_id: workspaceId }),
+        });
+        if (!hRes.ok) throw new Error(`Hermès ${hRes.status}`);
+
+        const reader2 = hRes.body?.getReader();
+        const dec2 = new TextDecoder();
+        let hermesOutput = '';
+        let steps: typeof hermesSteps = [];
+
+        while (reader2) {
+          const { done, value } = await reader2.read();
+          if (done) break;
+          const chunk = dec2.decode(value);
+          for (const line of chunk.split('\n').filter(Boolean)) {
+            try {
+              const ev = JSON.parse(line) as { type: string; content?: string; tool?: string; params?: any; actions_executed?: number };
+              steps = [...steps, ev];
+              setHermesSteps([...steps]);
+
+              if (ev.type === 'final') {
+                hermesOutput = ev.content || '';
+              } else if (ev.type === 'thought') {
+                hermesOutput += `*${ev.content}*\n`;
+              } else if (ev.type === 'action') {
+                hermesOutput += `→ **${ev.tool}**${ev.params ? ': ' + JSON.stringify(ev.params).slice(0, 80) : ''}\n`;
+              } else if (ev.type === 'observation') {
+                hermesOutput += `✓ ${ev.content}\n`;
+              }
+
+              setMessages(prev => {
+                const updated = [...prev];
+                if (updated[hermesIdx]) updated[hermesIdx] = { ...updated[hermesIdx], content: hermesOutput };
+                return updated;
+              });
+            } catch { /* skip malformed lines */ }
+          }
+        }
+
+        const finalMsg = steps.find(s => s.type === 'final');
+        const savedContent = finalMsg?.content || hermesOutput || 'Tâche terminée.';
+        await dbSaveMessage(activeSess.id, userId, 'assistant', savedContent);
+        setMessages(prev => {
+          const updated = [...prev];
+          if (updated[hermesIdx]) updated[hermesIdx] = { ...updated[hermesIdx], content: savedContent };
+          return updated;
+        });
+      } catch (err) {
+        const errMsg = `Erreur Hermès: ${err instanceof Error ? err.message : String(err)}`;
+        setMessages(prev => {
+          const updated = [...prev];
+          if (updated[hermesIdx]) updated[hermesIdx] = { ...updated[hermesIdx], content: errMsg };
+          return updated;
+        });
+      } finally {
+        setHermesRunning(false);
+        setIsLoading(false);
+      }
+      return;
+    }
 
     try {
       // An attached image requires a vision-capable model — auto-use the vision
@@ -1663,8 +1760,9 @@ Important : ne génère un bloc action QUE si l'utilisateur demande explicitemen
       `}</style>
       
       {/* ── LEFT PANEL: CHAT INTERFACE & SIDEBAR ── */}
+      {/* When canvas is floating (détaché) the chat takes full width */}
       <div className={`flex h-full bg-white transition-all duration-300 relative overflow-hidden ${
-        isCanvasOpen ? 'w-full md:w-[40%] border-r border-[#e6e5e0]' : 'w-full'
+        (isCanvasOpen && !isCanvasFloating) ? 'w-full md:w-[40%] border-r border-[#e6e5e0]' : 'w-full'
       }`}>
         
         {/* collapsible sidebar for thread/canvas doc history — auto-collapse when canvas opens */}

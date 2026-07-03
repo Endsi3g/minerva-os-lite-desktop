@@ -58,6 +58,8 @@ import {
   MoreHorizontal,
   Home,
   Gauge,
+  Brain,
+  Bot,
 } from 'lucide-react';
 import { BottomBlur } from '@/components/ui/edge-blur';
 import { cn } from '@/lib/utils';
@@ -789,6 +791,16 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
         { name: 'Séquences',    href: '/sequences',     icon: Mail },
         { name: 'Campagnes',    href: '/campaigns',     icon: Megaphone },
         { name: 'Playbooks',    href: '/playbooks',     icon: BookOpen },
+      ],
+    },
+    {
+      id: 'ai',
+      label: 'Minerva AI',
+      items: [
+        { name: 'Assistant IA', href: '/assistant',    icon: Sparkles },
+        { name: 'Agents',       href: '/agents',       icon: Bot },
+        { name: 'Intelligence', href: '/intelligence', icon: Brain },
+        { name: 'Skills',       href: '/skills',       icon: Zap },
       ],
     },
   ];
@@ -1721,12 +1733,13 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
               </div>
 
               {/* Section IA */}
-              <p className="text-[9px] font-black uppercase tracking-widest text-[#7a7a76] px-5 pt-3 pb-1">Intelligence</p>
+              <p className="text-[9px] font-black uppercase tracking-widest text-[#7a7a76] px-5 pt-3 pb-1">Minerva AI</p>
               <div className="grid grid-cols-4 gap-0.5 px-3">
                 {([
                   { name: 'Assistant',    href: '/assistant',    icon: Sparkles },
-                  { name: 'Revenue OS',   href: '/today?tab=pilotage',      icon: Gauge },
-                  { name: 'Agents',       href: '/agents',       icon: Zap },
+                  { name: 'Intelligence', href: '/intelligence', icon: Brain },
+                  { name: 'Agents',       href: '/agents',       icon: Bot },
+                  { name: 'Skills',       href: '/skills',       icon: Zap },
                 ] as { name: string; href: string; icon: React.ElementType }[]).map(({ name, href, icon: Icon }) => {
                   const isActive = pathname.startsWith(href);
                   return (
