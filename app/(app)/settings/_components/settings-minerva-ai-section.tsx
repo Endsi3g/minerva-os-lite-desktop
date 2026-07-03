@@ -13,8 +13,9 @@ import {
   Sparkles, Brain, Loader2, Check, ExternalLink, Globe,
   MessageSquare, FileSearch, Mail, Image, HelpCircle, Zap,
   Key, Eye, EyeOff, Trash2, ArrowRight, Bot, BookOpen,
-  BarChart3, Clock, Coins,
+  BarChart3, Clock, Coins, PlayCircle, ChevronRight, Activity,
 } from 'lucide-react';
+import { getApiUrl } from '@/lib/api-helper';
 
 // ── Tools registry ─────────────────────────────────────────────────────────────
 
@@ -164,12 +165,22 @@ function ApiKeyField({
 
 // ── Main section ───────────────────────────────────────────────────────────────
 
+type AutonomyLevel = 'off' | 'suggest' | 'prepare' | 'act_with_approval' | 'auto';
+
 interface MinervaAiData {
   activeModel: string;
   firecrawlKeyMasked: string | null;
   memoryEnabled: boolean;
   spatialAiEnabled: boolean;
   webResearchEnabled: boolean;
+  agentEnabled: boolean;
+  agentAutonomy: {
+    tasks: AutonomyLevel;
+    pipeline: AutonomyLevel;
+    outreach_draft: AutonomyLevel;
+    outreach_followup: AutonomyLevel;
+    sequences: AutonomyLevel;
+  };
 }
 
 interface SettingsMinervaAiSectionProps {
@@ -177,17 +188,29 @@ interface SettingsMinervaAiSectionProps {
 }
 
 export function SettingsMinervaAiSection({ isSaving }: SettingsMinervaAiSectionProps) {
+  const DEFAULT_AUTONOMY = {
+    tasks: 'auto' as AutonomyLevel,
+    pipeline: 'act_with_approval' as AutonomyLevel,
+    outreach_draft: 'prepare' as AutonomyLevel,
+    outreach_followup: 'auto' as AutonomyLevel,
+    sequences: 'off' as AutonomyLevel,
+  };
+
   const [data, setData] = useState<MinervaAiData>({
     activeModel: 'claude-sonnet-4-6',
     firecrawlKeyMasked: null,
     memoryEnabled: true,
     spatialAiEnabled: true,
     webResearchEnabled: false,
+    agentEnabled: true,
+    agentAutonomy: DEFAULT_AUTONOMY,
   });
   const [stats, setStats] = useState({ conversations: 0, emailsDrafted: 0, researchQueries: 0 });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [triggerStatus, setTriggerStatus] = useState<'idle' | 'loading' | 'done' | 'error'>('idle');
+  const [triggerResult, setTriggerResult] = useState<string>('');
 
   useEffect(() => {
     const load = async () => {
@@ -196,7 +219,7 @@ export function SettingsMinervaAiSection({ isSaving }: SettingsMinervaAiSectionP
       if (!user) { setLoading(false); return; }
       const { data: row } = await supabase
         .from('settings')
-        .select('ai_model, firecrawl_api_key_masked, ai_memory_enabled, ai_spatial_enabled, ai_web_research_enabled')
+        .select('ai_model, firecrawl_api_key_masked, ai_memory_enabled, ai_spatial_enabled, ai_web_research_enabled, agent_enabled, agent_autonomy')
         .eq('user_id', user.id)
         .maybeSingle();
       if (row) {
@@ -206,6 +229,8 @@ export function SettingsMinervaAiSection({ isSaving }: SettingsMinervaAiSectionP
           memoryEnabled: row.ai_memory_enabled ?? true,
           spatialAiEnabled: row.ai_spatial_enabled ?? true,
           webResearchEnabled: row.ai_web_research_enabled ?? false,
+          agentEnabled: row.agent_enabled ?? true,
+          agentAutonomy: { ...DEFAULT_AUTONOMY, ...(row.agent_autonomy || {}) },
         });
       }
       // Mock usage stats (replace with real aggregation query when available)
@@ -264,6 +289,41 @@ export function SettingsMinervaAiSection({ isSaving }: SettingsMinervaAiSectionP
     setData(prev => ({ ...prev, firecrawlKeyMasked: null }));
   };
 
+  const handleAutonomyChange = async (domain: keyof typeof data.agentAutonomy, level: AutonomyLevel) => {
+    const next = { ...data.agentAutonomy, [domain]: level };
+    setData(prev => ({ ...prev, agentAutonomy: next }));
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    await supabase.from('settings').upsert({ user_id: user.id, agent_autonomy: next });
+  };
+
+  const handleAgentToggle = async (enabled: boolean) => {
+    setData(prev => ({ ...prev, agentEnabled: enabled }));
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    await supabase.from('settings').upsert({ user_id: user.id, agent_enabled: enabled });
+  };
+
+  const handleTriggerAgent = async () => {
+    setTriggerStatus('loading');
+    setTriggerResult('');
+    try {
+      const res = await fetch(getApiUrl('/api/agent/loop'), { method: 'POST' });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Erreur');
+      const executed = json.results?.filter((r: any) => r.executed).length ?? 0;
+      const suggested = json.results?.filter((r: any) => !r.executed).length ?? 0;
+      setTriggerResult(`${executed} action(s) exécutée(s), ${suggested} suggérée(s).`);
+      setTriggerStatus('done');
+    } catch (e) {
+      setTriggerResult((e as Error).message);
+      setTriggerStatus('error');
+    }
+    setTimeout(() => setTriggerStatus('idle'), 8000);
+  };
+
   if (loading) {
     return (
       <SettingsSectionWrapper title="Minerva AI" description="Configuration du cerveau IA de l'application." isSaving={false}>
@@ -307,6 +367,85 @@ export function SettingsMinervaAiSection({ isSaving }: SettingsMinervaAiSectionP
                 </div>
               </div>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* ── Agent autonomy ── */}
+        <Card className="border border-[#e5e5e0] bg-white">
+          <CardContent className="p-5 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-bold text-[#26251e] uppercase tracking-wider flex items-center gap-1.5">
+                <Activity className="h-3.5 w-3.5 text-[#059669]" />
+                Agent autonome
+              </h3>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] text-[#7a7a76] font-semibold">
+                  {data.agentEnabled ? 'Actif' : 'Inactif'}
+                </span>
+                <Switch
+                  checked={data.agentEnabled}
+                  onCheckedChange={handleAgentToggle}
+                />
+              </div>
+            </div>
+
+            {data.agentEnabled && (
+              <>
+                <p className="text-[11px] text-[#7a7a76] leading-relaxed">
+                  Définissez le niveau d'autonomie pour chaque domaine. <strong>Suggérer</strong> = l'agent recommande, vous décidez. <strong>Auto</strong> = l'agent agit sans validation.
+                </p>
+
+                {([
+                  { key: 'tasks', label: 'Tâches', desc: 'Créer des tâches de suivi automatiquement' },
+                  { key: 'pipeline', label: 'Pipeline', desc: 'Mettre à jour les statuts leads' },
+                  { key: 'outreach_draft', label: 'Emails (brouillons)', desc: 'Préparer des emails de prospection' },
+                  { key: 'outreach_followup', label: 'Emails (relances)', desc: 'Envoyer des relances automatiques' },
+                  { key: 'sequences', label: 'Séquences', desc: 'Inscrire des leads dans des séquences' },
+                ] as const).map(({ key, label, desc }) => (
+                  <div key={key} className="flex items-center justify-between gap-3 py-1.5 border-t border-[#f0f0ec] first:border-0">
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold text-[#26251e]">{label}</p>
+                      <p className="text-[10px] text-[#7a7a76]">{desc}</p>
+                    </div>
+                    <select
+                      value={data.agentAutonomy[key]}
+                      onChange={(e) => handleAutonomyChange(key, e.target.value as AutonomyLevel)}
+                      className="text-[10px] font-bold border border-[#e5e5e0] rounded-lg px-2 py-1.5 bg-white text-[#26251e] focus:outline-none focus:ring-1 focus:ring-[#059669] shrink-0"
+                    >
+                      <option value="off">Désactivé</option>
+                      <option value="suggest">Suggérer</option>
+                      <option value="prepare">Préparer</option>
+                      <option value="act_with_approval">Avec approbation</option>
+                      <option value="auto">Automatique</option>
+                    </select>
+                  </div>
+                ))}
+
+                <div className="pt-2 border-t border-[#f0f0ec]">
+                  <div className="flex items-center gap-3">
+                    <Button
+                      type="button"
+                      onClick={handleTriggerAgent}
+                      disabled={triggerStatus === 'loading'}
+                      className="h-8 px-3 text-xs font-bold bg-[#059669] hover:bg-[#047857] text-white gap-1.5 shrink-0"
+                    >
+                      {triggerStatus === 'loading'
+                        ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        : <PlayCircle className="h-3.5 w-3.5" />}
+                      {triggerStatus === 'loading' ? 'En cours...' : 'Déclencher maintenant'}
+                    </Button>
+                    {triggerResult && (
+                      <p className={`text-[10px] font-semibold ${triggerStatus === 'error' ? 'text-red-600' : 'text-[#059669]'}`}>
+                        {triggerStatus === 'done' ? '✓ ' : '✗ '}{triggerResult}
+                      </p>
+                    )}
+                    {!triggerResult && (
+                      <p className="text-[10px] text-[#7a7a76]">Lance un cycle agent maintenant sans attendre la cron nocturne.</p>
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
 

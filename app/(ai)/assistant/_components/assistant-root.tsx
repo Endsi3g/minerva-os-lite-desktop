@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
@@ -45,7 +45,6 @@ import {
   Zap,
 } from 'lucide-react';
 import { MinervaIcon } from '@/components/icons';
-import { MinervaOwl } from '@/components/minerva-owl';
 import { useLanguage } from '@/lib/language-context';
 import {
   dbGetSessions,
@@ -278,7 +277,145 @@ function parseToolBlock(content: string): { block: ToolBlock; before: string; af
   return null;
 }
 
-function RichMessageContent({ content, t }: { content: string; t: any }) {
+// ── Action block parser ─────────────────────────────────────────────────────
+
+type MinervaActionPayload = {
+  action: string;
+  params: Record<string, any>;
+  summary: string;
+};
+
+function parseActionBlock(content: string): {
+  action: MinervaActionPayload;
+  before: string;
+  after: string;
+} | null {
+  const regex = /```minerva-action\n([\s\S]*?)```/;
+  const match = content.match(regex);
+  if (!match) return null;
+  try {
+    const parsed = JSON.parse(match[1]);
+    if (!parsed.action || !parsed.summary) return null;
+    const fullMatch = match[0];
+    const matchStart = content.indexOf(fullMatch);
+    return {
+      action: parsed,
+      before: content.slice(0, matchStart),
+      after: content.slice(matchStart + fullMatch.length),
+    };
+  } catch {
+    return null;
+  }
+}
+
+function ActionCard({
+  action,
+  onExecute,
+}: {
+  action: MinervaActionPayload;
+  onExecute: () => Promise<{ success: boolean; message: string }>;
+}) {
+  const [status, setStatus] = React.useState<'pending' | 'loading' | 'done' | 'error'>('pending');
+  const [resultMsg, setResultMsg] = React.useState('');
+
+  const handleConfirm = async () => {
+    setStatus('loading');
+    const res = await onExecute();
+    setResultMsg(res.message);
+    setStatus(res.success ? 'done' : 'error');
+  };
+
+  const actionLabels: Record<string, string> = {
+    create_lead: 'Créer un lead',
+    send_email: 'Envoyer un email',
+    create_task: 'Créer une tâche',
+    update_lead_status: 'Mettre à jour le statut',
+    create_campaign: 'Créer une campagne',
+    create_sequence: 'Créer une séquence',
+    search_gmail_sent: 'Voir les emails envoyés',
+    search_gmail_replies: 'Voir les réponses Gmail',
+  };
+
+  return (
+    <div className="border border-[#059669]/25 bg-gradient-to-br from-[#f0fdf4] to-white rounded-xl p-3.5 space-y-2.5 my-2">
+      <div className="flex items-center gap-2">
+        <div className="h-6 w-6 rounded-md bg-[#059669]/15 flex items-center justify-center">
+          <Zap className="h-3.5 w-3.5 text-[#059669]" />
+        </div>
+        <span className="text-[10px] font-black uppercase tracking-wider text-[#059669]">
+          {actionLabels[action.action] || 'Action Minerva'}
+        </span>
+      </div>
+      <p className="text-sm text-[#26251e] font-medium">{action.summary}</p>
+      {Object.keys(action.params || {}).length > 0 && (
+        <div className="bg-white/60 rounded-lg px-3 py-2 space-y-1 border border-[#e5e5e0]/60">
+          {Object.entries(action.params).slice(0, 5).map(([k, v]) => (
+            <div key={k} className="flex items-center gap-2 text-[11px]">
+              <span className="text-[#7a7a76] font-semibold capitalize">{k.replace(/_/g, ' ')}:</span>
+              <span className="text-[#26251e] font-medium truncate max-w-[200px]">{String(v)}</span>
+            </div>
+          ))}
+        </div>
+      )}
+      {status === 'pending' && (
+        <div className="flex gap-2 pt-0.5">
+          <button
+            onClick={handleConfirm}
+            className="h-7 px-3.5 bg-[#059669] hover:bg-[#047857] text-white text-xs font-bold rounded-lg transition-colors"
+          >
+            Confirmer
+          </button>
+          <button
+            onClick={() => { setStatus('error'); setResultMsg('Action annulée'); }}
+            className="h-7 px-3 bg-neutral-100 hover:bg-neutral-200 text-[#26251e] text-xs font-semibold rounded-lg transition-colors"
+          >
+            Annuler
+          </button>
+        </div>
+      )}
+      {status === 'loading' && (
+        <div className="flex items-center gap-2 text-xs text-[#059669] font-semibold">
+          <div className="h-3.5 w-3.5 border-2 border-[#059669] border-t-transparent rounded-full animate-spin" />
+          Exécution en cours...
+        </div>
+      )}
+      {status === 'done' && (
+        <div className="flex items-center gap-2 text-xs text-[#059669] font-bold">
+          <Check className="h-3.5 w-3.5" />
+          {resultMsg || 'Action exécutée avec succès'}
+        </div>
+      )}
+      {status === 'error' && (
+        <div className="text-xs text-red-600 font-semibold">{resultMsg || 'Action annulée'}</div>
+      )}
+    </div>
+  );
+}
+
+// ── Rich message content ─────────────────────────────────────────────────────
+
+function RichMessageContent({
+  content,
+  t,
+  onAction,
+}: {
+  content: string;
+  t: any;
+  onAction?: (action: MinervaActionPayload) => Promise<{ success: boolean; message: string }>;
+}) {
+  // Check for CRM action blocks first
+  const actionResult = parseActionBlock(content);
+  if (actionResult && onAction) {
+    const { action, before, after } = actionResult;
+    return (
+      <div className="space-y-3">
+        {before.trim() && <MarkdownRenderer content={before.trim()} t={t} />}
+        <ActionCard action={action} onExecute={() => onAction(action)} />
+        {after.trim() && <MarkdownRenderer content={after.trim()} t={t} />}
+      </div>
+    );
+  }
+
   const toolResult = parseToolBlock(content);
 
   if (toolResult) {
@@ -324,7 +461,7 @@ function RichMessageContent({ content, t }: { content: string; t: any }) {
 // ────────────────────────────────────────────────────────────────────────────
 
 export function AssistantRoot() {
-  const { user, leads, tasks, activeWorkspace } = useReach();
+  const { user, leads, tasks, activeWorkspace, addLead, addTask, updateLeadStatus } = useReach();
   const { t, locale } = useLanguage();
   const { enabledSkills } = useSkills(activeWorkspace?.id);
 
@@ -407,6 +544,86 @@ export function AssistantRoot() {
 
   const userId = user?.id || 'anonymous';
   const workspaceId = activeWorkspace?.id || 'default_ws';
+
+  // ── CRM action executor — called by ActionCard confirm button ─────────────
+  const executeAction = useCallback(async (
+    actionData: MinervaActionPayload,
+  ): Promise<{ success: boolean; message: string }> => {
+    try {
+      switch (actionData.action) {
+        case 'create_lead': {
+          const p = actionData.params;
+          await addLead({
+            businessName: p.business_name || p.businessName || 'Nouveau lead',
+            contactName: p.contact_name || p.contactName || '',
+            contactEmail: p.email || p.contact_email || '',
+            niche: p.niche || 'Autre',
+            city: p.city || '',
+            source: 'assistant',
+            status: (p.status as any) || 'New',
+            temperature: (p.temperature as any) || 'Cold',
+            nextAction: 'Contacter',
+            nextActionDate: new Date(Date.now() + 86_400_000).toISOString().split('T')[0],
+            phone: p.phone || '',
+            website: p.website || '',
+            notes: p.notes || '',
+          });
+          return { success: true, message: `Lead "${p.business_name || p.businessName}" créé avec succès` };
+        }
+        case 'create_task': {
+          const p = actionData.params;
+          await addTask(
+            p.title || actionData.summary,
+            (p.category as any) || 'follow_up',
+            p.due_date,
+          );
+          return { success: true, message: `Tâche "${p.title || actionData.summary}" créée` };
+        }
+        case 'update_lead_status': {
+          const p = actionData.params;
+          if (!p.lead_id) return { success: false, message: 'ID lead manquant' };
+          await updateLeadStatus(p.lead_id, p.status);
+          return { success: true, message: `Statut mis à jour : ${p.status}` };
+        }
+        case 'send_email': {
+          const p = actionData.params;
+          const res = await fetch(getApiUrl('/api/send-email'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              to: p.to || p.recipient_email,
+              subject: p.subject,
+              body: p.body || p.content,
+              leadId: p.lead_id,
+            }),
+          });
+          if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            return { success: false, message: err.error || 'Erreur lors de l\'envoi' };
+          }
+          return { success: true, message: `Email envoyé à ${p.to || p.recipient_email}` };
+        }
+        case 'search_gmail_sent': {
+          const res = await fetch(getApiUrl('/api/gmail/threads?folder=SENT&limit=10'));
+          if (!res.ok) return { success: false, message: 'Impossible de charger les emails envoyés' };
+          const data = await res.json();
+          const count = data.threads?.length || 0;
+          return { success: true, message: `${count} email(s) envoyés récents chargés — consultez /inbox pour les détails` };
+        }
+        case 'search_gmail_replies': {
+          const res = await fetch(getApiUrl('/api/gmail/threads?folder=INBOX&hasReply=true&limit=10'));
+          if (!res.ok) return { success: false, message: 'Impossible de charger les réponses' };
+          const data = await res.json();
+          const count = data.threads?.length || 0;
+          return { success: true, message: `${count} réponse(s) reçues — consultez /inbox pour les lire` };
+        }
+        default:
+          return { success: false, message: `Action inconnue : ${actionData.action}` };
+      }
+    } catch (e) {
+      return { success: false, message: (e as Error).message };
+    }
+  }, [addLead, addTask, updateLeadStatus]);
 
   // TipTap WYSIWYG editor
   const editor = useEditor({
@@ -675,7 +892,7 @@ export function AssistantRoot() {
               <span className="truncate max-w-[150px]">{msg.attachedFile.name}</span>
             </div>
           )}
-          <RichMessageContent content={msg.content} t={t} />
+          <RichMessageContent content={msg.content} t={t} onAction={executeAction} />
         </div>
       );
     }
@@ -697,12 +914,13 @@ export function AssistantRoot() {
     );
   };
 
-  // Start a new thread
+  // Start a new thread — do NOT dispatch minerva_assistant_sync here: that
+  // triggers loadWorkspaceData() which falls back to sessions[0] and immediately
+  // re-loads the last chat, defeating the purpose of the new-chat action.
   const handleClearChat = () => {
     setCurrentSession(null);
     setMessages([]);
     localStorage.removeItem(`minerva_active_sess_${workspaceId}`);
-    window.dispatchEvent(new CustomEvent('minerva_assistant_sync'));
   };
 
   // Send message handler
@@ -810,8 +1028,24 @@ export function AssistantRoot() {
     };
     const contextText = activeContextIds.map(buildContext).filter(Boolean).join('\n\n');
 
+    const actionsPrompt = `## Actions Minerva — exécutables en temps réel
+Quand l'utilisateur demande une action CRM concrète (créer un lead, envoyer un email, créer une tâche, mettre à jour un statut...), génère un bloc d'action JSON dans ta réponse, en PLUS d'une courte explication :
+\`\`\`minerva-action
+{"action": "nom_action", "params": {...}, "summary": "Résumé de l'action en une phrase"}
+\`\`\`
+Actions disponibles :
+- create_lead : params { business_name, city, phone, niche, email, website, notes, status ("New"|"Contacted"|"Interested"), temperature ("Cold"|"Warm"|"Hot") }
+- send_email : params { to, subject, body, lead_id? }
+- create_task : params { title, category ("call"|"email"|"follow_up"|"meeting"), due_date? }
+- update_lead_status : params { lead_id, status }
+- search_gmail_sent : params {} — liste les emails envoyés récents
+- search_gmail_replies : params {} — liste les réponses reçues
+
+Important : ne génère un bloc action QUE si l'utilisateur demande explicitement une action. Pour les questions ou analyses, réponds normalement sans bloc action.`;
+
     const systemWithSkills = [
       canvasSystemPrompt,
+      actionsPrompt,
       skillInstructions ? `## Compétences activées\n${skillInstructions}` : '',
       contextText ? `## Contexte CRM (données réelles du workspace)\n${contextText}` : '',
     ].filter(Boolean).join('\n\n');
@@ -1590,8 +1824,8 @@ export function AssistantRoot() {
               >
                 <History className="w-3.5 h-3.5" />
               </Button>
-              <div className="h-6 w-6 rounded-md bg-[#10b981]/15 text-[#10b981] flex items-center justify-center shrink-0 overflow-hidden">
-                <MinervaOwl state="idle" size={20} />
+              <div className="h-6 w-6 rounded-md bg-[#10b981]/15 flex items-center justify-center shrink-0 overflow-hidden">
+                <img src="/icon-512.png" className="h-5 w-5 rounded object-cover" alt="Minerva" />
               </div>
               <span className="text-xs font-bold text-[#26251e]">Minerva AI Assistant</span>
               {currentSession && (
@@ -1619,7 +1853,36 @@ export function AssistantRoot() {
           <div className="flex-1 overflow-y-auto min-h-0 bg-white">
             {messages.length === 0 ? (
               /* Claude-style landing composer */
+              (() => {
+                const hour = new Date().getHours();
+                const greetingHello = hour < 12 ? 'Bonjour' : hour < 17 ? 'Bon après-midi' : 'Bonsoir';
+                const hotLeads = leads.filter(l => l.temperature === 'Hot').length;
+                const newLeads = leads.filter(l => l.status === 'New').length;
+                const openTasks = tasks.filter(t => !t.completed).length;
+                const greetingContext = hotLeads > 3
+                  ? `${hotLeads} leads chauds prêts à convertir — c'est le moment d'agir.`
+                  : hotLeads > 0
+                  ? `${hotLeads} lead${hotLeads > 1 ? 's chauds' : ' chaud'} à contacter en priorité.`
+                  : openTasks > 5
+                  ? `${openTasks} tâches ouvertes — je peux vous aider à prioriser.`
+                  : newLeads > 0
+                  ? `${newLeads} nouveau${newLeads > 1 ? 'x' : ''} lead${newLeads > 1 ? 's' : ''} dans le pipeline.`
+                  : leads.length > 0
+                  ? `Pipeline à jour · ${leads.length} leads suivis.`
+                  : 'Votre espace commercial est prêt.';
+                return (
               <div className="flex flex-col items-center justify-center min-h-full px-6 animate-scale-up" style={{ paddingTop: '6vh', paddingBottom: '4vh', gap: '1.5rem' }}>
+
+                {/* Personalized greeting */}
+                <div className="text-center space-y-2 animate-fade-in-up">
+                  <div className="flex items-center justify-center mb-3">
+                    <div className="h-14 w-14 rounded-2xl overflow-hidden shadow-md border border-[#e5e5e0]">
+                      <img src="/icon-512.png" className="h-full w-full object-cover" alt="Minerva" />
+                    </div>
+                  </div>
+                  <h2 className="text-2xl font-black text-[#26251e]">{greetingHello} 👋</h2>
+                  <p className="text-sm text-[#7a7a76] font-medium">{greetingContext}</p>
+                </div>
 
                 {/* Claude-style composer card */}
                 <div className="w-full max-w-[680px]">
@@ -1758,6 +2021,7 @@ export function AssistantRoot() {
                 </div>
 
               </div>
+            ); })()
             ) : (
               /* Active message feed container */
               <div className="p-4 space-y-6">
@@ -1785,8 +2049,8 @@ export function AssistantRoot() {
                       }`}
                     >
                       {msg.role === 'assistant' ? (
-                        <div className="h-7 w-7 rounded-lg bg-neutral-100 border border-neutral-200 text-[#10b981] flex items-center justify-center shrink-0 mt-0.5 overflow-hidden">
-                          <MinervaOwl state="idle" size={24} />
+                        <div className="h-7 w-7 rounded-lg bg-neutral-100 border border-neutral-200 flex items-center justify-center shrink-0 mt-0.5 overflow-hidden">
+                          <img src="/icon-512.png" className="h-6 w-6 rounded object-cover" alt="Minerva" />
                         </div>
                       ) : (
                         <div className="h-7 w-7 rounded-full bg-[#26251e] text-white flex items-center justify-center shrink-0 text-[10px] font-bold mt-0.5 select-none">
@@ -1817,8 +2081,8 @@ export function AssistantRoot() {
 
                 {isLoading && (
                   <div className="flex gap-3 max-w-[85%] mr-auto items-center">
-                    <div className="h-7 w-7 rounded-lg bg-emerald-50 border border-emerald-200 text-[#059669] flex items-center justify-center shrink-0 overflow-hidden">
-                      <MinervaOwl state="thinking" size={24} />
+                    <div className="h-7 w-7 rounded-lg bg-emerald-50 border border-emerald-200 flex items-center justify-center shrink-0 overflow-hidden">
+                      <img src="/icon-512.png" className="h-6 w-6 rounded object-cover animate-pulse" alt="Minerva" />
                     </div>
                     <div className="bg-white border-0 rounded-2xl rounded-tl-none px-4 py-2.5">
                       <div className="flex items-center gap-2">
