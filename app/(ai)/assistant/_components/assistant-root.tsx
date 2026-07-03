@@ -1114,6 +1114,8 @@ Important : ne génère un bloc action QUE si l'utilisateur demande explicitemen
                 hermesOutput += `→ **${ev.tool}**${ev.params ? ': ' + JSON.stringify(ev.params).slice(0, 80) : ''}\n`;
               } else if (ev.type === 'observation') {
                 hermesOutput += `✓ ${ev.content}\n`;
+              } else if (ev.type === 'error') {
+                hermesOutput += `⚠️ Erreur: ${(ev as any).message || 'Erreur inconnue'}\n`;
               }
 
               setMessages(prev => {

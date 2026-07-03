@@ -28,33 +28,51 @@ const getGlobalKeys = () => ({
 
 export function resolveAIProvider(settings?: AISettings | null) {
   const keys = getGlobalKeys();
+  const explicitProvider = settings?.ai_provider;
+  const rawModel = settings?.ai_model;
 
-  // If Cloudflare Token and Account ID are set, make it the default provider
-  if (keys.cloudflareToken && keys.cloudflareAccountId) {
-    const provider = 'cloudflare';
-    const rawModel = settings?.ai_model;
-    const model = (rawModel && !rawModel.startsWith('claude')) ? rawModel : 'google/gemma-4-26b-a4b-it';
-    return { provider, model, apiKey: keys.cloudflareToken };
+  // 1. Explicit Anthropic selection — or model name starts with "claude"
+  if (
+    explicitProvider === 'anthropic' ||
+    (rawModel?.startsWith('claude') && !explicitProvider)
+  ) {
+    if (keys.anthropicKey) {
+      const model = rawModel?.startsWith('claude') ? rawModel : 'claude-sonnet-4-6';
+      return { provider: 'anthropic', model, apiKey: keys.anthropicKey };
+    }
   }
 
-  const userOpenrouterKey = settings?.openrouter_key || '';
-  const openrouterKey = userOpenrouterKey || keys.openrouterKey;
+  // 2. Explicit OpenRouter selection
+  if (explicitProvider === 'openrouter') {
+    const apiKey = settings?.openrouter_key || keys.openrouterKey;
+    const STALE = new Set(['openrouter/free', 'meta-llama/llama-3-8b-instruct:free',
+      'meta-llama/llama-3.1-8b-instruct:free', 'google/gemma-2-9b-it:free',
+      'qwen/qwen-2-7b-instruct:free', 'llama-3.3-70b-versatile', 'meta-llama/Llama-3-70b-chat-hf']);
+    const model = (rawModel && !STALE.has(rawModel) && !rawModel.startsWith('claude')) ? rawModel : OPENROUTER_DEFAULT;
+    return { provider: 'openrouter', model, apiKey };
+  }
 
-  // Otherwise, OpenRouter is the fallback provider
-  const provider = 'openrouter';
-  const rawModel = settings?.ai_model;
-  const STALE_MODELS = new Set([
-    'openrouter/free', 'meta-llama/llama-3-8b-instruct:free',
-    'meta-llama/llama-3.1-8b-instruct:free', 'google/gemma-2-9b-it:free',
-    'qwen/qwen-2-7b-instruct:free', 'llama-3.3-70b-versatile',
-    'meta-llama/Llama-3-70b-chat-hf',
-  ]);
+  // 3. Explicit Cloudflare selection
+  if (explicitProvider === 'cloudflare') {
+    const model = (rawModel && !rawModel.startsWith('claude')) ? rawModel : 'google/gemma-4-26b-a4b-it';
+    return { provider: 'cloudflare', model, apiKey: keys.cloudflareToken };
+  }
 
-  let model = (rawModel && !STALE_MODELS.has(rawModel) && !rawModel.startsWith('claude'))
-    ? rawModel
-    : OPENROUTER_DEFAULT;
+  // 4. Anthropic as default when key is available (per CLAUDE.md: "default is Anthropic")
+  if (keys.anthropicKey) {
+    const model = rawModel?.startsWith('claude') ? rawModel : 'claude-sonnet-4-6';
+    return { provider: 'anthropic', model, apiKey: keys.anthropicKey };
+  }
 
-  return { provider, model, apiKey: openrouterKey };
+  // 5. Cloudflare fallback when Anthropic key is not set
+  if (keys.cloudflareToken && keys.cloudflareAccountId) {
+    const model = (rawModel && !rawModel.startsWith('claude')) ? rawModel : 'google/gemma-4-26b-a4b-it';
+    return { provider: 'cloudflare', model, apiKey: keys.cloudflareToken };
+  }
+
+  // 6. OpenRouter final fallback
+  const apiKey = settings?.openrouter_key || keys.openrouterKey;
+  return { provider: 'openrouter', model: OPENROUTER_DEFAULT, apiKey };
 }
 
 // ── Logging ───────────────────────────────────────────────────────────────────
