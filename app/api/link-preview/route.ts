@@ -3,12 +3,29 @@ import { NextRequest, NextResponse } from 'next/server';
 export const maxDuration = 10;
 export const dynamic = 'force-dynamic';
 
+function isPrivateUrl(u: URL): boolean {
+  const h = u.hostname;
+  return (
+    h === 'localhost' ||
+    h === '127.0.0.1' ||
+    h === '::1' ||
+    h.endsWith('.local') ||
+    /^169\.254\./.test(h) ||   // link-local (AWS/GCP metadata)
+    /^10\./.test(h) ||
+    /^192\.168\./.test(h) ||
+    /^172\.(1[6-9]|2\d|3[01])\./.test(h)
+  );
+}
+
 export async function GET(req: NextRequest) {
   const url = req.nextUrl.searchParams.get('url');
   if (!url) return NextResponse.json({ error: 'url requis' }, { status: 400 });
 
   try {
     const targetUrl = new URL(url);
+    if (!['http:', 'https:'].includes(targetUrl.protocol) || isPrivateUrl(targetUrl)) {
+      return NextResponse.json({ error: 'URL non autorisée' }, { status: 400 });
+    }
     const domain = targetUrl.hostname.replace('www.', '');
 
     // Fetch the page with a 5s timeout

@@ -12,6 +12,7 @@ import { SettingsGoalsSection } from './settings-goals-section';
 import SettingsAgencySection from './settings-agency-section';
 import { SettingsAutomationsSection } from './settings-automations-section';
 import { SettingsDiagnosticsIA } from './settings-diagnostics-ia';
+import { SettingsMinervaAiSection } from './settings-minerva-ai-section';
 import { createClient } from '@/lib/supabase/client';
 import { getApiUrl } from '@/lib/api-helper';
 import { cn } from '@/lib/utils';
@@ -319,6 +320,8 @@ export function SettingsRoot() {
               isSaving={!!savingSection.ai}
             />
           )}
+
+          {section === 'minerva_ai' && <SettingsMinervaAiSection />}
 
           {section === 'diagnostics' && <SettingsDiagnosticsIA />}
 

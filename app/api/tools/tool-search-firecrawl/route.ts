@@ -67,14 +67,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'ANTHROPIC_API_KEY non configuré' }, { status: 400 });
   }
 
-  const { query, mode = 'search' } = await req.json() as {
+  const { query, mode = 'search', url } = await req.json() as {
     query?: string;
     mode?: 'search' | 'scrape' | 'crawl';
     url?: string;
   };
-
-  const body = await req.json().catch(() => ({}));
-  const { url } = body as { url?: string };
 
   if (!query && !url) {
     return NextResponse.json({ error: 'query ou url requis' }, { status: 400 });

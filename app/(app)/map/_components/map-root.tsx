@@ -969,7 +969,7 @@ Retourne UNIQUEMENT un JSON valide (pas de texte autour) avec ces clés optionne
           <button
             onClick={() => setShowSatellite(v => !v)}
             className={cn('pointer-events-auto flex items-center gap-1.5 h-9 px-3 rounded-xl border text-xs font-bold shadow-sm backdrop-blur-md transition-colors',
-              showSatellite ? 'bg-sky-600 text-white border-sky-600' : 'bg-white/90 text-[#26251e] border-[#e5e5e0] hover:bg-white')}
+              showSatellite ? 'bg-[#0369a1] text-white border-[#0369a1]' : 'bg-white/90 text-[#26251e] border-[#e5e5e0] hover:bg-white')}
             title="Vue satellite Esri"
           >
             <Satellite className="h-3.5 w-3.5" />
@@ -994,10 +994,10 @@ Retourne UNIQUEMENT un JSON valide (pas de texte autour) avec ces clés optionne
           </div>
 
           {prospResults.length > 0 && (
-            <div className="pointer-events-auto flex items-center gap-1.5 h-9 px-3 rounded-xl bg-sky-50 border border-sky-200 shadow-sm">
-              <Search className="h-3.5 w-3.5 text-sky-600" />
-              <span className="text-xs font-bold text-sky-700">{prospResults.length}</span>
-              <span className="text-xs text-sky-500">prospects</span>
+            <div className="pointer-events-auto flex items-center gap-1.5 h-9 px-3 rounded-xl bg-[#eff6ff] border border-[#bfdbfe] shadow-sm">
+              <Search className="h-3.5 w-3.5 text-[#2563eb]" />
+              <span className="text-xs font-bold text-[#1d4ed8]">{prospResults.length}</span>
+              <span className="text-xs text-[#3b82f6]">prospects</span>
             </div>
           )}
         </div>
@@ -1041,8 +1041,8 @@ Retourne UNIQUEMENT un JSON valide (pas de texte autour) avec ces clés optionne
           ))}
           {prospResults.length > 0 && (
             <div className="flex items-center gap-2 pt-1 border-t border-[#f0f0ec] mt-1">
-              <div className="w-3 h-3 rounded-full border border-white shadow-sm bg-sky-500" />
-              <span className="text-[9px] text-sky-600 font-semibold">Prospect OSM</span>
+              <div className="w-3 h-3 rounded-full border border-white shadow-sm bg-[#3b82f6]" />
+              <span className="text-[9px] text-[#2563eb] font-semibold">Prospect OSM</span>
             </div>
           )}
           {tourWaypoints.length > 0 && (
