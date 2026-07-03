@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import maplibregl from 'maplibre-gl';
-import 'maplibre-gl/dist/maplibre-gl.css';
 import { useReach } from '@/lib/reach-context';
 import { Lead } from '@/lib/mock-data';
 import { getApiUrl } from '@/lib/api-helper';
@@ -149,18 +148,30 @@ export function MapRoot() {
     const container = mapContainer.current;
     if (!container || map.current) return;
 
-    map.current = new maplibregl.Map({
-      container,
-      style: MAP_STYLE,
-      center: [-73.5674, 45.5019],
-      zoom: 11,
-    });
+    try {
+      map.current = new maplibregl.Map({
+        container,
+        style: MAP_STYLE,
+        center: [-73.5674, 45.5019],
+        zoom: 11,
+        attributionControl: false,
+      });
 
-    map.current.addControl(new maplibregl.NavigationControl(), 'bottom-right');
-    map.current.on('load', () => {
-      map.current?.resize();
+      map.current.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-right');
+      map.current.addControl(new maplibregl.NavigationControl(), 'bottom-right');
+      map.current.on('load', () => {
+        map.current?.resize();
+        setMapLoaded(true);
+      });
+      map.current.on('error', (e) => {
+        console.error('[MapLibre]', e.error);
+        // Still mark as loaded so the UI shows even if tiles fail
+        setMapLoaded(true);
+      });
+    } catch (err) {
+      console.error('[MapLibre] init failed:', err);
       setMapLoaded(true);
-    });
+    }
 
     const ro = new ResizeObserver(() => { map.current?.resize(); });
     ro.observe(container);
