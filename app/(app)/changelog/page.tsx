@@ -66,6 +66,25 @@ function TagLegend() {
 
 const versions: ChangelogVersion[] = [
   {
+    version: 'v3.52.0',
+    date: '3 juillet 2026',
+    title: 'Map IA, Onboarding cult-ui, Chat Claude-style & Outils IA avancés',
+    highlights: [
+      { tag: 'feature', text: 'Carte — Bâtiments 3D : Toggle d\'extrusion 3D des bâtiments (fill-extrusion MapLibre) avec basculement automatique du pitch à 52° et bearing à -17°.' },
+      { tag: 'feature', text: 'Carte — Vue satellite : Couche raster Esri World Imagery superposée aux tuiles CartoDB Positron via toggle dans la topbar.' },
+      { tag: 'feature', text: 'Carte — Requêtes IA en langage naturel : Barre de filtrage intelligente (Brain icon) — tapez "prospects non contactés depuis 30 jours" et Claude génère les filtres automatiquement.' },
+      { tag: 'feature', text: 'Carte — Survol cinématique : Bouton Play dans la tournée qui anime la caméra de waypoint en waypoint avec pitch 55°, bearing rotatif et transitions fluides.' },
+      { tag: 'feature', text: 'Onboarding repensé : Nouveau flow 3 étapes avec cult-ui — Feature Carousel (3 slides Minerva), ChoiceGroup rôle/secteur, formulaire profil avec ShiftCard d\'aide.' },
+      { tag: 'feature', text: 'Assistant — Claude Composer : Redesign de l\'input landing en style Claude.ai — grande zone de texte arrondie, sélecteur de modèle, bouton + attachements, chips catégories en dessous.' },
+      { tag: 'feature', text: 'Email Tool IA : Composant AiEmailTool — brouillon email avec variantes Warm/Formal, sujet, corps, bouton Gmail compose, copie en un clic.' },
+      { tag: 'feature', text: 'Image Search IA : Composant AiImageSearch — grille collage 2 colonnes avec badges domaine, favicons Google S2, lightbox carousel avec navigation prev/next.' },
+      { tag: 'feature', text: 'Image Loader IA : Composant AiImageLoader — animation canvas pixel-mosaic pendant la génération d\'image, labels de statut cycliques, transition fondu vers l\'image finale.' },
+      { tag: 'feature', text: 'Cursor Questions : Composant CursorQuestions — wizard de questions clavier-friendly avec options A/B/C/D, multi-sélection, champ "Autre", navigation par flèches.' },
+      { tag: 'feature', text: 'Link Preview : Composant LinkPreview — carte survol avec titre, description, favicon, OG image — route /api/link-preview pour extraction de métadonnées.' },
+      { tag: 'feature', text: 'Firecrawl Web Research : Route /api/tools/tool-search-firecrawl — recherche web, scraping URL, crawl de site via Firecrawl + synthèse Claude Haiku en streaming.' },
+    ],
+  },
+  {
     version: 'v9.1.0',
     date: '2 juillet 2026',
     title: 'Fix — Carte, Notifications, Vocal AI & Nettoyage',

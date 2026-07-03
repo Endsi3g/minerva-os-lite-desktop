@@ -1530,147 +1530,130 @@ export function AssistantRoot() {
           {/* Message Feed / Chat Window */}
           <div className="flex-1 overflow-y-auto min-h-0 bg-white">
             {messages.length === 0 ? (
-              /* Premium Landing — Claude + Perplexity hybrid */
-              <div className="flex flex-col items-center justify-center min-h-full px-6 max-w-2xl mx-auto animate-scale-up" style={{ paddingTop: '5vh', paddingBottom: '4vh', gap: '1.75rem' }}>
+              /* Claude-style landing composer */
+              <div className="flex flex-col items-center justify-center min-h-full px-6 animate-scale-up" style={{ paddingTop: '6vh', paddingBottom: '4vh', gap: '1.5rem' }}>
 
-                {/* Hero */}
-                <div className="flex flex-col items-center text-center">
-                  <div className="relative mb-5">
-                    <div className="absolute inset-0 rounded-full blur-2xl opacity-15 scale-150" style={{ background: '#059669' }} />
-                    <MinervaOwl state="idle" size={72} className="relative" />
-                  </div>
-                  <h1 className="text-3xl sm:text-4xl font-black text-[#26251e] tracking-tight leading-tight">
-                    Comment puis-je vous aider ?
-                  </h1>
-                  <p className="text-[13px] text-[#7a7a76] mt-2 max-w-xs leading-relaxed">
-                    Analysez votre pipeline, rédigez des emails, préparez vos visites terrain.
-                  </p>
-                </div>
+                {/* Claude-style composer card */}
+                <div className="w-full max-w-[680px]">
+                  <div className="w-full border border-[#e0e0dc] rounded-3xl bg-white shadow-md hover:shadow-lg transition-shadow flex flex-col focus-within:border-[#d0d0cc] relative z-20">
 
-                {/* Search-style input card */}
-                <div className="w-full border border-[#e6e5e0] rounded-2xl bg-white shadow-lg hover:shadow-xl transition-shadow flex flex-col p-4 space-y-3 focus-within:border-[#059669] focus-within:ring-1 focus-within:ring-[#059669]/20 relative z-20 animate-fade-in-up">
-                  {attachedFile && (
-                    <div className="flex items-center justify-between bg-[#fafaf9] border border-[#e6e5e0]/60 px-3 py-2 rounded-xl text-xs">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <FileText className="h-4 w-4 text-[#10b981] shrink-0" />
-                        <span className="font-bold text-[#26251e] truncate">{attachedFile.name}</span>
-                        <span className="text-[10px] text-neutral-400 uppercase font-semibold shrink-0">
-                          {attachedFile.content ? t('assistant.extracted_content') : t('assistant.document')}
-                        </span>
+                    {/* Attached file preview */}
+                    {attachedFile && (
+                      <div className="flex items-center justify-between bg-[#fafaf9] border-b border-[#e6e5e0]/60 px-4 py-2.5 text-xs rounded-t-3xl">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <FileText className="h-4 w-4 text-[#059669] shrink-0" />
+                          <span className="font-bold text-[#26251e] truncate">{attachedFile.name}</span>
+                        </div>
+                        <button onClick={() => setAttachedFile(null)} className="text-neutral-400 hover:text-[#26251e] p-0.5">
+                          <X className="h-3.5 w-3.5" />
+                        </button>
                       </div>
-                      <button
-                        onClick={() => setAttachedFile(null)}
-                        className="text-neutral-400 hover:text-[#26251e] p-0.5"
-                      >
-                        <X className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                  )}
+                    )}
 
-                  <textarea
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-                    placeholder={t('assistant.input_placeholder_formats')}
-                    rows={3}
-                    className="w-full resize-none text-xs font-semibold text-[#26251e] bg-transparent outline-none placeholder:text-neutral-400 px-1 border-0"
-                  />
+                    {/* Main text area */}
+                    <textarea
+                      value={input}
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        setInput(v);
+                        const atIdx = v.lastIndexOf('@');
+                        setShowAtMenu(atIdx !== -1 && (atIdx === 0 || v[atIdx - 1] === ' ') && !/\s/.test(v.slice(atIdx + 1)));
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Escape') { setShowAtMenu(false); return; }
+                        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); setShowAtMenu(false); handleSend(); }
+                      }}
+                      placeholder="Comment puis-je vous aider aujourd'hui ?"
+                      rows={3}
+                      className="w-full resize-none text-[15px] text-[#26251e] bg-transparent outline-none placeholder:text-neutral-400 px-5 pt-5 pb-2 border-0 min-h-[80px] max-h-52 overflow-y-auto"
+                    />
 
-                  {/* Bottom Row inside input area */}
-                  <div className="flex items-center justify-between border-t border-neutral-100/80 pt-2 shrink-0">
-                    <div className="flex items-center gap-1.5">
-                      {/* Add attachment button */}
-                      <input 
-                        type="file" 
-                        ref={fileInputRef} 
-                        onChange={handleFileChange} 
-                        className="hidden" 
-                        accept=".txt,.md,.json,.csv,.js,.ts,image/*"
-                      />
-                      <button 
-                        onClick={triggerFileUpload}
-                        className="h-7 w-7 rounded-full bg-neutral-50 hover:bg-neutral-100 text-[#555552] flex items-center justify-center cursor-pointer transition-colors border border-transparent active:scale-95"
-                        title={t('assistant.attach_file')}
-                      >
-                        <Plus className="h-4 w-4" />
-                      </button>
+                    {/* @ menu */}
+                    {showAtMenu && (
+                      <div className="absolute bottom-full left-3 right-3 mb-2 bg-white border border-[#e5e5e0] rounded-xl shadow-lg z-20 max-h-56 overflow-y-auto py-1">
+                        <div className="px-3 py-1.5 text-[9px] font-bold uppercase tracking-wider text-[#7a7a76] border-b border-[#e5e5e0]/60">{t('assistant.skills_active_header')}</div>
+                        {enabledSkills.map(sk => (
+                          <button key={sk.id} type="button" onMouseDown={e => { e.preventDefault(); setActiveSkillIds(prev => prev.includes(sk.id) ? prev : [...prev, sk.id]); setInput(prev => prev.replace(/@\S*$/, '').trimEnd()); setShowAtMenu(false); }} className="w-full flex items-start gap-2.5 px-3 py-2 text-left hover:bg-[#f4f4f3]">
+                            <Sparkles className="h-3.5 w-3.5 text-[#059669] shrink-0 mt-0.5" />
+                            <div><p className="text-xs font-semibold text-[#26251e]">{sk.name}</p><p className="text-[10px] text-[#7a7a76] truncate">{sk.description}</p></div>
+                          </button>
+                        ))}
+                        <div className="px-3 py-1.5 text-[9px] font-bold uppercase tracking-wider text-[#7a7a76] border-y border-[#e5e5e0]/60 mt-1">{t('assistant.crm_context_header')}</div>
+                        {CRM_CONTEXTS.map(ctx => (
+                          <button key={ctx.id} type="button" onMouseDown={e => { e.preventDefault(); setActiveContextIds(prev => prev.includes(ctx.id) ? prev : [...prev, ctx.id]); setInput(prev => prev.replace(/@\S*$/, '').trimEnd()); setShowAtMenu(false); }} className="w-full flex items-start gap-2.5 px-3 py-2 text-left hover:bg-[#f4f4f3]">
+                            <Database className="h-3.5 w-3.5 text-[#26251e] shrink-0 mt-0.5" />
+                            <p className="text-xs font-semibold text-[#26251e]">{ctx.label}</p>
+                          </button>
+                        ))}
+                      </div>
+                    )}
 
-                      {/* Canvas Toggle button */}
-                      <button
-                        onClick={() => setIsCanvasOpen(!isCanvasOpen)}
-                        className={`h-7 px-3 rounded-full flex items-center gap-1 text-[10px] font-bold transition-all border ${
-                          isCanvasOpen 
-                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
-                            : 'bg-neutral-50 hover:bg-neutral-100 text-[#555552] border-transparent'
-                        }`}
-                      >
-                        <FileText className="h-3.5 w-3.5" />
-                        <span>Canvas</span>
-                      </button>
-                    </div>
+                    {/* Active skill/context chips */}
+                    {(activeSkillIds.length > 0 || activeContextIds.length > 0) && (
+                      <div className="flex flex-wrap gap-1.5 px-4 pb-2">
+                        {activeSkillIds.map(id => { const sk = enabledSkills.find(s => s.id === id); if (!sk) return null; return (
+                          <span key={id} className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#059669]/10 text-[#059669] border border-[#059669]/20">
+                            <Sparkles className="h-2.5 w-2.5" />{sk.name}
+                            <button onClick={() => setActiveSkillIds(prev => prev.filter(x => x !== id))}><X className="h-2.5 w-2.5" /></button>
+                          </span>
+                        ); })}
+                        {activeContextIds.map(id => { const ctx = CRM_CONTEXTS.find(c => c.id === id); if (!ctx) return null; return (
+                          <span key={id} className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-neutral-100 text-[#26251e] border border-neutral-200">
+                            <Database className="h-2.5 w-2.5" />{ctx.label}
+                            <button onClick={() => setActiveContextIds(prev => prev.filter(x => x !== id))}><X className="h-2.5 w-2.5" /></button>
+                          </span>
+                        ); })}
+                      </div>
+                    )}
 
-                    <div className="flex items-center gap-1.5">
-                      {/* Model selector dropdown */}
-                      <div className="relative">
-                        <button
-                          onClick={() => setShowModelDropdown(!showModelDropdown)}
-                          className="h-7 px-3 rounded-full bg-neutral-50 hover:bg-neutral-100 border border-neutral-100/60 text-[#555552] flex items-center gap-1.5 text-[10px] font-bold cursor-pointer transition-colors"
-                        >
-                          <Globe className="h-3.5 w-3.5 text-neutral-400" />
-                          <span>{selectedModel.name}</span>
-                          <ChevronDown className="h-3 w-3" />
+                    {/* Bottom row — Claude style */}
+                    <div className="flex items-center justify-between px-4 pb-4 pt-1">
+                      <div className="flex items-center gap-2">
+                        <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept=".txt,.md,.json,.csv,.js,.ts,image/*" />
+                        <button onClick={triggerFileUpload} className="h-8 w-8 rounded-full border border-[#e0e0dc] bg-white hover:bg-[#f4f4f3] text-[#7a7a76] flex items-center justify-center transition-colors" title={t('assistant.attach_file')}>
+                          <Plus className="h-4 w-4" />
+                        </button>
+                        <button onClick={() => setIsCanvasOpen(!isCanvasOpen)} className={`h-8 px-3 rounded-full border text-xs font-semibold flex items-center gap-1.5 transition-colors ${isCanvasOpen ? 'bg-[#059669]/10 text-[#059669] border-[#059669]/30' : 'border-[#e0e0dc] bg-white text-[#7a7a76] hover:bg-[#f4f4f3]'}`}>
+                          <FileText className="h-3.5 w-3.5" /><span>Canvas</span>
+                        </button>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        {/* Model selector — shows short name like "Sonnet 4.6" */}
+                        <div className="relative">
+                          <button onClick={() => setShowModelDropdown(!showModelDropdown)} className="h-8 px-3 rounded-full border border-[#e0e0dc] bg-white hover:bg-[#f4f4f3] flex items-center gap-1.5 text-xs font-semibold text-[#555552] transition-colors">
+                            <span>{selectedModel.name.split(' ').slice(0, 2).join(' ')}</span>
+                            <ChevronDown className="h-3.5 w-3.5 text-neutral-400" />
+                          </button>
+                          {showModelDropdown && (
+                            <div className="absolute right-0 bottom-10 z-50 bg-white border border-[#e6e5e0] rounded-xl py-1 shadow-lg w-52 animate-scale-up">
+                              <div className="px-3 py-1 text-[8px] font-bold text-[#7a7a76] uppercase tracking-wider">{t('assistant.models_title')}</div>
+                              {AI_MODELS.map(model => (
+                                <button key={model.id} onClick={() => { setSelectedModel(model); setShowModelDropdown(false); }} className={`w-full text-left px-3 py-1.5 text-[10px] font-bold flex items-center justify-between hover:bg-neutral-50 ${selectedModel.id === model.id ? 'text-[#059669]' : 'text-[#26251e]'}`}>
+                                  <span>{model.name}</span>
+                                  {selectedModel.id === model.id && <Check className="h-3 w-3" />}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Voice / waveform button */}
+                        <button onClick={isRecording ? stopRecording : startRecording} className={`h-8 w-8 rounded-full border flex items-center justify-center transition-all ${isRecording ? 'bg-red-500 text-white border-red-500 animate-pulse' : 'border-[#e0e0dc] bg-white text-[#7a7a76] hover:bg-[#f4f4f3]'}`} title={isRecording ? t('assistant.stop_recording') : t('assistant.voice_msg')}>
+                          <Mic className="h-4 w-4" />
                         </button>
 
-                        {showModelDropdown && (
-                          <div className="absolute right-0 bottom-8 z-50 bg-white border border-[#e6e5e0] rounded-xl py-1 shadow-lg w-52 text-left animate-scale-up">
-                            <div className="px-3 py-1 text-[8px] font-bold text-[#7a7a76] uppercase tracking-wider">{t('assistant.models_title')}</div>
-                            {AI_MODELS.map((model) => (
-                              <button
-                                key={model.id}
-                                onClick={() => {
-                                  setSelectedModel(model);
-                                  setShowModelDropdown(false);
-                                }}
-                                className={`w-full text-left px-3 py-1.5 text-[10px] font-bold flex items-center justify-between hover:bg-neutral-50 ${
-                                  selectedModel.id === model.id ? 'text-[#10b981]' : 'text-[#26251e]'
-                                }`}
-                              >
-                                <span>{model.name}</span>
-                                {selectedModel.id === model.id && <Check className="h-3 w-3" />}
-                              </button>
-                            ))}
-                          </div>
-                        )}
+                        {/* Send */}
+                        <button onClick={() => handleSend()} disabled={isLoading || (!input.trim() && !attachedFile)} className="h-8 w-8 rounded-full bg-[#26251e] hover:bg-[#3a3930] disabled:opacity-30 text-white flex items-center justify-center transition-all shadow-sm active:scale-95">
+                          <ArrowUp className="h-4 w-4" />
+                        </button>
                       </div>
-
-                      {/* Microphone voice button */}
-                      <button
-                        onClick={isRecording ? stopRecording : startRecording}
-                        className={`h-7 w-7 rounded-full flex items-center justify-center cursor-pointer transition-all border ${
-                          isRecording 
-                            ? 'bg-red-500 text-white border-red-500 animate-pulse' 
-                            : 'bg-neutral-50 hover:bg-neutral-100 text-[#555552] border-transparent'
-                        }`}
-                        title={isRecording ? t('assistant.stop_recording') : t('assistant.voice_msg')}
-                      >
-                        <Mic className="h-3.5 w-3.5" />
-                      </button>
-
-                      {/* Send button */}
-                      <button
-                        onClick={() => handleSend()}
-                        disabled={isLoading}
-                        className="h-7 w-7 rounded-full bg-[#10b981] hover:bg-[#059669] text-white flex items-center justify-center cursor-pointer transition-all shadow-sm active:scale-95 disabled:opacity-50"
-                        title={t('assistant.send')}
-                      >
-                        <ArrowUp className="h-4 w-4" />
-                      </button>
                     </div>
                   </div>
                 </div>
 
-                {/* Suggestion cards — 2-column grid */}
-                <div className="w-full grid grid-cols-1 sm:grid-cols-2 gap-2 animate-fade-in-up">
+                {/* Category chips — below the card like Claude */}
+                <div className="flex flex-wrap justify-center gap-2 max-w-[680px] animate-fade-in-up">
                   {QUICK_PROMPTS.map((chip) => {
                     const ICONS: Record<string, React.ElementType> = {
                       pipeline: TrendingUp, email: Mail, priority: Star,
@@ -1678,15 +1661,9 @@ export function AssistantRoot() {
                     };
                     const Icon = ICONS[chip.key] ?? Zap;
                     return (
-                      <button
-                        key={chip.label}
-                        onClick={() => handleQuickPromptClick(chip)}
-                        className="flex items-center gap-3 text-left px-3.5 py-3 rounded-xl border border-[#e5e5e0] bg-white hover:bg-[#f7f7f4] hover:border-[#059669]/40 active:scale-[0.98] transition-all group cursor-pointer"
-                      >
-                        <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-colors group-hover:bg-[#05966920]" style={{ background: '#f4f4f3' }}>
-                          <Icon className="h-3.5 w-3.5 text-[#7a7a76] group-hover:text-[#059669] transition-colors" />
-                        </div>
-                        <span className="text-[11px] font-bold text-[#26251e] group-hover:text-[#059669] transition-colors leading-tight">{chip.label}</span>
+                      <button key={chip.label} onClick={() => handleQuickPromptClick(chip)} className="flex items-center gap-2 px-4 py-2 rounded-full border border-[#e0e0dc] bg-white hover:bg-[#f4f4f3] hover:border-[#c0c0bc] transition-all text-[12px] font-semibold text-[#555552] hover:text-[#26251e] shadow-sm active:scale-[0.97]">
+                        <Icon className="h-3.5 w-3.5" />
+                        {chip.label}
                       </button>
                     );
                   })}

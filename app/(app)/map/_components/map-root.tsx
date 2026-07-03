@@ -14,7 +14,8 @@ import {
   Search, SlidersHorizontal, X, MapPin, Mail, Loader2,
   ChevronRight, Users, Zap, PanelLeft, Navigation, Star,
   Layers, Route, Plus, Trash2, CheckSquare, ExternalLink,
-  ArrowRight, RefreshCw, Clock, Activity,
+  ArrowRight, RefreshCw, Clock, Activity, Building2, Satellite,
+  Brain, Play, Square, Camera, Globe,
 } from 'lucide-react';
 
 // ── Constants ──────────────────────────────────────────────────────────────────
@@ -179,6 +180,188 @@ function CrmLeadsLayer({
   return null;
 }
 
+// ── 3D Buildings layer ─────────────────────────────────────────────────────────
+
+function ThreeDLayer({ enabled }: { enabled: boolean }) {
+  const { map, isLoaded } = useMap();
+  const initialized = useRef(false);
+  const layerId = '3d-buildings-extrusion';
+  const prevEnabled = useRef(enabled);
+
+  useEffect(() => {
+    if (!map || !isLoaded) return;
+
+    // Tilt map when enabling 3D
+    if (enabled !== prevEnabled.current) {
+      map.easeTo({ pitch: enabled ? 52 : 0, bearing: enabled ? -17 : 0, duration: 600 });
+      prevEnabled.current = enabled;
+    }
+
+    if (enabled && !initialized.current) {
+      initialized.current = true;
+      try {
+        // CartoDB Positron GL style has 'carto' source with 'building' layer
+        const style = map.getStyle();
+        const sources = style?.sources ? Object.keys(style.sources) : [];
+        const buildingSource = sources.find(s => s === 'carto' || s.includes('carto'));
+
+        if (buildingSource && !map.getLayer(layerId)) {
+          map.addLayer({
+            id: layerId,
+            source: buildingSource,
+            'source-layer': 'building',
+            type: 'fill-extrusion',
+            minzoom: 14,
+            paint: {
+              'fill-extrusion-color': '#d4d4ce',
+              'fill-extrusion-height': ['coalesce', ['get', 'height'], ['get', 'render_height'], 8],
+              'fill-extrusion-base': ['coalesce', ['get', 'min_height'], ['get', 'render_min_height'], 0],
+              'fill-extrusion-opacity': 0.72,
+            },
+          });
+        }
+      } catch { /* source layer may not exist in this style, silently skip */ }
+    }
+
+    if (!enabled && initialized.current) {
+      try { if (map.getLayer(layerId)) map.removeLayer(layerId); } catch { /* ignore */ }
+      initialized.current = false;
+    }
+
+    return () => {
+      if (initialized.current) {
+        try { if (map?.getLayer(layerId)) map.removeLayer(layerId); } catch { /* ignore */ }
+        initialized.current = false;
+      }
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [map, isLoaded, enabled]);
+
+  return null;
+}
+
+// ── Satellite layer ────────────────────────────────────────────────────────────
+
+function SatelliteLayer({ enabled }: { enabled: boolean }) {
+  const { map, isLoaded } = useMap();
+  const srcId = 'esri-satellite-src';
+  const layId = 'esri-satellite-layer';
+  const initialized = useRef(false);
+
+  useEffect(() => {
+    if (!map || !isLoaded) return;
+
+    if (enabled && !initialized.current) {
+      initialized.current = true;
+      try {
+        if (!map.getSource(srcId)) {
+          map.addSource(srcId, {
+            type: 'raster',
+            tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
+            tileSize: 256,
+            attribution: 'Esri World Imagery',
+          });
+        }
+        if (!map.getLayer(layId)) {
+          // Insert below road/label layers for better UX
+          const roadLayer = map.getStyle()?.layers?.find(l => l.type === 'line' && (l.id.includes('road') || l.id.includes('tunnel')));
+          map.addLayer({ id: layId, type: 'raster', source: srcId, paint: { 'raster-opacity': 0.88 } }, roadLayer?.id);
+        }
+      } catch { /* ignore */ }
+    }
+
+    if (!enabled && initialized.current) {
+      try {
+        if (map.getLayer(layId)) map.removeLayer(layId);
+        if (map.getSource(srcId)) map.removeSource(srcId);
+      } catch { /* ignore */ }
+      initialized.current = false;
+    }
+
+    return () => {
+      if (initialized.current) {
+        try {
+          if (map?.getLayer(layId)) map.removeLayer(layId);
+          if (map?.getSource(srcId)) map.removeSource(srcId);
+        } catch { /* ignore */ }
+        initialized.current = false;
+      }
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [map, isLoaded, enabled]);
+
+  return null;
+}
+
+// ── Fly-through controller ─────────────────────────────────────────────────────
+
+function useFlyThrough(waypoints: { _lat: number; _lng: number; businessName: string }[]) {
+  const { map, isLoaded } = useMap();
+  const [isFlying, setIsFlying] = useState(false);
+  const flyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const startFlyThrough = useCallback(() => {
+    if (!map || !isLoaded || waypoints.length < 1) return;
+    setIsFlying(true);
+    let idx = 0;
+
+    const flyNext = () => {
+      if (idx >= waypoints.length) {
+        setIsFlying(false);
+        map.easeTo({ pitch: 0, bearing: 0, duration: 800 });
+        return;
+      }
+      const wp = waypoints[idx++];
+      map.flyTo({
+        center: [wp._lng, wp._lat],
+        zoom: 16,
+        pitch: 55,
+        bearing: 30 + (idx * 45) % 360,
+        duration: 2800,
+        essential: true,
+      });
+      flyTimeoutRef.current = setTimeout(flyNext, 3200);
+    };
+
+    flyNext();
+  }, [map, isLoaded, waypoints]);
+
+  const stopFlyThrough = useCallback(() => {
+    if (flyTimeoutRef.current) clearTimeout(flyTimeoutRef.current);
+    setIsFlying(false);
+    map?.easeTo({ pitch: 0, bearing: 0, duration: 600 });
+  }, [map]);
+
+  useEffect(() => () => { if (flyTimeoutRef.current) clearTimeout(flyTimeoutRef.current); }, []);
+
+  return { isFlying, startFlyThrough, stopFlyThrough };
+}
+
+// ── FlyThrough wrapper (needs to be inside <Map> children) ────────────────────
+
+function FlyThroughLayer({ waypoints }: { waypoints: { _lat: number; _lng: number; businessName: string }[] }) {
+  const { isFlying, startFlyThrough, stopFlyThrough } = useFlyThrough(waypoints);
+  return (
+    <div className="absolute bottom-20 right-4 z-30">
+      {waypoints.length >= 1 && (
+        <button
+          onClick={isFlying ? stopFlyThrough : startFlyThrough}
+          className={cn(
+            'flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold shadow-lg border transition-colors',
+            isFlying
+              ? 'bg-[#ef4444] text-white border-[#ef4444] hover:bg-[#dc2626]'
+              : 'bg-[#7c3aed] text-white border-[#7c3aed] hover:bg-[#6d28d9]',
+          )}
+          title={isFlying ? 'Arrêter le survol' : 'Survol cinématique de la tournée'}
+        >
+          {isFlying ? <Square className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
+          {isFlying ? 'Arrêter' : 'Survol'}
+        </button>
+      )}
+    </div>
+  );
+}
+
 // ── OSRM route fetcher + display ───────────────────────────────────────────────
 
 function RouteLayer({ waypoints }: { waypoints: Waypoint[] }) {
@@ -248,6 +431,73 @@ export function MapRoot() {
   const [quickStatus, setQuickStatus] = useState('');
   const [taskTitle, setTaskTitle] = useState('');
   const [creatingTask, setCreatingTask] = useState(false);
+
+  // Advanced map features
+  const [show3D, setShow3D] = useState(false);
+  const [showSatellite, setShowSatellite] = useState(false);
+  const [showAiQueryBar, setShowAiQueryBar] = useState(false);
+  const [aiQuery, setAiQuery] = useState('');
+  const [aiQueryLoading, setAiQueryLoading] = useState(false);
+
+  // AI spatial query handler
+  const handleAiQuery = useCallback(async () => {
+    if (!aiQuery.trim()) return;
+    setAiQueryLoading(true);
+    try {
+      const res = await fetch(getApiUrl('/api/chat'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: [{
+            role: 'user',
+            content: `Analyse cette requête spatiale CRM et retourne un objet JSON de filtres. Requête: "${aiQuery}"
+
+Retourne UNIQUEMENT un JSON valide (pas de texte autour) avec ces clés optionnelles:
+{
+  "statuses": ["New","Contacted","Meeting Booked","Proposal Sent","Negotiation","Won","Lost"],
+  "niche": "string ou null",
+  "city": "string ou null",
+  "minScore": 0-100,
+  "maxScore": 0-100,
+  "notContactedSinceDays": null ou nombre de jours,
+  "searchQuery": "string ou null"
+}`,
+          }],
+          model: 'claude-haiku-4-5-20251001',
+          provider: 'anthropic',
+          system: 'Tu es un moteur de filtres CRM. Retourne UNIQUEMENT du JSON valide selon le schéma demandé.',
+        }),
+      });
+      if (!res.ok || !res.body) throw new Error('API error');
+      const reader = res.body.getReader();
+      const dec = new TextDecoder();
+      let raw = '';
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        for (const line of dec.decode(value, { stream: true }).split('\n')) {
+          if (line.startsWith('data: ') && line !== 'data: [DONE]') {
+            try { raw += JSON.parse(line.slice(6)).choices?.[0]?.delta?.content ?? ''; } catch { /* ignore */ }
+          }
+        }
+      }
+      const jsonMatch = raw.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const filters = JSON.parse(jsonMatch[0]);
+        if (filters.statuses?.length) setStatusFilters(new Set(filters.statuses));
+        if (filters.niche) setNicheFilter(filters.niche);
+        if (filters.searchQuery) setSearchQuery(filters.searchQuery);
+        if (filters.minScore != null || filters.maxScore != null) {
+          setScoreRange([filters.minScore ?? 0, filters.maxScore ?? 100]);
+        }
+      }
+    } catch { /* keep current filters */ }
+    finally {
+      setAiQueryLoading(false);
+      setShowAiQueryBar(false);
+      setAiQuery('');
+    }
+  }, [aiQuery]);
 
   // Prospection
   const [prospNiche, setProspNiche] = useState('');
@@ -633,6 +883,13 @@ export function MapRoot() {
             {/* CRM leads layer — clustered + status colored + heatmap */}
             <CrmLeadsLayer leads={filteredLeads} onLeadClick={handleLeadClick} showHeatmap={showHeatmap} />
 
+            {/* Advanced layers */}
+            <ThreeDLayer enabled={show3D} />
+            <SatelliteLayer enabled={showSatellite} />
+
+            {/* Fly-through for tournée */}
+            <FlyThroughLayer waypoints={tourWaypoints} />
+
             {/* Prospect search results — teal markers */}
             {prospResults.map(r => r.latitude && r.longitude ? (
               <MapMarker key={r.id} longitude={r.longitude} latitude={r.latitude}>
@@ -697,6 +954,39 @@ export function MapRoot() {
             <span className="hidden sm:inline">Heatmap</span>
           </button>
 
+          {/* 3D buildings toggle */}
+          <button
+            onClick={() => setShow3D(v => !v)}
+            className={cn('pointer-events-auto flex items-center gap-1.5 h-9 px-3 rounded-xl border text-xs font-bold shadow-sm backdrop-blur-md transition-colors',
+              show3D ? 'bg-[#26251e] text-white border-[#26251e]' : 'bg-white/90 text-[#26251e] border-[#e5e5e0] hover:bg-white')}
+            title="Bâtiments 3D"
+          >
+            <Building2 className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">3D</span>
+          </button>
+
+          {/* Satellite toggle */}
+          <button
+            onClick={() => setShowSatellite(v => !v)}
+            className={cn('pointer-events-auto flex items-center gap-1.5 h-9 px-3 rounded-xl border text-xs font-bold shadow-sm backdrop-blur-md transition-colors',
+              showSatellite ? 'bg-sky-600 text-white border-sky-600' : 'bg-white/90 text-[#26251e] border-[#e5e5e0] hover:bg-white')}
+            title="Vue satellite Esri"
+          >
+            <Satellite className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Satellite</span>
+          </button>
+
+          {/* AI spatial query */}
+          <button
+            onClick={() => setShowAiQueryBar(v => !v)}
+            className={cn('pointer-events-auto flex items-center gap-1.5 h-9 px-3 rounded-xl border text-xs font-bold shadow-sm backdrop-blur-md transition-colors',
+              showAiQueryBar ? 'bg-[#059669] text-white border-[#059669]' : 'bg-white/90 text-[#26251e] border-[#e5e5e0] hover:bg-white')}
+            title="Filtrage IA — langage naturel"
+          >
+            <Brain className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">IA</span>
+          </button>
+
           <div className="pointer-events-auto flex items-center gap-1.5 h-9 px-3 rounded-xl bg-white/90 backdrop-blur-md border border-[#e5e5e0] shadow-sm">
             <Users className="h-3.5 w-3.5 text-[#059669]" />
             <span className="text-xs font-bold text-[#26251e]">{filteredLeads.length}</span>
@@ -711,6 +1001,35 @@ export function MapRoot() {
             </div>
           )}
         </div>
+
+        {/* AI Query bar */}
+        {showAiQueryBar && (
+          <div className="absolute top-16 left-3 right-3 z-30 pointer-events-auto">
+            <div className="flex items-center gap-2 bg-white/95 backdrop-blur-md border border-[#059669]/30 rounded-2xl shadow-xl px-4 py-2.5">
+              <Brain className="h-4 w-4 text-[#059669] shrink-0" />
+              <input
+                autoFocus
+                value={aiQuery}
+                onChange={e => setAiQuery(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') handleAiQuery(); if (e.key === 'Escape') { setShowAiQueryBar(false); setAiQuery(''); } }}
+                placeholder="Ex: prospects non contactés depuis 30 jours à Montréal…"
+                className="flex-1 text-sm text-[#26251e] placeholder:text-[#7a7a76] bg-transparent outline-none"
+              />
+              {aiQueryLoading ? (
+                <Loader2 className="h-4 w-4 text-[#059669] animate-spin shrink-0" />
+              ) : (
+                <button
+                  onClick={handleAiQuery}
+                  disabled={!aiQuery.trim()}
+                  className="flex items-center gap-1 px-3 py-1.5 bg-[#059669] hover:bg-[#047857] disabled:opacity-50 text-white text-xs font-bold rounded-xl transition-colors shrink-0"
+                >
+                  Filtrer
+                </button>
+              )}
+            </div>
+            <p className="text-[9px] text-[#7a7a76] mt-1 ml-4">Langage naturel → filtres automatiques · Entrée pour confirmer · Échap pour annuler</p>
+          </div>
+        )}
 
         {/* Legend */}
         <div className="absolute bottom-12 left-3 z-20 bg-white/90 backdrop-blur-md rounded-xl border border-[#e5e5e0] shadow p-2 space-y-1">
