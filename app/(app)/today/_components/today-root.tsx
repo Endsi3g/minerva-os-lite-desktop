@@ -66,8 +66,7 @@ interface AgentAction {
 }
 
 interface NextActionData {
-  pending_actions: AgentAction[];
-  count: number;
+  action: AgentAction | null;
 }
 
 interface NbaLead {
@@ -457,24 +456,22 @@ export function TodayRoot() {
                             <Loader2 className="h-3.5 w-3.5 animate-spin" />
                             Chargement des actions en attente...
                           </div>
-                        ) : nextActions && nextActions.pending_actions.length > 0 ? (
-                          nextActions.pending_actions.map((act) => (
-                            <div key={act.id} className="flex items-center justify-between gap-3 p-3 rounded-xl bg-[#f0fdf9] border border-[#059669]/20 shadow-sm">
-                              <div>
-                                <p className="text-xs font-bold text-[#26251e]">{act.action_type}</p>
-                                <p className="text-[10px] text-[#7a7a76] mt-0.5">{act.reasoning ?? "Aucun motif fourni par l'agent"}</p>
-                                {act.lead_name && <p className="text-[10px] font-semibold text-[#059669] mt-1">Lead: {act.lead_name}</p>}
-                              </div>
-                              <button
-                                onClick={() => handleApprove(act.id)}
-                                disabled={approvingId === act.id}
-                                className="bg-[#059669] hover:bg-[#047857] disabled:opacity-50 text-white font-bold text-[10px] px-3 py-1.5 rounded-lg shrink-0 transition-all flex items-center gap-1"
-                              >
-                                {approvingId === act.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Play className="h-3 w-3" />}
-                                Approuver
-                              </button>
+                        ) : nextActions?.action ? (
+                          <div key={nextActions.action.id} className="flex items-center justify-between gap-3 p-3 rounded-xl bg-[#f0fdf9] border border-[#059669]/20 shadow-sm">
+                            <div>
+                              <p className="text-xs font-bold text-[#26251e]">{nextActions.action.action_type}</p>
+                              <p className="text-[10px] text-[#7a7a76] mt-0.5">{nextActions.action.reasoning ?? "Aucun motif fourni par l'agent"}</p>
+                              {nextActions.action.lead_name && <p className="text-[10px] font-semibold text-[#059669] mt-1">Lead: {nextActions.action.lead_name}</p>}
                             </div>
-                          ))
+                            <button
+                              onClick={() => handleApprove(nextActions.action!.id)}
+                              disabled={approvingId === nextActions.action.id}
+                              className="bg-[#059669] hover:bg-[#047857] disabled:opacity-50 text-white font-bold text-[10px] px-3 py-1.5 rounded-lg shrink-0 transition-all flex items-center gap-1"
+                            >
+                              {approvingId === nextActions.action.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Play className="h-3 w-3" />}
+                              Approuver
+                            </button>
+                          </div>
                         ) : (
                           <p className="text-xs text-[#7a7a76] py-3">Aucun projet de relance ou action de l'agent en attente d'approbation.</p>
                         )}
