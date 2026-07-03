@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useMemo } from 'react';
-import maplibregl from 'maplibre-gl';
+import React, { useState, useMemo } from 'react';
+import { Map, MapMarker, MarkerContent, MarkerPopup, MarkerTooltip, MapControls } from '@/components/ui/map';
 import { useReach } from '@/lib/reach-context';
 import { Lead } from '@/lib/mock-data';
 import { getApiUrl } from '@/lib/api-helper';
@@ -22,7 +22,8 @@ import {
   Star,
 } from 'lucide-react';
 
-// Status colors
+// ── Status config ──────────────────────────────────────────────────────────────
+
 const STATUS_COLORS: Record<string, string> = {
   New: '#7a7a76',
   Contacted: '#6b7280',
@@ -43,28 +44,8 @@ const STATUS_LABELS: Record<string, string> = {
   Lost: 'Perdu',
 };
 
-// OpenFreeMap Positron — vector tiles, no API key, fast CDN, globally available
-// OSM raster tiles — 100% public, no API key, no CORS restrictions
-const MAP_STYLE: maplibregl.StyleSpecification = {
-  version: 8,
-  glyphs: 'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf',
-  sources: {
-    osm: {
-      type: 'raster',
-      tiles: [
-        'https://a.tile.openstreetmap.org/{z}/{x}/{y}.png',
-        'https://b.tile.openstreetmap.org/{z}/{x}/{y}.png',
-        'https://c.tile.openstreetmap.org/{z}/{x}/{y}.png',
-      ],
-      tileSize: 256,
-      attribution: '© <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a>',
-      maxzoom: 19,
-    },
-  },
-  layers: [{ id: 'osm-tiles', type: 'raster', source: 'osm', minzoom: 0, maxzoom: 22 }],
-};
+// ── Coordinate resolution ──────────────────────────────────────────────────────
 
-// City-level fallback coordinates (Québec)
 const CITY_COORDS: Record<string, [number, number]> = {
   montreal: [45.5019, -73.5674], montréal: [45.5019, -73.5674],
   quebec: [46.8139, -71.2080], québec: [46.8139, -71.2080],
@@ -77,26 +58,26 @@ const CITY_COORDS: Record<string, [number, number]> = {
   drummondville: [45.8835, -72.4831], granby: [45.4042, -72.7340],
   'saint-jerome': [45.7805, -74.0034], 'saint-jérôme': [45.7805, -74.0034],
 };
-const DEFAULT_COORDS: [number, number] = [46.8, -72.5];
+const DEFAULT_COORDS: [number, number] = [45.5019, -73.5674];
 
 function applyJitter(v: number): number {
   return v + (Math.random() - 0.5) * 0.025;
 }
 
-function resolveCoords(lead: Lead): [number, number] | null {
-  if (lead.latitude && lead.longitude) return [lead.latitude, lead.longitude];
+function resolveCoords(lead: Lead): { lat: number; lng: number; estimated: boolean } {
+  if (lead.latitude && lead.longitude) {
+    return { lat: lead.latitude, lng: lead.longitude, estimated: false };
+  }
   const key = (lead.city || '').toLowerCase().trim();
-  const c = CITY_COORDS[key];
-  if (c) return [applyJitter(c[0]), applyJitter(c[1])];
-  return [applyJitter(DEFAULT_COORDS[0]), applyJitter(DEFAULT_COORDS[1])];
+  const c = CITY_COORDS[key] ?? DEFAULT_COORDS;
+  return { lat: applyJitter(c[0]), lng: applyJitter(c[1]), estimated: true };
 }
 
 type EnrichedLead = Lead & { _lat: number; _lng: number; _estimated: boolean };
 
+// ── Main component ─────────────────────────────────────────────────────────────
+
 export function MapRoot() {
-  const mapContainer = useRef<HTMLDivElement>(null);
-  const map = useRef<maplibregl.Map | null>(null);
-  const markersRef = useRef<maplibregl.Marker[]>([]);
   const { leads } = useReach();
 
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
@@ -109,14 +90,11 @@ export function MapRoot() {
   const [draftContent, setDraftContent] = useState('');
   const [generatingDraft, setGeneratingDraft] = useState(false);
   const [showDraftArea, setShowDraftArea] = useState(false);
-  const [mapLoaded, setMapLoaded] = useState(false);
 
-  // Enrich all leads with coordinates (real or city-fallback)
   const enrichedLeads = useMemo<EnrichedLead[]>(() => {
-    return leads.flatMap((lead) => {
+    return leads.map((lead) => {
       const coords = resolveCoords(lead);
-      if (!coords) return [];
-      return [{ ...lead, _lat: coords[0], _lng: coords[1], _estimated: !(lead.latitude && lead.longitude) }];
+      return { ...lead, _lat: coords.lat, _lng: coords.lng, _estimated: coords.estimated };
     });
   }, [leads]);
 
@@ -129,7 +107,7 @@ export function MapRoot() {
       ) return false;
       if (statusFilters.size > 0 && !statusFilters.has(lead.status || 'New')) return false;
       if (nicheFilter && lead.niche !== nicheFilter) return false;
-      const score = lead.score || 0;
+      const score = lead.score ?? 0;
       if (score < scoreRange[0] || score > scoreRange[1]) return false;
       return true;
     });
@@ -145,116 +123,8 @@ export function MapRoot() {
     (nicheFilter ? 1 : 0) +
     (scoreRange[0] > 0 || scoreRange[1] < 100 ? 1 : 0);
 
-  // Initialize MapLibre
-  useEffect(() => {
-    const container = mapContainer.current;
-    if (!container || map.current) return;
-
-    try {
-      map.current = new maplibregl.Map({
-        container,
-        style: MAP_STYLE,
-        center: [-73.5674, 45.5019],
-        zoom: 11,
-        attributionControl: false,
-      });
-
-      map.current.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-right');
-      map.current.addControl(new maplibregl.NavigationControl(), 'bottom-right');
-      map.current.on('load', () => {
-        map.current?.resize();
-        setMapLoaded(true);
-      });
-      map.current.on('error', (e) => {
-        console.error('[MapLibre]', e.error);
-        // Still mark as loaded so the UI shows even if tiles fail
-        setMapLoaded(true);
-      });
-    } catch (err) {
-      console.error('[MapLibre] init failed:', err);
-      setMapLoaded(true);
-    }
-
-    const ro = new ResizeObserver(() => { map.current?.resize(); });
-    ro.observe(container);
-
-    return () => {
-      ro.disconnect();
-      map.current?.remove();
-      map.current = null;
-    };
-  }, []);
-
-  // Trigger map resize when sidebar toggles
-  useEffect(() => {
-    if (map.current && mapLoaded) {
-      setTimeout(() => map.current?.resize(), 300);
-    }
-  }, [showSidebar, mapLoaded]);
-
-  // Add/update markers
-  useEffect(() => {
-    if (!map.current || !mapLoaded) return;
-    const mapInstance = map.current;
-
-    markersRef.current.forEach((m) => m.remove());
-    markersRef.current = [];
-
-    // Group by rounded coords to avoid fully overlapping markers
-    const groups = new Map<string, EnrichedLead[]>();
-    filteredLeads.forEach((lead) => {
-      const key = `${lead._lat.toFixed(3)},${lead._lng.toFixed(3)}`;
-      const arr = groups.get(key);
-      if (arr) arr.push(lead);
-      else groups.set(key, [lead]);
-    });
-
-    groups.forEach((group) => {
-      const lead = group[0];
-      const count = group.length;
-      const el = document.createElement('div');
-      const color = STATUS_COLORS[lead.status || 'New'] || '#7a7a76';
-      el.style.cssText = `
-        width: 28px; height: 28px; border-radius: 50%;
-        background: ${color}; border: 3px solid white;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-        cursor: pointer; display: flex; align-items: center; justify-content: center;
-        font-size: 9px; font-weight: 900; color: white;
-        transition: transform 0.15s ease; z-index: 1;
-        opacity: ${lead._estimated ? '0.65' : '1'};
-      `;
-      el.textContent = count > 1 ? String(count) : (lead.businessName || '?')[0].toUpperCase();
-      el.title = count > 1 ? `${count} leads` : lead.businessName || '';
-
-      el.addEventListener('mouseenter', () => { el.style.transform = 'scale(1.25)'; el.style.zIndex = '10'; });
-      el.addEventListener('mouseleave', () => { el.style.transform = 'scale(1)'; el.style.zIndex = '1'; });
-      el.addEventListener('click', () => {
-        if (count > 1) {
-          mapInstance.flyTo({ center: [lead._lng, lead._lat], zoom: Math.max(mapInstance.getZoom() + 2, 15), duration: 600 });
-          return;
-        }
-        selectLead(lead, mapInstance);
-      });
-
-      const marker = new maplibregl.Marker({ element: el })
-        .setLngLat([lead._lng, lead._lat])
-        .addTo(mapInstance);
-      markersRef.current.push(marker);
-    });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filteredLeads, mapLoaded]);
-
-  function selectLead(lead: EnrichedLead | Lead, mapInstance?: maplibregl.Map) {
-    setSelectedLead(lead);
-    setDraftContent('');
-    setShowDraftArea(false);
-    const m = mapInstance ?? map.current;
-    const lat = (lead as EnrichedLead)._lat ?? (lead as Lead).latitude;
-    const lng = (lead as EnrichedLead)._lng ?? (lead as Lead).longitude;
-    if (m && lat && lng) {
-      m.flyTo({ center: [lng, lat], zoom: Math.max(m.getZoom(), 14), duration: 600 });
-    }
-  }
+  // Montréal centre [lng, lat] — mapcn uses [lng, lat] order
+  const mapCenter: [number, number] = [-73.5674, 45.5019];
 
   const handleGenerateDraft = async () => {
     if (!selectedLead) return;
@@ -275,12 +145,6 @@ export function MapRoot() {
     }
   };
 
-  const resetFilters = () => {
-    setStatusFilters(new Set());
-    setNicheFilter('');
-    setScoreRange([0, 100]);
-  };
-
   return (
     <div className="relative w-full h-full overflow-hidden flex">
 
@@ -290,7 +154,6 @@ export function MapRoot() {
         showSidebar ? 'w-72' : 'w-0',
       )}>
         <div className="w-72 flex flex-col h-full">
-          {/* Sidebar header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-[#e5e5e0] shrink-0">
             <div className="flex items-center gap-2">
               <MapPin className="h-3.5 w-3.5 text-[#059669]" />
@@ -305,7 +168,6 @@ export function MapRoot() {
             </button>
           </div>
 
-          {/* Sidebar search */}
           <div className="px-3 py-2 border-b border-[#f0f0ec] shrink-0">
             <div className="relative">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3 w-3 text-[#7a7a76]" />
@@ -318,7 +180,6 @@ export function MapRoot() {
             </div>
           </div>
 
-          {/* Lead list */}
           <div className="flex-1 overflow-y-auto">
             {filteredLeads.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
@@ -332,7 +193,7 @@ export function MapRoot() {
                 return (
                   <button
                     key={lead.id}
-                    onClick={() => selectLead(lead)}
+                    onClick={() => setSelectedLead(lead)}
                     className={cn(
                       'w-full text-left px-3 py-2.5 border-b border-[#f4f4f3] transition-colors',
                       isSelected ? 'bg-[#059669]/5 border-l-2 border-l-[#059669]' : 'hover:bg-[#fafaf8]',
@@ -375,7 +236,6 @@ export function MapRoot() {
             )}
           </div>
 
-          {/* Sidebar footer — terrain link */}
           <div className="px-3 py-3 border-t border-[#e5e5e0] shrink-0">
             <Link
               href="/field"
@@ -389,43 +249,70 @@ export function MapRoot() {
       </div>
 
       {/* ── Map area ──────────────────────────────────────────────────────────── */}
-      <div className="relative flex-1 overflow-hidden bg-[#e5e5e0]">
-        {/* Map canvas */}
-        <div ref={mapContainer} className="absolute inset-0" />
+      <div className="relative flex-1 overflow-hidden">
 
-        {/* Loading overlay while MapLibre style fetches */}
-        {!mapLoaded && (
-          <div className="absolute inset-0 z-30 flex items-center justify-center bg-[#f4f4f3] transition-opacity duration-500">
-            <div className="flex flex-col items-center gap-3 text-center">
-              <div className="relative">
-                <div className="absolute inset-0 rounded-full animate-ping opacity-25" style={{ background: '#059669' }} />
-                <div className="relative w-12 h-12 rounded-xl flex items-center justify-center" style={{ background: '#05966920' }}>
-                  <MapPin className="h-6 w-6" style={{ color: '#059669' }} />
-                </div>
-              </div>
-              <p className="text-xs font-bold text-[#26251e]">Initialisation de la carte…</p>
-            </div>
-          </div>
-        )}
+        {/* Map canvas — @mapcn/map handles all MapLibre internals */}
+        <div className="absolute inset-0">
+          <Map center={mapCenter} zoom={11} theme="light" className="w-full h-full">
+            <MapControls position="bottom-right" />
+
+            {filteredLeads.map((lead) => {
+              const color = STATUS_COLORS[lead.status || 'New'];
+              return (
+                <MapMarker
+                  key={lead.id}
+                  longitude={lead._lng}
+                  latitude={lead._lat}
+                >
+                  <MarkerContent>
+                    <button
+                      onClick={() => setSelectedLead(lead)}
+                      title={lead.businessName || ''}
+                      style={{
+                        width: 28,
+                        height: 28,
+                        borderRadius: '50%',
+                        background: color,
+                        border: '3px solid white',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: 9,
+                        fontWeight: 900,
+                        color: 'white',
+                        cursor: 'pointer',
+                        opacity: lead._estimated ? 0.65 : 1,
+                        transition: 'transform 0.15s ease',
+                      }}
+                      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1.25)'; }}
+                      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
+                    >
+                      {(lead.businessName || '?')[0].toUpperCase()}
+                    </button>
+                  </MarkerContent>
+                  <MarkerTooltip>{lead.businessName}</MarkerTooltip>
+                </MapMarker>
+              );
+            })}
+          </Map>
+        </div>
 
         {/* Floating topbar */}
-        <div className="absolute top-3 left-3 right-3 z-20 flex items-center gap-2">
-          {/* Toggle sidebar */}
+        <div className="absolute top-3 left-3 right-3 z-20 flex items-center gap-2 pointer-events-none">
           <button
             onClick={() => setShowSidebar((v) => !v)}
             className={cn(
-              'flex items-center justify-center h-9 w-9 rounded-xl border shadow-sm backdrop-blur-md transition-colors shrink-0',
+              'pointer-events-auto flex items-center justify-center h-9 w-9 rounded-xl border shadow-sm backdrop-blur-md transition-colors shrink-0',
               showSidebar
                 ? 'bg-[#059669] text-white border-[#059669]'
                 : 'bg-white/90 text-[#26251e] border-[#e5e5e0] hover:bg-white'
             )}
-            title={showSidebar ? 'Masquer la liste' : 'Afficher la liste'}
           >
             <PanelLeft className="h-3.5 w-3.5" />
           </button>
 
-          {/* Search */}
-          <div className="relative flex-1 max-w-xs">
+          <div className="relative flex-1 max-w-xs pointer-events-auto">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#7a7a76]" />
             <input
               value={searchQuery}
@@ -435,11 +322,10 @@ export function MapRoot() {
             />
           </div>
 
-          {/* Filters */}
           <button
             onClick={() => setShowFilters((v) => !v)}
             className={cn(
-              'flex items-center gap-1.5 h-9 px-3 rounded-xl border text-xs font-bold shadow-sm backdrop-blur-md transition-colors',
+              'pointer-events-auto flex items-center gap-1.5 h-9 px-3 rounded-xl border text-xs font-bold shadow-sm backdrop-blur-md transition-colors',
               activeFilterCount > 0
                 ? 'bg-[#059669] text-white border-[#059669]'
                 : 'bg-white/90 text-[#26251e] border-[#e5e5e0] hover:bg-white'
@@ -448,29 +334,26 @@ export function MapRoot() {
             <SlidersHorizontal className="h-3.5 w-3.5" />
             Filtres
             {activeFilterCount > 0 && (
-              <span className="bg-white/30 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full">
-                {activeFilterCount}
-              </span>
+              <span className="bg-white/30 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full">{activeFilterCount}</span>
             )}
           </button>
 
-          {/* Stats pill */}
-          <div className="flex items-center gap-1.5 h-9 px-3 rounded-xl bg-white/90 backdrop-blur-md border border-[#e5e5e0] shadow-sm">
+          <div className="pointer-events-auto flex items-center gap-1.5 h-9 px-3 rounded-xl bg-white/90 backdrop-blur-md border border-[#e5e5e0] shadow-sm">
             <Users className="h-3.5 w-3.5 text-[#059669]" />
             <span className="text-xs font-bold text-[#26251e]">{filteredLeads.length}</span>
             <span className="text-xs text-[#7a7a76]">leads</span>
           </div>
         </div>
 
-        {/* Filters panel — animated */}
+        {/* Filter panel */}
         {showFilters && (
-          <div
-            className="absolute top-14 left-3 z-20 w-72 bg-white rounded-2xl border border-[#e5e5e0] shadow-xl p-4 space-y-4"
-            style={{ animation: 'filterPanelIn 0.2s cubic-bezier(0.22,1,0.36,1) both' }}
-          >
+          <div className="absolute top-14 left-3 z-20 w-72 bg-white rounded-2xl border border-[#e5e5e0] shadow-xl p-4 space-y-4">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold uppercase tracking-wider text-[#7a7a76]">Filtres</span>
-              <button onClick={resetFilters} className="text-[10px] font-bold text-[#059669] hover:underline">
+              <button
+                onClick={() => { setStatusFilters(new Set()); setNicheFilter(''); setScoreRange([0, 100]); }}
+                className="text-[10px] font-bold text-[#059669] hover:underline"
+              >
                 Réinitialiser
               </button>
             </div>
@@ -542,7 +425,7 @@ export function MapRoot() {
           </div>
         </div>
 
-        {/* Lead detail drawer (right) */}
+        {/* Lead detail drawer */}
         {selectedLead && (
           <div className="absolute right-0 top-0 bottom-0 w-80 bg-white shadow-2xl z-30 flex flex-col border-l border-[#e5e5e0]">
             <div className="p-4 border-b border-[#f0f0ec]">
@@ -646,19 +529,6 @@ export function MapRoot() {
               >
                 Voir le lead complet <ChevronRight className="h-3.5 w-3.5" />
               </Link>
-            </div>
-          </div>
-        )}
-
-        {/* Loading overlay */}
-        {!mapLoaded && (
-          <div className="absolute inset-0 bg-[#fafaf8] flex items-center justify-center z-50">
-            <div className="flex flex-col items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-[#059669] flex items-center justify-center">
-                <MapPin className="h-5 w-5 text-white" />
-              </div>
-              <p className="text-sm font-bold text-[#26251e]">Chargement de la carte…</p>
-              <Loader2 className="h-5 w-5 animate-spin text-[#059669]" />
             </div>
           </div>
         )}

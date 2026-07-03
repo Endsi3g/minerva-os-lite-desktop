@@ -379,7 +379,6 @@ body.sidebar-collapsed .max-w-5xl {
   -webkit-overflow-scrolling: touch;
 }
 
-
 /* ── Global: hide all scrollbars, keep scrollability ── */
 html {
   scroll-behavior: smooth;
