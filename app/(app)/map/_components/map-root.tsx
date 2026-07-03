@@ -15,8 +15,10 @@ import {
   ChevronRight, Users, Zap, PanelLeft, Navigation, Star,
   Layers, Route, Plus, Trash2, CheckSquare, ExternalLink,
   ArrowRight, RefreshCw, Clock, Activity, Building2, Satellite,
-  Brain, Play, Square, Camera, Globe,
+  Brain, Play, Square, Camera, Globe, Pencil, Wifi, WifiOff,
+  MapPinOff, LocateFixed,
 } from 'lucide-react';
+import { createClient } from '@/lib/supabase/client';
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -362,7 +364,22 @@ function FlyThroughLayer({ waypoints }: { waypoints: { _lat: number; _lng: numbe
   );
 }
 
-// ── OSRM route fetcher + display ───────────────────────────────────────────────
+// ── Point-in-polygon (ray casting) ────────────────────────────────────────────
+
+function pointInPolygon(point: [number, number], polygon: [number, number][]): boolean {
+  if (polygon.length < 3) return false;
+  let inside = false;
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+    const xi = polygon[i][0], yi = polygon[i][1];
+    const xj = polygon[j][0], yj = polygon[j][1];
+    if (((yi > point[1]) !== (yj > point[1])) && (point[0] < ((xj - xi) * (point[1] - yi)) / (yj - yi) + xi)) {
+      inside = !inside;
+    }
+  }
+  return inside;
+}
+
+// ── ORS route fetcher + display ────────────────────────────────────────────────
 
 function RouteLayer({ waypoints }: { waypoints: Waypoint[] }) {
   const [routeCoords, setRouteCoords] = useState<[number, number][]>([]);
@@ -370,16 +387,20 @@ function RouteLayer({ waypoints }: { waypoints: Waypoint[] }) {
 
   useEffect(() => {
     if (waypoints.length < 2) { setRouteCoords([]); setRouteInfo(null); return; }
-    const coords = waypoints.map(w => `${w._lng},${w._lat}`).join(';');
-    fetch(`https://router.project-osrm.org/route/v1/driving/${coords}?overview=full&geometries=geojson`)
+    const coords = waypoints.map(w => [w._lng, w._lat] as [number, number]);
+    fetch(getApiUrl('/api/routing'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ waypoints: coords }),
+    })
       .then(r => r.json())
       .then(d => {
-        const route = d.routes?.[0];
-        if (!route) return;
-        setRouteCoords(route.geometry.coordinates as [number, number][]);
-        setRouteInfo({ distanceKm: route.distance / 1000, durationMin: Math.round(route.duration / 60) });
+        if (d.coordinates) {
+          setRouteCoords(d.coordinates);
+          setRouteInfo({ distanceKm: d.distanceKm, durationMin: d.durationMin });
+        }
       })
-      .catch(() => { /* OSRM unreachable */ });
+      .catch(() => {});
   }, [waypoints]);
 
   if (routeCoords.length < 2) return null;
@@ -408,10 +429,268 @@ function RouteLayer({ waypoints }: { waypoints: Waypoint[] }) {
   );
 }
 
+// ── Drawing layer (polygon → auto-tournée) ────────────────────────────────────
+
+interface DrawingLayerProps {
+  leads: EnrichedLead[];
+  onCreateTournee: (leads: EnrichedLead[]) => void;
+}
+
+function DrawingLayer({ leads, onCreateTournee }: DrawingLayerProps) {
+  const { map } = useMap();
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [vertices, setVertices] = useState<[number, number][]>([]);
+  const [closedPolygon, setClosedPolygon] = useState<[number, number][] | null>(null);
+  const [leadsInZone, setLeadsInZone] = useState<EnrichedLead[]>([]);
+
+  const SRC_ID = 'draw-polygon-src';
+  const FILL_ID = 'draw-polygon-fill';
+  const LINE_ID = 'draw-polygon-line';
+
+  // Sync polygon to MapLibre source
+  useEffect(() => {
+    if (!map) return;
+    const poly = closedPolygon ?? (vertices.length > 1 ? [...vertices, vertices[0]] : []);
+    const geojson: GeoJSON.Feature = {
+      type: 'Feature',
+      geometry: { type: 'Polygon', coordinates: [poly] },
+      properties: {},
+    };
+    if (!map.getSource(SRC_ID)) {
+      map.addSource(SRC_ID, { type: 'geojson', data: geojson });
+      map.addLayer({ id: FILL_ID, type: 'fill', source: SRC_ID, paint: { 'fill-color': '#059669', 'fill-opacity': 0.12 } });
+      map.addLayer({ id: LINE_ID, type: 'line', source: SRC_ID, paint: { 'line-color': '#059669', 'line-width': 2, 'line-dasharray': [2, 2] } });
+    } else {
+      (map.getSource(SRC_ID) as any).setData(geojson);
+    }
+    return () => {
+      if (map.getLayer(FILL_ID)) map.removeLayer(FILL_ID);
+      if (map.getLayer(LINE_ID)) map.removeLayer(LINE_ID);
+      if (map.getSource(SRC_ID)) map.removeSource(SRC_ID);
+    };
+  }, [map, vertices, closedPolygon]);
+
+  // Click handler
+  useEffect(() => {
+    if (!map || !isDrawing) return;
+    const onClick = (e: any) => {
+      setVertices(prev => [...prev, [e.lngLat.lng, e.lngLat.lat]]);
+    };
+    const onDblClick = (e: any) => {
+      e.preventDefault();
+      setVertices(prev => {
+        if (prev.length < 3) return prev;
+        const closed = [...prev, prev[0]];
+        setClosedPolygon(closed);
+        const inside = leads.filter(l => l._lng && l._lat && pointInPolygon([l._lng, l._lat], closed));
+        setLeadsInZone(inside);
+        return prev;
+      });
+      setIsDrawing(false);
+    };
+    map.on('click', onClick);
+    map.on('dblclick', onDblClick);
+    map.getCanvas().style.cursor = 'crosshair';
+    return () => {
+      map.off('click', onClick);
+      map.off('dblclick', onDblClick);
+      map.getCanvas().style.cursor = '';
+    };
+  }, [map, isDrawing, leads]);
+
+  const handleReset = () => {
+    setVertices([]);
+    setClosedPolygon(null);
+    setLeadsInZone([]);
+    setIsDrawing(false);
+  };
+
+  return (
+    <div className="absolute bottom-32 right-4 z-20 flex flex-col items-end gap-2 pointer-events-auto">
+      {leadsInZone.length > 0 && (
+        <div className="bg-white/95 backdrop-blur-md rounded-xl border border-[#059669]/30 shadow-lg px-3 py-2.5 flex flex-col gap-2">
+          <p className="text-[11px] font-bold text-[#26251e]">{leadsInZone.length} leads dans la zone</p>
+          <button
+            onClick={() => { onCreateTournee(leadsInZone); handleReset(); }}
+            className="text-xs font-bold bg-[#059669] hover:bg-[#047857] text-white px-3 py-1.5 rounded-lg transition-colors"
+          >
+            Créer tournée →
+          </button>
+          <button onClick={handleReset} className="text-[10px] text-[#7a7a76] hover:text-[#26251e] text-center">Effacer zone</button>
+        </div>
+      )}
+      {!leadsInZone.length && (
+        <button
+          onClick={() => { if (isDrawing) { handleReset(); } else { setIsDrawing(true); } }}
+          className={cn(
+            'flex items-center gap-1.5 h-9 px-3 rounded-xl border text-xs font-bold shadow-sm backdrop-blur-md transition-colors',
+            isDrawing ? 'bg-[#059669] text-white border-[#059669]' : 'bg-white/90 text-[#26251e] border-[#e5e5e0] hover:bg-white'
+          )}
+          title={isDrawing ? 'Double-clic pour fermer la zone' : 'Dessiner une zone'}
+        >
+          <Pencil className="h-3.5 w-3.5" />
+          <span className="hidden sm:inline">{isDrawing ? 'Dbl-clic pour clore' : 'Zone'}</span>
+        </button>
+      )}
+    </div>
+  );
+}
+
+// ── GPS real-time tracking ─────────────────────────────────────────────────────
+
+interface TeamPosition {
+  userId: string;
+  userName: string;
+  lat: number;
+  lng: number;
+  updatedAt: number;
+}
+
+interface GpsTrackingLayerProps {
+  workspaceId: string | undefined;
+}
+
+function GpsTrackingLayer({ workspaceId }: GpsTrackingLayerProps) {
+  const [isTracking, setIsTracking] = useState(false);
+  const [myPosition, setMyPosition] = useState<{ lat: number; lng: number } | null>(null);
+  const [teamPositions, setTeamPositions] = useState<TeamPosition[]>([]);
+  const watchIdRef = useRef<number | null>(null);
+  const channelRef = useRef<any>(null);
+  const myUserIdRef = useRef<string | null>(null);
+  const myUserNameRef = useRef<string>('Moi');
+
+  useEffect(() => {
+    const getUser = async () => {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        myUserIdRef.current = user.id;
+        myUserNameRef.current = user.user_metadata?.full_name || user.email?.split('@')[0] || 'Moi';
+      }
+    };
+    getUser();
+  }, []);
+
+  const startTracking = useCallback(() => {
+    if (!workspaceId || !navigator.geolocation) return;
+    setIsTracking(true);
+
+    const supabase = createClient();
+    const channel = supabase.channel(`team-gps-${workspaceId}`, {
+      config: { broadcast: { self: false } },
+    });
+
+    channel
+      .on('broadcast', { event: 'position' }, ({ payload }: { payload: TeamPosition }) => {
+        setTeamPositions(prev => {
+          const others = prev.filter(p => p.userId !== payload.userId);
+          return [...others, payload];
+        });
+      })
+      .subscribe();
+
+    channelRef.current = channel;
+
+    watchIdRef.current = navigator.geolocation.watchPosition(
+      (pos) => {
+        const { latitude: lat, longitude: lng } = pos.coords;
+        setMyPosition({ lat, lng });
+        if (myUserIdRef.current) {
+          channel.send({
+            type: 'broadcast',
+            event: 'position',
+            payload: {
+              userId: myUserIdRef.current,
+              userName: myUserNameRef.current,
+              lat,
+              lng,
+              updatedAt: Date.now(),
+            } as TeamPosition,
+          });
+        }
+      },
+      () => { /* geolocation denied */ },
+      { enableHighAccuracy: true, maximumAge: 5000 }
+    );
+  }, [workspaceId]);
+
+  const stopTracking = useCallback(() => {
+    setIsTracking(false);
+    if (watchIdRef.current !== null) navigator.geolocation.clearWatch(watchIdRef.current);
+    channelRef.current?.unsubscribe();
+    channelRef.current = null;
+    setMyPosition(null);
+    setTeamPositions([]);
+  }, []);
+
+  useEffect(() => () => { stopTracking(); }, [stopTracking]);
+
+  // Remove stale positions older than 5 min
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const cutoff = Date.now() - 5 * 60 * 1000;
+      setTeamPositions(prev => prev.filter(p => p.updatedAt > cutoff));
+    }, 30_000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <>
+      {/* My position marker */}
+      {myPosition && (
+        <MapMarker longitude={myPosition.lng} latitude={myPosition.lat}>
+          <MarkerContent>
+            <div className="flex items-center justify-center rounded-full border-2 border-white shadow-lg text-white text-[9px] font-black animate-pulse"
+              style={{ width: 28, height: 28, background: '#059669' }}>
+              <LocateFixed className="h-3.5 w-3.5" />
+            </div>
+          </MarkerContent>
+          <MarkerTooltip>Vous (live)</MarkerTooltip>
+        </MapMarker>
+      )}
+
+      {/* Team member markers */}
+      {teamPositions.map(p => (
+        <MapMarker key={p.userId} longitude={p.lng} latitude={p.lat}>
+          <MarkerContent>
+            <div className="flex items-center justify-center rounded-full border-2 border-white shadow-md text-white text-[9px] font-black"
+              style={{ width: 26, height: 26, background: '#7c3aed' }}>
+              {p.userName[0]?.toUpperCase() || '?'}
+            </div>
+          </MarkerContent>
+          <MarkerTooltip>{p.userName}</MarkerTooltip>
+        </MapMarker>
+      ))}
+
+      {/* Toggle button */}
+      <div className="absolute bottom-48 right-4 z-20 pointer-events-auto">
+        <button
+          onClick={isTracking ? stopTracking : startTracking}
+          className={cn(
+            'flex items-center gap-1.5 h-9 px-3 rounded-xl border text-xs font-bold shadow-sm backdrop-blur-md transition-colors',
+            isTracking
+              ? 'bg-[#059669] text-white border-[#059669]'
+              : 'bg-white/90 text-[#26251e] border-[#e5e5e0] hover:bg-white'
+          )}
+          title={isTracking ? 'Arrêter le partage GPS' : 'Partager ma position en live'}
+        >
+          {isTracking ? <Wifi className="h-3.5 w-3.5 animate-pulse" /> : <WifiOff className="h-3.5 w-3.5" />}
+          <span className="hidden sm:inline">GPS</span>
+          {teamPositions.length > 0 && (
+            <span className="flex items-center justify-center h-4 w-4 rounded-full bg-white/20 text-[9px] font-black">
+              {teamPositions.length}
+            </span>
+          )}
+        </button>
+      </div>
+    </>
+  );
+}
+
 // ── Main component ─────────────────────────────────────────────────────────────
 
 export function MapRoot() {
-  const { leads, addLeadValidations, updateLeadStatus, addTask } = useReach();
+  const { leads, addLeadValidations, updateLeadStatus, addTask, activeWorkspace } = useReach();
 
   // Sidebar & map state
   const [activeTab, setActiveTab] = useState<SidebarTab>('leads');
@@ -421,6 +700,8 @@ export function MapRoot() {
   const [statusFilters, setStatusFilters] = useState<Set<string>>(new Set());
   const [nicheFilter, setNicheFilter] = useState('');
   const [scoreRange, setScoreRange] = useState<[number, number]>([0, 100]);
+  const [cityFilter, setCityFilter] = useState('');
+  const [notContactedDaysFilter, setNotContactedDaysFilter] = useState<number | null>(null);
   const [showFilters, setShowFilters] = useState(false);
 
   // Lead detail drawer
@@ -487,6 +768,8 @@ Retourne UNIQUEMENT un JSON valide (pas de texte autour) avec ces clés optionne
         if (filters.statuses?.length) setStatusFilters(new Set(filters.statuses));
         if (filters.niche) setNicheFilter(filters.niche);
         if (filters.searchQuery) setSearchQuery(filters.searchQuery);
+        if (filters.city) setCityFilter(filters.city);
+        if (filters.notContactedSinceDays != null) setNotContactedDaysFilter(filters.notContactedSinceDays);
         if (filters.minScore != null || filters.maxScore != null) {
           setScoreRange([filters.minScore ?? 0, filters.maxScore ?? 100]);
         }
@@ -511,6 +794,12 @@ Retourne UNIQUEMENT un JSON valide (pas de texte autour) avec ces clés optionne
   // Tournée (route planning)
   const [tourWaypoints, setTourWaypoints] = useState<Waypoint[]>([]);
 
+  const handleCreateTourneeFromZone = useCallback((zoneLeads: EnrichedLead[]) => {
+    const valid = zoneLeads.filter(l => l._lat && l._lng);
+    setTourWaypoints(valid.map(l => ({ ...l } as unknown as Waypoint)));
+    setActiveTab('tournee' as SidebarTab);
+  }, []);
+
   // Enrich leads with coordinates
   const enrichedLeads = useMemo<EnrichedLead[]>(() => {
     return leads.map(lead => {
@@ -520,16 +809,23 @@ Retourne UNIQUEMENT un JSON valide (pas de texte autour) avec ces clés optionne
   }, [leads]);
 
   const filteredLeads = useMemo(() => {
+    const now = Date.now();
     return enrichedLeads.filter(lead => {
       if (searchQuery &&
         !lead.businessName?.toLowerCase().includes(searchQuery.toLowerCase()) &&
         !lead.city?.toLowerCase().includes(searchQuery.toLowerCase())) return false;
       if (statusFilters.size > 0 && !statusFilters.has(lead.status || 'New')) return false;
       if (nicheFilter && lead.niche !== nicheFilter) return false;
+      if (cityFilter && !lead.city?.toLowerCase().includes(cityFilter.toLowerCase())) return false;
+      if (notContactedDaysFilter != null) {
+        const lastContact = lead.firstContactAt ? new Date(lead.firstContactAt).getTime() : 0;
+        const daysSince = (now - lastContact) / 86_400_000;
+        if (daysSince < notContactedDaysFilter) return false;
+      }
       const score = lead.score ?? 0;
       return score >= scoreRange[0] && score <= scoreRange[1];
     });
-  }, [enrichedLeads, searchQuery, statusFilters, nicheFilter, scoreRange]);
+  }, [enrichedLeads, searchQuery, statusFilters, nicheFilter, scoreRange, cityFilter, notContactedDaysFilter]);
 
   const uniqueNiches = useMemo(
     () => [...new Set(leads.map(l => l.niche).filter(Boolean))].sort() as string[],
@@ -887,6 +1183,9 @@ Retourne UNIQUEMENT un JSON valide (pas de texte autour) avec ces clés optionne
             <ThreeDLayer enabled={show3D} />
             <SatelliteLayer enabled={showSatellite} />
 
+            {/* GPS team tracking */}
+            <GpsTrackingLayer workspaceId={activeWorkspace?.id} />
+
             {/* Fly-through for tournée */}
             <FlyThroughLayer waypoints={tourWaypoints} />
 
@@ -920,6 +1219,9 @@ Retourne UNIQUEMENT un JSON valide (pas de texte autour) avec ces clés optionne
 
             {/* Route */}
             <RouteLayer waypoints={tourWaypoints} />
+
+            {/* Drawing tool — zone polygon → auto-tournée */}
+            <DrawingLayer leads={filteredLeads} onCreateTournee={handleCreateTourneeFromZone} />
           </Map>
         </div>
 
