@@ -63,6 +63,11 @@ import {
   AssistantCanvasDoc
 } from './assistant-db';
 import { Pin, PinOff } from 'lucide-react';
+import { AiEmailTool } from '@/components/ui/ai-email-tool';
+import { AiImageSearch } from '@/components/ui/ai-image-search';
+import { AiImageLoader } from '@/components/ui/ai-image-loader';
+import { CursorQuestions } from '@/components/ui/cursor-questions';
+import { LinkPreview } from '@/components/ui/link-preview';
 
 function MarkdownRenderer({ content, t }: { content: string; t: any }) {
   const [copiedBlock, setCopiedBlock] = React.useState<number | null>(null);
@@ -174,7 +179,7 @@ function MarkdownRenderer({ content, t }: { content: string; t: any }) {
 }
 
 function renderInline(text: string): React.ReactNode {
-  const parts = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`)/g);
+  const parts = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`|https?:\/\/[^\s]+)/g);
   return parts.map((part, i) => {
     if (part.startsWith('**') && part.endsWith('**')) {
       return <strong key={i} className="font-bold">{part.slice(2, -2)}</strong>;
@@ -184,6 +189,13 @@ function renderInline(text: string): React.ReactNode {
     }
     if (part.startsWith('`') && part.endsWith('`')) {
       return <code key={i} className="bg-neutral-100 text-[#cf2d56] px-1 py-0.5 rounded text-[11px] font-mono">{part.slice(1, -1)}</code>;
+    }
+    if (/^https?:\/\//.test(part)) {
+      return (
+        <LinkPreview key={i} url={part}>
+          <a href={part} target="_blank" rel="noopener noreferrer" className="text-[#059669] underline hover:text-[#047857] transition-colors break-all">{part}</a>
+        </LinkPreview>
+      );
     }
     return part;
   });
@@ -234,6 +246,82 @@ function mdToHtml(md: string): string {
     .replace(/\n/g, '<br/>')
     .replace(/^(.+)$/, '<p>$1</p>');
 }
+
+// ── Tool-block detection ─────────────────────────────────────────────────────
+
+type ToolBlock =
+  | { type: 'email-tool'; data: { variants: any[]; title?: string; recipientEmail?: string } }
+  | { type: 'image-search'; data: { results: any[]; query?: string } }
+  | { type: 'image-loader'; data: { src?: string; alt?: string; width?: number; height?: number } }
+  | { type: 'questions'; data: { questions: any[] } }
+  | null;
+
+function parseToolBlock(content: string): { block: ToolBlock; before: string; after: string } | null {
+  const toolTypes = ['email-tool', 'image-search', 'image-loader', 'questions'] as const;
+  for (const toolType of toolTypes) {
+    const regex = new RegExp('```' + toolType + '\\n([\\s\\S]*?)```');
+    const match = content.match(regex);
+    if (match) {
+      try {
+        const data = JSON.parse(match[1]);
+        const fullMatch = match[0];
+        const matchStart = content.indexOf(fullMatch);
+        const before = content.slice(0, matchStart);
+        const after = content.slice(matchStart + fullMatch.length);
+        const block: ToolBlock = { type: toolType, data };
+        return { block, before, after };
+      } catch {
+        // JSON parse failed — skip this block
+      }
+    }
+  }
+  return null;
+}
+
+function RichMessageContent({ content, t }: { content: string; t: any }) {
+  const toolResult = parseToolBlock(content);
+
+  if (toolResult) {
+    const { block, before, after } = toolResult;
+    return (
+      <div className="space-y-3">
+        {before.trim() && <MarkdownRenderer content={before.trim()} t={t} />}
+        {block?.type === 'email-tool' && (
+          <AiEmailTool
+            variants={block.data.variants}
+            title={block.data.title}
+            recipientEmail={block.data.recipientEmail}
+          />
+        )}
+        {block?.type === 'image-search' && (
+          <AiImageSearch
+            results={block.data.results}
+            query={block.data.query}
+          />
+        )}
+        {block?.type === 'image-loader' && (
+          <AiImageLoader
+            src={block.data.src}
+            alt={block.data.alt}
+            width={block.data.width}
+            height={block.data.height}
+          />
+        )}
+        {block?.type === 'questions' && (
+          <CursorQuestions
+            questions={block.data.questions}
+            onComplete={() => {}}
+          />
+        )}
+        {after.trim() && <MarkdownRenderer content={after.trim()} t={t} />}
+      </div>
+    );
+  }
+
+  return <MarkdownRenderer content={content} t={t} />;
+}
+
+// ────────────────────────────────────────────────────────────────────────────
 
 export function AssistantRoot() {
   const { user, leads, tasks, activeWorkspace } = useReach();
@@ -577,7 +665,7 @@ export function AssistantRoot() {
       );
     }
 
-    // Markdown renderer for assistant messages
+    // Rich content renderer for assistant messages (tool blocks + link previews + markdown)
     if (msg.role === 'assistant') {
       return (
         <div className="space-y-2">
@@ -587,7 +675,7 @@ export function AssistantRoot() {
               <span className="truncate max-w-[150px]">{msg.attachedFile.name}</span>
             </div>
           )}
-          <MarkdownRenderer content={msg.content} t={t} />
+          <RichMessageContent content={msg.content} t={t} />
         </div>
       );
     }
