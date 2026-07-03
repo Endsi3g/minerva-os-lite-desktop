@@ -43,24 +43,8 @@ const STATUS_LABELS: Record<string, string> = {
   Lost: 'Perdu',
 };
 
-// CartoDB Positron (Light) raster tiles — works everywhere, no API key, extremely premium and clean
-const MAP_STYLE: maplibregl.StyleSpecification = {
-  version: 8,
-  sources: {
-    carto: {
-      type: 'raster',
-      tiles: [
-        'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
-        'https://b.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
-        'https://c.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
-        'https://d.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png'
-      ],
-      tileSize: 256,
-      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> © <a href="https://carto.com/attributions">CARTO</a>',
-    },
-  },
-  layers: [{ id: 'carto', type: 'raster', source: 'carto' }],
-};
+// OpenFreeMap Positron — vector tiles, no API key, fast CDN, globally available
+const MAP_STYLE_URL = 'https://tiles.openfreemap.org/styles/positron';
 
 // City-level fallback coordinates (Québec)
 const CITY_COORDS: Record<string, [number, number]> = {
@@ -151,7 +135,7 @@ export function MapRoot() {
     try {
       map.current = new maplibregl.Map({
         container,
-        style: MAP_STYLE,
+        style: MAP_STYLE_URL,
         center: [-73.5674, 45.5019],
         zoom: 11,
         attributionControl: false,
