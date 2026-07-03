@@ -44,7 +44,25 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 // OpenFreeMap Positron — vector tiles, no API key, fast CDN, globally available
-const MAP_STYLE_URL = 'https://tiles.openfreemap.org/styles/positron';
+// OSM raster tiles — 100% public, no API key, no CORS restrictions
+const MAP_STYLE: maplibregl.StyleSpecification = {
+  version: 8,
+  glyphs: 'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf',
+  sources: {
+    osm: {
+      type: 'raster',
+      tiles: [
+        'https://a.tile.openstreetmap.org/{z}/{x}/{y}.png',
+        'https://b.tile.openstreetmap.org/{z}/{x}/{y}.png',
+        'https://c.tile.openstreetmap.org/{z}/{x}/{y}.png',
+      ],
+      tileSize: 256,
+      attribution: '© <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a>',
+      maxzoom: 19,
+    },
+  },
+  layers: [{ id: 'osm-tiles', type: 'raster', source: 'osm', minzoom: 0, maxzoom: 22 }],
+};
 
 // City-level fallback coordinates (Québec)
 const CITY_COORDS: Record<string, [number, number]> = {
@@ -135,7 +153,7 @@ export function MapRoot() {
     try {
       map.current = new maplibregl.Map({
         container,
-        style: MAP_STYLE_URL,
+        style: MAP_STYLE,
         center: [-73.5674, 45.5019],
         zoom: 11,
         attributionControl: false,
