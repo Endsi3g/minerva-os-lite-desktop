@@ -13,9 +13,23 @@ import SettingsAgencySection from './settings-agency-section';
 import { SettingsAutomationsSection } from './settings-automations-section';
 import { SettingsDiagnosticsIA } from './settings-diagnostics-ia';
 import { SettingsMinervaAiSection } from './settings-minerva-ai-section';
+import { SettingsBillingSection } from './settings-billing-section';
+import { SettingsSecuritySection } from './settings-security-section';
+import { SettingsNotificationsSection } from './settings-notifications-section';
+import { SettingsModelsSection, type ModelsData } from './settings-models-section';
+import { SettingsProspectingSection } from './settings-prospecting-section';
+import { SettingsRolesSection } from './settings-roles-section';
+import { SettingsApiKeysSection } from './settings-api-keys-section';
+import { SettingsCustomizationsSection, type CustomizationsData } from './settings-customizations-section';
+import { SettingsCustomInstructionsSection, type CustomInstructionsData } from './settings-custom-instructions-section';
+import { SettingsPreferencesSection, type PreferencesData } from './settings-preferences-section';
+import { SettingsWorkspaceApiSection } from './settings-workspace-api-section';
+import { SettingsWorkspaceOverviewSection } from './settings-workspace-overview-section';
+import { SettingsGroupsSection } from './settings-groups-section';
 import { createClient } from '@/lib/supabase/client';
 import { getApiUrl } from '@/lib/api-helper';
 import { cn } from '@/lib/utils';
+import type { Locale } from '@/lib/translations';
 
 interface ProfileData {
   firstName: string;
@@ -98,6 +112,48 @@ export function SettingsRoot() {
   const [section, setSection] = useState<SettingsSection>('profile');
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
   const [savingSection, setSavingSection] = useState<Record<string, boolean>>({});
+
+  const [notificationsData, setNotificationsData] = useState({
+    reminderOverdue: true,
+    dailyDigest: true,
+    weeklyReport: false,
+    digestTime: '08:00',
+  });
+
+  const [modelsData, setModelsData] = useState<ModelsData>({
+    defaultChatModel: 'claude-sonnet-4-6',
+    defaultImageModel: '',
+  });
+
+  const [prospectingData, setProspectingData] = useState({
+    niches: [] as string[],
+    cities: [] as string[],
+    services: { website: true, seoAudit: true, acquisition: false },
+    language: 'fr',
+    dailyEmailLimit: 50,
+  });
+
+  const [customizationsData, setCustomizationsData] = useState<CustomizationsData>({
+    customColor: '#059669',
+    backgroundImageBase64: '',
+    showWorkspaceLogo: true,
+    hideModelLogo: false,
+    chatDisclaimer: '',
+    infoBoxes: [],
+  });
+
+  const [customInstructionsData, setCustomInstructionsData] = useState<CustomInstructionsData>({
+    active: false,
+    aboutYou: '',
+    modelInstructions: '',
+  });
+
+  const [preferencesData, setPreferencesData] = useState<PreferencesData>({
+    defaultModel: 'claude-sonnet-4-6',
+    defaultImageModel: '',
+    chatCapabilities: [],
+    language: 'fr' as Locale,
+  });
 
   useEffect(() => {
     const fetchDbSettings = async () => {
@@ -301,6 +357,24 @@ export function SettingsRoot() {
             />
           )}
 
+          {section === 'notifications' && (
+            <SettingsNotificationsSection
+              data={notificationsData}
+              onChange={(updates) => setNotificationsData((prev) => ({ ...prev, ...updates }))}
+              isSaving={false}
+            />
+          )}
+
+          {section === 'security' && <SettingsSecuritySection />}
+
+          {section === 'preferences' && (
+            <SettingsPreferencesSection
+              data={preferencesData}
+              onChange={(updates) => setPreferencesData((prev) => ({ ...prev, ...updates }))}
+              isSaving={false}
+            />
+          )}
+
           {section === 'workspace_general' && (
             <SettingsWorkspaceGeneralSection
               data={settings.workspaceGeneral}
@@ -310,6 +384,12 @@ export function SettingsRoot() {
           )}
 
           {section === 'members' && <SettingsMembersSection />}
+
+          {section === 'workspace_overview' && <SettingsWorkspaceOverviewSection />}
+
+          {section === 'workspace_api' && <SettingsWorkspaceApiSection />}
+
+          {section === 'groups' && <SettingsGroupsSection />}
 
           {section === 'ai' && (
             <SettingsAiSection
@@ -323,15 +403,60 @@ export function SettingsRoot() {
 
           {section === 'minerva_ai' && <SettingsMinervaAiSection />}
 
+          {section === 'models' && (
+            <SettingsModelsSection
+              data={modelsData}
+              onChange={(updates) => setModelsData((prev) => ({ ...prev, ...updates }))}
+              isSaving={false}
+            />
+          )}
+
+          {section === 'api_keys' && (
+            <SettingsApiKeysSection
+              data={{ openrouterKeyMasked: settings.ai.openrouterKeyMasked }}
+              onSaveKey={saveAiKey}
+              onDeleteKey={deleteAiKey}
+              isSaving={!!savingSection.ai}
+            />
+          )}
+
           {section === 'diagnostics' && <SettingsDiagnosticsIA />}
+
+          {section === 'automations' && <SettingsAutomationsSection />}
+
+          {section === 'prospecting' && (
+            <SettingsProspectingSection
+              data={prospectingData}
+              onChange={(updates) => setProspectingData((prev) => ({ ...prev, ...updates }))}
+              isSaving={false}
+            />
+          )}
+
+          {section === 'custom_instructions' && (
+            <SettingsCustomInstructionsSection
+              data={customInstructionsData}
+              onChange={(updates) => setCustomInstructionsData((prev) => ({ ...prev, ...updates }))}
+              isSaving={false}
+            />
+          )}
+
+          {section === 'customizations' && (
+            <SettingsCustomizationsSection
+              data={customizationsData}
+              onChange={(updates) => setCustomizationsData((prev) => ({ ...prev, ...updates }))}
+              isSaving={false}
+            />
+          )}
+
+          {section === 'roles' && <SettingsRolesSection />}
+
+          {section === 'agency' && <SettingsAgencySection />}
 
           {section === 'integrations' && <SettingsIntegrationsSection />}
 
           {section === 'goals' && <SettingsGoalsSection />}
 
-          {section === 'automations' && <SettingsAutomationsSection />}
-
-          {section === 'agency' && <SettingsAgencySection />}
+          {section === 'billing' && <SettingsBillingSection />}
         </div>
       </div>
     </div>

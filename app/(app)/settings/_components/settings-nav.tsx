@@ -3,14 +3,16 @@
 import React from 'react';
 import {
   User, Sun, Briefcase, Users, Brain, Link2, Target, Globe, FileText, Zap, Activity, Sparkles,
+  CreditCard, Shield, Bell, Cpu, Key, Palette, MessageSquare, Sliders, Terminal, LayoutDashboard, Users2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/lib/language-context';
 
 export type SettingsSection =
-  | 'profile' | 'appearance'
-  | 'workspace_general' | 'members'
-  | 'ai' | 'minerva_ai' | 'integrations' | 'goals' | 'agency' | 'automations' | 'diagnostics';
+  | 'profile' | 'appearance' | 'notifications' | 'security' | 'preferences'
+  | 'workspace_general' | 'members' | 'workspace_overview' | 'workspace_api' | 'groups'
+  | 'ai' | 'minerva_ai' | 'integrations' | 'goals' | 'agency' | 'automations' | 'diagnostics'
+  | 'models' | 'api_keys' | 'prospecting' | 'custom_instructions' | 'customizations' | 'roles' | 'billing';
 
 interface NavGroup {
   label: string;
@@ -31,6 +33,9 @@ export function SettingsNav({ section, onSectionChange }: SettingsNavProps) {
       items: [
         { id: 'profile', name: t('settings.tab_profile'), icon: User },
         { id: 'appearance', name: t('settings.tab_appearance'), icon: Sun },
+        { id: 'notifications', name: 'Notifications', icon: Bell },
+        { id: 'security', name: 'Sécurité', icon: Shield },
+        { id: 'preferences', name: 'Préférences', icon: Sliders },
       ],
     },
     {
@@ -38,6 +43,9 @@ export function SettingsNav({ section, onSectionChange }: SettingsNavProps) {
       items: [
         { id: 'workspace_general', name: 'Général', icon: Briefcase },
         { id: 'members', name: 'Membres', icon: Users },
+        { id: 'workspace_overview', name: 'Vue d\'ensemble', icon: LayoutDashboard },
+        { id: 'workspace_api', name: 'API', icon: Terminal },
+        { id: 'groups', name: 'Groupes', icon: Users2 },
       ],
     },
     {
@@ -45,11 +53,18 @@ export function SettingsNav({ section, onSectionChange }: SettingsNavProps) {
       items: [
         { id: 'minerva_ai', name: 'Minerva AI', icon: Sparkles },
         { id: 'ai', name: t('settings.tab_ai'), icon: Brain },
+        { id: 'models', name: 'Modèles', icon: Cpu },
+        { id: 'api_keys', name: 'Clés API', icon: Key },
         { id: 'diagnostics', name: 'Diagnostics IA', icon: Activity },
         { id: 'automations', name: 'Automations', icon: Zap },
+        { id: 'prospecting', name: 'Prospection', icon: Target },
+        { id: 'custom_instructions', name: 'Instructions', icon: MessageSquare },
+        { id: 'customizations', name: 'Personnalisation', icon: Palette },
+        { id: 'roles', name: 'Rôles', icon: Users },
         { id: 'agency', name: 'Profil d\'agence', icon: Globe },
         { id: 'integrations', name: t('settings.tab_integrations'), icon: Link2 },
         { id: 'goals', name: 'Objectifs', icon: Target },
+        { id: 'billing', name: 'Facturation', icon: CreditCard },
       ],
     },
   ];

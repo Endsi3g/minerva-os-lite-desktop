@@ -94,7 +94,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator
 } from '@/components/ui/breadcrumb';
-import { Pin } from 'lucide-react';
+import { Pin, KanbanSquare, Navigation } from 'lucide-react';
 import { CalendarDays, UsersRound } from 'lucide-react';
 
 const CURRENT_VERSION = '8.9.1';
@@ -287,7 +287,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [todayCollapsed, setTodayCollapsed] = useState(false);
   const [collapsedCategories, setCollapsedCategories] = useState<Record<string, boolean>>({
-    crm: true, ai: true, data: true, platform: true
+    crm: true, ai: true, data: true, platform: true, sales: true
   });
 
   const toggleCategory = (id: string) => {
@@ -749,6 +749,16 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
   ];
 
   const navCategories: Array<{ id: string; label: string; items: { name: string; href: string; icon: React.ElementType }[] }> = [
+    {
+      id: 'sales',
+      label: 'Ventes',
+      items: [
+        { name: 'Prospection', href: '/prospecting', icon: Search },
+        { name: 'Pipeline',    href: '/pipeline',    icon: KanbanSquare },
+        { name: 'Inbox',       href: '/inbox',       icon: Inbox },
+        { name: 'Terrain',     href: '/field',       icon: Navigation },
+      ],
+    },
     {
       id: 'daily',
       label: 'Quotidien',
