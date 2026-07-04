@@ -65,15 +65,32 @@ export function resolveAIProvider(settings?: AISettings | null) {
     return { provider: 'anthropic', model, apiKey: keys.anthropicKey };
   }
 
-  // 5. Cloudflare fallback when Anthropic key is not set
+  // 5. OpenRouter when key is configured (preferred fallback — key is set in production)
+  const orKey = settings?.openrouter_key || keys.openrouterKey;
+  if (orKey) {
+    const STALE = new Set(['openrouter/free', 'meta-llama/llama-3-8b-instruct:free',
+      'meta-llama/llama-3.1-8b-instruct:free', 'google/gemma-2-9b-it:free',
+      'qwen/qwen-2-7b-instruct:free', 'llama-3.3-70b-versatile', 'meta-llama/Llama-3-70b-chat-hf']);
+    const model = (rawModel && !STALE.has(rawModel) && !rawModel.startsWith('claude')) ? rawModel : OPENROUTER_DEFAULT;
+    return { provider: 'openrouter', model, apiKey: orKey };
+  }
+
+  // 6. Cloudflare via explicit env vars
+  const cfToken = process.env.CLOUDFLARE_API_TOKEN;
+  const cfAccountId = process.env.CLOUDFLARE_ACCOUNT_ID;
+  if (cfToken && cfAccountId) {
+    const model = rawModel?.startsWith('@cf/') ? rawModel : CLOUDFLARE_DEFAULT_MODEL;
+    return { provider: 'cloudflare', model, apiKey: cfToken };
+  }
+
+  // 7. Cloudflare hardcoded fallback (last resort)
   if (keys.cloudflareToken && keys.cloudflareAccountId) {
     const model = (rawModel && !rawModel.startsWith('claude')) ? rawModel : CLOUDFLARE_DEFAULT_MODEL;
     return { provider: 'cloudflare', model, apiKey: keys.cloudflareToken };
   }
 
-  // 6. OpenRouter final fallback
-  const apiKey = settings?.openrouter_key || keys.openrouterKey;
-  return { provider: 'openrouter', model: OPENROUTER_DEFAULT, apiKey };
+  // 8. OpenRouter without key (will fail gracefully with 401)
+  return { provider: 'openrouter', model: OPENROUTER_DEFAULT, apiKey: '' };
 }
 
 // ── Logging ───────────────────────────────────────────────────────────────────
