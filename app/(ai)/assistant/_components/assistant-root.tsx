@@ -227,6 +227,7 @@ interface CanvasDocument {
 }
 
 const AI_MODELS = [
+  { id: '@cf/moonshotai/kimi-k2.7-code', name: 'Kimi K2 — Principal', provider: 'cloudflare' },
   { id: 'claude-sonnet-4-6', name: 'Claude Sonnet', provider: 'anthropic' },
   { id: 'claude-opus-4-8', name: 'Claude Opus — Avancé', provider: 'anthropic' },
   { id: 'claude-haiku-4-5-20251001', name: 'Claude Haiku — Rapide', provider: 'anthropic' },

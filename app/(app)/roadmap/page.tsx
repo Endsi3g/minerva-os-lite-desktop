@@ -86,6 +86,13 @@ const roadmapData: RoadmapItem[] = [
   { module: 'Intégrations', feature: 'Webhooks Website', desc: 'Réception des formulaires de site web entrants comme leads taggés (déjà en partie via /integrations/forms).', priority: 'medium', status: 'available' },
   { module: 'CRM', feature: 'Accounts / Entreprises', desc: 'Page /accounts : vue 360° par société regroupant contacts, pipeline cumulé, visites terrain et notes.', priority: 'high', status: 'available' },
 
+  // ─── Available (v3.53.0 — Kimi K2 + Carte intelligente) ───────────────
+  { module: 'IA', feature: 'Kimi K2 modèle primaire', desc: '@cf/moonshotai/kimi-k2.7-code (Moonshot AI via Cloudflare Workers AI) — modèle primaire de toute l\'app. Aucune clé externe requise.', priority: 'high', status: 'available' },
+  { module: 'IA', feature: 'Agent loop + Hermès entièrement fonctionnels', desc: 'Boucle agent, Hermès ReAct, intelligence comportementale et NBA fonctionnent end-to-end avec Kimi K2. JSON stripping des réponses raisonnantes corrigé.', priority: 'high', status: 'available' },
+  { module: 'Carte', feature: 'FlyTo au clic & popup inline', desc: 'Cliquer sur un lead fly to la map directement. Les infos apparaissent en popup ancré au point (nom, statut, distance GPS, email) sans sidebar droite.', priority: 'high', status: 'available' },
+  { module: 'Carte', feature: 'GPS nearby leads temps réel', desc: 'Quand le GPS est actif, les leads sont triés par distance et chaque lead affiche sa distance en temps réel. Popup indique aussi la distance.', priority: 'high', status: 'available' },
+  { module: 'Paramètres', feature: 'Groupes collapsibles', desc: 'Les 3 sections de la sidebar paramètres (Compte, Espace de travail, Outils) se replient/déplient via un chevron.', priority: 'medium', status: 'available' },
+
   // ─── v4 Phase 1 — Lead Engine unifié ─────────────────────────────────
   { module: 'v4 · Acquisition', feature: 'Lead Source Hub — page /acquisition', desc: 'Tour de contrôle unifiée regroupant toutes les sources de leads : prospection locale, CSV, formulaires, Facebook Lead Ads, Google Ads. Vue « nouveaux leads à traiter » avec timeline d\'acquisition par lead.', priority: 'high', status: 'in_progress' },
   { module: 'v4 · Acquisition', feature: 'Timeline unifiée par lead', desc: 'Flux chronologique unique par lead/compte : création, source, enrichissements, emails envoyés, ouvertures/clics, replies, appels, tâches, visites terrain, RDV, notes, automations, changements de statut. Colonne vertébrale du produit.', priority: 'high', status: 'in_progress' },

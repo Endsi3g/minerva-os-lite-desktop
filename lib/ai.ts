@@ -18,7 +18,7 @@ export interface AICallOptions {
 }
 
 const OPENROUTER_DEFAULT = 'meta-llama/llama-3.3-70b-instruct:free';
-const CLOUDFLARE_DEFAULT_MODEL = '@cf/meta/llama-3.1-8b-instruct';
+const CLOUDFLARE_DEFAULT_MODEL = '@cf/moonshotai/kimi-k2.7-code';
 
 const getGlobalKeys = () => ({
   openrouterKey: process.env.OPENROUTER_API_KEY || '',
@@ -59,13 +59,19 @@ export function resolveAIProvider(settings?: AISettings | null) {
     return { provider: 'cloudflare', model, apiKey: keys.cloudflareToken };
   }
 
-  // 4. Anthropic as default when key is available (per CLAUDE.md: "default is Anthropic")
+  // 4. Anthropic if key is available
   if (keys.anthropicKey) {
     const model = rawModel?.startsWith('claude') ? rawModel : 'claude-sonnet-4-6';
     return { provider: 'anthropic', model, apiKey: keys.anthropicKey };
   }
 
-  // 5. OpenRouter when key is configured (preferred fallback — key is set in production)
+  // 5. Cloudflare primary default — Kimi K2 (hardcoded creds always available)
+  if (keys.cloudflareToken && keys.cloudflareAccountId) {
+    const model = rawModel?.startsWith('@cf/') ? rawModel : CLOUDFLARE_DEFAULT_MODEL;
+    return { provider: 'cloudflare', model, apiKey: keys.cloudflareToken };
+  }
+
+  // 6. OpenRouter fallback when key is configured
   const orKey = settings?.openrouter_key || keys.openrouterKey;
   if (orKey) {
     const STALE = new Set(['openrouter/free', 'meta-llama/llama-3-8b-instruct:free',
@@ -75,21 +81,7 @@ export function resolveAIProvider(settings?: AISettings | null) {
     return { provider: 'openrouter', model, apiKey: orKey };
   }
 
-  // 6. Cloudflare via explicit env vars
-  const cfToken = process.env.CLOUDFLARE_API_TOKEN;
-  const cfAccountId = process.env.CLOUDFLARE_ACCOUNT_ID;
-  if (cfToken && cfAccountId) {
-    const model = rawModel?.startsWith('@cf/') ? rawModel : CLOUDFLARE_DEFAULT_MODEL;
-    return { provider: 'cloudflare', model, apiKey: cfToken };
-  }
-
-  // 7. Cloudflare hardcoded fallback (last resort)
-  if (keys.cloudflareToken && keys.cloudflareAccountId) {
-    const model = (rawModel && !rawModel.startsWith('claude')) ? rawModel : CLOUDFLARE_DEFAULT_MODEL;
-    return { provider: 'cloudflare', model, apiKey: keys.cloudflareToken };
-  }
-
-  // 8. OpenRouter without key (will fail gracefully with 401)
+  // 7. OpenRouter without key (will fail gracefully with 401)
   return { provider: 'openrouter', model: OPENROUTER_DEFAULT, apiKey: '' };
 }
 
@@ -224,7 +216,10 @@ async function callCloudflare(
     throw new Error(`Cloudflare Workers AI error ${resp.status}: ${text}`);
   }
   const data = await resp.json();
-  return data.choices?.[0]?.message?.content?.trim() || '';
+  let content: string = data.choices?.[0]?.message?.content?.trim() || '';
+  // Strip markdown code fences that reasoning models (Kimi K2) wrap JSON in
+  content = content.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
+  return content;
 }
 
 function doCall(
@@ -264,20 +259,9 @@ export async function generateCompletion(options: AICallOptions): Promise<string
     const result = await doCall(provider, model, apiKey, messages, options.system, options);
     logCall({ id: requestId, userId: options.userId, provider, model, latencyMs: Date.now() - startTime, success: true });
     return result;
-  } catch {
-    const fallback = getFallback(provider);
-    if (fallback) {
-      try {
-        const result = await doCall(fallback.provider, fallback.model, fallback.apiKey, messages, options.system, options);
-        logCall({ id: requestId, userId: options.userId, provider: `${fallback.provider} (fallback)`, model: fallback.model, latencyMs: Date.now() - startTime, success: true });
-        return result;
-      } catch (fallbackErr: any) {
-        logCall({ id: requestId, userId: options.userId, provider: `${fallback.provider} (fallback-failed)`, model: fallback.model, latencyMs: Date.now() - startTime, success: false });
-        throw new Error(`Tous les providers IA ont échoué : ${fallbackErr.message}`);
-      }
-    }
+  } catch (err: any) {
     logCall({ id: requestId, userId: options.userId, provider, model, latencyMs: Date.now() - startTime, success: false });
-    throw new Error('Le modèle IA est temporairement indisponible. Réessaie dans quelques minutes.');
+    throw new Error(err?.message || 'Le modèle IA est temporairement indisponible. Réessaie dans quelques minutes.');
   }
 }
 

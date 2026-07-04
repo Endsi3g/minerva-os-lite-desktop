@@ -37,10 +37,10 @@ export async function GET(req: NextRequest) {
         {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${CF_TOKEN}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ model: '@cf/meta/llama-3.1-8b-instruct', messages: [{ role: 'user', content: 'ping' }], max_tokens: 1 }),
+          body: JSON.stringify({ model: '@cf/moonshotai/kimi-k2.7-code', messages: [{ role: 'user', content: 'ping' }], max_tokens: 1 }),
         },
       );
-      providers.push({ id: 'cloudflare', name: 'Cloudflare Workers AI', available: r.ok, latency_ms: Date.now() - t, primary: false, model: '@cf/meta/llama-3.1-8b-instruct' });
+      providers.push({ id: 'cloudflare', name: 'Cloudflare Workers AI', available: r.ok, latency_ms: Date.now() - t, primary: false, model: '@cf/moonshotai/kimi-k2.7-code' });
     } catch {
       providers.push({ id: 'cloudflare', name: 'Cloudflare Workers AI', available: false, latency_ms: null, primary: false });
     }

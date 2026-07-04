@@ -66,6 +66,23 @@ function TagLegend() {
 
 const versions: ChangelogVersion[] = [
   {
+    version: 'v3.53.0',
+    date: '4 juillet 2026 · 08:30',
+    title: 'Kimi K2 — IA primaire, Carte intelligente & Sidebar repensée',
+    highlights: [
+      { tag: 'feature', text: 'IA Primaire — Kimi K2 : Le modèle @cf/moonshotai/kimi-k2.7-code (Moonshot AI via Cloudflare Workers AI) est maintenant le modèle principal de toute l\'application — assistant, agents, analyses, génération d\'emails, intelligence comportementale. Aucune dépendance externe requise.' },
+      { tag: 'fix', text: 'Agents IA fonctionnels : La boucle agent, Hermès ReAct, l\'intelligence comportementale et les analyses NBA fonctionnent maintenant end-to-end — le bug de priorité de provider (Cloudflare était sauté en faveur d\'un modèle cassé) est corrigé.' },
+      { tag: 'fix', text: 'JSON stripping : Les modèles raisonnants (Kimi K2) encapsulent leur réponse dans ```json ... ``` — ces backticks sont maintenant automatiquement supprimés avant le parsing, ce qui garantit que l\'agent Hermès reçoit du JSON valide.' },
+      { tag: 'fix', text: 'Propagation d\'erreur IA : Les erreurs réelles du provider sont maintenant remontées jusqu\'à l\'interface au lieu d\'être swallowées sous "modèle temporairement indisponible".' },
+      { tag: 'feature', text: 'Carte — FlyTo : Cliquer sur un lead dans la sidebar gauche ou sur un point sur la carte déplace maintenant la map directement vers ce lead (map.flyTo zoom 15, durée 900ms).' },
+      { tag: 'feature', text: 'Carte — Popup inline : Au clic sur un lead, les infos apparaissent maintenant en popup ancré au point sur la carte (nom, ville, statut, email, score, distance GPS) plutôt qu\'une sidebar droite. Le panneau détail complet s\'ouvre via "Voir détails" dans le popup.' },
+      { tag: 'feature', text: 'Carte — GPS nearby leads : Quand le tracking GPS est actif, les leads sont triés par distance et chaque lead affiche sa distance en temps réel (mètres si < 1km, kilomètres sinon). Le popup affiche aussi la distance.' },
+      { tag: 'feature', text: 'Sidebar — Minerva AI repositionnée : La section "Minerva AI" (Assistant IA, Agents, Intelligence, Skills) est maintenant au-dessus de "Marketing" dans la navigation — plus de valeur, plus de visibilité.' },
+      { tag: 'feature', text: 'Paramètres — Groupes collapsibles : Les 3 sections (Compte, Espace de travail, Outils) dans la sidebar des paramètres peuvent maintenant être repliées/dépliées via un bouton chevron. Les sections avec un élément actif restent visuellement distinguées.' },
+      { tag: 'fix', text: 'Production API 404 : Les routes API (/api/chat, /api/agent/hermes, etc.) retournaient 404 sur le domaine principal Vercel à cause d\'un cache CDN périmé. Corrigé via réassignation d\'alias et fix du provider IA.' },
+    ],
+  },
+  {
     version: 'v3.52.0',
     date: '3 juillet 2026',
     title: 'Map IA, Onboarding cult-ui, Chat Claude-style & Outils IA avancés',

@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
     const primaryProvider = Object.entries(providerCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || 'anthropic';
     const fallbackRate = total > 0 ? Math.round(logs!.filter(l => l.provider?.includes('fallback')).length / total * 100) : 0;
     const cfToken = process.env.CLOUDFLARE_API_TOKEN || 'cfut_l0PDRuG7slPkY2Q9zMAE9qhXzkD15c0sFQa12hS77cc92973';
-    return NextResponse.json({ status: 'operational', providers: { anthropic: { available: !!process.env.ANTHROPIC_API_KEY, primary: primaryProvider === 'anthropic' }, cloudflare: { available: !!cfToken, primary: primaryProvider === 'cloudflare', model: '@cf/meta/llama-3.1-8b-instruct' }, openrouter: { available: !!process.env.OPENROUTER_API_KEY, primary: primaryProvider === 'openrouter' } }, stats: { total_requests: total, success_rate: total > 0 ? Math.round(successes / total * 100) : 100, avg_latency_ms: avgLatency, fallback_rate: fallbackRate }, last_success: lastSuccess, last_request_at: logs?.[0]?.created_at || null });
+    return NextResponse.json({ status: 'operational', providers: { anthropic: { available: !!process.env.ANTHROPIC_API_KEY, primary: primaryProvider === 'anthropic' }, cloudflare: { available: !!cfToken, primary: primaryProvider === 'cloudflare', model: '@cf/moonshotai/kimi-k2.7-code' }, openrouter: { available: !!process.env.OPENROUTER_API_KEY, primary: primaryProvider === 'openrouter' } }, stats: { total_requests: total, success_rate: total > 0 ? Math.round(successes / total * 100) : 100, avg_latency_ms: avgLatency, fallback_rate: fallbackRate }, last_success: lastSuccess, last_request_at: logs?.[0]?.created_at || null });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }

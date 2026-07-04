@@ -548,9 +548,10 @@ interface TeamPosition {
 
 interface GpsTrackingLayerProps {
   workspaceId: string | undefined;
+  onPositionUpdate?: (pos: { lat: number; lng: number } | null) => void;
 }
 
-function GpsTrackingLayer({ workspaceId }: GpsTrackingLayerProps) {
+function GpsTrackingLayer({ workspaceId, onPositionUpdate }: GpsTrackingLayerProps) {
   const [isTracking, setIsTracking] = useState(false);
   const [myPosition, setMyPosition] = useState<{ lat: number; lng: number } | null>(null);
   const [teamPositions, setTeamPositions] = useState<TeamPosition[]>([]);
@@ -595,6 +596,7 @@ function GpsTrackingLayer({ workspaceId }: GpsTrackingLayerProps) {
       (pos) => {
         const { latitude: lat, longitude: lng } = pos.coords;
         setMyPosition({ lat, lng });
+        onPositionUpdate?.({ lat, lng });
         if (myUserIdRef.current) {
           channel.send({
             type: 'broadcast',
@@ -621,7 +623,8 @@ function GpsTrackingLayer({ workspaceId }: GpsTrackingLayerProps) {
     channelRef.current = null;
     setMyPosition(null);
     setTeamPositions([]);
-  }, []);
+    onPositionUpdate?.(null);
+  }, [onPositionUpdate]);
 
   useEffect(() => () => { stopTracking(); }, [stopTracking]);
 
@@ -687,6 +690,105 @@ function GpsTrackingLayer({ workspaceId }: GpsTrackingLayerProps) {
   );
 }
 
+// ── Haversine distance (km) ────────────────────────────────────────────────────
+
+function haversine(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLng = ((lng2 - lng1) * Math.PI) / 180;
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+// ── Fly controller (must live inside <Map>) ────────────────────────────────────
+
+function FlyController({ target }: { target: EnrichedLead | null }) {
+  const { map, isLoaded } = useMap();
+  const prevId = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!map || !isLoaded || !target) return;
+    if (prevId.current === target.id) return;
+    prevId.current = target.id;
+    map.flyTo({ center: [target._lng, target._lat], zoom: 15, duration: 900, essential: true });
+  }, [map, isLoaded, target]);
+
+  return null;
+}
+
+// ── Lead popup on map (must live inside <Map>) ─────────────────────────────────
+
+interface LeadMapPopupProps {
+  lead: EnrichedLead | null;
+  onClose: () => void;
+  onOpenDetail: () => void;
+  distanceKm?: number | null;
+}
+
+function LeadMapPopup({ lead, onClose, onOpenDetail, distanceKm }: LeadMapPopupProps) {
+  const { map, isLoaded } = useMap();
+  const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
+
+  useEffect(() => {
+    if (!map || !isLoaded || !lead) { setPos(null); return; }
+    const update = () => {
+      const pt = map.project([lead._lng, lead._lat]);
+      setPos({ x: pt.x, y: pt.y });
+    };
+    update();
+    map.on('move', update);
+    map.on('zoom', update);
+    return () => { map.off('move', update); map.off('zoom', update); };
+  }, [map, isLoaded, lead]);
+
+  if (!lead || !pos) return null;
+
+  return (
+    <div
+      style={{ position: 'absolute', left: pos.x, top: pos.y - 14, transform: 'translate(-50%, -100%)', zIndex: 60, pointerEvents: 'auto' }}
+    >
+      <div className="bg-white rounded-2xl shadow-2xl border border-[#e5e5e0] w-64 overflow-hidden">
+        <div className="px-4 py-3 border-b border-[#f0f0ec] flex items-start justify-between gap-2">
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-bold text-[#26251e] truncate leading-tight">{lead.businessName}</p>
+            <p className="text-[9px] text-[#7a7a76] mt-0.5 flex items-center gap-1">
+              <MapPin className="h-2.5 w-2.5 shrink-0" />{lead.city}{lead.niche ? ` · ${lead.niche}` : ''}
+              {distanceKm != null && <span className="ml-1 text-[#059669] font-bold">{distanceKm < 1 ? `${Math.round(distanceKm * 1000)} m` : `${distanceKm.toFixed(1)} km`}</span>}
+            </p>
+          </div>
+          <button onClick={onClose} className="w-5 h-5 rounded-full hover:bg-[#f4f4f3] flex items-center justify-center shrink-0">
+            <X className="h-3 w-3 text-[#7a7a76]" />
+          </button>
+        </div>
+        <div className="px-4 py-2.5 flex items-center justify-between gap-2">
+          <span className="text-[9px] font-bold px-2 py-0.5 rounded-full text-white" style={{ background: STATUS_COLORS[lead.status || 'New'] }}>
+            {STATUS_LABELS[lead.status || 'New']}
+          </span>
+          {lead.score != null && <span className="text-[9px] font-black text-[#059669]">Score {lead.score}</span>}
+        </div>
+        {(lead.contactEmail || lead.phone) && (
+          <div className="px-4 pb-2 space-y-1">
+            {lead.contactEmail && <p className="text-[9px] text-[#7a7a76] truncate flex items-center gap-1"><Mail className="h-2.5 w-2.5 shrink-0" />{lead.contactEmail}</p>}
+            {lead.phone && <p className="text-[9px] text-[#7a7a76] truncate">📞 {lead.phone}</p>}
+          </div>
+        )}
+        <div className="px-4 pb-3 flex gap-2">
+          <button onClick={onOpenDetail} className="flex-1 h-7 bg-[#059669] hover:bg-[#047857] text-white text-[9px] font-bold rounded-lg flex items-center justify-center gap-1 transition-colors">
+            <ChevronRight className="h-3 w-3" /> Voir détails
+          </button>
+          <a href={`/leads/${lead.id}`} className="flex-1 h-7 bg-[#f4f4f3] hover:bg-[#e5e5e0] text-[#26251e] text-[9px] font-bold rounded-lg flex items-center justify-center gap-1 transition-colors">
+            <ExternalLink className="h-3 w-3" /> Fiche
+          </a>
+        </div>
+      </div>
+      {/* Arrow */}
+      <div className="flex justify-center">
+        <div className="w-3 h-2 overflow-hidden"><div className="w-3 h-3 bg-white border-r border-b border-[#e5e5e0] rotate-45 -translate-y-1/2 shadow-sm" /></div>
+      </div>
+    </div>
+  );
+}
+
 // ── Main component ─────────────────────────────────────────────────────────────
 
 export function MapRoot() {
@@ -704,14 +806,18 @@ export function MapRoot() {
   const [notContactedDaysFilter, setNotContactedDaysFilter] = useState<number | null>(null);
   const [showFilters, setShowFilters] = useState(false);
 
-  // Lead detail drawer
+  // Lead detail drawer + map popup
   const [selectedLead, setSelectedLead] = useState<EnrichedLead | null>(null);
+  const [showDetailPanel, setShowDetailPanel] = useState(false);
   const [draftContent, setDraftContent] = useState('');
   const [generatingDraft, setGeneratingDraft] = useState(false);
   const [showDraftArea, setShowDraftArea] = useState(false);
   const [quickStatus, setQuickStatus] = useState('');
   const [taskTitle, setTaskTitle] = useState('');
   const [creatingTask, setCreatingTask] = useState(false);
+
+  // GPS shared position for nearby leads
+  const [myGpsPosition, setMyGpsPosition] = useState<{ lat: number; lng: number } | null>(null);
 
   // Advanced map features
   const [show3D, setShow3D] = useState(false);
@@ -834,14 +940,28 @@ Retourne UNIQUEMENT un JSON valide (pas de texte autour) avec ces clés optionne
 
   const activeFilterCount = (statusFilters.size > 0 ? 1 : 0) + (nicheFilter ? 1 : 0) + (scoreRange[0] > 0 || scoreRange[1] < 100 ? 1 : 0);
 
-  // Lead click from map
+  // Lead click from map or sidebar list
   const handleLeadClick = useCallback((id: string) => {
     const lead = enrichedLeads.find(l => l.id === id) ?? null;
     setSelectedLead(lead);
+    setShowDetailPanel(false); // show popup first, user can open detail panel from popup
     setQuickStatus(lead?.status || '');
     setShowDraftArea(false);
     setDraftContent('');
   }, [enrichedLeads]);
+
+  const distanceToSelected = useMemo(() => {
+    if (!myGpsPosition || !selectedLead) return null;
+    return haversine(myGpsPosition.lat, myGpsPosition.lng, selectedLead._lat, selectedLead._lng);
+  }, [myGpsPosition, selectedLead]);
+
+  // Distance from GPS for each lead
+  const leadsWithDistance = useMemo(() => {
+    if (!myGpsPosition) return filteredLeads.map(l => ({ ...l, _distance: null as number | null }));
+    return filteredLeads
+      .map(l => ({ ...l, _distance: haversine(myGpsPosition.lat, myGpsPosition.lng, l._lat, l._lng) }))
+      .sort((a, b) => (a._distance ?? 9999) - (b._distance ?? 9999));
+  }, [filteredLeads, myGpsPosition]);
 
   // Quick status update
   const handleStatusChange = async (status: string) => {
@@ -996,12 +1116,12 @@ Retourne UNIQUEMENT un JSON valide (pas de texte autour) avec ces clés optionne
                 </div>
               </div>
               <div className="flex-1 overflow-y-auto">
-                {filteredLeads.length === 0 ? (
+                {leadsWithDistance.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-12 text-center px-4">
                     <MapPin className="h-6 w-6 text-[#e5e5e0] mb-2" />
                     <p className="text-xs font-semibold text-[#7a7a76]">Aucun lead</p>
                   </div>
-                ) : filteredLeads.map(lead => {
+                ) : leadsWithDistance.map(lead => {
                   const isSelected = selectedLead?.id === lead.id;
                   const inTour = tourWaypoints.some(w => w.id === lead.id);
                   return (
@@ -1015,6 +1135,11 @@ Retourne UNIQUEMENT un JSON valide (pas de texte autour) avec ces clés optionne
                             <p className={cn('text-xs font-semibold leading-tight truncate', isSelected ? 'text-[#059669]' : 'text-[#26251e]')}>{lead.businessName}</p>
                             <span className="text-[9px] text-[#7a7a76] flex items-center gap-0.5 mt-0.5">
                               <Navigation className="h-2.5 w-2.5" />{lead.city}
+                              {lead._distance != null && (
+                                <span className="ml-1 text-[#059669] font-bold">
+                                  {lead._distance < 1 ? `${Math.round(lead._distance * 1000)} m` : `${lead._distance.toFixed(1)} km`}
+                                </span>
+                              )}
                             </span>
                           </div>
                           {lead.score != null && <span className="text-[9px] font-black text-[#059669] shrink-0">{lead.score}</span>}
@@ -1176,6 +1301,9 @@ Retourne UNIQUEMENT un JSON valide (pas de texte autour) avec ces clés optionne
           <Map center={mapCenter} zoom={11} theme="light" className="w-full h-full">
             <MapControls position="bottom-right" />
 
+            {/* Fly to selected lead */}
+            <FlyController target={selectedLead} />
+
             {/* CRM leads layer — clustered + status colored + heatmap */}
             <CrmLeadsLayer leads={filteredLeads} onLeadClick={handleLeadClick} showHeatmap={showHeatmap} />
 
@@ -1184,7 +1312,17 @@ Retourne UNIQUEMENT un JSON valide (pas de texte autour) avec ces clés optionne
             <SatelliteLayer enabled={showSatellite} />
 
             {/* GPS team tracking */}
-            <GpsTrackingLayer workspaceId={activeWorkspace?.id} />
+            <GpsTrackingLayer workspaceId={activeWorkspace?.id} onPositionUpdate={setMyGpsPosition} />
+
+            {/* Lead popup on map — shows info inline instead of right sidebar */}
+            {!showDetailPanel && (
+              <LeadMapPopup
+                lead={selectedLead}
+                onClose={() => setSelectedLead(null)}
+                onOpenDetail={() => setShowDetailPanel(true)}
+                distanceKm={distanceToSelected}
+              />
+            )}
 
             {/* Fly-through for tournée */}
             <FlyThroughLayer waypoints={tourWaypoints} />
@@ -1355,8 +1493,8 @@ Retourne UNIQUEMENT un JSON valide (pas de texte autour) avec ces clés optionne
           )}
         </div>
 
-        {/* Lead detail drawer */}
-        {selectedLead && (
+        {/* Lead detail panel — opens when user clicks "Voir détails" in popup */}
+        {selectedLead && showDetailPanel && (
           <div className="absolute right-0 top-0 bottom-0 w-80 bg-white shadow-2xl z-30 flex flex-col border-l border-[#e5e5e0]">
             <div className="p-4 border-b border-[#f0f0ec]">
               <div className="flex items-start justify-between">
@@ -1367,7 +1505,7 @@ Retourne UNIQUEMENT un JSON valide (pas de texte autour) avec ces clés optionne
                     <span className="text-[10px] text-[#7a7a76] truncate">{selectedLead.city}{selectedLead.niche && ` · ${selectedLead.niche}`}</span>
                   </div>
                 </div>
-                <button onClick={() => setSelectedLead(null)} className="w-7 h-7 rounded-full hover:bg-[#f4f4f3] flex items-center justify-center ml-2 shrink-0">
+                <button onClick={() => { setSelectedLead(null); setShowDetailPanel(false); }} className="w-7 h-7 rounded-full hover:bg-[#f4f4f3] flex items-center justify-center ml-2 shrink-0">
                   <X className="h-3.5 w-3.5 text-[#7a7a76]" />
                 </button>
               </div>

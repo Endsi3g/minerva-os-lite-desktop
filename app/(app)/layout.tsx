@@ -773,6 +773,16 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
       ],
     },
     {
+      id: 'ai',
+      label: 'Minerva AI',
+      items: [
+        { name: 'Assistant IA', href: '/assistant',    icon: Sparkles },
+        { name: 'Agents',       href: '/agents',       icon: Bot },
+        { name: 'Intelligence', href: '/intelligence', icon: Brain },
+        { name: 'Skills',       href: '/skills',       icon: Zap },
+      ],
+    },
+    {
       id: 'marketing',
       label: 'Marketing',
       items: [
@@ -791,16 +801,6 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
         { name: 'Séquences',    href: '/sequences',     icon: Mail },
         { name: 'Campagnes',    href: '/campaigns',     icon: Megaphone },
         { name: 'Playbooks',    href: '/playbooks',     icon: BookOpen },
-      ],
-    },
-    {
-      id: 'ai',
-      label: 'Minerva AI',
-      items: [
-        { name: 'Assistant IA', href: '/assistant',    icon: Sparkles },
-        { name: 'Agents',       href: '/agents',       icon: Bot },
-        { name: 'Intelligence', href: '/intelligence', icon: Brain },
-        { name: 'Skills',       href: '/skills',       icon: Zap },
       ],
     },
   ];
