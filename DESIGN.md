@@ -1,164 +1,371 @@
 # Minerva OS Lite — Design System
 
+> **Version**: 3.53.0 · Dernière mise à jour : 4 juillet 2026
+
 ## Philosophy
 
-Minerva OS Lite follows a **dense, professional, monochromatic** aesthetic inspired by Langdock and Linear. The interface is utility-first: every pixel serves a function. No decorative gradients, no heavy shadows, no noisy backgrounds unless they serve orientation (e.g., the dot pattern on the Today/Welcome pages).
+Minerva OS Lite suit une esthétique **dense, professionnelle, monochromatique** inspirée de Linear et Langdock. L'interface est utility-first : chaque pixel sert une fonction. Pas de dégradés décoratifs, pas d'ombres lourdes, pas de fonds bruités — sauf quand ils servent l'orientation (ex. dot pattern sur Today/Welcome).
 
 ---
 
 ## Color Tokens
 
-All brand colors are hard-coded as hex literals (not Tailwind color names) for pixel-perfect control. Never use Tailwind named colors like `green-600` or `orange-500` for brand elements.
+Toutes les couleurs de marque sont codées en dur comme hex littéraux (pas de noms Tailwind) pour un contrôle pixel-perfect. **Ne jamais utiliser `green-600`, `emerald-500` ou tout autre nom Tailwind pour les éléments de marque.**
 
 | Token | Hex | Usage |
 |---|---|---|
-| `--foreground` / text primary | `#26251e` | All primary text |
-| `--muted-foreground` | `#7a7a76` | Secondary/helper text |
-| `--border` | `#e5e5e0` | All borders, dividers |
-| `--background` | `#fafaf8` | Page background |
-| `--card` / sidebar bg | `#f4f4f3` | Cards, sidebar |
-| Accent / Primary | `#059669` (hover `#047857`) | CTA buttons, highlights, all accents — **green is the only accent color, app-wide** |
-| Brand Green | `#059669` / `#10b981` | Success states, prospecting, chat bubbles |
-| Warm Dark | `#26251e` | Headers, nav items |
-| Warm Tan | `#e5e5e2` | Hover states, dividers |
+| Text primary | `#26251e` | Tout texte primaire, headers nav |
+| Text secondary | `#7a7a76` | Métadonnées, labels, placeholders |
+| Border | `#e5e5e0` | Toutes les bordures et séparateurs |
+| Background page | `#fafaf8` | Fond de page |
+| Background card | `#f4f4f3` | Cards, sidebar bg |
+| Background hover | `#fafaf8` | Hover sur les lignes de liste |
+| **Accent / Primary** | `#059669` (hover `#047857`) | **Couleur d'accent unique de l'app** — boutons CTA, highlights, focus rings, badges actifs |
+| Success / Brand Green | `#10b981` | Indicateurs de succès, bulles de chat IA |
+| Danger | `#ef4444` | Destructif, erreurs |
+| Warning | `#d97706` | Alertes, statut "Proposition" |
+| Purple | `#7c3aed` | Tournées, étapes, Négociation pipeline |
+| Blue | `#2563eb` | Statut "RDV planifié", liens externes |
+
+> **Il n'y a pas d'orange dans l'app.** Ne jamais utiliser `#f54e00`, `#d94400` ou les classes Tailwind `orange-*`. L'accent unique est le vert `#059669`.
+
+### Couleurs de statut leads (map + pipeline)
+
+| Statut | Hex |
+|---|---|
+| Nouveau | `#7a7a76` |
+| Contacté | `#6b7280` |
+| RDV planifié | `#2563eb` |
+| Proposition | `#d97706` |
+| Négociation | `#7c3aed` |
+| Gagné | `#059669` |
+| Perdu | `#ef4444` |
 
 ### Dark Mode
-Handled by `ThemeProvider` (next-themes). CSS variables flip automatically. Never hard-code `dark:` overrides for structural colors — use CSS variables via `bg-background`, `text-foreground`, etc.
+
+Géré par `ThemeProvider` (next-themes). Les variables CSS basculent automatiquement. Ne jamais hard-coder les overrides `dark:` pour les couleurs structurelles — utiliser les variables CSS via `bg-background`, `text-foreground`, etc.
 
 ---
 
 ## Typography
 
-- **Font stack**: system sans-serif via Tailwind's `font-sans`; monospaced numbers via `font-mono`
-- **Title sizes**: `text-2xl font-bold` (page headers), `text-xl font-bold` (section headers), `text-sm font-bold` (card titles)
-- **Body**: `text-xs` (12px) for all UI chrome; `text-sm` (14px) for content areas (editor, chat)
-- **Labels / metadata**: `text-[10px]` or `text-[9px]` for badges, timestamps, point counters
-- **Tracking**: `tracking-tight` on large headings; `tracking-wider uppercase` on section labels
+- **Font stack** : system sans-serif via `font-sans`; nombres monospaces via `font-mono`
+- **Page header** : `text-2xl font-bold` (28px)
+- **Section header** : `text-xl font-bold` (20px)
+- **Card title** : `text-sm font-bold` (14px)
+- **UI chrome** : `text-xs` (12px) — corps par défaut de toute l'interface
+- **Content areas** : `text-sm` (14px) — éditeur, chat, longues descriptions
+- **Labels / metadata** : `text-[10px]` ou `text-[9px]` — badges, timestamps, compteurs, labels de section
+- **Tracking** : `tracking-tight` sur les grands titres; `tracking-wider uppercase` sur les labels de section
 
 ---
 
 ## Spacing & Density
 
-- Sidebar width: `240px` (collapsed: `0`/`border-r-0`)
-- Topbar height: `h-14` (56px)
-- Card padding: `p-5` (20px); compact cards: `p-3` or `p-4`
-- Section gap: `gap-6` between major sections; `gap-3` within a card
-- Border radius: `rounded-xl` (12px) for cards/modals; `rounded-lg` (8px) for inputs/buttons; `rounded-md` (6px) for small controls; `rounded-full` for badges
-- Comfortable density is the default; compact mode can be toggled in Appearance settings
+- Sidebar width : `240px` (w-60 ou w-64 selon contexte)
+- Topbar height : `h-14` (56px)
+- Card padding : `p-5` (standard), `p-4` (compact), `p-3` (micro-card)
+- Section gap : `gap-6` entre sections majeures, `gap-3` à l'intérieur d'une card
+- Border radius :
+  - `rounded-2xl` (16px) — modals, panels flottants, popups carte
+  - `rounded-xl` (12px) — cards, drawers, zones de contenu
+  - `rounded-lg` (8px) — inputs, boutons
+  - `rounded-md` (6px) — petits contrôles, menus
+  - `rounded-full` — badges, avatars, icônes circulaires
 
 ---
 
 ## Component Patterns
 
-### Page structure
-Every feature page follows the `*-root.tsx` client component pattern:
+### Structure de page
+
+Chaque page feature suit le pattern `*-root.tsx` :
+
 ```
-app/(app)/<feature>/page.tsx          ← server component (thin wrapper)
-app/(app)/<feature>/_components/<feature>-root.tsx  ← client component (all state)
+app/(app)/<feature>/page.tsx                        ← server component (thin wrapper)
+app/(app)/<feature>/_components/<feature>-root.tsx  ← client component (tout le state)
 ```
 
-### Buttons
-- **Primary CTA**: `bg-[#059669] hover:bg-[#047857] text-white font-bold rounded-lg` (green for prospecting/chat actions)
-- **Accent CTA**: `bg-primary text-primary-foreground` (uses CSS variable, green `#059669` app-wide)
-- **Secondary/outline**: `border border-[#e5e5e0] bg-white text-[#555552] hover:bg-[#f4f4f3]`
-- **Destructive**: `bg-destructive text-destructive-foreground`
-- **Ghost**: `hover:bg-muted text-muted-foreground`
-- Height: `h-8` (small), `h-9` (default), `h-10` (large); always `text-xs font-bold` or `text-sm font-semibold`
+### Boutons
+
+```tsx
+// Primary CTA
+<button className="bg-[#059669] hover:bg-[#047857] text-white text-xs font-bold rounded-lg h-9 px-4 transition-colors">
+  Action
+</button>
+
+// Secondary / outline
+<button className="border border-[#e5e5e0] bg-white text-[#26251e] text-xs font-bold rounded-lg h-9 px-4 hover:bg-[#f4f4f3] transition-colors">
+  Annuler
+</button>
+
+// Ghost / icon-only
+<button className="h-8 w-8 rounded-lg hover:bg-[#f4f4f3] flex items-center justify-center text-[#7a7a76] hover:text-[#26251e] transition-colors">
+  <Icon className="h-3.5 w-3.5" />
+</button>
+
+// Destructif
+<button className="bg-[#ef4444] hover:bg-[#dc2626] text-white text-xs font-bold rounded-lg h-9 px-4">
+  Supprimer
+</button>
+```
+
+Hauteurs standard : `h-7` (micro), `h-8` (small), `h-9` (default), `h-10` (large).  
+Toujours `text-xs font-bold` ou `text-sm font-semibold`.
 
 ### Cards
+
 ```tsx
-<div className="border border-border rounded-xl p-5 bg-card space-y-3">
+<div className="border border-[#e5e5e0] rounded-xl p-5 bg-white space-y-3">
+  <p className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Section Label</p>
+  {/* content */}
+</div>
 ```
-Cards use `bg-card` (maps to `#f4f4f3` in light mode) with `border-border` (`#e5e5e0`). No shadow by default — only `shadow-sm` when elevation is needed (modals, popovers).
+
+Pas de shadow par défaut. `shadow-sm` seulement pour les éléments flottants (modals, popovers, dropdowns).
 
 ### Modals / Dialogs
-- Use shadcn `Dialog` or a custom fixed overlay with `bg-black/40 backdrop-blur-sm`
-- Modal container: `bg-white rounded-2xl shadow-xl w-[480px] max-w-[95vw] p-6`
-- Animation: `animate-in zoom-in-95 duration-150`
 
-### Section headers (settings / forms)
 ```tsx
-<div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Label</div>
+// Overlay
+<div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center">
+  // Modal container
+  <div className="bg-white rounded-2xl shadow-xl w-[480px] max-w-[95vw] p-6 animate-in zoom-in-95 duration-150">
+    {/* content */}
+  </div>
+</div>
+```
+
+### Inputs / Select
+
+```tsx
+<input className="w-full h-9 px-3 text-xs border border-[#e5e5e0] rounded-lg outline-none focus:ring-1 focus:ring-[#059669] text-[#26251e] placeholder:text-[#7a7a76] bg-white" />
+
+<select className="h-9 px-2 text-xs border border-[#e5e5e0] rounded-lg bg-white text-[#26251e] outline-none focus:ring-1 focus:ring-[#059669]" />
+```
+
+### Labels de section (settings / formulaires)
+
+```tsx
+<p className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76] mb-1.5">Label</p>
 ```
 
 ### Badges / Tags
+
 ```tsx
-<span className="text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full border bg-emerald-50 text-emerald-600 border-emerald-200">Actif</span>
+// Status badge
+<span className="text-[9px] font-bold px-2 py-0.5 rounded-full text-white" style={{ background: STATUS_COLORS[status] }}>
+  {STATUS_LABELS[status]}
+</span>
+
+// Feature badge
+<span className="text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full border bg-[#f0fdf4] text-[#059669] border-[#059669]/20">
+  Actif
+</span>
 ```
 
-### SettingsSectionWrapper
-All settings sections use a shared wrapper with `title`, `description`, `isSaving` props. The wrapper provides a consistent header and saving indicator.
+### Toggle Switch
 
-### Toggle switches
-Custom toggle (not shadcn Switch for consistency):
 ```tsx
-<button onClick={() => onChange(!value)} className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${value ? 'bg-primary' : 'bg-muted-foreground/30'}`}>
+<button
+  onClick={() => onChange(!value)}
+  className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${value ? 'bg-[#059669]' : 'bg-[#d4d4d0]'}`}
+>
   <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition duration-200 ${value ? 'translate-x-4' : 'translate-x-0'}`} />
 </button>
 ```
+
+### SettingsSectionWrapper
+
+Toutes les sections de settings utilisent un wrapper partagé avec `title`, `description`, `isSaving`. Il fournit un header cohérent et un indicateur de sauvegarde.
 
 ---
 
 ## Navigation
 
-### Sidebar (240px)
-- **Fixed pinned items**: Aujourd'hui, Leads, Pipeline, Prospection, Chat IA
-- **Collapsible categories**: Intelligence IA, Données & Fichiers, Plateforme
-- **Bottom section**: Projects (from Supabase), then Get Started progress
-- **Footer**: Workspace switcher, theme, notifications bell
+### Sidebar principale (240px)
 
-### Settings nav
-Grouped into 4 sections: **Compte** / **Espace de travail** / **Gestion des utilisateurs** / **Outils**. Width: `w-56`.
+**6 items épinglés en haut (toujours visibles)** :
+
+| Label | Route | Icône |
+|---|---|---|
+| Accueil | `/today` | `Home` |
+| Leads | `/leads` | `Users` |
+| Outreach | `/outreach` | `Send` |
+| Carte | `/map` | `MapPin` |
+| Agenda | `/agenda` | `CalendarDays` |
+| Équipe | `/team` | `UsersRound` |
+
+**5 catégories collapsibles** (dans cet ordre) :
+
+| Catégorie | id | Items |
+|---|---|---|
+| Ventes | `sales` | Prospection, Pipeline, Inbox, Terrain |
+| Quotidien | `daily` | Tâches, Activités, Messages, Contacts, Notifications |
+| **Minerva AI** | `ai` | Assistant IA, Agents, Intelligence, Skills |
+| Marketing | `marketing` | Publicité, Acquisition, Site web IA, Rapports client, Performance, Webhooks |
+| Outils outreach | `tools` | Séquences, Campagnes, Playbooks |
+
+> Minerva AI est positionné **avant Marketing** — c'est la valeur principale du produit.
+
+**Footer sidebar** :
+- Workspace switcher (nom + chevron dropdown)
+- Bouton Paramètres (`/settings`)
+- Bouton Notifications
+- Avatar utilisateur + menu logout
+
+### Settings sidebar (w-56)
+
+**3 groupes collapsibles** (chevron toggle) :
+
+| Groupe | Sections |
+|---|---|
+| Compte | profile, appearance, notifications, security, preferences |
+| Espace de travail | workspace_general, members, workspace_overview, workspace_api, groups |
+| Outils | minerva_ai, ai, models, api_keys, diagnostics, automations, prospecting, custom_instructions, customizations, roles, agency, integrations, goals, billing |
+
+Le groupe actif (contenant la section active) n'est jamais collapsed automatiquement.
 
 ---
 
-## Dot Pattern Background (Cult UI)
-Used on Today and Welcome pages for visual orientation:
+## Page Map — Patterns spécifiques
+
+### FlyTo au clic
+
+Tout clic sur un lead (sidebar gauche ou point sur la carte) déclenche :
+
 ```tsx
-<div aria-hidden="true" className="pointer-events-none absolute inset-0 z-0 opacity-40 dark:opacity-20" style={{ backgroundImage: 'radial-gradient(circle, #a1a1aa 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
+map.flyTo({ center: [lng, lat], zoom: 15, duration: 900, essential: true });
+```
+
+### Popup inline sur la carte
+
+Au lieu d'une sidebar droite, les infos lead apparaissent en popup ancré au marqueur :
+
+```tsx
+// Positionnement via map.project()
+const pt = map.project([lead._lng, lead._lat]);
+style={{ position: 'absolute', left: pt.x, top: pt.y - 14, transform: 'translate(-50%, -100%)', zIndex: 60 }}
+```
+
+Le popup contient : nom, ville+niche, distance GPS (si actif), statut coloré, score, email/tel, boutons "Voir détails" (ouvre le panel) et "Fiche" (lien `/leads/[id]`).
+
+### GPS nearby leads
+
+Quand le GPS est actif (`GpsTrackingLayer` → callback `onPositionUpdate`), les leads sont :
+- Triés par distance croissante (Haversine)
+- Annotés d'un badge distance : `< 1km` → `"450 m"`, sinon `"2.3 km"`
+- Le popup affiche aussi la distance
+
+### Clusters et statuts
+
+Clustering MapLibre GL JS avec couleurs de statut sur les points individuels (voir table STATUS_COLORS ci-dessus). Heatmap verte (`#059669`) désactivée par défaut.
+
+---
+
+## Composants IA
+
+### Modèle primaire
+
+**`@cf/moonshotai/kimi-k2.7-code`** (Moonshot AI via Cloudflare Workers AI) — modèle par défaut de toute l'application. Aucune clé externe requise (creds hardcodés en fallback).
+
+Cascade de providers dans `resolveAIProvider` (`lib/ai.ts`) :
+1. Anthropic (si clé configurée + provider explicite `anthropic`)
+2. OpenRouter (si provider explicite `openrouter`)
+3. Cloudflare / modèle `@cf/` (si provider explicite `cloudflare` ou modèle `@cf/*`)
+4. Anthropic (fallback si `ANTHROPIC_API_KEY` disponible)
+5. **Cloudflare Kimi K2** (fallback primaire — hardcodé, toujours disponible)
+6. OpenRouter (si `OPENROUTER_API_KEY` configuré)
+7. OpenRouter sans clé (last resort, fail avec 401)
+
+### JSON stripping
+
+Les modèles raisonnants (Kimi K2) encapsulent parfois le JSON dans des backticks markdown. `callCloudflare` strip automatiquement :
+
+```ts
+content = content.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
+```
+
+### Assistant — Sélecteur de modèle
+
+```ts
+const AI_MODELS = [
+  { id: '@cf/moonshotai/kimi-k2.7-code', name: 'Kimi K2 — Principal', provider: 'cloudflare' },
+  { id: 'claude-sonnet-4-6',             name: 'Claude Sonnet',         provider: 'anthropic' },
+  { id: 'claude-opus-4-8',               name: 'Claude Opus — Avancé',  provider: 'anthropic' },
+  { id: 'claude-haiku-4-5-20251001',     name: 'Claude Haiku — Rapide', provider: 'anthropic' },
+];
 ```
 
 ---
 
-## Localization (i18n)
+## Dot Pattern Background (Cult UI)
 
-All visible UI strings go through `useLanguage().t(key)`. Translation keys live in `lib/translations.ts` under 3 locales: `fr` (default), `en`, `de`. Keys use dot-notation: `nav.today`, `settings.tab_profile`, `analytics.title`, etc.
+Utilisé sur Today et Welcome pour l'orientation visuelle :
 
-**Rule**: never hard-code French, English, or German strings in JSX. Add the key to all 3 locales simultaneously.
+```tsx
+<div
+  aria-hidden="true"
+  className="pointer-events-none absolute inset-0 z-0 opacity-40 dark:opacity-20"
+  style={{
+    backgroundImage: 'radial-gradient(circle, #a1a1aa 1px, transparent 1px)',
+    backgroundSize: '20px 20px',
+  }}
+/>
+```
 
 ---
 
 ## Animation
 
-- Page transitions: `animate-in fade-in duration-200`
-- Modals: `animate-in zoom-in-95 duration-150`
-- Sidebar collapse: `sidebar-transition` (custom CSS class, duration ~200ms)
-- Progress bars: `transition-all duration-500`
-- Toast/notification slide: `animate-in slide-in-from-bottom-2 duration-200`
+| Contexte | Classe |
+|---|---|
+| Transitions de page | `animate-in fade-in duration-200` |
+| Modals / popups | `animate-in zoom-in-95 duration-150` |
+| Collapse sidebar | Transition CSS custom ~200ms |
+| Progress bars | `transition-all duration-500` |
+| Toasts | `animate-in slide-in-from-bottom-2 duration-200` |
+| Loader spinner | `animate-spin` sur `Loader2` |
+| GPS pulse | `animate-pulse` sur l'icône position |
 
 ---
 
 ## Icons
 
-Use `lucide-react` exclusively. Icon sizes: `w-4 h-4` (standard), `w-3.5 h-3.5` (compact / toolbar), `w-3 h-3` (inline / badge). Never use emoji as icons unless explicitly in a badge or score display.
+`lucide-react` exclusivement. Tailles :
+
+| Contexte | Taille |
+|---|---|
+| Standard (boutons, nav) | `h-4 w-4` |
+| Compact (toolbar, badge, carte) | `h-3.5 w-3.5` |
+| Micro (inline, inside badge) | `h-3 w-3` ou `h-2.5 w-2.5` |
+
+Ne jamais utiliser des emojis comme icônes sauf dans les badges de score ou les affichages de statut numériques.
 
 ---
 
-## Data Architecture Notes (for design consistency)
+## Data Architecture (design consistency)
 
-- **Workspace partitioning**: all data queries include `workspace_id = activeWorkspace.id`; the active workspace ID is always visible in the topbar workspace switcher
-- **Optimistic UI**: all mutations update local state before the async Supabase/SQLite write, so the UI feels instant
-- **Sync status**: in Electron mode, rows carry `sync_status: 'pending_insert' | 'pending_update' | 'pending_delete' | 'synced'` — no visual indicator in the UI (sync is silent)
+- **Workspace partitioning** : toutes les requêtes incluent `workspace_id = activeWorkspace.id`; le workspace actif est toujours visible dans le switcher topbar
+- **Optimistic UI** : toutes les mutations mettent à jour le state local avant l'écriture Supabase/SQLite
+- **Sync status (Electron)** : les rows portent `sync_status: 'pending_insert' | 'pending_update' | 'pending_delete' | 'synced'` — pas d'indicateur visuel, la sync est silencieuse
+- **Dual-store** : `if (window.electron)` → SQLite IPC; sinon → Supabase direct
 
 ---
 
-## Preferences for Future Apps
+## Localization (i18n)
 
-When replicating this design system for other Minerva-family products:
+Toutes les chaînes UI visibles passent par `useLanguage().t(key)`. Les clés de traduction sont dans `lib/translations.ts`, 3 locales : `fr` (défaut), `en`, `de`. Format : `nav.today`, `settings.tab_profile`, etc.
 
-1. Keep the **`#26251e` warm dark** as foreground — it's distinctly warmer than pure black and reads better on the `#fafaf8` background
-2. Keep **`#e5e5e0`** for all borders — it's warm enough to feel "paper-like" without being gray
-3. **`#059669`** (Tailwind `emerald-600`, hover `#047857`) is the single brand accent — used in the `--primary` token and for all CTAs/highlights app-wide. **There is no orange in the app**; never introduce `#f54e00` or Tailwind `orange-*` classes.
-4. The `font-sans` stack + `text-xs` body creates the "dense UI" feel — resist going to `text-sm` for UI chrome
-5. All section labels use `text-[10px] font-bold uppercase tracking-wider` — this small-caps pattern creates visual hierarchy without weight changes
-6. Cards never have drop shadows in the default state — only `shadow-sm` for modals/popovers that float above the surface
+**Règle** : ne jamais hard-coder de chaînes françaises, anglaises ou allemandes dans le JSX. Toujours ajouter la clé dans les 3 locales simultanément.
+
+---
+
+## Règles absolues (ne jamais enfreindre)
+
+1. **Pas d'orange** : zéro occurrence de `#f54e00`, `#d94400`, `orange-*` — le seul accent est `#059669`
+2. **Hex littéraux pour la marque** : `#059669`, `#26251e`, `#e5e5e0` — jamais `green-600`, `zinc-800`, `gray-200`
+3. **`text-xs` pour l'UI chrome** : résister à la tentation de `text-sm` pour les labels, badges, métadonnées
+4. **Cards sans shadow** : `border border-[#e5e5e0]` suffit; `shadow-sm` uniquement pour les éléments qui flottent au-dessus du contenu
+5. **`#7a7a76` pour le texte secondaire** — jamais `gray-500` ou `text-muted` pour les éléments de marque
+6. **Green is the only accent** : focus rings, active states, primary CTAs, highlights — tout `#059669`
