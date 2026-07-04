@@ -227,13 +227,9 @@ interface CanvasDocument {
 }
 
 const AI_MODELS = [
-  { id: 'claude-sonnet-4-6', name: 'Claude Sonnet (Anthropic)', provider: 'anthropic' },
+  { id: 'claude-sonnet-4-6', name: 'Claude Sonnet', provider: 'anthropic' },
+  { id: 'claude-opus-4-8', name: 'Claude Opus — Avancé', provider: 'anthropic' },
   { id: 'claude-haiku-4-5-20251001', name: 'Claude Haiku — Rapide', provider: 'anthropic' },
-  { id: 'meta-llama/llama-3.3-70b-instruct:free', name: 'Llama 3.3 70B (OpenRouter)', provider: 'openrouter' },
-  { id: 'meta-llama/llama-3.2-11b-vision-instruct:free', name: 'Vision (texte + image)', provider: 'openrouter' },
-  { id: 'google/gemini-2.5-flash:free', name: 'Gemini 2.5 Flash', provider: 'openrouter' },
-  { id: 'deepseek/deepseek-r1:free', name: 'DeepSeek R1 — Raisonnement', provider: 'openrouter' },
-  { id: 'nousresearch/hermes-3-llama-3-8b', name: 'Hermes Agent ⚡', provider: 'openrouter' },
 ];
 
 const generateUniqueId = () => {
@@ -1150,11 +1146,9 @@ Important : ne génère un bloc action QUE si l'utilisateur demande explicitemen
     }
 
     try {
-      // An attached image requires a vision-capable model — auto-use the vision
-      // model so the request doesn't fail on a text-only model.
       const hasImage = !!(fileToAttach && fileToAttach.dataUrl);
-      const requestModel = hasImage ? 'meta-llama/llama-3.2-11b-vision-instruct:free' : selectedModel.id;
-      const requestProviderName = hasImage ? 'openrouter' : selectedModel.provider;
+      const requestModel = selectedModel.id;
+      const requestProviderName = selectedModel.provider;
 
       const res = await fetch(getApiUrl('/api/chat'), {
         method: 'POST',
