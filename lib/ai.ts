@@ -18,6 +18,7 @@ export interface AICallOptions {
 }
 
 const OPENROUTER_DEFAULT = 'meta-llama/llama-3.3-70b-instruct:free';
+const CLOUDFLARE_DEFAULT_MODEL = '@cf/meta/llama-3.1-8b-instruct';
 
 const getGlobalKeys = () => ({
   openrouterKey: process.env.OPENROUTER_API_KEY || '',
@@ -52,9 +53,9 @@ export function resolveAIProvider(settings?: AISettings | null) {
     return { provider: 'openrouter', model, apiKey };
   }
 
-  // 3. Explicit Cloudflare selection
-  if (explicitProvider === 'cloudflare') {
-    const model = (rawModel && !rawModel.startsWith('claude')) ? rawModel : 'google/gemma-4-26b-a4b-it';
+  // 3. Cloudflare — explicit selection OR model name starts with "@cf/"
+  if (explicitProvider === 'cloudflare' || rawModel?.startsWith('@cf/')) {
+    const model = rawModel?.startsWith('@cf/') ? rawModel : CLOUDFLARE_DEFAULT_MODEL;
     return { provider: 'cloudflare', model, apiKey: keys.cloudflareToken };
   }
 
@@ -66,7 +67,7 @@ export function resolveAIProvider(settings?: AISettings | null) {
 
   // 5. Cloudflare fallback when Anthropic key is not set
   if (keys.cloudflareToken && keys.cloudflareAccountId) {
-    const model = (rawModel && !rawModel.startsWith('claude')) ? rawModel : 'google/gemma-4-26b-a4b-it';
+    const model = (rawModel && !rawModel.startsWith('claude')) ? rawModel : CLOUDFLARE_DEFAULT_MODEL;
     return { provider: 'cloudflare', model, apiKey: keys.cloudflareToken };
   }
 

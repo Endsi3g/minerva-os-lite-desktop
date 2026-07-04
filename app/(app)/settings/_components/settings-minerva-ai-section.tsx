@@ -68,6 +68,14 @@ const MINERVA_MODELS = [
     color: '#059669',
   },
   {
+    id: 'claude-opus-4-8',
+    name: 'Claude Opus 4.8',
+    provider: 'Anthropic',
+    badge: 'Avancé',
+    description: 'Le plus puissant — raisonnement complexe et tâches longues.',
+    color: '#059669',
+  },
+  {
     id: 'claude-haiku-4-5-20251001',
     name: 'Claude Haiku 4.5',
     provider: 'Anthropic',
@@ -76,20 +84,12 @@ const MINERVA_MODELS = [
     color: '#7a7a76',
   },
   {
-    id: 'meta-llama/llama-3.3-70b-instruct:free',
-    name: 'Llama 3.3 70B',
-    provider: 'OpenRouter',
-    badge: 'Gratuit',
-    description: 'Alternative haute performance sans coût API.',
-    color: '#26251e',
-  },
-  {
-    id: 'google/gemini-2.5-flash:free',
-    name: 'Gemini 2.5 Flash',
-    provider: 'OpenRouter',
-    badge: 'Gratuit',
-    description: 'Flash multimodal de Google, idéal pour les analyses rapides.',
-    color: '#26251e',
+    id: '@cf/meta/llama-3.1-8b-instruct',
+    name: 'Llama 3.1 8B',
+    provider: 'Cloudflare',
+    badge: 'Edge',
+    description: 'Inférence edge via Cloudflare Workers AI — faible latence.',
+    color: '#f6821f',
   },
 ];
 
