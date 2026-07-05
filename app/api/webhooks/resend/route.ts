@@ -5,7 +5,10 @@ import { createHmac, timingSafeEqual } from 'crypto';
 // Verify Resend/Svix webhook signature
 function verifySignature(payload: string, headers: Headers): boolean {
   const secret = process.env.RESEND_WEBHOOK_SECRET;
-  if (!secret) return true; // Allow in dev without secret
+  if (!secret) {
+    console.error('[resend/webhook] RESEND_WEBHOOK_SECRET not configured — rejecting request');
+    return false;
+  }
 
   // Svix signature format: whsec_base64encodedvalue
   const rawSecret = secret.startsWith('whsec_')

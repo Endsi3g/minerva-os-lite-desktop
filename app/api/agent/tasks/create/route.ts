@@ -1,11 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { timingSafeEqual } from 'crypto';
 
 function verifyServiceToken(req: NextRequest): boolean {
+  const expectedToken = process.env.HERMES_SERVICE_TOKEN;
+  if (!expectedToken) return false;
   const authHeader = req.headers.get('authorization');
-  const expectedToken = process.env.HERMES_SERVICE_TOKEN || 'hermes_service_token_secret_12345';
   if (!authHeader || !authHeader.startsWith('Bearer ')) return false;
-  return authHeader.substring(7) === expectedToken;
+  const provided = authHeader.substring(7);
+  const a = Buffer.from(provided);
+  const b = Buffer.from(expectedToken);
+  return a.length === b.length && timingSafeEqual(a, b);
 }
 
 export async function POST(req: NextRequest) {

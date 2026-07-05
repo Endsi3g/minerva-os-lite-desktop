@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
 export async function POST(req: NextRequest) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
   const accountSid = process.env.TWILIO_ACCOUNT_SID;
   const apiKeySid = process.env.TWILIO_API_KEY_SID;
   const apiKeySecret = process.env.TWILIO_API_KEY_SECRET;
@@ -48,7 +52,6 @@ export async function POST(req: NextRequest) {
 
   // Log to sms_messages table (non-blocking)
   try {
-    const supabase = await createClient();
     await supabase.from('sms_messages').insert({
       twilio_sid: data.sid,
       from_number: data.from,

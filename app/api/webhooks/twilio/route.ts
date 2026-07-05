@@ -32,12 +32,14 @@ export async function POST(req: NextRequest) {
     if (k) params[decodeURIComponent(k)] = decodeURIComponent(v ?? '');
   }
 
-  // Verify signature (skip in dev if TWILIO_AUTH_TOKEN not set)
-  if (authToken && signature) {
-    const url = `${process.env.NEXT_PUBLIC_APP_URL}/api/webhooks/twilio`;
-    if (!verifyTwilioSignature(authToken, url, params, signature)) {
-      return new NextResponse('Unauthorized', { status: 401 });
-    }
+  // Verify signature — reject if TWILIO_AUTH_TOKEN isn't configured or signature is missing/invalid
+  if (!authToken) {
+    console.error('[twilio/webhook] TWILIO_AUTH_TOKEN not configured — rejecting request');
+    return new NextResponse('Unauthorized', { status: 401 });
+  }
+  const url = `${process.env.NEXT_PUBLIC_APP_URL}/api/webhooks/twilio`;
+  if (!signature || !verifyTwilioSignature(authToken, url, params, signature)) {
+    return new NextResponse('Unauthorized', { status: 401 });
   }
 
   const messageStatus = params['MessageStatus'];

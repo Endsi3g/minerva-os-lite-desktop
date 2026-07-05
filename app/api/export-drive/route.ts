@@ -65,38 +65,41 @@ export async function POST(req: NextRequest) {
       .maybeSingle();
 
     const clientId = process.env.GOOGLE_CLIENT_ID;
-    const isMockMode = !clientId || clientId.includes('placeholder') || !settings?.google_refresh_token;
+    const googleConfigured = !!clientId && !clientId.includes('placeholder') && !!settings?.google_refresh_token;
 
-    let refreshSuccess = false;
+    if (!googleConfigured || !settings) {
+      return NextResponse.json(
+        { error: 'Connectez votre compte Google Drive (Paramètres → Intégrations) avant d\'exporter ce document.' },
+        { status: 400 }
+      );
+    }
 
-    // 4. Export to Google Drive (Real API or Simulated Mock)
-    if (!isMockMode && settings) {
-      try {
-        let currentToken = settings.google_access_token;
-        let expiresAt = settings.google_token_expires_at;
+    // 4. Export to Google Drive via the real API — errors propagate to the outer catch, no fake success.
+    let currentToken = settings.google_access_token;
+    let expiresAt = settings.google_token_expires_at;
 
-        // Check token expiration (refresh 5 minutes early to be safe)
-        const isExpired = !expiresAt || new Date(expiresAt).getTime() - 5 * 60 * 1000 < Date.now();
-        
-        if (isExpired && settings.google_refresh_token) {
-          const refreshed = await refreshAccessToken(settings.google_refresh_token);
-          currentToken = refreshed.accessToken;
-          expiresAt = refreshed.expiresAt;
+    // Check token expiration (refresh 5 minutes early to be safe)
+    const isExpired = !expiresAt || new Date(expiresAt).getTime() - 5 * 60 * 1000 < Date.now();
 
-          // Save refreshed tokens back to settings
-          await supabase
-            .from('settings')
-            .update({
-              google_access_token: currentToken,
-              google_token_expires_at: expiresAt,
-              updated_at: new Date().toISOString()
-            })
-            .eq('user_id', user.id);
-        }
+    if (isExpired && settings.google_refresh_token) {
+      const refreshed = await refreshAccessToken(settings.google_refresh_token);
+      currentToken = refreshed.accessToken;
+      expiresAt = refreshed.expiresAt;
 
-        // Build an HTML document for Google Docs import
-        const now = new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
-        const htmlContent = `<!DOCTYPE html>
+      // Save refreshed tokens back to settings
+      await supabase
+        .from('settings')
+        .update({
+          google_access_token: currentToken,
+          google_token_expires_at: expiresAt,
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', user.id);
+    }
+
+    // Build an HTML document for Google Docs import
+    const now = new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+    const htmlContent = `<!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
@@ -118,55 +121,42 @@ export async function POST(req: NextRequest) {
 </body>
 </html>`;
 
-        // Upload as Google Doc (HTML → Docs conversion)
-        const docFileName = fileName.replace(/\.(txt|html)$/, '') + '.html';
-        const fileMetadata = {
-          name: docFileName,
-          mimeType: 'application/vnd.google-apps.document',
-        };
+    // Upload as Google Doc (HTML → Docs conversion)
+    const docFileName = fileName.replace(/\.(txt|html)$/, '') + '.html';
+    const fileMetadata = {
+      name: docFileName,
+      mimeType: 'application/vnd.google-apps.document',
+    };
 
-        const boundary = 'minerva_drive_boundary';
-        const delimiter = `\r\n--${boundary}\r\n`;
-        const closeDelimiter = `\r\n--${boundary}--`;
+    const boundary = 'minerva_drive_boundary';
+    const delimiter = `\r\n--${boundary}\r\n`;
+    const closeDelimiter = `\r\n--${boundary}--`;
 
-        const multipartRequestBody =
-          delimiter +
-          'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
-          JSON.stringify(fileMetadata) +
-          delimiter +
-          'Content-Type: text/html; charset=UTF-8\r\n\r\n' +
-          htmlContent +
-          closeDelimiter;
+    const multipartRequestBody =
+      delimiter +
+      'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
+      JSON.stringify(fileMetadata) +
+      delimiter +
+      'Content-Type: text/html; charset=UTF-8\r\n\r\n' +
+      htmlContent +
+      closeDelimiter;
 
-        const driveResponse = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${currentToken}`,
-            'Content-Type': `multipart/related; boundary=${boundary}`
-          },
-          body: multipartRequestBody
-        });
+    const driveResponse = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${currentToken}`,
+        'Content-Type': `multipart/related; boundary=${boundary}`
+      },
+      body: multipartRequestBody
+    });
 
-        if (!driveResponse.ok) {
-          const driveErr = await driveResponse.json();
-          throw new Error(driveErr.error?.message || "Erreur de l'API Google Drive");
-        }
-        
-        refreshSuccess = true;
-      } catch (err) {
-        console.warn("Google Drive API call failed, falling back to simulated mode for local sandbox:", err);
-      }
-    }
-
-    const simulated = !refreshSuccess;
-    if (simulated) {
-      await new Promise(resolve => setTimeout(resolve, 1000));
+    if (!driveResponse.ok) {
+      const driveErr = await driveResponse.json();
+      throw new Error(driveErr.error?.message || "Erreur de l'API Google Drive");
     }
 
     // Append historical note
-    const logText = simulated 
-      ? `[Simulé] Audit SEO exporté avec succès sur Google Drive (mode bac à sable) :\nFichier : ${fileName}` 
-      : `Audit SEO exporté avec succès sur Google Drive (compte ${settings?.google_email || 'connecté'}) :\nFichier : ${fileName}`;
+    const logText = `Audit SEO exporté avec succès sur Google Drive (compte ${settings.google_email || 'connecté'}) :\nFichier : ${fileName}`;
 
     const { error: noteErr } = await supabase
       .from('notes')
@@ -182,7 +172,6 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      simulated,
       fileName
     });
 

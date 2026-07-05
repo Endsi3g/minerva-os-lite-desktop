@@ -82,6 +82,38 @@ interface IntegrationItem {
   descriptionKey?: TranslationKey;
   custom?: boolean;
   steps?: string[];
+  authType?: 'none' | 'key' | 'oauth';
+}
+
+const CUSTOM_INTEGRATIONS_STORAGE_KEY = 'minerva_custom_integrations_v1';
+
+const CustomIntegrationIcon = () => (
+  <div className="w-7 h-7 rounded-lg bg-[#059669]/10 flex items-center justify-center border border-[#059669]/20 shrink-0">
+    <Plug className="w-4 h-4 text-[#059669]" />
+  </div>
+);
+
+function loadPersistedCustomIntegrations(): IntegrationItem[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(CUSTOM_INTEGRATIONS_STORAGE_KEY);
+    if (!raw) return [];
+    const parsed: IntegrationItem[] = JSON.parse(raw);
+    // `icon` is a function component and cannot survive JSON serialization — restore it.
+    return parsed.map(item => ({ ...item, icon: CustomIntegrationIcon }));
+  } catch {
+    return [];
+  }
+}
+
+function persistCustomIntegrations(items: IntegrationItem[]) {
+  if (typeof window === 'undefined') return;
+  try {
+    const serializable = items.filter(i => i.custom).map(({ icon, ...rest }) => rest);
+    localStorage.setItem(CUSTOM_INTEGRATIONS_STORAGE_KEY, JSON.stringify(serializable));
+  } catch {
+    // non-blocking
+  }
 }
 
 const DEFAULT_INTEGRATIONS: IntegrationItem[] = [
@@ -654,6 +686,25 @@ export default function IntegrationsPage() {
   const [userName, setUserName] = useState('Moi');
   const [userEmail, setUserEmail] = useState('');
 
+  // Hydrate custom (scratch-created) integrations from localStorage on mount —
+  // they only ever lived in component state before, so a reload silently dropped them.
+  useEffect(() => {
+    const persisted = loadPersistedCustomIntegrations();
+    if (persisted.length > 0) {
+      setIntegrationsList(prev => {
+        const persistedIds = new Set(persisted.map(p => p.id));
+        return [...prev.filter(item => !persistedIds.has(item.id)), ...persisted];
+      });
+    }
+  }, []);
+
+  // Sync the auth-type selector to whichever integration is currently open in the editor
+  useEffect(() => {
+    if (!activeIntegrationEditId) return;
+    const opened = integrationsList.find(i => i.id === activeIntegrationEditId);
+    setAuthType(opened?.authType ?? 'none');
+  }, [activeIntegrationEditId]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Todoist Functions
   const fetchTodoistProjects = async (token: string) => {
     if (!token) return;
@@ -971,11 +1022,7 @@ export default function IntegrationsPage() {
       email: userEmail || `${userName.toLowerCase().replace(/\s/g, '')}@minerva-os-lite.com`,
       accEmail: 'Custom Connected Integration',
       accEmailKey: 'integrations.custom.acc_email',
-      icon: () => (
-        <div className="w-7 h-7 rounded-lg bg-[#059669]/10 flex items-center justify-center border border-[#059669]/20 shrink-0">
-          <Plug className="w-4 h-4 text-[#059669]" />
-        </div>
-      ),
+      icon: CustomIntegrationIcon,
       status: 'Active',
       statusKey: 'integrations.status.active',
       assets: '—',
@@ -986,7 +1033,11 @@ export default function IntegrationsPage() {
       custom: true
     };
 
-    setIntegrationsList(prev => [...prev, newIntegration]);
+    setIntegrationsList(prev => {
+      const next = [...prev, newIntegration];
+      persistCustomIntegrations(next);
+      return next;
+    });
     connectIntegration(newId);
     setConnectedIds(prev => [...prev, newId]);
 
@@ -1013,9 +1064,37 @@ export default function IntegrationsPage() {
     setShowInviteModal(false);
   };
 
+  const handleExportIntegrationManifest = () => {
+    if (!activeEditIntegration) return;
+    const manifest = {
+      name: resolveItemName(activeEditIntegration),
+      description: resolveItemDescription(activeEditIntegration),
+      authType: activeEditIntegration.authType ?? 'none',
+      category: activeEditIntegration.category,
+      owner: activeEditIntegration.owner,
+      custom: !!activeEditIntegration.custom,
+    };
+    const blob = new Blob([JSON.stringify(manifest, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${activeEditIntegration.id}-manifest.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  };
+
   const handleSaveEditChanges = async () => {
+    if (!activeIntegrationEditId) return;
     setIsSavingEdit(true);
-    await new Promise(r => setTimeout(r, 1000));
+    setIntegrationsList(prev => {
+      const next = prev.map(item =>
+        item.id === activeIntegrationEditId ? { ...item, authType } : item
+      );
+      persistCustomIntegrations(next);
+      return next;
+    });
     setIsSavingEdit(false);
     setEditSavedSuccess(true);
     await new Promise(r => setTimeout(r, 1200));
@@ -1080,6 +1159,7 @@ export default function IntegrationsPage() {
                   <Button
                     variant="outline"
                     size="sm"
+                    onClick={handleExportIntegrationManifest}
                     className="h-8.5 text-xs font-semibold px-3.5 border-[#e5e5e0] text-[#555552] hover:text-[#26251e] bg-white rounded-md"
                   >
                     {t('integrations.editor.export')}
@@ -1378,7 +1458,8 @@ export default function IntegrationsPage() {
                           <h3 className="font-bold text-xs">{t('integrations.editor.no_actions_title')}</h3>
                           <p className="text-[11px] text-[#7a7a76] max-w-xs leading-relaxed">{t('integrations.editor.no_actions_desc')}</p>
                         </div>
-                        <Button className="h-8 text-xs font-bold bg-[#059669] hover:bg-[#047857] text-white">{t('integrations.editor.add_action')}</Button>
+                        <Button disabled title={t('integrations.editor.coming_soon')} className="h-8 text-xs font-bold bg-[#e5e5e0] text-[#7a7a76] cursor-not-allowed">{t('integrations.editor.add_action')}</Button>
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-[#b0b0a8]">{t('integrations.editor.coming_soon')}</p>
                       </div>
                     )}
 
@@ -1389,7 +1470,8 @@ export default function IntegrationsPage() {
                           <h3 className="font-bold text-xs">{t('integrations.editor.no_triggers_title')}</h3>
                           <p className="text-[11px] text-[#7a7a76] max-w-xs leading-relaxed">{t('integrations.editor.no_triggers_desc')}</p>
                         </div>
-                        <Button className="h-8 text-xs font-bold bg-[#059669] hover:bg-[#047857] text-white">{t('integrations.editor.add_trigger')}</Button>
+                        <Button disabled title={t('integrations.editor.coming_soon')} className="h-8 text-xs font-bold bg-[#e5e5e0] text-[#7a7a76] cursor-not-allowed">{t('integrations.editor.add_trigger')}</Button>
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-[#b0b0a8]">{t('integrations.editor.coming_soon')}</p>
                       </div>
                     )}
 
@@ -1503,7 +1585,7 @@ export default function IntegrationsPage() {
                     <div className="flex items-center justify-between border-b border-[#e5e5e0]/60 pb-3">
                       <h2 className="font-bold text-sm">{t('integrations.editor.insights_title')}</h2>
                       <div className="flex gap-2">
-                        <select id="time-filter-select" title={t('integrations.editor.time_filter_title')} className="text-xs bg-white border border-[#e5e5e0] p-1.5 rounded cursor-pointer">
+                        <select disabled id="time-filter-select" title={t('integrations.editor.coming_soon')} className="text-xs bg-[#f4f4f3] text-[#b0b0a8] border border-[#e5e5e0] p-1.5 rounded cursor-not-allowed">
                           <option value="30">{t('integrations.editor.last_30_days')}</option>
                           <option value="7">{t('integrations.editor.last_7_days')}</option>
                         </select>

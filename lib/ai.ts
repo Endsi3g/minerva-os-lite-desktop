@@ -23,8 +23,8 @@ const CLOUDFLARE_DEFAULT_MODEL = '@cf/moonshotai/kimi-k2.7-code';
 const getGlobalKeys = () => ({
   openrouterKey: process.env.OPENROUTER_API_KEY || '',
   anthropicKey: process.env.ANTHROPIC_API_KEY || '',
-  cloudflareToken: process.env.CLOUDFLARE_API_TOKEN || 'cfut_l0PDRuG7slPkY2Q9zMAE9qhXzkD15c0sFQa12hS77cc92973',
-  cloudflareAccountId: process.env.CLOUDFLARE_ACCOUNT_ID || '2a6584ba17918eeea6ea4c659abb1782',
+  cloudflareToken: process.env.CLOUDFLARE_API_TOKEN || '',
+  cloudflareAccountId: process.env.CLOUDFLARE_ACCOUNT_ID || '',
 });
 
 export function resolveAIProvider(settings?: AISettings | null) {
@@ -65,7 +65,7 @@ export function resolveAIProvider(settings?: AISettings | null) {
     return { provider: 'anthropic', model, apiKey: keys.anthropicKey };
   }
 
-  // 5. Cloudflare primary default — Kimi K2 (hardcoded creds always available)
+  // 5. Cloudflare primary default — Kimi K2 (only if configured via env)
   if (keys.cloudflareToken && keys.cloudflareAccountId) {
     const model = rawModel?.startsWith('@cf/') ? rawModel : CLOUDFLARE_DEFAULT_MODEL;
     return { provider: 'cloudflare', model, apiKey: keys.cloudflareToken };

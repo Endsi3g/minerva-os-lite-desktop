@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useState, useMemo, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeft, Plus, Trash2, Check, Loader2, Zap, Clock, MessageSquare, TrendingUp, Webhook, ChevronRight } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useReach } from '@/lib/reach-context';
@@ -14,7 +14,21 @@ type Step = 'trigger' | 'conditions' | 'actions' | 'review';
 const STEPS: Step[] = ['trigger', 'conditions', 'actions', 'review'];
 
 export default function NewAutomationPage() {
+  return (
+    <Suspense fallback={
+      <div className="h-full flex items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-[#059669]" />
+      </div>
+    }>
+      <NewAutomationPageContent />
+    </Suspense>
+  );
+}
+
+function NewAutomationPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const editId = searchParams.get('id');
   const { activeWorkspace } = useReach();
   const { t, locale } = useLanguage();
 
@@ -25,6 +39,24 @@ export default function NewAutomationPage() {
   const [name, setName] = useState('');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [loadingExisting, setLoadingExisting] = useState(!!editId);
+
+  useEffect(() => {
+    async function loadExisting() {
+      if (!editId) return;
+      const supabase = createClient();
+      const { data } = await supabase.from('automations').select('*').eq('id', editId).maybeSingle();
+      if (data) {
+        setName(data.name ?? '');
+        setTriggerType(data.trigger_type ?? null);
+        setConditions(typeof data.conditions === 'string' ? JSON.parse(data.conditions) : (data.conditions ?? []));
+        setActions(typeof data.actions === 'string' ? JSON.parse(data.actions) : (data.actions ?? []));
+        setStep('review');
+      }
+      setLoadingExisting(false);
+    }
+    loadExisting();
+  }, [editId]);
 
   const TRIGGERS = useMemo(() => {
     return [
@@ -131,14 +163,23 @@ export default function NewAutomationPage() {
     setSaving(true);
     try {
       const supabase = createClient();
-      await supabase.from('automations').insert({
-        workspace_id: activeWorkspace.id,
-        name: name.trim(),
-        trigger_type: triggerType,
-        conditions: conditions,
-        actions: actions,
-        is_active: true,
-      });
+      if (editId) {
+        await supabase.from('automations').update({
+          name: name.trim(),
+          trigger_type: triggerType,
+          conditions: conditions,
+          actions: actions,
+        }).eq('id', editId);
+      } else {
+        await supabase.from('automations').insert({
+          workspace_id: activeWorkspace.id,
+          name: name.trim(),
+          trigger_type: triggerType,
+          conditions: conditions,
+          actions: actions,
+          is_active: true,
+        });
+      }
       setSaved(true);
       setTimeout(() => router.push('/settings/automations'), 1200);
     } catch (e) {
@@ -178,11 +219,22 @@ export default function NewAutomationPage() {
             <ArrowLeft className="h-4 w-4" />
           </button>
           <div>
-            <h1 className="text-xl font-bold tracking-tight text-[#26251e]">{t('automations.new_title')}</h1>
+            <h1 className="text-xl font-bold tracking-tight text-[#26251e]">
+              {editId
+                ? (locale === 'en' ? 'Edit rule' : locale === 'de' ? 'Regel bearbeiten' : 'Modifier la règle')
+                : t('automations.new_title')}
+            </h1>
             <p className="text-xs text-[#807d72] mt-0.5">{locale === 'en' ? 'Set up a trigger, conditions, and actions.' : locale === 'de' ? 'Richten Sie einen Auslöser, Bedingungen und Aktionen ein.' : 'Configurez un déclencheur, des conditions et des actions.'}</p>
           </div>
         </div>
 
+        {loadingExisting ? (
+          <div className="flex items-center justify-center h-32 text-[#807d72] text-xs font-semibold">
+            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+            {locale === 'en' ? 'Loading rule…' : locale === 'de' ? 'Regel wird geladen…' : 'Chargement de la règle…'}
+          </div>
+        ) : (
+        <>
         {/* Step indicator */}
         <StepIndicator current={step} steps={STEPS} />
 
@@ -388,10 +440,16 @@ export default function NewAutomationPage() {
               style={{ background: '#059669' }}
             >
               {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : saved ? <Check className="h-4 w-4" /> : <Zap className="h-4 w-4" />}
-              {saved ? (locale === 'en' ? 'Saved!' : locale === 'de' ? 'Gespeichert!' : 'Enregistrée !') : (locale === 'en' ? 'Create rule' : locale === 'de' ? 'Regel erstellen' : 'Créer la règle')}
+              {saved
+                ? (locale === 'en' ? 'Saved!' : locale === 'de' ? 'Gespeichert!' : 'Enregistrée !')
+                : editId
+                  ? (locale === 'en' ? 'Save changes' : locale === 'de' ? 'Änderungen speichern' : 'Enregistrer les modifications')
+                  : (locale === 'en' ? 'Create rule' : locale === 'de' ? 'Regel erstellen' : 'Créer la règle')}
             </button>
           )}
         </div>
+        </>
+        )}
       </div>
     </div>
   );

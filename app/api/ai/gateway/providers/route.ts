@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
-const CF_TOKEN = process.env.CLOUDFLARE_API_TOKEN || 'cfut_l0PDRuG7slPkY2Q9zMAE9qhXzkD15c0sFQa12hS77cc92973';
-const CF_ACCOUNT = process.env.CLOUDFLARE_ACCOUNT_ID || '2a6584ba17918eeea6ea4c659abb1782';
+const CF_TOKEN = process.env.CLOUDFLARE_API_TOKEN || '';
+const CF_ACCOUNT = process.env.CLOUDFLARE_ACCOUNT_ID || '';
 
 export async function GET(req: NextRequest) {
   const supabase = await createClient();
@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
   }
 
   // Cloudflare Workers AI
-  {
+  if (CF_TOKEN && CF_ACCOUNT) {
     const t = Date.now();
     try {
       const r = await fetch(
@@ -44,6 +44,8 @@ export async function GET(req: NextRequest) {
     } catch {
       providers.push({ id: 'cloudflare', name: 'Cloudflare Workers AI', available: false, latency_ms: null, primary: false });
     }
+  } else {
+    providers.push({ id: 'cloudflare', name: 'Cloudflare Workers AI', available: false, latency_ms: null, primary: false, error: 'API token not configured' });
   }
 
   // OpenRouter

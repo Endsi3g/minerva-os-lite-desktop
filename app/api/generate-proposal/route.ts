@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@/lib/supabase/server';
 import type { Lead } from '@/lib/mock-data';
 
 export interface Service {
@@ -419,6 +420,10 @@ function buildHtml(lead: Lead, services: Service[], userInfo: UserInfo): string 
 }
 
 export async function POST(req: NextRequest) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
   let body: ProposalRequestBody;
 
   try {

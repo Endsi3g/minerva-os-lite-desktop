@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { createClient } from '@/lib/supabase/server';
 import { sendEmail } from '@/lib/email-service';
 import {
   emailNewLead,
@@ -11,6 +12,10 @@ import {
 export const runtime = 'nodejs';
 
 export async function POST(req: Request) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
   let body: Record<string, unknown>;
   try {
     body = await req.json();

@@ -470,6 +470,9 @@ cp .env.example .env.local
 | `TWILIO_API_KEY_SID` | ⬜ | API Key SID Twilio (commence par `SK`) — pour envoyer des SMS |
 | `TWILIO_API_KEY_SECRET` | ⬜ | Secret de la clé API Twilio |
 | `TWILIO_MESSAGING_SERVICE_SID` | ⬜ | SID du Messaging Service (commence par `MG`) |
+| `HERMES_SERVICE_TOKEN` | ✅ | Secret d'authentification service-à-service pour les routes `app/api/agent/*` (outils Hermes) — aucun fallback en dur, générer avec `openssl rand -hex 32` |
+| `CLOUDFLARE_API_TOKEN` | ⬜ | Token Cloudflare Workers AI — active le provider de repli Kimi K2 dans `lib/ai.ts` (aucune valeur par défaut) |
+| `CLOUDFLARE_ACCOUNT_ID` | ⬜ | Account ID Cloudflare associé au token ci-dessus |
 
 ---
 

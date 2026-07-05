@@ -168,7 +168,7 @@ export default function AutomationsSettingsPage() {
                       </>
                     )}
                   </button>
-                  <Button variant="ghost" size="icon" onClick={() => router.push('/settings/automations/new')} className="h-8 w-8 text-[#807d72] hover:text-[#26251e] border border-transparent hover:border-[#e5e5e0] rounded-lg">
+                  <Button variant="ghost" size="icon" onClick={() => router.push(`/settings/automations/new?id=${auto.id}`)} className="h-8 w-8 text-[#807d72] hover:text-[#26251e] border border-transparent hover:border-[#e5e5e0] rounded-lg">
                     <Edit2 className="h-3.5 w-3.5" />
                   </Button>
                   <Button variant="ghost" size="icon" onClick={() => deleteAutomation(auto.id)} className="h-8 w-8 text-[#807d72] hover:text-red-600 border border-transparent hover:border-red-100 rounded-lg">
