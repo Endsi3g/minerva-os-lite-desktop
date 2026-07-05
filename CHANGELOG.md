@@ -5,6 +5,40 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [3.54.0] — Release GitHub v11.0.0 — 2026-07-05
+
+Cette release fait suite à un audit complet de l'application (sécurité, build, navigation) mené juste avant, et couvre : correctifs de sécurité critiques, résolution d'une régression bloquant le build de production, mise en place du monitoring, une première tranche du backlog « Revenue OS » (Reply Classifier v2, Lead Rescue Center, Deal Risk Score) et une suite de tests E2E Playwright réellement exécutée et vérifiée.
+
+### Sécurité (P0)
+- **Jeton API Cloudflare retiré du code source** (`lib/ai.ts`, `api/ai/gateway/status|providers`) — n'était lu que depuis la variable d'environnement, plus de fallback en dur. **Action requise : ce jeton a été exposé dans l'historique git et doit être régénéré côté Cloudflare.**
+- **Jeton de service Hermes** (6 routes `api/agent/*`) — fallback faible `'hermes_service_token_secret_12345'` retiré, comparaison `timingSafeEqual`, échec si `HERMES_SERVICE_TOKEN` n'est pas configuré.
+- **Webhooks Twilio/Resend** — rejettent désormais la requête si le secret de signature est absent, au lieu de sauter silencieusement la vérification.
+- **Auth manquante ajoutée** sur `generate-proposal`, `notifications/email`, `sms/send`.
+
+### Build & Infrastructure
+- **Fix régression build export statique** — 13 pages dynamiques (`leads/[id]`, `workspaces/[id]`, `field/[planId]`, etc.) avaient perdu leur `generateStaticParams()` placeholder lors d'un refactor antérieur (`52e5a53`), cassant silencieusement `pnpm electron:build`/`cap:sync` depuis cette régression. Restauré et vérifié (116 routes exportées avec succès).
+- **Fix build de production réel** — `app/api/email-sequences/route.ts` ré-exportait des fonctions internes (`sendGmailStep`, `refreshToken`) en violation des règles strictes de Next.js 16 sur les exports de route, faisant échouer `next build` depuis des mois sans que `tsc --noEmit` seul ne le détecte.
+- **Monitoring Sentry** — `@sentry/nextjs` installé et configuré (`instrumentation.ts`, `instrumentation-client.ts`, `app/global-error.tsx`), branché sur l'`ErrorBoundary` existant. No-op tant que `NEXT_PUBLIC_SENTRY_DSN` n'est pas configuré.
+- **Nouvelle page `/settings/monitoring`** — volumes réels des 7 derniers jours (leads créés, réponses détectées, emails/SMS envoyés, actions agent, taux de succès IA), statut Sentry.
+- **Suite de tests E2E Playwright** — 8 fichiers, 45 tests couvrant auth, leads, pipeline, inbox, agenda, assistant IA, paramètres et navigation complète. Exécutée et vérifiée de bout en bout contre un compte de test réel (43 passés, 2 skip légitimes sur données absentes).
+
+### Ajouté — Backlog Revenue OS (1ère tranche)
+- **Reply Classifier v2** — le cron `gmail-check-replies` assumait auparavant que **toute** réponse (même négative) était positive : statut forcé à « Meeting Booked », RDV Google Calendar auto-réservé demain 10h, sans jamais appeler de classification IA malgré son existence dans `lib/agent-tools.ts`. Corrigé : classification réelle (intéressé/pas intéressé/objection/planification/demande info), le statut et le RDV automatique ne s'activent plus que sur réponse réellement positive.
+- **Cadences intelligentes** — une réponse négative/objection met désormais en pause automatiquement la séquence active du lead, sur les deux systèmes de séquencement de l'app (`email_sequences` et `sequence_enrollments`).
+- **Fix file d'envoi** — `process-queue` envoyait un email déjà en file même si sa séquence parente venait d'être mise en pause ; vérifie maintenant le statut de l'enrollment avant l'envoi.
+- **Lead Rescue Center** (`/leads/rescue`) — tableau de bord réel des leads stagnants (nurture/pause/sans contact depuis 14+ jours), réutilise le moteur `lib/nba-engine.ts` existant, action « Créer une relance » en un clic.
+- **Deal Risk Score** — badge de risque réel sur les cartes du pipeline (récence d'activité, sentiment de la dernière réponse, probabilité de closing faible sur deal chiffré).
+- **Fix `listLeadsToFollowUp`** — utilisait une colonne inexistante (`last_contacted_at` au lieu de `last_activity_at`) et des statuts français ne correspondant à aucune valeur réelle en base (`Client`/`Perdu` vs `Won`/`Lost`), rendant le filtre silencieusement inopérant.
+
+### Navigation
+- **`/audit`** (Audit SEO) et **`/personas`** (Profils cibles) reliés à la navigation — pages fonctionnelles jusque-là invisibles.
+- **`/recovery`** relié au menu Paramètres & Plus.
+- **Suppression du code mort** — `/automations` (top-level, doublon orphelin du vrai builder `/settings/automations`) et `/ops` (cockpit avec animation de terminal factice) retirés, aucune référence externe trouvée.
+
+### Connu — hors scope de cette release
+- Le reste du backlog « Revenue OS » (6 agents Hermes spécialisés, Call Intelligence, Meeting Packet automatique, AI Copy Lab, Trust & Compliance Center, Client Portal) reste non commencé — chantiers de plusieurs jours chacun.
+- Bug découvert en testant : `invalid input syntax for type uuid: "default_ws"` sur les sessions Assistant/Canvas pour un workspace fraîchement créé — un chemin de code utilise un littéral `"default_ws"` au lieu d'un UUID réel. À investiguer séparément.
+
 ## [3.52.0] - 2026-07-02
 
 ### Corrigé — Notifications actives, Son confirmé, Vocal → Assistant AI, Carte MapLibre fonctionnelle

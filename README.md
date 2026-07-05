@@ -6,7 +6,7 @@
 
 **CRM de prospection B2B autonome pour entrepreneurs québécois**
 
-[![Version](https://img.shields.io/badge/version-v8.0.0-059669?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-v11.0.0-059669?style=flat-square)](CHANGELOG.md)
 [![Next.js](https://img.shields.io/badge/Next.js-15-black?style=flat-square&logo=next.js)](https://nextjs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178c6?style=flat-square&logo=typescript&logoColor=white)](https://typescriptlang.org)
 [![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-3ecf8e?style=flat-square&logo=supabase&logoColor=white)](https://supabase.com)
@@ -679,6 +679,9 @@ Dernières versions :
 
 | Version | Date | Points clés |
 |---------|------|-------------|
+| **v11.0.0** | 2026-07-05 | Audit sécurité complet (secrets en dur retirés), fix build production, monitoring Sentry, Reply Classifier v2, Lead Rescue Center, Deal Risk Score, suite E2E Playwright |
+| **v10.0.0** | 2026-07-02 | Client Reports, Ads & Acquisition redesign, notifications OS |
+| **v9.0.0** | 2026-07-02 | Navigation complète, parité visuelle, /notifications, /contacts |
 | **v8.0.0** | 2026-06-30 | SMS Twilio (envoi + réception), webhooks Resend (livraison email), revue visuelle complète (64 fichiers), design tokens hex app-wide |
 | **v6.0.0** | 2026-06-29 | Architecture 2 plateformes : app/(ai)/ layout, 4 pages IA déplacées, switch topbar, lib/platform-utils.ts |
 | **v5.4.0** | 2026-06-29 | Google Places enrichment, email IA personnalisé par lead, sidebar slide + spring animations, tabs mobiles, fix workspace ownership |
