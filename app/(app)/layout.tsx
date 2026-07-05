@@ -60,6 +60,7 @@ import {
   Gauge,
   Brain,
   Bot,
+  UserCog,
 } from 'lucide-react';
 import { BottomBlur } from '@/components/ui/edge-blur';
 import { cn } from '@/lib/utils';
@@ -755,10 +756,11 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
       id: 'sales',
       label: 'Ventes',
       items: [
-        { name: 'Prospection', href: '/prospecting', icon: Search },
-        { name: 'Pipeline',    href: '/pipeline',    icon: KanbanSquare },
-        { name: 'Inbox',       href: '/inbox',       icon: Inbox },
-        { name: 'Terrain',     href: '/field',       icon: Navigation },
+        { name: 'Prospection',   href: '/prospecting', icon: Search },
+        { name: 'Profils cibles',href: '/personas',    icon: UserCog },
+        { name: 'Pipeline',      href: '/pipeline',    icon: KanbanSquare },
+        { name: 'Inbox',         href: '/inbox',       icon: Inbox },
+        { name: 'Terrain',       href: '/field',       icon: Navigation },
       ],
     },
     {
@@ -789,6 +791,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
         { name: 'Publicité',       href: '/ads',            icon: Target },
         { name: 'Acquisition',     href: '/acquisition',    icon: TrendingUp },
         { name: 'Site web IA',     href: '/website-builder',icon: Globe },
+        { name: 'Audit SEO',       href: '/audit',          icon: ShieldCheck },
         { name: 'Rapports client', href: '/client-reports', icon: FileText },
         { name: 'Performance',     href: '/performance',    icon: BarChart3 },
         { name: 'Webhooks',        href: '/webhooks',       icon: Zap },
@@ -1269,6 +1272,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                         { href: '/changelog', icon: Megaphone, label: t('nav.changelog') },
                         { href: '/roadmap', icon: Flag, label: 'Roadmap' },
                         { href: '/leverage-library', icon: BookOpen, label: 'Bibliothèque de preuves' },
+                        { href: '/recovery', icon: RefreshCw, label: 'Récupération de données' },
                       ].map(({ href, icon: Icon, label }) => {
                         const isFooterActive = pathname === href;
                         return (
@@ -1689,6 +1693,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
               <div className="grid grid-cols-4 gap-0.5 px-3">
                 {([
                   { name: 'Prospects',    href: '/prospecting',  icon: PenSquare },
+                  { name: 'Profils cibles', href: '/personas',   icon: UserCog },
                   { name: 'Pipeline',     href: '/pipeline',     icon: Kanban },
                   { name: 'Inbox',        href: '/inbox',        icon: Inbox },
                   { name: 'Terrain',      href: '/field',        icon: MapPin },
@@ -1718,6 +1723,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                   { name: 'Campagnes',  href: '/campaigns',     icon: Megaphone },
                   { name: 'Playbooks',  href: '/playbooks',     icon: BookOpen },
                   { name: 'Acquisition',href: '/acquisition',   icon: TrendingUp },
+                  { name: 'Audit SEO',  href: '/audit',         icon: ShieldCheck },
                 ] as { name: string; href: string; icon: React.ElementType }[]).map(({ name, href, icon: Icon }) => {
                   const isActive = pathname.startsWith(href);
                   return (
@@ -1763,6 +1769,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                   { name: 'Performance',  href: '/performance',  icon: BarChart3 },
                   { name: 'Changelog',    href: '/changelog',    icon: Megaphone },
                   { name: 'Bibliothèque', href: '/library',      icon: Folder },
+                  { name: 'Récupération', href: '/recovery',     icon: RefreshCw },
                 ] as { name: string; href: string; icon: React.ElementType }[]).map(({ name, href, icon: Icon }) => {
                   const isActive = pathname.startsWith(href);
                   return (
