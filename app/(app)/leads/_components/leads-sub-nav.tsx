@@ -1,7 +1,7 @@
 'use client';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { List, Kanban, Building2, MapPin, Clock } from 'lucide-react';
+import { List, Kanban, Building2, MapPin, Clock, LifeBuoy } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const TABS = [
@@ -10,6 +10,7 @@ const TABS = [
   { label: 'Comptes', href: '/accounts', icon: Building2 },
   { label: 'Prospection', href: '/prospecting', icon: MapPin },
   { label: 'Timeline', href: '/leads/timeline', icon: Clock },
+  { label: 'À relancer', href: '/leads/rescue', icon: LifeBuoy },
 ];
 
 export function LeadsSubNav() {

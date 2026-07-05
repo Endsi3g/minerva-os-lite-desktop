@@ -11,6 +11,8 @@ import { ChevronLeft, ChevronRight, MapPin, Calendar, X, ArrowUpRight, DollarSig
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { getTemperatureStyle, getTemperatureLabel } from '@/lib/lead-badges';
+import { computeDealRisk, getDealRiskColor, getDealRiskLabel } from '@/lib/deal-risk';
+import { AlertTriangle } from 'lucide-react';
 
 interface PipelineKanbanCardProps {
   lead: Lead;
@@ -47,6 +49,15 @@ export function PipelineKanbanCard({ lead }: PipelineKanbanCardProps) {
   };
 
   const isOverdue = lead.nextActionDate && lead.nextActionDate <= new Date().toISOString().split('T')[0];
+
+  const dealRisk = computeDealRisk({
+    status: lead.status,
+    lastActivityAt: lead.lastActivityAt,
+    nextActionDate: lead.nextActionDate,
+    replyStatus: lead.replyStatus,
+    dealAmount: lead.dealAmount,
+    dealProbability: lead.dealProbability,
+  });
 
   const handleDragStart = (e: React.DragEvent) => {
     e.dataTransfer.setData('leadId', lead.id);
@@ -88,12 +99,30 @@ export function PipelineKanbanCard({ lead }: PipelineKanbanCardProps) {
 
         {/* Temp badge + score */}
         <div className="flex items-center justify-between">
-          <Badge
-            variant="secondary"
-            className={cn("text-[8px] font-bold px-1.5 py-0 rounded", getTemperatureStyle(lead.temperature))}
-          >
-            {getTemperatureLabel(lead.temperature)}
-          </Badge>
+          <div className="flex items-center gap-1.5">
+            <Badge
+              variant="secondary"
+              className={cn("text-[8px] font-bold px-1.5 py-0 rounded", getTemperatureStyle(lead.temperature))}
+            >
+              {getTemperatureLabel(lead.temperature)}
+            </Badge>
+            {dealRisk && dealRisk.level !== 'low' && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div
+                    className="flex items-center gap-0.5 text-[8px] font-bold px-1.5 py-0 rounded border"
+                    style={{ color: getDealRiskColor(dealRisk.level), borderColor: `${getDealRiskColor(dealRisk.level)}33`, background: `${getDealRiskColor(dealRisk.level)}0d` }}
+                  >
+                    <AlertTriangle className="h-2.5 w-2.5" />
+                    {getDealRiskLabel(dealRisk.level)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className="text-[10px] max-w-[200px]">{dealRisk.reasons.join(' · ')}</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
+          </div>
 
           <div className="flex items-center gap-1.5">
             {!!lead.score && (
