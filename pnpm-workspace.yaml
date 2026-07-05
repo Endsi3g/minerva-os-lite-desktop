@@ -6,3 +6,4 @@ allowBuilds:
   msw: false
   electron-winstaller: true
   sqlite3: true
+  '@sentry/cli': true

@@ -190,6 +190,3 @@ export async function DELETE(req: NextRequest) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true });
 }
-
-// Internal helper (used by cron) — exported for reuse
-export { sendGmailStep, refreshToken };

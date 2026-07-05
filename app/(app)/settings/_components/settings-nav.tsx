@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import {
   User, Sun, Briefcase, Users, Brain, Link2, Target, Globe, FileText, Zap, Activity, Sparkles,
   CreditCard, Shield, Bell, Cpu, Key, Palette, MessageSquare, Sliders, Terminal, LayoutDashboard, Users2,
-  ChevronDown, ChevronRight,
+  ChevronDown, ChevronRight, Gauge,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/lib/language-context';
@@ -12,7 +12,7 @@ import { useLanguage } from '@/lib/language-context';
 export type SettingsSection =
   | 'profile' | 'appearance' | 'notifications' | 'security' | 'preferences'
   | 'workspace_general' | 'members' | 'workspace_overview' | 'workspace_api' | 'groups'
-  | 'ai' | 'minerva_ai' | 'integrations' | 'goals' | 'agency' | 'automations' | 'diagnostics'
+  | 'ai' | 'minerva_ai' | 'integrations' | 'goals' | 'agency' | 'automations' | 'diagnostics' | 'monitoring'
   | 'models' | 'api_keys' | 'prospecting' | 'custom_instructions' | 'customizations' | 'roles' | 'billing';
 
 interface NavGroup {
@@ -58,6 +58,7 @@ export function SettingsNav({ section, onSectionChange }: SettingsNavProps) {
         { id: 'models', name: 'Modèles', icon: Cpu },
         { id: 'api_keys', name: 'Clés API', icon: Key },
         { id: 'diagnostics', name: 'Diagnostics IA', icon: Activity },
+        { id: 'monitoring', name: 'Monitoring', icon: Gauge },
         { id: 'automations', name: 'Automations', icon: Zap },
         { id: 'prospecting', name: 'Prospection', icon: Target },
         { id: 'custom_instructions', name: 'Instructions', icon: MessageSquare },

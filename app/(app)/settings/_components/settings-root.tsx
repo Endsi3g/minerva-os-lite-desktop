@@ -12,6 +12,7 @@ import { SettingsGoalsSection } from './settings-goals-section';
 import SettingsAgencySection from './settings-agency-section';
 import { SettingsAutomationsSection } from './settings-automations-section';
 import { SettingsDiagnosticsIA } from './settings-diagnostics-ia';
+import { SettingsMonitoring } from './settings-monitoring';
 import { SettingsMinervaAiSection } from './settings-minerva-ai-section';
 import { SettingsBillingSection } from './settings-billing-section';
 import { SettingsSecuritySection } from './settings-security-section';
@@ -421,6 +422,8 @@ export function SettingsRoot() {
           )}
 
           {section === 'diagnostics' && <SettingsDiagnosticsIA />}
+
+          {section === 'monitoring' && <SettingsMonitoring />}
 
           {section === 'automations' && <SettingsAutomationsSection />}
 
