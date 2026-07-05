@@ -228,6 +228,25 @@ export async function GET(req: NextRequest) {
 
     if (!item) continue;
 
+    // A paused/stopped enrollment must block an already-queued send too — pausing the
+    // enrollment alone doesn't retroactively cancel steps already sitting in email_queue.
+    if (item.enrollment_id) {
+      const { data: enrollment } = await supabase
+        .from('sequence_enrollments')
+        .select('status')
+        .eq('id', item.enrollment_id)
+        .maybeSingle();
+      if (enrollment && enrollment.status !== 'active') {
+        await supabase.from('email_queue').update({
+          status: 'cancelled',
+          error_message: `Séquence en pause (enrollment ${enrollment.status})`,
+          updated_at: now.toISOString(),
+        }).eq('id', item.id);
+        totalSkipped++;
+        continue;
+      }
+    }
+
     await supabase.from('email_queue').update({ status: 'sending', updated_at: now.toISOString() }).eq('id', item.id);
 
     const accessToken = await getValidAccessToken(supabase, workspace.owner_id);

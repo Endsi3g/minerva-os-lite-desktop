@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { classifyReply } from '@/lib/agent-tools';
 
 async function refreshAccessToken(refreshToken: string, clientId: string, clientSecret: string) {
   const res = await fetch('https://oauth2.googleapis.com/token', {
@@ -162,42 +163,70 @@ export async function GET(req: NextRequest) {
         // A reply exists if the thread has more than 1 message
         // The first message is the one we sent; subsequent messages are replies
         const senderEmail = settings.google_email;
-        const hasExternalReply = thread.messages.some((msg: any, idx: number) => {
-          if (idx === 0) return false; // skip our own sent message
+        let replyMessage: { subject: string; snippet: string } | null = null;
+        for (let idx = 1; idx < thread.messages.length; idx++) {
+          const msg = thread.messages[idx];
           const headers = msg.payload?.headers || [];
           const fromHeader = headers.find((h: any) => h.name === 'From')?.value || '';
-          if (fromHeader.includes(senderEmail)) return false;
+          if (fromHeader.includes(senderEmail)) continue;
 
           const subjectHeader = headers.find((h: any) => h.name === 'Subject')?.value || '';
           const snippet = msg.snippet || '';
 
-          return isBusinessReply(subjectHeader, fromHeader, snippet, headers);
-        });
+          if (isBusinessReply(subjectHeader, fromHeader, snippet, headers)) {
+            replyMessage = { subject: subjectHeader, snippet };
+            break;
+          }
+        }
 
-        if (!hasExternalReply) continue;
+        if (!replyMessage) continue;
 
         const now = new Date().toISOString();
 
-        // Auto-tag: map reply classification to tag
-        const INTENT_TAG_MAP: Record<string, string> = {
-          interested: 'Intéressé',
-          not_interested: 'Pas intéressé',
-          scheduling: 'RDV demandé',
-          info_request: 'Demande info',
-          out_of_office: 'Absent',
-        };
-
-        // Check if auto_tag_replies is enabled (default true)
+        // Check if auto_tag_replies is enabled (default true) + load AI settings for classification
         const { data: userSettings } = await supabase
           .from('settings')
-          .select('auto_tag_replies')
+          .select('auto_tag_replies, ai_provider, ai_model, openrouter_key')
           .eq('user_id', settings.user_id)
           .maybeSingle();
 
         const autoTagEnabled = userSettings?.auto_tag_replies !== false;
+        const workspaceId = lead.workspace_id || settings.workspace_id;
 
-        // Apply a basic "replied" tag — classification would require a separate AI call
-        // Here we tag with 'RDV demandé' as default when status → Meeting Booked
+        // Real AI classification of the reply — replaces the previous "always assume interested" behavior.
+        let classification: { intent?: string; should_pause_sequence?: boolean } = {};
+        try {
+          classification = await classifyReply(
+            {
+              workspaceId,
+              userId: settings.user_id,
+              supabase,
+              settings: {
+                ai_provider: userSettings?.ai_provider,
+                ai_model: userSettings?.ai_model,
+                openrouter_key: userSettings?.openrouter_key,
+              },
+            },
+            { lead_id: lead.id, subject: replyMessage.subject, snippet: replyMessage.snippet.slice(0, 800), thread_id: lead.gmail_thread_id },
+          );
+        } catch (err) {
+          console.error('[gmail-check-replies] classification failed, defaulting to neutral:', err);
+        }
+
+        const intent = classification.intent ?? 'other';
+        const isPositive = intent === 'interested' || intent === 'scheduling';
+        const isNegative = intent === 'not_interested' || intent === 'objection';
+
+        const INTENT_TAG_MAP: Record<string, string> = {
+          interested: 'Intéressé',
+          scheduling: 'RDV demandé',
+          not_interested: 'Pas intéressé',
+          objection: 'Objection',
+          info_request: 'Demande info',
+          other: 'Réponse reçue',
+        };
+        const tagForIntent = INTENT_TAG_MAP[intent] ?? INTENT_TAG_MAP.other;
+
         let tagsUpdate: string[] | undefined;
         if (autoTagEnabled) {
           const { data: currentLead } = await supabase
@@ -209,36 +238,53 @@ export async function GET(req: NextRequest) {
           const existingTags: string[] = currentLead?.tags || [];
           const responseTags = Object.values(INTENT_TAG_MAP);
           const filteredTags = existingTags.filter((t: string) => !responseTags.includes(t));
-          // Default intent for a detected reply (no classification) — mark as needs follow-up
-          tagsUpdate = [...filteredTags, 'RDV demandé'];
+          tagsUpdate = [...filteredTags, tagForIntent];
         }
 
         await supabase
           .from('leads')
           .update({
             reply_detected_at: now,
-            status: 'Meeting Booked', // Upgrade status — replied lead is a warm prospect
+            reply_status: isPositive ? 'positive' : isNegative ? 'negative' : 'followup',
+            // Only upgrade to a warm-prospect status when the reply is genuinely positive —
+            // a negative/neutral reply must not fake a meeting or overwrite the real pipeline stage.
+            ...(isPositive ? { status: 'Meeting Booked' } : {}),
             updated_at: now,
             ...(tagsUpdate !== undefined ? { tags: tagsUpdate } : {}),
           })
           .eq('id', lead.id);
 
+        // Intelligent cadences: pause any active sequence for this lead when the reply
+        // is negative/an objection, across both sequencing systems in use in this app.
+        if (isNegative || classification.should_pause_sequence) {
+          await supabase
+            .from('email_sequences')
+            .update({ status: 'paused', updated_at: now })
+            .eq('lead_id', lead.id)
+            .eq('status', 'active');
+          await supabase
+            .from('sequence_enrollments')
+            .update({ status: 'paused', paused_at: now, paused_reason: `reply_intent:${intent}` })
+            .eq('lead_id', lead.id)
+            .eq('status', 'active');
+        }
+
         // Create reply notification
         await supabase.from('notifications').insert({
           id: crypto.randomUUID(),
           user_id: settings.user_id,
-          workspace_id: lead.workspace_id || settings.workspace_id,
+          workspace_id: workspaceId,
           type: 'reply_detected',
           title: 'Réponse détectée',
-          body: `${lead.business_name} a répondu à votre e-mail.${autoTagEnabled ? ' Tag « RDV demandé » ajouté.' : ''}`,
+          body: `${lead.business_name} a répondu à votre e-mail — intention détectée : ${tagForIntent}.${autoTagEnabled ? ` Tag « ${tagForIntent} » ajouté.` : ''}`,
           link: `/leads/${lead.id}`,
           is_read: false,
           created_at: now,
           updated_at: now,
         });
 
-        // Auto-create Google Calendar event for the appointment
-        if (accessToken) {
+        // Auto-create Google Calendar event only for genuinely positive replies
+        if (accessToken && isPositive) {
           try {
             const tomorrow = new Date(Date.now() + 86_400_000);
             const startDt = new Date(tomorrow);

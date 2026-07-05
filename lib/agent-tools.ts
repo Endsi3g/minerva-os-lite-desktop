@@ -53,11 +53,10 @@ export async function listLeadsToFollowUp(
 
   const { data } = await ctx.supabase
     .from('leads')
-    .select('id, business_name, niche, status, score, last_contacted_at, pipeline_stage')
+    .select('id, business_name, niche, status, score, last_activity_at')
     .eq('workspace_id', ctx.workspaceId)
-    .not('status', 'eq', 'Client')
-    .not('status', 'eq', 'Perdu')
-    .or(`last_contacted_at.lt.${cutoff},last_contacted_at.is.null`)
+    .not('status', 'in', '("Won","Lost")')
+    .or(`last_activity_at.lt.${cutoff},last_activity_at.is.null`)
     .gte('score', min_score)
     .order('score', { ascending: false })
     .limit(20);
