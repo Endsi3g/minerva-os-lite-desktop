@@ -901,6 +901,12 @@ function initDb() {
     // + message d'erreur visible sur un brouillon qui ne peut pas être mis en file.
     db.run(`ALTER TABLE settings ADD COLUMN batch_outreach_auto_draft INTEGER DEFAULT 0`, () => {});
     db.run(`ALTER TABLE drafts ADD COLUMN error TEXT DEFAULT NULL`, () => {});
+
+    // v13.2 — Fiabilité IA & Prospection en masse (Phase 4) : qualité d'enrichissement.
+    // decision_maker_role/decision_maker_name/suggested_emails déjà présents plus haut.
+    db.run(`ALTER TABLE leads ADD COLUMN company_vibe TEXT DEFAULT NULL`, () => {});
+    db.run(`ALTER TABLE leads ADD COLUMN enrichment_completeness INTEGER DEFAULT 0`, () => {});
+    db.run(`ALTER TABLE leads ADD COLUMN enrichment_sufficient INTEGER DEFAULT 0`, () => {});
   });
 }
 

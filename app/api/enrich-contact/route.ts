@@ -2,10 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createClient as createAdminClient } from '@supabase/supabase-js';
 import { generateCompletion } from '@/lib/ai';
+import { scrapeWebsite, discoverInternalLinks } from '@/lib/website-scraper';
 
-function normalizeUrl(url: string): string {
-  return url.startsWith('http') ? url : `https://${url}`;
-}
+const DEEPER_CRAWL_KEYWORDS = [
+  'about', 'a-propos', 'apropos', 'qui-sommes-nous',
+  'services', 'contact', 'equipe', 'team', 'notre-histoire', 'histoire',
+];
+const ENRICHMENT_SUFFICIENT_THRESHOLD = 60;
 
 function extractDomain(website: string): string | null {
   try {
@@ -33,50 +36,6 @@ function generateEmailSuggestions(domain: string, contactName?: string): string[
   }
 
   return [...new Set(emails)];
-}
-
-// Firecrawl scrape (clean markdown of main content)
-async function scrapeWithFirecrawl(url: string): Promise<string | null> {
-  const apiKey = process.env.FIRECRAWL_API_KEY;
-  if (!apiKey) return null;
-  try {
-    const res = await fetch('https://api.firecrawl.dev/v1/scrape', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url: normalizeUrl(url), formats: ['markdown'], onlyMainContent: true }),
-      signal: AbortSignal.timeout(15000),
-    });
-    if (!res.ok) return null;
-    const data = await res.json();
-    const md: string = data?.data?.markdown || data?.markdown || '';
-    return md.slice(0, 4000) || null;
-  } catch {
-    return null;
-  }
-}
-
-// Fallback: fetch the raw HTML and strip tags to plain text
-async function scrapePlain(url: string): Promise<string | null> {
-  try {
-    const res = await fetch(normalizeUrl(url), {
-      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; MinervaBot/1.0)' },
-      signal: AbortSignal.timeout(12000),
-    });
-    if (!res.ok) return null;
-    const html = await res.text();
-    const metaDesc = html.match(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']+)["']/i)?.[1] || '';
-    const title = html.match(/<title[^>]*>([^<]+)<\/title>/i)?.[1] || '';
-    const text = html
-      .replace(/<script[\s\S]*?<\/script>/gi, ' ')
-      .replace(/<style[\s\S]*?<\/style>/gi, ' ')
-      .replace(/<[^>]+>/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim();
-    const combined = [title, metaDesc, text].filter(Boolean).join('. ');
-    return combined.slice(0, 4000) || null;
-  } catch {
-    return null;
-  }
 }
 
 function computeFitScore(data: {
@@ -167,6 +126,26 @@ function computeOpportunityScore(data: {
   return Math.min(100, Math.max(0, score));
 }
 
+// "Have we actually gathered enough to write a genuinely personalized message" — distinct
+// from the opportunity/fit/intent heuristics above, which run regardless of scrape success.
+function computeEnrichmentCompleteness(data: {
+  hasWebsite: boolean;
+  websiteScraped: boolean;
+  websiteDescription: string;
+  decisionMakerName: string;
+  rating?: number;
+  reviewsCount?: number;
+  hasNamedEmail: boolean;
+}): number {
+  let score = 0;
+  if (data.hasWebsite && data.websiteScraped) score += 30;
+  if (data.websiteDescription && data.websiteDescription.length >= 80) score += 25;
+  if (data.decisionMakerName) score += 20;
+  if (data.rating !== undefined && (data.reviewsCount ?? 0) >= 3) score += 15;
+  if (data.hasNamedEmail) score += 10;
+  return Math.min(100, score);
+}
+
 export async function POST(req: NextRequest) {
   try {
     const { leadId, website, businessName, contactName, city, niche, rating, reviewsCount, socialLinks, photos } = await req.json();
@@ -178,7 +157,7 @@ export async function POST(req: NextRequest) {
 
     let websiteContent: string | null = null;
     if (website) {
-      websiteContent = (await scrapeWithFirecrawl(website)) || (await scrapePlain(website));
+      websiteContent = await scrapeWebsite(website);
     }
 
     let decisionMakerName = contactName || '';
@@ -188,7 +167,7 @@ export async function POST(req: NextRequest) {
     let foundEmail = '';
 
     // Fetch settings for AI API
-    let settings = null;
+    let settings: { ai_provider?: string | null; ai_model?: string | null; openrouter_key?: string | null } | null = null;
     let userId: string | null = null;
     try {
       const supabase = await createClient();
@@ -206,12 +185,10 @@ export async function POST(req: NextRequest) {
       console.warn('[enrich-contact] Failed loading user settings:', err);
     }
 
-    // AI Analysis of Website Content (if scraped)
-    if (websiteContent) {
-      try {
-        const prompt = `Tu es un expert en prospection B2B et en scraping.
+    async function analyzeWebsiteContent(content: string) {
+      const prompt = `Tu es un expert en prospection B2B et en scraping.
 Voici le contenu extrait du site web de l'entreprise "${businessName || 'cette entreprise'}" :
-"""${websiteContent}"""
+"""${content}"""
 
 Analyse le texte ci-dessus et extrais les informations suivantes au format JSON strict (sans markdown, sans enrobage) :
 {
@@ -224,15 +201,20 @@ Analyse le texte ci-dessus et extrais les informations suivantes au format JSON 
 
 Réponds uniquement avec le JSON strict.`;
 
-        const text = await generateCompletion({
-          messages: [{ role: 'user', content: prompt }],
-          settings: settings || undefined,
-          jsonMode: true,
-          maxTokens: 500,
-          userId: userId || undefined,
-        });
+      const text = await generateCompletion({
+        messages: [{ role: 'user', content: prompt }],
+        settings: settings || undefined,
+        jsonMode: true,
+        maxTokens: 500,
+        userId: userId || undefined,
+      });
+      return JSON.parse(text) as { managerName?: string; managerRole?: string; managerEmail?: string; companyVibe?: string; description?: string };
+    }
 
-        const parsed = JSON.parse(text);
+    // AI Analysis of Website Content (if scraped)
+    if (websiteContent) {
+      try {
+        const parsed = await analyzeWebsiteContent(websiteContent);
         if (parsed.managerName) decisionMakerName = parsed.managerName;
         if (parsed.managerRole) decisionMakerRole = parsed.managerRole;
         if (parsed.companyVibe) companyVibe = parsed.companyVibe;
@@ -277,6 +259,59 @@ Réponds uniquement avec le JSON.`;
         console.warn('[enrich-contact] AI guessing failed:', err);
       }
     }
+
+    const hasNamedEmail = () => !!foundEmail || suggestedEmails.some(e => /^[a-z]+\.[a-z]+@/i.test(e));
+
+    let enrichmentCompleteness = computeEnrichmentCompleteness({
+      hasWebsite: !!website,
+      websiteScraped: !!websiteContent,
+      websiteDescription,
+      decisionMakerName,
+      rating,
+      reviewsCount,
+      hasNamedEmail: hasNamedEmail(),
+    });
+
+    // Homepage alone wasn't enough — go one level deeper on the SAME site (never an
+    // external search engine): discover 1-2 same-domain pages (About/Contact/etc.),
+    // scrape them, and re-run the extraction once with the combined content. Capped
+    // at a single extra pass — this never loops further.
+    if (enrichmentCompleteness < ENRICHMENT_SUFFICIENT_THRESHOLD && website) {
+      try {
+        const extraLinks = await discoverInternalLinks(website, DEEPER_CRAWL_KEYWORDS, 2);
+        if (extraLinks.length > 0) {
+          const extraContents = await Promise.all(extraLinks.map((url) => scrapeWebsite(url)));
+          const combined = [websiteContent, ...extraContents.filter(Boolean)].filter(Boolean).join('\n\n---\n\n').slice(0, 10000);
+
+          if (combined && combined !== websiteContent) {
+            websiteContent = combined;
+            const parsed = await analyzeWebsiteContent(combined);
+            if (parsed.managerName) decisionMakerName = parsed.managerName;
+            if (parsed.managerRole) decisionMakerRole = parsed.managerRole;
+            if (parsed.companyVibe) companyVibe = parsed.companyVibe;
+            if (parsed.description) websiteDescription = parsed.description;
+            if (parsed.managerEmail) {
+              foundEmail = parsed.managerEmail;
+              suggestedEmails = [foundEmail, ...suggestedEmails.filter(e => e !== foundEmail)];
+            }
+
+            enrichmentCompleteness = computeEnrichmentCompleteness({
+              hasWebsite: !!website,
+              websiteScraped: !!websiteContent,
+              websiteDescription,
+              decisionMakerName,
+              rating,
+              reviewsCount,
+              hasNamedEmail: hasNamedEmail(),
+            });
+          }
+        }
+      } catch (err) {
+        console.warn('[enrich-contact] Deeper same-site crawl failed:', err);
+      }
+    }
+
+    const enrichmentSufficient = enrichmentCompleteness >= ENRICHMENT_SUFFICIENT_THRESHOLD;
 
     // Compute Accurate Opportunity Score
     const opportunityScore = computeOpportunityScore({
@@ -354,11 +389,18 @@ Génère UNIQUEMENT le texte final du pitch, sans titres de section ni balises m
             status: 'Draft'
           });
 
-          // Also persist enriched fields on the lead record itself
+          // Also persist enriched fields on the lead record itself — decision_maker_role/
+          // company_vibe/website_description/enrichment_* were computed above but never
+          // persisted before, and decision_maker_role wasn't a tracked column at all
+          // (an unknown-column update silently failed the whole write in some environments).
           await admin.from('leads').update({
             decision_maker_name: decisionMakerName || null,
             decision_maker_role: decisionMakerRole || null,
+            company_vibe: companyVibe || null,
+            website_description: websiteDescription || null,
             suggested_emails: suggestedEmails.length ? suggestedEmails : null,
+            enrichment_completeness: enrichmentCompleteness,
+            enrichment_sufficient: enrichmentSufficient,
             enriched_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
           }).eq('id', leadId);
@@ -380,6 +422,8 @@ Génère UNIQUEMENT le texte final du pitch, sans titres de section ni balises m
       customPitch,
       foundEmail,
       domain,
+      enrichmentCompleteness,
+      enrichmentSufficient,
     });
   } catch (err: any) {
     console.error('[enrich-contact] Unexpected error:', err);

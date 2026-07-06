@@ -1,6 +1,7 @@
 import { generateCompletion, type AISettings } from '@/lib/ai';
 import { logLeadEvent } from '@/lib/timeline-logger';
 import { resolveAccessToken } from '@/lib/google/google-auth-service';
+import { generateEmailDraftForLead } from '@/lib/generate-email-draft';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 export type AutonomyLevel = 'off' | 'suggest' | 'prepare' | 'act_with_approval' | 'auto';
@@ -108,58 +109,26 @@ export async function generateEmailDraft(
   ctx: AgentContext,
   params: { lead_id: string; template_type: 'follow_up' | 'introduction' | 'closing' | 'reactivation'; source?: string },
 ) {
-  // `leads` has no `name`/`company`/`notes` columns — the real fields are business_name,
-  // contact_name, niche, city, website_description. Selecting the wrong names made this
-  // query always fail, so every draft silently threw and fell back to nothing.
-  const { data: lead } = await ctx.supabase
-    .from('leads')
-    .select('business_name, contact_name, niche, city, status, score, website_description')
-    .eq('id', params.lead_id)
-    .single();
-
-  if (!lead) throw new Error('Lead not found');
-
-  // Recent interaction history makes the draft specific instead of generic.
-  const { data: recentNotes } = await ctx.supabase
-    .from('notes')
-    .select('content')
-    .eq('lead_id', params.lead_id)
-    .order('created_at', { ascending: false })
-    .limit(3);
-
-  const contextParts = [
-    lead.website_description,
-    ...(recentNotes ?? []).map((n: { content: string }) => n.content),
-  ].filter(Boolean);
-
-  const draft = await generateCompletion({
-    system: `Tu es un assistant commercial expert en prospection B2B au Québec. Génère un email concis (max 120 mots), personnalisé à partir du contexte fourni (pas un modèle générique), en français. Retourne uniquement JSON: { "subject": "...", "body": "..." }`,
-    messages: [{
-      role: 'user',
-      content: `Prospect: ${lead.contact_name || 'le/la gérant(e)'} chez ${lead.business_name} (${lead.niche || 'commerce local'}, ${lead.city || 'Québec'}). Type de relance: ${params.template_type}. Contexte réel à utiliser pour personnaliser: ${contextParts.join(' | ') || 'Pas de contexte disponible — reste bref et générique sur le secteur.'}`,
-    }],
-    jsonMode: true,
-    maxTokens: 400,
-    settings: ctx.settings,
-    userId: ctx.userId,
-    workspaceId: ctx.workspaceId,
+  // Thin wrapper around the canonical generator (lib/generate-email-draft.ts) — this
+  // is what gives every caller (agent tool, manual batch, auto-draft cron) the rich
+  // context (decision-maker, company vibe, Google reviews, persona) for free.
+  const draft = await generateEmailDraftForLead(ctx.supabase, ctx.userId, ctx.workspaceId, {
+    leadId: params.lead_id,
+    templateType: params.template_type,
   });
-
-  let parsed: { subject: string; body: string };
-  try { parsed = JSON.parse(draft); } catch { parsed = { subject: `Relance — ${lead.business_name}`, body: draft }; }
 
   const { data, error } = await ctx.supabase.from('drafts').insert({
     workspace_id: ctx.workspaceId,
     user_id: ctx.userId,
     lead_id: params.lead_id,
-    subject: parsed.subject,
-    content: parsed.body,
+    subject: draft.subject,
+    content: draft.content,
     source: params.source ?? 'agent',
     created_at: new Date().toISOString(),
   }).select('id').single();
 
   if (error) throw new Error(`generateEmailDraft insert failed: ${error.message}`);
-  return { draft_id: data.id, subject: parsed.subject };
+  return { draft_id: data.id, subject: draft.subject };
 }
 
 // ── Tool: enroll in sequence ──────────────────────────────────────────────────
