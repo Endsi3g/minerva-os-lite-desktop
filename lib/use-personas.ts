@@ -24,8 +24,6 @@ export interface Persona {
   updatedAt: string;
 }
 
-const LS_KEY = 'minerva_personas_v1';
-
 function isElectron(): boolean {
   return false;
 }
@@ -57,15 +55,6 @@ function mapDbPersona(row: Record<string, any>): Persona {
 export function usePersonas(workspaceId: string | undefined) {
   const [personas, setPersonas] = useState<Persona[]>([]);
   const [loading, setLoading] = useState(true);
-
-  const saveToLocalStorage = useCallback((updated: Persona[]) => {
-    try {
-      const raw = localStorage.getItem(LS_KEY);
-      const all: Persona[] = raw ? JSON.parse(raw) : [];
-      const others = all.filter(p => p.workspaceId !== workspaceId);
-      localStorage.setItem(LS_KEY, JSON.stringify([...others, ...updated]));
-    } catch { /* ignore */ }
-  }, [workspaceId]);
 
   const load = useCallback(async () => {
     if (!workspaceId) { setLoading(false); return; }

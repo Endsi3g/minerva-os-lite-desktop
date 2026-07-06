@@ -886,6 +886,16 @@ function initDb() {
     db.run(`ALTER TABLE settings ADD COLUMN firecrawl_api_key_masked TEXT DEFAULT NULL`, () => {});
     db.run(`ALTER TABLE settings ADD COLUMN custom_instructions_about TEXT DEFAULT NULL`, () => {});
     db.run(`ALTER TABLE settings ADD COLUMN custom_instructions_model TEXT DEFAULT NULL`, () => {});
+
+    // v13.0 — Fiabilité IA & Prospection en masse (Phase 1) : toggle IA + suivi de
+    // santé, notifications d'échec IA anti-spam.
+    db.run(`ALTER TABLE settings ADD COLUMN ai_enabled INTEGER DEFAULT 1`, () => {});
+    db.run(`ALTER TABLE settings ADD COLUMN ai_last_health_check_at TEXT DEFAULT NULL`, () => {});
+    db.run(`ALTER TABLE settings ADD COLUMN ai_last_health_status TEXT DEFAULT NULL`, () => {});
+    db.run(`CREATE TABLE IF NOT EXISTS ai_failure_notifications (
+      user_id TEXT PRIMARY KEY,
+      last_notified_at TEXT NOT NULL
+    )`, () => {});
   });
 }
 

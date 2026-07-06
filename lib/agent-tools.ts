@@ -141,6 +141,7 @@ export async function generateEmailDraft(
     maxTokens: 400,
     settings: ctx.settings,
     userId: ctx.userId,
+    workspaceId: ctx.workspaceId,
   });
 
   let parsed: { subject: string; body: string };

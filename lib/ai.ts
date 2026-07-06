@@ -15,6 +15,7 @@ export interface AICallOptions {
   maxTokens?: number;
   temperature?: number;
   userId?: string;
+  workspaceId?: string;
 }
 
 const OPENROUTER_DEFAULT = 'meta-llama/llama-3.3-70b-instruct:free';
@@ -131,6 +132,44 @@ function logCall(params: {
         created_at: new Date().toISOString(),
       })
       .then(() => {}, () => {});
+  } catch { /* never throw */ }
+}
+
+// Notifies the user once every 15 minutes at most when a call has exhausted every
+// provider fallback (a "real" failure, not a transient hiccup absorbed by the retry).
+// Fire-and-forget, mirrors logCall's never-throw contract.
+async function notifyAiFailure(userId: string | undefined, workspaceId: string | undefined, errorMessage: string) {
+  if (!userId) return;
+  try {
+    const admin = getAdminClient();
+
+    let resolvedWorkspaceId = workspaceId;
+    if (!resolvedWorkspaceId) {
+      const { data: settingsRow } = await admin.from('settings').select('workspace_id').eq('user_id', userId).maybeSingle();
+      resolvedWorkspaceId = settingsRow?.workspace_id ?? undefined;
+    }
+
+    const { data: throttle } = await admin
+      .from('ai_failure_notifications')
+      .select('last_notified_at')
+      .eq('user_id', userId)
+      .maybeSingle();
+    if (throttle && Date.now() - new Date(throttle.last_notified_at).getTime() < 15 * 60 * 1000) return;
+
+    const now = new Date().toISOString();
+    await admin.from('notifications').insert({
+      id: crypto.randomUUID(),
+      user_id: userId,
+      workspace_id: resolvedWorkspaceId ?? null,
+      type: 'ai_failure',
+      title: 'Échec IA ⚠️',
+      body: `L'IA n'a pas pu répondre : ${errorMessage.slice(0, 200)}`,
+      link: '/settings',
+      is_read: false,
+      created_at: now,
+      updated_at: now,
+    });
+    await admin.from('ai_failure_notifications').upsert({ user_id: userId, last_notified_at: now });
   } catch { /* never throw */ }
 }
 
@@ -274,7 +313,11 @@ export async function generateCompletion(options: AICallOptions): Promise<string
 
   if (!apiKey) {
     const fallback = getFallback(provider, options.settings);
-    if (!fallback) throw new Error(`Clé API manquante pour le provider : ${provider}`);
+    if (!fallback) {
+      const message = `Clé API manquante pour le provider : ${provider}`;
+      await notifyAiFailure(options.userId, options.workspaceId, message);
+      throw new Error(message);
+    }
     return callWithFallback(fallback.provider, fallback.model, fallback.apiKey, messages, options, requestId, startTime);
   }
 
@@ -285,7 +328,11 @@ export async function generateCompletion(options: AICallOptions): Promise<string
   } catch (err: any) {
     logCall({ id: requestId, userId: options.userId, provider, model, latencyMs: Date.now() - startTime, success: false });
     const fallback = getFallback(provider, options.settings);
-    if (!fallback) throw new Error(err?.message || 'Le modèle IA est temporairement indisponible. Réessaie dans quelques minutes.');
+    if (!fallback) {
+      const message = err?.message || 'Le modèle IA est temporairement indisponible. Réessaie dans quelques minutes.';
+      await notifyAiFailure(options.userId, options.workspaceId, message);
+      throw new Error(message);
+    }
     return callWithFallback(fallback.provider, fallback.model, fallback.apiKey, messages, options, crypto.randomUUID(), Date.now());
   }
 }
@@ -305,7 +352,9 @@ async function callWithFallback(
     return result;
   } catch (err: any) {
     logCall({ id: requestId, userId: options.userId, provider, model, latencyMs: Date.now() - startTime, success: false });
-    throw new Error(err?.message || 'Le modèle IA est temporairement indisponible, même après repli sur un second provider.');
+    const message = err?.message || 'Le modèle IA est temporairement indisponible, même après repli sur un second provider.';
+    await notifyAiFailure(options.userId, options.workspaceId, message);
+    throw new Error(message);
   }
 }
 

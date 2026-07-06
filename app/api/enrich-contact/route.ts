@@ -229,6 +229,7 @@ Réponds uniquement avec le JSON strict.`;
           settings: settings || undefined,
           jsonMode: true,
           maxTokens: 500,
+          userId: userId || undefined,
         });
 
         const parsed = JSON.parse(text);
@@ -265,6 +266,7 @@ Réponds uniquement avec le JSON.`;
           settings: settings || undefined,
           jsonMode: true,
           maxTokens: 200,
+          userId: userId || undefined,
         });
 
         const parsed = JSON.parse(text);
@@ -315,6 +317,7 @@ Génère UNIQUEMENT le texte final du pitch, sans titres de section ni balises m
         messages: [{ role: 'user', content: pitchPrompt }],
         settings: settings || undefined,
         maxTokens: 400,
+        userId: userId || undefined,
       });
       // Replace markdown asterisks just in case
       customPitch = customPitch.replace(/\*/g, '').trim();

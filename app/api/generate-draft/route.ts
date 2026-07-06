@@ -163,6 +163,8 @@ Rédige uniquement le message final (pas de méta-commentaires, pas de "Voici le
           openrouter_key: settings?.openrouter_key,
         },
         maxTokens: 1024,
+        userId: user.id,
+        workspaceId: lead.workspace_id,
       });
     } catch (err) {
       // Try Anthropic as hard fallback before using mock
@@ -173,6 +175,8 @@ Rédige uniquement le message final (pas de méta-commentaires, pas de "Voici le
           messages: [{ role: 'user', content: userPrompt }],
           settings: { ai_provider: 'anthropic', ai_model: 'claude-haiku-4-5-20251001' },
           maxTokens: 1024,
+          userId: user.id,
+          workspaceId: lead.workspace_id,
         });
       } catch (fallbackErr) {
         const errMsg = (fallbackErr as Error).message;

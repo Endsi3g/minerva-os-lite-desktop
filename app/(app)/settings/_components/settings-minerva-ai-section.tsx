@@ -14,6 +14,7 @@ import {
   MessageSquare, FileSearch, Mail, Image, HelpCircle, Zap,
   Key, Eye, EyeOff, Trash2, ArrowRight, Bot, BookOpen,
   BarChart3, Clock, Coins, PlayCircle, ChevronRight, Activity,
+  AlertTriangle, ShieldCheck,
 } from 'lucide-react';
 import { getApiUrl } from '@/lib/api-helper';
 
@@ -173,6 +174,7 @@ interface MinervaAiData {
   memoryEnabled: boolean;
   spatialAiEnabled: boolean;
   webResearchEnabled: boolean;
+  aiEnabled: boolean;
   agentEnabled: boolean;
   agentAutonomy: {
     tasks: AutonomyLevel;
@@ -202,6 +204,7 @@ export function SettingsMinervaAiSection({ isSaving }: SettingsMinervaAiSectionP
     memoryEnabled: true,
     spatialAiEnabled: true,
     webResearchEnabled: false,
+    aiEnabled: true,
     agentEnabled: true,
     agentAutonomy: DEFAULT_AUTONOMY,
   });
@@ -211,6 +214,8 @@ export function SettingsMinervaAiSection({ isSaving }: SettingsMinervaAiSectionP
   const [saved, setSaved] = useState(false);
   const [triggerStatus, setTriggerStatus] = useState<'idle' | 'loading' | 'done' | 'error'>('idle');
   const [triggerResult, setTriggerResult] = useState<string>('');
+  const [aiHealthChecking, setAiHealthChecking] = useState(false);
+  const [aiHealthResult, setAiHealthResult] = useState<{ ok: boolean; message: string } | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -219,7 +224,7 @@ export function SettingsMinervaAiSection({ isSaving }: SettingsMinervaAiSectionP
       if (!user) { setLoading(false); return; }
       const { data: row } = await supabase
         .from('settings')
-        .select('ai_model, firecrawl_api_key_masked, ai_memory_enabled, ai_spatial_enabled, ai_web_research_enabled, agent_enabled, agent_autonomy')
+        .select('ai_model, firecrawl_api_key_masked, ai_memory_enabled, ai_spatial_enabled, ai_web_research_enabled, ai_enabled, agent_enabled, agent_autonomy')
         .eq('user_id', user.id)
         .maybeSingle();
       if (row) {
@@ -229,6 +234,7 @@ export function SettingsMinervaAiSection({ isSaving }: SettingsMinervaAiSectionP
           memoryEnabled: row.ai_memory_enabled ?? true,
           spatialAiEnabled: row.ai_spatial_enabled ?? true,
           webResearchEnabled: row.ai_web_research_enabled ?? false,
+          aiEnabled: row.ai_enabled ?? true,
           agentEnabled: row.agent_enabled ?? true,
           agentAutonomy: { ...DEFAULT_AUTONOMY, ...(row.agent_autonomy || {}) },
         });
@@ -296,6 +302,31 @@ export function SettingsMinervaAiSection({ isSaving }: SettingsMinervaAiSectionP
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
     await supabase.from('settings').upsert({ user_id: user.id, agent_autonomy: next });
+  };
+
+  const handleAiToggle = async (enabled: boolean) => {
+    setData(prev => ({ ...prev, aiEnabled: enabled }));
+    setAiHealthResult(null);
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    await supabase.from('settings').upsert({ user_id: user.id, ai_enabled: enabled });
+
+    if (!enabled) return;
+
+    setAiHealthChecking(true);
+    try {
+      const res = await fetch(getApiUrl('/api/ai/health-check'), { method: 'POST' });
+      const json = await res.json();
+      if (json.anyAvailable) {
+        setAiHealthResult({ ok: true, message: 'Connexion IA vérifiée — au moins un provider répond.' });
+      } else {
+        setAiHealthResult({ ok: false, message: "Aucun provider IA n'est joignable — vérifiez vos clés API." });
+      }
+    } catch {
+      setAiHealthResult({ ok: false, message: 'Impossible de vérifier la connexion IA pour le moment.' });
+    }
+    setAiHealthChecking(false);
   };
 
   const handleAgentToggle = async (enabled: boolean) => {
@@ -367,6 +398,41 @@ export function SettingsMinervaAiSection({ isSaving }: SettingsMinervaAiSectionP
                 </div>
               </div>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* ── AI enabled (parent switch — connectivity-tested on activation) ── */}
+        <Card className="border border-[#e5e5e0] bg-white">
+          <CardContent className="p-5 space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-bold text-[#26251e] uppercase tracking-wider flex items-center gap-1.5">
+                <ShieldCheck className="h-3.5 w-3.5 text-[#059669]" />
+                IA activée
+              </h3>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] text-[#7a7a76] font-semibold">
+                  {data.aiEnabled ? 'Activée' : 'Désactivée'}
+                </span>
+                <Switch checked={data.aiEnabled} onCheckedChange={handleAiToggle} />
+              </div>
+            </div>
+            <p className="text-[11px] text-[#7a7a76] leading-relaxed">
+              Contrôle l'ensemble des fonctionnalités IA (brouillons, enrichissement, chat) — indépendant de l'agent autonome ci-dessous.
+            </p>
+            {aiHealthChecking && (
+              <div className="flex items-center gap-2 text-[11px] text-[#7a7a76]">
+                <Loader2 className="h-3.5 w-3.5 animate-spin" /> Vérification de la connexion IA…
+              </div>
+            )}
+            {!aiHealthChecking && aiHealthResult && (
+              <div className={cn(
+                'flex items-center gap-2 text-[11px] font-semibold px-3 py-2 rounded-lg border',
+                aiHealthResult.ok ? 'bg-[#059669]/5 text-[#059669] border-[#059669]/20' : 'bg-red-50 text-red-600 border-red-200'
+              )}>
+                {aiHealthResult.ok ? <Check className="h-3.5 w-3.5 shrink-0" /> : <AlertTriangle className="h-3.5 w-3.5 shrink-0" />}
+                {aiHealthResult.message}
+              </div>
+            )}
           </CardContent>
         </Card>
 
