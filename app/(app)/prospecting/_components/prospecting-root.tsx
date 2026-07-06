@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Map, MapMarker, MarkerContent, MarkerPopup, MapPopup } from '@/components/ui/map';
+import { ProspectingMiniMap } from './prospecting-mini-map';
 import {
   Search, MapPin, Building, Loader2, Sparkles, Check, Globe, Phone, Star,
   Database, Plus, X, ChevronDown, WifiOff, CheckCircle2, Settings2, BarChart3,
@@ -1008,6 +1008,9 @@ export function ProspectingRoot() {
             Recherche locale propulsée par Apify. Les données d'OpenStreetMap (OSM) servent de fallback automatique en cas de besoin.
           </p>
         </div>
+
+        {/* Mini-carte des leads déjà ajoutés — clusters colorés par température */}
+        <ProspectingMiniMap leads={leads} />
 
         {/* Search Mode Tabs */}
         <div className="flex gap-1 p-1 bg-[#f4f4f3]/70 border border-[#e5e5e0] rounded-lg w-full sm:w-auto self-start flex-wrap">

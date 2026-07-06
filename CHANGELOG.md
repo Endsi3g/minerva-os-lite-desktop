@@ -5,6 +5,14 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [3.63.0] — Audit v11 → v12, Phase 8/10 : stabilité carte + mini-carte Prospecting — 2026-07-06
+
+### Ajouté
+- **Mini-carte à clusters dans Prospecting** — affiche tous les leads déjà ajoutés, regroupés en clusters colorés selon leur température moyenne (rouge = chaud, orange = tiède, bleu = froid). Cliquer un cluster zoome ET liste les leads qu'il contient dans un panneau latéral. Filtres par statut et par score minimum directement sur la carte. La carte était importée dans le code mais n'était jamais réellement affichée.
+
+### Corrigé
+- **Plus de plantage en cascade sur les pages carte** — `/map` et `/prospecting` n'avaient aucune limite de erreur : un problème sur la carte (coordonnées invalides, tuiles indisponibles) faisait planter toute l'application (écran blanc), forçant à naviguer en arrière puis à revenir pour la retrouver. Chaque page a maintenant sa propre limite d'erreur avec un bouton "Réessayer" qui n'affecte que la carte, pas le reste de l'app.
+
 ## [3.62.0] — Audit v11 → v12, Phase 7/10 : messages vocaux, fichiers, chat unifié — 2026-07-06
 
 ### Ajouté
