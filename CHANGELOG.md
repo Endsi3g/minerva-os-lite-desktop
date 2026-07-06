@@ -5,6 +5,17 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [3.56.0] — Audit v11 → v12, Phase 1/10 : navigation & attribution des leads — 2026-07-05
+
+### Changé — Navigation
+- **Fini les 3 couches de "Séquences"** : la page `/sequences` (renommée « Séquences, Composer & Cadences ») regroupe maintenant tout — séquences automatiques par lead, modèles réutilisables, rédaction manuelle, file d'envoi et calendrier de relances — via un simple switch de vue. L'ancien onglet « Séquences » imbriqué dans `/outreach` a disparu.
+- **Plus de doublon "Inbox"** : l'onglet Inbox a été retiré d'`/outreach` (qui garde Campagnes, Templates, Approbations) — un seul vrai Inbox reste, accessible depuis la sidebar.
+- **Une seule page Équipe** : `/team` regroupe maintenant Membres, **Groupes** (nouveau — voir ci-dessous), Chat, Rôles, Charge de travail et Feed revenus. Settings > Membres et Settings > Groupes (qui ne persistaient jamais rien nulle part) ont été retirés.
+- **Groupes d'équipe enfin réels** — l'ancien widget "Groupes" des Paramètres était de la donnée locale factice, sans aucune table en base ni moyen d'y assigner un membre. Nouvelle implémentation dans `/team` : créez un groupe, cochez de vrais membres de l'équipe, voyez-les listés dedans. Nouvelles tables `team_groups` / `team_group_members`.
+
+### Corrigé
+- **Bug d'attribution des leads scrapés** — un lead importé via le scraping (OSM, Google/Here/Yelp/PagesJaunes) était systématiquement étiqueté « Manuel » dans le tableau d'Acquisition, alors qu'il ne l'était pas. La fonction d'ajout de lead ne renseignait jamais la colonne qui pilote cet affichage ; elle la déduit maintenant correctement de la vraie source.
+
 ## [3.55.0] — Audit v11 → v12, Phase 0/10 : fondations base de données — 2026-07-05
 
 Premier volet d'un audit complet de l'application demandé par l'utilisateur (bugs de scraping, campagnes, emails, navigation, IA, sécurité...). Cette phase corrige la cause racine derrière une bonne partie des erreurs remontées : **plusieurs mois de modifications de schéma n'avaient jamais été réellement appliqués à la base de données de production**, alors que le code, lui, avait continué d'évoluer en supposant qu'elles l'étaient. Les phases suivantes (navigation, IA, campagnes, galerie de sites, messagerie, carte, sécurité...) seront livrées une par une, chacune avec sa propre entrée de changelog.

@@ -338,7 +338,7 @@ function StepEditor({
 }
 
 // ── Main Component ─────────────────────────────────────────────────────────────
-export function OutreachRoot() {
+export function ComposerQueueCadenceRoot() {
   const { t } = useLanguage();
   const { leads, activeWorkspace, user: contextUser, addTask } = useReach();
 

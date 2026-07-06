@@ -1304,6 +1304,19 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
     if (!user || !activeWorkspace) return;
     const electronObj = typeof window !== 'undefined' && (window as any).electron ? (window as any).electron : null;
 
+    // Le champ `source` (ex: "Scraper Minerva (osm)", "manual"...) est un détail technique
+    // de provenance ; `lead_source_type` est la catégorie affichée dans l'UI d'attribution
+    // (Acquisition). Sans ce mapping, tout lead non explicitement 'manual' retombait sur
+    // 'manual' à la lecture (mapDbLeadToUi ci-dessus), étiquetant à tort les leads scrapés
+    // comme saisis à la main.
+    const leadSourceType: Lead['leadSourceType'] = !leadData.source || leadData.source === 'manual'
+      ? 'manual'
+      : leadData.source === 'facebook' ? 'facebook'
+      : leadData.source === 'google' ? 'google'
+      : leadData.source === 'csv' ? 'csv'
+      : leadData.source === 'form' ? 'form'
+      : 'osm';
+
     if (electronObj) {
       try {
         const leadId = crypto.randomUUID();
@@ -1314,9 +1327,9 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
           source: leadData.source
         });
 
-        await electronObj.dbRun(`INSERT INTO leads (id, user_id, business_name, contact_name, contact_email, niche, city, source, status, temperature, next_action, next_action_date, owner, image_url, workspace_id, score, website, rating, reviews_count, maps_url, photos, social_links, assigned_to, latitude, longitude, phone, created_at, updated_at, sync_status)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending_insert')`,
-          [leadId, user.id, leadData.businessName, leadData.contactName, leadData.contactEmail || '', leadData.niche, leadData.city, leadData.source, leadData.status, leadData.temperature, leadData.nextAction, leadData.nextActionDate || null, 'Moi', leadData.imageUrl || null, activeWorkspace.id, leadScore, leadData.website || null, leadData.rating ?? null, leadData.reviewsCount ?? null, leadData.mapsUrl || null, leadData.photos ? JSON.stringify(leadData.photos) : null, leadData.socialLinks ? JSON.stringify(leadData.socialLinks) : null, leadData.assignedTo || null, leadData.latitude ?? null, leadData.longitude ?? null, leadData.phone || null, nowStr, nowStr]
+        await electronObj.dbRun(`INSERT INTO leads (id, user_id, business_name, contact_name, contact_email, niche, city, source, lead_source_type, status, temperature, next_action, next_action_date, owner, image_url, workspace_id, score, website, rating, reviews_count, maps_url, photos, social_links, assigned_to, latitude, longitude, phone, created_at, updated_at, sync_status)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending_insert')`,
+          [leadId, user.id, leadData.businessName, leadData.contactName, leadData.contactEmail || '', leadData.niche, leadData.city, leadData.source, leadSourceType, leadData.status, leadData.temperature, leadData.nextAction, leadData.nextActionDate || null, 'Moi', leadData.imageUrl || null, activeWorkspace.id, leadScore, leadData.website || null, leadData.rating ?? null, leadData.reviewsCount ?? null, leadData.mapsUrl || null, leadData.photos ? JSON.stringify(leadData.photos) : null, leadData.socialLinks ? JSON.stringify(leadData.socialLinks) : null, leadData.assignedTo || null, leadData.latitude ?? null, leadData.longitude ?? null, leadData.phone || null, nowStr, nowStr]
         );
 
         const insertedNotes: DbNote[] = [];
@@ -1385,6 +1398,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
       niche: leadData.niche,
       city: leadData.city,
       source: leadData.source,
+      lead_source_type: leadSourceType,
       status: leadData.status,
       temperature: leadData.temperature,
       next_action: leadData.nextAction,

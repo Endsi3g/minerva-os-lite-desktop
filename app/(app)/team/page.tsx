@@ -9,7 +9,7 @@ import {
   MessageSquare, Send, Link2, Copy, Shield, Star, Eye,
   Smile, ImagePlus,
   Plus, Pencil, LogOut, Palette, ChevronRight,
-  UsersRound, BarChart2, TrendingUp,
+  UsersRound, BarChart2, TrendingUp, Users2,
 } from 'lucide-react';
 import { WorkloadBoard } from './_components/workload-board';
 import { RevenueFeed } from './_components/revenue-feed';
@@ -22,7 +22,13 @@ import { PERMISSION_MODULES, DEFAULT_ROLE_PERMISSIONS, type PermissionModule, AL
 
 // ── Types ────────────────────────────────────────────────────────────────────
 type Role = 'admin' | 'editor' | 'viewer';
-type TeamTab = 'members' | 'chat' | 'roles' | 'workload' | 'revenue';
+type TeamTab = 'members' | 'groups' | 'chat' | 'roles' | 'workload' | 'revenue';
+
+interface TeamGroup {
+  id: string;
+  name: string;
+  memberIds: string[];
+}
 type Status = 'active' | 'pending';
 type Plan = 'Business' | 'Pro' | 'Free';
 
@@ -66,8 +72,20 @@ export default function TeamPage() {
     if (t === 'chat') return 'chat';
     if (t === 'workload') return 'workload';
     if (t === 'revenue') return 'revenue';
+    if (t === 'groups') return 'groups';
     return 'members';
   });
+
+  // Groupes d'équipe (remplace l'ancien widget Settings > Groupes, qui ne
+  // persistait rien et ne permettait d'assigner aucun membre réel)
+  const [groups, setGroups] = useState<TeamGroup[]>([]);
+  const [groupsLoading, setGroupsLoading] = useState(false);
+  const [expandedGroupId, setExpandedGroupId] = useState<string | null>(null);
+  const [showCreateGroupModal, setShowCreateGroupModal] = useState(false);
+  const [newGroupName, setNewGroupName] = useState('');
+  const [newGroupMemberIds, setNewGroupMemberIds] = useState<Set<string>>(new Set());
+  const [savingGroup, setSavingGroup] = useState(false);
+  const [addingMemberToGroupId, setAddingMemberToGroupId] = useState<string | null>(null);
   const [chatMessage, setChatMessage] = useState('');
   const chatEndRef = useRef<HTMLDivElement>(null);
   const chatInputRef = useRef<HTMLInputElement>(null);
@@ -196,6 +214,85 @@ export default function TeamPage() {
     } catch {}
   }, []);
 
+  // Fetch team groups (real members only — see migration team_groups/team_group_members)
+  const fetchGroups = useCallback(async () => {
+    if (!activeWorkspace) return;
+    setGroupsLoading(true);
+    try {
+      const supabase = createClient();
+      const { data: groupRows } = await supabase
+        .from('team_groups')
+        .select('id, name')
+        .eq('workspace_id', activeWorkspace.id)
+        .order('created_at', { ascending: true });
+      const { data: memberRows } = await supabase
+        .from('team_group_members')
+        .select('group_id, team_member_id');
+      const byGroup = new Map<string, string[]>();
+      (memberRows || []).forEach((r: { group_id: string; team_member_id: string }) => {
+        const arr = byGroup.get(r.group_id) || [];
+        arr.push(r.team_member_id);
+        byGroup.set(r.group_id, arr);
+      });
+      setGroups((groupRows || []).map((g: { id: string; name: string }) => ({
+        id: g.id,
+        name: g.name,
+        memberIds: byGroup.get(g.id) || [],
+      })));
+    } catch (err) {
+      console.error('Failed to load team groups:', err);
+    } finally {
+      setGroupsLoading(false);
+    }
+  }, [activeWorkspace]);
+
+  const handleCreateGroup = async () => {
+    if (!newGroupName.trim() || !activeWorkspace || !currentUser) return;
+    setSavingGroup(true);
+    try {
+      const supabase = createClient();
+      const { data: group, error } = await supabase
+        .from('team_groups')
+        .insert({ workspace_id: activeWorkspace.id, name: newGroupName.trim(), created_by: currentUser.id })
+        .select('id')
+        .single();
+      if (error || !group) throw error;
+      if (newGroupMemberIds.size > 0) {
+        await supabase.from('team_group_members').insert(
+          Array.from(newGroupMemberIds).map((memberId) => ({ group_id: group.id, team_member_id: memberId }))
+        );
+      }
+      setShowCreateGroupModal(false);
+      setNewGroupName('');
+      setNewGroupMemberIds(new Set());
+      await fetchGroups();
+    } catch (err) {
+      console.error('Failed to create group:', err);
+    } finally {
+      setSavingGroup(false);
+    }
+  };
+
+  const handleDeleteGroup = async (groupId: string) => {
+    const supabase = createClient();
+    await supabase.from('team_group_members').delete().eq('group_id', groupId);
+    await supabase.from('team_groups').delete().eq('id', groupId);
+    setGroups((prev) => prev.filter((g) => g.id !== groupId));
+  };
+
+  const handleToggleGroupMember = async (groupId: string, memberId: string, isMember: boolean) => {
+    const supabase = createClient();
+    if (isMember) {
+      await supabase.from('team_group_members').delete().eq('group_id', groupId).eq('team_member_id', memberId);
+    } else {
+      await supabase.from('team_group_members').insert({ group_id: groupId, team_member_id: memberId });
+    }
+    setGroups((prev) => prev.map((g) => g.id !== groupId ? g : {
+      ...g,
+      memberIds: isMember ? g.memberIds.filter((id) => id !== memberId) : [...g.memberIds, memberId],
+    }));
+  };
+
   // Init Data
   useEffect(() => {
     const init = async () => {
@@ -219,6 +316,8 @@ export default function TeamPage() {
     };
     init();
   }, [fetchMembers, fetchCustomRoles]);
+
+  useEffect(() => { fetchGroups(); }, [fetchGroups]);
 
   // Supabase realtime — refresh members when team_members changes
   useEffect(() => {
@@ -734,6 +833,23 @@ export default function TeamPage() {
             Équipe
           </button>
           <button
+            onClick={() => setActiveTab('groups')}
+            className={cn(
+              "px-4 py-2 text-xs font-bold rounded-t-lg border border-b-0 transition-colors flex items-center gap-1.5 shrink-0",
+              activeTab === 'groups'
+                ? 'bg-white border-[#e5e5e0] text-[#26251e]'
+                : 'bg-[#f4f4f3] border-transparent text-[#807d72] hover:text-[#26251e]'
+            )}
+          >
+            <Users2 className="w-3.5 h-3.5" />
+            Groupes
+            {groups.length > 0 && (
+              <span className="bg-[#059669] text-white text-[9px] font-black px-1.5 py-0.5 rounded-full leading-none">
+                {groups.length}
+              </span>
+            )}
+          </button>
+          <button
             onClick={() => setActiveTab('chat')}
             className={cn(
               "px-4 py-2 text-xs font-bold rounded-t-lg border border-b-0 transition-colors flex items-center gap-1.5",
@@ -787,6 +903,124 @@ export default function TeamPage() {
             Feed revenus
           </button>
         </div>
+
+        {/* ── Groups Panel (shown when activeTab === 'groups') ── */}
+        {activeTab === 'groups' && (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-xs text-[#7a7a76]">Organisez vos {members.length} membre(s) en groupes (ex: par région, par rôle) pour les cibler ensemble.</p>
+              <button
+                onClick={() => setShowCreateGroupModal(true)}
+                className="px-4 py-2 bg-[#059669] text-white rounded-lg text-xs font-bold hover:bg-[#059669]/90 transition-colors shrink-0"
+              >
+                Créer un groupe
+              </button>
+            </div>
+
+            {groupsLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="w-5 h-5 animate-spin text-[#059669]" />
+              </div>
+            ) : groups.length === 0 ? (
+              <div className="border border-dashed border-[#e5e5e0] rounded-xl py-12 flex flex-col items-center gap-3 text-[#7a7a76]">
+                <Users2 className="w-8 h-8 opacity-30" />
+                <p className="text-xs font-semibold">Aucun groupe pour l&apos;instant.</p>
+                <p className="text-[10px]">Créez un groupe et assignez-lui des membres réels de l&apos;équipe.</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {groups.map((group) => {
+                  const isExpanded = expandedGroupId === group.id;
+                  const groupMembers = members.filter((m) => group.memberIds.includes(m.id));
+                  return (
+                    <div key={group.id} className="border border-[#e5e5e0] rounded-xl bg-white overflow-hidden">
+                      <button
+                        onClick={() => setExpandedGroupId(isExpanded ? null : group.id)}
+                        className="w-full flex items-center gap-3 px-4 py-3 text-left"
+                      >
+                        {isExpanded ? <ChevronDown className="h-4 w-4 text-[#7a7a76] shrink-0" /> : <ChevronRight className="h-4 w-4 text-[#7a7a76] shrink-0" />}
+                        <div className="w-8 h-8 rounded-lg bg-[#059669]/10 flex items-center justify-center shrink-0">
+                          <Users2 className="w-4 h-4 text-[#059669]" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-bold text-[#26251e]">{group.name}</p>
+                          <p className="text-[10px] text-[#7a7a76]">{groupMembers.length} membre(s)</p>
+                        </div>
+                        <span
+                          role="button"
+                          onClick={(e) => { e.stopPropagation(); handleDeleteGroup(group.id); }}
+                          className="p-1.5 text-[#7a7a76] hover:text-red-500 transition-colors"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </span>
+                      </button>
+                      {isExpanded && (
+                        <div className="border-t border-[#e5e5e0] p-3 space-y-2">
+                          {groupMembers.length === 0 ? (
+                            <p className="text-[10px] text-[#7a7a76] px-1">Aucun membre dans ce groupe.</p>
+                          ) : (
+                            groupMembers.map((m) => (
+                              <div key={m.id} className="flex items-center gap-3 px-1">
+                                <div className="w-6 h-6 rounded-full bg-[#059669]/10 flex items-center justify-center shrink-0 overflow-hidden">
+                                  {m.profile?.avatar_base64 ? (
+                                    <img src={m.profile.avatar_base64} alt="" className="w-full h-full object-cover" />
+                                  ) : (
+                                    <span className="text-[10px] font-bold text-[#059669]">{(m.profile?.full_name || m.email).charAt(0).toUpperCase()}</span>
+                                  )}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-xs font-semibold text-[#26251e] truncate">{m.profile?.full_name || m.email.split('@')[0]}</p>
+                                  <p className="text-[10px] text-[#7a7a76] truncate">{m.email}</p>
+                                </div>
+                                <button
+                                  onClick={() => handleToggleGroupMember(group.id, m.id, true)}
+                                  className="text-[10px] text-[#7a7a76] hover:text-red-500 font-semibold"
+                                >
+                                  Retirer
+                                </button>
+                              </div>
+                            ))
+                          )}
+
+                          {addingMemberToGroupId === group.id ? (
+                            <div className="border-t border-[#e5e5e0] pt-2 mt-2 space-y-1">
+                              {members.filter((m) => !group.memberIds.includes(m.id)).map((m) => (
+                                <button
+                                  key={m.id}
+                                  onClick={() => handleToggleGroupMember(group.id, m.id, false)}
+                                  className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-[#f4f4f3] text-left"
+                                >
+                                  <span className="text-xs text-[#26251e]">{m.profile?.full_name || m.email.split('@')[0]}</span>
+                                  <span className="text-[10px] text-[#7a7a76] ml-auto">{m.email}</span>
+                                </button>
+                              ))}
+                              {members.filter((m) => !group.memberIds.includes(m.id)).length === 0 && (
+                                <p className="text-[10px] text-[#7a7a76] px-2">Tous les membres sont déjà dans ce groupe.</p>
+                              )}
+                              <button
+                                onClick={() => setAddingMemberToGroupId(null)}
+                                className="text-[10px] text-[#7a7a76] hover:text-[#26251e] px-2 pt-1"
+                              >
+                                Fermer
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => setAddingMemberToGroupId(group.id)}
+                              className="text-[10px] font-bold text-[#059669] hover:underline px-1 pt-1"
+                            >
+                              + Ajouter un membre
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* ── Chat Panel (shown when activeTab === 'chat') ── */}
         {activeTab === 'chat' && (
@@ -1753,6 +1987,73 @@ export default function TeamPage() {
         )}
 
       </div>
+
+      {/* ── Create Group Modal Overlay ── */}
+      {showCreateGroupModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-xs animate-fade-in">
+          <div className="w-full max-w-sm bg-white border border-neutral-200 rounded-xl p-5 space-y-4 shadow-xl animate-in fade-in zoom-in-95 duration-150 text-left">
+            <div className="flex items-start justify-between">
+              <div className="space-y-1">
+                <h3 className="text-sm font-bold text-neutral-900">Nouveau groupe</h3>
+                <p className="text-[11px] text-neutral-400 font-medium">Nommez le groupe et choisissez ses membres.</p>
+              </div>
+              <button onClick={() => { setShowCreateGroupModal(false); setNewGroupName(''); setNewGroupMemberIds(new Set()); }} className="text-neutral-400 hover:text-neutral-700">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <input
+              type="text"
+              placeholder="Nom du groupe (ex: Équipe terrain Montréal)"
+              value={newGroupName}
+              onChange={(e) => setNewGroupName(e.target.value)}
+              autoFocus
+              className="w-full text-xs px-3.5 py-2 border border-[#e5e5e0] rounded-lg focus:outline-none focus:ring-1 focus:ring-primary bg-[#fafaf8] text-[#26251e]"
+            />
+            <div className="max-h-48 overflow-y-auto space-y-1 border border-[#e5e5e0] rounded-lg p-2">
+              {members.length === 0 ? (
+                <p className="text-[10px] text-[#7a7a76] px-1 py-2">Aucun membre disponible.</p>
+              ) : (
+                members.map((m) => {
+                  const checked = newGroupMemberIds.has(m.id);
+                  return (
+                    <label key={m.id} className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-[#f4f4f3] cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => {
+                          setNewGroupMemberIds((prev) => {
+                            const next = new Set(prev);
+                            if (checked) next.delete(m.id); else next.add(m.id);
+                            return next;
+                          });
+                        }}
+                        className="rounded"
+                      />
+                      <span className="text-xs text-[#26251e]">{m.profile?.full_name || m.email.split('@')[0]}</span>
+                      <span className="text-[10px] text-[#7a7a76] ml-auto">{m.email}</span>
+                    </label>
+                  );
+                })
+              )}
+            </div>
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => { setShowCreateGroupModal(false); setNewGroupName(''); setNewGroupMemberIds(new Set()); }}
+                className="px-3 py-2 text-xs border border-[#e5e5e0] rounded-lg hover:bg-[#f4f4f3] transition-colors"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={handleCreateGroup}
+                disabled={!newGroupName.trim() || savingGroup}
+                className="px-4 py-2 bg-[#059669] text-white text-xs font-bold rounded-lg hover:bg-[#059669]/90 transition-colors disabled:opacity-50"
+              >
+                {savingGroup ? 'Création...' : 'Créer le groupe'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Invite User Modal Overlay ── */}
       {showInviteModal && (

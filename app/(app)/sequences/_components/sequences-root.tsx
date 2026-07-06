@@ -11,8 +11,11 @@ import { Input } from '@/components/ui/input';
 import {
   Plus, Mail, CheckCircle2, Clock, XCircle, Pause,
   Play, Trash2, ChevronDown, ChevronRight, Loader2,
-  Send, Calendar, MailCheck, Phone, Link2, MessageSquare,
+  Send, Calendar, MailCheck, Phone, Link2, MessageSquare, Layers, ListTodo,
 } from 'lucide-react';
+import { ComposerQueueCadenceRoot } from './composer-queue-cadence-root';
+
+type SequencesView = 'by_lead' | 'composer';
 
 type StepChannel = 'Email' | 'Call' | 'LinkedIn' | 'SMS';
 
@@ -74,6 +77,7 @@ const DEFAULT_STEPS: NewStep[] = [
 
 export function SequencesRoot() {
   const { leads } = useReach();
+  const [view, setView] = useState<SequencesView>('by_lead');
   const [sequences, setSequences] = useState<Sequence[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [expandedSeq, setExpandedSeq] = useState<string | null>(null);
@@ -198,24 +202,57 @@ export function SequencesRoot() {
       <div className="absolute inset-0 opacity-[0.25] pointer-events-none bg-grid-pattern-20 z-0" />
       <div className="relative z-10 w-full p-3 sm:p-4 md:p-8 space-y-6">
         {/* Header */}
-        <div className="flex items-start justify-between">
+        <div className="flex items-start justify-between flex-wrap gap-3">
           <div>
-            <h1 className="text-xl font-bold text-[#26251e]">Séquences email</h1>
-            <p className="text-xs text-[#7a7a76] mt-1">
-              Automatisez vos relances — 2 à 3 emails espacés sur plusieurs jours, envoyés via votre Gmail connecté.
+            <h1 className="text-xl font-bold text-[#26251e]">Séquences, Composer & Cadences</h1>
+            <p className="text-xs text-[#7a7a76] mt-1 max-w-xl">
+              Tout l'outreach par email au même endroit : séquences automatiques par lead, modèles réutilisables,
+              rédaction manuelle, file d'envoi et calendrier de relances — au lieu d'être éparpillé entre plusieurs pages.
             </p>
           </div>
-          <Link
-            href="/sequences/new"
-            className="inline-flex items-center gap-1.5 bg-[#059669] hover:bg-[#047857] text-white text-xs font-bold h-8 px-3 rounded-lg transition-colors"
-          >
-            <Plus className="h-3.5 w-3.5" />
-            Nouvelle séquence
-          </Link>
+          {view === 'by_lead' && (
+            <Link
+              href="/sequences/new"
+              className="inline-flex items-center gap-1.5 bg-[#059669] hover:bg-[#047857] text-white text-xs font-bold h-8 px-3 rounded-lg transition-colors shrink-0"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              Nouvelle séquence
+            </Link>
+          )}
         </div>
 
+        {/* View switcher */}
+        <div className="inline-flex items-center gap-1 rounded-lg border border-[#e5e5e0] bg-white p-1 w-fit">
+          <button
+            onClick={() => setView('by_lead')}
+            className={cn(
+              'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-colors',
+              view === 'by_lead' ? 'bg-[#26251e] text-white' : 'text-[#7a7a76] hover:bg-[#f4f4f3]'
+            )}
+          >
+            <ListTodo className="h-3.5 w-3.5" />
+            Séquences par lead
+          </button>
+          <button
+            onClick={() => setView('composer')}
+            className={cn(
+              'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-colors',
+              view === 'composer' ? 'bg-[#26251e] text-white' : 'text-[#7a7a76] hover:bg-[#f4f4f3]'
+            )}
+          >
+            <Layers className="h-3.5 w-3.5" />
+            Modèles, Composer & Queue
+          </button>
+        </div>
+
+        {view === 'composer' && (
+          <div className="-mx-3 sm:-mx-4 md:-mx-8 border-t border-[#e5e5e0]">
+            <ComposerQueueCadenceRoot />
+          </div>
+        )}
+
         {/* Stats row */}
-        {sequences.length > 0 && (
+        {view === 'by_lead' && sequences.length > 0 && (
           <div className="grid grid-cols-3 gap-4">
             {[
               { label: 'Séquences actives', value: sequences.filter((s) => s.status === 'active').length, color: '#059669' },
@@ -231,7 +268,7 @@ export function SequencesRoot() {
         )}
 
         {/* Sequence list */}
-        {isLoading ? (
+        {view === 'by_lead' && (isLoading ? (
           <div className="flex items-center justify-center py-20">
             <Loader2 className="h-5 w-5 animate-spin text-[#059669]" />
           </div>
@@ -359,7 +396,7 @@ export function SequencesRoot() {
               );
             })}
           </div>
-        )}
+        ))}
       </div>
 
       {/* New Sequence Modal */}

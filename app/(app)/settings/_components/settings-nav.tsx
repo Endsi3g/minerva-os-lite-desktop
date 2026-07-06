@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import {
   User, Sun, Briefcase, Users, Brain, Link2, Target, Globe, FileText, Zap, Activity, Sparkles,
-  CreditCard, Shield, Bell, Cpu, Key, Palette, MessageSquare, Sliders, Terminal, LayoutDashboard, Users2,
+  CreditCard, Shield, Bell, Cpu, Key, Palette, MessageSquare, Sliders, Terminal, LayoutDashboard,
   ChevronDown, ChevronRight, Gauge,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -11,7 +11,7 @@ import { useLanguage } from '@/lib/language-context';
 
 export type SettingsSection =
   | 'profile' | 'appearance' | 'notifications' | 'security' | 'preferences'
-  | 'workspace_general' | 'members' | 'workspace_overview' | 'workspace_api' | 'groups'
+  | 'workspace_general' | 'workspace_overview' | 'workspace_api'
   | 'ai' | 'minerva_ai' | 'integrations' | 'goals' | 'agency' | 'automations' | 'diagnostics' | 'monitoring'
   | 'models' | 'api_keys' | 'prospecting' | 'custom_instructions' | 'customizations' | 'roles' | 'billing';
 
@@ -44,10 +44,8 @@ export function SettingsNav({ section, onSectionChange }: SettingsNavProps) {
       label: 'Espace de travail',
       items: [
         { id: 'workspace_general', name: 'Général', icon: Briefcase },
-        { id: 'members', name: 'Membres', icon: Users },
         { id: 'workspace_overview', name: 'Vue d\'ensemble', icon: LayoutDashboard },
         { id: 'workspace_api', name: 'API', icon: Terminal },
-        { id: 'groups', name: 'Groupes', icon: Users2 },
       ],
     },
     {

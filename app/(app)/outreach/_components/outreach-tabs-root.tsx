@@ -2,20 +2,16 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Inbox, GitBranch, Megaphone, FileText, CheckCircle2, ArrowRight, Zap, X } from 'lucide-react';
+import { Megaphone, FileText, CheckCircle2, ArrowRight, Zap, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getApiUrl } from '@/lib/api-helper';
-import { InboxRoot } from '@/app/(app)/inbox/_components/inbox-root';
-import { OutreachRoot } from './outreach-root';
 import { OutreachApprovals } from './outreach-approvals';
 import { OutreachCampaigns } from './outreach-campaigns';
 import EmailTemplatesPage from '@/app/(app)/settings/email-templates/page';
 
-type OutreachTab = 'inbox' | 'sequences' | 'campaigns' | 'templates' | 'approvals';
+type OutreachTab = 'campaigns' | 'templates' | 'approvals';
 
 const TABS: { id: OutreachTab; label: string; icon: React.ElementType; badgeKey?: string }[] = [
-  { id: 'inbox', label: 'Inbox', icon: Inbox },
-  { id: 'sequences', label: 'Séquences', icon: GitBranch },
   { id: 'campaigns', label: 'Campagnes', icon: Megaphone },
   { id: 'templates', label: 'Templates', icon: FileText },
   { id: 'approvals', label: 'Approbations', icon: CheckCircle2, badgeKey: 'approvals' },
@@ -41,7 +37,7 @@ function ShellTab({ icon: Icon, title, description, href, cta }: { icon: React.E
 }
 
 export function OutreachTabsRoot() {
-  const [activeTab, setActiveTab] = useState<OutreachTab>('inbox');
+  const [activeTab, setActiveTab] = useState<OutreachTab>('campaigns');
   const [showSetupBanner, setShowSetupBanner] = useState(false);
   const [pendingApprovals, setPendingApprovals] = useState(0);
 
@@ -126,14 +122,6 @@ export function OutreachTabsRoot() {
       </div>
 
       <div className="flex-1 overflow-y-auto min-h-0">
-        {activeTab === 'inbox' && (
-          <div className="h-full">
-            <InboxRoot />
-          </div>
-        )}
-
-        {activeTab === 'sequences' && <OutreachRoot />}
-
         {activeTab === 'campaigns' && (
           <div className="h-full">
             <OutreachCampaigns />

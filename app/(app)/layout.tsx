@@ -801,9 +801,9 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
       id: 'tools',
       label: 'Outils outreach',
       items: [
-        { name: 'Séquences',    href: '/sequences',     icon: Mail },
-        { name: 'Campagnes',    href: '/campaigns',     icon: Megaphone },
-        { name: 'Playbooks',    href: '/playbooks',     icon: BookOpen },
+        { name: 'Séquences & Envoi', href: '/sequences',     icon: Mail },
+        { name: 'Campagnes',         href: '/campaigns',     icon: Megaphone },
+        { name: 'Playbooks',         href: '/playbooks',     icon: BookOpen },
       ],
     },
   ];

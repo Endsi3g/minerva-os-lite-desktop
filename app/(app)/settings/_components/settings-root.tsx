@@ -7,7 +7,6 @@ import { SettingsAiSection, type AgentAutonomy } from './settings-ai-section';
 import { SettingsAppearanceSection } from './settings-appearance-section';
 import { SettingsIntegrationsSection } from './settings-integrations-section';
 import { SettingsWorkspaceGeneralSection } from './settings-workspace-general-section';
-import { SettingsMembersSection } from './settings-members-section';
 import { SettingsGoalsSection } from './settings-goals-section';
 import SettingsAgencySection from './settings-agency-section';
 import { SettingsAutomationsSection } from './settings-automations-section';
@@ -26,7 +25,6 @@ import { SettingsCustomInstructionsSection, type CustomInstructionsData } from '
 import { SettingsPreferencesSection, type PreferencesData } from './settings-preferences-section';
 import { SettingsWorkspaceApiSection } from './settings-workspace-api-section';
 import { SettingsWorkspaceOverviewSection } from './settings-workspace-overview-section';
-import { SettingsGroupsSection } from './settings-groups-section';
 import { createClient } from '@/lib/supabase/client';
 import { getApiUrl } from '@/lib/api-helper';
 import { cn } from '@/lib/utils';
@@ -384,13 +382,9 @@ export function SettingsRoot() {
             />
           )}
 
-          {section === 'members' && <SettingsMembersSection />}
-
           {section === 'workspace_overview' && <SettingsWorkspaceOverviewSection />}
 
           {section === 'workspace_api' && <SettingsWorkspaceApiSection />}
-
-          {section === 'groups' && <SettingsGroupsSection />}
 
           {section === 'ai' && (
             <SettingsAiSection
