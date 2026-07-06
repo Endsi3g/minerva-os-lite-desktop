@@ -164,9 +164,10 @@ async function executeAction(workspaceId: string, action: Action, context: Recor
       await supabase.from('drafts').insert({
         id: crypto.randomUUID(),
         workspace_id: workspaceId,
+        user_id: context.user_id || context.userId,
         lead_id: context.id,
         subject,
-        body,
+        content: body,
         source: 'automation',
         approved: null,
         created_at: now,

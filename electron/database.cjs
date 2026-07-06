@@ -876,6 +876,16 @@ function initDb() {
     )`, () => {});
     db.run(`CREATE INDEX IF NOT EXISTS idx_strategy_memory_workspace ON strategy_memory(workspace_id)`, () => {});
     db.run(`CREATE INDEX IF NOT EXISTS idx_strategy_memory_type ON strategy_memory(workspace_id, memory_type)`, () => {});
+
+    // v12.0 — schema drift fix: columns the app already queries but were never mirrored
+    db.run(`ALTER TABLE leads ADD COLUMN google_place_id TEXT DEFAULT NULL`, () => {});
+    db.run(`ALTER TABLE leads ADD COLUMN google_place_data TEXT DEFAULT NULL`, () => {});
+    db.run(`ALTER TABLE leads ADD COLUMN google_enriched_at TEXT DEFAULT NULL`, () => {});
+    db.run(`ALTER TABLE leads ADD COLUMN gmail_thread_id TEXT DEFAULT NULL`, () => {});
+    db.run(`ALTER TABLE settings ADD COLUMN firecrawl_api_key TEXT DEFAULT NULL`, () => {});
+    db.run(`ALTER TABLE settings ADD COLUMN firecrawl_api_key_masked TEXT DEFAULT NULL`, () => {});
+    db.run(`ALTER TABLE settings ADD COLUMN custom_instructions_about TEXT DEFAULT NULL`, () => {});
+    db.run(`ALTER TABLE settings ADD COLUMN custom_instructions_model TEXT DEFAULT NULL`, () => {});
   });
 }
 

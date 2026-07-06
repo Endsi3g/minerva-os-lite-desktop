@@ -5,6 +5,17 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [3.55.0] — Audit v11 → v12, Phase 0/10 : fondations base de données — 2026-07-05
+
+Premier volet d'un audit complet de l'application demandé par l'utilisateur (bugs de scraping, campagnes, emails, navigation, IA, sécurité...). Cette phase corrige la cause racine derrière une bonne partie des erreurs remontées : **plusieurs mois de modifications de schéma n'avaient jamais été réellement appliqués à la base de données de production**, alors que le code, lui, avait continué d'évoluer en supposant qu'elles l'étaient. Les phases suivantes (navigation, IA, campagnes, galerie de sites, messagerie, carte, sécurité...) seront livrées une par une, chacune avec sa propre entrée de changelog.
+
+### Corrigé — Base de données
+- **Mise en place du suivi officiel des migrations Supabase** (`supabase/config.toml`, historique `supabase_migrations.schema_migrations`) — jusqu'ici, les ~47 fichiers `supabase_migration_*.sql` du projet n'étaient trackés par aucun outil, ce qui a permis à la prod de dériver silencieusement de ce que le code attendait.
+- **Colonnes manquantes ajoutées** (sans aucune perte de données, migration additive uniquement) : `leads.google_place_id/google_place_data/google_enriched_at/gmail_thread_id`, `email_sequences.workspace_id/lead_id/status/created_at/updated_at`, `email_sequence_steps.channel`, `campaigns.target_niche/target_city/sequence_ids/created_by`, `settings.firecrawl_api_key/firecrawl_api_key_masked/custom_instructions_about/custom_instructions_model`.
+- **`email_sequence_steps.sequence_id`** — la colonne réelle s'appelait `email_sequence_id` alors que tout le code (création de séquence, cron d'envoi, agent IA, statistiques du jour) l'appelle `sequence_id` depuis des mois ; renommée pour correspondre au code, sans perte de données.
+- **Brouillons IA créés par l'agent/les automatisations** (`lib/agent-tools.ts`, `lib/automations-engine.ts`) écrivaient dans une colonne `body` qui n'a jamais existé sur la table `drafts` (la vraie colonne est `content`) et oubliaient de renseigner l'auteur du brouillon — ces deux bugs faisaient échouer silencieusement toute génération de brouillon par l'IA. Corrigé.
+- Ces erreurs concrètes disparaissent : `column leads.google_place_id/gmail_thread_id does not exist`, `column email_sequences.created_at does not exist`, `column email_sequence_steps.sequence_id/channel does not exist`, `column drafts.body does not exist`, `column campaigns.target_niche does not exist`, `column settings.firecrawl_api_key(_masked)/custom_instructions_about does not exist`.
+
 ## [3.54.0] — Release GitHub v11.0.0 — 2026-07-05
 
 Cette release fait suite à un audit complet de l'application (sécurité, build, navigation) mené juste avant, et couvre : correctifs de sécurité critiques, résolution d'une régression bloquant le build de production, mise en place du monitoring, une première tranche du backlog « Revenue OS » (Reply Classifier v2, Lead Rescue Center, Deal Risk Score) et une suite de tests E2E Playwright réellement exécutée et vérifiée.

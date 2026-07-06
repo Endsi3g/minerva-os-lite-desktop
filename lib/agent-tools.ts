@@ -132,9 +132,10 @@ export async function generateEmailDraft(
 
   const { data, error } = await ctx.supabase.from('drafts').insert({
     workspace_id: ctx.workspaceId,
+    user_id: ctx.userId,
     lead_id: params.lead_id,
     subject: parsed.subject,
-    body: parsed.body,
+    content: parsed.body,
     source: 'agent',
     created_at: new Date().toISOString(),
   }).select('id').single();
