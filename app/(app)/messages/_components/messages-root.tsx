@@ -458,6 +458,7 @@ export default function MessagesRoot() {
       await sendContent(`[[file]]${file.name}|${urlData.publicUrl}`);
     } catch (err) {
       console.error('File upload failed:', err);
+      toast.error('Envoi du fichier impossible.');
     } finally {
       setUploadingFile(false);
     }

@@ -1009,9 +1009,6 @@ export function ProspectingRoot() {
           </p>
         </div>
 
-        {/* Mini-carte des leads déjà ajoutés — clusters colorés par température */}
-        <ProspectingMiniMap leads={leads} />
-
         {/* Search Mode Tabs */}
         <div className="flex gap-1 p-1 bg-[#f4f4f3]/70 border border-[#e5e5e0] rounded-lg w-full sm:w-auto self-start flex-wrap">
           {([
@@ -2528,6 +2525,9 @@ export function ProspectingRoot() {
             )}
           </Card>
         )}
+
+        {/* Mini-carte des leads déjà ajoutés — clusters colorés par température */}
+        <ProspectingMiniMap leads={leads} />
       </div>
       </div>
     </div>

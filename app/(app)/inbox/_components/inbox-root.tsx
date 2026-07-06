@@ -12,6 +12,7 @@ import { Mail, Check, Inbox, Users, Archive, RefreshCw, Send } from 'lucide-reac
 import { GoogleConnectModal } from '@/components/google-connect-modal';
 import { OutreachNavBar } from '@/components/outreach-nav-bar';
 import { sendDesktopNotification } from '@/lib/notification-service';
+import { toast } from 'sonner';
 
 type ReplyStatusFilter = 'all' | 'positive' | 'followup' | 'negative';
 type UnreadFilter = 'all' | 'unread' | 'leads';
@@ -92,13 +93,19 @@ export function InboxRoot() {
     if (!activeWorkspace?.id || syncing) return;
     setSyncing(true);
     try {
-      await fetch(getApiUrl('/api/google/gmail/sync'), {
+      const res = await fetch(getApiUrl('/api/google/gmail/sync'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ workspaceId: activeWorkspace.id }),
       });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast.error(data.error || 'Synchronisation impossible — vérifiez la connexion Google.');
+      } else {
+        toast.success(data.syncedCount ? `${data.syncedCount} conversation(s) synchronisée(s).` : 'Boîte de réception à jour.');
+      }
     } catch {
-      // ignore — fetchThreads below will still show whatever is currently synced
+      toast.error('Synchronisation impossible — vérifiez votre connexion.');
     } finally {
       await fetchThreads();
       setSyncing(false);
