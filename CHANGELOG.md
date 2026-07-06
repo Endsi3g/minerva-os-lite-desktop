@@ -5,6 +5,14 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [3.61.0] — Audit v11 → v12, Phase 6/10 : import CSV pour l'Acquisition — 2026-07-06
+
+### Ajouté
+- **Import CSV** sur la page Acquisition : bouton "Importer CSV" à côté de "Créer un lead" (qui existait déjà et fonctionnait). Upload d'un fichier → association des colonnes du fichier aux champs des leads (nom d'entreprise, contact, email, téléphone, ville, secteur, site web) avec suggestion automatique du mapping → import en masse avec barre de progression. Les leads importés sont correctement étiquetés comme provenant d'un import CSV dans le tableau d'attribution (qui affichait déjà cette catégorie, mais qui ne recevait jamais aucune donnée faute d'un moyen d'importer un CSV).
+
+### Vérifié
+- Le formulaire de création manuelle de lead existait déjà et fonctionnait correctement (nom, contact, email, téléphone, ville, secteur, site web) — rien à corriger de ce côté.
+
 ## [3.60.0] — Audit v11 → v12, Phase 5/10 : galerie de sites web façon marketplace — 2026-07-06
 
 ### Ajouté

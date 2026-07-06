@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
 import {
   Clock, Check, Eye, GitMerge, AlertTriangle, Loader2, RefreshCw,
   Zap, Globe, Phone, Building2, ChevronRight, TrendingUp,
-  Users, DollarSign, Target, BarChart3, ArrowDown, Plus,
+  Users, DollarSign, Target, BarChart3, ArrowDown, Plus, Upload,
 } from 'lucide-react';
 import { getApiUrl } from '@/lib/api-helper';
 import { toast } from 'sonner';
@@ -22,6 +22,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { CsvImportDialog } from './csv-import-dialog';
 
 // ─── Create Lead Form ─────────────────────────────────────────────────────────
 
@@ -1058,6 +1059,7 @@ export default function AcquisitionRoot() {
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>('all');
   const [sortMode, setSortMode] = useState<SortMode>('recent');
   const [createOpen, setCreateOpen] = useState(false);
+  const [csvImportOpen, setCsvImportOpen] = useState(false);
 
   const now = Date.now();
   const stats = useMemo(() => {
@@ -1167,14 +1169,24 @@ export default function AcquisitionRoot() {
             {/* Dashboard sub-header with create button */}
             <div className="flex items-center justify-between">
               <p className="text-xs font-bold text-[#7a7a76] uppercase tracking-wider">Tableau de bord</p>
-              <button
-                type="button"
-                onClick={() => setCreateOpen(true)}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#059669] hover:bg-[#047857] text-white text-xs font-bold transition-colors"
-              >
-                <Plus className="h-3.5 w-3.5" />
-                Créer un lead
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setCsvImportOpen(true)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#e5e5e0] text-[#26251e] hover:bg-[#f4f4f3] text-xs font-bold transition-colors"
+                >
+                  <Upload className="h-3.5 w-3.5" />
+                  Importer CSV
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCreateOpen(true)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#059669] hover:bg-[#047857] text-white text-xs font-bold transition-colors"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  Créer un lead
+                </button>
+              </div>
             </div>
             {/* Stat cards */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -1316,6 +1328,11 @@ export default function AcquisitionRoot() {
         open={createOpen}
         onClose={() => setCreateOpen(false)}
         onCreated={() => {}}
+      />
+      <CsvImportDialog
+        open={csvImportOpen}
+        onClose={() => setCsvImportOpen(false)}
+        onImported={() => {}}
       />
     </div>
   );
