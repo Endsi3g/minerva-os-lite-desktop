@@ -5,6 +5,23 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [3.66.0] — Fiabilité IA & prospection en masse — 2026-07-06
+
+### Ajouté
+- **Toggle "IA activée"** (Paramètres > Minerva AI), distinct de l'agent autonome — teste immédiatement la connexion à au moins un provider IA lors de l'activation, avec un cron de vérification périodique (toutes les 6h) et une notification automatique en cas de panne (à l'activation ou pendant l'utilisation normale).
+- **Onglet Brouillons** dans la Boîte de réception, accessible même sans Gmail connecté.
+- **Pipeline d'envoi en batch** : bouton "Générer brouillons IA" sur la sélection multiple de la page Leads, et cron automatique opt-in (désactivé par défaut) qui génère chaque matin des brouillons pour les leads froids éligibles — toujours en attente d'approbation humaine, jamais d'envoi direct.
+- **Exploration approfondie du site du prospect** — quand l'enrichissement initial (page d'accueil) ne suffit pas, l'agent explore automatiquement 1-2 pages internes du même site (À propos, Contact, Services) avant de générer le message de prospection.
+- **Personas de prospection** enfin persistées côté cloud (table manquante depuis longtemps, invisible en mode web).
+
+### Corrigé
+- **Approuver un brouillon ne faisait rien** — ni dans l'onglet Approbations, ni dans Brouillons de l'Inbox, l'approbation ne faisait que basculer un booléen sans jamais mettre l'email en file d'envoi. C'est maintenant réparé : approuver met réellement l'email en file, respectant les mêmes quotas/fenêtres d'envoi qu'avant.
+- **Un email envoyé n'apparaissait jamais dans l'Inbox** — l'envoi via la file d'attente n'enregistrait le lien de conversation Gmail que sur la file elle-même, jamais sur le lead, empêchant toute détection de réponse et tout affichage dans l'Inbox.
+- **L'enrôlement en masse dans une séquence ne faisait rien** — le premier email d'une séquence n'était jamais amorcé après un enrôlement, les leads restaient bloqués indéfiniment à la première étape.
+- **Deux systèmes d'authentification Google coexistaient**, causant des échecs silencieux (envoi d'email, export Drive, réservation de rendez-vous, séquences) pour les comptes connectés uniquement via le flux le plus récent. Consolidé sur un seul système.
+- **Génération de brouillons trop générique** — interrogeait des colonnes de lead qui n'ont jamais existé, échouant systématiquement et repliant sur un texte passe-partout. Corrigé et enrichi avec le décideur, la vibe de l'entreprise, les avis Google et la persona/le style configurés par l'utilisateur — jamais exploités auparavant.
+- Débit d'envoi du batch augmenté à un rythme réaliste (jusqu'à 10 emails/workspace/passage, toutes les heures en journée au lieu d'une fois par jour) — mêmes quotas configurés, juste un mécanisme d'application correct.
+
 ## [3.65.0] — Audit v11 → v12, Phase 10/10 (finale) : automatisations, monitoring, prospection — 2026-07-06
 
 ### Corrigé

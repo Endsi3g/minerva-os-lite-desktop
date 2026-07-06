@@ -69,6 +69,23 @@ function TagLegend() {
 
 const versions: ChangelogVersion[] = [
   {
+    version: 'v3.66.0',
+    date: '6 juillet 2026 · 20h00',
+    title: 'Fiabilité IA & prospection en masse',
+    highlights: [
+      { tag: 'fix', text: "Approuver un brouillon ne faisait rien — ni dans Approbations, ni dans Brouillons de l'Inbox, ça ne faisait que basculer un booléen sans jamais mettre l'email en file d'envoi. Réparé : l'approbation met maintenant réellement l'email en file, mêmes quotas/fenêtres qu'avant." },
+      { tag: 'fix', text: "Un email envoyé n'apparaissait jamais dans l'Inbox — le lien de conversation Gmail n'était enregistré que sur la file d'envoi, jamais sur le lead. Corrigé." },
+      { tag: 'fix', text: "L'enrôlement en masse dans une séquence ne faisait rien — le premier email n'était jamais amorcé, les leads restaient bloqués à la première étape indéfiniment." },
+      { tag: 'fix', text: 'Deux systèmes d\'authentification Google coexistaient, causant des échecs silencieux (envoi, Drive, réservation, séquences) pour les comptes connectés via le flux le plus récent. Consolidé sur un seul système.' },
+      { tag: 'fix', text: 'Génération de brouillons trop générique — interrogeait des colonnes de lead inexistantes, échouant systématiquement. Corrigé et enrichi avec le décideur, la vibe de l\'entreprise, les avis Google et la persona/style configurés par l\'utilisateur.' },
+      { tag: 'feature', text: 'Toggle "IA activée" avec test de connectivité immédiat, vérification périodique (6h) et notification automatique en cas de panne.' },
+      { tag: 'feature', text: 'Onglet Brouillons dans la Boîte de réception, accessible même sans Gmail connecté.' },
+      { tag: 'feature', text: 'Batch d\'envoi : bouton "Générer brouillons IA" sur la sélection multiple des Leads, et cron automatique opt-in pour les leads froids éligibles — toujours en attente d\'approbation, jamais d\'envoi direct.' },
+      { tag: 'feature', text: 'Exploration approfondie du site du prospect (À propos, Contact, Services) quand la page d\'accueil seule ne suffit pas — jamais de recherche externe.' },
+      { tag: 'feature', text: 'Personas de prospection enfin persistées côté cloud.' },
+    ],
+  },
+  {
     version: 'v3.65.0',
     date: '6 juillet 2026 · 01h15',
     title: 'Audit v11 → v12 — Phase 10/10 (finale) : automatisations, monitoring, prospection',
