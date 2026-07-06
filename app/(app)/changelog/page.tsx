@@ -69,6 +69,17 @@ function TagLegend() {
 
 const versions: ChangelogVersion[] = [
   {
+    version: 'v3.65.0',
+    date: '6 juillet 2026 · 01h15',
+    title: 'Audit v11 → v12 — Phase 10/10 (finale) : automatisations, monitoring, prospection',
+    highlights: [
+      { text: 'Le réglage "Enrichir automatiquement à l\'import" était purement cosmétique — l\'enrichissement se lançait systématiquement, réglage activé ou non. Corrigé.' },
+      { text: 'Vérifié : Monitoring, enrichissement nocturne, envoi d\'email après enrichissement et tag automatique des réponses fonctionnaient déjà correctement.' },
+      { text: 'Revue de bout en bout de la Prospection (carte, enrichissement, scraping) — aucune anomalie trouvée après les corrections de base de données du début de cet audit.' },
+      { text: 'Fin de l\'audit complet v11 → v12 en 10 phases : base de données, navigation, IA, notifications, campagnes, galerie de sites, acquisition, messagerie, cartes, sécurité et automatisations.' },
+    ],
+  },
+  {
     version: 'v3.64.0',
     date: '6 juillet 2026 · 01h00',
     title: 'Audit v11 → v12 — Phase 9/10 : sécurité et profil',

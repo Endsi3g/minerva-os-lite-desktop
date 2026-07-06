@@ -5,6 +5,16 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [3.65.0] — Audit v11 → v12, Phase 10/10 (finale) : automatisations, monitoring, prospection — 2026-07-06
+
+### Corrigé
+- **"Enrichir automatiquement à l'import" enfin réellement respecté** — ce réglage dans Paramètres > Automatisations était purement cosmétique : l'enrichissement se lançait systématiquement à chaque nouveau lead, que le réglage soit activé ou non. Vérifie maintenant le réglage avant d'agir.
+
+### Vérifié (déjà fonctionnels, aucun changement nécessaire)
+- **Monitoring** (Paramètres > Monitoring) — l'endpoint qui alimente cette page existe et calcule bien des volumes réels (leads créés, réponses détectées, emails envoyés/échoués, actions agent, taux de succès IA) sur les 7 derniers jours. Une fausse alerte de ma part durant l'audit (liée à un build Electron tournant en parallèle qui renommait temporairement le dossier des routes API) m'avait fait croire que la route n'existait pas — elle existe et est correcte.
+- **Enrichissement nocturne** (cron quotidien à 2h) et **envoi d'email après enrichissement** et **tag automatique des réponses** — tous les trois consultent et respectent déjà correctement leurs réglages respectifs.
+- **Prospection de bout en bout** — carte (Phase 8), enrichissement en masse et scraping revus : aucune anomalie de code trouvée après la correction des fondations de base de données (Phase 0).
+
 ## [3.64.0] — Audit v11 → v12, Phase 9/10 : vraies sessions de sécurité, profil synchronisé — 2026-07-06
 
 ### Ajouté

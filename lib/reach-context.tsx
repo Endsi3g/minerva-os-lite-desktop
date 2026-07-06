@@ -1253,6 +1253,22 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
   const autoEnrichLead = React.useCallback(async (leadId: string, website?: string, businessName?: string) => {
     if (!website && !businessName) return; // nothing to work with
     if (enrichingSemaphore.current >= 3) return; // back-pressure
+    // Respecte le réglage "Enrichir automatiquement à l'import" (Paramètres >
+    // Automatisations) — jusqu'ici cette fonction s'exécutait toujours, que le
+    // réglage soit activé ou non, rendant le bouton purement cosmétique.
+    try {
+      const supabase = createClient();
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (!authUser) return;
+      const { data: settingsRow } = await supabase
+        .from('settings')
+        .select('auto_enrich_on_import')
+        .eq('user_id', authUser.id)
+        .maybeSingle();
+      if (!settingsRow?.auto_enrich_on_import) return;
+    } catch {
+      return; // impossible de vérifier le réglage — on n'enrichit pas par défaut
+    }
     enrichingSemaphore.current++;
     try {
       const res = await fetch('/api/enrich-contact', {
