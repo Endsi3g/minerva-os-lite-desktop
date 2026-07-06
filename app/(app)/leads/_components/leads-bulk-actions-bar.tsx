@@ -15,16 +15,19 @@ import {
   AlertDialogAction,
 } from '@/components/ui/alert-dialog';
 import { useReach } from '@/lib/reach-context';
-import { Trash2, X } from 'lucide-react';
+import { Trash2, X, Sparkles, Loader2 } from 'lucide-react';
 import { Lead } from '@/lib/mock-data';
+import { getApiUrl } from '@/lib/api-helper';
+import { toast } from 'sonner';
 
 interface LeadsBulkActionsBarProps<TData> {
   table: TableType<TData>;
 }
 
 export function LeadsBulkActionsBar<TData>({ table }: LeadsBulkActionsBarProps<TData>) {
-  const { deleteLeads, updateLeadsStatus } = useReach();
+  const { deleteLeads, updateLeadsStatus, activeWorkspace } = useReach();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [generatingDrafts, setGeneratingDrafts] = useState(false);
 
   const selectedRows = table.getFilteredSelectedRowModel().rows;
   const selectedCount = selectedRows.length;
@@ -43,6 +46,31 @@ export function LeadsBulkActionsBar<TData>({ table }: LeadsBulkActionsBarProps<T
     deleteLeads(selectedIds);
     table.toggleAllPageRowsSelected(false);
     setShowDeleteDialog(false);
+  };
+
+  const handleGenerateDrafts = async () => {
+    if (!activeWorkspace?.id || generatingDrafts) return;
+    setGeneratingDrafts(true);
+    try {
+      const res = await fetch(getApiUrl('/api/outreach/batch-generate'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ leadIds: selectedIds, workspaceId: activeWorkspace.id }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Erreur');
+      const failedCount = data.failed?.length ?? 0;
+      if (data.created > 0) {
+        toast.success(`${data.created} brouillon${data.created > 1 ? 's' : ''} généré${data.created > 1 ? 's' : ''} — à approuver dans Outreach.${failedCount ? ` (${failedCount} échec${failedCount > 1 ? 's' : ''})` : ''}`);
+      } else {
+        toast.error("Aucun brouillon n'a pu être généré pour cette sélection.");
+      }
+      table.toggleAllPageRowsSelected(false);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erreur lors de la génération des brouillons');
+    } finally {
+      setGeneratingDrafts(false);
+    }
   };
 
   return (
@@ -90,6 +118,18 @@ export function LeadsBulkActionsBar<TData>({ table }: LeadsBulkActionsBarProps<T
               <SelectItem value="Lost" className="text-xs">⚪ Perdu</SelectItem>
             </SelectContent>
           </Select>
+
+          {/* Bulk AI Draft Generation */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleGenerateDrafts}
+            disabled={generatingDrafts}
+            className="h-8 px-2.5 text-xs text-[#059669] hover:text-[#047857] hover:bg-[#059669]/5 gap-1.5"
+          >
+            {generatingDrafts ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+            <span className="hidden sm:inline">Générer brouillons IA</span>
+          </Button>
 
           {/* Bulk Delete Button */}
           <Button

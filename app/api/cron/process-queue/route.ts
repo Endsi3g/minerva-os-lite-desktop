@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { resolveAccessToken } from '@/lib/google/google-auth-service';
+import { isWithinSendingWindow, getRemainingQuota } from '@/lib/outreach-quota';
 
 function makeMimeMessage(to: string, subject: string, body: string, isHtml = true): string {
   const utf8Subject = `=?utf-8?B?${Buffer.from(subject).toString('base64')}?=`;
@@ -21,27 +22,8 @@ function makeMimeMessage(to: string, subject: string, body: string, isHtml = tru
     .replace(/=+$/, '');
 }
 
-function isWithinSendingWindow(
-  windowStart: string,
-  windowEnd: string,
-  windowDays: string,
-): boolean {
-  const now = new Date();
-  const dayNames = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
-  const todayName = dayNames[now.getDay()];
-
-  const allowedDays = windowDays.split(',').map((d) => d.trim().toLowerCase());
-  if (!allowedDays.includes(todayName)) return false;
-
-  const [startH, startM] = windowStart.split(':').map(Number);
-  const [endH, endM] = windowEnd.split(':').map(Number);
-  const currentMinutes = now.getHours() * 60 + now.getMinutes();
-
-  return currentMinutes >= startH * 60 + startM && currentMinutes < endH * 60 + endM;
-}
-
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function advanceEnrollment(supabase: any, enrollmentId: string, sentAt: Date) {
+async function advanceEnrollment(supabase: any, enrollmentId: string, sentAt: Date, fromStepIndex?: number) {
   const { data: enrollment } = await supabase
     .from('sequence_enrollments')
     .select('*, sequence_templates(steps, workspace_id), leads(contact_email, business_name, contact_name)')
@@ -59,7 +41,7 @@ async function advanceEnrollment(supabase: any, enrollmentId: string, sentAt: Da
   };
   const steps: Step[] = enrollment.sequence_templates?.steps ?? [];
 
-  let nextIdx = enrollment.current_step + 1;
+  let nextIdx = fromStepIndex ?? (enrollment.current_step + 1);
   let accumulatedDays = 0;
 
   while (nextIdx < steps.length) {
@@ -111,35 +93,56 @@ async function advanceEnrollment(supabase: any, enrollmentId: string, sentAt: Da
     .eq('id', enrollmentId);
 }
 
-export async function GET(req: NextRequest) {
-  if (process.env.NODE_ENV !== 'development') {
-    const authHeader = req.headers.get('authorization');
-    if (!process.env.CRON_SECRET || authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-  }
+// Bulk-enrolling leads into a sequence (composer-queue-cadence-root.tsx's handleEnroll)
+// only ever inserts the sequence_enrollments row — it never seeds the first email_queue
+// row, so a freshly-enrolled lead (current_step=0, next_action_at never set) would
+// otherwise sit forever. advanceEnrollment normally starts at current_step + 1, which
+// would skip step 0 entirely for a fresh enrollment, so this passes fromStepIndex=0
+// explicitly instead of relying on the default.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function seedUnstartedEnrollments(supabase: any): Promise<number> {
+  const { data: unseeded } = await supabase
+    .from('sequence_enrollments')
+    .select('id')
+    .eq('status', 'active')
+    .eq('current_step', 0)
+    .is('next_action_at', null)
+    .limit(200);
 
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
+  for (const enr of unseeded ?? []) {
+    await advanceEnrollment(supabase, enr.id, new Date(), 0);
+  }
+  return unseeded?.length ?? 0;
+}
+
+const MAX_SENDS_PER_WORKSPACE_PER_TICK = 10;
+
+// Exported so both the recurring cron (GET below) and the manual
+// "process now" route (app/api/outreach/queue/process-now) share one implementation.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function processQueue(supabase: any, workspaceIdFilter?: string): Promise<{ sent: number; skipped: number; failed: number; seeded: number }> {
+  const seeded = await seedUnstartedEnrollments(supabase);
 
   const now = new Date();
   const todayStart = new Date(now);
   todayStart.setHours(0, 0, 0, 0);
 
-  const { data: pendingRows } = await supabase
+  const pendingQuery = supabase
     .from('email_queue')
     .select('workspace_id')
     .eq('status', 'pending')
     .or(`scheduled_at.is.null,scheduled_at.lte.${now.toISOString()}`)
-    .limit(200);
+    .limit(500);
+  const { data: pendingRows } = workspaceIdFilter
+    ? await pendingQuery.eq('workspace_id', workspaceIdFilter)
+    : await pendingQuery;
 
   if (!pendingRows || pendingRows.length === 0) {
-    return NextResponse.json({ ok: true, sent: 0, skipped: 0, failed: 0 });
+    return { sent: 0, skipped: 0, failed: 0, seeded };
   }
 
-  const workspaceIds = [...new Set(pendingRows.map((r) => r.workspace_id as string))];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const workspaceIds: string[] = [...new Set<string>(pendingRows.map((r: any) => r.workspace_id as string))];
 
   let totalSent = 0;
   let totalSkipped = 0;
@@ -160,107 +163,127 @@ export async function GET(req: NextRequest) {
       .eq('user_id', workspace.owner_id)
       .maybeSingle();
 
-    const quota: number = (ownerSettings as { outreach_daily_quota?: number | null } | null)?.outreach_daily_quota ?? 50;
-    const windowStart: string = (ownerSettings as { outreach_window_start?: string | null } | null)?.outreach_window_start ?? '09:00';
-    const windowEnd: string = (ownerSettings as { outreach_window_end?: string | null } | null)?.outreach_window_end ?? '18:00';
-    const windowDays: string = (ownerSettings as { outreach_window_days?: string | null } | null)?.outreach_window_days ?? 'mon,tue,wed,thu,fri';
+    const settings = ownerSettings ?? {};
+    const windowStart: string = settings.outreach_window_start ?? '09:00';
+    const windowEnd: string = settings.outreach_window_end ?? '18:00';
+    const windowDays: string = settings.outreach_window_days ?? 'mon,tue,wed,thu,fri';
 
     if (!isWithinSendingWindow(windowStart, windowEnd, windowDays)) {
       totalSkipped++;
       continue;
     }
 
-    const { count: sentToday } = await supabase
-      .from('email_queue')
-      .select('id', { count: 'exact', head: true })
-      .eq('workspace_id', workspaceId)
-      .eq('status', 'sent')
-      .gte('sent_at', todayStart.toISOString());
+    for (let tick = 0; tick < MAX_SENDS_PER_WORKSPACE_PER_TICK; tick++) {
+      const { remaining } = await getRemainingQuota(supabase, workspaceId, settings);
+      if (remaining <= 0) { totalSkipped++; break; }
 
-    if ((sentToday ?? 0) >= quota) {
-      totalSkipped++;
-      continue;
-    }
-
-    const { data: item } = await supabase
-      .from('email_queue')
-      .select('*')
-      .eq('workspace_id', workspaceId)
-      .eq('status', 'pending')
-      .or(`scheduled_at.is.null,scheduled_at.lte.${now.toISOString()}`)
-      .order('scheduled_at', { ascending: true, nullsFirst: true })
-      .limit(1)
-      .maybeSingle();
-
-    if (!item) continue;
-
-    // A paused/stopped enrollment must block an already-queued send too — pausing the
-    // enrollment alone doesn't retroactively cancel steps already sitting in email_queue.
-    if (item.enrollment_id) {
-      const { data: enrollment } = await supabase
-        .from('sequence_enrollments')
-        .select('status')
-        .eq('id', item.enrollment_id)
+      const { data: item } = await supabase
+        .from('email_queue')
+        .select('*')
+        .eq('workspace_id', workspaceId)
+        .eq('status', 'pending')
+        .or(`scheduled_at.is.null,scheduled_at.lte.${now.toISOString()}`)
+        .order('scheduled_at', { ascending: true, nullsFirst: true })
+        .limit(1)
         .maybeSingle();
-      if (enrollment && enrollment.status !== 'active') {
+
+      if (!item) break;
+
+      // A paused/stopped enrollment must block an already-queued send too — pausing the
+      // enrollment alone doesn't retroactively cancel steps already sitting in email_queue.
+      if (item.enrollment_id) {
+        const { data: enrollment } = await supabase
+          .from('sequence_enrollments')
+          .select('status')
+          .eq('id', item.enrollment_id)
+          .maybeSingle();
+        if (enrollment && enrollment.status !== 'active') {
+          await supabase.from('email_queue').update({
+            status: 'cancelled',
+            error_message: `Séquence en pause (enrollment ${enrollment.status})`,
+            updated_at: now.toISOString(),
+          }).eq('id', item.id);
+          totalSkipped++;
+          continue;
+        }
+      }
+
+      await supabase.from('email_queue').update({ status: 'sending', updated_at: now.toISOString() }).eq('id', item.id);
+
+      const tokenData = await resolveAccessToken(supabase, workspace.owner_id);
+      const accessToken = tokenData?.accessToken;
+      if (!accessToken) {
         await supabase.from('email_queue').update({
-          status: 'cancelled',
-          error_message: `Séquence en pause (enrollment ${enrollment.status})`,
+          status: 'failed',
+          error_message: 'Aucun token Google valide — reconnectez Gmail dans les paramètres',
           updated_at: now.toISOString(),
         }).eq('id', item.id);
-        totalSkipped++;
+        totalFailed++;
         continue;
       }
-    }
 
-    await supabase.from('email_queue').update({ status: 'sending', updated_at: now.toISOString() }).eq('id', item.id);
+      const body = item.body_html || item.body_text || '';
+      const isHtml = !!item.body_html;
+      const raw = makeMimeMessage(item.to_email, item.subject, body, isHtml);
 
-    const tokenData = await resolveAccessToken(supabase, workspace.owner_id);
-    const accessToken = tokenData?.accessToken;
-    if (!accessToken) {
-      await supabase.from('email_queue').update({
-        status: 'failed',
-        error_message: 'Aucun token Google valide — reconnectez Gmail dans les paramètres',
-        updated_at: now.toISOString(),
-      }).eq('id', item.id);
-      totalFailed++;
-      continue;
-    }
+      const gmailRes = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ raw }),
+      });
 
-    const body = item.body_html || item.body_text || '';
-    const isHtml = !!item.body_html;
-    const raw = makeMimeMessage(item.to_email, item.subject, body, isHtml);
+      if (gmailRes.ok) {
+        const gmailData = await gmailRes.json();
+        await supabase.from('email_queue').update({
+          status: 'sent',
+          sent_at: now.toISOString(),
+          gmail_message_id: gmailData.id,
+          gmail_thread_id: gmailData.threadId,
+          updated_at: now.toISOString(),
+        }).eq('id', item.id);
+        totalSent++;
 
-    const gmailRes = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ raw }),
-    });
+        // Without this, a lead emailed via the queue is never thread-linked, so it never
+        // gets reply-detection (cron/gmail-check-replies keys off leads.gmail_thread_id)
+        // and never shows in the Inbox "Réponses leads" tab.
+        if (item.lead_id) {
+          await supabase.from('leads').update({
+            gmail_thread_id: gmailData.threadId,
+            updated_at: now.toISOString(),
+          }).eq('id', item.lead_id);
+        }
 
-    if (gmailRes.ok) {
-      const gmailData = await gmailRes.json();
-      await supabase.from('email_queue').update({
-        status: 'sent',
-        sent_at: now.toISOString(),
-        gmail_message_id: gmailData.id,
-        gmail_thread_id: gmailData.threadId,
-        updated_at: now.toISOString(),
-      }).eq('id', item.id);
-      totalSent++;
-
-      if (item.enrollment_id) {
-        await advanceEnrollment(supabase, item.enrollment_id, now);
+        if (item.enrollment_id) {
+          await advanceEnrollment(supabase, item.enrollment_id, now);
+        }
+      } else {
+        const errData = await gmailRes.json().catch(() => ({})) as { error?: { message?: string } };
+        await supabase.from('email_queue').update({
+          status: 'failed',
+          error_message: errData?.error?.message ?? `Gmail API ${gmailRes.status}`,
+          updated_at: now.toISOString(),
+        }).eq('id', item.id);
+        totalFailed++;
       }
-    } else {
-      const errData = await gmailRes.json().catch(() => ({})) as { error?: { message?: string } };
-      await supabase.from('email_queue').update({
-        status: 'failed',
-        error_message: errData?.error?.message ?? `Gmail API ${gmailRes.status}`,
-        updated_at: now.toISOString(),
-      }).eq('id', item.id);
-      totalFailed++;
     }
   }
 
-  return NextResponse.json({ ok: true, sent: totalSent, skipped: totalSkipped, failed: totalFailed });
+  return { sent: totalSent, skipped: totalSkipped, failed: totalFailed, seeded };
+}
+
+export async function GET(req: NextRequest) {
+  if (process.env.NODE_ENV !== 'development') {
+    const authHeader = req.headers.get('authorization');
+    if (!process.env.CRON_SECRET || authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+  }
+
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+
+  const result = await processQueue(supabase);
+  return NextResponse.json({ ok: true, ...result });
 }

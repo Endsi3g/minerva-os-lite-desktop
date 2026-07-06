@@ -174,6 +174,7 @@ interface MinervaAiData {
   memoryEnabled: boolean;
   spatialAiEnabled: boolean;
   webResearchEnabled: boolean;
+  batchOutreachAutoDraft: boolean;
   aiEnabled: boolean;
   agentEnabled: boolean;
   agentAutonomy: {
@@ -204,6 +205,7 @@ export function SettingsMinervaAiSection({ isSaving }: SettingsMinervaAiSectionP
     memoryEnabled: true,
     spatialAiEnabled: true,
     webResearchEnabled: false,
+    batchOutreachAutoDraft: false,
     aiEnabled: true,
     agentEnabled: true,
     agentAutonomy: DEFAULT_AUTONOMY,
@@ -224,7 +226,7 @@ export function SettingsMinervaAiSection({ isSaving }: SettingsMinervaAiSectionP
       if (!user) { setLoading(false); return; }
       const { data: row } = await supabase
         .from('settings')
-        .select('ai_model, firecrawl_api_key_masked, ai_memory_enabled, ai_spatial_enabled, ai_web_research_enabled, ai_enabled, agent_enabled, agent_autonomy')
+        .select('ai_model, firecrawl_api_key_masked, ai_memory_enabled, ai_spatial_enabled, ai_web_research_enabled, batch_outreach_auto_draft, ai_enabled, agent_enabled, agent_autonomy')
         .eq('user_id', user.id)
         .maybeSingle();
       if (row) {
@@ -234,6 +236,7 @@ export function SettingsMinervaAiSection({ isSaving }: SettingsMinervaAiSectionP
           memoryEnabled: row.ai_memory_enabled ?? true,
           spatialAiEnabled: row.ai_spatial_enabled ?? true,
           webResearchEnabled: row.ai_web_research_enabled ?? false,
+          batchOutreachAutoDraft: row.batch_outreach_auto_draft ?? false,
           aiEnabled: row.ai_enabled ?? true,
           agentEnabled: row.agent_enabled ?? true,
           agentAutonomy: { ...DEFAULT_AUTONOMY, ...(row.agent_autonomy || {}) },
@@ -266,6 +269,7 @@ export function SettingsMinervaAiSection({ isSaving }: SettingsMinervaAiSectionP
       memoryEnabled: 'ai_memory_enabled',
       spatialAiEnabled: 'ai_spatial_enabled',
       webResearchEnabled: 'ai_web_research_enabled',
+      batchOutreachAutoDraft: 'batch_outreach_auto_draft',
     };
     await supabase.from('settings').upsert({ user_id: user.id, [colMap[key]]: value });
   };
@@ -620,6 +624,12 @@ export function SettingsMinervaAiSection({ isSaving }: SettingsMinervaAiSectionP
                   label: 'Recherche web (Firecrawl)',
                   description: 'Permet à Minerva de scraper et synthétiser des pages web en temps réel.',
                   icon: FileSearch,
+                },
+                {
+                  key: 'batchOutreachAutoDraft' as const,
+                  label: 'Brouillons automatiques en batch',
+                  description: "Génère chaque matin des brouillons IA pour les leads froids éligibles — toujours en attente d'approbation, jamais envoyés automatiquement.",
+                  icon: Mail,
                 },
               ].map(({ key, label, description, icon: Icon }) => (
                 <div key={key} className="flex items-center justify-between py-3.5 gap-4">

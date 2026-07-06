@@ -106,7 +106,7 @@ export async function updatePipelineStage(
 
 export async function generateEmailDraft(
   ctx: AgentContext,
-  params: { lead_id: string; template_type: 'follow_up' | 'introduction' | 'closing' | 'reactivation' },
+  params: { lead_id: string; template_type: 'follow_up' | 'introduction' | 'closing' | 'reactivation'; source?: string },
 ) {
   // `leads` has no `name`/`company`/`notes` columns — the real fields are business_name,
   // contact_name, niche, city, website_description. Selecting the wrong names made this
@@ -154,7 +154,7 @@ export async function generateEmailDraft(
     lead_id: params.lead_id,
     subject: parsed.subject,
     content: parsed.body,
-    source: 'agent',
+    source: params.source ?? 'agent',
     created_at: new Date().toISOString(),
   }).select('id').single();
 

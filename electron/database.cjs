@@ -896,6 +896,11 @@ function initDb() {
       user_id TEXT PRIMARY KEY,
       last_notified_at TEXT NOT NULL
     )`, () => {});
+
+    // v13.1 — Fiabilité IA & Prospection en masse (Phase 3) : batch outreach opt-in
+    // + message d'erreur visible sur un brouillon qui ne peut pas être mis en file.
+    db.run(`ALTER TABLE settings ADD COLUMN batch_outreach_auto_draft INTEGER DEFAULT 0`, () => {});
+    db.run(`ALTER TABLE drafts ADD COLUMN error TEXT DEFAULT NULL`, () => {});
   });
 }
 

@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { FileText, ChevronDown, ChevronUp, Check, X, Bot, User } from 'lucide-react';
 import { getApiUrl } from '@/lib/api-helper';
+import { toast } from 'sonner';
 
 interface InboxDraft {
   id: string;
@@ -127,11 +128,17 @@ export function DraftsPanel({ workspaceId }: { workspaceId: string | undefined }
   const decide = async (id: string, decision: 'approve' | 'reject') => {
     setBusy(true);
     try {
-      await fetch(getApiUrl('/api/outreach/approvals'), {
+      const res = await fetch(getApiUrl('/api/outreach/approvals'), {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id, type: 'draft', decision }),
       });
+      const data = await res.json().catch(() => ({}));
+      if (data.queueError) {
+        toast.error(data.queueError);
+      } else if (decision === 'approve') {
+        toast.success("Brouillon approuvé — mis en file d'envoi.");
+      }
       setDrafts(prev => prev.filter(d => d.id !== id));
     } finally {
       setBusy(false);

@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { getApiUrl } from '@/lib/api-helper';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -226,11 +227,19 @@ export function OutreachApprovals() {
 
   const approve = async (id: string, type: 'draft' | 'agent_action') => {
     setBusy(true);
-    await fetch(getApiUrl('/api/outreach/approvals'), {
+    const res = await fetch(getApiUrl('/api/outreach/approvals'), {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id, type, decision: 'approve' }),
     });
+    const data = await res.json().catch(() => ({}));
+    if (data.queueError) {
+      toast.error(data.queueError);
+    } else if (type === 'draft') {
+      toast.success("Brouillon approuvé — mis en file d'envoi.");
+    } else {
+      toast.success('Approuvé.');
+    }
     if (type === 'draft') setDrafts(prev => prev.filter(d => d.id !== id));
     else setActions(prev => prev.filter(a => a.id !== id));
     setBusy(false);

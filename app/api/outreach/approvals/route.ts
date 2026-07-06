@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
       // aliased to `body` here so the response shape matches what outreach-approvals.tsx expects.
       .select('id, lead_id, subject, body:content, intent_type, source, created_at, leads(id, business_name, niche)')
       .eq('workspace_id', workspaceId)
-      .eq('source', 'agent')
+      .in('source', ['agent', 'batch', 'batch_auto'])
       .is('approved', null)
       .order('created_at', { ascending: false })
       .limit(30),
@@ -39,6 +39,11 @@ export async function GET(req: NextRequest) {
     total: (agentActions?.length ?? 0) + (drafts?.length ?? 0),
   });
 }
+
+// Agent action types that represent an actual email send — approving these should
+// queue a real send, same as approving a draft. Other types (tasks, pipeline moves,
+// sequence enrollment) just flip the approved flag, they have nothing to "send".
+const EMAIL_ACTION_TYPES = new Set(['send_email', 'outreach_followup', 'outreach_initial_send']);
 
 // PATCH: approve or reject an item — and log to timeline
 export async function PATCH(req: NextRequest) {
@@ -58,9 +63,37 @@ export async function PATCH(req: NextRequest) {
       .from('drafts')
       .update({ approved, approved_at: new Date().toISOString() })
       .eq('id', id)
-      .select('lead_id, subject, workspace_id')
+      .select('lead_id, subject, content, workspace_id, leads(contact_email, contact_name, business_name)')
       .single();
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+    let queueError: string | null = null;
+
+    // Approving a draft used to just flip this boolean — nothing ever actually sent it.
+    // Insert into email_queue so the existing process-queue cron (or an immediate
+    // /api/outreach/queue/process-now call) picks it up under the normal quota/window.
+    if (approved && draft) {
+      const lead = draft.leads as unknown as { contact_email: string | null; contact_name: string | null; business_name: string | null } | null;
+      if (!lead?.contact_email) {
+        queueError = "Ce prospect n'a pas d'adresse e-mail — impossible de mettre en file d'envoi.";
+        await supabase.from('drafts').update({ error: queueError }).eq('id', id);
+      } else {
+        const { error: insertErr } = await supabase.from('email_queue').insert({
+          workspace_id: draft.workspace_id,
+          lead_id: draft.lead_id,
+          to_email: lead.contact_email,
+          to_name: lead.contact_name || lead.business_name,
+          subject: draft.subject,
+          body_html: draft.content,
+          status: 'pending',
+          scheduled_at: new Date().toISOString(),
+        });
+        if (insertErr) {
+          queueError = insertErr.message;
+          await supabase.from('drafts').update({ error: queueError }).eq('id', id);
+        }
+      }
+    }
 
     if (draft?.lead_id) {
       logLeadEvent({
@@ -74,14 +107,47 @@ export async function PATCH(req: NextRequest) {
         metadata: { draft_id: id, decision },
       });
     }
+
+    return NextResponse.json({ ok: true, approved, queueError });
   } else {
     const { data: action, error } = await supabase
       .from('agent_actions')
       .update({ approved })
       .eq('id', id)
-      .select('lead_id, action_type, workspace_id')
+      .select('lead_id, action_type, workspace_id, outreach_type, leads(contact_email, contact_name, business_name)')
       .single();
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+    let queueError: string | null = null;
+
+    if (approved && action && EMAIL_ACTION_TYPES.has(action.action_type)) {
+      const lead = action.leads as unknown as { contact_email: string | null; contact_name: string | null; business_name: string | null } | null;
+      if (lead?.contact_email) {
+        const { data: draftForAction } = await supabase
+          .from('drafts')
+          .select('subject, content')
+          .eq('lead_id', action.lead_id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (draftForAction) {
+          const { error: insertErr } = await supabase.from('email_queue').insert({
+            workspace_id: action.workspace_id,
+            lead_id: action.lead_id,
+            to_email: lead.contact_email,
+            to_name: lead.contact_name || lead.business_name,
+            subject: draftForAction.subject,
+            body_html: draftForAction.content,
+            status: 'pending',
+            scheduled_at: new Date().toISOString(),
+          });
+          if (insertErr) queueError = insertErr.message;
+        }
+      } else {
+        queueError = "Ce prospect n'a pas d'adresse e-mail — impossible de mettre en file d'envoi.";
+      }
+    }
 
     if (action?.lead_id) {
       logLeadEvent({
@@ -95,7 +161,7 @@ export async function PATCH(req: NextRequest) {
         metadata: { action_id: id, action_type: action.action_type, decision },
       });
     }
-  }
 
-  return NextResponse.json({ ok: true, approved });
+    return NextResponse.json({ ok: true, approved, queueError });
+  }
 }
