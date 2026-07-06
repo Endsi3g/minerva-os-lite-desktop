@@ -22,16 +22,19 @@ export function AgentPrioritiesCard() {
   const [running, setRunning] = useState(false);
   const [lastResult, setLastResult] = useState<{ drafted: number; message: string } | null>(null);
 
-  // Top cold/warm leads by score (max 5, not Won/Lost)
+  // Top cold/warm leads eligible for an agent relance (max 5, not Won/Lost).
+  // Mirrors listLeadsToFollowUp's criteria (lib/agent-tools.ts) exactly — score >= 30
+  // AND inactive 7+ days (or never contacted) — so this list never shows leads the
+  // "Générer les relances" button can't actually find.
   const coldLeads = useMemo(() => {
-    const today = new Date().toISOString().split('T')[0];
+    const cutoff = Date.now() - 7 * 86_400_000;
     return leads
-      .filter(l =>
-        l.status !== 'Won' &&
-        l.status !== 'Lost' &&
-        l.temperature !== 'Hot' &&
-        (l.score ?? 0) >= 30
-      )
+      .filter(l => {
+        if (l.status === 'Won' || l.status === 'Lost' || l.temperature === 'Hot') return false;
+        if ((l.score ?? 0) < 30) return false;
+        const lastActivity = l.lastActivityAt ?? l.updatedAt;
+        return !lastActivity || new Date(lastActivity).getTime() < cutoff;
+      })
       .sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
       .slice(0, 5);
   }, [leads]);

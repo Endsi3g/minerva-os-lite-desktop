@@ -76,14 +76,20 @@ export async function GET(req: NextRequest) {
     try {
       // Parallel stats queries
       const [
-        { count: emailsSent },
+        { count: oneOffEmailsSent },
+        { count: queuedEmailsSent },
+        { count: sequenceEmailsSent },
         { count: repliesReceived },
         { count: agentActions },
         { count: appointmentsCreated },
         { count: leadsCreated },
         { count: tasksDone },
       ] = await Promise.all([
-        adminClient.from('drafts').select('*', { count: 'exact', head: true }).eq('workspace_id', ws.id).gte('created_at', since),
+        // "Emails envoyés" must reflect emails actually delivered via Gmail, not drafts created —
+        // these three sources are the only places that write a real Gmail messages.send result.
+        adminClient.from('notes').select('*', { count: 'exact', head: true }).eq('workspace_id', ws.id).eq('type', 'email').gte('created_at', since),
+        adminClient.from('email_queue').select('*', { count: 'exact', head: true }).eq('workspace_id', ws.id).eq('status', 'sent').gte('sent_at', since),
+        adminClient.from('email_sequence_steps').select('*, email_sequences!inner(workspace_id)', { count: 'exact', head: true }).eq('email_sequences.workspace_id', ws.id).eq('status', 'sent').gte('sent_at', since),
         adminClient.from('leads').select('*', { count: 'exact', head: true }).eq('workspace_id', ws.id).not('reply_detected_at', 'is', null).gte('reply_detected_at', since),
         adminClient.from('agent_actions').select('*', { count: 'exact', head: true }).eq('workspace_id', ws.id).eq('executed', true).gte('created_at', since),
         adminClient.from('notifications').select('*', { count: 'exact', head: true }).eq('workspace_id', ws.id).eq('type', 'calendar_event_created').gte('created_at', since),
@@ -92,7 +98,7 @@ export async function GET(req: NextRequest) {
       ]);
 
       const stats = {
-        emailsSent: emailsSent ?? 0,
+        emailsSent: (oneOffEmailsSent ?? 0) + (queuedEmailsSent ?? 0) + (sequenceEmailsSent ?? 0),
         repliesReceived: repliesReceived ?? 0,
         agentActions: agentActions ?? 0,
         appointmentsCreated: appointmentsCreated ?? 0,

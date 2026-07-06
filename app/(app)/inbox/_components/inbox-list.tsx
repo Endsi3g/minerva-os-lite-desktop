@@ -8,7 +8,14 @@ import type { Campaign } from '@/lib/reach-context';
 
 type ReplyStatusFilter = 'all' | 'positive' | 'followup' | 'negative';
 type UnreadFilter = 'all' | 'unread' | 'leads';
-type ViewMode = 'all' | 'leads' | 'sent';
+type ViewMode = 'all' | 'leads' | 'sent' | 'drafts';
+
+const VIEW_MODE_TITLES: Record<ViewMode, string> = {
+  all: 'Boîte de réception',
+  leads: 'Réponses leads',
+  sent: 'Envoyés',
+  drafts: 'Brouillons',
+};
 
 const REPLY_STATUS_LABELS: Record<string, { label: string; color: string }> = {
   positive: { label: 'Positif', color: 'bg-[#059669]/10 text-[#059669] border-[#059669]/20' },
@@ -100,7 +107,7 @@ export function InboxList({
       <div className="border-b border-[#e5e5e0] px-4 py-3">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold text-[#26251e]">
-            {viewMode === 'all' ? 'Boîte de réception' : 'Réponses leads'}
+            {VIEW_MODE_TITLES[viewMode]}
           </h2>
           <span className="text-[10px] text-[#7a7a76]">{threads.length} conversation{threads.length !== 1 ? 's' : ''}</span>
         </div>
@@ -192,6 +199,8 @@ export function InboxList({
             <p className="text-xs text-center">
               {viewMode === 'all'
                 ? 'Aucun email dans votre boîte de réception'
+                : viewMode === 'sent'
+                ? 'Aucun email envoyé pour le moment'
                 : 'Aucune réponse de lead pour le moment'}
             </p>
             {viewMode === 'leads' && !needsReauth && threads.length === 0 && (

@@ -23,7 +23,9 @@ export async function GET(req: NextRequest) {
 
     supabase
       .from('drafts')
-      .select('id, lead_id, subject, body, intent_type, source, created_at, leads(id, business_name, niche)')
+      // The draft text lives in the `content` column (there is no `body` column on `drafts`) —
+      // aliased to `body` here so the response shape matches what outreach-approvals.tsx expects.
+      .select('id, lead_id, subject, body:content, intent_type, source, created_at, leads(id, business_name, niche)')
       .eq('workspace_id', workspaceId)
       .eq('source', 'agent')
       .is('approved', null)

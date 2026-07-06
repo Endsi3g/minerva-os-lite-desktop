@@ -6,9 +6,10 @@ import { useReach } from '@/lib/reach-context';
 import { getApiUrl } from '@/lib/api-helper';
 import { InboxList } from './inbox-list';
 import { InboxDetail } from './inbox-detail';
+import { DraftsPanel } from './drafts-panel';
 import type { InboxThread, ThreadMessage } from '@/lib/inbox-types';
 import type { Lead } from '@/lib/mock-data';
-import { Mail, Check, Inbox, Users, Archive, RefreshCw, Send } from 'lucide-react';
+import { Mail, Check, Inbox, Users, Archive, RefreshCw, Send, FileText } from 'lucide-react';
 import { GoogleConnectModal } from '@/components/google-connect-modal';
 import { OutreachNavBar } from '@/components/outreach-nav-bar';
 import { sendDesktopNotification } from '@/lib/notification-service';
@@ -17,7 +18,7 @@ import { toast } from 'sonner';
 type ReplyStatusFilter = 'all' | 'positive' | 'followup' | 'negative';
 type UnreadFilter = 'all' | 'unread' | 'leads';
 type ReplyStatus = 'positive' | 'followup' | 'negative' | null;
-type ViewMode = 'all' | 'leads' | 'sent';
+type ViewMode = 'all' | 'leads' | 'sent' | 'drafts';
 
 export function InboxRoot() {
   const router = useRouter();
@@ -48,6 +49,7 @@ export function InboxRoot() {
 
   const fetchThreads = useCallback(async () => {
     if (!activeWorkspace?.id) return;
+    if (viewMode === 'drafts') { setLoading(false); return; } // Drafts tab reads Supabase directly, not Gmail
     setLoading(true);
     try {
       const mode = viewMode === 'all' ? 'all' : viewMode === 'sent' ? 'sent' : 'leads';
@@ -315,42 +317,62 @@ export function InboxRoot() {
     } catch { /* ignore */ }
   };
 
-  if (!isConnected) {
+  // Drafts live in Supabase and have nothing to do with Gmail, so — unlike the other
+  // tabs — this prompt must not block access to the "Brouillons" tab when Gmail isn't
+  // connected yet. It's rendered inline in the content area below instead of as an
+  // early return.
+  const connectPrompt = (
+    <div className="h-full flex items-center justify-center bg-white p-6 w-full">
+      <div className="max-w-md w-full text-center space-y-6 animate-in fade-in duration-300">
+        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#059669]/15 text-[#059669]">
+          <Mail className="h-7 w-7" />
+        </div>
+        <div className="space-y-2">
+          <h2 className="text-xl font-bold text-[#26251e] font-sans">Connectez votre boîte de réception</h2>
+          <p className="text-xs text-[#7a7a76] leading-relaxed">
+            Suivez toutes vos conversations email directement depuis Minerva Reach.
+            Répondez, qualifiez vos leads et créez des tâches sans quitter l&apos;app.
+          </p>
+        </div>
+        <div className="bg-[#fafaf8] border border-[#e5e5e0] rounded-xl p-4 text-left space-y-2.5">
+          {[
+            'Voir tous vos emails Gmail dans Minerva',
+            'Liaison automatique des emails à vos leads',
+            'Réponses assistées par IA en un clic',
+          ].map((line) => (
+            <div key={line} className="flex items-center gap-2.5 text-xs text-[#26251e]">
+              <span className="h-4.5 w-4.5 rounded-full bg-[#059669]/15 text-[#059669] flex items-center justify-center shrink-0">
+                <Check className="h-2.5 w-2.5" />
+              </span>
+              <span>{line}</span>
+            </div>
+          ))}
+        </div>
+        <button
+          onClick={() => setShowConnect(true)}
+          className="w-full py-2.5 px-4 bg-[#059669] hover:bg-[#047857] text-white font-bold rounded-lg text-xs transition-colors flex items-center justify-center gap-2 shadow-xs cursor-pointer border-0"
+        >
+          <span>Connecter mon compte Gmail</span>
+        </button>
+      </div>
+      <GoogleConnectModal open={showConnect} onClose={() => setShowConnect(false)} pack="communication" redirect="/inbox" />
+    </div>
+  );
+
+  if (!isConnected && viewMode !== 'drafts') {
     return (
-      <div className="h-full flex items-center justify-center bg-white p-6 w-full">
-        <div className="max-w-md w-full text-center space-y-6 animate-in fade-in duration-300">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#059669]/15 text-[#059669]">
-            <Mail className="h-7 w-7" />
-          </div>
-          <div className="space-y-2">
-            <h2 className="text-xl font-bold text-[#26251e] font-sans">Connectez votre boîte de réception</h2>
-            <p className="text-xs text-[#7a7a76] leading-relaxed">
-              Suivez toutes vos conversations email directement depuis Minerva Reach.
-              Répondez, qualifiez vos leads et créez des tâches sans quitter l&apos;app.
-            </p>
-          </div>
-          <div className="bg-[#fafaf8] border border-[#e5e5e0] rounded-xl p-4 text-left space-y-2.5">
-            {[
-              'Voir tous vos emails Gmail dans Minerva',
-              'Liaison automatique des emails à vos leads',
-              'Réponses assistées par IA en un clic',
-            ].map((line) => (
-              <div key={line} className="flex items-center gap-2.5 text-xs text-[#26251e]">
-                <span className="h-4.5 w-4.5 rounded-full bg-[#059669]/15 text-[#059669] flex items-center justify-center shrink-0">
-                  <Check className="h-2.5 w-2.5" />
-                </span>
-                <span>{line}</span>
-              </div>
-            ))}
-          </div>
+      <div className="flex h-full flex-col overflow-hidden bg-white">
+        <OutreachNavBar />
+        <div className="flex items-center gap-0 border-b border-[#e5e5e0] bg-[#fafaf8] px-4 shrink-0">
           <button
-            onClick={() => setShowConnect(true)}
-            className="w-full py-2.5 px-4 bg-[#059669] hover:bg-[#047857] text-white font-bold rounded-lg text-xs transition-colors flex items-center justify-center gap-2 shadow-xs cursor-pointer border-0"
+            onClick={() => setViewMode('drafts')}
+            className="flex items-center gap-1.5 px-4 py-2.5 text-xs font-semibold border-b-2 border-transparent text-[#7a7a76] hover:text-[#26251e] transition-colors"
           >
-            <span>Connecter mon compte Gmail</span>
+            <FileText className="h-3.5 w-3.5" />
+            Brouillons
           </button>
         </div>
-        <GoogleConnectModal open={showConnect} onClose={() => setShowConnect(false)} pack="communication" redirect="/inbox" />
+        {connectPrompt}
       </div>
     );
   }
@@ -394,6 +416,17 @@ export function InboxRoot() {
           Envoyés
         </button>
         <button
+          onClick={() => setViewMode('drafts')}
+          className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-semibold border-b-2 transition-colors ${
+            viewMode === 'drafts'
+              ? 'border-[#059669] text-[#059669]'
+              : 'border-transparent text-[#7a7a76] hover:text-[#26251e]'
+          }`}
+        >
+          <FileText className="h-3.5 w-3.5" />
+          Brouillons
+        </button>
+        <button
           onClick={handleManualSync}
           disabled={syncing}
           title="Vérifier les nouveaux emails maintenant (au lieu d'attendre la synchronisation automatique quotidienne)"
@@ -422,6 +455,10 @@ export function InboxRoot() {
       )}
 
       <div className="flex flex-1 overflow-hidden">
+        {viewMode === 'drafts' ? (
+          <DraftsPanel workspaceId={activeWorkspace?.id} />
+        ) : (
+        <>
         {/* List panel */}
         <div className={selectedThread ? 'hidden md:flex md:flex-col' : 'flex flex-col w-full md:w-auto'}>
           <InboxList
@@ -463,6 +500,8 @@ export function InboxRoot() {
             onBack={() => handleSelectThread(null)}
           />
         </div>
+        </>
+        )}
       </div>
     </div>
   );

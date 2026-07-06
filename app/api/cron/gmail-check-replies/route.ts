@@ -1,25 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { classifyReply } from '@/lib/agent-tools';
-
-async function refreshAccessToken(refreshToken: string, clientId: string, clientSecret: string) {
-  const res = await fetch('https://oauth2.googleapis.com/token', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({
-      client_id: clientId,
-      client_secret: clientSecret,
-      refresh_token: refreshToken,
-      grant_type: 'refresh_token',
-    }),
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error_description || 'Token refresh failed');
-  return {
-    accessToken: data.access_token as string,
-    expiresAt: new Date(Date.now() + data.expires_in * 1000).toISOString(),
-  };
-}
+import { resolveAccessToken } from '@/lib/google/google-auth-service';
 
 function isBusinessReply(subject: string, fromHeader: string, snippet: string, headers: { name: string; value: string }[]): boolean {
   const fromLower = fromHeader.toLowerCase();
@@ -104,54 +86,43 @@ export async function GET(req: NextRequest) {
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
 
-  // Fetch all users with Gmail connected who have leads with thread IDs
-  const { data: settingsRows } = await supabase
-    .from('settings')
-    .select('user_id, workspace_id, google_refresh_token, google_access_token, google_token_expires_at, google_email')
-    .not('google_refresh_token', 'is', null);
+  // Fetch every user with a usable Gmail connection — union of the legacy
+  // settings.google_refresh_token store and the newer google_accounts store.
+  // Querying settings alone silently skipped anyone connected via the newer flow
+  // (they have no google_refresh_token there), so their replies never got detected
+  // even though the same Gmail account works fine in the live Inbox tabs.
+  const [{ data: legacySettingsRows }, { data: connectedAccountRows }] = await Promise.all([
+    supabase.from('settings').select('user_id').not('google_refresh_token', 'is', null),
+    supabase.from('google_accounts').select('user_id').eq('status', 'connected'),
+  ]);
 
-  if (!settingsRows || settingsRows.length === 0) {
+  const userIds = new Set<string>([
+    ...(legacySettingsRows || []).map((s: any) => s.user_id),
+    ...(connectedAccountRows || []).map((a: any) => a.user_id),
+  ]);
+
+  if (userIds.size === 0) {
     return NextResponse.json({ ok: true, processed: 0 });
   }
 
   let totalReplies = 0;
 
-  for (const settings of settingsRows) {
-    if (!settings.google_refresh_token) continue;
+  for (const userId of userIds) {
+    const tokenData = await resolveAccessToken(supabase, userId);
+    if (!tokenData) continue; // No usable token via either flow — skip this user
+
+    const { accessToken, googleEmail } = tokenData;
 
     // Get leads with a gmail_thread_id that haven't been marked as replied
     const { data: leads } = await supabase
       .from('leads')
       .select('id, workspace_id, business_name, gmail_thread_id, status')
-      .eq('user_id', settings.user_id)
+      .eq('user_id', userId)
       .not('gmail_thread_id', 'is', null)
       .is('reply_detected_at', null)
       .not('status', 'in', '("Won","Lost")');
 
     if (!leads || leads.length === 0) continue;
-
-    // Ensure we have a valid access token
-    let accessToken = settings.google_access_token;
-    const isExpired =
-      !settings.google_token_expires_at ||
-      new Date(settings.google_token_expires_at).getTime() - 5 * 60 * 1000 < Date.now();
-
-    if (isExpired) {
-      try {
-        const refreshed = await refreshAccessToken(settings.google_refresh_token, clientId, clientSecret);
-        accessToken = refreshed.accessToken;
-        await supabase
-          .from('settings')
-          .update({
-            google_access_token: refreshed.accessToken,
-            google_token_expires_at: refreshed.expiresAt,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('user_id', settings.user_id);
-      } catch {
-        continue; // Skip this user if token refresh fails
-      }
-    }
 
     for (const lead of leads) {
       if (!lead.gmail_thread_id) continue;
@@ -162,7 +133,7 @@ export async function GET(req: NextRequest) {
 
         // A reply exists if the thread has more than 1 message
         // The first message is the one we sent; subsequent messages are replies
-        const senderEmail = settings.google_email;
+        const senderEmail = googleEmail;
         let replyMessage: { subject: string; snippet: string } | null = null;
         for (let idx = 1; idx < thread.messages.length; idx++) {
           const msg = thread.messages[idx];
@@ -187,11 +158,11 @@ export async function GET(req: NextRequest) {
         const { data: userSettings } = await supabase
           .from('settings')
           .select('auto_tag_replies, ai_provider, ai_model, openrouter_key')
-          .eq('user_id', settings.user_id)
+          .eq('user_id', userId)
           .maybeSingle();
 
         const autoTagEnabled = userSettings?.auto_tag_replies !== false;
-        const workspaceId = lead.workspace_id || settings.workspace_id;
+        const workspaceId = lead.workspace_id;
 
         // Real AI classification of the reply — replaces the previous "always assume interested" behavior.
         let classification: { intent?: string; should_pause_sequence?: boolean } = {};
@@ -199,7 +170,7 @@ export async function GET(req: NextRequest) {
           classification = await classifyReply(
             {
               workspaceId,
-              userId: settings.user_id,
+              userId,
               supabase,
               settings: {
                 ai_provider: userSettings?.ai_provider,
@@ -272,7 +243,7 @@ export async function GET(req: NextRequest) {
         // Create reply notification
         await supabase.from('notifications').insert({
           id: crypto.randomUUID(),
-          user_id: settings.user_id,
+          user_id: userId,
           workspace_id: workspaceId,
           type: 'reply_detected',
           title: 'Réponse détectée',
@@ -311,8 +282,8 @@ export async function GET(req: NextRequest) {
               const calData = await calRes.json();
               await supabase.from('notifications').insert({
                 id: crypto.randomUUID(),
-                user_id: settings.user_id,
-                workspace_id: lead.workspace_id || settings.workspace_id,
+                user_id: userId,
+                workspace_id: lead.workspace_id,
                 type: 'calendar_event_created',
                 title: '📅 RDV créé automatiquement',
                 body: `RDV avec ${lead.business_name} ajouté dans Google Calendar pour demain 10h.`,

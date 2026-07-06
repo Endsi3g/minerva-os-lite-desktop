@@ -339,6 +339,116 @@ export async function getFreshAccessToken(supabase: any, userId: string): Promis
   return newAccessToken;
 }
 
+async function refreshLegacyToken(refreshToken: string): Promise<{ accessToken: string; expiresAt: string }> {
+  const clientId = process.env.GOOGLE_CLIENT_ID;
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  if (!clientId || !clientSecret) throw new Error('Google OAuth credentials missing');
+
+  const res = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      client_id: clientId,
+      client_secret: clientSecret,
+      refresh_token: refreshToken,
+      grant_type: 'refresh_token',
+    }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error_description || 'Failed to refresh token');
+  const expiresAt = new Date(Date.now() + data.expires_in * 1000).toISOString();
+  return { accessToken: data.access_token, expiresAt };
+}
+
+// Single source of truth for "does this user have a usable Gmail token, and what is it" —
+// covers both the legacy settings.google_* store and the newer google_accounts/google_tokens
+// store. Any route or cron job that needs to act on a user's Gmail account should go through
+// this instead of querying one store directly, so a user connected via either flow is never
+// silently skipped (this drifted apart once already: gmail-check-replies queried settings
+// only, so newer-flow accounts never got their replies detected).
+export async function resolveAccessToken(
+  supabase: any,
+  userId: string
+): Promise<{ accessToken: string; googleEmail: string } | null> {
+  const { data: settings } = await supabase
+    .from('settings')
+    .select('google_access_token, google_refresh_token, google_token_expires_at, google_email')
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  let accessToken: string | null = settings?.google_access_token ?? null;
+  const googleEmail: string = settings?.google_email ?? '';
+
+  // Path 1: legacy settings.google_refresh_token (old OAuth flow)
+  if (settings?.google_refresh_token) {
+    const needsRefresh = !accessToken ||
+      (settings.google_token_expires_at &&
+        new Date(settings.google_token_expires_at).getTime() - Date.now() < 300_000);
+
+    if (needsRefresh) {
+      try {
+        const refreshed = await refreshLegacyToken(settings.google_refresh_token);
+        accessToken = refreshed.accessToken;
+        await supabase
+          .from('settings')
+          .update({ google_access_token: refreshed.accessToken, google_token_expires_at: refreshed.expiresAt })
+          .eq('user_id', userId);
+      } catch {
+        // Legacy refresh failed — fall through to newer token path
+        accessToken = null;
+      }
+    }
+
+    if (accessToken) return { accessToken, googleEmail };
+  }
+
+  // Path 2: newer google_accounts / google_tokens tables (uses status check)
+  try {
+    const status = await getAuthStatus(supabase, userId);
+    if (status.connected) {
+      const freshToken = await getFreshAccessToken(supabase, userId);
+      return { accessToken: freshToken, googleEmail: status.email || googleEmail };
+    }
+  } catch { /* fall through to path 3 */ }
+
+  // Path 3: direct google_tokens query — bypasses status='error' so reconnect heals itself
+  try {
+    const { data: acct } = await supabase
+      .from('google_accounts')
+      .select('id, google_email')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (acct) {
+      const { data: tok } = await supabase
+        .from('google_tokens')
+        .select('access_token, refresh_token, expires_at')
+        .eq('account_id', acct.id)
+        .maybeSingle();
+
+      if (tok?.access_token) {
+        const exp = new Date(tok.expires_at);
+        if (exp.getTime() - Date.now() > 60000) {
+          await supabase.from('google_accounts').update({ status: 'connected', updated_at: new Date().toISOString() }).eq('id', acct.id);
+          return { accessToken: tok.access_token, googleEmail: acct.google_email || '' };
+        }
+        if (tok.refresh_token) {
+          const refreshed = await refreshLegacyToken(tok.refresh_token);
+          await supabase.from('google_tokens')
+            .update({ access_token: refreshed.accessToken, expires_at: refreshed.expiresAt, updated_at: new Date().toISOString() })
+            .eq('account_id', acct.id);
+          await supabase.from('google_accounts').update({ status: 'connected', updated_at: new Date().toISOString() }).eq('id', acct.id);
+          return { accessToken: refreshed.accessToken, googleEmail: acct.google_email || '' };
+        }
+      }
+    }
+  } catch { }
+
+  return null;
+}
+
 export async function disconnectGoogle(supabase: any, userId: string) {
   const { data: account } = await supabase
     .from('google_accounts')

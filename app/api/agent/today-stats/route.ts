@@ -13,14 +13,20 @@ export async function GET(req: NextRequest) {
   const since = `${today}T00:00:00.000Z`;
 
   const [
-    { count: emailsSent },
+    { count: oneOffEmailsSent },
+    { count: queuedEmailsSent },
+    { count: sequenceEmailsSent },
     { count: repliesReceived },
     { count: agentActions },
     { count: appointmentsCreated },
     { count: leadsCreated },
     { data: latestActions },
   ] = await Promise.all([
-    supabase.from('drafts').select('*', { count: 'exact', head: true }).eq('workspace_id', workspaceId).gte('created_at', since),
+    // "Emails envoyés" must reflect emails actually delivered via Gmail, not drafts created —
+    // these three sources are the only places that write a real Gmail messages.send result.
+    supabase.from('notes').select('*', { count: 'exact', head: true }).eq('workspace_id', workspaceId).eq('type', 'email').gte('created_at', since),
+    supabase.from('email_queue').select('*', { count: 'exact', head: true }).eq('workspace_id', workspaceId).eq('status', 'sent').gte('sent_at', since),
+    supabase.from('email_sequence_steps').select('*, email_sequences!inner(workspace_id)', { count: 'exact', head: true }).eq('email_sequences.workspace_id', workspaceId).eq('status', 'sent').gte('sent_at', since),
     supabase.from('leads').select('*', { count: 'exact', head: true }).eq('workspace_id', workspaceId).not('reply_detected_at', 'is', null).gte('reply_detected_at', since),
     supabase.from('agent_actions').select('*', { count: 'exact', head: true }).eq('workspace_id', workspaceId).eq('executed', true).gte('created_at', since),
     supabase.from('notifications').select('*', { count: 'exact', head: true }).eq('workspace_id', workspaceId).eq('type', 'calendar_event_created').gte('created_at', since),
@@ -30,7 +36,7 @@ export async function GET(req: NextRequest) {
 
   return NextResponse.json({
     date: today,
-    emails_sent: emailsSent ?? 0,
+    emails_sent: (oneOffEmailsSent ?? 0) + (queuedEmailsSent ?? 0) + (sequenceEmailsSent ?? 0),
     replies_received: repliesReceived ?? 0,
     agent_actions: agentActions ?? 0,
     appointments_created: appointmentsCreated ?? 0,
