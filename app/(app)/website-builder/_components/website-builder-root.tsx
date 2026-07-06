@@ -14,6 +14,7 @@ import {
   X, BookMarked, Trash2, ExternalLink, ChevronRight,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { WebsitePortfolioSection } from './website-portfolio-section';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -513,7 +514,13 @@ export default function WebsiteBuilderRoot() {
 
         {/* ── GALLERY MODE ── */}
         {mode === 'gallery' && (
-          <div className="space-y-4">
+          <div className="space-y-8">
+            <WebsitePortfolioSection />
+
+            <div className="pt-6 border-t border-[#e5e5e0]">
+              <h2 className="text-sm font-bold text-[#26251e] mb-4">Sites générés par l&apos;IA</h2>
+            </div>
+
             {savedSites.length === 0 ? (
               <div className="flex flex-col items-center gap-4 py-20 text-center">
                 <div className="h-14 w-14 rounded-2xl border border-[#e5e5e0] bg-white flex items-center justify-center">

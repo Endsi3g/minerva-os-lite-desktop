@@ -689,7 +689,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
       else if (segment === 'prospecting') label = t('nav.prospect');
       else if (segment === 'integrations') label = t('nav.integrations');
       else if (segment === 'ads') label = 'Publicité & Attribution';
-      else if (segment === 'website-builder') label = 'Créateur de site';
+      else if (segment === 'website-builder') label = 'Site Web';
       else if (segment === 'settings') label = t('nav.settings');
       else if (segment === 'team') label = t('nav.team');
       else if (segment === 'workspaces') label = t('nav.workspaces');
@@ -717,7 +717,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
       else if (segment === 'contacts') label = 'Contacts';
       else if (segment === 'ads') label = 'Publicité & Attribution';
       else if (segment === 'acquisition') label = 'Acquisition';
-      else if (segment === 'website-builder') label = 'Créateur de site';
+      else if (segment === 'website-builder') label = 'Site Web';
       else if (segment === 'client-reports') label = 'Rapports client';
       else if (segment === 'performance') label = 'Classement de performance';
       else if (segment === 'webhooks') label = 'Webhooks';
@@ -790,7 +790,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
       items: [
         { name: 'Publicité',       href: '/ads',            icon: Target },
         { name: 'Acquisition',     href: '/acquisition',    icon: TrendingUp },
-        { name: 'Site web IA',     href: '/website-builder',icon: Globe },
+        { name: 'Site Web',        href: '/website-builder',icon: Globe },
         { name: 'Audit SEO',       href: '/audit',          icon: ShieldCheck },
         { name: 'Rapports client', href: '/client-reports', icon: FileText },
         { name: 'Performance',     href: '/performance',    icon: BarChart3 },

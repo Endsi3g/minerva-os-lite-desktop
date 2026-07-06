@@ -5,6 +5,12 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [3.60.0] — Audit v11 → v12, Phase 5/10 : galerie de sites web façon marketplace — 2026-07-06
+
+### Ajouté
+- **Portfolio de sites web** — dans "Site Web" > Galerie : collez un lien, l'app récupère automatiquement son aperçu (titre, description, image, favicon via les balises Open Graph — un endpoint qui existait déjà, `/api/link-preview`, mais n'était utilisé nulle part), catégorisez-le (Restaurant, Services professionnels, Immobilier...), ajoutez des tags. Recherche et filtres par catégorie façon marketplace. Nouvelle table `saved_websites`, partagée avec toute l'équipe (au lieu d'un stockage local par appareil).
+- Sidebar renommée **"Site Web"** (au lieu de "Site web IA") pour refléter que la section couvre maintenant le générateur IA et le portfolio.
+
 ## [3.59.0] — Audit v11 → v12, Phase 4/10 : campagnes, groupes dynamiques, tags visibles — 2026-07-06
 
 ### Ajouté
