@@ -303,6 +303,27 @@ export function buildColumns(workspaceMembers: WorkspaceMember[], lastVisitedLea
     },
     enableSorting: true,
   },
+  // Tags (potentiel, secteur, etc. — posés manuellement ou par l'agent IA)
+  {
+    id: 'tags',
+    header: 'Tags',
+    accessorFn: (row) => row.tags ?? [],
+    cell: ({ row }) => {
+      const tags = row.original.tags ?? [];
+      if (tags.length === 0) return <span className="text-[10px] text-[#7a7a76]/40">—</span>;
+      return (
+        <div className="flex flex-wrap gap-1 max-w-[160px]">
+          {tags.slice(0, 3).map((tag) => (
+            <span key={tag} className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[#059669]/10 text-[#059669] border border-[#059669]/20 whitespace-nowrap">
+              {tag}
+            </span>
+          ))}
+          {tags.length > 3 && <span className="text-[9px] text-[#7a7a76]">+{tags.length - 3}</span>}
+        </div>
+      );
+    },
+    enableSorting: false,
+  },
   // Assignment
   {
     id: 'assignedTo',

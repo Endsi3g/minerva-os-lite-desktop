@@ -192,6 +192,11 @@ export function NewCampaignRoot() {
   const [metric, setMetric] = useState('leads_contacted');
   const [targetNumber, setTargetNumber] = useState(50);
   const [period, setPeriod] = useState('month');
+
+  // Automatisation — cadence, canaux, volume, approbation
+  const [channels, setChannels] = useState<string[]>(['Email']);
+  const [dailyVolumeCap, setDailyVolumeCap] = useState(20);
+  const [requireApproval, setRequireApproval] = useState(true);
   const [startDate, setStartDate] = useState('');
 
   const canNext = () => {
@@ -207,6 +212,7 @@ export function NewCampaignRoot() {
       niches,
       cities,
       startDate: startDate || undefined,
+      sequenceConfig: JSON.stringify({ channels, dailyVolumeCap, requireApproval }),
     });
     setSaving(false);
     if (c) {
@@ -428,6 +434,58 @@ export function NewCampaignRoot() {
               </div>
             </div>
 
+            {/* Automatisation */}
+            <div className="pt-4 border-t border-[#e5e5e0] space-y-4">
+              <div className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">
+                Automatisation de la prospection
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Canaux de contact</label>
+                <div className="flex flex-wrap gap-2">
+                  {['Email', 'Call', 'SMS', 'LinkedIn'].map((ch) => (
+                    <button
+                      key={ch}
+                      type="button"
+                      onClick={() => setChannels((prev) => prev.includes(ch) ? prev.filter((c) => c !== ch) : [...prev, ch])}
+                      className={cn(
+                        'px-3 py-1.5 rounded-lg border-2 text-xs font-bold transition-all',
+                        channels.includes(ch) ? 'border-[#059669] text-[#059669] bg-[#059669]/5' : 'border-[#e5e5e0] text-[#7a7a76] hover:border-[#059669]/30',
+                      )}
+                    >
+                      {ch}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Volume quotidien maximum</label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min={1}
+                    value={dailyVolumeCap}
+                    onChange={(e) => setDailyVolumeCap(Number(e.target.value))}
+                    className="w-24 text-xs px-2.5 py-2 border border-[#e5e5e0] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#059669]"
+                  />
+                  <span className="text-[10px] text-[#7a7a76]">contacts/jour — évite d&apos;être marqué comme spam</span>
+                </div>
+              </div>
+
+              <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                <div
+                  className={cn('w-9 h-5 rounded-full transition-colors relative shrink-0', requireApproval ? 'bg-[#059669]' : 'bg-[#e5e5e0]')}
+                  onClick={() => setRequireApproval((v) => !v)}
+                >
+                  <div className={cn('w-3.5 h-3.5 rounded-full bg-white shadow absolute top-[3px] transition-transform', requireApproval ? 'translate-x-[19px]' : 'translate-x-[3px]')} />
+                </div>
+                <span className="text-xs text-[#26251e]">
+                  {requireApproval ? 'Approbation manuelle requise avant chaque envoi' : "Envoi 100% automatique, sans validation"}
+                </span>
+              </label>
+            </div>
+
             <div className="p-3 bg-[#059669]/5 border border-[#059669]/20 rounded-lg">
               <p className="text-[10px] text-[#059669] font-semibold">
                 Objectif : {targetNumber}{' '}
@@ -495,6 +553,9 @@ export function NewCampaignRoot() {
                   value={new Date(startDate + 'T12:00:00').toLocaleDateString('fr-CA')}
                 />
               )}
+              <ReviewRow label="Canaux" value={channels.length > 0 ? channels.join(', ') : '—'} />
+              <ReviewRow label="Volume max" value={`${dailyVolumeCap} contacts/jour`} />
+              <ReviewRow label="Approbation" value={requireApproval ? 'Manuelle avant chaque envoi' : 'Automatique'} />
             </div>
 
             <div className="text-[10px] text-[#7a7a76] bg-[#f4f4f3] rounded-lg px-3 py-2">

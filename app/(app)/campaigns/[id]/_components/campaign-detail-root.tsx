@@ -174,6 +174,21 @@ export function CampaignDetailRoot({ id }: { id: string }) {
         {/* Overview tab */}
         {tab === 'overview' && (
           <div className="space-y-4">
+            {(() => {
+              let config: { channels?: string[]; dailyVolumeCap?: number; requireApproval?: boolean } | null = null;
+              try { config = campaign.sequenceConfig ? JSON.parse(campaign.sequenceConfig) : null; } catch { config = null; }
+              if (!config) return null;
+              return (
+                <div className="rounded-xl border border-[#e5e5e0] bg-white p-4 space-y-2">
+                  <h3 className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Automatisation</h3>
+                  <div className="flex flex-wrap gap-4 text-xs">
+                    <span className="text-[#26251e]"><strong>Canaux :</strong> {(config.channels || []).join(', ') || '—'}</span>
+                    <span className="text-[#26251e]"><strong>Volume max :</strong> {config.dailyVolumeCap ?? '—'} contacts/jour</span>
+                    <span className="text-[#26251e]"><strong>Approbation :</strong> {config.requireApproval ? 'Manuelle' : 'Automatique'}</span>
+                  </div>
+                </div>
+              );
+            })()}
             <h3 className="text-xs font-bold text-[#26251e]">Leads récents</h3>
             {campaignLeads.length === 0 ? (
               <div className="py-8 text-center rounded-xl border border-dashed border-[#e5e5e0]">

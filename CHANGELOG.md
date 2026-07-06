@@ -5,6 +5,17 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [3.59.0] — Audit v11 → v12, Phase 4/10 : campagnes, groupes dynamiques, tags visibles — 2026-07-06
+
+### Ajouté
+- **Groupes dynamiques de leads** — nouveau système de segments par règles (ex: score > 80 ET secteur = Restaurant), qui se mettent à jour tout seuls quand un lead correspond aux critères, sans rien faire manuellement. Nouvelle table `lead_segments`.
+- **Séquences ciblant un groupe entier ou une campagne** — jusqu'ici une séquence ne pouvait viser qu'un seul lead à la fois. Depuis `/sequences/new`, on peut maintenant choisir "Segment dynamique" ou "Campagne" comme cible : une séquence individuelle est créée pour chaque lead correspondant (avec barre de progression).
+- **Configuration d'automatisation sur les campagnes** — à la création d'une campagne (`/campaigns/new`), en plus du ciblage (niches/villes) déjà existant : choix des canaux de contact (Email/Appel/SMS/LinkedIn), volume quotidien maximum, et bascule approbation manuelle vs 100% automatique. Visible ensuite sur la fiche de la campagne.
+- **Tags visibles dans le tableau des leads** — les tags (posés manuellement ou par l'assistant IA via l'outil `tag_lead`) apparaissent désormais comme colonne dans la liste principale des leads, alors qu'ils n'étaient auparavant visibles que sur la fiche individuelle du lead.
+
+### Vérifié
+- Le score, la température (chaud/tiède/froid) et le score d'opportunité des leads étaient déjà affichés et filtrables dans le tableau principal — contrairement à ce qui semblait être le cas, ce n'était pas un point à corriger.
+
 ## [3.58.0] — Audit v11 → v12, Phase 3/10 : notifications, emails, assistant actionnable — 2026-07-06
 
 ### Ajouté

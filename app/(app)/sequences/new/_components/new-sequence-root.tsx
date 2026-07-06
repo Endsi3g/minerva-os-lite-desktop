@@ -1,16 +1,19 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useReach } from '@/lib/reach-context';
 import { getApiUrl } from '@/lib/api-helper';
+import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
   ChevronLeft, ChevronRight, Mail, CheckCircle2, Loader2, Plus, Trash2,
   Phone, Link2, MessageSquare, Send, Calendar, Sparkles, ChevronDown, ChevronUp,
+  User, Layers, Megaphone, X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { getSegmentMembers, SEGMENT_FIELDS, SEGMENT_OPERATORS, type SegmentRule, type LeadSegment } from '@/lib/lead-segments';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -439,19 +442,67 @@ function ReviewRow({ label, value }: { label: string; value: React.ReactNode }) 
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
+type TargetMode = 'lead' | 'segment' | 'campaign';
+
 export function NewSequenceRoot() {
   const router = useRouter();
-  const { leads } = useReach();
+  const { leads, campaigns, activeWorkspace, user } = useReach();
 
   const [step, setStep] = useState(0);
+  const [targetMode, setTargetMode] = useState<TargetMode>('lead');
   const [selectedLeadId, setSelectedLeadId] = useState('');
+  const [selectedSegmentId, setSelectedSegmentId] = useState('');
+  const [selectedCampaignId, setSelectedCampaignId] = useState('');
   const [steps, setSteps] = useState<NewStep[]>(DEFAULT_STEPS);
   const [sendFirstNow, setSendFirstNow] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [leadSearch, setLeadSearch] = useState('');
+  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
+
+  // Segments dynamiques (groupes de leads par règles)
+  const [segments, setSegments] = useState<LeadSegment[]>([]);
+  const [showCreateSegment, setShowCreateSegment] = useState(false);
+  const [newSegmentName, setNewSegmentName] = useState('');
+  const [newSegmentRules, setNewSegmentRules] = useState<SegmentRule[]>([{ field: 'score', operator: 'greater_than', value: 80 }]);
+  const [savingSegment, setSavingSegment] = useState(false);
+
+  useEffect(() => {
+    if (!activeWorkspace?.id) return;
+    (async () => {
+      const supabase = createClient();
+      const { data } = await supabase
+        .from('lead_segments')
+        .select('id, workspace_id, name, rules, created_at')
+        .eq('workspace_id', activeWorkspace.id)
+        .order('created_at', { ascending: false });
+      setSegments((data || []).map((s: { id: string; workspace_id: string; name: string; rules: unknown; created_at: string }) => ({
+        id: s.id, workspaceId: s.workspace_id, name: s.name,
+        rules: Array.isArray(s.rules) ? s.rules as SegmentRule[] : [], createdAt: s.created_at,
+      })));
+    })();
+  }, [activeWorkspace?.id]);
 
   const selectedLead = leads.find((l) => l.id === selectedLeadId);
+  const selectedSegment = segments.find((s) => s.id === selectedSegmentId);
+  const selectedCampaign = campaigns.find((c) => c.id === selectedCampaignId);
+
+  const segmentMatches = useMemo(
+    () => (selectedSegment ? getSegmentMembers(leads, selectedSegment.rules) : []),
+    [leads, selectedSegment],
+  );
+  const campaignMatches = useMemo(
+    () => (selectedCampaign ? leads.filter((l) => l.campaignId === selectedCampaign.id) : []),
+    [leads, selectedCampaign],
+  );
+
+  // Les leads réellement ciblés par la séquence, selon le mode choisi.
+  const targetLeads = useMemo(() => {
+    if (targetMode === 'lead') return selectedLead ? [selectedLead] : [];
+    if (targetMode === 'segment') return segmentMatches.filter((l) => l.contactEmail);
+    if (targetMode === 'campaign') return campaignMatches.filter((l) => l.contactEmail);
+    return [];
+  }, [targetMode, selectedLead, segmentMatches, campaignMatches]);
 
   const filteredLeads = leads.filter((l) => {
     const q = leadSearch.toLowerCase();
@@ -461,41 +512,84 @@ export function NewSequenceRoot() {
     );
   });
 
+  const handleCreateSegment = async () => {
+    if (!newSegmentName.trim() || !activeWorkspace?.id) return;
+    setSavingSegment(true);
+    try {
+      const supabase = createClient();
+      const { data, error } = await supabase
+        .from('lead_segments')
+        .insert({ workspace_id: activeWorkspace.id, name: newSegmentName.trim(), rules: newSegmentRules, created_by: user?.id })
+        .select('id, workspace_id, name, rules, created_at')
+        .single();
+      if (error || !data) throw error;
+      const created: LeadSegment = { id: data.id, workspaceId: data.workspace_id, name: data.name, rules: data.rules, createdAt: data.created_at };
+      setSegments((prev) => [created, ...prev]);
+      setSelectedSegmentId(created.id);
+      setShowCreateSegment(false);
+      setNewSegmentName('');
+      setNewSegmentRules([{ field: 'score', operator: 'greater_than', value: 80 }]);
+    } catch (err) {
+      console.error('Failed to create segment:', err);
+    } finally {
+      setSavingSegment(false);
+    }
+  };
+
   const canNext = () => {
-    if (step === 0) return !!selectedLeadId;
+    if (step === 0) {
+      if (targetMode === 'lead') return !!selectedLeadId;
+      if (targetMode === 'segment') return !!selectedSegmentId && segmentMatches.length > 0;
+      if (targetMode === 'campaign') return !!selectedCampaignId && campaignMatches.length > 0;
+      return false;
+    }
     if (step === 1) return steps.length > 0;
     return true;
   };
 
   const handleCreate = async () => {
-    if (!selectedLead) return;
+    if (targetLeads.length === 0) return;
     if (steps.some((s) => s.channel === 'Email' && (!s.subject.trim() || !s.body.trim()))) {
       setSaveError('Remplissez le sujet et le corps de chaque étape Email.');
       return;
     }
     setSaving(true);
     setSaveError(null);
+    setProgress({ done: 0, total: targetLeads.length });
     try {
-      const res = await fetch(getApiUrl('/api/email-sequences'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          leadId: selectedLead.id,
-          leadName: selectedLead.businessName,
-          leadEmail: selectedLead.contactEmail || '',
-          sequenceName: `Séquence — ${selectedLead.businessName}`,
-          steps,
-          workspaceId: null,
-          sendFirstNow,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Erreur serveur');
+      const groupLabel = targetMode === 'segment' ? selectedSegment?.name : targetMode === 'campaign' ? selectedCampaign?.name : undefined;
+      let failures = 0;
+      for (let i = 0; i < targetLeads.length; i++) {
+        const lead = targetLeads[i];
+        try {
+          const res = await fetch(getApiUrl('/api/email-sequences'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              leadId: lead.id,
+              leadName: lead.businessName,
+              leadEmail: lead.contactEmail || '',
+              sequenceName: groupLabel ? `Séquence — ${groupLabel} — ${lead.businessName}` : `Séquence — ${lead.businessName}`,
+              steps,
+              workspaceId: null,
+              sendFirstNow,
+            }),
+          });
+          if (!res.ok) failures++;
+        } catch {
+          failures++;
+        }
+        setProgress({ done: i + 1, total: targetLeads.length });
+      }
+      if (failures === targetLeads.length) {
+        throw new Error("Aucune séquence n'a pu être créée.");
+      }
       router.push('/sequences');
     } catch (err) {
       setSaveError(err instanceof Error ? err.message : 'Erreur inconnue');
     } finally {
       setSaving(false);
+      setProgress(null);
     }
   };
 
@@ -522,57 +616,211 @@ export function NewSequenceRoot() {
         {/* Step indicator */}
         <StepIndicator current={step} />
 
-        {/* Step 0 — Choose lead */}
+        {/* Step 0 — Choose target */}
         {step === 0 && (
-          <div className="border border-[#e5e5e0] rounded-xl p-5 bg-white space-y-4">
-            <div className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">
-              Sélectionner un lead
-            </div>
-
-            <input
-              autoFocus
-              value={leadSearch}
-              onChange={(e) => setLeadSearch(e.target.value)}
-              placeholder="Rechercher par nom ou email..."
-              className="w-full text-xs px-2.5 py-2 border border-[#e5e5e0] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#059669]"
-            />
-
-            <div className="space-y-1 max-h-72 overflow-y-auto">
-              {filteredLeads.length === 0 && (
-                <p className="text-xs text-[#7a7a76] py-4 text-center">Aucun lead trouvé.</p>
-              )}
-              {filteredLeads.map((lead) => (
+          <div className="space-y-4">
+            {/* Target mode toggle */}
+            <div className="inline-flex items-center gap-1 rounded-lg border border-[#e5e5e0] bg-white p-1">
+              {([
+                { mode: 'lead' as const, icon: User, label: 'Lead unique' },
+                { mode: 'segment' as const, icon: Layers, label: 'Segment dynamique' },
+                { mode: 'campaign' as const, icon: Megaphone, label: 'Campagne' },
+              ]).map(({ mode, icon: Icon, label }) => (
                 <button
-                  key={lead.id}
+                  key={mode}
                   type="button"
-                  onClick={() => setSelectedLeadId(lead.id)}
+                  onClick={() => setTargetMode(mode)}
                   className={cn(
-                    'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border text-left transition-all',
-                    selectedLeadId === lead.id
-                      ? 'border-[#059669] bg-[#059669]/5'
-                      : 'border-[#e5e5e0] hover:border-[#059669]/30 hover:bg-[#f4f4f3]',
+                    'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-colors',
+                    targetMode === mode ? 'bg-[#26251e] text-white' : 'text-[#7a7a76] hover:bg-[#f4f4f3]'
                   )}
                 >
-                  <div
-                    className={cn(
-                      'h-5 w-5 rounded-full border-2 flex items-center justify-center shrink-0',
-                      selectedLeadId === lead.id ? 'border-[#059669] bg-[#059669]' : 'border-[#e5e5e0]',
-                    )}
-                  >
-                    {selectedLeadId === lead.id && <CheckCircle2 className="h-3 w-3 text-white" />}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-bold text-[#26251e] truncate">{lead.businessName}</p>
-                    {lead.contactEmail && (
-                      <p className="text-[10px] text-[#7a7a76] truncate">{lead.contactEmail}</p>
-                    )}
-                    {!lead.contactEmail && (
-                      <p className="text-[10px] text-amber-600">Pas d&apos;email — les étapes Email seront ignorées</p>
-                    )}
-                  </div>
+                  <Icon className="h-3.5 w-3.5" />
+                  {label}
                 </button>
               ))}
             </div>
+
+            {targetMode === 'lead' && (
+              <div className="border border-[#e5e5e0] rounded-xl p-5 bg-white space-y-4">
+                <div className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">
+                  Sélectionner un lead
+                </div>
+
+                <input
+                  autoFocus
+                  value={leadSearch}
+                  onChange={(e) => setLeadSearch(e.target.value)}
+                  placeholder="Rechercher par nom ou email..."
+                  className="w-full text-xs px-2.5 py-2 border border-[#e5e5e0] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#059669]"
+                />
+
+                <div className="space-y-1 max-h-72 overflow-y-auto">
+                  {filteredLeads.length === 0 && (
+                    <p className="text-xs text-[#7a7a76] py-4 text-center">Aucun lead trouvé.</p>
+                  )}
+                  {filteredLeads.map((lead) => (
+                    <button
+                      key={lead.id}
+                      type="button"
+                      onClick={() => setSelectedLeadId(lead.id)}
+                      className={cn(
+                        'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border text-left transition-all',
+                        selectedLeadId === lead.id
+                          ? 'border-[#059669] bg-[#059669]/5'
+                          : 'border-[#e5e5e0] hover:border-[#059669]/30 hover:bg-[#f4f4f3]',
+                      )}
+                    >
+                      <div
+                        className={cn(
+                          'h-5 w-5 rounded-full border-2 flex items-center justify-center shrink-0',
+                          selectedLeadId === lead.id ? 'border-[#059669] bg-[#059669]' : 'border-[#e5e5e0]',
+                        )}
+                      >
+                        {selectedLeadId === lead.id && <CheckCircle2 className="h-3 w-3 text-white" />}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-bold text-[#26251e] truncate">{lead.businessName}</p>
+                        {lead.contactEmail && (
+                          <p className="text-[10px] text-[#7a7a76] truncate">{lead.contactEmail}</p>
+                        )}
+                        {!lead.contactEmail && (
+                          <p className="text-[10px] text-amber-600">Pas d&apos;email — les étapes Email seront ignorées</p>
+                        )}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {targetMode === 'segment' && (
+              <div className="border border-[#e5e5e0] rounded-xl p-5 bg-white space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">
+                    Segment dynamique — mis à jour automatiquement selon les règles
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowCreateSegment((v) => !v)}
+                    className="text-[10px] font-bold text-[#059669] hover:underline flex items-center gap-1"
+                  >
+                    <Plus className="h-3 w-3" /> Nouveau segment
+                  </button>
+                </div>
+
+                {showCreateSegment && (
+                  <div className="border border-[#e5e5e0] rounded-lg p-3 space-y-2 bg-[#fafaf8]">
+                    <input
+                      value={newSegmentName}
+                      onChange={(e) => setNewSegmentName(e.target.value)}
+                      placeholder="Nom du segment (ex: Leads très chauds)"
+                      className="w-full text-xs px-2.5 py-2 border border-[#e5e5e0] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#059669]"
+                    />
+                    {newSegmentRules.map((rule, i) => (
+                      <div key={i} className="flex items-center gap-1.5">
+                        <select
+                          value={rule.field}
+                          onChange={(e) => setNewSegmentRules((prev) => prev.map((r, idx) => idx === i ? { ...r, field: e.target.value } : r))}
+                          className="text-[11px] border border-[#e5e5e0] rounded px-1.5 py-1.5 bg-white flex-1"
+                        >
+                          {SEGMENT_FIELDS.map((f) => <option key={f.value} value={f.value}>{f.label}</option>)}
+                        </select>
+                        <select
+                          value={rule.operator}
+                          onChange={(e) => setNewSegmentRules((prev) => prev.map((r, idx) => idx === i ? { ...r, operator: e.target.value as SegmentRule['operator'] } : r))}
+                          className="text-[11px] border border-[#e5e5e0] rounded px-1.5 py-1.5 bg-white"
+                        >
+                          {SEGMENT_OPERATORS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                        </select>
+                        <input
+                          value={rule.value}
+                          onChange={(e) => setNewSegmentRules((prev) => prev.map((r, idx) => idx === i ? { ...r, value: e.target.value } : r))}
+                          placeholder="Valeur"
+                          className="w-24 text-[11px] px-2 py-1.5 border border-[#e5e5e0] rounded focus:outline-none focus:ring-1 focus:ring-[#059669]"
+                        />
+                        <button type="button" onClick={() => setNewSegmentRules((prev) => prev.filter((_, idx) => idx !== i))} className="text-[#7a7a76] hover:text-red-500 p-1">
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => setNewSegmentRules((prev) => [...prev, { field: 'score', operator: 'greater_than', value: 50 }])}
+                      className="text-[10px] font-bold text-[#7a7a76] hover:text-[#26251e] flex items-center gap-1"
+                    >
+                      <Plus className="h-3 w-3" /> Ajouter une règle (ET)
+                    </button>
+                    <div className="flex justify-end gap-2 pt-1">
+                      <Button size="sm" variant="outline" onClick={() => setShowCreateSegment(false)} className="h-7 text-[10px]">Annuler</Button>
+                      <Button size="sm" onClick={handleCreateSegment} disabled={!newSegmentName.trim() || savingSegment} className="h-7 text-[10px] bg-[#059669] hover:bg-[#047857]">
+                        {savingSegment ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Créer le segment'}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                <div className="space-y-1 max-h-56 overflow-y-auto">
+                  {segments.length === 0 ? (
+                    <p className="text-xs text-[#7a7a76] py-4 text-center">Aucun segment. Créez-en un pour cibler plusieurs leads d&apos;un coup.</p>
+                  ) : segments.map((seg) => {
+                    const count = getSegmentMembers(leads, seg.rules).length;
+                    return (
+                      <button
+                        key={seg.id}
+                        type="button"
+                        onClick={() => setSelectedSegmentId(seg.id)}
+                        className={cn(
+                          'w-full flex items-center justify-between px-3 py-2.5 rounded-lg border text-left transition-all',
+                          selectedSegmentId === seg.id ? 'border-[#059669] bg-[#059669]/5' : 'border-[#e5e5e0] hover:border-[#059669]/30 hover:bg-[#f4f4f3]',
+                        )}
+                      >
+                        <span className="text-xs font-bold text-[#26251e]">{seg.name}</span>
+                        <span className="text-[10px] text-[#7a7a76]">{count} lead{count !== 1 ? 's' : ''}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+                {selectedSegment && segmentMatches.length === 0 && (
+                  <p className="text-[10px] text-amber-600">Aucun lead ne correspond à ce segment actuellement.</p>
+                )}
+              </div>
+            )}
+
+            {targetMode === 'campaign' && (
+              <div className="border border-[#e5e5e0] rounded-xl p-5 bg-white space-y-3">
+                <div className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">
+                  Tous les leads d&apos;une campagne
+                </div>
+                <div className="space-y-1 max-h-72 overflow-y-auto">
+                  {campaigns.length === 0 ? (
+                    <p className="text-xs text-[#7a7a76] py-4 text-center">Aucune campagne. Créez-en une depuis /campaigns.</p>
+                  ) : campaigns.map((c) => {
+                    const count = leads.filter((l) => l.campaignId === c.id).length;
+                    return (
+                      <button
+                        key={c.id}
+                        type="button"
+                        onClick={() => setSelectedCampaignId(c.id)}
+                        className={cn(
+                          'w-full flex items-center justify-between px-3 py-2.5 rounded-lg border text-left transition-all',
+                          selectedCampaignId === c.id ? 'border-[#059669] bg-[#059669]/5' : 'border-[#e5e5e0] hover:border-[#059669]/30 hover:bg-[#f4f4f3]',
+                        )}
+                      >
+                        <span className="text-xs font-bold text-[#26251e]">{c.name}</span>
+                        <span className="text-[10px] text-[#7a7a76]">{count} lead{count !== 1 ? 's' : ''}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {targetMode !== 'lead' && targetLeads.length > 0 && (
+              <p className="text-[10px] text-[#059669] bg-[#059669]/5 border border-[#059669]/20 rounded-lg px-3 py-2">
+                {targetLeads.length} lead{targetLeads.length !== 1 ? 's' : ''} avec email seront inscrits dans une séquence individuelle chacun.
+              </p>
+            )}
           </div>
         )}
 
@@ -581,17 +829,26 @@ export function NewSequenceRoot() {
           <div className="space-y-4">
             <div className="border border-[#e5e5e0] rounded-xl p-5 bg-white">
               <div className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76] mb-1">
-                Lead sélectionné
+                {targetMode === 'lead' ? 'Lead sélectionné' : targetMode === 'segment' ? 'Segment ciblé' : 'Campagne ciblée'}
               </div>
-              <div className="flex items-center gap-2 mt-2">
-                <div className="h-7 w-7 rounded-full bg-[#059669]/10 flex items-center justify-center text-[10px] font-black text-[#059669]">
-                  {selectedLead?.businessName?.charAt(0).toUpperCase()}
+              {targetMode === 'lead' ? (
+                <div className="flex items-center gap-2 mt-2">
+                  <div className="h-7 w-7 rounded-full bg-[#059669]/10 flex items-center justify-center text-[10px] font-black text-[#059669]">
+                    {selectedLead?.businessName?.charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-[#26251e]">{selectedLead?.businessName}</p>
+                    <p className="text-[10px] text-[#7a7a76]">{selectedLead?.contactEmail || 'Pas d\'email'}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-xs font-bold text-[#26251e]">{selectedLead?.businessName}</p>
-                  <p className="text-[10px] text-[#7a7a76]">{selectedLead?.contactEmail || 'Pas d\'email'}</p>
-                </div>
-              </div>
+              ) : (
+                <p className="text-xs font-bold text-[#26251e] mt-2">
+                  {targetMode === 'segment' ? selectedSegment?.name : selectedCampaign?.name}
+                  <span className="text-[10px] font-normal text-[#7a7a76] ml-2">
+                    {targetLeads.length} lead{targetLeads.length !== 1 ? 's' : ''} avec email
+                  </span>
+                </p>
+              )}
             </div>
 
             <AIAssistedPanel onGenerate={(generated) => setSteps(generated)} />
@@ -690,7 +947,7 @@ export function NewSequenceRoot() {
             <button
               type="button"
               onClick={handleCreate}
-              disabled={!selectedLead || saving}
+              disabled={targetLeads.length === 0 || saving}
               className="inline-flex items-center gap-1.5 h-9 px-5 text-xs font-bold bg-[#059669] hover:bg-[#047857] text-white rounded-lg transition-colors disabled:opacity-50"
             >
               {saving ? (
@@ -698,7 +955,9 @@ export function NewSequenceRoot() {
               ) : (
                 <Mail className="h-3.5 w-3.5" />
               )}
-              {saving ? 'Création...' : 'Lancer la séquence'}
+              {saving
+                ? (progress ? `Création… ${progress.done}/${progress.total}` : 'Création...')
+                : targetLeads.length > 1 ? `Lancer ${targetLeads.length} séquences` : 'Lancer la séquence'}
             </button>
           )}
         </div>
