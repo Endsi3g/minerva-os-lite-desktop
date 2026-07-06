@@ -3,6 +3,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createAdminClient } from '@supabase/supabase-js';
+import { resolveAccessToken } from '@/lib/google/google-auth-service';
 
 function admin() {
   return createAdminClient(
@@ -112,40 +113,9 @@ export async function GET(req: NextRequest) {
   let busyPeriods: { start: string; end: string }[] = [];
 
   if (settings.google_calendar_id) {
-    const { data: userSettings } = await db
-      .from('settings')
-      .select('google_access_token, google_refresh_token, google_token_expires_at')
-      .eq('user_id', settings.user_id)
-      .maybeSingle();
-
-    let accessToken = userSettings?.google_access_token;
-    const expiresAt = userSettings?.google_token_expires_at ? new Date(userSettings.google_token_expires_at) : null;
-
-    if (accessToken && expiresAt && expiresAt < new Date() && userSettings?.google_refresh_token) {
-      try {
-        const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: new URLSearchParams({
-            client_id: process.env.GOOGLE_CLIENT_ID!,
-            client_secret: process.env.GOOGLE_CLIENT_SECRET!,
-            refresh_token: userSettings.google_refresh_token,
-            grant_type: 'refresh_token',
-          }),
-        });
-        if (tokenRes.ok) {
-          const tokenData = await tokenRes.json();
-          accessToken = tokenData.access_token;
-          await db.from('settings').update({
-            google_access_token: accessToken,
-            google_token_expires_at: new Date(Date.now() + tokenData.expires_in * 1000).toISOString(),
-          }).eq('user_id', settings.user_id);
-        }
-      } catch { /* continue without freebusy */ }
-    }
-
-    if (accessToken) {
-      busyPeriods = await getFreeBusySlots(accessToken, settings.google_calendar_id, date, settings.timezone);
+    const tokenData = await resolveAccessToken(db, settings.user_id);
+    if (tokenData) {
+      busyPeriods = await getFreeBusySlots(tokenData.accessToken, settings.google_calendar_id, date, settings.timezone);
     }
   }
 

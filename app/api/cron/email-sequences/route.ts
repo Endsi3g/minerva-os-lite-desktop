@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { resolveAccessToken } from '@/lib/google/google-auth-service';
 
 function makeMimeMessage(to: string, subject: string, body: string): string {
   const utf8Subject = `=?utf-8?B?${Buffer.from(subject).toString('base64')}?=`;
@@ -17,48 +18,6 @@ function makeMimeMessage(to: string, subject: string, body: string): string {
     .replace(/\+/g, '-')
     .replace(/\//g, '_')
     .replace(/=+$/, '');
-}
-
-type GoogleSettings = {
-  google_access_token: string | null;
-  google_refresh_token: string | null;
-  google_token_expires_at: string | null;
-};
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function getValidAccessToken(supabase: any, userId: string): Promise<string | null> {
-  const { data } = await supabase
-    .from('settings')
-    .select('google_access_token, google_refresh_token, google_token_expires_at')
-    .eq('user_id', userId)
-    .single();
-
-  const settings = data as GoogleSettings | null;
-  if (!settings?.google_refresh_token) return null;
-
-  const expiresAt = settings.google_token_expires_at ? new Date(settings.google_token_expires_at) : new Date(0);
-  if (expiresAt > new Date()) return settings.google_access_token;
-
-  const res = await fetch('https://oauth2.googleapis.com/token', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({
-      client_id: process.env.GOOGLE_CLIENT_ID!,
-      client_secret: process.env.GOOGLE_CLIENT_SECRET!,
-      refresh_token: settings.google_refresh_token,
-      grant_type: 'refresh_token',
-    }),
-  });
-  if (!res.ok) return null;
-  const refreshData = await res.json();
-
-  const newExpiresAt = new Date(Date.now() + (refreshData.expires_in - 60) * 1000).toISOString();
-  await supabase.from('settings').update({
-    google_access_token: refreshData.access_token,
-    google_token_expires_at: newExpiresAt,
-  }).eq('user_id', userId);
-
-  return refreshData.access_token;
 }
 
 export async function GET(req: NextRequest) {
@@ -144,7 +103,8 @@ export async function GET(req: NextRequest) {
     if (channel && channel !== 'Email') continue;
 
     try {
-      const accessToken = await getValidAccessToken(supabase, seq.user_id);
+      const tokenData = await resolveAccessToken(supabase, seq.user_id);
+      const accessToken = tokenData?.accessToken;
       if (!accessToken) {
         const reason = `Aucun token Google valide pour user ${seq.user_id}`;
         console.error(`[email-sequences] step ${step.id} failed: ${reason}`);

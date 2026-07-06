@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { createClient as createServiceClient } from '@supabase/supabase-js';
+import { resolveAccessToken } from '@/lib/google/google-auth-service';
 
 function makeMimeMessage(to: string, subject: string, body: string): string {
   const utf8Subject = `=?utf-8?B?${Buffer.from(subject).toString('base64')}?=`;
@@ -18,22 +18,6 @@ function makeMimeMessage(to: string, subject: string, body: string): string {
     .replace(/\+/g, '-')
     .replace(/\//g, '_')
     .replace(/=+$/, '');
-}
-
-async function refreshToken(refreshTokenStr: string) {
-  const res = await fetch('https://oauth2.googleapis.com/token', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({
-      client_id: process.env.GOOGLE_CLIENT_ID!,
-      client_secret: process.env.GOOGLE_CLIENT_SECRET!,
-      refresh_token: refreshTokenStr,
-      grant_type: 'refresh_token',
-    }),
-  });
-  if (!res.ok) throw new Error('Token refresh failed');
-  const data = await res.json();
-  return data.access_token as string;
 }
 
 async function sendGmailStep(accessToken: string, to: string, subject: string, body: string) {
@@ -127,28 +111,15 @@ export async function POST(req: NextRequest) {
   // Optionally send step 1 immediately
   if (sendFirstNow) {
     try {
-      const { data: settings } = await supabase
-        .from('settings')
-        .select('google_access_token, google_refresh_token, google_token_expires_at')
-        .eq('user_id', user.id)
-        .single();
-
-      if (settings?.google_refresh_token) {
-        let accessToken = settings.google_access_token;
-        const expiresAt = settings.google_token_expires_at ? new Date(settings.google_token_expires_at) : new Date(0);
-        if (expiresAt < new Date()) {
-          accessToken = await refreshToken(settings.google_refresh_token);
-        }
-
-        const step1 = steps.find((s) => s.stepNumber === 1);
-        if (step1 && accessToken) {
-          await sendGmailStep(accessToken, leadEmail, step1.subject, step1.body);
-          await supabase
-            .from('email_sequence_steps')
-            .update({ status: 'sent', sent_at: new Date().toISOString() })
-            .eq('sequence_id', seq.id)
-            .eq('step_number', 1);
-        }
+      const tokenData = await resolveAccessToken(supabase, user.id);
+      const step1 = steps.find((s) => s.stepNumber === 1);
+      if (step1 && tokenData) {
+        await sendGmailStep(tokenData.accessToken, leadEmail, step1.subject, step1.body);
+        await supabase
+          .from('email_sequence_steps')
+          .update({ status: 'sent', sent_at: new Date().toISOString() })
+          .eq('sequence_id', seq.id)
+          .eq('step_number', 1);
       }
     } catch {
       // Non-fatal: sequence created, first email failed

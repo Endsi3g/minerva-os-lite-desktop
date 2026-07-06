@@ -4,6 +4,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createServerClient } from '@/lib/supabase/server';
 import { createClient as createAdminClient } from '@supabase/supabase-js';
+import { resolveAccessToken } from '@/lib/google/google-auth-service';
 
 function admin() {
   return createAdminClient(
@@ -68,35 +69,8 @@ export async function POST(req: NextRequest) {
   // Try to create Google Calendar event
   if (settings.google_calendar_id) {
     try {
-      const { data: userSettings } = await db
-        .from('settings')
-        .select('google_access_token, google_refresh_token, google_token_expires_at, full_name')
-        .eq('user_id', settings.user_id)
-        .maybeSingle();
-
-      let accessToken = userSettings?.google_access_token;
-      const expiresAt = userSettings?.google_token_expires_at ? new Date(userSettings.google_token_expires_at) : null;
-
-      if (expiresAt && expiresAt < new Date() && userSettings?.google_refresh_token) {
-        const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: new URLSearchParams({
-            client_id: process.env.GOOGLE_CLIENT_ID!,
-            client_secret: process.env.GOOGLE_CLIENT_SECRET!,
-            refresh_token: userSettings.google_refresh_token,
-            grant_type: 'refresh_token',
-          }),
-        });
-        if (tokenRes.ok) {
-          const t = await tokenRes.json();
-          accessToken = t.access_token;
-          await db.from('settings').update({
-            google_access_token: accessToken,
-            google_token_expires_at: new Date(Date.now() + t.expires_in * 1000).toISOString(),
-          }).eq('user_id', settings.user_id);
-        }
-      }
+      const tokenData = await resolveAccessToken(db, settings.user_id);
+      const accessToken = tokenData?.accessToken;
 
       if (accessToken) {
         const eventRes = await fetch(

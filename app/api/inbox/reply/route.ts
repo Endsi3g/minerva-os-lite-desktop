@@ -1,27 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { getFreshAccessToken, getAuthStatus } from '@/lib/google/google-auth-service';
-
-async function refreshLegacyToken(refreshToken: string): Promise<{ accessToken: string; expiresAt: string }> {
-  const clientId = process.env.GOOGLE_CLIENT_ID;
-  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-  if (!clientId || !clientSecret) throw new Error('Google OAuth credentials missing');
-
-  const res = await fetch('https://oauth2.googleapis.com/token', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({
-      client_id: clientId,
-      client_secret: clientSecret,
-      refresh_token: refreshToken,
-      grant_type: 'refresh_token',
-    }),
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error_description || 'Failed to refresh token');
-  const expiresAt = new Date(Date.now() + data.expires_in * 1000).toISOString();
-  return { accessToken: data.access_token, expiresAt };
-}
+import { resolveAccessToken } from '@/lib/google/google-auth-service';
 
 function buildReplyMime(to: string, subject: string, body: string, inReplyTo?: string): string {
   const reSubject = subject.startsWith('Re:') ? subject : `Re: ${subject}`;
@@ -62,38 +41,9 @@ export async function POST(req: NextRequest) {
     }
 
     // Resolve access token (both legacy and new flows)
-    const { data: settings } = await supabase
-      .from('settings')
-      .select('google_access_token, google_refresh_token, google_token_expires_at')
-      .eq('user_id', user.id)
-      .single();
-
-    let accessToken: string | null = settings?.google_access_token ?? null;
-
-    if (settings?.google_refresh_token) {
-      if (
-        !accessToken ||
-        (settings.google_token_expires_at &&
-          new Date(settings.google_token_expires_at).getTime() - Date.now() < 300_000)
-      ) {
-        const refreshed = await refreshLegacyToken(settings.google_refresh_token);
-        accessToken = refreshed.accessToken;
-        await supabase
-          .from('settings')
-          .update({ google_access_token: refreshed.accessToken, google_token_expires_at: refreshed.expiresAt })
-          .eq('user_id', user.id);
-      }
-    } else {
-      try {
-        const status = await getAuthStatus(supabase, user.id);
-        if (!status.connected) return NextResponse.json({ error: 'Gmail non connecté' }, { status: 400 });
-        accessToken = await getFreshAccessToken(supabase, user.id);
-      } catch {
-        return NextResponse.json({ error: 'Gmail non connecté' }, { status: 400 });
-      }
-    }
-
-    if (!accessToken) return NextResponse.json({ error: 'Gmail non connecté' }, { status: 400 });
+    const tokenData = await resolveAccessToken(supabase, user.id);
+    if (!tokenData) return NextResponse.json({ error: 'Gmail non connecté' }, { status: 400 });
+    const { accessToken } = tokenData;
 
     const raw = buildReplyMime(to, subject || '', body, inReplyTo);
 

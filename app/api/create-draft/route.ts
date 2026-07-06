@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { resolveAccessToken } from '@/lib/google/google-auth-service';
 
 function makeMimeMessage(to: string, subject: string, body: string) {
   const utf8Subject = `=?utf-8?B?${Buffer.from(subject).toString('base64')}?=`;
@@ -16,25 +17,6 @@ function makeMimeMessage(to: string, subject: string, body: string) {
   return Buffer.from(message).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
-async function refreshAccessToken(refreshToken: string) {
-  const res = await fetch('https://oauth2.googleapis.com/token', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({
-      client_id: process.env.GOOGLE_CLIENT_ID!,
-      client_secret: process.env.GOOGLE_CLIENT_SECRET!,
-      refresh_token: refreshToken,
-      grant_type: 'refresh_token',
-    }),
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error_description || 'Failed to refresh token');
-  return {
-    accessToken: data.access_token as string,
-    expiresAt: new Date(Date.now() + data.expires_in * 1000).toISOString(),
-  };
-}
-
 export async function POST(req: NextRequest) {
   try {
     const supabase = await createClient();
@@ -44,11 +26,9 @@ export async function POST(req: NextRequest) {
     const { to, subject = 'Prospection', body, leadId } = await req.json();
     if (!body) return NextResponse.json({ error: 'body requis' }, { status: 400 });
 
-    const { data: settings } = await supabase.from('settings').select('*').eq('user_id', user.id).maybeSingle();
+    const tokenData = await resolveAccessToken(supabase, user.id);
 
-    const isMockMode = !process.env.GOOGLE_CLIENT_ID || !settings?.google_refresh_token;
-
-    if (isMockMode) {
+    if (!tokenData) {
       // Fallback: store as a document draft
       if (leadId) {
         await supabase.from('drafts').insert({
@@ -63,15 +43,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true, simulated: true, draftId: null, message: 'Brouillon sauvegardé localement (Google non connecté).' });
     }
 
-    // Refresh token if needed
-    let token = settings.google_access_token;
-    const isExpired = !settings.google_token_expires_at || new Date(settings.google_token_expires_at).getTime() - 5 * 60 * 1000 < Date.now();
-    if (isExpired && settings.google_refresh_token) {
-      const refreshed = await refreshAccessToken(settings.google_refresh_token);
-      token = refreshed.accessToken;
-      await supabase.from('settings').update({ google_access_token: token, google_token_expires_at: refreshed.expiresAt }).eq('user_id', user.id);
-    }
-
+    const { accessToken: token } = tokenData;
     const rawMime = makeMimeMessage(to || '', subject, body);
 
     // Create Gmail draft (does NOT send)

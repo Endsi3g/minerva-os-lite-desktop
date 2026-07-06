@@ -1,35 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-
-async function refreshAccessToken(refreshToken: string): Promise<{ accessToken: string; expiresAt: string }> {
-  const clientId = process.env.GOOGLE_CLIENT_ID;
-  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-
-  if (!clientId || !clientSecret) {
-    throw new Error('Google OAuth credentials missing in env variables');
-  }
-
-  const res = await fetch('https://oauth2.googleapis.com/token', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({
-      client_id: clientId,
-      client_secret: clientSecret,
-      refresh_token: refreshToken,
-      grant_type: 'refresh_token',
-    }),
-  });
-
-  const data = await res.json();
-  if (!res.ok) {
-    throw new Error(data.error_description || 'Failed to refresh token');
-  }
-
-  return {
-    accessToken: data.access_token,
-    expiresAt: new Date(Date.now() + data.expires_in * 1000).toISOString()
-  };
-}
+import { resolveAccessToken } from '@/lib/google/google-auth-service';
 
 export async function POST(req: NextRequest) {
   try {
@@ -57,46 +28,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Prospect introuvable' }, { status: 404 });
     }
 
-    // 3. Fetch User Google tokens
-    const { data: settings } = await supabase
-      .from('settings')
-      .select('*')
-      .eq('user_id', user.id)
-      .maybeSingle();
-
-    const clientId = process.env.GOOGLE_CLIENT_ID;
-    const googleConfigured = !!clientId && !clientId.includes('placeholder') && !!settings?.google_refresh_token;
-
-    if (!googleConfigured || !settings) {
+    // 3. Resolve Google access token (covers both the legacy and current OAuth flows)
+    const tokenData = await resolveAccessToken(supabase, user.id);
+    if (!tokenData) {
       return NextResponse.json(
         { error: 'Connectez votre compte Google Drive (Paramètres → Intégrations) avant d\'exporter ce document.' },
         { status: 400 }
       );
     }
+    const { accessToken: currentToken, googleEmail } = tokenData;
 
     // 4. Export to Google Drive via the real API — errors propagate to the outer catch, no fake success.
-    let currentToken = settings.google_access_token;
-    let expiresAt = settings.google_token_expires_at;
-
-    // Check token expiration (refresh 5 minutes early to be safe)
-    const isExpired = !expiresAt || new Date(expiresAt).getTime() - 5 * 60 * 1000 < Date.now();
-
-    if (isExpired && settings.google_refresh_token) {
-      const refreshed = await refreshAccessToken(settings.google_refresh_token);
-      currentToken = refreshed.accessToken;
-      expiresAt = refreshed.expiresAt;
-
-      // Save refreshed tokens back to settings
-      await supabase
-        .from('settings')
-        .update({
-          google_access_token: currentToken,
-          google_token_expires_at: expiresAt,
-          updated_at: new Date().toISOString()
-        })
-        .eq('user_id', user.id);
-    }
-
     // Build an HTML document for Google Docs import
     const now = new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
     const htmlContent = `<!DOCTYPE html>
@@ -156,7 +98,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Append historical note
-    const logText = `Audit SEO exporté avec succès sur Google Drive (compte ${settings.google_email || 'connecté'}) :\nFichier : ${fileName}`;
+    const logText = `Audit SEO exporté avec succès sur Google Drive (compte ${googleEmail || 'connecté'}) :\nFichier : ${fileName}`;
 
     const { error: noteErr } = await supabase
       .from('notes')

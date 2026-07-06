@@ -1,5 +1,6 @@
 import { generateCompletion, type AISettings } from '@/lib/ai';
 import { logLeadEvent } from '@/lib/timeline-logger';
+import { resolveAccessToken } from '@/lib/google/google-auth-service';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 export type AutonomyLevel = 'off' | 'suggest' | 'prepare' | 'act_with_approval' | 'auto';
@@ -329,33 +330,11 @@ export async function sendEmail(
     throw new Error("Ce prospect n'a pas d'adresse e-mail valide");
   }
 
-  const { data: settings } = await ctx.supabase.from('settings').select('*').eq('user_id', ctx.userId).maybeSingle();
-  const clientId = process.env.GOOGLE_CLIENT_ID;
-  if (!clientId || clientId.includes('placeholder') || !settings?.google_refresh_token) {
+  const tokenData = await resolveAccessToken(ctx.supabase, ctx.userId);
+  if (!tokenData) {
     throw new Error('Connecte ton compte Gmail (Paramètres → Intégrations) avant d\'envoyer un e-mail.');
   }
-
-  let currentToken = settings.google_access_token;
-  let expiresAt = settings.google_token_expires_at;
-  const isExpired = !expiresAt || new Date(expiresAt).getTime() - 5 * 60 * 1000 < Date.now();
-  if (isExpired && settings.google_refresh_token) {
-    const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-    const res = await fetch('https://oauth2.googleapis.com/token', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        client_id: clientId!, client_secret: clientSecret!,
-        refresh_token: settings.google_refresh_token, grant_type: 'refresh_token',
-      }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error_description || 'Échec du rafraîchissement du token Google');
-    currentToken = data.access_token;
-    expiresAt = new Date(Date.now() + data.expires_in * 1000).toISOString();
-    await ctx.supabase.from('settings').update({
-      google_access_token: currentToken, google_token_expires_at: expiresAt, updated_at: new Date().toISOString(),
-    }).eq('user_id', ctx.userId);
-  }
+  const { accessToken: currentToken } = tokenData;
 
   const rawMime = makeMimeMessage(recipientEmail, params.subject, params.body);
   const gmailRes = await fetch('https://gmail.googleapis.com/v1/users/me/messages/send', {

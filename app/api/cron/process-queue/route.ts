@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { resolveAccessToken } from '@/lib/google/google-auth-service';
 
 function makeMimeMessage(to: string, subject: string, body: string, isHtml = true): string {
   const utf8Subject = `=?utf-8?B?${Buffer.from(subject).toString('base64')}?=`;
@@ -18,41 +19,6 @@ function makeMimeMessage(to: string, subject: string, body: string, isHtml = tru
     .replace(/\+/g, '-')
     .replace(/\//g, '_')
     .replace(/=+$/, '');
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function getValidAccessToken(supabase: any, userId: string): Promise<string | null> {
-  const { data } = await supabase
-    .from('settings')
-    .select('google_access_token, google_refresh_token, google_token_expires_at')
-    .eq('user_id', userId)
-    .single();
-
-  if (!data?.google_refresh_token) return null;
-
-  const expiresAt = data.google_token_expires_at ? new Date(data.google_token_expires_at) : new Date(0);
-  if (expiresAt > new Date(Date.now() + 60_000)) return data.google_access_token;
-
-  const res = await fetch('https://oauth2.googleapis.com/token', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({
-      client_id: process.env.GOOGLE_CLIENT_ID!,
-      client_secret: process.env.GOOGLE_CLIENT_SECRET!,
-      refresh_token: data.google_refresh_token,
-      grant_type: 'refresh_token',
-    }),
-  });
-  if (!res.ok) return null;
-  const refreshData = await res.json();
-
-  const newExpiresAt = new Date(Date.now() + (refreshData.expires_in - 60) * 1000).toISOString();
-  await supabase.from('settings').update({
-    google_access_token: refreshData.access_token,
-    google_token_expires_at: newExpiresAt,
-  }).eq('user_id', userId);
-
-  return refreshData.access_token;
 }
 
 function isWithinSendingWindow(
@@ -249,7 +215,8 @@ export async function GET(req: NextRequest) {
 
     await supabase.from('email_queue').update({ status: 'sending', updated_at: now.toISOString() }).eq('id', item.id);
 
-    const accessToken = await getValidAccessToken(supabase, workspace.owner_id);
+    const tokenData = await resolveAccessToken(supabase, workspace.owner_id);
+    const accessToken = tokenData?.accessToken;
     if (!accessToken) {
       await supabase.from('email_queue').update({
         status: 'failed',

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { resolveAccessToken } from '@/lib/google/google-auth-service';
 
 function makeMimeMessage(to: string, subject: string, body: string) {
   const utf8Subject = `=?utf-8?B?${Buffer.from(subject).toString('base64')}?=`;
@@ -20,36 +21,6 @@ function makeMimeMessage(to: string, subject: string, body: string) {
     .replace(/\+/g, '-')
     .replace(/\//g, '_')
     .replace(/=+$/, '');
-}
-
-async function refreshAccessToken(refreshToken: string): Promise<{ accessToken: string; expiresAt: string }> {
-  const clientId = process.env.GOOGLE_CLIENT_ID;
-  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-
-  if (!clientId || !clientSecret) {
-    throw new Error('Google OAuth credentials missing in env variables');
-  }
-
-  const res = await fetch('https://oauth2.googleapis.com/token', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({
-      client_id: clientId,
-      client_secret: clientSecret,
-      refresh_token: refreshToken,
-      grant_type: 'refresh_token',
-    }),
-  });
-
-  const data = await res.json();
-  if (!res.ok) {
-    throw new Error(data.error_description || 'Failed to refresh token');
-  }
-
-  return {
-    accessToken: data.access_token,
-    expiresAt: new Date(Date.now() + data.expires_in * 1000).toISOString()
-  };
 }
 
 export async function POST(req: NextRequest) {
@@ -86,46 +57,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "L'adresse e-mail du prospect est invalide" }, { status: 400 });
     }
 
-    // 3. Fetch User Google tokens
-    const { data: settings } = await supabase
-      .from('settings')
-      .select('*')
-      .eq('user_id', user.id)
-      .maybeSingle();
-
-    const clientId = process.env.GOOGLE_CLIENT_ID;
-    const googleConfigured = !!clientId && !clientId.includes('placeholder') && !!settings?.google_refresh_token;
-
-    if (!googleConfigured || !settings) {
+    // 3. Resolve Google access token (covers both the legacy and current OAuth flows)
+    const tokenData = await resolveAccessToken(supabase, user.id);
+    if (!tokenData) {
       return NextResponse.json(
         { error: 'Connectez votre compte Gmail (Paramètres → Intégrations) avant d\'envoyer un e-mail.' },
         { status: 400 }
       );
     }
+    const { accessToken: currentToken, googleEmail } = tokenData;
 
     // 4. Send email via the real Gmail API — errors propagate to the outer catch, no fake success.
-    let currentToken = settings.google_access_token;
-    let expiresAt = settings.google_token_expires_at;
-
-    // Check token expiration (refresh 5 minutes early to be safe)
-    const isExpired = !expiresAt || new Date(expiresAt).getTime() - 5 * 60 * 1000 < Date.now();
-
-    if (isExpired && settings.google_refresh_token) {
-      const refreshed = await refreshAccessToken(settings.google_refresh_token);
-      currentToken = refreshed.accessToken;
-      expiresAt = refreshed.expiresAt;
-
-      // Save refreshed tokens back to settings
-      await supabase
-        .from('settings')
-        .update({
-          google_access_token: currentToken,
-          google_token_expires_at: expiresAt,
-          updated_at: new Date().toISOString()
-        })
-        .eq('user_id', user.id);
-    }
-
     // Send via Gmail
     const rawMime = makeMimeMessage(recipientEmail, subject, body);
     const gmailResponse = await fetch('https://gmail.googleapis.com/v1/users/me/messages/send', {
@@ -167,7 +109,7 @@ export async function POST(req: NextRequest) {
     if (updateErr) throw updateErr;
 
     // Append historical note
-    const logText = `E-mail envoyé via Gmail API (compte ${settings.google_email || 'connecté'}) :\n\nSujet : ${subject}\n\n${body}`;
+    const logText = `E-mail envoyé via Gmail API (compte ${googleEmail || 'connecté'}) :\n\nSujet : ${subject}\n\n${body}`;
 
     const { error: noteErr } = await supabase
       .from('notes')

@@ -239,17 +239,10 @@ export async function exchangeCodeForTokens(supabase: any, code: string, redirec
     await supabase.from('google_scope_grants').insert(grants);
   }
 
-  await supabase
-    .from('settings')
-    .upsert({
-      user_id: userId,
-      google_access_token: access_token,
-      google_refresh_token: refresh_token || undefined,
-      google_token_expires_at: expiresAt,
-      google_email: googleEmail,
-      updated_at: new Date().toISOString()
-    });
-
+  // Note: this used to also mirror the tokens into legacy settings.google_* columns.
+  // Every reader now goes through resolveAccessToken (google_accounts/google_tokens
+  // first, legacy settings only as a fallback for pre-existing connections), so this
+  // flow no longer needs to keep that legacy store in sync.
   return { accountId, googleEmail };
 }
 
@@ -454,6 +447,8 @@ export async function disconnectGoogle(supabase: any, userId: string) {
     .from('google_accounts')
     .select('id')
     .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(1)
     .maybeSingle();
 
   if (!account) return;
