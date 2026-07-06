@@ -5,6 +5,15 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [3.62.0] — Audit v11 → v12, Phase 7/10 : messages vocaux, fichiers, chat unifié — 2026-07-06
+
+### Ajouté
+- **Messages vocaux** dans `/messages` — enregistrement au micro directement dans le navigateur, aussi long que nécessaire, uploadé vers Supabase Storage (nouveau bucket `voice-messages`) et lu inline avec un lecteur audio. Auparavant, seuls images/GIFs/emojis étaient supportés.
+- **Fichiers joints** — n'importe quel type de fichier peut être partagé dans une conversation (bucket `message-files`), affiché comme une pièce jointe cliquable.
+
+### Changé
+- **Un seul chat d'équipe** — `/messages` était dupliqué avec l'onglet "Chat d'équipe" de `/team` (les deux écrivaient dans la même table, avec des fonctionnalités qui divergeaient). L'onglet Chat de `/team` a été retiré au profit d'un lien direct vers `/messages`, qui devient le seul et unique endroit pour discuter.
+
 ## [3.61.0] — Audit v11 → v12, Phase 6/10 : import CSV pour l'Acquisition — 2026-07-06
 
 ### Ajouté

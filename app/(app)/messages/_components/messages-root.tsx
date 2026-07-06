@@ -10,7 +10,8 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Send, Search, Users, MessageCircle, Smile, ImageIcon, X } from 'lucide-react';
+import { Send, Search, Users, MessageCircle, Smile, ImageIcon, X, FileText, Mic, Square, Paperclip, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -111,6 +112,33 @@ function MessageContent({ content, isMe, onImageClick }: { content: string; isMe
     );
   }
 
+  if (content.startsWith('[[audio]]')) {
+    const src = content.slice(9);
+    return (
+      <audio controls src={src} className="max-w-[260px] h-10">
+        Votre navigateur ne supporte pas la lecture audio.
+      </audio>
+    );
+  }
+
+  if (content.startsWith('[[file]]')) {
+    const [name, url] = content.slice(8).split('|');
+    return (
+      <a
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={cn(
+          'flex items-center gap-2 px-3 py-2 rounded-xl border max-w-[240px] transition-colors',
+          isMe ? 'border-white/30 bg-white/10 hover:bg-white/20' : 'border-[#e5e5e0] bg-[#f4f4f3] hover:bg-[#e5e5e0]/60',
+        )}
+      >
+        <FileText className={cn('w-4 h-4 shrink-0', isMe ? 'text-white' : 'text-[#059669]')} />
+        <span className={cn('text-xs font-semibold truncate', isMe ? 'text-white' : 'text-[#26251e]')}>{name || 'Fichier'}</span>
+      </a>
+    );
+  }
+
   // Highlight @mentions
   const parts = content.split(/(@\S+)/g);
   return (
@@ -144,10 +172,18 @@ export default function MessagesRoot() {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [emojiOpen, setEmojiOpen] = useState(false);
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingSeconds, setRecordingSeconds] = useState(0);
+  const [uploadingVoice, setUploadingVoice] = useState(false);
+  const [uploadingFile, setUploadingFile] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const attachmentInputRef = useRef<HTMLInputElement>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const recordedChunksRef = useRef<Blob[]>([]);
+  const recordingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Fetch current user
   useEffect(() => {
@@ -358,6 +394,73 @@ export default function MessagesRoot() {
     if (!imagePreview) return;
     sendContent(`[[img]]${imagePreview}`);
     setImagePreview(null);
+  };
+
+  // Messages vocaux — enregistrement via MediaRecorder, upload réel vers
+  // Supabase Storage (pas de base64 en base — un enregistrement long
+  // exploserait la colonne content).
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      recordedChunksRef.current = [];
+      recorder.ondataavailable = (e) => { if (e.data.size > 0) recordedChunksRef.current.push(e.data); };
+      recorder.onstop = () => { stream.getTracks().forEach((t) => t.stop()); };
+      recorder.start();
+      mediaRecorderRef.current = recorder;
+      setIsRecording(true);
+      setRecordingSeconds(0);
+      recordingTimerRef.current = setInterval(() => setRecordingSeconds((s) => s + 1), 1000);
+    } catch {
+      toast.error('Microphone inaccessible — vérifiez les permissions du navigateur.');
+    }
+  };
+
+  const stopRecording = () => {
+    const recorder = mediaRecorderRef.current;
+    if (!recorder) return;
+    if (recordingTimerRef.current) { clearInterval(recordingTimerRef.current); recordingTimerRef.current = null; }
+    setIsRecording(false);
+    recorder.onstop = async () => {
+      recorder.stream.getTracks().forEach((t) => t.stop());
+      const blob = new Blob(recordedChunksRef.current, { type: recorder.mimeType || 'audio/webm' });
+      if (blob.size === 0) return;
+      setUploadingVoice(true);
+      try {
+        const supabase = createClient();
+        const ext = (recorder.mimeType || 'audio/webm').includes('mp4') ? 'm4a' : 'webm';
+        const path = `${activeWorkspace?.id || 'ws'}/${Date.now()}.${ext}`;
+        const { error } = await supabase.storage.from('voice-messages').upload(path, blob, { contentType: blob.type });
+        if (error) throw error;
+        const { data: urlData } = supabase.storage.from('voice-messages').getPublicUrl(path);
+        await sendContent(`[[audio]]${urlData.publicUrl}`);
+      } catch (err) {
+        console.error('Voice upload failed:', err);
+      } finally {
+        setUploadingVoice(false);
+      }
+    };
+    recorder.stop();
+  };
+
+  // Fichiers arbitraires — upload vers le bucket message-files.
+  const handleAttachmentSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file || !activeWorkspace) return;
+    setUploadingFile(true);
+    try {
+      const supabase = createClient();
+      const path = `${activeWorkspace.id}/${Date.now()}_${file.name}`;
+      const { error } = await supabase.storage.from('message-files').upload(path, file, { contentType: file.type });
+      if (error) throw error;
+      const { data: urlData } = supabase.storage.from('message-files').getPublicUrl(path);
+      await sendContent(`[[file]]${file.name}|${urlData.publicUrl}`);
+    } catch (err) {
+      console.error('File upload failed:', err);
+    } finally {
+      setUploadingFile(false);
+    }
   };
 
   const handleEmojiSelect = (emoji: string) => {
@@ -641,6 +744,46 @@ export default function MessagesRoot() {
               className="text-[#7a7a76] hover:text-[#26251e] transition-colors p-0.5 shrink-0"
             >
               <ImageIcon className="w-5 h-5" />
+            </button>
+
+            {/* Fichier arbitraire */}
+            <input
+              ref={attachmentInputRef}
+              type="file"
+              className="hidden"
+              onChange={handleAttachmentSelect}
+            />
+            <button
+              type="button"
+              onClick={() => attachmentInputRef.current?.click()}
+              disabled={uploadingFile}
+              className="text-[#7a7a76] hover:text-[#26251e] transition-colors p-0.5 shrink-0 disabled:opacity-50"
+              title="Joindre un fichier"
+            >
+              {uploadingFile ? <Loader2 className="w-5 h-5 animate-spin" /> : <Paperclip className="w-5 h-5" />}
+            </button>
+
+            {/* Message vocal */}
+            <button
+              type="button"
+              onClick={isRecording ? stopRecording : startRecording}
+              disabled={uploadingVoice}
+              className={cn(
+                'transition-colors p-0.5 shrink-0 disabled:opacity-50',
+                isRecording ? 'text-red-500' : 'text-[#7a7a76] hover:text-[#26251e]'
+              )}
+              title={isRecording ? 'Arrêter l\'enregistrement' : 'Message vocal'}
+            >
+              {uploadingVoice ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : isRecording ? (
+                <span className="flex items-center gap-1">
+                  <Square className="w-4 h-4 fill-current" />
+                  <span className="text-[10px] font-bold tabular-nums">{Math.floor(recordingSeconds / 60)}:{String(recordingSeconds % 60).padStart(2, '0')}</span>
+                </span>
+              ) : (
+                <Mic className="w-5 h-5" />
+              )}
             </button>
 
             {/* Text input */}

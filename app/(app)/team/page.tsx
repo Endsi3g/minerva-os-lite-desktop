@@ -22,7 +22,7 @@ import { PERMISSION_MODULES, DEFAULT_ROLE_PERMISSIONS, type PermissionModule, AL
 
 // ── Types ────────────────────────────────────────────────────────────────────
 type Role = 'admin' | 'editor' | 'viewer';
-type TeamTab = 'members' | 'groups' | 'chat' | 'roles' | 'workload' | 'revenue';
+type TeamTab = 'members' | 'groups' | 'roles' | 'workload' | 'revenue';
 
 interface TeamGroup {
   id: string;
@@ -69,7 +69,6 @@ export default function TeamPage() {
   const [activeTab, setActiveTab] = useState<TeamTab>(() => {
     const t = searchParams.get('tab');
     if (t === 'roles') return 'roles';
-    if (t === 'chat') return 'chat';
     if (t === 'workload') return 'workload';
     if (t === 'revenue') return 'revenue';
     if (t === 'groups') return 'groups';
@@ -86,16 +85,7 @@ export default function TeamPage() {
   const [newGroupMemberIds, setNewGroupMemberIds] = useState<Set<string>>(new Set());
   const [savingGroup, setSavingGroup] = useState(false);
   const [addingMemberToGroupId, setAddingMemberToGroupId] = useState<string | null>(null);
-  const [chatMessage, setChatMessage] = useState('');
-  const chatEndRef = useRef<HTMLDivElement>(null);
-  const chatInputRef = useRef<HTMLInputElement>(null);
-  const { teamMessages, sendTeamMessage, activeWorkspace } = useReach();
-  const [mentionQuery, setMentionQuery] = useState('');
-  const [showMentions, setShowMentions] = useState(false);
-  const [showEmojis, setShowEmojis] = useState(false);
-  const [sendingImage, setSendingImage] = useState(false);
-  const imageInputRef = useRef<HTMLInputElement>(null);
-  const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
+  const { activeWorkspace } = useReach();
 
   // Search and Filter States
   const [searchQuery, setSearchQuery] = useState('');
@@ -162,13 +152,6 @@ export default function TeamPage() {
       if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
     };
   }, []);
-
-  // Auto-scroll chat to bottom on new messages
-  useEffect(() => {
-    if (activeTab === 'chat') {
-      chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }
-  }, [teamMessages, activeTab]);
 
   // Fetch Members
   const fetchMembers = useCallback(async () => {
@@ -677,103 +660,6 @@ export default function TeamPage() {
   const totalInvitedCount = members.filter(m => m.status === 'pending').length;
   const totalMembersCount = members.length + 1; // +1 for current user
 
-  // ── Team chat helpers ──────────────────────────────────────────────────────
-  // Sentinel prefix used to embed an image (data URL) inside a message's content,
-  // avoiding any schema change to the team_messages table.
-  const IMG_PREFIX = '[[img]]';
-  const COMMON_EMOJIS = ['😀','😂','😍','👍','🙏','🔥','🎉','✅','💪','👏','🚀','💡','📈','🤝','❤️','😎','🤔','👀','💯','⏰'];
-
-  // Map senderId → avatar so every bubble shows the right photo (not just mine)
-  const avatarById: Record<string, string> = {};
-  members.forEach(m => {
-    if (m.member_user_id && m.profile?.avatar_base64) avatarById[m.member_user_id] = m.profile.avatar_base64;
-  });
-  if (currentUser?.avatar) avatarById[currentUser.id] = currentUser.avatar;
-
-  const insertEmoji = (emoji: string) => {
-    setChatMessage(prev => prev + emoji);
-    setShowEmojis(false);
-    chatInputRef.current?.focus();
-  };
-
-  const handleImageSelected = async (file: File) => {
-    if (!file.type.startsWith('image/')) return;
-    setSendingImage(true);
-    try {
-      // Downscale to keep the data URL small enough for Realtime/content column
-      const dataUrl = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => {
-          const img = new Image();
-          img.onload = () => {
-            const max = 800;
-            let { width, height } = img;
-            if (width > max || height > max) {
-              const ratio = Math.min(max / width, max / height);
-              width = Math.round(width * ratio);
-              height = Math.round(height * ratio);
-            }
-            const canvas = document.createElement('canvas');
-            canvas.width = width; canvas.height = height;
-            const ctx = canvas.getContext('2d');
-            if (!ctx) { resolve(reader.result as string); return; }
-            ctx.drawImage(img, 0, 0, width, height);
-            // GIFs lose animation through canvas — keep original for gif, compress others
-            resolve(file.type === 'image/gif' ? (reader.result as string) : canvas.toDataURL('image/jpeg', 0.7));
-          };
-          img.onerror = reject;
-          img.src = reader.result as string;
-        };
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
-      await sendTeamMessage(`${IMG_PREFIX}${dataUrl}`);
-    } catch { /* ignore */ }
-    finally {
-      setSendingImage(false);
-      if (imageInputRef.current) imageInputRef.current.value = '';
-    }
-  };
-
-  // Notify any @mentioned users (resolve @displayName → user id via members/owner)
-  const notifyMentions = async (message: string) => {
-    if (!activeWorkspace || !message.includes('@')) return;
-    const ownerId = (activeWorkspace as { owner_id?: string }).owner_id;
-    const candidates = [
-      ...(currentUser ? [{ name: currentUser.name, userId: currentUser.id }] : []),
-      ...members
-        .filter(m => m.member_user_id)
-        .map(m => ({ name: m.profile?.full_name || m.email.split('@')[0], userId: m.member_user_id as string })),
-    ];
-    const lower = message.toLowerCase();
-    const mentioned = candidates
-      .filter(c => c.userId !== currentUser?.id && lower.includes(`@${c.name.toLowerCase()}`))
-      .map(c => c.userId);
-    const unique = Array.from(new Set(mentioned));
-    if (unique.length === 0) return;
-    try {
-      await fetch(getApiUrl('/api/notifications/team'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          workspaceId: activeWorkspace.id,
-          workspaceOwnerId: ownerId,
-          title: `${currentUser?.name || 'Un membre'} vous a mentionné`,
-          body: message.slice(0, 200),
-          type: 'mention',
-          link: '/team',
-          recipientUserIds: unique,
-        }),
-      });
-    } catch { /* ignore */ }
-  };
-
-  // Send a chat message + fire mention notifications
-  const sendChat = async (msg: string) => {
-    await sendTeamMessage(msg);
-    notifyMentions(msg);
-  };
-
   return (
     <div className="h-full overflow-y-auto bg-white text-[#26251e] font-sans selection:bg-[#059669]/10 relative">
       <div className="absolute inset-0 opacity-[0.25] pointer-events-none bg-grid-pattern-20 z-0" />
@@ -806,6 +692,14 @@ export default function TeamPage() {
               {t('team.members_subtitle')}
             </p>
           </div>
+          <div className="flex items-center gap-2 shrink-0">
+          <Link
+            href="/messages"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-[#e5e5e0] text-[#26251e] text-xs font-bold hover:bg-[#f4f4f3] transition-colors"
+          >
+            <MessageSquare className="h-3.5 w-3.5" />
+            Chat d&apos;équipe
+          </Link>
           {/* Leave team button — shown only if user is NOT the owner */}
           {currentUser && activeWorkspace && (activeWorkspace as { owner_id?: string }).owner_id !== currentUser.id && (
             <button
@@ -816,6 +710,7 @@ export default function TeamPage() {
               Quitter l&apos;équipe
             </button>
           )}
+          </div>
         </div>
 
         {/* ── Tab Bar ── */}
@@ -848,18 +743,6 @@ export default function TeamPage() {
                 {groups.length}
               </span>
             )}
-          </button>
-          <button
-            onClick={() => setActiveTab('chat')}
-            className={cn(
-              "px-4 py-2 text-xs font-bold rounded-t-lg border border-b-0 transition-colors flex items-center gap-1.5",
-              activeTab === 'chat'
-                ? 'bg-white border-[#e5e5e0] text-[#26251e]'
-                : 'bg-[#f4f4f3] border-transparent text-[#807d72] hover:text-[#26251e]'
-            )}
-          >
-            <MessageSquare className="w-3.5 h-3.5" />
-            Chat d&apos;équipe
           </button>
           <button
             onClick={() => setActiveTab('roles')}
@@ -1019,243 +902,6 @@ export default function TeamPage() {
                 })}
               </div>
             )}
-          </div>
-        )}
-
-        {/* ── Chat Panel (shown when activeTab === 'chat') ── */}
-        {activeTab === 'chat' && (
-          <div className="flex flex-col bg-white border border-[#e5e5e0] rounded-xl overflow-hidden shadow-2xs" style={{ height: 'calc(100vh - 280px)', minHeight: '400px' }}>
-            {/* Messages list */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-3">
-              {teamMessages.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-full gap-2 text-[#807d72]">
-                  <MessageSquare className="w-10 h-10 opacity-30" />
-                  <p className="text-sm font-semibold">Aucun message pour le moment.</p>
-                  <p className="text-xs">Commencez la conversation avec votre équipe.</p>
-                </div>
-              ) : (
-                teamMessages.map(msg => {
-                  const isMe = msg.senderId === currentUser?.id;
-                  const avatarSrc = avatarById[msg.senderId];
-                  const isImage = msg.content.startsWith(IMG_PREFIX);
-                  const imageSrc = isImage ? msg.content.slice(IMG_PREFIX.length) : '';
-                  const renderContent = (text: string) => {
-                    const parts = text.split(/(@\w+)/g);
-                    return parts.map((part, i) =>
-                      part.startsWith('@')
-                        ? <span key={i} className={cn("font-bold", isMe ? "text-white/90 bg-white/20" : "text-[#059669] bg-[#059669]/10", "rounded px-0.5")}>{part}</span>
-                        : <span key={i}>{part}</span>
-                    );
-                  };
-                  return (
-                    <div key={msg.id} className={cn("flex gap-2.5 items-end", isMe && "flex-row-reverse")}>
-                      <div className={cn(
-                        "w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 overflow-hidden",
-                        isMe ? "bg-[#10b981] text-white" : "bg-[#e5e5e0] text-[#26251e]"
-                      )}>
-                        {avatarSrc
-                          // eslint-disable-next-line @next/next/no-img-element
-                          ? <img src={avatarSrc} alt="" className="w-full h-full object-cover" />
-                          : msg.senderName.charAt(0).toUpperCase()
-                        }
-                      </div>
-                      <div className={cn("max-w-[70%] space-y-0.5", isMe && "items-end flex flex-col")}>
-                        <span className="text-[10px] font-semibold text-[#807d72]">
-                          {isMe ? 'Vous' : msg.senderName}
-                        </span>
-                        {isImage ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            src={imageSrc}
-                            alt="image partagée"
-                            onClick={() => setLightboxSrc(imageSrc)}
-                            className="max-w-[220px] max-h-[220px] rounded-2xl border border-[#e5e5e0] object-cover cursor-zoom-in hover:opacity-90 transition-opacity"
-                          />
-                        ) : (
-                          <div className={cn(
-                            "px-3 py-2 rounded-2xl text-xs leading-relaxed break-words",
-                            isMe
-                              ? "bg-[#10b981] text-white rounded-br-sm"
-                              : "bg-[#f4f4f3] text-[#26251e] rounded-bl-sm"
-                          )}>
-                            {renderContent(msg.content)}
-                          </div>
-                        )}
-                        <span className="text-[9px] text-[#a3a39c]">
-                          {new Date(msg.createdAt).toLocaleTimeString('fr-CA', { hour: '2-digit', minute: '2-digit' })}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-              <div ref={chatEndRef} />
-            </div>
-
-            {/* Input bar */}
-            <div className="border-t border-[#e5e5e0] p-3 flex gap-2 items-center bg-white shrink-0 relative">
-
-              {/* @mention autocomplete — anchored directly ABOVE the input so it never covers the text */}
-              {showMentions && (() => {
-                const ownerCandidate = currentUser
-                  ? [{ id: 'current_user', email: currentUser.email, displayName: currentUser.name }]
-                  : [];
-                const memberCandidates = members.map(m => ({
-                  id: m.id,
-                  email: m.email,
-                  displayName: m.profile?.full_name || m.email.split('@')[0],
-                }));
-                const allCandidates = [
-                  ...ownerCandidate,
-                  ...memberCandidates.filter(c => c.email !== currentUser?.email),
-                ];
-                const q = mentionQuery.toLowerCase();
-                const matched = allCandidates.filter(c =>
-                  c.displayName.toLowerCase().includes(q) || c.email.toLowerCase().includes(q)
-                ).slice(0, 5);
-
-                return (
-                  <div className="absolute bottom-full left-3 right-3 mb-2 bg-white border border-[#e5e5e0] rounded-xl shadow-lg z-20 overflow-hidden max-h-40 overflow-y-auto">
-                    {matched.length === 0 ? (
-                      <div className="px-3 py-3 text-xs text-[#7a7a76]">Aucun membre trouvé</div>
-                    ) : matched.map(c => (
-                      <button
-                        key={c.id}
-                        type="button"
-                        className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-left hover:bg-[#f4f4f3] transition-colors"
-                        onMouseDown={e => {
-                          e.preventDefault();
-                          const atIdx = chatMessage.lastIndexOf('@');
-                          const newMsg = chatMessage.slice(0, atIdx) + `@${c.displayName} `;
-                          setChatMessage(newMsg);
-                          setShowMentions(false);
-                          chatInputRef.current?.focus();
-                        }}
-                      >
-                        <div className="w-6 h-6 rounded-full bg-[#e5e5e0] flex items-center justify-center text-[9px] font-bold shrink-0">
-                          {c.displayName.charAt(0).toUpperCase()}
-                        </div>
-                        <span className="font-semibold text-[#26251e]">{c.displayName}</span>
-                        <span className="text-[#7a7a76] ml-1">{c.email}</span>
-                      </button>
-                    ))}
-                  </div>
-                );
-              })()}
-
-              {/* Emoji picker popover */}
-              {showEmojis && (
-                <div className="absolute bottom-full left-3 mb-2 bg-white border border-[#e5e5e0] rounded-xl shadow-lg z-20 p-2 grid grid-cols-5 gap-1 w-[210px]">
-                  {COMMON_EMOJIS.map(em => (
-                    <button
-                      key={em}
-                      type="button"
-                      onMouseDown={e => { e.preventDefault(); insertEmoji(em); }}
-                      className="h-8 w-8 flex items-center justify-center text-lg rounded-lg hover:bg-[#f4f4f3] transition-colors"
-                    >
-                      {em}
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              {/* Hidden file input for images / GIFs */}
-              <input
-                ref={imageInputRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={e => { const f = e.target.files?.[0]; if (f) handleImageSelected(f); }}
-              />
-
-              {/* Emoji button */}
-              <button
-                type="button"
-                onClick={() => { setShowEmojis(v => !v); setShowMentions(false); }}
-                className="h-8 w-8 flex items-center justify-center rounded-xl text-[#7a7a76] hover:bg-[#f4f4f3] hover:text-[#26251e] transition-colors shrink-0"
-                title="Emoji"
-              >
-                <Smile className="w-4 h-4" />
-              </button>
-
-              {/* Image button */}
-              <button
-                type="button"
-                onClick={() => imageInputRef.current?.click()}
-                disabled={sendingImage}
-                className="h-8 w-8 flex items-center justify-center rounded-xl text-[#7a7a76] hover:bg-[#f4f4f3] hover:text-[#26251e] transition-colors shrink-0 disabled:opacity-50"
-                title="Image ou GIF"
-              >
-                {sendingImage ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImagePlus className="w-4 h-4" />}
-              </button>
-
-              <input
-                ref={chatInputRef}
-                type="text"
-                value={chatMessage}
-                onChange={e => {
-                  const val = e.target.value;
-                  setChatMessage(val);
-                  const atIdx = val.lastIndexOf('@');
-                  if (atIdx !== -1 && (atIdx === 0 || val[atIdx - 1] === ' ')) {
-                    setMentionQuery(val.slice(atIdx + 1));
-                    setShowMentions(true);
-                    setShowEmojis(false);
-                  } else {
-                    setShowMentions(false);
-                  }
-                }}
-                onKeyDown={async e => {
-                  if (e.key === 'Escape') { setShowMentions(false); setShowEmojis(false); return; }
-                  if (e.key === 'Enter' && !e.shiftKey && chatMessage.trim()) {
-                    e.preventDefault();
-                    const msg = chatMessage.trim();
-                    setChatMessage('');
-                    setShowMentions(false);
-                    await sendChat(msg);
-                  }
-                }}
-                onBlur={() => setTimeout(() => setShowMentions(false), 150)}
-                placeholder="Message à l'équipe... Tapez @ pour mentionner"
-                className="flex-1 text-xs bg-[#f4f4f3] border border-[#e5e5e0] rounded-xl px-3 py-2 focus:outline-none focus:ring-1 focus:ring-[#10b981]"
-              />
-              <button
-                onClick={async () => {
-                  if (!chatMessage.trim()) return;
-                  const msg = chatMessage.trim();
-                  setChatMessage('');
-                  setShowMentions(false);
-                  await sendChat(msg);
-                }}
-                disabled={!chatMessage.trim()}
-                className="h-8 w-8 flex items-center justify-center rounded-xl bg-[#10b981] text-white hover:bg-[#059669] transition-colors disabled:opacity-50 shrink-0"
-              >
-                <Send className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Fullscreen image lightbox — clickable by everyone in the chat */}
-        {lightboxSrc && (
-          <div
-            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-6 animate-in fade-in duration-150"
-            onClick={() => setLightboxSrc(null)}
-          >
-            <button
-              onClick={() => setLightboxSrc(null)}
-              className="absolute top-4 right-4 h-9 w-9 flex items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors"
-              aria-label="Fermer"
-            >
-              <X className="h-5 w-5" />
-            </button>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={lightboxSrc}
-              alt="aperçu plein écran"
-              onClick={e => e.stopPropagation()}
-              className="max-w-full max-h-full rounded-xl object-contain shadow-2xl"
-            />
           </div>
         )}
 
