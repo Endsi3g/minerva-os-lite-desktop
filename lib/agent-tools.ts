@@ -107,19 +107,35 @@ export async function generateEmailDraft(
   ctx: AgentContext,
   params: { lead_id: string; template_type: 'follow_up' | 'introduction' | 'closing' | 'reactivation' },
 ) {
+  // `leads` has no `name`/`company`/`notes` columns — the real fields are business_name,
+  // contact_name, niche, city, website_description. Selecting the wrong names made this
+  // query always fail, so every draft silently threw and fell back to nothing.
   const { data: lead } = await ctx.supabase
     .from('leads')
-    .select('name, company, status, score, website_description, notes')
+    .select('business_name, contact_name, niche, city, status, score, website_description')
     .eq('id', params.lead_id)
     .single();
 
   if (!lead) throw new Error('Lead not found');
 
+  // Recent interaction history makes the draft specific instead of generic.
+  const { data: recentNotes } = await ctx.supabase
+    .from('notes')
+    .select('content')
+    .eq('lead_id', params.lead_id)
+    .order('created_at', { ascending: false })
+    .limit(3);
+
+  const contextParts = [
+    lead.website_description,
+    ...(recentNotes ?? []).map((n: { content: string }) => n.content),
+  ].filter(Boolean);
+
   const draft = await generateCompletion({
-    system: `Tu es un assistant commercial expert en prospection B2B. Génère un email concis (max 120 mots), personnalisé, en français. Retourne uniquement JSON: { "subject": "...", "body": "..." }`,
+    system: `Tu es un assistant commercial expert en prospection B2B au Québec. Génère un email concis (max 120 mots), personnalisé à partir du contexte fourni (pas un modèle générique), en français. Retourne uniquement JSON: { "subject": "...", "body": "..." }`,
     messages: [{
       role: 'user',
-      content: `Prospect: ${lead.name} chez ${lead.company}. Type: ${params.template_type}. Contexte: ${lead.website_description || lead.notes || 'Pas de contexte disponible'}.`,
+      content: `Prospect: ${lead.contact_name || 'le/la gérant(e)'} chez ${lead.business_name} (${lead.niche || 'commerce local'}, ${lead.city || 'Québec'}). Type de relance: ${params.template_type}. Contexte réel à utiliser pour personnaliser: ${contextParts.join(' | ') || 'Pas de contexte disponible — reste bref et générique sur le secteur.'}`,
     }],
     jsonMode: true,
     maxTokens: 400,
@@ -128,7 +144,7 @@ export async function generateEmailDraft(
   });
 
   let parsed: { subject: string; body: string };
-  try { parsed = JSON.parse(draft); } catch { parsed = { subject: `Relance — ${lead.company}`, body: draft }; }
+  try { parsed = JSON.parse(draft); } catch { parsed = { subject: `Relance — ${lead.business_name}`, body: draft }; }
 
   const { data, error } = await ctx.supabase.from('drafts').insert({
     workspace_id: ctx.workspaceId,
