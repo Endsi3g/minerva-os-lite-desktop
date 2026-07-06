@@ -43,6 +43,7 @@ export function InboxRoot() {
   const [replyText, setReplyText] = useState('');
   const [sending, setSending] = useState(false);
   const [classifyingThreadId, setClassifyingThreadId] = useState<string | null>(null);
+  const [syncing, setSyncing] = useState(false);
 
   const fetchThreads = useCallback(async () => {
     if (!activeWorkspace?.id) return;
@@ -82,6 +83,27 @@ export function InboxRoot() {
       setLoading(false);
     }
   }, [activeWorkspace?.id, viewMode]);
+
+  // Synchronisation manuelle — jusqu'ici la seule mise à jour de l'inbox venait
+  // d'un cron une fois par jour (8h), ce qui donnait l'impression que l'app ne
+  // recevait jamais les réponses. Appelle /api/google/gmail/sync (existant
+  // mais jamais relié à l'UI) puis rafraîchit la liste.
+  const handleManualSync = useCallback(async () => {
+    if (!activeWorkspace?.id || syncing) return;
+    setSyncing(true);
+    try {
+      await fetch(getApiUrl('/api/google/gmail/sync'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ workspaceId: activeWorkspace.id }),
+      });
+    } catch {
+      // ignore — fetchThreads below will still show whatever is currently synced
+    } finally {
+      await fetchThreads();
+      setSyncing(false);
+    }
+  }, [activeWorkspace?.id, syncing, fetchThreads]);
 
   // Check if gmail.modify scope is granted (needed for archive)
   useEffect(() => {
@@ -363,6 +385,15 @@ export function InboxRoot() {
         >
           <Send className="h-3.5 w-3.5" />
           Envoyés
+        </button>
+        <button
+          onClick={handleManualSync}
+          disabled={syncing}
+          title="Vérifier les nouveaux emails maintenant (au lieu d'attendre la synchronisation automatique quotidienne)"
+          className="ml-auto mr-3 flex items-center gap-1.5 px-3 py-1.5 my-1.5 rounded-md text-xs font-semibold text-[#7a7a76] hover:text-[#26251e] hover:bg-white border border-[#e5e5e0] transition-colors disabled:opacity-50 shrink-0"
+        >
+          <RefreshCw className={`h-3 w-3 ${syncing ? 'animate-spin' : ''}`} />
+          {syncing ? 'Synchronisation…' : 'Synchroniser maintenant'}
         </button>
       </div>
 

@@ -5,6 +5,17 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [3.58.0] — Audit v11 → v12, Phase 3/10 : notifications, emails, assistant actionnable — 2026-07-06
+
+### Ajouté
+- **Notifications natives sur les actions de l'agent IA** — jusqu'ici, quand l'agent autonome (`/api/agent/loop`, manuel ou cron) exécutait des actions sur le pipeline, rien ne vous en informait. Il envoie maintenant une vraie notification native (déjà suivie en temps réel par l'app) résumant ce qu'il a fait.
+- **Bouton "Synchroniser maintenant" dans l'Inbox** — la vérification des réponses Gmail ne tournait qu'une fois par jour (8h), donnant l'impression que l'app ne recevait jamais rien. L'endroit de synchronisation manuelle existait déjà dans le code mais n'était relié à aucun bouton ; c'est corrigé. Le cron automatique passe aussi de 1x/jour à toutes les 2h.
+- **Assistant IA capable d'agir réellement** — en plus de créer des leads/tâches, mettre à jour un statut et envoyer un email (déjà fonctionnel), l'assistant peut maintenant : ajouter une note à un lead, lancer un vrai enrichissement (Google Places, site web) sur des leads, et vous amener directement vers une page précise de l'app suite à une demande en langage naturel.
+- **Agent autonome enrichi** — les outils `send_email` et `trigger_enrichment` existent maintenant aussi côté agent autonome (`lib/agent-tools.ts`), qui ne pouvait jusque-là que créer des tâches/brouillons/tags mais jamais envoyer un vrai email ni lancer un enrichissement.
+
+### Nettoyé
+- Suppression de ~170 lignes de réponses simulées ("Hermes Agent", "Lucifee") dans `/api/chat` qui affichaient de faux logs d'appels d'outils ("Appel d'outil en cours...") sans jamais rien exécuter réellement. Code mort, jamais atteint par le vrai flux (qui appelle bien l'IA réelle) — mais trompeur à la lecture et source probable de confusion sur ce que l'app fait vraiment.
+
 ## [3.57.0] — Audit v11 → v12, Phase 2/10 : fiabilité des providers IA — 2026-07-05
 
 ### Changé

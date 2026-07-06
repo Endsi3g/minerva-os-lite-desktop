@@ -163,9 +163,27 @@ ${recentMemory?.map((m: any) => `[${m.type}] ${m.key}: ${m.content}`).join('\n')
     }).then(() => {}, () => {});
   }
 
+  const executedCount = results.filter((r) => r.executed).length;
+  if (executedCount > 0) {
+    // Notification native — jusqu'ici aucune action de l'agent IA ne déclenchait
+    // de notification, malgré la souscription Realtime déjà en place côté client
+    // (reach-context.tsx) sur les INSERT de la table `notifications`.
+    await admin.from('notifications').insert({
+      id: crypto.randomUUID(),
+      user_id: user.id,
+      workspace_id: workspaceId,
+      type: 'agent_action',
+      title: `Agent IA — ${executedCount} action${executedCount > 1 ? 's' : ''} effectuée${executedCount > 1 ? 's' : ''}`,
+      body: plan.reasoning?.slice(0, 200) || 'L\'agent a exécuté des actions sur votre pipeline.',
+      is_read: false,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }).then(() => {}, () => {});
+  }
+
   return NextResponse.json({
     reasoning: plan.reasoning,
-    actions_executed: results.filter((r) => r.executed).length,
+    actions_executed: executedCount,
     actions_suggested: results.filter((r) => !r.executed).length,
     results,
   });
@@ -220,6 +238,20 @@ export async function GET(req: NextRequest) {
     if (canExecute(action.tool, autonomy)) {
       try { await dispatchTool(action.tool, action.params, ctx); executed++; } catch { /* log silently */ }
     }
+  }
+
+  if (executed > 0) {
+    await admin.from('notifications').insert({
+      id: crypto.randomUUID(),
+      user_id: ws.owner_id,
+      workspace_id: workspaceId,
+      type: 'agent_action',
+      title: `Agent IA — ${executed} action${executed > 1 ? 's' : ''} effectuée${executed > 1 ? 's' : ''}`,
+      body: plan.reasoning?.slice(0, 200) || 'L\'agent a exécuté des actions sur votre pipeline.',
+      is_read: false,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }).then(() => {}, () => {});
   }
 
   return NextResponse.json({ ok: true, actions_planned: actions.length, actions_executed: executed });

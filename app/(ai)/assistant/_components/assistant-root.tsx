@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
@@ -343,6 +344,9 @@ function ActionCard({
     create_sequence: 'Créer une séquence',
     search_gmail_sent: 'Voir les emails envoyés',
     search_gmail_replies: 'Voir les réponses Gmail',
+    create_note: 'Ajouter une note',
+    trigger_enrichment: 'Enrichir les leads',
+    navigate: 'Naviguer',
   };
 
   return (
@@ -470,7 +474,8 @@ function RichMessageContent({
 // ────────────────────────────────────────────────────────────────────────────
 
 export function AssistantRoot() {
-  const { user, leads, tasks, activeWorkspace, addLead, addTask, updateLeadStatus } = useReach();
+  const { user, leads, tasks, activeWorkspace, addLead, addTask, updateLeadStatus, addNoteToLead } = useReach();
+  const router = useRouter();
   const { t, locale } = useLanguage();
   const { enabledSkills } = useSkills(activeWorkspace?.id);
 
@@ -630,13 +635,42 @@ export function AssistantRoot() {
           const count = data.threads?.length || 0;
           return { success: true, message: `${count} réponse(s) reçues — consultez /inbox pour les lire` };
         }
+        case 'create_note': {
+          const p = actionData.params;
+          if (!p.lead_id) return { success: false, message: 'ID lead manquant' };
+          await addNoteToLead(p.lead_id, p.content || actionData.summary, (p.type as any) || 'general');
+          return { success: true, message: 'Note ajoutée au lead' };
+        }
+        case 'trigger_enrichment': {
+          const p = actionData.params;
+          const leadIds: string[] = Array.isArray(p.lead_ids) ? p.lead_ids : p.lead_id ? [p.lead_id] : [];
+          if (leadIds.length === 0) return { success: false, message: 'Aucun lead à enrichir' };
+          const res = await fetch(getApiUrl('/api/leads/enrich-batch'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ leadIds, workspaceId: activeWorkspace?.id, mode: 'full' }),
+          });
+          if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            return { success: false, message: err.error || "Erreur lors de l'enrichissement" };
+          }
+          const data = await res.json();
+          return { success: true, message: `${data.enriched ?? leadIds.length} lead(s) enrichi(s)` };
+        }
+        case 'navigate': {
+          const p = actionData.params;
+          const path = p.path || p.url;
+          if (!path) return { success: false, message: 'Chemin manquant' };
+          router.push(path);
+          return { success: true, message: `Navigation vers ${path}` };
+        }
         default:
           return { success: false, message: `Action inconnue : ${actionData.action}` };
       }
     } catch (e) {
       return { success: false, message: (e as Error).message };
     }
-  }, [addLead, addTask, updateLeadStatus]);
+  }, [addLead, addTask, updateLeadStatus, addNoteToLead, activeWorkspace, router]);
 
   // TipTap WYSIWYG editor
   const editor = useEditor({
@@ -1053,6 +1087,9 @@ Actions disponibles :
 - update_lead_status : params { lead_id, status }
 - search_gmail_sent : params {} — liste les emails envoyés récents
 - search_gmail_replies : params {} — liste les réponses reçues
+- create_note : params { lead_id, content, type ("general"|"call"|"meeting") } — ajoute une note à un lead
+- trigger_enrichment : params { lead_ids: [...] } — lance un vrai enrichissement (Google Places, site web) sur les leads donnés
+- navigate : params { path } — amène l'utilisateur vers une page précise de l'app (ex: "/leads/abc123", "/prospecting")
 
 Important : ne génère un bloc action QUE si l'utilisateur demande explicitement une action. Pour les questions ou analyses, réponds normalement sans bloc action.`;
 

@@ -285,6 +285,109 @@ export async function tagLead(
   return { tags_added: params.tags, total_tags: merged.length };
 }
 
+// ── Tool: send email (Gmail réel — même logique que app/api/send-email) ──────
+
+function makeMimeMessage(to: string, subject: string, body: string) {
+  const utf8Subject = `=?utf-8?B?${Buffer.from(subject).toString('base64')}?=`;
+  const message = [
+    `To: ${to}`,
+    `Subject: ${utf8Subject}`,
+    'MIME-Version: 1.0',
+    'Content-Type: text/plain; charset="UTF-8"',
+    'Content-Transfer-Encoding: base64',
+    '',
+    Buffer.from(body).toString('base64'),
+  ].join('\r\n');
+  return Buffer.from(message).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+export async function sendEmail(
+  ctx: AgentContext,
+  params: { lead_id: string; subject: string; body: string },
+) {
+  const { data: lead } = await ctx.supabase.from('leads').select('*').eq('id', params.lead_id).single();
+  if (!lead) throw new Error('Lead introuvable');
+  const recipientEmail = lead.contact_email;
+  if (!recipientEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipientEmail)) {
+    throw new Error("Ce prospect n'a pas d'adresse e-mail valide");
+  }
+
+  const { data: settings } = await ctx.supabase.from('settings').select('*').eq('user_id', ctx.userId).maybeSingle();
+  const clientId = process.env.GOOGLE_CLIENT_ID;
+  if (!clientId || clientId.includes('placeholder') || !settings?.google_refresh_token) {
+    throw new Error('Connecte ton compte Gmail (Paramètres → Intégrations) avant d\'envoyer un e-mail.');
+  }
+
+  let currentToken = settings.google_access_token;
+  let expiresAt = settings.google_token_expires_at;
+  const isExpired = !expiresAt || new Date(expiresAt).getTime() - 5 * 60 * 1000 < Date.now();
+  if (isExpired && settings.google_refresh_token) {
+    const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+    const res = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        client_id: clientId!, client_secret: clientSecret!,
+        refresh_token: settings.google_refresh_token, grant_type: 'refresh_token',
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error_description || 'Échec du rafraîchissement du token Google');
+    currentToken = data.access_token;
+    expiresAt = new Date(Date.now() + data.expires_in * 1000).toISOString();
+    await ctx.supabase.from('settings').update({
+      google_access_token: currentToken, google_token_expires_at: expiresAt, updated_at: new Date().toISOString(),
+    }).eq('user_id', ctx.userId);
+  }
+
+  const rawMime = makeMimeMessage(recipientEmail, params.subject, params.body);
+  const gmailRes = await fetch('https://gmail.googleapis.com/v1/users/me/messages/send', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${currentToken}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ raw: rawMime }),
+  });
+  if (!gmailRes.ok) {
+    const err = await gmailRes.json();
+    throw new Error(err.error?.message || "Erreur de l'API Gmail");
+  }
+  const gmailData = await gmailRes.json();
+
+  const nextActionDate = new Date();
+  nextActionDate.setDate(nextActionDate.getDate() + 3);
+  await ctx.supabase.from('leads').update({
+    status: 'Contacted',
+    gmail_thread_id: gmailData.threadId ?? lead.gmail_thread_id,
+    next_action: 'Relance e-mail / Appel téléphonique suite à premier contact',
+    next_action_date: nextActionDate.toISOString().split('T')[0],
+    updated_at: new Date().toISOString(),
+  }).eq('id', params.lead_id);
+
+  await ctx.supabase.from('notes').insert({
+    lead_id: params.lead_id, user_id: ctx.userId, workspace_id: lead.workspace_id,
+    type: 'email', content: `E-mail envoyé via l'assistant IA :\n\nSujet : ${params.subject}\n\n${params.body}`,
+  });
+
+  return { sent: true, recipient: recipientEmail };
+}
+
+// ── Tool: trigger enrichment (délègue à /api/leads/enrich-batch existant) ────
+
+export async function triggerEnrichment(
+  ctx: AgentContext,
+  params: { lead_ids: string[] },
+  requestInfo?: { origin: string; cookie: string },
+) {
+  if (!requestInfo) throw new Error('Enrichissement indisponible dans ce contexte (pas de session HTTP).');
+  const res = await fetch(`${requestInfo.origin}/api/leads/enrich-batch`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', cookie: requestInfo.cookie },
+    body: JSON.stringify({ leadIds: params.lead_ids, workspaceId: ctx.workspaceId, mode: 'full' }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || "Échec de l'enrichissement");
+  return data;
+}
+
 // ── Tool: classify reply ──────────────────────────────────────────────────────
 
 export async function classifyReply(
@@ -409,6 +512,8 @@ const TOOL_DOMAIN_MAP: Record<string, keyof AgentAutonomy> = {
   suggest_follow_up: 'outreach_followup',
   tag_lead: 'tasks',
   plan_field_route: 'field',
+  send_email: 'outreach_initial_send',
+  trigger_enrichment: 'pipeline',
 };
 
 export function canExecute(tool: string, autonomy: Partial<AgentAutonomy>): boolean {
@@ -431,6 +536,7 @@ export async function dispatchTool(
   tool: string,
   params: Record<string, unknown>,
   ctx: AgentContext,
+  requestInfo?: { origin: string; cookie: string },
 ): Promise<Record<string, unknown>> {
   switch (tool) {
     case 'list_leads_to_follow_up':
@@ -459,6 +565,10 @@ export async function dispatchTool(
       return summarizeInbox(ctx);
     case 'suggest_follow_up':
       return suggestFollowUp(ctx, params as any);
+    case 'send_email':
+      return sendEmail(ctx, params as any);
+    case 'trigger_enrichment':
+      return triggerEnrichment(ctx, params as any, requestInfo);
     default:
       throw new Error(`Unknown tool: ${tool}`);
   }
@@ -484,6 +594,8 @@ OUTREACH:
 - classify_reply(lead_id, subject, snippet, thread_id?) : classifie l'intention d'une réponse
 - summarize_inbox() : résume l'état de la boîte de réception par intent
 - suggest_follow_up(lead_id) : suggère la prochaine action pour un lead spécifique
+- send_email(lead_id, subject, body) : envoie un vrai email via Gmail au lead (nécessite Gmail connecté)
+- trigger_enrichment(lead_ids[]) : lance un enrichissement réel (Google Places, site web) sur les leads donnés
 
 MÉMOIRE:
 - update_agent_memory(type, key, content) : mémorise un apprentissage
