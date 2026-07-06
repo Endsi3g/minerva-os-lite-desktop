@@ -1,0 +1,21 @@
+name: Drain email queue (hourly, business hours)
+
+# Alternative gratuite au cron natif de Vercel : le plan Hobby limite les
+# cron jobs Vercel à 1x/jour maximum. GitHub Actions n'a pas cette limite et
+# est gratuit pour ce volume d'exécutions — ce workflow appelle le même
+# endpoint que le cron Vercel (déjà présent, 1x/jour), toutes les heures en
+# semaine de 9h à 18h, pour que le batch d'envoi s'écoule dans la journée.
+on:
+  schedule:
+    - cron: '0 9-18 * * 1-5'
+  workflow_dispatch: {}
+
+jobs:
+  process-queue:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call process-queue endpoint
+        run: |
+          curl -sf -X GET "https://minerva-os-lite-desktop.vercel.app/api/cron/process-queue" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "x-cron-secret: ${{ secrets.CRON_SECRET }}"
