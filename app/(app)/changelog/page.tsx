@@ -8,7 +8,7 @@ type HighlightTag = 'fix' | 'feature' | 'design';
 type Lang = 'fr' | 'en' | 'de';
 
 interface HighlightItem {
-  tag: HighlightTag;
+  tag?: HighlightTag;
   text: string;
 }
 
@@ -25,7 +25,10 @@ const TAG_CONFIG: Record<HighlightTag, { label: string; bg: string; text: string
   design:  { label: 'Design',     bg: '#eef2ff', text: '#6366f1', border: '#c7d2fe', icon: Palette  },
 };
 
-function TagBadge({ tag }: { tag: HighlightTag }) {
+function TagBadge({ tag }: { tag?: HighlightTag }) {
+  if (!tag) {
+    return <span aria-hidden="true" className="shrink-0 w-[18px] h-[18px] flex items-center justify-center"><span className="w-1.5 h-1.5 rounded-full bg-[#d4d4ce]" /></span>;
+  }
   const { bg, border, text, icon: Icon, label } = TAG_CONFIG[tag];
   return (
     <span
@@ -65,6 +68,116 @@ function TagLegend() {
 // ─── Versions data ─────────────────────────────────────────────────────────────
 
 const versions: ChangelogVersion[] = [
+  {
+    version: 'v3.64.0',
+    date: '6 juillet 2026 · 01h00',
+    title: 'Audit v11 → v12 — Phase 9/10 : sécurité et profil',
+    highlights: [
+      { text: 'Vraie détection des appareils connectés dans Paramètres > Sécurité — affichait une seule session fictive incapable de voir un second appareil pourtant bien connecté. Lit maintenant les vraies sessions actives, avec possibilité de déconnecter un appareil à distance.' },
+      { text: 'Synchronisation de l\'avatar entre appareils corrigée — une fois mis en cache sur un appareil, les mises à jour faites depuis un autre appareil n\'étaient plus jamais reflétées. La base de données est maintenant la seule source de vérité.' },
+    ],
+  },
+  {
+    version: 'v3.63.0',
+    date: '6 juillet 2026 · 00h53',
+    title: 'Audit v11 → v12 — Phase 8/10 : stabilité carte + mini-carte Prospecting',
+    highlights: [
+      { text: 'Plus de plantage en cascade sur les pages carte — /map et /prospecting affichent maintenant un bouton "Réessayer" propre au lieu de faire planter toute l\'application.' },
+      { text: 'Nouvelle mini-carte à clusters dans Prospecting : leads regroupés par région, colorés selon leur température moyenne, clic sur un cluster = zoom + liste des leads dedans, filtres statut/score directement sur la carte.' },
+    ],
+  },
+  {
+    version: 'v3.62.0',
+    date: '6 juillet 2026 · 00h45',
+    title: 'Audit v11 → v12 — Phase 7/10 : messages vocaux, fichiers, chat unifié',
+    highlights: [
+      { text: 'Messages vocaux dans Messages — enregistrement au micro directement dans le navigateur, aussi long que nécessaire, avec lecteur audio inline.' },
+      { text: 'Pièces jointes fichiers — n\'importe quel type de fichier peut être partagé dans une conversation.' },
+      { text: 'Un seul chat d\'équipe — l\'onglet Chat de la page Équipe (qui faisait doublon avec Messages) a été retiré au profit d\'un lien direct vers Messages.' },
+    ],
+  },
+  {
+    version: 'v3.61.0',
+    date: '6 juillet 2026 · 00h33',
+    title: 'Audit v11 → v12 — Phase 6/10 : import CSV pour l\'Acquisition',
+    highlights: [
+      { text: 'Nouveau bouton "Importer CSV" sur la page Acquisition, avec association automatique des colonnes du fichier aux champs des leads, aperçu et import en masse.' },
+      { text: 'Le formulaire de création manuelle de lead existait déjà et fonctionnait correctement — vérifié.' },
+    ],
+  },
+  {
+    version: 'v3.60.0',
+    date: '6 juillet 2026 · 00h28',
+    title: 'Audit v11 → v12 — Phase 5/10 : galerie de sites web façon marketplace',
+    highlights: [
+      { text: 'Nouveau Portfolio dans "Site Web" > Galerie : coller un lien récupère automatiquement son aperçu (titre, description, image, favicon), avec catégorisation et tags, recherche et filtres.' },
+      { text: 'Sidebar renommée "Site web IA" → "Site Web".' },
+    ],
+  },
+  {
+    version: 'v3.59.0',
+    date: '6 juillet 2026 · 00h23',
+    title: 'Audit v11 → v12 — Phase 4/10 : campagnes automatisées, groupes dynamiques',
+    highlights: [
+      { text: 'Groupes dynamiques de leads par règles (ex: score > 80 ET secteur = Restaurant), mis à jour automatiquement.' },
+      { text: 'Une séquence peut maintenant cibler un segment entier ou une campagne au complet, pas seulement un lead à la fois.' },
+      { text: 'Configuration d\'automatisation sur les campagnes : canaux de contact, volume quotidien max, approbation manuelle vs automatique.' },
+      { text: 'Les tags posés sur un lead (manuellement ou par l\'IA) sont maintenant visibles directement dans le tableau des leads.' },
+    ],
+  },
+  {
+    version: 'v3.58.0',
+    date: '6 juillet 2026 · 00h12',
+    title: 'Audit v11 → v12 — Phase 3/10 : notifications, emails, assistant actionnable',
+    highlights: [
+      { text: 'L\'agent IA autonome envoie maintenant une vraie notification native après avoir exécuté des actions — jusqu\'ici aucune action IA ne déclenchait de notification.' },
+      { text: 'Bouton "Synchroniser maintenant" dans l\'Inbox pour vérifier les nouveaux emails sans attendre le contrôle automatique.' },
+      { text: 'L\'assistant IA peut maintenant ajouter une note à un lead, lancer un enrichissement réel, et naviguer vers une page précise de l\'app.' },
+    ],
+  },
+  {
+    version: 'v3.57.0',
+    date: '5 juillet 2026 · 23h58',
+    title: 'Audit v11 → v12 — Phase 2/10 : fiabilité des providers IA',
+    highlights: [
+      { text: 'Ordre de priorité des providers IA corrigé : Cloudflare Workers AI en premier, OpenRouter en second, Anthropic Claude en dernier recours.' },
+      { text: 'Vrai mécanisme de repli — si le provider principal échoue, l\'app retente maintenant automatiquement avec le suivant.' },
+      { text: 'Paramètres > Modèles affiche les vrais providers avec leur statut en direct, au lieu d\'une liste figée qui ne fonctionnait jamais.' },
+    ],
+  },
+  {
+    version: 'v3.56.0',
+    date: '5 juillet 2026 · 23h47',
+    title: 'Audit v11 → v12 — Phase 1/10 : navigation nettoyée',
+    highlights: [
+      { text: 'Séquences, Composer, Queue et Cadences regroupés au même endroit (/sequences) — fini d\'aller chercher ces outils cachés dans un sous-onglet d\'Outreach.' },
+      { text: 'Plus de double Inbox — Outreach n\'a plus son propre onglet Inbox qui ramenait en boucle sur la vraie page Inbox.' },
+      { text: 'Nouvel onglet Groupes dans Équipe, réellement fonctionnel cette fois — l\'ancien widget des Paramètres ne sauvegardait jamais rien.' },
+      { text: 'Fix d\'attribution : un lead trouvé par scraping n\'est plus étiqueté à tort "Manuel" dans Acquisition.' },
+    ],
+  },
+  {
+    version: 'v3.55.0',
+    date: '5 juillet 2026 · 23h26',
+    title: 'Audit v11 → v12 — Phase 0/10 : fondations base de données',
+    highlights: [
+      { text: 'Cause racine des erreurs "column does not exist" en continu depuis des mois : la base de données de production n\'avait jamais reçu plusieurs mois de changements de schéma. Corrigé.' },
+      { text: 'Mise en place du suivi officiel des migrations Supabase pour que ce genre de dérive ne se reproduise plus.' },
+      { text: 'Deux bugs qui faisaient échouer silencieusement les brouillons générés par l\'IA, corrigés au passage.' },
+    ],
+  },
+  {
+    version: 'v3.54.0',
+    date: '5 juillet 2026 · 18h15',
+    title: 'Release v11.0.0 — Sécurité, build de production, Revenue OS',
+    highlights: [
+      { text: 'Correctifs de sécurité critiques (jetons codés en dur retirés, comparaisons non sécurisées corrigées, authentification manquante ajoutée sur plusieurs routes).' },
+      { text: 'Fix d\'une régression bloquant le build de production depuis des mois, jamais détectée par le typecheck seul.' },
+      { text: 'Monitoring Sentry mis en place.' },
+      { text: 'Reply Classifier v2, cadences intelligentes, Lead Rescue Center et Deal Risk Score ajoutés.' },
+      { text: 'Suite de tests E2E Playwright (45 tests) exécutée et vérifiée de bout en bout.' },
+    ],
+  },
   {
     version: 'v3.53.0',
     date: '4 juillet 2026 · 08:30',

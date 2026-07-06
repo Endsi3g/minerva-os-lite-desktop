@@ -5,6 +5,14 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [3.64.0] — Audit v11 → v12, Phase 9/10 : vraies sessions de sécurité, profil synchronisé — 2026-07-06
+
+### Ajouté
+- **Vraie détection des appareils connectés** dans Paramètres > Sécurité — affichait auparavant une seule session fictive dérivée du navigateur local, incapable de détecter un second appareil (téléphone, autre ordinateur) pourtant bien connecté. Lit maintenant les vraies sessions actives depuis Supabase Auth, avec possibilité de déconnecter un appareil à distance.
+
+### Corrigé
+- **Synchronisation de l'avatar entre appareils** — une fois un avatar mis en cache localement sur un appareil, les mises à jour faites depuis un AUTRE appareil n'étaient plus jamais reflétées (le cache local prenait toujours le pas sur la valeur fraîche de la base de données, indéfiniment). La base de données est maintenant la seule source de vérité ; le cache local ne sert plus qu'à un affichage instantané le temps du chargement.
+
 ## [3.63.0] — Audit v11 → v12, Phase 8/10 : stabilité carte + mini-carte Prospecting — 2026-07-06
 
 ### Ajouté

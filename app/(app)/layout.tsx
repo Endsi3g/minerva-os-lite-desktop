@@ -598,16 +598,19 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
       if (!settings || !settings.full_name || !settings.company_name) {
         router.push('/onboarding');
       } else {
-        // Prefer localStorage-cached avatar for instant display after save
-        const cachedAvatar = localStorage.getItem('minerva_avatar');
+        // La base de données est la source de vérité (synchronisée entre tous
+        // les appareils) — le cache local ne sert plus qu'à peindre le
+        // dernier avatar connu le temps que ce fetch se termine, jamais à
+        // écraser une valeur plus fraîche venue d'un autre appareil.
         setUserProfile({
           fullName: settings.full_name,
           companyName: settings.company_name || 'Uprising Studio',
-          avatarBase64: cachedAvatar ?? settings.avatar_base64 ?? null,
+          avatarBase64: settings.avatar_base64 ?? null,
         });
-        // Keep localStorage in sync with DB value
-        if (settings.avatar_base64 && !cachedAvatar) {
+        if (settings.avatar_base64) {
           localStorage.setItem('minerva_avatar', settings.avatar_base64);
+        } else {
+          localStorage.removeItem('minerva_avatar');
         }
         setCheckingWelcome(false);
       }
