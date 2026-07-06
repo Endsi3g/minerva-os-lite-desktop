@@ -25,7 +25,7 @@ interface AgentReview {
 
 const MODELS = [
   { id: 'claude-haiku-4-5-20251001', name: 'Claude Haiku', desc: 'Rapide et économique', badge: 'Rapide', badgeColor: 'blue', requiresKey: false },
-  { id: 'claude-sonnet-4-6', name: 'Claude Sonnet', desc: 'Équilibré, polyvalent', badge: 'Recommandé', badgeColor: 'green', requiresKey: false },
+  { id: 'claude-sonnet-5', name: 'Claude Sonnet', desc: 'Équilibré, polyvalent', badge: 'Recommandé', badgeColor: 'green', requiresKey: false },
   { id: 'claude-opus-4-8', name: 'Claude Opus', desc: 'Raisonnement avancé', badge: 'Puissant', badgeColor: 'gray', requiresKey: false },
   { id: 'gpt-4o', name: 'GPT-4o', desc: 'Via OpenRouter', badge: 'Clé requise', badgeColor: 'orange', requiresKey: true },
 ] as const;
@@ -84,7 +84,7 @@ const BUILTIN_META: Record<string, Omit<Agent, 'id'> & { isBuiltin: true; catego
       { id: 'mode', name: "Mode d'analyse", type: 'select', description: "Niveau de profondeur de l'audit", options: ['Rapide', 'Approfondi'], required: true }
     ],
     actions: [{ id: 'gmb-audit', enabled: true }],
-    model: 'claude-sonnet-4-6',
+    model: 'claude-sonnet-5',
     creativity: 0.2,
     labels: ['Audit', 'SEO Local', 'Montréal']
   },
@@ -123,7 +123,7 @@ const BUILTIN_META: Record<string, Omit<Agent, 'id'> & { isBuiltin: true; catego
       { id: 'reseau', name: "Réseau cible", type: 'select', description: "Réseau social ou plateforme à analyser", options: ['Google Maps', 'Yelp', 'Facebook'], required: true }
     ],
     actions: [{ id: 'gmb-audit', enabled: true }, { id: 'data-analyst', enabled: true }],
-    model: 'claude-sonnet-4-6',
+    model: 'claude-sonnet-5',
     creativity: 0.3,
     labels: ['Réputation', 'Analyse']
   },
@@ -183,7 +183,7 @@ export function AgentDetailRoot({ agentId }: { agentId: string }) {
   const [editStarters, setEditStarters] = useState<string[]>([]);
   const [editInputFields, setEditInputFields] = useState<AgentInputField[]>([]);
   const [editKnowledgeFiles, setEditKnowledgeFiles] = useState<{ name: string; size: number; type: string }[]>([]);
-  const [editModel, setEditModel] = useState('claude-sonnet-4-6');
+  const [editModel, setEditModel] = useState('claude-sonnet-5');
   const [editCreativity, setEditCreativity] = useState(0.5);
   const [editLabels, setEditLabels] = useState<string[]>([]);
   const [editEnabledActions, setEditEnabledActions] = useState<Record<string, boolean>>({});
@@ -300,7 +300,7 @@ export function AgentDetailRoot({ agentId }: { agentId: string }) {
     setEditStarters(agent.conversationStarters || []);
     setEditInputFields(agent.inputFields || []);
     setEditKnowledgeFiles(agent.knowledgeFiles || []);
-    setEditModel(agent.model || 'claude-sonnet-4-6');
+    setEditModel(agent.model || 'claude-sonnet-5');
     setEditCreativity(agent.creativity ?? 0.5);
     setEditLabels(agent.labels || []);
     setEditAvatarEmoji(agent.avatarEmoji || '');

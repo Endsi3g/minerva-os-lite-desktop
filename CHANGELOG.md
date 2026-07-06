@@ -5,6 +5,14 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [3.57.0] — Audit v11 → v12, Phase 2/10 : fiabilité des providers IA — 2026-07-05
+
+### Changé
+- **Ordre de priorité des providers IA** : Cloudflare Workers AI (primaire) → OpenRouter (secondaire) → Anthropic Claude (tertiaire), comme demandé. Chaque palier n'est utilisé que si sa clé est réellement configurée ; en production actuellement, seul OpenRouter a une clé valide (Cloudflare et Anthropic attendent encore les identifiants).
+- **Vrai mécanisme de repli** — si le provider principal échoue, l'appel retente automatiquement avec le provider suivant dans l'ordre de priorité au lieu d'abandonner directement. Le "repli" existait dans le code mais retournait toujours `null` sans jamais rien faire.
+- **Page Paramètres > Modèles** refaite pour afficher les vrais providers supportés (Cloudflare, OpenRouter, Anthropic) avec leur statut en direct (disponible/latence/erreur), à la place d'une liste figée incluant GPT-4o, Groq et Mistral — trois providers qui n'ont jamais eu de branche de code correspondante et ne pouvaient donc jamais fonctionner.
+- **Modèle Anthropic par défaut mis à jour** partout dans l'app (assistant, agents, Minerva AI, paramètres) — l'ancien identifiant de modèle codé en dur était périmé.
+
 ## [3.56.0] — Audit v11 → v12, Phase 1/10 : navigation & attribution des leads — 2026-07-05
 
 ### Changé — Navigation

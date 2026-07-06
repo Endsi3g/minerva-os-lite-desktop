@@ -120,7 +120,7 @@ export function SettingsRoot() {
   });
 
   const [modelsData, setModelsData] = useState<ModelsData>({
-    defaultChatModel: 'claude-sonnet-4-6',
+    defaultChatModel: 'claude-sonnet-5',
     defaultImageModel: '',
   });
 
@@ -148,7 +148,7 @@ export function SettingsRoot() {
   });
 
   const [preferencesData, setPreferencesData] = useState<PreferencesData>({
-    defaultModel: 'claude-sonnet-4-6',
+    defaultModel: 'claude-sonnet-5',
     defaultImageModel: '',
     chatCapabilities: [],
     language: 'fr' as Locale,

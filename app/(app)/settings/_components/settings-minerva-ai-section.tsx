@@ -60,7 +60,7 @@ const AI_TOOLS = [
 
 const MINERVA_MODELS = [
   {
-    id: 'claude-sonnet-4-6',
+    id: 'claude-sonnet-5',
     name: 'Claude Sonnet 4.6',
     provider: 'Anthropic',
     badge: 'Par défaut',
@@ -197,7 +197,7 @@ export function SettingsMinervaAiSection({ isSaving }: SettingsMinervaAiSectionP
   };
 
   const [data, setData] = useState<MinervaAiData>({
-    activeModel: 'claude-sonnet-4-6',
+    activeModel: 'claude-sonnet-5',
     firecrawlKeyMasked: null,
     memoryEnabled: true,
     spatialAiEnabled: true,
@@ -224,7 +224,7 @@ export function SettingsMinervaAiSection({ isSaving }: SettingsMinervaAiSectionP
         .maybeSingle();
       if (row) {
         setData({
-          activeModel: row.ai_model || 'claude-sonnet-4-6',
+          activeModel: row.ai_model || 'claude-sonnet-5',
           firecrawlKeyMasked: row.firecrawl_api_key_masked || null,
           memoryEnabled: row.ai_memory_enabled ?? true,
           spatialAiEnabled: row.ai_spatial_enabled ?? true,

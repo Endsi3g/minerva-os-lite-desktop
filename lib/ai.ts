@@ -27,62 +27,85 @@ const getGlobalKeys = () => ({
   cloudflareAccountId: process.env.CLOUDFLARE_ACCOUNT_ID || '',
 });
 
+const STALE_OPENROUTER_MODELS = new Set([
+  'openrouter/free', 'meta-llama/llama-3-8b-instruct:free',
+  'meta-llama/llama-3.1-8b-instruct:free', 'google/gemma-2-9b-it:free',
+  'qwen/qwen-2-7b-instruct:free', 'llama-3.3-70b-versatile', 'meta-llama/Llama-3-70b-chat-hf',
+]);
+
+function openrouterModel(rawModel?: string | null): string {
+  return (rawModel && !STALE_OPENROUTER_MODELS.has(rawModel) && !rawModel.startsWith('claude'))
+    ? rawModel
+    : OPENROUTER_DEFAULT;
+}
+
+// Ordre de priorité par défaut (aucune sélection explicite de l'utilisateur) :
+// Cloudflare Workers AI → OpenRouter → Anthropic. Chaque palier n'est retenu
+// que si sa clé est réellement configurée, sinon on passe au suivant.
 export function resolveAIProvider(settings?: AISettings | null) {
   const keys = getGlobalKeys();
   const explicitProvider = settings?.ai_provider;
   const rawModel = settings?.ai_model;
+  const orKey = settings?.openrouter_key || keys.openrouterKey;
 
   // 1. Explicit Anthropic selection — or model name starts with "claude"
   if (
-    explicitProvider === 'anthropic' ||
-    (rawModel?.startsWith('claude') && !explicitProvider)
+    (explicitProvider === 'anthropic' || (rawModel?.startsWith('claude') && !explicitProvider))
+    && keys.anthropicKey
   ) {
-    if (keys.anthropicKey) {
-      const model = rawModel?.startsWith('claude') ? rawModel : 'claude-sonnet-4-6';
-      return { provider: 'anthropic', model, apiKey: keys.anthropicKey };
-    }
+    const model = rawModel?.startsWith('claude') ? rawModel : 'claude-sonnet-5';
+    return { provider: 'anthropic', model, apiKey: keys.anthropicKey };
   }
 
   // 2. Explicit OpenRouter selection
-  if (explicitProvider === 'openrouter') {
-    const apiKey = settings?.openrouter_key || keys.openrouterKey;
-    const STALE = new Set(['openrouter/free', 'meta-llama/llama-3-8b-instruct:free',
-      'meta-llama/llama-3.1-8b-instruct:free', 'google/gemma-2-9b-it:free',
-      'qwen/qwen-2-7b-instruct:free', 'llama-3.3-70b-versatile', 'meta-llama/Llama-3-70b-chat-hf']);
-    const model = (rawModel && !STALE.has(rawModel) && !rawModel.startsWith('claude')) ? rawModel : OPENROUTER_DEFAULT;
-    return { provider: 'openrouter', model, apiKey };
+  if (explicitProvider === 'openrouter' && orKey) {
+    return { provider: 'openrouter', model: openrouterModel(rawModel), apiKey: orKey };
   }
 
-  // 3. Cloudflare — explicit selection OR model name starts with "@cf/"
-  if (explicitProvider === 'cloudflare' || rawModel?.startsWith('@cf/')) {
+  // 3. Explicit Cloudflare selection — or model name starts with "@cf/"
+  if ((explicitProvider === 'cloudflare' || rawModel?.startsWith('@cf/')) && keys.cloudflareToken && keys.cloudflareAccountId) {
     const model = rawModel?.startsWith('@cf/') ? rawModel : CLOUDFLARE_DEFAULT_MODEL;
     return { provider: 'cloudflare', model, apiKey: keys.cloudflareToken };
   }
 
-  // 4. Anthropic if key is available
-  if (keys.anthropicKey) {
-    const model = rawModel?.startsWith('claude') ? rawModel : 'claude-sonnet-4-6';
-    return { provider: 'anthropic', model, apiKey: keys.anthropicKey };
-  }
-
-  // 5. Cloudflare primary default — Kimi K2 (only if configured via env)
+  // 4. Défaut — Cloudflare Workers AI (primaire)
   if (keys.cloudflareToken && keys.cloudflareAccountId) {
     const model = rawModel?.startsWith('@cf/') ? rawModel : CLOUDFLARE_DEFAULT_MODEL;
     return { provider: 'cloudflare', model, apiKey: keys.cloudflareToken };
   }
 
-  // 6. OpenRouter fallback when key is configured
-  const orKey = settings?.openrouter_key || keys.openrouterKey;
+  // 5. Défaut — OpenRouter (secondaire)
   if (orKey) {
-    const STALE = new Set(['openrouter/free', 'meta-llama/llama-3-8b-instruct:free',
-      'meta-llama/llama-3.1-8b-instruct:free', 'google/gemma-2-9b-it:free',
-      'qwen/qwen-2-7b-instruct:free', 'llama-3.3-70b-versatile', 'meta-llama/Llama-3-70b-chat-hf']);
-    const model = (rawModel && !STALE.has(rawModel) && !rawModel.startsWith('claude')) ? rawModel : OPENROUTER_DEFAULT;
-    return { provider: 'openrouter', model, apiKey: orKey };
+    return { provider: 'openrouter', model: openrouterModel(rawModel), apiKey: orKey };
   }
 
-  // 7. OpenRouter without key (will fail gracefully with 401)
+  // 6. Défaut — Anthropic (tertiaire)
+  if (keys.anthropicKey) {
+    const model = rawModel?.startsWith('claude') ? rawModel : 'claude-sonnet-5';
+    return { provider: 'anthropic', model, apiKey: keys.anthropicKey };
+  }
+
+  // 7. Aucune clé configurée nulle part — échoue proprement avec un message clair
+  // plutôt qu'un 401 silencieux vers OpenRouter.
   return { provider: 'openrouter', model: OPENROUTER_DEFAULT, apiKey: '' };
+}
+
+// Provider de repli si l'appel primaire échoue, en respectant le même ordre
+// de priorité (Cloudflare → OpenRouter → Anthropic), clé disponible uniquement.
+function getFallback(
+  primaryProvider: string,
+  settings?: AISettings | null,
+): { provider: string; model: string; apiKey: string } | null {
+  const keys = getGlobalKeys();
+  const orKey = settings?.openrouter_key || keys.openrouterKey;
+  const candidates: Array<{ provider: string; model: string; apiKey: string } | null> = [
+    keys.cloudflareToken && keys.cloudflareAccountId
+      ? { provider: 'cloudflare', model: CLOUDFLARE_DEFAULT_MODEL, apiKey: keys.cloudflareToken }
+      : null,
+    orKey ? { provider: 'openrouter', model: OPENROUTER_DEFAULT, apiKey: orKey } : null,
+    keys.anthropicKey ? { provider: 'anthropic', model: 'claude-sonnet-5', apiKey: keys.anthropicKey } : null,
+  ];
+  return candidates.find((c) => c && c.provider !== primaryProvider) ?? null;
 }
 
 // ── Logging ───────────────────────────────────────────────────────────────────
@@ -165,7 +188,7 @@ async function callAnthropic(
   system: string | undefined,
   opts: Pick<AICallOptions, 'maxTokens' | 'temperature'>,
 ): Promise<string> {
-  const anthropicModel = model.startsWith('claude') ? model : 'claude-3-5-sonnet-20241022';
+  const anthropicModel = model.startsWith('claude') ? model : 'claude-sonnet-5';
   const client = new Anthropic({ apiKey });
   const userMessages = messages.filter(m => m.role !== 'system');
 
@@ -238,10 +261,6 @@ function doCall(
   return callOpenRouter(apiKey, model, messages, system, opts);
 }
 
-function getFallback(primary: string): { provider: string; model: string; apiKey: string } | null {
-  return null;
-}
-
 // ── Public API ────────────────────────────────────────────────────────────────
 
 export async function generateCompletion(options: AICallOptions): Promise<string> {
@@ -253,7 +272,11 @@ export async function generateCompletion(options: AICallOptions): Promise<string
     content: m.content,
   }));
 
-  if (!apiKey) throw new Error(`Clé API manquante pour le provider : ${provider}`);
+  if (!apiKey) {
+    const fallback = getFallback(provider, options.settings);
+    if (!fallback) throw new Error(`Clé API manquante pour le provider : ${provider}`);
+    return callWithFallback(fallback.provider, fallback.model, fallback.apiKey, messages, options, requestId, startTime);
+  }
 
   try {
     const result = await doCall(provider, model, apiKey, messages, options.system, options);
@@ -261,7 +284,28 @@ export async function generateCompletion(options: AICallOptions): Promise<string
     return result;
   } catch (err: any) {
     logCall({ id: requestId, userId: options.userId, provider, model, latencyMs: Date.now() - startTime, success: false });
-    throw new Error(err?.message || 'Le modèle IA est temporairement indisponible. Réessaie dans quelques minutes.');
+    const fallback = getFallback(provider, options.settings);
+    if (!fallback) throw new Error(err?.message || 'Le modèle IA est temporairement indisponible. Réessaie dans quelques minutes.');
+    return callWithFallback(fallback.provider, fallback.model, fallback.apiKey, messages, options, crypto.randomUUID(), Date.now());
+  }
+}
+
+async function callWithFallback(
+  provider: string,
+  model: string,
+  apiKey: string,
+  messages: Array<{ role: string; content: string }>,
+  options: AICallOptions,
+  requestId: string,
+  startTime: number,
+): Promise<string> {
+  try {
+    const result = await doCall(provider, model, apiKey, messages, options.system, options);
+    logCall({ id: requestId, userId: options.userId, provider, model, latencyMs: Date.now() - startTime, success: true });
+    return result;
+  } catch (err: any) {
+    logCall({ id: requestId, userId: options.userId, provider, model, latencyMs: Date.now() - startTime, success: false });
+    throw new Error(err?.message || 'Le modèle IA est temporairement indisponible, même après repli sur un second provider.');
   }
 }
 
@@ -354,7 +398,7 @@ export async function generateStreamCompletion(options: AICallOptions): Promise<
   }
 
   // ── Anthropic streaming ───────────────────────────────────────────────────
-  const anthropicModel = model.startsWith('claude') ? model : 'claude-3-5-sonnet-20241022';
+  const anthropicModel = model.startsWith('claude') ? model : 'claude-sonnet-5';
   const userMessages = messages.filter(m => m.role !== 'system');
   const resp = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',

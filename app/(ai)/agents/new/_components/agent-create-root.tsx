@@ -17,7 +17,7 @@ import { createClient } from '@/lib/supabase/client';
 
 const MODELS = [
   { id: 'claude-haiku-4-5-20251001', name: 'Claude Haiku', desc: 'Rapide et économique', badge: 'Rapide', badgeColor: 'blue', requiresKey: false },
-  { id: 'claude-sonnet-4-6', name: 'Claude Sonnet', desc: 'Équilibré, polyvalent', badge: 'Recommandé', badgeColor: 'green', requiresKey: false },
+  { id: 'claude-sonnet-5', name: 'Claude Sonnet', desc: 'Équilibré, polyvalent', badge: 'Recommandé', badgeColor: 'green', requiresKey: false },
   { id: 'claude-opus-4-8', name: 'Claude Opus', desc: 'Raisonnement avancé', badge: 'Puissant', badgeColor: 'gray', requiresKey: false },
   { id: 'gpt-4o', name: 'GPT-4o', desc: 'Via OpenRouter', badge: 'Clé requise', badgeColor: 'orange', requiresKey: true },
 ] as const;
@@ -78,7 +78,7 @@ export function AgentCreateRoot() {
   const [inputFields, setInputFields] = useState<AgentInputField[]>([]);
   const [knowledgeFiles, setKnowledgeFiles] = useState<{ name: string; size: number; type: string }[]>([]);
   const [enabledActions, setEnabledActions] = useState<Record<string, boolean>>({});
-  const [model, setModel] = useState('claude-sonnet-4-6');
+  const [model, setModel] = useState('claude-sonnet-5');
   const [creativity, setCreativity] = useState(0.5);
   const [labels, setLabels] = useState<string[]>([]);
   const [avatarEmoji, setAvatarEmoji] = useState('');

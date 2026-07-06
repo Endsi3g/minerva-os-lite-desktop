@@ -17,9 +17,11 @@ interface ProviderInfo {
   name: string;
   available: boolean;
   latency_ms: number | null;
-  primary: boolean;
+  priority: number;
   error?: string;
 }
+
+const PRIORITY_LABELS: Record<number, string> = { 1: 'Primaire', 2: 'Secondaire', 3: 'Tertiaire' };
 
 export function SettingsDiagnosticsIA() {
   const [status, setStatus] = useState<GatewayStatus | null>(null);
@@ -148,7 +150,14 @@ export function SettingsDiagnosticsIA() {
                 <div className="min-w-0">
                   <p className="text-xs font-semibold text-[#26251e] flex items-center gap-1.5">
                     {p.name}
-                    {p.primary && <span className="text-[9px] font-bold bg-[#059669]/10 text-[#059669] px-1.5 py-0.5 rounded-full">Primaire</span>}
+                    {PRIORITY_LABELS[p.priority] && (
+                      <span className={cn(
+                        'text-[9px] font-bold px-1.5 py-0.5 rounded-full',
+                        p.priority === 1 ? 'bg-[#059669]/10 text-[#059669]' : 'bg-[#f4f4f3] text-[#7a7a76]'
+                      )}>
+                        {PRIORITY_LABELS[p.priority]}
+                      </span>
+                    )}
                   </p>
                   {p.error && <p className="text-[10px] text-[#7a7a76]">{p.error}</p>}
                 </div>

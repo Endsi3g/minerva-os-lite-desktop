@@ -11,24 +11,10 @@ export async function GET(req: NextRequest) {
 
   const providers = [];
 
-  // Anthropic
-  if (process.env.ANTHROPIC_API_KEY) {
-    const t = Date.now();
-    try {
-      const r = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: { 'x-api-key': process.env.ANTHROPIC_API_KEY!, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
-        body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 1, messages: [{ role: 'user', content: 'ping' }] }),
-      });
-      providers.push({ id: 'anthropic', name: 'Anthropic Claude', available: r.ok, latency_ms: Date.now() - t, primary: true });
-    } catch {
-      providers.push({ id: 'anthropic', name: 'Anthropic Claude', available: false, latency_ms: null, primary: true });
-    }
-  } else {
-    providers.push({ id: 'anthropic', name: 'Anthropic Claude', available: false, latency_ms: null, primary: true, error: 'API key not configured' });
-  }
+  // Ordre de priorité réel (voir lib/ai.ts resolveAIProvider) :
+  // 1. Cloudflare Workers AI — 2. OpenRouter — 3. Anthropic Claude.
 
-  // Cloudflare Workers AI
+  // Cloudflare Workers AI (priorité 1 — primaire)
   if (CF_TOKEN && CF_ACCOUNT) {
     const t = Date.now();
     try {
@@ -40,25 +26,42 @@ export async function GET(req: NextRequest) {
           body: JSON.stringify({ model: '@cf/moonshotai/kimi-k2.7-code', messages: [{ role: 'user', content: 'ping' }], max_tokens: 1 }),
         },
       );
-      providers.push({ id: 'cloudflare', name: 'Cloudflare Workers AI', available: r.ok, latency_ms: Date.now() - t, primary: false, model: '@cf/moonshotai/kimi-k2.7-code' });
+      providers.push({ id: 'cloudflare', name: 'Cloudflare Workers AI', available: r.ok, latency_ms: Date.now() - t, priority: 1, model: '@cf/moonshotai/kimi-k2.7-code' });
     } catch {
-      providers.push({ id: 'cloudflare', name: 'Cloudflare Workers AI', available: false, latency_ms: null, primary: false });
+      providers.push({ id: 'cloudflare', name: 'Cloudflare Workers AI', available: false, latency_ms: null, priority: 1 });
     }
   } else {
-    providers.push({ id: 'cloudflare', name: 'Cloudflare Workers AI', available: false, latency_ms: null, primary: false, error: 'API token not configured' });
+    providers.push({ id: 'cloudflare', name: 'Cloudflare Workers AI', available: false, latency_ms: null, priority: 1, error: 'API token not configured' });
   }
 
-  // OpenRouter
+  // OpenRouter (priorité 2 — secondaire)
   if (process.env.OPENROUTER_API_KEY) {
     const t = Date.now();
     try {
       const r = await fetch('https://openrouter.ai/api/v1/models', { headers: { 'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}` } });
-      providers.push({ id: 'openrouter', name: 'OpenRouter', available: r.ok, latency_ms: Date.now() - t, primary: false });
+      providers.push({ id: 'openrouter', name: 'OpenRouter', available: r.ok, latency_ms: Date.now() - t, priority: 2 });
     } catch {
-      providers.push({ id: 'openrouter', name: 'OpenRouter', available: false, latency_ms: null, primary: false });
+      providers.push({ id: 'openrouter', name: 'OpenRouter', available: false, latency_ms: null, priority: 2 });
     }
   } else {
-    providers.push({ id: 'openrouter', name: 'OpenRouter', available: false, latency_ms: null, primary: false, error: 'API key not configured' });
+    providers.push({ id: 'openrouter', name: 'OpenRouter', available: false, latency_ms: null, priority: 2, error: 'API key not configured' });
+  }
+
+  // Anthropic (priorité 3 — tertiaire)
+  if (process.env.ANTHROPIC_API_KEY) {
+    const t = Date.now();
+    try {
+      const r = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'x-api-key': process.env.ANTHROPIC_API_KEY!, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
+        body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 1, messages: [{ role: 'user', content: 'ping' }] }),
+      });
+      providers.push({ id: 'anthropic', name: 'Anthropic Claude', available: r.ok, latency_ms: Date.now() - t, priority: 3 });
+    } catch {
+      providers.push({ id: 'anthropic', name: 'Anthropic Claude', available: false, latency_ms: null, priority: 3 });
+    }
+  } else {
+    providers.push({ id: 'anthropic', name: 'Anthropic Claude', available: false, latency_ms: null, priority: 3, error: 'API key not configured' });
   }
 
   return NextResponse.json({ providers });

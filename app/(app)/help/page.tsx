@@ -49,7 +49,7 @@ const FAQ_ITEMS = [
   {
     id: 'ai',
     question: 'Quels modèles d\'IA sont utilisés ?',
-    answer: 'Minerva OS utilise les modèles Claude d\'Anthropic (via l\'API Anthropic) pour la génération de brouillons d\'emails, les audits de sites et les suggestions d\'actions. Le modèle actuel est claude-sonnet-4-6, qui offre le meilleur équilibre entre qualité et vitesse.',
+    answer: 'Minerva OS utilise les modèles Claude d\'Anthropic (via l\'API Anthropic) pour la génération de brouillons d\'emails, les audits de sites et les suggestions d\'actions. Le modèle actuel est claude-sonnet-5, qui offre le meilleur équilibre entre qualité et vitesse.',
   },
 ];
 
