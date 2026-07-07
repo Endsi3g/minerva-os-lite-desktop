@@ -57,6 +57,9 @@ export async function POST(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
 
+  const { data: settingsRow } = await supabase.from('settings').select('workspace_id, active_workspace_id').eq('user_id', user.id).maybeSingle();
+  const workspaceId = settingsRow?.active_workspace_id || settingsRow?.workspace_id || null;
+
   const apiKey = process.env.FIRECRAWL_API_KEY;
   if (!apiKey) {
     return NextResponse.json({ error: 'FIRECRAWL_API_KEY non configuré' }, { status: 400 });
@@ -90,6 +93,15 @@ export async function POST(req: NextRequest) {
     } else {
       rawResult = await tools.searchWeb(query || '', 5);
     }
+
+    // Fire-and-forget usage log — alimente les statistiques "Recherches web" de
+    // Paramètres, jusqu'ici un nombre codé en dur sans aucune donnée réelle.
+    void supabase.from('ai_tool_usage_log').insert({
+      workspace_id: workspaceId,
+      user_id: user.id,
+      tool: mode === 'scrape' ? 'firecrawl_scrape' : mode === 'crawl' ? 'firecrawl_crawl' : 'firecrawl_search',
+      summary: (query || url || '').slice(0, 200),
+    }).then(() => {}, () => {});
 
     // Now use Anthropic to synthesize the result
     const { default: Anthropic } = await import('@anthropic-ai/sdk');

@@ -913,6 +913,17 @@ function initDb() {
       user_id TEXT PRIMARY KEY,
       last_notified_at TEXT NOT NULL
     )`, () => {});
+
+    // v13.4 — Journal d'usage des outils IA (recherches web Firecrawl) : alimente
+    // les vraies statistiques de Paramètres au lieu de nombres codés en dur.
+    db.run(`CREATE TABLE IF NOT EXISTS ai_tool_usage_log (
+      id TEXT PRIMARY KEY,
+      workspace_id TEXT,
+      user_id TEXT,
+      tool TEXT NOT NULL,
+      summary TEXT,
+      created_at TEXT NOT NULL
+    )`, () => {});
   });
 }
 

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -211,6 +212,7 @@ export function SettingsMinervaAiSection({ isSaving }: SettingsMinervaAiSectionP
     agentAutonomy: DEFAULT_AUTONOMY,
   });
   const [stats, setStats] = useState({ conversations: 0, emailsDrafted: 0, researchQueries: 0 });
+  const [recentResearch, setRecentResearch] = useState<Array<{ summary: string; created_at: string }>>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -226,7 +228,7 @@ export function SettingsMinervaAiSection({ isSaving }: SettingsMinervaAiSectionP
       if (!user) { setLoading(false); return; }
       const { data: row } = await supabase
         .from('settings')
-        .select('ai_model, firecrawl_api_key_masked, ai_memory_enabled, ai_spatial_enabled, ai_web_research_enabled, batch_outreach_auto_draft, ai_enabled, agent_enabled, agent_autonomy')
+        .select('ai_model, firecrawl_api_key_masked, ai_memory_enabled, ai_spatial_enabled, ai_web_research_enabled, batch_outreach_auto_draft, ai_enabled, agent_enabled, agent_autonomy, workspace_id, active_workspace_id')
         .eq('user_id', user.id)
         .maybeSingle();
       if (row) {
@@ -242,8 +244,30 @@ export function SettingsMinervaAiSection({ isSaving }: SettingsMinervaAiSectionP
           agentAutonomy: { ...DEFAULT_AUTONOMY, ...(row.agent_autonomy || {}) },
         });
       }
-      // Mock usage stats (replace with real aggregation query when available)
-      setStats({ conversations: 42, emailsDrafted: 18, researchQueries: 7 });
+
+      // Vraies statistiques (remplace les nombres codés en dur 42/18/7 —
+      // aucune donnée réelle ne les alimentait, impossible de voir quoi que ce soit).
+      const workspaceId = row?.active_workspace_id || row?.workspace_id || null;
+      if (workspaceId) {
+        const monthStart = new Date();
+        monthStart.setDate(1);
+        monthStart.setHours(0, 0, 0, 0);
+        const monthStartIso = monthStart.toISOString();
+
+        const [convRes, draftsRes, researchRes, recentRes] = await Promise.all([
+          supabase.from('assistant_sessions').select('id', { count: 'exact', head: true }).eq('workspace_id', workspaceId).gte('created_at', monthStartIso),
+          supabase.from('drafts').select('id', { count: 'exact', head: true }).eq('workspace_id', workspaceId).gte('created_at', monthStartIso),
+          supabase.from('ai_tool_usage_log').select('id', { count: 'exact', head: true }).eq('workspace_id', workspaceId).gte('created_at', monthStartIso),
+          supabase.from('ai_tool_usage_log').select('summary, created_at').eq('workspace_id', workspaceId).order('created_at', { ascending: false }).limit(5),
+        ]);
+
+        setStats({
+          conversations: convRes.count ?? 0,
+          emailsDrafted: draftsRes.count ?? 0,
+          researchQueries: researchRes.count ?? 0,
+        });
+        setRecentResearch((recentRes.data ?? []).map((r: { summary: string | null; created_at: string }) => ({ summary: r.summary || '(sans requête)', created_at: r.created_at })));
+      }
       setLoading(false);
     };
     load();
@@ -528,17 +552,35 @@ export function SettingsMinervaAiSection({ isSaving }: SettingsMinervaAiSectionP
             </h3>
             <div className="grid grid-cols-3 gap-3">
               {[
-                { icon: MessageSquare, label: 'Conversations', value: stats.conversations },
-                { icon: Mail, label: 'Emails rédigés', value: stats.emailsDrafted },
-                { icon: FileSearch, label: 'Recherches web', value: stats.researchQueries },
-              ].map(({ icon: Icon, label, value }) => (
-                <div key={label} className="flex flex-col items-center p-3 rounded-xl bg-[#fafaf9] border border-[#e5e5e0] gap-1">
-                  <Icon className="h-4 w-4 text-[#059669]" />
-                  <span className="text-xl font-black text-[#26251e]">{value}</span>
-                  <span className="text-[9px] font-semibold text-[#7a7a76] uppercase tracking-wide text-center leading-tight">{label}</span>
-                </div>
-              ))}
+                { icon: MessageSquare, label: 'Conversations', value: stats.conversations, href: '/assistant' },
+                { icon: Mail, label: 'Emails rédigés', value: stats.emailsDrafted, href: '/inbox' },
+                { icon: FileSearch, label: 'Recherches web', value: stats.researchQueries, href: null },
+              ].map(({ icon: Icon, label, value, href }) => {
+                const card = (
+                  <div className="flex flex-col items-center p-3 rounded-xl bg-[#fafaf9] border border-[#e5e5e0] gap-1 h-full">
+                    <Icon className="h-4 w-4 text-[#059669]" />
+                    <span className="text-xl font-black text-[#26251e]">{value}</span>
+                    <span className="text-[9px] font-semibold text-[#7a7a76] uppercase tracking-wide text-center leading-tight">{label}</span>
+                  </div>
+                );
+                return href ? (
+                  <Link key={label} href={href} className="hover:border-[#059669]/40 rounded-xl transition-colors">{card}</Link>
+                ) : (
+                  <div key={label}>{card}</div>
+                );
+              })}
             </div>
+            {recentResearch.length > 0 && (
+              <div className="pt-2 border-t border-[#e5e5e0]/60 space-y-1.5">
+                <p className="text-[9px] font-bold text-[#7a7a76] uppercase tracking-wide">Dernières recherches web</p>
+                {recentResearch.map((r, i) => (
+                  <div key={i} className="flex items-center justify-between gap-3 text-[11px]">
+                    <span className="text-[#26251e] truncate">{r.summary}</span>
+                    <span className="text-[#7a7a76] shrink-0">{new Date(r.created_at).toLocaleDateString('fr-CA')}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -661,25 +703,34 @@ export function SettingsMinervaAiSection({ isSaving }: SettingsMinervaAiSectionP
               Outils IA disponibles
             </h3>
             <div className="divide-y divide-[#e5e5e0]/60">
-              {AI_TOOLS.map(({ id, icon: Icon, label, description, badge, badgeVariant }) => (
-                <div key={id} className="flex items-center justify-between py-3 gap-3">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="h-7 w-7 rounded-lg bg-[#f4f4f3] flex items-center justify-center shrink-0">
-                      <Icon className="h-3.5 w-3.5 text-[#7a7a76]" />
+              {AI_TOOLS.map(({ id, icon: Icon, label, description, badge: staticBadge }) => {
+                // "firecrawl" est le seul outil dont la disponibilité dépend d'une clé
+                // configurable par l'utilisateur — badge recalculé à partir de l'état
+                // réel de la clé plutôt que du texte figé du registre (qui affichait
+                // "Clé requise" même une fois la clé enregistrée).
+                const badge = id === 'firecrawl'
+                  ? (data.firecrawlKeyMasked ? 'Actif' : 'Clé requise')
+                  : staticBadge;
+                return (
+                  <div key={id} className="flex items-center justify-between py-3 gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="h-7 w-7 rounded-lg bg-[#f4f4f3] flex items-center justify-center shrink-0">
+                        <Icon className="h-3.5 w-3.5 text-[#7a7a76]" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs font-semibold text-[#26251e]">{label}</p>
+                        <p className="text-[10px] text-[#7a7a76] leading-relaxed truncate">{description}</p>
+                      </div>
                     </div>
-                    <div className="min-w-0">
-                      <p className="text-xs font-semibold text-[#26251e]">{label}</p>
-                      <p className="text-[10px] text-[#7a7a76] leading-relaxed truncate">{description}</p>
-                    </div>
+                    <span className={cn(
+                      'text-[9px] font-bold px-2 py-0.5 rounded-full shrink-0 border',
+                      badge === 'Actif' ? 'bg-[#059669]/10 text-[#059669] border-[#059669]/20' : 'bg-transparent text-[#7a7a76] border-[#e5e5e0]'
+                    )}>
+                      {badge}
+                    </span>
                   </div>
-                  <span className={cn(
-                    'text-[9px] font-bold px-2 py-0.5 rounded-full shrink-0 border',
-                    badge === 'Actif' ? 'bg-[#059669]/10 text-[#059669] border-[#059669]/20' : 'bg-transparent text-[#7a7a76] border-[#e5e5e0]'
-                  )}>
-                    {badge}
-                  </span>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </CardContent>
         </Card>

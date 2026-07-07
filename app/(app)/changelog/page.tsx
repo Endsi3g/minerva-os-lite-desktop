@@ -20,6 +20,21 @@ interface ChangelogVersion {
 
 const versions: ChangelogVersion[] = [
   {
+    version: 'v3.67.0',
+    date: '6 juillet 2026 · 22h05',
+    title: 'Corrections IA, campagnes et Paramètres',
+    highlights: [
+      { text: "Des colonnes de lead qui n'ont jamais existé faisaient planter la recherche de leads par l'assistant IA et la suggestion de prochaine action. Corrigées." },
+      { text: "Plusieurs notifications \"Échec IA\" identiques apparaissaient pour un seul événement de saturation du provider IA. Corrigé, et ajout d'une vraie limite de fréquence des appels IA (8 par minute par utilisateur) avec sa propre notification." },
+      { text: "Une campagne créée en demandant à l'assistant IA n'apparaissait jamais nulle part dans l'application — elle était enregistrée dans un système que rien d'autre ne consulte. Unifiée sur le système utilisé partout ailleurs." },
+      { text: "Lancer un Playbook ne créait en réalité aucun lead et son statut restait bloqué sur \"En cours\" indéfiniment. Un Playbook lancé crée maintenant réellement des leads rattachés à sa campagne, et le statut passe à \"Terminé\" avec un vrai décompte." },
+      { text: "Le lien \"Campagne\" dans les dernières exécutions de Playbooks menait vers la liste générale au lieu de la campagne concernée." },
+      { text: "Dans Paramètres > Minerva AI, l'outil \"Recherche web (Firecrawl)\" affichait \"Clé requise\" même une fois la clé déjà enregistrée." },
+      { text: "Les statistiques \"Conversations / Emails rédigés / Recherches web\" de Paramètres étaient des nombres fixes sans lien avec la réalité. Remplacées par de vrais comptages du mois en cours, avec liens directs vers les conversations et les emails, et la liste des dernières recherches web affichée directement dans Paramètres." },
+      { text: "Ajout d'un vrai graphique en barres (au lieu de simples barres de progression) dans l'onglet Analytics du détail d'une campagne." },
+    ],
+  },
+  {
     version: 'v3.66.0',
     date: '6 juillet 2026 · 20h00',
     title: 'Fiabilité IA & prospection en masse',

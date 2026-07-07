@@ -5,6 +5,21 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [3.67.0] — Corrections IA, campagnes et Paramètres — 6 juillet 2026, 22h05
+
+### Corrigé
+- Des colonnes de lead qui n'ont jamais existé (`leads.name`, `leads.email`, `leads.company`, `leads.last_contacted_at`) faisaient planter la recherche de leads par l'assistant IA et la suggestion de prochaine action — corrigées vers les vraies colonnes.
+- Plusieurs notifications "Échec IA" identiques apparaissaient pour un seul événement de saturation du provider IA, à cause d'une vérification et d'une écriture séparées et non simultanées qui laissaient passer plusieurs notifications en même temps. Corrigé, et ajout d'une vraie limite de fréquence des appels IA (8 par minute par utilisateur) avec sa propre notification distincte.
+- Une campagne créée en demandant à l'assistant IA n'apparaissait jamais nulle part dans l'application — elle était enregistrée dans un système que rien d'autre ne consulte. Unifiée sur le système réellement utilisé partout ailleurs (page Campagnes, onglet Campagnes d'Outreach, assistant de lancement des Playbooks).
+- Lancer un Playbook ne créait en réalité aucun lead (les résultats de la recherche de prospects étaient récupérés puis jetés) et son statut restait bloqué sur "En cours" indéfiniment. Les deux sont corrigés — un Playbook lancé crée maintenant réellement des leads rattachés à sa campagne, et le statut passe à "Terminé" avec un vrai décompte.
+- Le lien "Campagne" dans les dernières exécutions de Playbooks menait vers la liste générale au lieu de la campagne concernée.
+- Dans Paramètres > Minerva AI, l'outil "Recherche web (Firecrawl)" affichait "Clé requise" même une fois la clé déjà enregistrée.
+- Les statistiques "Conversations / Emails rédigés / Recherches web" de Paramètres > Minerva AI étaient des nombres fixes sans lien avec la réalité, rendant impossible de voir la moindre conversation ou recherche correspondante. Remplacées par de vrais comptages du mois en cours, avec liens directs vers les conversations et les emails, et la liste des dernières recherches web affichée directement dans Paramètres.
+
+### Ajouté
+- Un vrai graphique en barres (au lieu de simples barres de progression) dans l'onglet Analytics du détail d'une campagne.
+- Document technique expliquant comment répliquer la sidebar et la mise en page de l'application dans un autre projet (`docs/DESIGN_SYSTEM_REPLICATION.md`).
+
 ## [3.66.0] — Fiabilité IA & prospection en masse — 2026-07-06
 
 ### Ajouté
