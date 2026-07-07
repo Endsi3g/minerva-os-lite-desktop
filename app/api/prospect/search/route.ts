@@ -4,6 +4,30 @@ import { createClient } from '@/lib/supabase/server';
 export const maxDuration = 55;
 export const dynamic = 'force-dynamic';
 
+interface ApifyPlace {
+  title?: string;
+  categoryName?: string;
+  address?: string;
+  city?: string;
+  phone?: string;
+  email?: string;
+  website?: string;
+  totalScore?: number;
+  reviewsCount?: number;
+  url?: string;
+  location?: { lat?: number; lng?: number };
+}
+
+function buildSeoAuditApify(place: ApifyPlace): string {
+  const issues: string[] = [];
+  if (!place.website) issues.push('Aucun site web détecté');
+  if ((place.totalScore ?? 5) < 3.5) issues.push(`Note très faible (${place.totalScore ?? 0}/5) — gestion de réputation urgente`);
+  else if ((place.totalScore ?? 5) < 4.0) issues.push(`Note faible (${place.totalScore ?? 0}/5)`);
+  if ((place.reviewsCount ?? 0) < 5) issues.push('Très peu d\'avis clients');
+  else if ((place.reviewsCount ?? 0) < 15) issues.push('Peu d\'avis clients');
+  return issues.length > 0 ? issues.join(' · ') : 'Profil local correct — proposer l\'automatisation Minerva';
+}
+
 // ── City coordinates (Québec) ─────────────────────────────────────────────────
 
 const CITY_COORDS: Record<string, [number, number]> = {
@@ -172,6 +196,16 @@ export async function POST(req: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
 
+    // Fetch settings for Apify token
+    const { data: settings } = await supabase
+      .from('settings')
+      .select('apify_token')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    const apifyToken = (settings as any)?.apify_token;
+    const hasApify = apifyToken && apifyToken !== 'native' && apifyToken.trim().length > 5;
+
     const body = await req.json();
 
     const niches: string[] = (Array.isArray(body.niches) && body.niches.length > 0)
@@ -203,6 +237,100 @@ export async function POST(req: NextRequest) {
     }
 
     const searchCenter = { lat, lon, label: cities[0] };
+    let apifyErrorMsg: string | null = null;
+
+    if (hasApify) {
+      try {
+        const searchTerms: string[] = cities.flatMap(city =>
+          niches.map(niche => body.query || `${niche} ${city}`)
+        ).slice(0, 10);
+
+        const perSearch = Math.ceil(maxResults / searchTerms.length);
+
+        const apifyRes = await fetch(
+          `https://api.apify.com/v2/acts/compass~crawler-google-places/run-sync-get-dataset-items?token=${apifyToken}&timeout=40&memory=1024`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              searchTerms,
+              searchStringsArray: searchTerms,
+              maxCrawledPlacesPerSearch: Math.max(perSearch, 10),
+              language: 'fr',
+              countryCode: 'ca',
+              scrapeWebsite: false,
+            }),
+            signal: AbortSignal.timeout(42000),
+          }
+        );
+
+        const rawText = await apifyRes.text();
+
+        if (!apifyRes.ok) {
+          throw new Error(`Apify server responded with HTTP ${apifyRes.status}: ${rawText.slice(0, 200)}`);
+        }
+
+        if (rawText.trimStart().startsWith('<')) {
+          throw new Error('Apify API key is invalid or returned HTML (e.g. captcha or auth error)');
+        }
+
+        const places: ApifyPlace[] = JSON.parse(rawText);
+        
+        // Deduplicate
+        const seen = new Set<string>();
+        const leads = places
+          .filter(p => p.title)
+          .filter(p => {
+            const key = `${(p.title ?? '').toLowerCase().replace(/[^a-z0-9]/g, '')}|${(p.city ?? '').toLowerCase()}`;
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+          })
+          .slice(0, maxResults)
+          .map((p, i) => {
+            const phone = p.phone ?? '';
+            const website = p.website ?? '';
+            const completenessScore = Math.round((phone ? 33 : 0) + (website ? 33 : 0) + (p.address ? 34 : 0));
+            const qualityScore = Math.round(completenessScore * 0.6 + 40);
+            return {
+              id: `apify-${i}-${Date.now()}`,
+              businessName: p.title ?? 'Inconnu',
+              niche: p.categoryName ?? (niches[0] ?? 'Commerce local'),
+              city: p.city ?? cities[0],
+              phone,
+              email: p.email ?? '',
+              website,
+              address: p.address ?? '',
+              rating: p.totalScore ?? 0,
+              reviewsCount: p.reviewsCount ?? 0,
+              mapsUrl: p.url ?? '',
+              seoAudit: buildSeoAuditApify(p),
+              source: 'apify',
+              latitude: p.location?.lat,
+              longitude: p.location?.lng,
+              qualityScore,
+              completenessScore,
+              localFitScore: 85,
+              opportunityScore: completenessScore < 50 ? 90 : 70,
+              distanceKm: 0,
+            };
+          });
+
+        if (leads.length > 0) {
+          return NextResponse.json({
+            leads,
+            provider: 'apify',
+            searchCenter,
+            message: `${leads.length} établissements trouvés via Apify (Google Maps Premium)`,
+          });
+        }
+      } catch (err: any) {
+        apifyErrorMsg = err?.message || String(err);
+        console.error('[prospect/search] Apify failed, falling back to OSM:', apifyErrorMsg);
+      }
+    }
+
+    // OSM Fallback
     const tags = getNicheTags(niches[0] ?? 'commerce local');
     const query = buildOverpassQuery(tags, lat, lon, radius, Math.ceil(maxResults * 1.5));
 
@@ -237,9 +365,9 @@ export async function POST(req: NextRequest) {
       leads,
       provider: 'osm',
       searchCenter,
-      message: leads.length > 0
-        ? `${leads.length} établissements trouvés via OpenStreetMap`
-        : 'Aucun résultat OSM — essayez une autre niche ou ville',
+      message: apifyErrorMsg
+        ? `Échec Apify (${apifyErrorMsg.slice(0, 50)}). ${leads.length} leads trouvés via OpenStreetMap (secours).`
+        : `${leads.length} établissements trouvés via OpenStreetMap`,
     });
   } catch (err: any) {
     console.error('[prospect/search]', err);

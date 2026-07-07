@@ -203,7 +203,7 @@ async function notifyAiFailure(userId: string | undefined, workspaceId: string |
 
 // ── Rate limiting ─────────────────────────────────────────────────────────────
 
-const AI_RATE_LIMIT_MAX_CALLS = 8;
+const AI_RATE_LIMIT_MAX_CALLS = 60;
 const AI_RATE_LIMIT_WINDOW_MS = 60 * 1000;
 
 // Self-imposed limit checked BEFORE calling any provider, so a burst (e.g. a batch

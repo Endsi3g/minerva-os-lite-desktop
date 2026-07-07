@@ -150,6 +150,7 @@ interface ReachContextType {
     phone?: string;
     score?: number;
     campaignId?: string;
+    customFields?: Record<string, string>;
   }) => void;
   toggleTask: (id: string) => void;
   addTask: (title: string, category: Task['category'], dueDate?: string) => void;
@@ -263,6 +264,7 @@ interface DbLead {
   project_id?: string | null;
   // Tags (v4.0) — JSON string in SQLite, text[] in Supabase
   tags?: string | string[] | null;
+  custom_fields?: string | Record<string, string> | null;
 }
 
 interface DbNote {
@@ -294,8 +296,18 @@ interface DbSuggestion {
 function mapDbLeadToUi(dbLead: DbLead, dbNotes: DbNote[] = []): Lead {
   let photos: string[] = [];
   let socialLinks: Record<string, string> = {};
+  let customFields: Record<string, string> = {};
   try { photos = dbLead.photos ? JSON.parse(dbLead.photos as string) : []; } catch { photos = []; }
   try { socialLinks = dbLead.social_links ? JSON.parse(dbLead.social_links as string) : {}; } catch { socialLinks = {}; }
+  try {
+    if (dbLead.custom_fields) {
+      customFields = typeof dbLead.custom_fields === 'string'
+        ? JSON.parse(dbLead.custom_fields)
+        : dbLead.custom_fields;
+    }
+  } catch {
+    customFields = {};
+  }
 
   return {
     id: dbLead.id,
@@ -353,6 +365,7 @@ function mapDbLeadToUi(dbLead: DbLead, dbNotes: DbNote[] = []): Lead {
     scoreRevenue: dbLead.score_revenue ?? undefined,
     projectId: dbLead.project_id || undefined,
     tags: (() => { try { return dbLead.tags ? (Array.isArray(dbLead.tags) ? dbLead.tags : JSON.parse(dbLead.tags as string)) : []; } catch { return []; } })(),
+    customFields,
     notes: dbNotes
       .filter(n => n.lead_id === dbLead.id)
       .map(n => ({
@@ -1318,6 +1331,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
     phone?: string;
     score?: number;
     campaignId?: string;
+    customFields?: Record<string, string>;
   }) => {
     if (!user || !activeWorkspace) return;
     const electronObj = typeof window !== 'undefined' && (window as any).electron ? (window as any).electron : null;
@@ -1345,9 +1359,9 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
           source: leadData.source
         });
 
-        await electronObj.dbRun(`INSERT INTO leads (id, user_id, business_name, contact_name, contact_email, niche, city, source, lead_source_type, status, temperature, next_action, next_action_date, owner, image_url, workspace_id, score, website, rating, reviews_count, maps_url, photos, social_links, assigned_to, latitude, longitude, phone, campaign_id, created_at, updated_at, sync_status)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending_insert')`,
-          [leadId, user.id, leadData.businessName, leadData.contactName, leadData.contactEmail || '', leadData.niche, leadData.city, leadData.source, leadSourceType, leadData.status, leadData.temperature, leadData.nextAction, leadData.nextActionDate || null, 'Moi', leadData.imageUrl || null, activeWorkspace.id, leadScore, leadData.website || null, leadData.rating ?? null, leadData.reviewsCount ?? null, leadData.mapsUrl || null, leadData.photos ? JSON.stringify(leadData.photos) : null, leadData.socialLinks ? JSON.stringify(leadData.socialLinks) : null, leadData.assignedTo || null, leadData.latitude ?? null, leadData.longitude ?? null, leadData.phone || null, leadData.campaignId || null, nowStr, nowStr]
+        await electronObj.dbRun(`INSERT INTO leads (id, user_id, business_name, contact_name, contact_email, niche, city, source, lead_source_type, status, temperature, next_action, next_action_date, owner, image_url, workspace_id, score, website, rating, reviews_count, maps_url, photos, social_links, assigned_to, latitude, longitude, phone, campaign_id, created_at, updated_at, sync_status, custom_fields)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending_insert', ?)`,
+          [leadId, user.id, leadData.businessName, leadData.contactName, leadData.contactEmail || '', leadData.niche, leadData.city, leadData.source, leadSourceType, leadData.status, leadData.temperature, leadData.nextAction, leadData.nextActionDate || null, 'Moi', leadData.imageUrl || null, activeWorkspace.id, leadScore, leadData.website || null, leadData.rating ?? null, leadData.reviewsCount ?? null, leadData.mapsUrl || null, leadData.photos ? JSON.stringify(leadData.photos) : null, leadData.socialLinks ? JSON.stringify(leadData.socialLinks) : null, leadData.assignedTo || null, leadData.latitude ?? null, leadData.longitude ?? null, leadData.phone || null, leadData.campaignId || null, nowStr, nowStr, leadData.customFields ? JSON.stringify(leadData.customFields) : '{}']
         );
 
         const insertedNotes: DbNote[] = [];
@@ -1393,7 +1407,8 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
           latitude: leadData.latitude ?? null,
           longitude: leadData.longitude ?? null,
           phone: leadData.phone || null,
-          campaign_id: leadData.campaignId || null
+          campaign_id: leadData.campaignId || null,
+          custom_fields: leadData.customFields || null
         }, insertedNotes);
 
         setLeads(prev => [newUiLead, ...prev]);
@@ -1438,6 +1453,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
       latitude: leadData.latitude ?? null,
       longitude: leadData.longitude ?? null,
       phone: leadData.phone || null,
+      custom_fields: leadData.customFields || null,
       ...(leadData.score !== undefined ? { score: leadData.score } : {}),
     };
 

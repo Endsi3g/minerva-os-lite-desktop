@@ -30,11 +30,21 @@ import TextAlign from '@tiptap/extension-text-align';
 
 // ── Variable substitution ──────────────────────────────────────────────────────
 function substituteVars(text: string, lead: Lead): string {
-  return text
+  let result = text
     .replace(/\{\{prenom\}\}/g, lead.contactName?.split(' ')[0] || lead.businessName)
     .replace(/\{\{business\}\}/g, lead.businessName || '')
     .replace(/\{\{ville\}\}/g, lead.city || '')
     .replace(/\{\{niche\}\}/g, lead.niche || '');
+
+  if (lead.customFields && typeof lead.customFields === 'object') {
+    Object.entries(lead.customFields).forEach(([key, val]) => {
+      const escapedKey = key.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+      const regex = new RegExp(`\\{\\{${escapedKey}\\}\\}`, 'g');
+      result = result.replace(regex, String(val ?? ''));
+    });
+  }
+
+  return result;
 }
 
 // ── Variable chips ─────────────────────────────────────────────────────────────
@@ -45,7 +55,8 @@ const VARS = [
   { label: '{{niche}}', key: 'niche' },
 ];
 
-function VarChips({ onInsert }: { onInsert: (v: string) => void }) {
+function VarChips({ onInsert, customFields }: { onInsert: (v: string) => void; customFields?: Record<string, string> }) {
+  const extraKeys = customFields ? Object.keys(customFields) : [];
   return (
     <div className="flex flex-wrap gap-1 mt-1">
       {VARS.map(v => (
@@ -56,6 +67,16 @@ function VarChips({ onInsert }: { onInsert: (v: string) => void }) {
           className="text-[10px] font-bold px-2 py-0.5 rounded-full border border-[#e5e5e0] bg-white hover:bg-[#059669]/5 hover:border-[#059669]/30 text-[#26251e] transition-colors"
         >
           {v.label}
+        </button>
+      ))}
+      {extraKeys.map(k => (
+        <button
+          key={k}
+          type="button"
+          onClick={() => onInsert(`{{${k}}}`)}
+          className="text-[10px] font-bold px-2.5 py-0.5 rounded-full border border-purple-200 bg-purple-50 hover:bg-purple-100 hover:border-purple-300 text-purple-700 transition-colors"
+        >
+          {`{{${k}}}`}
         </button>
       ))}
     </div>
@@ -962,7 +983,7 @@ export function ComposerQueueCadenceRoot() {
                 </div>
 
                 {/* Variable chips for subject */}
-                <VarChips onInsert={insertVarSubject} />
+                <VarChips onInsert={insertVarSubject} customFields={composerLead?.customFields} />
 
                 <Separator className="bg-[#e5e5e0]" />
 
@@ -975,7 +996,7 @@ export function ComposerQueueCadenceRoot() {
                 </div>
 
                 {/* Variable chips for body */}
-                <VarChips onInsert={(v) => composerEditor?.chain().focus().insertContent(v).run()} />
+                <VarChips onInsert={(v) => composerEditor?.chain().focus().insertContent(v).run()} customFields={composerLead?.customFields} />
 
                 {/* Feedback */}
                 {composerMsg && (

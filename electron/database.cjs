@@ -924,6 +924,9 @@ function initDb() {
       summary TEXT,
       created_at TEXT NOT NULL
     )`, () => {});
+
+    // v13.5 — Custom fields for CSV import and personalized outreach
+    db.run(`ALTER TABLE leads ADD COLUMN custom_fields TEXT DEFAULT '{}'`, () => {});
   });
 }
 

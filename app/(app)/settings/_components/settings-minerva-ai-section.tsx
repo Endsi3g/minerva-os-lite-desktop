@@ -93,6 +93,30 @@ const MINERVA_MODELS = [
     description: 'Inférence edge via Cloudflare Workers AI — faible latence.',
     color: '#f6821f',
   },
+  {
+    id: 'meta-llama/llama-3.3-70b-instruct:free',
+    name: 'Llama 3.3 70B Free',
+    provider: 'OpenRouter',
+    badge: 'Gratuit',
+    description: 'Modèle de référence Open Source via OpenRouter (Gratuit).',
+    color: '#7c3aed',
+  },
+  {
+    id: 'meta-llama/llama-3.3-70b-instruct',
+    name: 'Llama 3.3 70B',
+    provider: 'OpenRouter',
+    badge: 'Standard',
+    description: 'Modèle de référence Open Source via OpenRouter.',
+    color: '#7c3aed',
+  },
+  {
+    id: 'deepseek/deepseek-chat',
+    name: 'DeepSeek V3',
+    provider: 'OpenRouter',
+    badge: 'Performant',
+    description: 'Modèle ultra-performant à faible coût via OpenRouter.',
+    color: '#0052cc',
+  },
 ];
 
 // ── ApiKeyField ────────────────────────────────────────────────────────────────
@@ -278,7 +302,21 @@ export function SettingsMinervaAiSection({ isSaving }: SettingsMinervaAiSectionP
     setSaving(true);
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
-    if (user) await supabase.from('settings').upsert({ user_id: user.id, ai_model: model });
+
+    let provider = 'anthropic';
+    if (model.startsWith('@cf/')) {
+      provider = 'cloudflare';
+    } else if (model.includes('/') || model.includes(':') || model.startsWith('meta-')) {
+      provider = 'openrouter';
+    }
+
+    if (user) {
+      await supabase.from('settings').upsert({ 
+        user_id: user.id, 
+        ai_model: model,
+        ai_provider: provider
+      });
+    }
     setSaving(false);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);

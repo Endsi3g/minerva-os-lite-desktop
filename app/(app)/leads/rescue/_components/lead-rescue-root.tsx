@@ -52,7 +52,24 @@ export function LeadRescueRoot() {
     setRescuingIds(prev => new Set(prev).add(lead.id));
     try {
       await addTask(`Relancer ${lead.business_name} (${getActionLabel(lead.nba_action)})`, 'Follow-up');
-      toast.success(`Tâche de relance créée pour ${lead.business_name}`);
+
+      try {
+        await fetch(getApiUrl('/api/generate-draft'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            leadId: lead.id,
+            channel: 'Email',
+            tone: 'Calme & Conseil',
+            instructions: `Relance automatique via la page de sauvetage (Action recommandée : ${getActionLabel(lead.nba_action)})`,
+            templateType: 'follow_up',
+          }),
+        });
+      } catch (e) {
+        console.error('Error generating AI draft for rescued lead:', e);
+      }
+
+      toast.success(`Tâche de relance et brouillon IA créés pour ${lead.business_name}`);
       setLeads(prev => prev.filter(l => l.id !== lead.id));
     } catch (err) {
       console.error(err);

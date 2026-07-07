@@ -5,6 +5,17 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [3.69.0] — Amélioration de la prospection, champs personnalisés CSV, relances automatisées et modèles OpenRouter — 7 juillet 2026, 15h50
+
+### Ajouté
+- **Scraper de prospects premium Apify** : Restauration complète du scraper premium de Google Places via Apify dans le module de prospection, avec une gestion robuste des diacritiques (accentuation) utilisant une regex ASCII-compatible (`[\u0300-\u036f]`) pour écarter tout plantage à la compilation Vercel/Next.js. Le scraper dispose d'un timeout de secours automatique pour basculer de manière transparente sur OpenStreetMap si nécessaire.
+- **Filtres de prospection enrichis** : Intégration d'un curseur d'avis maximum ("Avis maximum", allant jusqu'à 1000/Illimité) à côté de la note et des avis minimums sur la carte, permettant d'exclure les établissements ayant trop d'avis pour cibler la prospection de façon ultra-sélective.
+- **Importation CSV dynamique et champs personnalisés** : L'importateur CSV détecte maintenant automatiquement les colonnes non-standards et propose de créer des nouveaux champs personnalisés (ex: `custom__*`). Ces propriétés sont stockées au format JSON dans la table `leads` de la base SQLite et Supabase.
+- **Personnalisation d'outreach par variables dynamiques** : Le compositeur et les séquences d'emails interpolent maintenant dynamiquement les balises associées aux colonnes personnalisées du CSV (ex: `{{nom_de_colonne}}`). Des badges/chips violettes spécifiques apparaissent dans la barre d'outils de TipTap pour les insérer facilement.
+- **Enrichissement AI contextuel** : Les données des colonnes personnalisées importées sont automatiquement transmises au prompt du copilote de prospection pour guider l'intelligence artificielle dans la rédaction de messages hautement personnalisés.
+- **Brouillons de relance automatique dans le Rescue Panel** : Le bouton "Relancer" sur la page de sauvetage des leads crée dorénavant à la fois la tâche manuelle de relance et lance la génération d'un brouillon d'email par l'IA dans l'onglet des brouillons à approuver.
+- **Modèles OpenRouter et limites ajustées** : Ajout de raccourcis rapides pour sélectionner les modèles OpenRouter (**Llama 3.3 70B Free**, **Llama 3.3 70B** standard, et **DeepSeek V3**) dans l'onglet Minerva AI des Paramètres, avec détection automatique du provider lors de la sauvegarde. La limite locale d'appels IA a été rehaussée de 8 à 60 requêtes par minute pour absorber les requêtes en batch.
+
 ## [3.68.1] — Carte : vraie cause du plantage identifiée et corrigée — 6 juillet 2026, 22h48
 
 ### Corrigé

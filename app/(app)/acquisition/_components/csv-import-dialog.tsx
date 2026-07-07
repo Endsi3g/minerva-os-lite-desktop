@@ -57,7 +57,7 @@ function guessMapping(headers: string[]): Record<number, string> {
     else if (/city|ville/.test(norm)) mapping[i] = 'city';
     else if (/niche|secteur|category|catégorie/.test(norm)) mapping[i] = 'niche';
     else if (/website|site.?web|url/.test(norm)) mapping[i] = 'website';
-    else mapping[i] = 'ignore';
+    else mapping[i] = h.trim() ? `custom__${h.trim()}` : 'ignore';
   });
   return mapping;
 }
@@ -98,6 +98,18 @@ export function CsvImportDialog({ open, onClose, onImported }: { open: boolean; 
         const idx = Object.entries(mapping).find(([, v]) => v === field)?.[0];
         return idx !== undefined ? (row[Number(idx)] || '') : '';
       };
+      
+      const customFields: Record<string, string> = {};
+      Object.entries(mapping).forEach(([colIdx, mappedField]) => {
+        if (mappedField.startsWith('custom__')) {
+          const fieldName = mappedField.replace('custom__', '');
+          const val = row[Number(colIdx)] || '';
+          if (val.trim()) {
+            customFields[fieldName] = val.trim();
+          }
+        }
+      });
+
       const businessName = get('businessName');
       if (businessName.trim()) {
         try {
@@ -114,6 +126,7 @@ export function CsvImportDialog({ open, onClose, onImported }: { open: boolean; 
             source: 'csv',
             nextAction: '',
             nextActionDate: '',
+            customFields,
           });
           success++;
         } catch { /* continue with next row */ }
@@ -169,6 +182,9 @@ export function CsvImportDialog({ open, onClose, onImported }: { open: boolean; 
                       className="text-[11px] border border-[#e5e5e0] rounded px-2 py-1.5 bg-white shrink-0"
                     >
                       {LEAD_FIELDS.map((f) => <option key={f.key} value={f.key}>{f.label}</option>)}
+                      {h && h.trim() && !LEAD_FIELDS.some((f) => f.key === h.trim()) && (
+                        <option value={`custom__${h.trim()}`}>Créer le champ &quot;{h.trim()}&quot;</option>
+                      )}
                     </select>
                   </div>
                 ))}

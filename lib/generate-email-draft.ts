@@ -87,6 +87,21 @@ export async function generateEmailDraftForLead(
     : '';
   const vibeLine = lead.company_vibe ? `\nVibe de l'entreprise : ${lead.company_vibe}` : '';
 
+  let customContext = '';
+  if (lead.custom_fields) {
+    try {
+      const fields = typeof lead.custom_fields === 'string'
+        ? JSON.parse(lead.custom_fields)
+        : lead.custom_fields;
+      if (fields && typeof fields === 'object') {
+        const entries = Object.entries(fields).filter(([, v]) => v);
+        if (entries.length > 0) {
+          customContext = `\nInformations de personnalisation supplémentaires (utilise-les intelligemment pour personnaliser le message) :\n${entries.map(([k, v]) => `- ${k} : ${v}`).join('\n')}`;
+        }
+      }
+    } catch { /* ignore parse errors */ }
+  }
+
   let personaContext = '';
   if (settings?.ai_persona) {
     try {
@@ -126,7 +141,7 @@ Contact : ${lead.contact_name || 'le gérant/propriétaire'}
 Email : ${lead.contact_email || 'non renseigné'}
 Secteur : ${lead.niche || 'non précisé'}
 Ville : ${lead.city || 'non précisée'}${decisionMakerLine}${vibeLine}${webContext}
-${googleContext}
+${googleContext}${customContext}
 ${params.templateType ? `Type de relance : ${params.templateType}` : ''}
 Notes terrain / observations :
 ${notesText || '(aucune note spécifique — utilise les données Google comme seul contexte personnel)'}

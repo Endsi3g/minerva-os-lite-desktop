@@ -100,6 +100,7 @@ export interface Lead {
   projectId?: string;
   // Tags (v4.0)
   tags?: string[];
+  customFields?: Record<string, string>;
 }
 
 export interface LeadEvent {
