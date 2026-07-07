@@ -9,7 +9,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { useReach } from '@/lib/reach-context';
 import { getApiUrl } from '@/lib/api-helper';
 import { Lead } from '@/lib/mock-data';
-import { ChevronLeft, Upload, X, Building2 } from 'lucide-react';
+import { ChevronLeft, Upload, X, Building2, Plus } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface TeamMember {
   id: string;
@@ -42,11 +43,28 @@ function AppSelect({
 
 export default function NewLeadRoot() {
   const router = useRouter();
-  const { addLead } = useReach();
+  const { addLead, activeWorkspace, updateWorkspace } = useReach();
   const logoInputRef = useRef<HTMLInputElement>(null);
 
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [logoBase64, setLogoBase64] = useState('');
+  const [customFormFields, setCustomFormFields] = useState<Record<string, string>>({});
+  const [addingCustomField, setAddingCustomField] = useState(false);
+  const [newFieldName, setNewFieldName] = useState('');
+
+  const handleCreateCustomField = () => {
+    if (!newFieldName.trim() || !activeWorkspace) return;
+    const current = activeWorkspace.custom_columns || [];
+    if (current.includes(newFieldName.trim())) {
+      toast.error('Ce champ existe déjà.');
+      return;
+    }
+    const updated = [...current, newFieldName.trim()];
+    updateWorkspace(activeWorkspace.id, { custom_columns: updated });
+    setNewFieldName('');
+    setAddingCustomField(false);
+    toast.success('Champ personnalisé créé');
+  };
 
   useEffect(() => {
     const fetchTeamMembers = async () => {
@@ -107,6 +125,7 @@ export default function NewLeadRoot() {
       ...(phone ? { phone } : {}),
       ...(assignedTo ? { assignedTo } : {}),
       ...(logoBase64 ? { imageUrl: logoBase64 } : {}),
+      customFields: customFormFields,
     });
     router.push('/leads');
   };
@@ -346,6 +365,65 @@ export default function NewLeadRoot() {
               className="text-sm border-[#e5e5e0] focus:ring-[#059669] focus:border-[#059669] resize-none"
             />
           </div>
+
+          {/* Champs Personnalisés */}
+          {(activeWorkspace?.custom_columns && activeWorkspace.custom_columns.length > 0) || addingCustomField ? (
+            <div className="space-y-4 pt-2 border-t border-[#e5e5e0]">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Champs personnalisés</p>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {activeWorkspace?.custom_columns?.map((colName) => (
+                  <div key={colName} className="space-y-1.5 animate-in fade-in duration-100">
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">{colName}</label>
+                    <Input
+                      placeholder={`Valeur pour ${colName}`}
+                      value={customFormFields[colName] || ''}
+                      onChange={(e) => setCustomFormFields(prev => ({ ...prev, [colName]: e.target.value }))}
+                      className="h-9 text-sm border-[#e5e5e0] focus:ring-[#059669] focus:border-[#059669]"
+                    />
+                  </div>
+                ))}
+              </div>
+
+              {addingCustomField ? (
+                <div className="flex gap-2 items-center bg-[#fafaf8] border border-[#e5e5e0] p-3 rounded-lg max-w-md animate-in slide-in-from-top-1 duration-150">
+                  <Input
+                    placeholder="Nom du nouveau champ..."
+                    value={newFieldName}
+                    onChange={(e) => setNewFieldName(e.target.value)}
+                    className="h-8 text-xs border-[#e5e5e0] focus:ring-[#059669]"
+                    autoFocus
+                  />
+                  <Button type="button" onClick={handleCreateCustomField} size="sm" className="bg-[#059669] hover:bg-[#047857] text-white text-xs h-8">
+                    Créer
+                  </Button>
+                  <Button type="button" variant="ghost" onClick={() => { setAddingCustomField(false); setNewFieldName(''); }} size="sm" className="h-8 text-xs hover:bg-[#f4f4f3]">
+                    Annuler
+                  </Button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setAddingCustomField(true)}
+                  className="flex items-center gap-1.5 text-xs text-[#059669] font-bold hover:underline py-1"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  Créer un autre champ personnalisé
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="pt-2 border-t border-[#e5e5e0]">
+              <button
+                type="button"
+                onClick={() => setAddingCustomField(true)}
+                className="flex items-center gap-1.5 text-xs text-[#059669] font-bold hover:underline py-1"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                Ajouter un champ personnalisé
+              </button>
+            </div>
+          )}
 
           {/* Actions */}
           <div className="flex items-center justify-end gap-3 pt-2 border-t border-[#e5e5e0]">

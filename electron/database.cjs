@@ -933,6 +933,9 @@ function initDb() {
     db.run(`ALTER TABLE lead_validations ADD COLUMN maps_url TEXT DEFAULT NULL`, () => {});
     db.run(`ALTER TABLE leads ADD COLUMN address TEXT DEFAULT NULL`, () => {});
     db.run(`ALTER TABLE leads ADD COLUMN notes TEXT DEFAULT NULL`, () => {});
+
+    // v13.7 — custom_columns for workspaces
+    db.run(`ALTER TABLE workspaces ADD COLUMN custom_columns TEXT DEFAULT '[]'`, () => {});
   });
 }
 

@@ -5,6 +5,16 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [3.69.1] — Colonnes personnalisées de workspace, import manuel et copie rapide — 7 juillet 2026, 23h30
+
+### Ajouté
+- **Colonnes personnalisées persistées** : Intégration d'une colonne `custom_columns` dans la table `workspaces` (SQLite locale et Supabase cloud) pour mémoriser la liste des champs personnalisés définis par l'utilisateur pour son espace de travail.
+- **Gestion des colonnes dans les Paramètres** : Ajout d'une section dédiée dans les Paramètres Généraux du Workspace pour lister, ajouter et supprimer des colonnes personnalisées.
+- **Champs personnalisés sur la Fiche Prospect** : Rendu dynamique des colonnes personnalisées du workspace dans le volet des propriétés du prospect (`lead-detail-client.tsx`), avec édition en ligne (`InlineTextEdit`) et bouton de création rapide de nouveaux champs.
+- **Mappage intelligent à l'Importation CSV** : Détection et suggestion automatique de mappage des en-têtes inconnus vers des colonnes existantes ou vers une nouvelle colonne à créer à la volée. Les nouvelles colonnes détectées sont automatiquement enregistrées au niveau du workspace.
+- **Création manuelle de prospect enrichie** : Ajout d'une zone dédiée aux champs personnalisés dans le formulaire de création manuelle de prospect (`new-lead-root.tsx`), avec saisie des valeurs existantes et création à la volée de nouvelles colonnes.
+- **Bouton Copie Rapide de Prospect** : Ajout d'un bouton de copie des informations en haut de la fiche de détails du prospect pour copier dans le presse-papiers une synthèse exhaustive de toutes les données du lead (coordonnées, réseaux sociaux, notes de terrain, champs personnalisés) formatée pour l'IA ou pour un document externe.
+
 ## [3.69.0] — Amélioration de la prospection, champs personnalisés CSV, relances automatisées et modèles OpenRouter — 7 juillet 2026, 15h50
 
 ### Ajouté

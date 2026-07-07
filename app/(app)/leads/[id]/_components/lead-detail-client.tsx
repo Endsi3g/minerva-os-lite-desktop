@@ -565,7 +565,7 @@ function TagInputInline({ onAdd }: { onAdd: (tag: string) => void }) {
 }
 
 export function LeadDetailClient({ id }: { id: string }) {
-  const { leads, updateLead, addNoteToLead, campaigns, projects, activeWorkspace, addTask, addNotification, user } = useReach();
+  const { leads, updateLead, addNoteToLead, campaigns, projects, activeWorkspace, updateWorkspace, addTask, addNotification, user } = useReach();
   const { t } = useLanguage();
 
   // Look up lead
@@ -581,6 +581,85 @@ export function LeadDetailClient({ id }: { id: string }) {
   // Website scraper state
   const [scrapingSite, setScrapingSite] = useState(false);
   const [scrapeError, setScrapeError] = useState('');
+
+  // Custom columns state
+  const [addingCustomField, setAddingCustomField] = useState(false);
+  const [newFieldName, setNewFieldName] = useState('');
+
+  const handleCreateCustomField = () => {
+    if (!newFieldName.trim() || !activeWorkspace || !lead) return;
+    const current = activeWorkspace.custom_columns || [];
+    if (current.includes(newFieldName.trim())) {
+      toast.error('Ce champ existe déjà.');
+      return;
+    }
+    const updated = [...current, newFieldName.trim()];
+    updateWorkspace(activeWorkspace.id, { custom_columns: updated });
+    setNewFieldName('');
+    setAddingCustomField(false);
+    toast.success('Champ personnalisé créé');
+  };
+
+  const handleSaveCustomField = (colName: string, value: string) => {
+    if (!lead) return;
+    const nextFields = { ...(lead.customFields || {}), [colName]: value };
+    updateLead(lead.id, { customFields: nextFields });
+  };
+
+  const handleCopyLeadInfo = () => {
+    if (!lead) return;
+    
+    const lines: string[] = [];
+    lines.push(`=== INFORMATIONS DU PROSPECT ===`);
+    lines.push(`Nom de l'entreprise : ${lead.businessName}`);
+    if (lead.niche) lines.push(`Secteur / Niche : ${lead.niche}`);
+    if (lead.city) lines.push(`Ville : ${lead.city}`);
+    if (lead.contactName) lines.push(`Nom du contact : ${lead.contactName}`);
+    if (lead.decisionMakerRole) lines.push(`Rôle du contact : ${lead.decisionMakerRole}`);
+    if (lead.contactEmail) lines.push(`Email : ${lead.contactEmail}`);
+    if (lead.phone) lines.push(`Téléphone : ${lead.phone}`);
+    if (lead.website) lines.push(`Site web : ${lead.website}`);
+    if (lead.address) lines.push(`Adresse complète : ${lead.address}`);
+    if (lead.rating !== undefined) lines.push(`Note Google : ${lead.rating}/5 (${lead.reviewsCount || 0} avis)`);
+    if (lead.mapsUrl) lines.push(`Lien Google Maps : ${lead.mapsUrl}`);
+    if (lead.status) lines.push(`Statut CRM : ${lead.status}`);
+    if (lead.temperature) lines.push(`Température : ${lead.temperature}`);
+    if (lead.source) lines.push(`Source : ${lead.source}`);
+    if (lead.nextAction) lines.push(`Action suivante : ${lead.nextAction} (le ${lead.nextActionDate || 'Non planifié'})`);
+
+    // Field Notes / Contexte
+    if (lead.notes && lead.notes.length > 0) {
+      lines.push(`\n--- Notes de terrain / Observations ---`);
+      lead.notes.forEach((n) => {
+        lines.push(`[${new Date(n.createdAt).toLocaleDateString('fr-FR')}] ${n.content}`);
+      });
+    } else if (lead.websiteDescription) {
+      lines.push(`\n--- Description du site (Scraping IA) ---`);
+      lines.push(lead.websiteDescription);
+    }
+
+    // Social Links
+    const social = [];
+    if (lead.socialLinks?.instagram) social.push(`Instagram : ${lead.socialLinks.instagram}`);
+    if (lead.socialLinks?.facebook) social.push(`Facebook : ${lead.socialLinks.facebook}`);
+    if (lead.socialLinks?.linkedin) social.push(`LinkedIn : ${lead.socialLinks.linkedin}`);
+    if (social.length > 0) {
+      lines.push(`\n--- Réseaux sociaux ---`);
+      lines.push(...social);
+    }
+
+    // Custom Fields
+    if (lead.customFields && Object.keys(lead.customFields).length > 0) {
+      lines.push(`\n--- Champs personnalisés ---`);
+      Object.entries(lead.customFields).forEach(([k, v]) => {
+        if (v) lines.push(`${k} : ${v}`);
+      });
+    }
+
+    const fullText = lines.join('\n');
+    navigator.clipboard.writeText(fullText);
+    toast.success('Informations du prospect copiées !');
+  };
 
   // Load workspace and user profile for realtime collaboration
   const [currentUser, setCurrentUser] = useState<any>(null);
@@ -1581,6 +1660,15 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
             </Link>
           </Button>
           <div className="flex items-center gap-2">
+            {/* Copy lead info button */}
+            <button
+              onClick={handleCopyLeadInfo}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#e5e5e0] bg-white hover:bg-[#f4f4f3] text-[11px] font-bold text-[#26251e] transition-colors"
+            >
+              <Copy className="h-3 w-3" />
+              Copier les infos
+            </button>
+
             {/* Share lead button */}
             {!shareLink ? (
               <button
@@ -2742,6 +2830,52 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                     disabled={isLocked}
                   />
                 </div>
+
+                {/* Champs Personnalisés */}
+                {activeWorkspace?.custom_columns?.map((colName) => (
+                  <div key={colName} className="grid grid-cols-[100px_1fr] items-start gap-1.5 py-0.5 animate-in fade-in duration-100">
+                    <span className="text-[11px] font-medium text-[#7a7a76] flex items-center gap-1.5 h-6 truncate" title={colName}>
+                      <Tag className="h-3 w-3 shrink-0" />
+                      {colName}
+                    </span>
+                    <InlineTextEdit 
+                      value={lead.customFields?.[colName] || ''} 
+                      onSave={(val) => handleSaveCustomField(colName, val)}
+                      placeholder="Non spécifié"
+                      disabled={isLocked}
+                      onEditStateChange={setIsEditing}
+                    />
+                  </div>
+                ))}
+              </div>
+
+              {/* Ajouter un champ personnalisé depuis la fiche de détail */}
+              <div className="mt-2 text-right">
+                {addingCustomField ? (
+                  <div className="flex gap-1.5 items-center justify-end bg-[#fafaf8] border border-[#e5e5e0] p-2 rounded-lg animate-in slide-in-from-top-1 duration-150 mt-1 max-w-[240px] ml-auto">
+                    <Input
+                      placeholder="Nom du champ…"
+                      value={newFieldName}
+                      onChange={(e) => setNewFieldName(e.target.value)}
+                      className="h-6 text-[10px] border-[#e5e5e0] focus:ring-[#059669]"
+                      autoFocus
+                    />
+                    <Button type="button" onClick={handleCreateCustomField} size="sm" className="bg-[#059669] hover:bg-[#047857] text-white text-[10px] h-6 px-2.5">
+                      Créer
+                    </Button>
+                    <button type="button" onClick={() => { setAddingCustomField(false); setNewFieldName(''); }} className="text-[#7a7a76] hover:text-[#26251e] p-0.5">
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setAddingCustomField(true)}
+                    className="inline-flex items-center gap-1 text-[10px] text-[#059669] font-bold hover:underline"
+                  >
+                    <Plus className="w-3 h-3" /> Ajouter un champ
+                  </button>
+                )}
               </div>
 
               {/* Scripts Contextuels (Phase 3) */}

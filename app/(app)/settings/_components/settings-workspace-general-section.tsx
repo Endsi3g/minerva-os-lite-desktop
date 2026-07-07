@@ -1,10 +1,12 @@
 'use client';
 
 import React, { useState, useRef } from 'react';
-import { Upload, Trash2, AlertTriangle } from 'lucide-react';
+import { Upload, Trash2, AlertTriangle, Plus, X } from 'lucide-react';
 import { SettingsSectionWrapper } from './settings-section-wrapper';
 import { Button } from '@/components/ui/button';
 import { createClient } from '@/lib/supabase/client';
+import { useReach } from '@/lib/reach-context';
+import { toast } from 'sonner';
 
 interface WorkspaceGeneralData {
   workspaceName: string;
@@ -21,6 +23,8 @@ interface Props {
 export function SettingsWorkspaceGeneralSection({ data, onChange, isSaving }: Props) {
   const iconInputRef = useRef<HTMLInputElement>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const { activeWorkspace, updateWorkspace } = useReach();
+  const [newCol, setNewCol] = useState('');
 
   const handleIconUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -29,6 +33,28 @@ export function SettingsWorkspaceGeneralSection({ data, onChange, isSaving }: Pr
     reader.onload = (ev) => onChange({ workspaceIconBase64: ev.target?.result as string });
     reader.readAsDataURL(file);
     e.target.value = '';
+  };
+
+  const handleAddColumn = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCol.trim() || !activeWorkspace) return;
+    const current = activeWorkspace.custom_columns || [];
+    if (current.includes(newCol.trim())) {
+      toast.error('Cette colonne existe déjà.');
+      return;
+    }
+    const updated = [...current, newCol.trim()];
+    updateWorkspace(activeWorkspace.id, { custom_columns: updated });
+    setNewCol('');
+    toast.success('Colonne personnalisée ajoutée');
+  };
+
+  const handleDeleteColumn = (colName: string) => {
+    if (!activeWorkspace) return;
+    const current = activeWorkspace.custom_columns || [];
+    const updated = current.filter(c => c !== colName);
+    updateWorkspace(activeWorkspace.id, { custom_columns: updated });
+    toast.success('Colonne personnalisée supprimée');
   };
 
   return (
@@ -91,6 +117,49 @@ export function SettingsWorkspaceGeneralSection({ data, onChange, isSaving }: Pr
           rows={5}
           className="w-full text-sm px-3.5 py-2.5 border border-[#e5e5e0] rounded-lg focus:outline-none focus:ring-1 focus:ring-primary bg-[#fafaf8] resize-none text-[#26251e] placeholder:text-[#7a7a76]"
         />
+      </div>
+
+      {/* Workspace Custom Columns */}
+      <div className="border border-[#e5e5e0] rounded-xl p-5 bg-white space-y-4">
+        <div>
+          <label className="text-xs font-bold text-[#26251e] block mb-0.5">Colonnes personnalisées pour les prospects</label>
+          <p className="text-[11px] text-[#7a7a76]">Définissez des champs supplémentaires spécifiques à cet espace de travail.</p>
+        </div>
+        
+        <form onSubmit={handleAddColumn} className="flex gap-2">
+          <input
+            type="text"
+            placeholder="Ex: Taille du marché, Technologie, Budget..."
+            value={newCol}
+            onChange={(e) => setNewCol(e.target.value)}
+            className="flex-1 text-xs px-3 py-2 border border-[#e5e5e0] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#059669] bg-[#fafaf8] text-[#26251e]"
+          />
+          <Button type="submit" size="sm" className="bg-[#059669] hover:bg-[#047857] text-white text-xs gap-1 h-9">
+            <Plus className="w-3.5 h-3.5" /> Ajouter
+          </Button>
+        </form>
+
+        {activeWorkspace?.custom_columns && activeWorkspace.custom_columns.length > 0 ? (
+          <div className="flex flex-wrap gap-2 pt-2">
+            {activeWorkspace.custom_columns.map((colName) => (
+              <span
+                key={colName}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-[#f4f4f3] border border-[#e5e5e0] text-[#26251e]"
+              >
+                {colName}
+                <button
+                  type="button"
+                  onClick={() => handleDeleteColumn(colName)}
+                  className="text-[#7a7a76] hover:text-red-500 transition-colors"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </span>
+            ))}
+          </div>
+        ) : (
+          <p className="text-[11px] text-[#7a7a76] italic">Aucune colonne personnalisée configurée.</p>
+        )}
       </div>
 
       {/* Delete workspace */}

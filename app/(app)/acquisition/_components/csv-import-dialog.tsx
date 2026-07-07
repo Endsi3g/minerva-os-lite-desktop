@@ -74,7 +74,7 @@ function guessMapping(headers: string[]): Record<number, string> {
 }
 
 export function CsvImportDialog({ open, onClose, onImported }: { open: boolean; onClose: () => void; onImported: () => void }) {
-  const { addLead } = useReach();
+  const { addLead, activeWorkspace, updateWorkspace } = useReach();
   const [fileName, setFileName] = useState('');
   const [headers, setHeaders] = useState<string[]>([]);
   const [rows, setRows] = useState<string[][]>([]);
@@ -104,6 +104,8 @@ export function CsvImportDialog({ open, onClose, onImported }: { open: boolean; 
     setImporting(true);
     setProgress({ done: 0, total: rows.length });
     let success = 0;
+    const newCustomColsDetected = new Set<string>();
+
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
       const get = (field: string) => {
@@ -118,6 +120,7 @@ export function CsvImportDialog({ open, onClose, onImported }: { open: boolean; 
           const val = row[Number(colIdx)] || '';
           if (val.trim()) {
             customFields[fieldName] = val.trim();
+            newCustomColsDetected.add(fieldName);
           }
         }
       });
@@ -155,6 +158,24 @@ export function CsvImportDialog({ open, onClose, onImported }: { open: boolean; 
       }
       setProgress({ done: i + 1, total: rows.length });
     }
+
+    if (activeWorkspace && newCustomColsDetected.size > 0) {
+      const currentCols = activeWorkspace.custom_columns || [];
+      const updatedCols = [...currentCols];
+      newCustomColsDetected.forEach((col) => {
+        if (!updatedCols.includes(col)) {
+          updatedCols.push(col);
+        }
+      });
+      if (updatedCols.length !== currentCols.length) {
+        try {
+          await updateWorkspace(activeWorkspace.id, { custom_columns: updatedCols });
+        } catch (err) {
+          console.error("Error auto-saving new custom columns:", err);
+        }
+      }
+    }
+
     setImporting(false);
     toast.success(`${success} lead${success !== 1 ? 's' : ''} importé${success !== 1 ? 's' : ''} sur ${rows.length}.`);
     onImported();
@@ -218,7 +239,10 @@ export function CsvImportDialog({ open, onClose, onImported }: { open: boolean; 
                       className="text-[11px] border border-[#e5e5e0] rounded px-2 py-1.5 bg-white shrink-0"
                     >
                       {LEAD_FIELDS.map((f) => <option key={f.key} value={f.key}>{f.label}</option>)}
-                      {h && h.trim() && !LEAD_FIELDS.some((f) => f.key === h.trim()) && (
+                      {activeWorkspace?.custom_columns?.map((c) => (
+                        <option key={`custom__${c}`} value={`custom__${c}`}>Champ: {c}</option>
+                      ))}
+                      {h && h.trim() && !LEAD_FIELDS.some((f) => f.key === h.trim()) && !activeWorkspace?.custom_columns?.includes(h.trim()) && (
                         <option value={`custom__${h.trim()}`}>Créer le champ &quot;{h.trim()}&quot;</option>
                       )}
                     </select>

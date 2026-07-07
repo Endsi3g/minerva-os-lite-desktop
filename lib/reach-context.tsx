@@ -19,6 +19,7 @@ export interface Workspace {
   created_at: string;
   isOwner: boolean;
   ownerName: string;
+  custom_columns?: string[];
 }
 
 export interface AppNotification {
@@ -759,14 +760,21 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
           logo_base64: w.logo_base64 || '',
           created_at: w.created_at || new Date().toISOString(),
           isOwner: currentUser ? w.owner_id === currentUser.id : true,
-          ownerName: currentUser && w.owner_id === currentUser.id ? 'Vous' : 'Propriétaire'
+          ownerName: currentUser && w.owner_id === currentUser.id ? 'Vous' : 'Propriétaire',
+          custom_columns: (() => {
+            try {
+              return w.custom_columns ? (typeof w.custom_columns === 'string' ? JSON.parse(w.custom_columns) : w.custom_columns) : [];
+            } catch {
+              return [];
+            }
+          })()
         }));
 
         if (mappedList.length === 0 && currentUser) {
           const defaultId = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : Math.random().toString(36).substring(2) + Date.now().toString(36);
           const nowStr = new Date().toISOString();
           await electronObj.dbRun(
-            "INSERT INTO workspaces (id, name, owner_id, created_at, sync_status) VALUES (?, ?, ?, ?, 'pending_insert')",
+            "INSERT INTO workspaces (id, name, owner_id, created_at, sync_status, custom_columns) VALUES (?, ?, ?, ?, 'pending_insert', '[]')",
             [defaultId, 'Mon Espace', currentUser.id, nowStr]
           );
           mappedList = [{
@@ -779,7 +787,8 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
             logo_base64: '',
             created_at: nowStr,
             isOwner: true,
-            ownerName: 'Vous'
+            ownerName: 'Vous',
+            custom_columns: []
           }];
           if (electronObj.triggerSync) {
             electronObj.triggerSync();
@@ -862,6 +871,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
                   created_at: createData.workspace.created_at,
                   isOwner: true,
                   ownerName: 'Vous',
+                  custom_columns: []
                 };
                 setWorkspacesList([ws]);
                 active = ws;
@@ -1058,9 +1068,13 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
         const updates: string[] = [];
         const params: any[] = [];
         Object.entries(fields).forEach(([key, val]) => {
-          if (['name', 'description', 'tag', 'accent_color', 'logo_base64'].includes(key)) {
+          if (['name', 'description', 'tag', 'accent_color', 'logo_base64', 'custom_columns'].includes(key)) {
             updates.push(`${key} = ?`);
-            params.push(val);
+            if (key === 'custom_columns') {
+              params.push(Array.isArray(val) ? JSON.stringify(val) : val);
+            } else {
+              params.push(val);
+            }
           }
         });
 
