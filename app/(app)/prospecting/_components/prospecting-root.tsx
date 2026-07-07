@@ -360,11 +360,7 @@ export function ProspectingRoot() {
           setCsvError('Impossible de trouver la colonne de la niche/catégorie (Niche, Catégorie, Category, etc.).');
           return;
         }
-        if (cityIdx === -1) {
-          setCsvError('Impossible de trouver la colonne de la ville (Ville, City).');
-          return;
-        }
-
+        const fallbackCity = selectedCities[0] || 'Montréal';
         const parsedRows = [];
         for (let i = 1; i < lines.length; i++) {
           const line = lines[i].trim();
@@ -372,8 +368,8 @@ export function ProspectingRoot() {
           const vals = parseLine(line);
           const name = vals[nameIdx] || '';
           const niche = vals[nicheIdx] || '';
-          const city = vals[cityIdx] || '';
-          if (!name || !niche || !city) continue; // Skip incomplete row
+          const city = cityIdx !== -1 ? vals[cityIdx] || fallbackCity : fallbackCity;
+          if (!name || !niche) continue; // Skip incomplete row
 
           const phone = phoneIdx !== -1 ? vals[phoneIdx] || '' : '';
           const email = emailIdx !== -1 ? vals[emailIdx] || '' : '';
