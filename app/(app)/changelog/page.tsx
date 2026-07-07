@@ -20,6 +20,33 @@ interface ChangelogVersion {
 
 const versions: ChangelogVersion[] = [
   {
+    version: 'v3.69.1',
+    date: '7 juillet 2026 · 23h30',
+    title: 'Colonnes personnalisées de workspace, import manuel et copie rapide',
+    highlights: [
+      { text: "Colonnes personnalisées persistées : Intégration d'une colonne custom_columns dans la table workspaces (SQLite locale et Supabase cloud) pour mémoriser la liste des champs personnalisés définis par l'utilisateur pour son espace de travail." },
+      { text: "Gestion des colonnes dans les Paramètres : Ajout d'une section dédiée dans les Paramètres Généraux du Workspace pour lister, ajouter et supprimer des colonnes personnalisées." },
+      { text: "Champs personnalisés sur la Fiche Prospect : Rendu dynamique des colonnes personnalisées du workspace dans le volet des propriétés du prospect (lead-detail-client.tsx), avec édition en ligne (InlineTextEdit) et bouton de création rapide de nouveaux champs." },
+      { text: "Mappage intelligent à l'Importation CSV : Détection et suggestion automatique de mappage des en-têtes inconnus vers des colonnes existantes ou vers une nouvelle colonne à créer à la volée. Les nouvelles colonnes détectées sont automatiquement enregistrées au niveau du workspace." },
+      { text: "Création manuelle de prospect enrichie : Ajout d'une zone dédiée aux champs personnalisés dans le formulaire de création manuelle de prospect (new-lead-root.tsx), avec saisie des valeurs existantes et création à la volée de nouvelles colonnes." },
+      { text: "Bouton Copie Rapide de Prospect : Ajout d'un bouton de copie des informations en haut de la fiche de détails du prospect pour copier dans le presse-papiers une synthèse exhaustive de toutes les données du lead (coordonnées, réseaux sociaux, notes de terrain, champs personnalisés) formatée pour l'IA ou pour un document externe." },
+    ],
+  },
+  {
+    version: 'v3.69.0',
+    date: '7 juillet 2026 · 15h50',
+    title: 'Amélioration de la prospection, champs personnalisés CSV, relances automatisées et modèles OpenRouter',
+    highlights: [
+      { text: "Scraper de prospects premium Apify : Restauration complète du scraper premium de Google Places via Apify dans le module de prospection, avec une gestion robuste des diacritiques (accentuation) utilisant une regex ASCII-compatible ([\\u0300-\\u036f]) pour écarter tout plantage. Le scraper dispose d'un timeout de secours automatique pour basculer sur OpenStreetMap." },
+      { text: "Filtres de prospection enrichis : Intégration d'un curseur d'avis maximum (Avis maximum, allant jusqu'à 1000/Illimité) à côté de la note et des avis minimums sur la carte, pour exclure les établissements ayant trop d'avis." },
+      { text: "Importation CSV dynamique et champs personnalisés : L'importateur CSV détecte automatiquement les colonnes non-standards et propose de créer de nouveaux champs personnalisés (ex: custom__*). Ces propriétés sont stockées au format JSON." },
+      { text: "Personnalisation d'outreach par variables dynamiques : Le compositeur et les séquences d'emails interpolent dynamiquement les balises associées aux colonnes personnalisées du CSV (ex: {{nom_de_colonne}})." },
+      { text: "Enrichissement AI contextuel : Les données des colonnes personnalisées importées sont automatiquement transmises au prompt du copilote de prospection pour guider la personnalisation par l'IA." },
+      { text: "Brouillons de relance automatique dans le Rescue Panel : Le bouton \"Relancer\" crée la tâche manuelle et lance la génération d'un brouillon d'email par l'IA." },
+      { text: "Modèles OpenRouter et limites ajustées : Raccourcis rapides pour sélectionner Llama 3.3 70B Free, Llama 3.3 70B standard et DeepSeek V3, avec dérogation automatique du provider. Limite haussée de 8 à 60 appels IA par minute." },
+    ],
+  },
+  {
     version: 'v3.68.1',
     date: '6 juillet 2026 · 22h48',
     title: 'Carte : vraie cause du plantage identifiée et corrigée',
