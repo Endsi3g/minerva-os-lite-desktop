@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { useReach } from '@/lib/reach-context';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Upload, Loader2, CheckCircle2, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -68,11 +69,12 @@ export function CsvImportDialog({ open, onClose, onImported }: { open: boolean; 
   const [headers, setHeaders] = useState<string[]>([]);
   const [rows, setRows] = useState<string[][]>([]);
   const [mapping, setMapping] = useState<Record<number, string>>({});
+  const [defaultCity, setDefaultCity] = useState('Montréal');
   const [importing, setImporting] = useState(false);
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
 
   const reset = () => {
-    setFileName(''); setHeaders([]); setRows([]); setMapping({}); setProgress(null);
+    setFileName(''); setHeaders([]); setRows([]); setMapping({}); setProgress(null); setDefaultCity('Montréal');
   };
 
   const handleFile = async (file: File) => {
@@ -118,7 +120,7 @@ export function CsvImportDialog({ open, onClose, onImported }: { open: boolean; 
             contactName: get('contactName').trim(),
             contactEmail: get('contactEmail').trim() || undefined,
             phone: get('phone').trim() || undefined,
-            city: get('city').trim(),
+            city: get('city').trim() || defaultCity.trim(),
             niche: get('niche').trim(),
             website: get('website').trim() || undefined,
             status: 'New',
@@ -167,6 +169,20 @@ export function CsvImportDialog({ open, onClose, onImported }: { open: boolean; 
               <FileText className="h-3.5 w-3.5" />
               {fileName} — {rows.length} ligne{rows.length !== 1 ? 's' : ''} détectée{rows.length !== 1 ? 's' : ''}
               <button type="button" onClick={reset} className="ml-auto text-[#059669] font-bold hover:underline">Changer de fichier</button>
+            </div>
+
+            <div className="space-y-1.5 bg-[#fafaf9] border border-[#e5e5e0] rounded-xl p-3.5">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Ville par défaut</label>
+              <p className="text-[10px] text-[#7a7a76] leading-relaxed">
+                Sera utilisée comme valeur si la colonne Ville n'est pas présente dans le fichier CSV ou si certaines lignes sont vides.
+              </p>
+              <Input
+                type="text"
+                value={defaultCity}
+                onChange={(e) => setDefaultCity(e.target.value)}
+                placeholder="Ex: Montréal, Québec..."
+                className="text-xs bg-white mt-1 h-8 text-[#26251e] border-[#e5e5e0] focus:border-[#059669]"
+              />
             </div>
 
             <div className="space-y-2">
