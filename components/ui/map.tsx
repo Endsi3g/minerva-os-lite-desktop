@@ -468,11 +468,18 @@ function MapMarker({
   };
 
   const marker = useMemo(() => {
+    // MapLibre's setLngLat throws synchronously on NaN/undefined coordinates
+    // ("Invalid LngLat object"), which crashes the whole page up to the nearest
+    // error boundary — fall back to Null Island here so construction never
+    // throws; the effects below make sure an invalid marker is never actually
+    // attached to the map (see hasValidCoords checks).
+    const initialLng = Number.isFinite(longitude) ? longitude : 0;
+    const initialLat = Number.isFinite(latitude) ? latitude : 0;
     const markerInstance = new MapLibreGL.Marker({
       ...markerOptions,
       element: document.createElement("div"),
       draggable,
-    }).setLngLat([longitude, latitude]);
+    }).setLngLat([initialLng, initialLat]);
 
     const handleClick = (e: MouseEvent) => callbacksRef.current.onClick?.(e);
     const handleMouseEnter = (e: MouseEvent) =>
@@ -511,7 +518,7 @@ function MapMarker({
   }, []);
 
   useEffect(() => {
-    if (!map) return;
+    if (!map || !Number.isFinite(longitude) || !Number.isFinite(latitude)) return;
 
     marker.addTo(map);
 
@@ -525,6 +532,7 @@ function MapMarker({
   const { offset, rotation, rotationAlignment, pitchAlignment } = markerOptions;
 
   useEffect(() => {
+    if (!Number.isFinite(longitude) || !Number.isFinite(latitude)) return;
     const current = marker.getLngLat();
     if (current.lng !== longitude || current.lat !== latitude) {
       marker.setLngLat([longitude, latitude]);
@@ -1023,20 +1031,24 @@ function MapPopup({
   const { offset, maxWidth } = popupOptions;
 
   const popup = useMemo(() => {
+    // Cf. MapMarker : setLngLat throws sur des coordonnées NaN/undefined —
+    // repli Null Island à la construction, jamais attaché au tour si invalide.
+    const initialLng = Number.isFinite(longitude) ? longitude : 0;
+    const initialLat = Number.isFinite(latitude) ? latitude : 0;
     const popupInstance = new MapLibreGL.Popup({
       offset: 16,
       ...popupOptions,
       closeButton: false,
     })
       .setMaxWidth("none")
-      .setLngLat([longitude, latitude]);
+      .setLngLat([initialLng, initialLat]);
 
     return popupInstance;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
-    if (!map) return;
+    if (!map || !Number.isFinite(longitude) || !Number.isFinite(latitude)) return;
 
     const onCloseProp = () => onCloseRef.current?.();
 
@@ -1056,6 +1068,7 @@ function MapPopup({
 
   // Sync popup position and options when they change.
   useEffect(() => {
+    if (!Number.isFinite(longitude) || !Number.isFinite(latitude)) return;
     const current = popup.getLngLat();
     if (!current || current.lng !== longitude || current.lat !== latitude) {
       popup.setLngLat([longitude, latitude]);

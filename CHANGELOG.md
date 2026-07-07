@@ -5,6 +5,13 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [3.68.0] — Fiabilité de l'assistant IA, carte et séquences — 6 juillet 2026, 22h33
+
+### Corrigé
+- L'assistant IA (page Assistant) pouvait afficher "Erreur IA — OpenRouter streaming error 400" sans jamais essayer un autre modèle IA, contrairement au reste de l'application qui bascule automatiquement sur un second provider en cas d'échec. L'assistant fait maintenant le même repli automatique.
+- La page Carte pouvait planter entièrement ("La carte a rencontré un problème") si un lead ou un point avait des coordonnées invalides. Les marqueurs et popups ignorent maintenant silencieusement les coordonnées invalides au lieu de faire planter toute la carte.
+- Le créateur de séquence était en partie un module (fenêtre superposée) laissé par erreur dans le code, alors que le bouton "Nouvelle séquence" ouvre déjà la page dédiée complète (`/sequences/new`). Le module inutilisé a été retiré.
+
 ## [3.67.0] — Corrections IA, campagnes et Paramètres — 6 juillet 2026, 22h05
 
 ### Corrigé

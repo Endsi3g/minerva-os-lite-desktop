@@ -449,19 +449,17 @@ async function callWithFallback(
   }
 }
 
-export async function generateStreamCompletion(options: AICallOptions): Promise<ReadableStream> {
-  const startTime = Date.now();
-  const requestId = crypto.randomUUID();
-  const { provider, model, apiKey } = resolveAIProvider(options.settings);
-  if (!apiKey) throw new Error(`Clé API manquante pour le provider : ${provider}`);
-
-  const messages = options.messages.map(m => ({
-    role: m.role === 'assistant' ? 'assistant' : m.role === 'system' ? 'system' : 'user',
-    content: m.content,
-  }));
-  const encoder = new TextEncoder();
-
-  // ── OpenRouter streaming ──────────────────────────────────────────────────
+// Fait le fetch amont pour un provider donné et renvoie la Response brute (pas
+// encore transformée en ReadableStream) — permet d'essayer un provider de repli
+// avant d'avoir envoyé le moindre octet au client, exactement comme
+// generateCompletion/callWithFallback le fait déjà pour les appels non-streaming.
+async function fetchStreamUpstream(
+  provider: string,
+  model: string,
+  apiKey: string,
+  messages: Array<{ role: string; content: string }>,
+  options: AICallOptions,
+): Promise<{ resp: Response; model: string }> {
   if (provider === 'openrouter') {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
@@ -479,35 +477,18 @@ export async function generateStreamCompletion(options: AICallOptions): Promise<
       max_tokens: options.maxTokens || 1500,
       temperature: options.temperature ?? 0.7,
     };
-
     let resp = await fetch('https://openrouter.ai/api/v1/chat/completions', { method: 'POST', headers, body: JSON.stringify(body) });
     if (resp.status === 429) {
       await new Promise(r => setTimeout(r, 60_000));
       resp = await fetch('https://openrouter.ai/api/v1/chat/completions', { method: 'POST', headers, body: JSON.stringify(body) });
-      if (!resp.ok) throw new Error('Le modèle IA est temporairement saturé.');
     }
-    if (!resp.ok) {
-      logCall({ id: requestId, userId: options.userId, provider, model, latencyMs: Date.now() - startTime, success: false });
-      throw new Error(`OpenRouter streaming error ${resp.status}`);
-    }
-    logCall({ id: requestId, userId: options.userId, provider, model, latencyMs: Date.now() - startTime, success: true });
-    return new ReadableStream({
-      async start(controller) {
-        const reader = resp.body!.getReader();
-        try { while (true) { const { done, value } = await reader.read(); if (done) break; controller.enqueue(value); } }
-        catch (e) { controller.error(e); }
-        finally { controller.close(); }
-      }
-    });
+    if (!resp.ok) throw new Error(`OpenRouter streaming error ${resp.status}`);
+    return { resp, model };
   }
 
-  // ── Cloudflare streaming ──────────────────────────────────────────────────
   if (provider === 'cloudflare') {
     const keys = getGlobalKeys();
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
-    };
+    const headers: Record<string, string> = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` };
     const cfModel = model.startsWith('@cf/') ? model : `@cf/${model}`;
     const body = {
       model: cfModel,
@@ -519,25 +500,13 @@ export async function generateStreamCompletion(options: AICallOptions): Promise<
       max_tokens: options.maxTokens || 1500,
       temperature: options.temperature ?? 0.7,
     };
-
     const url = `https://api.cloudflare.com/client/v4/accounts/${keys.cloudflareAccountId}/ai/v1/chat/completions`;
     const resp = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body) });
-    if (!resp.ok) {
-      logCall({ id: requestId, userId: options.userId, provider, model, latencyMs: Date.now() - startTime, success: false });
-      throw new Error(`Cloudflare streaming error ${resp.status}`);
-    }
-    logCall({ id: requestId, userId: options.userId, provider, model, latencyMs: Date.now() - startTime, success: true });
-    return new ReadableStream({
-      async start(controller) {
-        const reader = resp.body!.getReader();
-        try { while (true) { const { done, value } = await reader.read(); if (done) break; controller.enqueue(value); } }
-        catch (e) { controller.error(e); }
-        finally { controller.close(); }
-      }
-    });
+    if (!resp.ok) throw new Error(`Cloudflare streaming error ${resp.status}`);
+    return { resp, model: cfModel };
   }
 
-  // ── Anthropic streaming ───────────────────────────────────────────────────
+  // ── Anthropic ──────────────────────────────────────────────────────────────
   const anthropicModel = model.startsWith('claude') ? model : 'claude-sonnet-5';
   const userMessages = messages.filter(m => m.role !== 'system');
   const resp = await fetch('https://api.anthropic.com/v1/messages', {
@@ -552,11 +521,27 @@ export async function generateStreamCompletion(options: AICallOptions): Promise<
       temperature: options.temperature ?? 0.7,
     }),
   });
-  if (!resp.ok) {
-    logCall({ id: requestId, userId: options.userId, provider, model: anthropicModel, latencyMs: Date.now() - startTime, success: false });
-    throw new Error(`Anthropic streaming error ${resp.status}`);
+  if (!resp.ok) throw new Error(`Anthropic streaming error ${resp.status}`);
+  return { resp, model: anthropicModel };
+}
+
+// Transforme la Response amont réussie en ReadableStream au format SSE attendu
+// par le front (delta OpenAI-style) — passthrough brut pour OpenRouter/Cloudflare
+// (déjà au bon format), reformatage pour Anthropic (format d'event différent).
+function wrapStreamResponse(provider: string, resp: Response): ReadableStream {
+  const encoder = new TextEncoder();
+
+  if (provider !== 'anthropic') {
+    return new ReadableStream({
+      async start(controller) {
+        const reader = resp.body!.getReader();
+        try { while (true) { const { done, value } = await reader.read(); if (done) break; controller.enqueue(value); } }
+        catch (e) { controller.error(e); }
+        finally { controller.close(); }
+      }
+    });
   }
-  logCall({ id: requestId, userId: options.userId, provider, model: anthropicModel, latencyMs: Date.now() - startTime, success: true });
+
   return new ReadableStream({
     async start(controller) {
       const reader = resp.body!.getReader();
@@ -588,4 +573,58 @@ export async function generateStreamCompletion(options: AICallOptions): Promise<
       finally { controller.close(); reader.releaseLock(); }
     }
   });
+}
+
+export async function generateStreamCompletion(options: AICallOptions): Promise<ReadableStream> {
+  const rateLimit = await checkAiRateLimit(options.userId);
+  if (!rateLimit.allowed) {
+    await notifyRateLimited(options.userId, options.workspaceId);
+    throw new Error(`Limite IA atteinte — réessaie dans ${rateLimit.retryAfterSeconds}s.`);
+  }
+
+  const startTime = Date.now();
+  const requestId = crypto.randomUUID();
+  const { provider, model, apiKey } = resolveAIProvider(options.settings);
+  const messages = options.messages.map(m => ({
+    role: m.role === 'assistant' ? 'assistant' : m.role === 'system' ? 'system' : 'user',
+    content: m.content,
+  }));
+
+  // Le provider primaire n'a pas de clé configurée — repli direct sur le suivant
+  // de la cascade, sans même tenter l'appel (comme generateCompletion).
+  if (!apiKey) {
+    const fallback = getFallback(provider, options.settings);
+    if (!fallback) {
+      const message = `Clé API manquante pour le provider : ${provider}`;
+      await notifyAiFailure(options.userId, options.workspaceId, message);
+      throw new Error(message);
+    }
+    const { resp, model: usedModel } = await fetchStreamUpstream(fallback.provider, fallback.model, fallback.apiKey, messages, options);
+    logCall({ id: crypto.randomUUID(), userId: options.userId, provider: fallback.provider, model: usedModel, latencyMs: Date.now() - startTime, success: true });
+    return wrapStreamResponse(fallback.provider, resp);
+  }
+
+  try {
+    const { resp, model: usedModel } = await fetchStreamUpstream(provider, model, apiKey, messages, options);
+    logCall({ id: requestId, userId: options.userId, provider, model: usedModel, latencyMs: Date.now() - startTime, success: true });
+    return wrapStreamResponse(provider, resp);
+  } catch (err: any) {
+    logCall({ id: requestId, userId: options.userId, provider, model, latencyMs: Date.now() - startTime, success: false });
+    const fallback = getFallback(provider, options.settings);
+    if (!fallback) {
+      const message = err?.message || 'Le modèle IA est temporairement indisponible. Réessaie dans quelques minutes.';
+      await notifyAiFailure(options.userId, options.workspaceId, message);
+      throw new Error(message);
+    }
+    try {
+      const { resp, model: usedModel } = await fetchStreamUpstream(fallback.provider, fallback.model, fallback.apiKey, messages, options);
+      logCall({ id: crypto.randomUUID(), userId: options.userId, provider: fallback.provider, model: usedModel, latencyMs: Date.now() - startTime, success: true });
+      return wrapStreamResponse(fallback.provider, resp);
+    } catch (fallbackErr: any) {
+      logCall({ id: crypto.randomUUID(), userId: options.userId, provider: fallback.provider, model: fallback.model, latencyMs: Date.now() - startTime, success: false });
+      const message = fallbackErr?.message || 'Le modèle IA est temporairement indisponible, même après repli sur un second provider.';
+      await notifyAiFailure(options.userId, options.workspaceId, message);
+      throw new Error(message);
+    }
+  }
 }

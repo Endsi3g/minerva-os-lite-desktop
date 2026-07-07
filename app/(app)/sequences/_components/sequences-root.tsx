@@ -2,16 +2,13 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { useReach } from '@/lib/reach-context';
 import { OutreachNavBar } from '@/components/outreach-nav-bar';
 import { getApiUrl } from '@/lib/api-helper';
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import {
   Plus, Mail, CheckCircle2, Clock, XCircle, Pause,
   Play, Trash2, ChevronDown, ChevronRight, Loader2,
-  Send, Calendar, MailCheck, Phone, Link2, MessageSquare, Layers, ListTodo,
+  Calendar, MailCheck, Phone, Link2, MessageSquare, Layers, ListTodo,
 } from 'lucide-react';
 import { ComposerQueueCadenceRoot } from './composer-queue-cadence-root';
 
@@ -49,14 +46,6 @@ interface Sequence {
   email_sequence_steps: SequenceStep[];
 }
 
-interface NewStep {
-  stepNumber: number;
-  delayDays: number;
-  channel: StepChannel;
-  subject: string;
-  body: string;
-}
-
 const STATUS_COLORS = {
   active: 'text-[#059669] bg-[#059669]/10 border-[#059669]/20',
   paused: 'text-amber-600 bg-amber-50 border-amber-200',
@@ -69,25 +58,11 @@ const STEP_STATUS_ICON = {
   failed: <XCircle className="h-3.5 w-3.5 text-red-500" />,
 };
 
-const DEFAULT_STEPS: NewStep[] = [
-  { stepNumber: 1, delayDays: 0, channel: 'Email', subject: '', body: '' },
-  { stepNumber: 2, delayDays: 3, channel: 'Call', subject: 'Appel de suivi', body: '' },
-  { stepNumber: 3, delayDays: 7, channel: 'Email', subject: '', body: '' },
-];
-
 export function SequencesRoot() {
-  const { leads } = useReach();
   const [view, setView] = useState<SequencesView>('by_lead');
   const [sequences, setSequences] = useState<Sequence[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [expandedSeq, setExpandedSeq] = useState<string | null>(null);
-  const [showNewModal, setShowNewModal] = useState(false);
-  const [newLeadId, setNewLeadId] = useState('');
-  const [newSteps, setNewSteps] = useState<NewStep[]>(DEFAULT_STEPS);
-  const [sendFirstNow, setSendFirstNow] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [saveError, setSaveError] = useState<string | null>(null);
-  const [generatingStep, setGeneratingStep] = useState<number | null>(null);
 
   const fetchSequences = useCallback(async () => {
     setIsLoading(true);
@@ -100,82 +75,6 @@ export function SequencesRoot() {
   }, []);
 
   useEffect(() => { fetchSequences(); }, [fetchSequences]);
-
-  const selectedLead = leads.find((l) => l.id === newLeadId);
-
-  const generateDraftForStep = async (stepIndex: number) => {
-    if (!selectedLead) return;
-    setGeneratingStep(stepIndex);
-    try {
-      const step = newSteps[stepIndex];
-      const isFollowUp = step.delayDays > 0;
-      const tone = isFollowUp ? 'relance douce' : 'prospection initiale';
-
-      const res = await fetch(getApiUrl('/api/generate-draft'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          leadId: selectedLead.id,
-          channel: 'Email',
-          tone,
-          context: isFollowUp
-            ? `Relance #${stepIndex} — ${step.delayDays} jour${step.delayDays > 1 ? 's' : ''} après l'email précédent.`
-            : 'Premier contact par email.',
-        }),
-      });
-
-      if (res.ok) {
-        const { draft } = await res.json();
-        // Parse subject and body from draft
-        const lines = (draft as string).split('\n');
-        const subjectLine = lines.find((l: string) => l.toLowerCase().startsWith('objet:') || l.toLowerCase().startsWith('sujet:'));
-        const subject = subjectLine
-          ? subjectLine.replace(/^(objet|sujet)\s*:\s*/i, '').trim()
-          : `${isFollowUp ? 'Suite' : 'Contact'} — ${selectedLead.businessName}`;
-        const body = lines.filter((l: string) => l !== subjectLine).join('\n').trim();
-
-        setNewSteps((prev) => prev.map((s, i) => i === stepIndex ? { ...s, subject, body } : s));
-      }
-    } finally {
-      setGeneratingStep(null);
-    }
-  };
-
-  const handleCreate = async () => {
-    if (!selectedLead) return;
-    if (newSteps.some((s) => s.channel === 'Email' && (!s.subject.trim() || !s.body.trim()))) {
-      setSaveError('Remplissez le sujet et le corps de chaque étape Email.');
-      return;
-    }
-    setSaving(true);
-    setSaveError(null);
-    try {
-      const res = await fetch(getApiUrl('/api/email-sequences'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          leadId: selectedLead.id,
-          leadName: selectedLead.businessName,
-          leadEmail: selectedLead.contactEmail || '',
-          sequenceName: `Séquence — ${selectedLead.businessName}`,
-          steps: newSteps,
-          workspaceId: null,
-          sendFirstNow,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Erreur serveur');
-      setShowNewModal(false);
-      setNewLeadId('');
-      setNewSteps(DEFAULT_STEPS);
-      setSendFirstNow(false);
-      await fetchSequences();
-    } catch (err) {
-      setSaveError(err instanceof Error ? err.message : 'Erreur inconnue');
-    } finally {
-      setSaving(false);
-    }
-  };
 
   const handleToggleStatus = async (seq: Sequence) => {
     const newStatus = seq.status === 'active' ? 'paused' : 'active';
@@ -399,158 +298,6 @@ export function SequencesRoot() {
         ))}
       </div>
 
-      {/* New Sequence Modal */}
-      {showNewModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm">
-          <div className="w-full max-w-2xl bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-            {/* Modal header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-[#e5e5e0]">
-              <div>
-                <h2 className="text-sm font-black text-[#26251e]">Nouvelle séquence de relance</h2>
-                <p className="text-[10px] text-[#7a7a76] mt-0.5">Configurez 2 à 3 emails automatiques pour un lead.</p>
-              </div>
-              <button onClick={() => { setShowNewModal(false); setSaveError(null); }} className="text-[#7a7a76] hover:text-[#26251e]">
-                ✕
-              </button>
-            </div>
-
-            <div className="overflow-y-auto flex-1 px-6 py-4 space-y-5">
-              {/* Lead selector */}
-              <div>
-                <label className="text-xs font-bold text-[#26251e] block mb-1.5">Lead *</label>
-                <select
-                  value={newLeadId}
-                  onChange={(e) => setNewLeadId(e.target.value)}
-                  className="w-full text-xs border border-[#e5e5e0] rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-[#059669] bg-white"
-                >
-                  <option value="">— Sélectionner un lead —</option>
-                  {leads.filter((l) => l.contactEmail).map((lead) => (
-                    <option key={lead.id} value={lead.id}>
-                      {lead.businessName} — {lead.contactEmail}
-                    </option>
-                  ))}
-                </select>
-                {selectedLead && !selectedLead.contactEmail && (
-                  <p className="text-[10px] text-red-500 mt-1">Ce lead n'a pas d'email de contact.</p>
-                )}
-              </div>
-
-              {/* Steps */}
-              <div className="space-y-4">
-                {newSteps.map((step, i) => {
-                  const cfg = CHANNEL_CONFIG[step.channel];
-                  return (
-                    <div key={step.stepNumber} className="border border-[#e5e5e0] rounded-xl p-4 space-y-3">
-                      <div className="flex items-center justify-between flex-wrap gap-2">
-                        <div className="flex items-center gap-2">
-                          <div className="h-6 w-6 rounded-full bg-[#059669] text-white text-[10px] font-bold flex items-center justify-center">
-                            {step.stepNumber}
-                          </div>
-                          <span className="text-xs font-bold text-[#26251e]">
-                            {step.delayDays === 0 ? 'Étape immédiate' : `Étape J+${step.delayDays}`}
-                          </span>
-                          <span className={`text-[10px] font-semibold flex items-center gap-1 px-1.5 py-0.5 rounded border ${cfg.color}`}>
-                            {cfg.icon}{cfg.label}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {/* Channel selector */}
-                          <select
-                            value={step.channel}
-                            onChange={(e) => setNewSteps((prev) => prev.map((s, idx) => idx === i ? { ...s, channel: e.target.value as StepChannel } : s))}
-                            className="text-[10px] border border-[#e5e5e0] rounded px-1.5 py-1 focus:outline-none focus:ring-1 focus:ring-[#059669] bg-white"
-                          >
-                            {(Object.keys(CHANNEL_CONFIG) as StepChannel[]).map(c => (
-                              <option key={c} value={c}>{CHANNEL_CONFIG[c].label}</option>
-                            ))}
-                          </select>
-                          <label className="text-[10px] text-[#7a7a76]">J+</label>
-                          <input
-                            type="number"
-                            min={0}
-                            value={step.delayDays}
-                            onChange={(e) => setNewSteps((prev) => prev.map((s, idx) => idx === i ? { ...s, delayDays: Number(e.target.value) } : s))}
-                            className="w-12 text-xs border border-[#e5e5e0] rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-[#059669]"
-                            disabled={i === 0}
-                          />
-                          {step.channel === 'Email' && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => generateDraftForStep(i)}
-                              disabled={!selectedLead || generatingStep === i}
-                              className="h-7 text-[10px] gap-1 border-[#e5e5e0] text-[#7a7a76]"
-                            >
-                              {generatingStep === i ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
-                              IA
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-
-                      {step.channel === 'Email' && (
-                        <Input
-                          placeholder="Sujet de l'email *"
-                          value={step.subject}
-                          onChange={(e) => setNewSteps((prev) => prev.map((s, idx) => idx === i ? { ...s, subject: e.target.value } : s))}
-                          className="text-xs h-8"
-                        />
-                      )}
-                      <textarea
-                        placeholder={step.channel !== 'Email' ? `${cfg.bodyLabel} (action manuelle — rappel)` : 'Corps de l\'email *'}
-                        value={step.body}
-                        onChange={(e) => setNewSteps((prev) => prev.map((s, idx) => idx === i ? { ...s, body: e.target.value } : s))}
-                        rows={step.channel === 'Call' ? 5 : 4}
-                        className="w-full text-xs border border-[#e5e5e0] rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-[#059669] resize-none"
-                      />
-                      {step.channel !== 'Email' && (
-                        <p className="text-[9px] text-amber-600 flex items-center gap-1">
-                          ⚠ Cette étape est manuelle — un rappel de tâche sera créé automatiquement à J+{step.delayDays}.
-                        </p>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Send step 1 now toggle */}
-              <div className="flex items-center gap-2.5 p-3 border border-[#059669]/20 bg-[#059669]/5 rounded-lg">
-                <input
-                  type="checkbox"
-                  id="sendNow"
-                  checked={sendFirstNow}
-                  onChange={(e) => setSendFirstNow(e.target.checked)}
-                  className="rounded"
-                />
-                <label htmlFor="sendNow" className="text-xs text-[#26251e] cursor-pointer">
-                  Envoyer le premier email maintenant (nécessite Gmail connecté)
-                </label>
-              </div>
-
-              {saveError && (
-                <p className="text-xs text-red-500 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
-                  {saveError}
-                </p>
-              )}
-            </div>
-
-            {/* Modal footer */}
-            <div className="px-6 py-4 border-t border-[#e5e5e0] flex justify-end gap-2">
-              <Button variant="ghost" onClick={() => { setShowNewModal(false); setSaveError(null); }} className="h-8 text-xs">
-                Annuler
-              </Button>
-              <Button
-                onClick={handleCreate}
-                disabled={!selectedLead || saving}
-                className="h-8 text-xs font-bold bg-[#059669] hover:bg-[#047857] text-white gap-1.5"
-              >
-                {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Mail className="h-3.5 w-3.5" />}
-                {saving ? 'Création...' : 'Créer la séquence'}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
     </div>
   );

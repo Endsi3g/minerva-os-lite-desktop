@@ -20,6 +20,16 @@ interface ChangelogVersion {
 
 const versions: ChangelogVersion[] = [
   {
+    version: 'v3.68.0',
+    date: '6 juillet 2026 · 22h33',
+    title: "Fiabilité de l'assistant IA, carte et séquences",
+    highlights: [
+      { text: "L'assistant IA pouvait afficher une erreur OpenRouter sans jamais essayer un autre modèle. Il fait maintenant le même repli automatique que le reste de l'application." },
+      { text: "La page Carte pouvait planter entièrement si un lead avait des coordonnées invalides. Les marqueurs et popups ignorent maintenant silencieusement les coordonnées invalides au lieu de faire planter toute la carte." },
+      { text: "Le créateur de séquence gardait par erreur un module inutilisé dans le code, alors que le bouton \"Nouvelle séquence\" ouvre déjà la page dédiée complète. Le module inutilisé a été retiré." },
+    ],
+  },
+  {
     version: 'v3.67.0',
     date: '6 juillet 2026 · 22h05',
     title: 'Corrections IA, campagnes et Paramètres',
