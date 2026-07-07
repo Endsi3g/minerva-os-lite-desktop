@@ -94,6 +94,7 @@ export interface LeadValidation {
   email: string;
   website: string;
   address: string;
+  mapsUrl?: string;
   rating: number;
   reviewsCount: number;
   latitude?: number;
@@ -151,6 +152,7 @@ interface ReachContextType {
     score?: number;
     campaignId?: string;
     customFields?: Record<string, string>;
+    address?: string;
   }) => void;
   toggleTask: (id: string) => void;
   addTask: (title: string, category: Task['category'], dueDate?: string) => void;
@@ -262,6 +264,7 @@ interface DbLead {
   score_revenue?: number | null;
   // Project association (v4.6)
   project_id?: string | null;
+  address?: string | null;
   // Tags (v4.0) — JSON string in SQLite, text[] in Supabase
   tags?: string | string[] | null;
   custom_fields?: string | Record<string, string> | null;
@@ -331,6 +334,7 @@ function mapDbLeadToUi(dbLead: DbLead, dbNotes: DbNote[] = []): Lead {
     rating: dbLead.rating ?? undefined,
     reviewsCount: dbLead.reviews_count ?? undefined,
     mapsUrl: dbLead.maps_url || undefined,
+    address: dbLead.address || undefined,
     photos,
     socialLinks,
     assignedTo: dbLead.assigned_to || undefined,
@@ -398,6 +402,7 @@ function mapDbValidationToUi(db: any): LeadValidation {
     email: db.email || '',
     website: db.website || '',
     address: db.address || '',
+    mapsUrl: db.maps_url || '',
     rating: db.rating ?? 0,
     reviewsCount: db.reviews_count ?? 0,
     latitude: db.latitude ?? undefined,
@@ -1285,19 +1290,65 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
     }
     enrichingSemaphore.current++;
     try {
+      let currentWebsite = website;
+      let currentRating: number | undefined;
+      let currentReviewsCount: number | undefined;
+      let currentPhone: string | undefined;
+      let currentMapsUrl: string | undefined;
+      let currentAddress: string | undefined;
+
+      // 1. Google Places enrichment first
+      try {
+        const googleRes = await fetch('/api/leads/enrich-google', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ leadId }),
+        });
+        if (googleRes.ok) {
+          const googleData = await googleRes.json();
+          if (googleData?.ok && googleData.data) {
+            const d = googleData.data;
+            currentWebsite = currentWebsite || d.website || undefined;
+            currentRating = d.rating || undefined;
+            currentReviewsCount = d.review_count || undefined;
+            currentPhone = d.phone || undefined;
+            currentMapsUrl = `https://www.google.com/maps/place/?q=place_id:${d.place_id}`;
+            currentAddress = d.formattedAddress || d.address || undefined;
+          }
+        }
+      } catch (err) {
+        console.warn('[autoEnrichLead] Google Places enrichment failed:', err);
+      }
+
+      // 2. Contact enrichment
       const res = await fetch('/api/enrich-contact', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ leadId, website, businessName }),
+        body: JSON.stringify({
+          leadId,
+          website: currentWebsite,
+          businessName,
+          rating: currentRating,
+          reviewsCount: currentReviewsCount
+        }),
       });
-      if (!res.ok) return;
-      const data = await res.json();
-      // Patch the lead in state with enriched fields
+
       const patch: Partial<Lead> = { enrichedAt: new Date().toISOString() };
-      if (data.decisionMakerName)  patch.decisionMakerName  = data.decisionMakerName;
-      if (data.decisionMakerRole)  patch.decisionMakerRole  = data.decisionMakerRole;
-      if (data.suggestedEmails?.length) patch.suggestedEmails = data.suggestedEmails;
-      // updateLead is defined below — safe to reference since this runs async
+      if (currentWebsite) patch.website = currentWebsite;
+      if (currentRating !== undefined) patch.rating = currentRating;
+      if (currentReviewsCount !== undefined) patch.reviewsCount = currentReviewsCount;
+      if (currentPhone) patch.phone = currentPhone;
+      if (currentMapsUrl) patch.mapsUrl = currentMapsUrl;
+      if (currentAddress) patch.address = currentAddress;
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.decisionMakerName) patch.decisionMakerName = data.decisionMakerName;
+        if (data.decisionMakerRole) patch.decisionMakerRole = data.decisionMakerRole;
+        if (data.suggestedEmails?.length) patch.suggestedEmails = data.suggestedEmails;
+        if (data.websiteDescription) patch.websiteDescription = data.websiteDescription;
+      }
+
       setLeads(prev => prev.map(l => l.id === leadId ? { ...l, ...patch } : l));
     } catch {
       // silently ignore enrichment failures
@@ -1332,6 +1383,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
     score?: number;
     campaignId?: string;
     customFields?: Record<string, string>;
+    address?: string;
   }) => {
     if (!user || !activeWorkspace) return;
     const electronObj = typeof window !== 'undefined' && (window as any).electron ? (window as any).electron : null;
@@ -1359,9 +1411,9 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
           source: leadData.source
         });
 
-        await electronObj.dbRun(`INSERT INTO leads (id, user_id, business_name, contact_name, contact_email, niche, city, source, lead_source_type, status, temperature, next_action, next_action_date, owner, image_url, workspace_id, score, website, rating, reviews_count, maps_url, photos, social_links, assigned_to, latitude, longitude, phone, campaign_id, created_at, updated_at, sync_status, custom_fields)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending_insert', ?)`,
-          [leadId, user.id, leadData.businessName, leadData.contactName, leadData.contactEmail || '', leadData.niche, leadData.city, leadData.source, leadSourceType, leadData.status, leadData.temperature, leadData.nextAction, leadData.nextActionDate || null, 'Moi', leadData.imageUrl || null, activeWorkspace.id, leadScore, leadData.website || null, leadData.rating ?? null, leadData.reviewsCount ?? null, leadData.mapsUrl || null, leadData.photos ? JSON.stringify(leadData.photos) : null, leadData.socialLinks ? JSON.stringify(leadData.socialLinks) : null, leadData.assignedTo || null, leadData.latitude ?? null, leadData.longitude ?? null, leadData.phone || null, leadData.campaignId || null, nowStr, nowStr, leadData.customFields ? JSON.stringify(leadData.customFields) : '{}']
+        await electronObj.dbRun(`INSERT INTO leads (id, user_id, business_name, contact_name, contact_email, niche, city, source, lead_source_type, status, temperature, next_action, next_action_date, owner, image_url, workspace_id, score, website, rating, reviews_count, maps_url, address, notes, photos, social_links, assigned_to, latitude, longitude, phone, campaign_id, created_at, updated_at, sync_status, custom_fields)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending_insert', ?)`,
+          [leadId, user.id, leadData.businessName, leadData.contactName, leadData.contactEmail || '', leadData.niche, leadData.city, leadData.source, leadSourceType, leadData.status, leadData.temperature, leadData.nextAction, leadData.nextActionDate || null, 'Moi', leadData.imageUrl || null, activeWorkspace.id, leadScore, leadData.website || null, leadData.rating ?? null, leadData.reviewsCount ?? null, leadData.mapsUrl || null, leadData.address || null, leadData.notes || null, leadData.photos ? JSON.stringify(leadData.photos) : null, leadData.socialLinks ? JSON.stringify(leadData.socialLinks) : null, leadData.assignedTo || null, leadData.latitude ?? null, leadData.longitude ?? null, leadData.phone || null, leadData.campaignId || null, nowStr, nowStr, leadData.customFields ? JSON.stringify(leadData.customFields) : '{}']
         );
 
         const insertedNotes: DbNote[] = [];
@@ -1401,6 +1453,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
           rating: leadData.rating ?? null,
           reviews_count: leadData.reviewsCount ?? null,
           maps_url: leadData.mapsUrl || null,
+          address: leadData.address || null,
           photos: leadData.photos ? JSON.stringify(leadData.photos) : null,
           social_links: leadData.socialLinks ? JSON.stringify(leadData.socialLinks) : null,
           assigned_to: leadData.assignedTo || null,
@@ -1447,6 +1500,8 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
       rating: leadData.rating ?? null,
       reviews_count: leadData.reviewsCount ?? null,
       maps_url: leadData.mapsUrl || null,
+      address: leadData.address || null,
+      notes: leadData.notes || null,
       photos: leadData.photos || null,
       social_links: leadData.socialLinks || null,
       assigned_to: leadData.assignedTo || null,
@@ -1844,6 +1899,16 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
         if (fields.longitude !== undefined) { dbFields.push("longitude = ?"); params.push(fields.longitude ?? null); }
         if (fields.phone !== undefined) { dbFields.push("phone = ?"); params.push(fields.phone || null); }
         if (fields.tags !== undefined) { dbFields.push("tags = ?"); params.push(JSON.stringify(fields.tags || [])); }
+        if (fields.address !== undefined) { dbFields.push("address = ?"); params.push(fields.address || null); }
+        if (fields.notes !== undefined) {
+          const noteText = typeof fields.notes === 'string'
+            ? fields.notes
+            : Array.isArray(fields.notes)
+              ? fields.notes.map((n: any) => n.content).join('\n')
+              : null;
+          dbFields.push("notes = ?");
+          params.push(noteText);
+        }
 
         if (dbFields.length > 0) {
           dbFields.push("updated_at = ?");
@@ -1912,6 +1977,14 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
     if (fields.longitude !== undefined) dbFields.longitude = fields.longitude ?? null;
     if (fields.phone !== undefined) dbFields.phone = fields.phone || null;
     if (fields.tags !== undefined) dbFields.tags = fields.tags || [];
+    if (fields.address !== undefined) dbFields.address = fields.address || null;
+    if (fields.notes !== undefined) {
+      dbFields.notes = typeof fields.notes === 'string'
+        ? fields.notes
+        : Array.isArray(fields.notes)
+          ? fields.notes.map((n: any) => n.content).join('\n')
+          : null;
+    }
 
     try {
       const { error } = await supabase
@@ -2728,10 +2801,10 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
       try {
         for (const item of mappedItems) {
           await electronObj.dbRun(
-            `INSERT INTO lead_validations (id, user_id, workspace_id, business_name, niche, city, phone, email, website, address, rating, reviews_count, latitude, longitude, source, status, original_tags, quality_score, completeness_score, local_fit_score, opportunity_score, created_at, updated_at, sync_status)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending_insert')`,
+            `INSERT INTO lead_validations (id, user_id, workspace_id, business_name, niche, city, phone, email, website, address, maps_url, rating, reviews_count, latitude, longitude, source, status, original_tags, quality_score, completeness_score, local_fit_score, opportunity_score, created_at, updated_at, sync_status)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending_insert')`,
             [
-              item.id, item.userId, item.workspaceId, item.businessName, item.niche, item.city, item.phone, item.email, item.website, item.address, item.rating, item.reviewsCount, item.latitude ?? null, item.longitude ?? null, item.source, item.status, JSON.stringify(item.originalTags || {}), item.qualityScore, item.completenessScore, item.localFitScore, item.opportunityScore, item.createdAt, item.updatedAt
+              item.id, item.userId, item.workspaceId, item.businessName, item.niche, item.city, item.phone, item.email, item.website, item.address, item.mapsUrl || null, item.rating, item.reviewsCount, item.latitude ?? null, item.longitude ?? null, item.source, item.status, JSON.stringify(item.originalTags || {}), item.qualityScore, item.completenessScore, item.localFitScore, item.opportunityScore, item.createdAt, item.updatedAt
             ]
           );
         }
@@ -2756,6 +2829,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
         email: item.email,
         website: item.website,
         address: item.address,
+        maps_url: item.mapsUrl || null,
         rating: item.rating,
         reviews_count: item.reviewsCount,
         latitude: item.latitude ?? null,
@@ -2799,6 +2873,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
         if (fields.email !== undefined) { dbFields.push("email = ?"); params.push(fields.email); }
         if (fields.website !== undefined) { dbFields.push("website = ?"); params.push(fields.website); }
         if (fields.address !== undefined) { dbFields.push("address = ?"); params.push(fields.address); }
+        if (fields.mapsUrl !== undefined) { dbFields.push("maps_url = ?"); params.push(fields.mapsUrl); }
         if (fields.status !== undefined) { dbFields.push("status = ?"); params.push(fields.status); }
         if (fields.qualityScore !== undefined) { dbFields.push("quality_score = ?"); params.push(fields.qualityScore); }
         if (fields.completenessScore !== undefined) { dbFields.push("completeness_score = ?"); params.push(fields.completenessScore); }
@@ -2830,6 +2905,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
     if (fields.email !== undefined) dbFields.email = fields.email;
     if (fields.website !== undefined) dbFields.website = fields.website;
     if (fields.address !== undefined) dbFields.address = fields.address;
+    if (fields.mapsUrl !== undefined) dbFields.maps_url = fields.mapsUrl;
     if (fields.status !== undefined) dbFields.status = fields.status;
     if (fields.qualityScore !== undefined) dbFields.quality_score = fields.qualityScore;
     if (fields.completenessScore !== undefined) dbFields.completeness_score = fields.completenessScore;

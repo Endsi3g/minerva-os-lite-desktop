@@ -30,6 +30,7 @@ export interface Lead {
   rating?: number;
   reviewsCount?: number;
   mapsUrl?: string;
+  address?: string;
   photos?: string[];
   socialLinks?: Record<string, string>;
   assignedTo?: string;

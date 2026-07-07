@@ -513,6 +513,7 @@ function initDb() {
       reviews_count INTEGER,
       latitude REAL,
       longitude REAL,
+      maps_url TEXT,
       source TEXT,
       status TEXT DEFAULT 'to_verify',
       original_tags TEXT DEFAULT '{}',
@@ -927,6 +928,11 @@ function initDb() {
 
     // v13.5 — Custom fields for CSV import and personalized outreach
     db.run(`ALTER TABLE leads ADD COLUMN custom_fields TEXT DEFAULT '{}'`, () => {});
+
+    // v13.6 — maps_url for validations & address/notes for leads schema alignment
+    db.run(`ALTER TABLE lead_validations ADD COLUMN maps_url TEXT DEFAULT NULL`, () => {});
+    db.run(`ALTER TABLE leads ADD COLUMN address TEXT DEFAULT NULL`, () => {});
+    db.run(`ALTER TABLE leads ADD COLUMN notes TEXT DEFAULT NULL`, () => {});
   });
 }
 

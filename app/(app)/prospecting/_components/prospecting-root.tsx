@@ -351,6 +351,7 @@ export function ProspectingRoot() {
         const addressIdx = findHeaderIndex(['adresse', 'address', 'rue']);
         const ratingIdx = findHeaderIndex(['note', 'rating', 'score']);
         const reviewsCountIdx = findHeaderIndex(['avis', 'reviews', 'count', 'nombre']);
+        const mapsUrlIdx = findHeaderIndex(['lien google maps', 'maps', 'google maps', 'url google', 'url maps']);
 
         if (nameIdx === -1) {
           setCsvError('Impossible de trouver la colonne du nom (Nom, Name, Entreprise, etc.).');
@@ -377,6 +378,7 @@ export function ProspectingRoot() {
           const address = addressIdx !== -1 ? vals[addressIdx] || '' : '';
           const rating = ratingIdx !== -1 ? parseFloat(vals[ratingIdx]) || 0 : 0;
           const reviewsCount = reviewsCountIdx !== -1 ? parseInt(vals[reviewsCountIdx]) || 0 : 0;
+          const mapsUrl = mapsUrlIdx !== -1 ? vals[mapsUrlIdx] || '' : '';
 
           const scores = computeManualScores({ website, phone, rating, reviewsCount });
 
@@ -388,6 +390,7 @@ export function ProspectingRoot() {
             email,
             website,
             address,
+            mapsUrl,
             rating,
             reviewsCount,
             source: 'Import CSV',
@@ -640,6 +643,7 @@ export function ProspectingRoot() {
         email: l.email || '',
         website: l.website || '',
         address: l.address || '',
+        mapsUrl: l.mapsUrl || '',
         rating: l.rating ?? 0,
         reviewsCount: l.reviewsCount ?? 0,
         latitude: l.latitude,
@@ -865,6 +869,8 @@ export function ProspectingRoot() {
         status: 'New',
         temperature: temp,
         website: item.website,
+        mapsUrl: item.mapsUrl,
+        address: item.address,
         rating: item.rating,
         reviewsCount: item.reviewsCount,
         latitude: item.latitude,
@@ -936,6 +942,8 @@ export function ProspectingRoot() {
           status: 'New',
           temperature: temp,
           website: item.website,
+          mapsUrl: item.mapsUrl,
+          address: item.address,
           rating: item.rating,
           reviewsCount: item.reviewsCount,
           latitude: item.latitude,

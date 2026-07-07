@@ -16,6 +16,11 @@ const LEAD_FIELDS: { key: string; label: string; required?: boolean }[] = [
   { key: 'city', label: 'Ville' },
   { key: 'niche', label: 'Secteur' },
   { key: 'website', label: 'Site web' },
+  { key: 'mapsUrl', label: 'Lien Google Maps' },
+  { key: 'rating', label: 'Note' },
+  { key: 'reviewsCount', label: 'Nombre d\'avis' },
+  { key: 'address', label: 'Adresse complète' },
+  { key: 'notes', label: 'Notes de terrain / Commentaires' },
   { key: 'ignore', label: '— Ignorer cette colonne —' },
 ];
 
@@ -50,14 +55,19 @@ function parseCsv(text: string): { headers: string[]; rows: string[][] } {
 function guessMapping(headers: string[]): Record<number, string> {
   const mapping: Record<number, string> = {};
   headers.forEach((h, i) => {
-    const norm = h.toLowerCase().trim();
-    if (/entreprise|business|company|name$/.test(norm) && !/contact/.test(norm)) mapping[i] = 'businessName';
+    const norm = h.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    if (/entreprise|business|company|name|nom$/.test(norm) && !/contact/.test(norm)) mapping[i] = 'businessName';
     else if (/contact.*name|nom.*contact/.test(norm)) mapping[i] = 'contactName';
     else if (/email|courriel/.test(norm)) mapping[i] = 'contactEmail';
-    else if (/phone|tel|téléphone/.test(norm)) mapping[i] = 'phone';
+    else if (/phone|tel|telephone/.test(norm)) mapping[i] = 'phone';
     else if (/city|ville/.test(norm)) mapping[i] = 'city';
-    else if (/niche|secteur|category|catégorie/.test(norm)) mapping[i] = 'niche';
+    else if (/niche|secteur|category|categorie/.test(norm)) mapping[i] = 'niche';
     else if (/website|site.?web|url/.test(norm)) mapping[i] = 'website';
+    else if (/google.*maps|lien.*maps|maps.*url|liens.*google.*maps/.test(norm)) mapping[i] = 'mapsUrl';
+    else if (/rating|note|score/.test(norm)) mapping[i] = 'rating';
+    else if (/revues|reviews|avis|count/.test(norm)) mapping[i] = 'reviewsCount';
+    else if (/address|adresse|rue/.test(norm)) mapping[i] = 'address';
+    else if (/commentaires|notes.*terrain|terrain.*notes|notes.*de.*terrain/.test(norm)) mapping[i] = 'notes';
     else mapping[i] = h.trim() ? `custom__${h.trim()}` : 'ignore';
   });
   return mapping;
@@ -114,6 +124,11 @@ export function CsvImportDialog({ open, onClose, onImported }: { open: boolean; 
 
       const businessName = get('businessName');
       if (businessName.trim()) {
+        const rawRating = get('rating').trim().replace(',', '.');
+        const rating = rawRating ? parseFloat(rawRating) : undefined;
+        const rawReviewsCount = get('reviewsCount').trim();
+        const reviewsCount = rawReviewsCount ? parseInt(rawReviewsCount, 10) : undefined;
+
         try {
           await (addLead as (data: Parameters<typeof addLead>[0]) => Promise<void>)({
             businessName: businessName.trim(),
@@ -123,6 +138,11 @@ export function CsvImportDialog({ open, onClose, onImported }: { open: boolean; 
             city: get('city').trim() || defaultCity.trim(),
             niche: get('niche').trim(),
             website: get('website').trim() || undefined,
+            mapsUrl: get('mapsUrl').trim() || undefined,
+            rating: isNaN(rating as any) ? undefined : rating,
+            reviewsCount: isNaN(reviewsCount as any) ? undefined : reviewsCount,
+            address: get('address').trim() || undefined,
+            notes: get('notes').trim() || undefined,
             status: 'New',
             temperature: 'Warm',
             source: 'csv',

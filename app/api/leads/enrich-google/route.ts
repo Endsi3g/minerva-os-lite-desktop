@@ -23,6 +23,7 @@ interface PlaceResult {
   };
   websiteUri?: string;
   nationalPhoneNumber?: string;
+  formattedAddress?: string;
 }
 
 async function searchPlace(businessName: string, city: string): Promise<PlaceResult | null> {
@@ -44,6 +45,7 @@ async function searchPlace(businessName: string, city: string): Promise<PlaceRes
         'places.generativeSummary',
         'places.websiteUri',
         'places.nationalPhoneNumber',
+        'places.formattedAddress',
       ].join(','),
     },
     body: JSON.stringify({
@@ -92,7 +94,7 @@ export async function POST(req: NextRequest) {
 
   const { data: lead } = await supabase
     .from('leads')
-    .select('id, business_name, city, google_place_id, google_place_data, google_enriched_at')
+    .select('id, business_name, city, google_place_id, google_place_data, google_enriched_at, rating, reviews_count, website, phone, address')
     .eq('id', leadId)
     .maybeSingle();
 
@@ -136,11 +138,22 @@ export async function POST(req: NextRequest) {
     insights: extractInsights(place),
   };
 
-  await supabase.from('leads').update({
+  const updatePayload: any = {
     google_place_id: place.id,
     google_place_data: placeData,
     google_enriched_at: new Date().toISOString(),
-  }).eq('id', leadId);
+  };
+
+  if (!lead.rating && place.rating) updatePayload.rating = place.rating;
+  if (!lead.reviews_count && place.userRatingCount) updatePayload.reviews_count = place.userRatingCount;
+  if (!lead.website && place.websiteUri) updatePayload.website = place.websiteUri;
+  if (!lead.phone && place.nationalPhoneNumber) updatePayload.phone = place.nationalPhoneNumber;
+  updatePayload.maps_url = `https://www.google.com/maps/place/?q=place_id:${place.id}`;
+  if (place.formattedAddress) {
+    updatePayload.address = place.formattedAddress;
+  }
+
+  await supabase.from('leads').update(updatePayload).eq('id', leadId);
 
   return NextResponse.json({ ok: true, cached: false, data: placeData });
 }

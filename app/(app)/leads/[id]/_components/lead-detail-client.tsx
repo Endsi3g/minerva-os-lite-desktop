@@ -610,7 +610,19 @@ export function LeadDetailClient({ id }: { id: string }) {
       body: JSON.stringify({ leadId: lead.id }),
     })
       .then(r => r.json())
-      .then(d => { if (d.ok && d.data) setGooglePlaceData(d.data); })
+      .then(d => {
+        if (d.ok && d.data) {
+          setGooglePlaceData(d.data);
+          updateLead(lead.id, {
+            rating: lead.rating || d.data.rating || undefined,
+            reviewsCount: lead.reviewsCount || d.data.review_count || undefined,
+            website: lead.website || d.data.website || undefined,
+            phone: lead.phone || d.data.phone || undefined,
+            mapsUrl: lead.mapsUrl || `https://www.google.com/maps/place/?q=place_id:${d.data.place_id}`,
+            address: lead.address || d.data.formattedAddress || undefined,
+          });
+        }
+      })
       .catch(() => {})
       .finally(() => setEnrichingGoogle(false));
   }, [lead?.id]); // eslint-disable-line react-hooks/exhaustive-deps
