@@ -6,6 +6,7 @@ import { useReach, type Campaign } from '@/lib/reach-context';
 import { ChevronLeft, Megaphone, Tag, MapPin, Calendar, Users, CheckCircle2, TrendingUp, Mail, Play, Pause, Edit2, Check, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Lead } from '@/lib/mock-data';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 const STATUS_COLORS: Record<Campaign['status'], string> = {
   active: 'bg-[#059669]/10 text-[#059669] border-[#059669]/20',
@@ -277,16 +278,37 @@ export function CampaignDetailRoot({ id }: { id: string }) {
               <p className="text-xs text-[#7a7a76]">Aucune donnée disponible.</p>
             ) : (
               <div className="rounded-xl border border-[#e5e5e0] bg-white p-5 space-y-3">
-                {statusBreakdown.map(s => (
-                  <div key={s.status} className="flex items-center gap-3">
-                    <span className="w-28 text-[10px] text-[#7a7a76] truncate">{s.status}</span>
-                    <div className="flex-1 h-2 bg-[#f4f4f3] rounded-full overflow-hidden">
-                      <div className="h-full bg-[#059669] rounded-full" style={{ width: `${s.pct}%` }} />
-                    </div>
-                    <span className="w-8 text-right text-[10px] font-bold text-[#26251e]">{s.count}</span>
-                    <span className="w-8 text-right text-[10px] text-[#7a7a76]">{s.pct}%</span>
-                  </div>
-                ))}
+                <div className="w-full h-[220px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={statusBreakdown} margin={{ top: 10, right: 5, left: -25, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e5e5e0" vertical={false} />
+                      <XAxis
+                        dataKey="status"
+                        tick={{ fontSize: 10, fill: '#807d72', fontWeight: 500 }}
+                        axisLine={false}
+                        tickLine={false}
+                      />
+                      <YAxis
+                        tick={{ fontSize: 10, fill: '#807d72', fontWeight: 500 }}
+                        axisLine={false}
+                        tickLine={false}
+                        allowDecimals={false}
+                      />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: '#ffffff',
+                          border: '1px solid #e5e5e0',
+                          borderRadius: '10px',
+                          fontSize: '11px',
+                          color: '#26251e',
+                          boxShadow: 'none',
+                        }}
+                        labelStyle={{ fontWeight: 'bold', color: '#26251e' }}
+                      />
+                      <Bar dataKey="count" name="Leads" fill="#059669" radius={[3, 3, 0, 0]} barSize={28} strokeWidth={0} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
                 <div className="pt-2 border-t border-[#e5e5e0]/60 text-[10px] text-[#7a7a76]">
                   Taux de conversion : <span className="font-bold text-[#059669]">{kpis.conversionRate}%</span>
                 </div>

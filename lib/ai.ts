@@ -135,6 +135,40 @@ function logCall(params: {
   } catch { /* never throw */ }
 }
 
+// Atomically claims a notification slot for a user in the given throttle table —
+// only one concurrent caller ever gets `true` back, even if several calls fail at
+// the exact same instant (e.g. a batch of concurrent draft generations all hitting
+// a provider's rate limit together). The UPDATE...WHERE is what makes this safe:
+// Postgres serializes concurrent updates to the same row, and only the first one
+// to run sees a stale-enough last_notified_at — every later one re-evaluates the
+// WHERE against the row the first one just wrote, so it matches zero rows. A plain
+// "SELECT then upsert" (the previous implementation) has no such guarantee, which
+// is exactly what let 3 simultaneous failures each fire their own notification.
+async function claimNotificationSlot(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  admin: any,
+  table: string,
+  userId: string,
+  windowMs: number,
+): Promise<boolean> {
+  const now = new Date().toISOString();
+  const cutoff = new Date(Date.now() - windowMs).toISOString();
+
+  const { data: updated } = await admin
+    .from(table)
+    .update({ last_notified_at: now })
+    .eq('user_id', userId)
+    .lt('last_notified_at', cutoff)
+    .select('user_id');
+  if (updated && updated.length > 0) return true;
+
+  // No existing (stale-enough) row to claim via UPDATE — either this is the very
+  // first failure ever for this user (insert wins), or another concurrent call
+  // already claimed the slot moments ago (insert fails on the user_id PK conflict).
+  const { error: insertErr } = await admin.from(table).insert({ user_id: userId, last_notified_at: now });
+  return !insertErr;
+}
+
 // Notifies the user once every 15 minutes at most when a call has exhausted every
 // provider fallback (a "real" failure, not a transient hiccup absorbed by the retry).
 // Fire-and-forget, mirrors logCall's never-throw contract.
@@ -142,19 +176,14 @@ async function notifyAiFailure(userId: string | undefined, workspaceId: string |
   if (!userId) return;
   try {
     const admin = getAdminClient();
+    const claimed = await claimNotificationSlot(admin, 'ai_failure_notifications', userId, 15 * 60 * 1000);
+    if (!claimed) return;
 
     let resolvedWorkspaceId = workspaceId;
     if (!resolvedWorkspaceId) {
       const { data: settingsRow } = await admin.from('settings').select('workspace_id').eq('user_id', userId).maybeSingle();
       resolvedWorkspaceId = settingsRow?.workspace_id ?? undefined;
     }
-
-    const { data: throttle } = await admin
-      .from('ai_failure_notifications')
-      .select('last_notified_at')
-      .eq('user_id', userId)
-      .maybeSingle();
-    if (throttle && Date.now() - new Date(throttle.last_notified_at).getTime() < 15 * 60 * 1000) return;
 
     const now = new Date().toISOString();
     await admin.from('notifications').insert({
@@ -169,7 +198,63 @@ async function notifyAiFailure(userId: string | undefined, workspaceId: string |
       created_at: now,
       updated_at: now,
     });
-    await admin.from('ai_failure_notifications').upsert({ user_id: userId, last_notified_at: now });
+  } catch { /* never throw */ }
+}
+
+// ── Rate limiting ─────────────────────────────────────────────────────────────
+
+const AI_RATE_LIMIT_MAX_CALLS = 8;
+const AI_RATE_LIMIT_WINDOW_MS = 60 * 1000;
+
+// Self-imposed limit checked BEFORE calling any provider, so a burst (e.g. a batch
+// draft-generation button) fails fast locally instead of hammering the provider
+// until it 429s — which is what produced 3 near-simultaneous "Échec IA" notifications
+// for what was really a single rate-limit event.
+async function checkAiRateLimit(userId: string | undefined): Promise<{ allowed: boolean; retryAfterSeconds?: number }> {
+  if (!userId) return { allowed: true };
+  try {
+    const admin = getAdminClient();
+    const windowStart = new Date(Date.now() - AI_RATE_LIMIT_WINDOW_MS).toISOString();
+    const { count } = await admin
+      .from('ai_gateway_logs')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .gte('created_at', windowStart);
+    if ((count ?? 0) >= AI_RATE_LIMIT_MAX_CALLS) {
+      return { allowed: false, retryAfterSeconds: Math.ceil(AI_RATE_LIMIT_WINDOW_MS / 1000) };
+    }
+    return { allowed: true };
+  } catch {
+    return { allowed: true }; // fail open — never block a real call because the check itself errored
+  }
+}
+
+async function notifyRateLimited(userId: string | undefined, workspaceId: string | undefined) {
+  if (!userId) return;
+  try {
+    const admin = getAdminClient();
+    const claimed = await claimNotificationSlot(admin, 'ai_rate_limit_notifications', userId, 5 * 60 * 1000);
+    if (!claimed) return;
+
+    let resolvedWorkspaceId = workspaceId;
+    if (!resolvedWorkspaceId) {
+      const { data: settingsRow } = await admin.from('settings').select('workspace_id').eq('user_id', userId).maybeSingle();
+      resolvedWorkspaceId = settingsRow?.workspace_id ?? undefined;
+    }
+
+    const now = new Date().toISOString();
+    await admin.from('notifications').insert({
+      id: crypto.randomUUID(),
+      user_id: userId,
+      workspace_id: resolvedWorkspaceId ?? null,
+      type: 'ai_rate_limit',
+      title: 'Limite IA atteinte ⏳',
+      body: `Trop de demandes IA en peu de temps (max ${AI_RATE_LIMIT_MAX_CALLS}/min) — réessayez dans une minute.`,
+      link: '/settings',
+      is_read: false,
+      created_at: now,
+      updated_at: now,
+    });
   } catch { /* never throw */ }
 }
 
@@ -303,6 +388,12 @@ function doCall(
 // ── Public API ────────────────────────────────────────────────────────────────
 
 export async function generateCompletion(options: AICallOptions): Promise<string> {
+  const rateLimit = await checkAiRateLimit(options.userId);
+  if (!rateLimit.allowed) {
+    await notifyRateLimited(options.userId, options.workspaceId);
+    throw new Error(`Limite IA atteinte — réessaie dans ${rateLimit.retryAfterSeconds}s.`);
+  }
+
   const startTime = Date.now();
   const requestId = crypto.randomUUID();
   const { provider, model, apiKey } = resolveAIProvider(options.settings);

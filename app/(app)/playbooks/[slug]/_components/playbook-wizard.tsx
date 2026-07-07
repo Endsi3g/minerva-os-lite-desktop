@@ -7,129 +7,10 @@ import { getApiUrl } from '@/lib/api-helper';
 import { cn } from '@/lib/utils';
 import {
   ArrowLeft, ArrowRight, CheckCircle2, Loader2, Play,
-  User, MapPin, Mail, Phone, Link2, MessageSquare,
+  User, MapPin, Mail,
   Target, Zap, ChevronRight, AlertCircle,
 } from 'lucide-react';
-
-// ─── Playbook data (same as in playbooks-root.tsx) ───────────────────────────
-interface PlaybookSequenceStep {
-  day: number;
-  channel: string;
-  subject?: string;
-  template: string;
-}
-
-interface Playbook {
-  id: string;
-  emoji: string;
-  title: string;
-  description: string;
-  category: string;
-  icp: {
-    persona: string;
-    painPoints: string[];
-    budget: string;
-    sector: string;
-  };
-  scraping: {
-    niches: string[];
-    cities: string[];
-    radius: number;
-    sources: string[];
-  };
-  sequence: PlaybookSequenceStep[];
-  callScript: string;
-  proposalTemplate: string;
-}
-
-const PLAYBOOKS: Record<string, Playbook> = {
-  'dentistes-mtl': {
-    id: 'dentistes-mtl', emoji: '🦷',
-    title: 'Dentistes sans site moderne — Montréal', description: 'Cliniques dentaires avec une présence web datée ou absente. Fort potentiel de refonte + SEO local.',
-    category: 'Santé',
-    icp: { persona: 'Dr. Martin, 45 ans, clinique de 2 dentistes à NDG. Site Wix 2015, aucun avis Google. Débordé, délègue la gestion marketing à sa réceptionniste.', painPoints: ['Patients perdus au profit de centres dentaires modernes', 'Aucune présence sur Google Maps', 'Site non mobile-friendly'], budget: '1 500 – 4 000 $/mois', sector: 'Clinique dentaire' },
-    scraping: { niches: ['Clinique dentaire'], cities: ['Montréal', 'Laval', 'Longueuil'], radius: 15, sources: ['google', 'here'] },
-    sequence: [
-      { day: 0, channel: 'email', subject: 'Audit gratuit — votre visibilité sur Google Maps', template: 'Bonjour {{prenom}},\n\nJ\'ai regardé la fiche Google Maps de {{entreprise}} et j\'ai identifié 3 points bloquants qui vous font perdre des patients chaque mois.\n\nJe vous envoie l\'audit complet gratuitement si vous me répondez d\'ici vendredi.\n\nCordialement,\n{{signature}}' },
-      { day: 3, channel: 'call', template: 'Bonjour, je suis {{nom}} de {{agence}}. Je vous appelais suite à un email envoyé il y a 3 jours au sujet de votre visibilité sur Google. Est-ce que vous avez eu le temps de le lire ?' },
-      { day: 7, channel: 'email', subject: 'Résultat de l\'audit SEO — {{entreprise}}', template: 'Bonjour {{prenom}},\n\nVoici les 3 lacunes principales identifiées pour {{entreprise}}…' },
-    ],
-    callScript: 'Bonjour [Prénom], je vous contacte car j\'ai analysé votre fiche Google…', proposalTemplate: 'PROPOSITION — Pack Visibilité Dentaire\n1. Refonte Google My Business — 400 $\n2. SEO local (3 mois) — 900 $/mois',
-  },
-  'restos-note-faible': {
-    id: 'restos-note-faible', emoji: '🍕', title: 'Restaurants note <4★ — Québec', description: 'Restaurants avec mauvaise réputation en ligne. Opportunité de gestion de réputation + SEO.', category: 'Restauration',
-    icp: { persona: 'Marco, propriétaire d\'un restaurant italien à Québec, note 3.6 sur Google, plusieurs avis négatifs sur le service. Pas de stratégie de réponse aux avis.', painPoints: ['Note Google en baisse', 'Avis négatifs sans réponse', 'Perdent face aux chaînes'], budget: '800 – 2 500 $/mois', sector: 'Restaurant / Café' },
-    scraping: { niches: ['Restaurant / Café', 'Pizzeria / Fast-food', 'Boulangerie / Pâtisserie'], cities: ['Québec', 'Montréal', 'Sherbrooke', 'Gatineau'], radius: 12, sources: ['google', 'yelp'] },
-    sequence: [
-      { day: 0, channel: 'email', subject: 'Votre note Google — comment l\'améliorer rapidement', template: 'Bonjour {{prenom}},\n\n87% des clients regardent les avis avant de choisir un restaurant. Avec la bonne stratégie, vous pouvez remonter à 4.3+ en 90 jours.\n\nVoulez-vous qu\'on en parle 15 minutes ?' },
-      { day: 5, channel: 'email', subject: 'Étude de cas — restaurant passé de 3.4 à 4.6 en 3 mois', template: 'Bonjour {{prenom}},\n\nJe vous partage l\'histoire d\'un restaurant similaire à {{entreprise}}…' },
-    ],
-    callScript: 'Bonjour [Prénom], je vous appelle car j\'ai analysé les avis Google de [Restaurant]…', proposalTemplate: 'PROPOSITION — Gestion de Réputation\n1. Audit complet — 300 $\n2. Réponses aux avis — 400 $/mois',
-  },
-  'plombiers-artisans': {
-    id: 'plombiers-artisans', emoji: '🔧', title: 'Plombiers & Électriciens — Grand Montréal', description: 'Artisans sans site web ou site non mobile. Forte demande locale, faible présence digitale.', category: 'Artisans',
-    icp: { persona: 'Robert, plombier indépendant à Laval, travaille via bouche-à-oreille, pas de site, une fiche Google incomplète.', painPoints: ['100% dépendant du bouche-à-oreille', 'Pas de site web', 'Perd des appels d\'urgence'], budget: '500 – 1 500 $/mois', sector: 'Artisan / Service' },
-    scraping: { niches: ['Plombier', 'Électricien', 'Peintre en bâtiment', 'Couvreur / Toiture'], cities: ['Montréal', 'Laval', 'Longueuil', 'Brossard', 'Repentigny'], radius: 20, sources: ['google', 'here'] },
-    sequence: [{ day: 0, channel: 'email', subject: 'Vos concurrents captent vos clients urgence', template: 'Bonjour {{prenom}},\n\nQuand quelqu\'un cherche "plombier urgence {{ville}}", votre nom n\'apparaît pas dans les 3 premiers résultats. Je peux changer ça en 30 jours.' }],
-    callScript: 'Bonjour [Prénom], je vous appelle car quand on cherche [métier] à [ville] sur Google, vous n\'êtes pas visible.', proposalTemplate: 'PROPOSITION — Visibilité Artisan\n1. Site 3 pages — 800 $\n2. SEO local — 500 $/mois',
-  },
-  'salons-coiffure': {
-    id: 'salons-coiffure', emoji: '✂️', title: 'Salons de coiffure sans réservation en ligne — Montréal', description: 'Salons sans système de booking digital. Potentiel d\'automatisation + SEO local.', category: 'Beauté',
-    icp: { persona: 'Sophie, gérante d\'un salon de 4 coiffeurs à Rosemont. Prend encore les RDV par téléphone.', painPoints: ['Pas de réservation en ligne', 'Clients perdus hors heures d\'ouverture', 'Pas d\'emails de rappel'], budget: '400 – 1 200 $/mois', sector: 'Salon de coiffure / Barbier' },
-    scraping: { niches: ['Salon de coiffure', 'Barbier', 'Esthéticienne / Spa', 'Tatoueur / Perceur'], cities: ['Montréal', 'Laval', 'Québec'], radius: 10, sources: ['google', 'yelp'] },
-    sequence: [{ day: 0, channel: 'email', subject: 'Clients perdus hors heures d\'ouverture — la solution', template: 'Bonjour {{prenom}},\n\nSaviez-vous que 40% des demandes de RDV arrivent après 18h ? Sans réservation en ligne, ces clients appellent vos concurrents.' }],
-    callScript: 'Bonjour, j\'ai un outil qui permet à [Salon] d\'accepter des réservations 24/7 sans décrocher le téléphone.', proposalTemplate: 'PROPOSITION — Automatisation Salon\n1. Réservation en ligne — 200 $/mois\n2. SMS rappel — 150 $/mois',
-  },
-  'osteopathes-physios': {
-    id: 'osteopathes-physios', emoji: '🏥', title: 'Ostéopathes & Physiothérapeutes — Québec', description: 'Cliniques de santé avec peu de présence en ligne.', category: 'Santé',
-    icp: { persona: 'Claire, ostéopathe solo à Sherbrooke, 8 ans d\'expérience, agenda souvent plein mais dépendante du bouche-à-oreille.', painPoints: ['Pas de système pour capturer les nouveaux patients', 'Site web basique', 'Pas de présence sociale'], budget: '600 – 2 000 $/mois', sector: 'Santé & Bien-être' },
-    scraping: { niches: ['Physiothérapie / Chiro', 'Psychologue / Thérapeute', 'Clinique médicale'], cities: ['Québec', 'Sherbrooke', 'Gatineau', 'Trois-Rivières', 'Saguenay'], radius: 15, sources: ['google', 'here'] },
-    sequence: [{ day: 0, channel: 'email', subject: '3 patients par mois supplémentaires — sans publicité payante', template: 'Bonjour {{prenom}},\n\nJ\'ai identifié 3 ajustements simples qui pourraient vous amener 3 nouveaux patients par mois sans budget pub.' }],
-    callScript: 'Bonjour [Prénom], votre clinique n\'apparaît pas quand on cherche [spécialité] à [ville] sur Google.', proposalTemplate: 'PROPOSITION — Visibilité Clinique\n1. Google My Business — 300 $\n2. Avis patients — 200 $/mois',
-  },
-  'agences-immo': {
-    id: 'agences-immo', emoji: '🏠', title: 'Agences immobilières indépendantes — Québec', description: 'Courtiers immobiliers sans outils CRM ni présence digitale structurée.', category: 'Immobilier',
-    icp: { persona: 'Jean-François, courtier immobilier indépendant à Brossard depuis 12 ans. Pas de CRM, gère ses clients sur Excel.', painPoints: ['Pas de CRM — suivi par Excel', 'Pas de nurturing des leads froids', 'Site non à jour'], budget: '700 – 2 500 $/mois', sector: 'Agence immobilière' },
-    scraping: { niches: ['Agence immobilière'], cities: ['Montréal', 'Laval', 'Longueuil', 'Brossard', 'Blainville', 'Mirabel'], radius: 20, sources: ['google', 'here'] },
-    sequence: [{ day: 0, channel: 'email', subject: 'Vos leads froids vous coûtent des commissions', template: 'Bonjour {{prenom}},\n\nUn courtier moyen perd 30% de ses commissions faute de suivi systématique de ses leads froids.' }],
-    callScript: 'Bonjour [Prénom], j\'ai un système qui transforme vos leads froids en clients actifs automatiquement.', proposalTemplate: 'PROPOSITION — CRM Immobilier\n1. Setup CRM — 500 $\n2. Séquences nurturing — 300 $/mois',
-  },
-  'cpa-comptables': {
-    id: 'cpa-comptables', emoji: '📊', title: 'Comptables & CPA PME — Québec', description: 'Cabinets comptables qui recrutent des clients par réseau seulement.', category: 'Finance',
-    icp: { persona: 'Marie-Hélène, CPA associée dans un cabinet de 3 comptables à Québec. Clients via bouche-à-oreille uniquement.', painPoints: ['Acquisition 100% réseau — plafonné', 'Pas de contenu en ligne', 'Perd face aux grandes firmes'], budget: '1 000 – 3 000 $/mois', sector: 'Finance & Comptabilité' },
-    scraping: { niches: ['Comptable / CPA', 'Assurance', 'Avocat', 'Notaire'], cities: ['Québec', 'Montréal', 'Gatineau', 'Sherbrooke'], radius: 15, sources: ['google', 'here'] },
-    sequence: [{ day: 0, channel: 'email', subject: '15 nouveaux clients PME en 6 mois — stratégie concrète', template: 'Bonjour {{prenom}},\n\nLa plupart des PME cherchent un comptable sur Google. Si {{entreprise}} n\'y est pas, elles vont chez vos concurrents.' }],
-    callScript: 'Bonjour [Prénom], quand une PME cherche un comptable à [ville] sur Google, [Cabinet] n\'apparaît pas.', proposalTemplate: 'PROPOSITION — Acquisition Digitale\n1. SEO 3 mots-clés PME — 800 $/mois\n2. LinkedIn 4 posts/mois — 400 $/mois',
-  },
-  'gyms-studios': {
-    id: 'gyms-studios', emoji: '💪', title: 'Gyms & Studios de fitness — Grand Montréal', description: 'Studios indépendants face aux grandes chaînes.', category: 'Sport & Bien-être',
-    icp: { persona: 'Alex, propriétaire d\'un studio de yoga à Plateau, 60 membres. Lutte contre Equinox.', painPoints: ['Visibilité faible vs les chaînes', 'Peu d\'avis Google', 'Pas de stratégie de rétention'], budget: '500 – 1 500 $/mois', sector: 'Sport & Fitness' },
-    scraping: { niches: ['Gym / Fitness', 'Studio yoga / Pilates', 'Salle de danse'], cities: ['Montréal', 'Laval', 'Québec', 'Longueuil'], radius: 8, sources: ['google', 'yelp'] },
-    sequence: [{ day: 0, channel: 'email', subject: 'Comment un studio de yoga a doublé ses membres en 90 jours', template: 'Bonjour {{prenom}},\n\n{{entreprise}} offre quelque chose qu\'Equinox ne peut pas : une vraie communauté.' }],
-    callScript: 'Bonjour [Prénom], mon agence aide les studios indépendants à attirer des membres qui n\'abandonneront pas.', proposalTemplate: 'PROPOSITION — Croissance Studio\n1. Google My Business — 300 $\n2. Meta Ads géolocalisées — 500 $/mois',
-  },
-  'serruriers-urgences': {
-    id: 'serruriers-urgences', emoji: '🔑', title: 'Serruriers & Urgences dépannage — Montréal', description: 'Artisans urgentistes sans visibilité locale.', category: 'Urgences & Dépannage',
-    icp: { persona: 'Tony, serrurier indépendant, Montréal. Disponible 24/7 mais n\'apparaît pas dans le top 3 Google.', painPoints: ['Absent du top 3 Google pour les mots-clés urgence', 'Concurrent capte les appels nuit/weekend', 'Aucune présence en ligne'], budget: '400 – 1 000 $/mois', sector: 'Urgences & Artisans' },
-    scraping: { niches: ['Serrurier', 'Électricien', 'Plombier'], cities: ['Montréal', 'Laval', 'Longueuil', 'Brossard', 'Saint-Jérôme'], radius: 25, sources: ['google', 'here'] },
-    sequence: [{ day: 0, channel: 'email', subject: 'Urgence lockout à 2h du matin — qui capte l\'appel ?', template: 'Bonjour {{prenom}},\n\nJ\'ai testé "serrurier urgence Montréal" sur Google à 2h du matin la semaine passée. Votre nom n\'est pas dans les 3 premiers.' }],
-    callScript: 'Bonjour [Prénom], cherchez "serrurier urgence [ville]" sur Google maintenant. Vous êtes là ? Non.', proposalTemplate: 'PROPOSITION — Top 3 Google Urgences\n1. Google My Business urgences — 200 $\n2. SEO local — 400 $/mois',
-  },
-  'avocats-notaires': {
-    id: 'avocats-notaires', emoji: '⚖️', title: 'Avocats & Notaires — PME et particuliers', description: 'Cabinets juridiques sans présence SEO locale.', category: 'Juridique',
-    icp: { persona: 'Maître Dubois, avocat d\'affaires à Montréal, cabinet de 2 avocats. Pas de blog, pas de fiche Google optimisée.', painPoints: ['Pas de contenu juridique en ligne', 'Fiche Google incomplète', 'Concurrence des grandes firmes'], budget: '1 500 – 5 000 $/mois', sector: 'Juridique' },
-    scraping: { niches: ['Avocat', 'Notaire', 'Comptable / CPA'], cities: ['Montréal', 'Québec', 'Gatineau', 'Laval'], radius: 15, sources: ['google', 'here'] },
-    sequence: [{ day: 0, channel: 'email', subject: 'Vos clients PME vous trouvent-ils sur Google ?', template: 'Bonjour Maître {{prenom}},\n\nJ\'ai analysé la présence en ligne de {{entreprise}}. Voici ce que j\'ai trouvé :\n\n❌ Fiche Google incomplète\n❌ Aucun article de blog\n❌ 5 avis seulement' }],
-    callScript: 'Bonjour Maître [Nom], j\'ai analysé votre présence en ligne et comparé avec 3 cabinets concurrents.', proposalTemplate: 'PROPOSITION — Autorité Digitale Juridique\n1. Contenu SEO (2 articles/mois) — 800 $/mois\n2. LinkedIn cabinet — 400 $/mois',
-  },
-};
-
-const CHANNEL_ICONS: Record<string, React.ReactNode> = {
-  email: <Mail className="h-3.5 w-3.5" />,
-  call: <Phone className="h-3.5 w-3.5" />,
-  linkedin: <Link2 className="h-3.5 w-3.5" />,
-  sms: <MessageSquare className="h-3.5 w-3.5" />,
-};
+import { PLAYBOOKS, CHANNEL_ICONS } from '../../data';
 
 const SOURCES = [
   { id: 'google', label: 'Google Maps (Apify)' },
@@ -180,8 +61,8 @@ function TagInput({ tags, setTags, placeholder }: { tags: string[]; setTags: (t:
 
 export function PlaybookWizard({ slug }: { slug: string }) {
   const router = useRouter();
-  const { addCampaign, activeWorkspace } = useReach();
-  const pb = PLAYBOOKS[slug];
+  const { addCampaign, addLead, activeWorkspace } = useReach();
+  const pb = PLAYBOOKS.find((p) => p.id === slug);
   const [step, setStep] = useState(0);
   const [launching, setLaunching] = useState(false);
   const [launched, setLaunched] = useState(false);
@@ -211,6 +92,77 @@ export function PlaybookWizard({ slug }: { slug: string }) {
     );
   }
 
+  // Scrape puis persiste réellement les leads dans la campagne, et met à jour le
+  // statut du run en conséquence. Tourne en arrière-plan après l'écran de succès —
+  // avant ce correctif, la réponse de /api/scrape-maps était lue puis jetée, donc
+  // un playbook "lancé" ne créait jamais aucun lead et le run restait "En cours"
+  // pour toujours (aucun appel PATCH n'existait dans ce fichier).
+  const finalizeRun = async (cId: string | null, runId: string | null) => {
+    let leadsScraped = 0;
+    try {
+      const scrapeRes = await fetch(getApiUrl('/api/scrape-maps'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          niches: state.niches,
+          cities: state.cities,
+          radius: state.radius * 1000,
+          sources: state.sources,
+          campaignId: cId,
+          workspaceId: activeWorkspace?.id,
+          maxResults: 100,
+        }),
+      });
+      const scrapeData = scrapeRes.ok ? await scrapeRes.json() : null;
+      const scrapedLeads: Array<Record<string, unknown>> = scrapeData?.leads ?? [];
+
+      const CONCURRENCY = 5;
+      for (let i = 0; i < scrapedLeads.length; i += CONCURRENCY) {
+        const chunk = scrapedLeads.slice(i, i + CONCURRENCY);
+        await Promise.all(chunk.map((item) => addLead({
+          businessName: String(item.businessName ?? 'Sans nom'),
+          contactName: '',
+          contactEmail: '',
+          niche: String(item.niche ?? state.niches[0] ?? ''),
+          city: String(item.city ?? state.cities[0] ?? ''),
+          source: `Playbook — ${pb!.title}`,
+          status: 'New',
+          temperature: 'Warm',
+          nextAction: 'Vérifier la fiche et lancer la séquence',
+          nextActionDate: new Date().toISOString().split('T')[0],
+          website: item.website ? String(item.website) : undefined,
+          rating: typeof item.rating === 'number' ? item.rating : undefined,
+          reviewsCount: typeof item.reviewsCount === 'number' ? item.reviewsCount : undefined,
+          mapsUrl: item.mapsUrl ? String(item.mapsUrl) : undefined,
+          latitude: typeof item.latitude === 'number' ? item.latitude : undefined,
+          longitude: typeof item.longitude === 'number' ? item.longitude : undefined,
+          phone: item.phone ? String(item.phone) : undefined,
+          campaignId: cId ?? undefined,
+        })));
+        leadsScraped += chunk.length;
+      }
+
+      if (runId) {
+        await fetch(getApiUrl('/api/playbook-runs'), {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: runId, status: 'done', leads_scraped: leadsScraped }),
+        });
+      }
+    } catch (err) {
+      console.error('finalizeRun error:', err);
+      if (runId) {
+        try {
+          await fetch(getApiUrl('/api/playbook-runs'), {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: runId, status: 'error', leads_scraped: leadsScraped }),
+          });
+        } catch { /* best-effort */ }
+      }
+    }
+  };
+
   const handleLaunch = async () => {
     setLaunching(true);
     setError(null);
@@ -218,50 +170,43 @@ export function PlaybookWizard({ slug }: { slug: string }) {
       // 1. Create campaign
       const campaign = await addCampaign({
         name: state.campaignName,
-        description: pb.description,
+        description: pb!.description,
         niches: state.niches,
         cities: state.cities,
-        personaId: pb.id,
-        sequenceConfig: state.useDefaultSequence ? JSON.stringify(pb.sequence) : undefined,
+        personaId: pb!.id,
+        sequenceConfig: state.useDefaultSequence ? JSON.stringify(pb!.sequence) : undefined,
         goals: JSON.stringify({ metric: state.goalMetric, target: state.goalTarget }),
       });
 
       const cId = (campaign as { id: string } | undefined)?.id ?? null;
 
       // 2. Create playbook_run
+      let runId: string | null = null;
       try {
         const runRes = await fetch(getApiUrl('/api/playbook-runs'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            playbook_id: pb.id,
+            playbook_id: pb!.id,
             workspace_id: activeWorkspace?.id,
             campaign_id: cId,
             status: 'running',
           }),
         });
-        if (!runRes.ok) console.warn('playbook_run creation failed (non-blocking)');
+        if (runRes.ok) {
+          const runData = await runRes.json();
+          runId = runData?.id ?? null;
+        } else {
+          console.warn('playbook_run creation failed (non-blocking)');
+        }
       } catch { /* non-blocking */ }
-
-      // 3. Trigger scraping
-      try {
-        await fetch(getApiUrl('/api/scrape-maps'), {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            niches: state.niches,
-            cities: state.cities,
-            radius: state.radius * 1000,
-            sources: state.sources,
-            campaignId: cId,
-            workspaceId: activeWorkspace?.id,
-            maxResults: 100,
-          }),
-        });
-      } catch { /* scraping runs in background */ }
 
       setCampaignId(cId);
       setLaunched(true);
+
+      // 3. Scrape + persist leads + finalize run status — fire-and-forget, the
+      // success screen is already shown, this doesn't block the user.
+      void finalizeRun(cId, runId);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erreur lors du lancement');
     } finally {

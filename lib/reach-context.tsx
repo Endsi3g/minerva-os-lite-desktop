@@ -149,6 +149,7 @@ interface ReachContextType {
     longitude?: number;
     phone?: string;
     score?: number;
+    campaignId?: string;
   }) => void;
   toggleTask: (id: string) => void;
   addTask: (title: string, category: Task['category'], dueDate?: string) => void;
@@ -1316,6 +1317,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
     longitude?: number;
     phone?: string;
     score?: number;
+    campaignId?: string;
   }) => {
     if (!user || !activeWorkspace) return;
     const electronObj = typeof window !== 'undefined' && (window as any).electron ? (window as any).electron : null;
@@ -1343,9 +1345,9 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
           source: leadData.source
         });
 
-        await electronObj.dbRun(`INSERT INTO leads (id, user_id, business_name, contact_name, contact_email, niche, city, source, lead_source_type, status, temperature, next_action, next_action_date, owner, image_url, workspace_id, score, website, rating, reviews_count, maps_url, photos, social_links, assigned_to, latitude, longitude, phone, created_at, updated_at, sync_status)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending_insert')`,
-          [leadId, user.id, leadData.businessName, leadData.contactName, leadData.contactEmail || '', leadData.niche, leadData.city, leadData.source, leadSourceType, leadData.status, leadData.temperature, leadData.nextAction, leadData.nextActionDate || null, 'Moi', leadData.imageUrl || null, activeWorkspace.id, leadScore, leadData.website || null, leadData.rating ?? null, leadData.reviewsCount ?? null, leadData.mapsUrl || null, leadData.photos ? JSON.stringify(leadData.photos) : null, leadData.socialLinks ? JSON.stringify(leadData.socialLinks) : null, leadData.assignedTo || null, leadData.latitude ?? null, leadData.longitude ?? null, leadData.phone || null, nowStr, nowStr]
+        await electronObj.dbRun(`INSERT INTO leads (id, user_id, business_name, contact_name, contact_email, niche, city, source, lead_source_type, status, temperature, next_action, next_action_date, owner, image_url, workspace_id, score, website, rating, reviews_count, maps_url, photos, social_links, assigned_to, latitude, longitude, phone, campaign_id, created_at, updated_at, sync_status)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending_insert')`,
+          [leadId, user.id, leadData.businessName, leadData.contactName, leadData.contactEmail || '', leadData.niche, leadData.city, leadData.source, leadSourceType, leadData.status, leadData.temperature, leadData.nextAction, leadData.nextActionDate || null, 'Moi', leadData.imageUrl || null, activeWorkspace.id, leadScore, leadData.website || null, leadData.rating ?? null, leadData.reviewsCount ?? null, leadData.mapsUrl || null, leadData.photos ? JSON.stringify(leadData.photos) : null, leadData.socialLinks ? JSON.stringify(leadData.socialLinks) : null, leadData.assignedTo || null, leadData.latitude ?? null, leadData.longitude ?? null, leadData.phone || null, leadData.campaignId || null, nowStr, nowStr]
         );
 
         const insertedNotes: DbNote[] = [];
@@ -1390,7 +1392,8 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
           assigned_to: leadData.assignedTo || null,
           latitude: leadData.latitude ?? null,
           longitude: leadData.longitude ?? null,
-          phone: leadData.phone || null
+          phone: leadData.phone || null,
+          campaign_id: leadData.campaignId || null
         }, insertedNotes);
 
         setLeads(prev => [newUiLead, ...prev]);
@@ -1420,6 +1423,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
       next_action: leadData.nextAction,
       next_action_date: leadData.nextActionDate || null,
       owner: 'Moi',
+      campaign_id: leadData.campaignId || null,
     };
 
     const enrichedPayload = {

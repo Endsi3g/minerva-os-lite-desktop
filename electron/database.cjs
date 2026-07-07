@@ -907,6 +907,12 @@ function initDb() {
     db.run(`ALTER TABLE leads ADD COLUMN company_vibe TEXT DEFAULT NULL`, () => {});
     db.run(`ALTER TABLE leads ADD COLUMN enrichment_completeness INTEGER DEFAULT 0`, () => {});
     db.run(`ALTER TABLE leads ADD COLUMN enrichment_sufficient INTEGER DEFAULT 0`, () => {});
+
+    // v13.3 — Rate limiting IA (notification dédiée, distincte des échecs).
+    db.run(`CREATE TABLE IF NOT EXISTS ai_rate_limit_notifications (
+      user_id TEXT PRIMARY KEY,
+      last_notified_at TEXT NOT NULL
+    )`, () => {});
   });
 }
 

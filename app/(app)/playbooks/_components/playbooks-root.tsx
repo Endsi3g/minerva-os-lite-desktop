@@ -91,7 +91,7 @@ export function PlaybooksRoot() {
                       {new Date(run.created_at).toLocaleDateString('fr-CA')}
                     </span>
                     {run.campaign_id && (
-                      <Link href={`/campaigns`} className="text-[10px] text-[#059669] underline shrink-0">Campagne</Link>
+                      <Link href={`/campaigns/${run.campaign_id}`} className="text-[10px] text-[#059669] underline shrink-0">Campagne</Link>
                     )}
                   </div>
                 );

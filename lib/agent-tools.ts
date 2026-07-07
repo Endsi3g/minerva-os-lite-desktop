@@ -443,7 +443,7 @@ export async function suggestFollowUp(
 ) {
   const { data: lead } = await ctx.supabase
     .from('leads')
-    .select('name, company, status, score, last_contacted_at, last_reply_intent, outreach_tags')
+    .select('business_name, contact_name, status, score, last_activity_at, last_reply_intent, outreach_tags')
     .eq('id', params.lead_id)
     .single();
 
@@ -453,7 +453,7 @@ export async function suggestFollowUp(
     system: 'Tu es un coach commercial. Donne une recommandation courte et actionnable pour la prochaine interaction avec ce lead.',
     messages: [{
       role: 'user',
-      content: `Lead: ${lead.name} (${lead.company}). Statut: ${lead.status}. Score: ${lead.score}. Dernier contact: ${lead.last_contacted_at || 'jamais'}. Intent détecté: ${lead.last_reply_intent || 'inconnu'}. Tags: ${(lead.outreach_tags || []).join(', ') || 'aucun'}.
+      content: `Lead: ${lead.contact_name || 'le/la gérant(e)'} chez ${lead.business_name}. Statut: ${lead.status}. Score: ${lead.score}. Dernier contact: ${lead.last_activity_at || 'jamais'}. Intent détecté: ${lead.last_reply_intent || 'inconnu'}. Tags: ${(lead.outreach_tags || []).join(', ') || 'aucun'}.
 Quelle est la meilleure prochaine action ? En 1 phrase concrète.`,
     }],
     maxTokens: 150,

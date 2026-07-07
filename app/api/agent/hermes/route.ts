@@ -83,7 +83,7 @@ async function toolSearchLeads(
   let query = db
     .from('leads')
     .select(
-      'id, business_name, name, email, phone, status, city, niche, website, website_description, temperature, score, pipeline_stage, last_contacted_at',
+      'id, business_name, contact_name, contact_email, phone, status, city, niche, website, website_description, temperature, score, pipeline_stage, last_activity_at',
     )
     .eq('workspace_id', workspaceId)
     .limit(params.limit ?? 20);
@@ -164,7 +164,7 @@ async function toolGenerateEmail(
   // Fetch lead context for personalisation
   const { data: lead } = await db
     .from('leads')
-    .select('business_name, name, city, niche, website_description, score')
+    .select('business_name, contact_name, city, niche, website_description, score')
     .eq('id', params.lead_id)
     .maybeSingle();
 
@@ -200,44 +200,41 @@ async function toolGenerateEmail(
   return { lead_id: params.lead_id, subject: parsed.subject, body: parsed.body };
 }
 
+// Écrit dans `campaigns` (niches/cities en tableaux) — la seule table que lit
+// vraiment l'UI (/campaigns, /campaigns/[id], onglet Campagnes d'Outreach, wizard
+// Playbooks). Les anciennes tables outreach_campaigns/campaign_leads existent
+// toujours en base mais ne sont lues par aucune surface UI — une campagne créée
+// là était invisible partout dans l'app.
 async function toolCreateCampaign(
   params: { name: string; description?: string; lead_ids: string[] },
   db: DbClient,
   workspaceId: string,
   userId: string,
 ): Promise<{ campaign_id: string; name: string; lead_count: number; persisted: boolean }> {
-  const campaignPayload = {
-    workspace_id: workspaceId,
-    name: params.name,
-    description: params.description ?? null,
-    status: 'active',
-    lead_count: params.lead_ids.length,
-    created_by: userId,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  };
+  const now = new Date().toISOString();
+  const { data, error } = await db
+    .from('campaigns')
+    .insert({
+      workspace_id: workspaceId,
+      user_id: userId,
+      name: params.name,
+      description: params.description ?? null,
+      niches: [],
+      cities: [],
+      status: 'active',
+      created_at: now,
+      updated_at: now,
+    })
+    .select('id')
+    .single();
 
-  // Try outreach_campaigns, then campaigns — both might not exist
-  const tables = ['outreach_campaigns', 'campaigns'];
-
-  for (const table of tables) {
-    try {
-      const { data, error } = await db
-        .from(table)
-        .insert(campaignPayload)
-        .select('id')
-        .single();
-      if (!error && data?.id) {
-        return {
-          campaign_id: data.id,
-          name: params.name,
-          lead_count: params.lead_ids.length,
-          persisted: true,
-        };
-      }
-    } catch {
-      // table does not exist — try next
-    }
+  if (!error && data?.id) {
+    return {
+      campaign_id: data.id,
+      name: params.name,
+      lead_count: params.lead_ids.length,
+      persisted: true,
+    };
   }
 
   // Graceful fallback: return a synthetic ID so the loop can continue
@@ -250,6 +247,9 @@ async function toolCreateCampaign(
   };
 }
 
+// Associe des leads à une campagne via `leads.campaign_id` — le même mécanisme
+// que lit campaign-detail-root.tsx (`leads.filter(l => l.campaignId === id)`),
+// au lieu d'une table de jonction que rien d'autre ne consulte.
 async function toolEnrollLeads(
   params: {
     campaign_id: string;
@@ -259,41 +259,16 @@ async function toolEnrollLeads(
   },
   db: DbClient,
   workspaceId: string,
-  userId: string,
 ): Promise<{ enrolled: number; campaign_id: string }> {
-  const now = new Date().toISOString();
+  const { data, error } = await db
+    .from('leads')
+    .update({ campaign_id: params.campaign_id, updated_at: new Date().toISOString() })
+    .in('id', params.lead_ids)
+    .eq('workspace_id', workspaceId)
+    .select('id');
 
-  // Try campaign_leads table first
-  try {
-    const rows = params.lead_ids.map((lid) => ({
-      workspace_id: workspaceId,
-      campaign_id: params.campaign_id,
-      lead_id: lid,
-      email_subject: params.email_subject ?? null,
-      email_body: params.email_body_template ?? null,
-      status: 'pending',
-      enrolled_by: 'hermes',
-      enrolled_at: now,
-    }));
-    const { error } = await db.from('campaign_leads').insert(rows);
-    if (!error) return { enrolled: rows.length, campaign_id: params.campaign_id };
-  } catch { /* table not found — try sequence_enrollments */ }
-
-  // Fallback: sequence_enrollments
-  try {
-    const rows = params.lead_ids.map((lid) => ({
-      workspace_id: workspaceId,
-      lead_id: lid,
-      sequence_id: params.campaign_id,
-      status: 'active',
-      enrolled_by: 'hermes',
-      enrolled_at: now,
-    }));
-    const { error } = await db.from('sequence_enrollments').insert(rows);
-    if (!error) return { enrolled: rows.length, campaign_id: params.campaign_id };
-  } catch { /* also not found */ }
-
-  return { enrolled: 0, campaign_id: params.campaign_id };
+  if (error) throw new Error(`enroll_leads: ${error.message}`);
+  return { enrolled: data?.length ?? 0, campaign_id: params.campaign_id };
 }
 
 async function toolCreateTask(
@@ -400,7 +375,6 @@ async function executeTool(
         params as { campaign_id: string; lead_ids: string[]; email_subject?: string; email_body_template?: string },
         db,
         workspaceId,
-        userId,
       );
     case 'create_task':
       return toolCreateTask(params as { lead_id: string; title: string; due_date?: string }, db, workspaceId, userId);

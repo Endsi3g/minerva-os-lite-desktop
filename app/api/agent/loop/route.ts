@@ -95,7 +95,7 @@ Pipeline actuel:
 ${JSON.stringify(pipelineSummary, null, 2)}
 
 Leads prioritaires à relancer (${leadsToFollowUp.length}):
-${leadsToFollowUp.slice(0, 10).map((l: any) => `- ${l.business_name} (${l.niche}) | Score: ${l.score} | Statut: ${l.status} | Dernier contact: ${l.last_contacted_at || 'jamais'}`).join('\n')}
+${leadsToFollowUp.slice(0, 10).map((l: any) => `- ${l.business_name} (${l.niche}) | Score: ${l.score} | Statut: ${l.status} | Dernier contact: ${l.last_activity_at || 'jamais'}`).join('\n')}
 
 Mémoire agent (apprentissages récents):
 ${recentMemory?.map((m: any) => `[${m.type}] ${m.key}: ${m.content}`).join('\n') || 'Aucune mémoire enregistrée.'}
