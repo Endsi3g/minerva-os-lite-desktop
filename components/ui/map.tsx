@@ -205,6 +205,19 @@ function DefaultLoader() {
   );
 }
 
+// MapLibre GL JS doesn't expose a public `supported()` helper in this version
+// — a plain canvas WebGL probe is the standard portable way to detect this
+// before ever calling `new MapLibreGL.Map(...)`, which throws synchronously
+// (not just an 'error' event) when WebGL isn't available.
+function isWebGLSupported(): boolean {
+  try {
+    const canvas = document.createElement("canvas");
+    return !!(canvas.getContext("webgl2") || canvas.getContext("webgl") || canvas.getContext("experimental-webgl"));
+  } catch {
+    return false;
+  }
+}
+
 function getViewport(map: MapLibreGL.Map): MapViewport {
   const center = map.getCenter();
   return {
@@ -234,6 +247,7 @@ const Map = forwardRef<MapRef, MapProps>(function Map(
   const [mapInstance, setMapInstance] = useState<MapLibreGL.Map | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
   const [isStyleLoaded, setIsStyleLoaded] = useState(false);
+  const [initError, setInitError] = useState<string | null>(null);
   const currentStyleRef = useRef<MapStyleOption | null>(null);
   const styleTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const internalUpdateRef = useRef(false);
@@ -273,20 +287,35 @@ const Map = forwardRef<MapRef, MapProps>(function Map(
   useEffect(() => {
     if (!containerRef.current) return;
 
+    // MapLibreGL.Map's constructor throws synchronously (not just an 'error'
+    // event) when WebGL isn't available — no check existed for this at all,
+    // which crashed the entire page up to the nearest error boundary on any
+    // device/browser/VM without proper WebGL support, regardless of data.
+    if (!isWebGLSupported()) {
+      setInitError("Ce navigateur ne supporte pas l'affichage de la carte (WebGL indisponible).");
+      return;
+    }
+
     const initialStyle =
       resolvedTheme === "dark" ? mapStyles.dark : mapStyles.light;
     currentStyleRef.current = initialStyle;
 
-    const map = new MapLibreGL.Map({
-      container: containerRef.current,
-      style: initialStyle,
-      renderWorldCopies: false,
-      attributionControl: {
-        compact: true,
-      },
-      ...props,
-      ...viewport,
-    });
+    let map: MapLibreGL.Map;
+    try {
+      map = new MapLibreGL.Map({
+        container: containerRef.current,
+        style: initialStyle,
+        renderWorldCopies: false,
+        attributionControl: {
+          compact: true,
+        },
+        ...props,
+        ...viewport,
+      });
+    } catch (err) {
+      setInitError(err instanceof Error ? err.message : "Échec de l'initialisation de la carte.");
+      return;
+    }
 
     const styleDataHandler = () => {
       clearStyleTimeout();
@@ -301,6 +330,13 @@ const Map = forwardRef<MapRef, MapProps>(function Map(
       }, 100);
     };
     const loadHandler = () => setIsLoaded(true);
+    // Style/tile load failures (network, CDN outage, ad-blocker) emit an
+    // 'error' event — without any listener, MapLibre only logs to console, but
+    // an explicit handler here means we never depend on that undocumented
+    // default and can surface it if needed later.
+    const errorHandler = (e: { error?: Error }) => {
+      console.error("[map] MapLibre error event:", e?.error ?? e);
+    };
 
     // Viewport change handler - skip if triggered by internal update
     const handleMove = () => {
@@ -311,6 +347,7 @@ const Map = forwardRef<MapRef, MapProps>(function Map(
     map.on("load", loadHandler);
     map.on("styledata", styleDataHandler);
     map.on("move", handleMove);
+    map.on("error", errorHandler);
     setMapInstance(map);
 
     return () => {
@@ -318,6 +355,7 @@ const Map = forwardRef<MapRef, MapProps>(function Map(
       map.off("load", loadHandler);
       map.off("styledata", styleDataHandler);
       map.off("move", handleMove);
+      map.off("error", errorHandler);
       map.remove();
       setIsLoaded(false);
       setIsStyleLoaded(false);
@@ -384,6 +422,14 @@ const Map = forwardRef<MapRef, MapProps>(function Map(
     }),
     [mapInstance, isLoaded, isStyleLoaded, resolvedTheme],
   );
+
+  if (initError) {
+    return (
+      <div className={cn("relative h-full w-full flex items-center justify-center bg-muted/20 text-center p-6", className)}>
+        <p className="text-xs text-muted-foreground max-w-xs">{initError}</p>
+      </div>
+    );
+  }
 
   return (
     <MapContext.Provider value={contextValue}>

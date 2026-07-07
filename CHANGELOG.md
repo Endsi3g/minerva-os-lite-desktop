@@ -5,6 +5,11 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [3.68.1] — Carte : vraie cause du plantage identifiée et corrigée — 6 juillet 2026, 22h48
+
+### Corrigé
+- Le correctif précédent (coordonnées invalides) ne suffisait pas — la vraie cause la plus probable du plantage de la Carte est l'absence totale de vérification du support WebGL avant de créer la carte : sur un navigateur, une machine virtuelle ou un appareil sans WebGL disponible, la bibliothèque de carte plante immédiatement, peu importe les données. Un message clair s'affiche maintenant à la place ("navigateur non supporté") au lieu de faire planter toute la page.
+
 ## [3.68.0] — Fiabilité de l'assistant IA, carte et séquences — 6 juillet 2026, 22h33
 
 ### Corrigé

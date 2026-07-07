@@ -20,6 +20,14 @@ interface ChangelogVersion {
 
 const versions: ChangelogVersion[] = [
   {
+    version: 'v3.68.1',
+    date: '6 juillet 2026 · 22h48',
+    title: 'Carte : vraie cause du plantage identifiée et corrigée',
+    highlights: [
+      { text: "Le correctif précédent ne suffisait pas — la vraie cause la plus probable est l'absence de vérification du support WebGL avant de créer la carte, qui plantait immédiatement sur un navigateur ou une machine sans WebGL, peu importe les données. Un message clair s'affiche maintenant à la place." },
+    ],
+  },
+  {
     version: 'v3.68.0',
     date: '6 juillet 2026 · 22h33',
     title: "Fiabilité de l'assistant IA, carte et séquences",
