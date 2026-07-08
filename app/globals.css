@@ -491,3 +491,24 @@ html {
 @utility animate-caret-blink {
   animation: caret-blink 1s step-end infinite;
 }
+
+/* Texte en dégradé animé pour les états "en cours" (statuts de conversation,
+   Marker de streaming, Attachment en upload/traitement) — référencé par
+   components/ui/attachment.tsx (state=uploading|processing) et le Marker de
+   l'assistant IA, mais jamais défini nulle part avant, donc silencieusement
+   inerte (une animation CSS sur un @keyframes inexistant ne produit aucune
+   erreur, juste aucun mouvement). */
+@keyframes shimmer-text {
+  to {
+    background-position: -200% center;
+  }
+}
+
+@utility shimmer {
+  background-image: linear-gradient(90deg, #7a7a76 40%, #26251e 50%, #7a7a76 60%);
+  background-size: 200% auto;
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  animation: shimmer-text 1.5s linear infinite;
+}

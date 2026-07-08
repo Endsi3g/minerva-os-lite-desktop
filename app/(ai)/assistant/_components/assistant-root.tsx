@@ -63,6 +63,8 @@ import {
   AssistantCanvasDoc
 } from './assistant-db';
 import { Pin, PinOff } from 'lucide-react';
+import { Marker, MarkerIcon, MarkerContent } from '@/components/ui/marker';
+import { Spinner } from '@/components/ui/spinner';
 import { AiEmailTool } from '@/components/ui/ai-email-tool';
 import { AiImageSearch } from '@/components/ui/ai-image-search';
 import { AiImageLoader } from '@/components/ui/ai-image-loader';
@@ -387,19 +389,25 @@ function ActionCard({
         </div>
       )}
       {status === 'loading' && (
-        <div className="flex items-center gap-2 text-xs text-[#059669] font-semibold">
-          <div className="h-3.5 w-3.5 border-2 border-[#059669] border-t-transparent rounded-full animate-spin" />
-          Exécution en cours...
-        </div>
+        <Marker role="status" className="text-xs text-[#059669] font-semibold">
+          <MarkerIcon>
+            <Spinner className="text-[#059669]" />
+          </MarkerIcon>
+          <MarkerContent>Exécution en cours...</MarkerContent>
+        </Marker>
       )}
       {status === 'done' && (
-        <div className="flex items-center gap-2 text-xs text-[#059669] font-bold">
-          <Check className="h-3.5 w-3.5" />
-          {resultMsg || 'Action exécutée avec succès'}
-        </div>
+        <Marker className="text-xs text-[#059669] font-bold">
+          <MarkerIcon>
+            <Check className="h-3.5 w-3.5" />
+          </MarkerIcon>
+          <MarkerContent>{resultMsg || 'Action exécutée avec succès'}</MarkerContent>
+        </Marker>
       )}
       {status === 'error' && (
-        <div className="text-xs text-red-600 font-semibold">{resultMsg || 'Action annulée'}</div>
+        <Marker className="text-xs text-red-600 font-semibold">
+          <MarkerContent>{resultMsg || 'Action annulée'}</MarkerContent>
+        </Marker>
       )}
     </div>
   );
@@ -2217,15 +2225,14 @@ Important : ne génère un bloc action QUE si l'utilisateur demande explicitemen
                       <img src="/icon-512.png" className="h-6 w-6 rounded object-cover animate-pulse" alt="Minerva" />
                     </div>
                     <div className="bg-white border-0 rounded-2xl rounded-tl-none px-4 py-2.5">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-semibold text-[#7a7a76]" style={{
-                          background: 'linear-gradient(90deg, #059669 0%, #10b981 50%, #059669 100%)',
-                          backgroundSize: '200% auto',
-                          WebkitBackgroundClip: 'text',
-                          WebkitTextFillColor: 'transparent',
-                          animation: 'shimmer 1.5s linear infinite',
-                        }}>{t('assistant.thinking')}</span>
-                      </div>
+                      <Marker role="status">
+                        <MarkerIcon>
+                          <Spinner className="text-[#059669]" />
+                        </MarkerIcon>
+                        <MarkerContent className="shimmer text-xs font-semibold">
+                          {t('assistant.thinking')}
+                        </MarkerContent>
+                      </Marker>
                     </div>
                   </div>
                 )}
