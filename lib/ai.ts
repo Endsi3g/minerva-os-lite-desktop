@@ -34,8 +34,14 @@ const STALE_OPENROUTER_MODELS = new Set([
   'qwen/qwen-2-7b-instruct:free', 'llama-3.3-70b-versatile', 'meta-llama/Llama-3-70b-chat-hf',
 ]);
 
+// Un rawModel peut être au format d'un AUTRE provider (ex. "@cf/..." pour Cloudflare,
+// "claude-*" pour Anthropic) quand il vient de settings.ai_model sélectionné pour le
+// provider primaire — buildProviderChain réutilise ce même rawModel pour construire le
+// candidat OpenRouter de la chaîne de repli, donc il faut explicitement écarter les
+// formats d'ID étrangers à OpenRouter, sinon l'appel échoue avec "X is not a valid
+// model ID" (ex. un "@cf/meta/llama-3.1-8b-instruct" envoyé tel quel à OpenRouter).
 function openrouterModel(rawModel?: string | null): string {
-  return (rawModel && !STALE_OPENROUTER_MODELS.has(rawModel) && !rawModel.startsWith('claude'))
+  return (rawModel && !STALE_OPENROUTER_MODELS.has(rawModel) && !rawModel.startsWith('claude') && !rawModel.startsWith('@cf/'))
     ? rawModel
     : OPENROUTER_DEFAULT;
 }

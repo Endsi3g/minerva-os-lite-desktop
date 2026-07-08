@@ -5,6 +5,11 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [3.71.2] — Régression : ID de modèle Cloudflare envoyé à OpenRouter — 8 juillet 2026, 02h15
+
+### Corrigé
+- **"OpenRouter error 400: @cf/meta/llama-3.1-8b-instruct is not a valid model ID"** : `openrouterModel()` ne filtrait que les ID au format Anthropic (`claude-*`), jamais ceux au format Cloudflare (`@cf/...`). Quand le modèle configuré par l'utilisateur était un modèle Cloudflare, tout candidat OpenRouter construit à partir de ce même réglage réutilisait l'ID Cloudflare tel quel au lieu de retomber sur le modèle par défaut. La cascade IA complète (v3.71.0) rendait ce chemin de repli bien plus souvent atteint qu'avant — d'où sa découverte immédiate. Corrigé pour de bon dans la fonction partagée.
+
 ## [3.71.1] — Apify : mémoire insuffisante causant un plantage systématique du run — 7 juillet 2026, 23h05
 
 ### Corrigé

@@ -20,6 +20,14 @@ interface ChangelogVersion {
 
 const versions: ChangelogVersion[] = [
   {
+    version: 'v3.71.2',
+    date: '8 juillet 2026 · 02h15',
+    title: 'Régression : ID de modèle Cloudflare envoyé à OpenRouter',
+    highlights: [
+      { text: "\"OpenRouter error 400: @cf/meta/llama-3.1-8b-instruct is not a valid model ID\" : la fonction de résolution de modèle OpenRouter ne filtrait que les ID au format Anthropic, jamais ceux au format Cloudflare. Un modèle Cloudflare configuré par l'utilisateur pouvait fuiter tel quel vers un appel OpenRouter de secours. Corrigé dans la fonction partagée." },
+    ],
+  },
+  {
     version: 'v3.71.1',
     date: '7 juillet 2026 · 23h05',
     title: 'Apify : mémoire insuffisante causant un plantage systématique du run',
