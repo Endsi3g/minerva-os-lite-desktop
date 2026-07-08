@@ -20,6 +20,15 @@ interface ChangelogVersion {
 
 const versions: ChangelogVersion[] = [
   {
+    version: 'v3.80.0',
+    date: '8 juillet 2026 · 13h30',
+    title: 'Autopilot par programme (PRD v12, Sprint 3)',
+    highlights: [
+      { text: "Toggle Autopilot sur la fiche d'un programme : plafond d'emails/jour + cible RDV/semaine, désormais réellement appliqués aux envois automatiques (pas juste stockés)." },
+      { text: "Suspension automatique si le taux de réponses négatives dépasse 40% (minimum 5 leads contactés), avec notification." },
+    ],
+  },
+  {
     version: 'v3.79.0',
     date: '8 juillet 2026 · 12h30',
     title: 'Programmes de croissance, Phase 6 : lien vers projects/agenda',

@@ -86,6 +86,14 @@ export interface Campaign {
   // (RDV / clients / MRR) et cible chiffrée associée.
   goalType?: 'rdv' | 'clients' | 'mrr';
   targetValue?: number;
+  // Autopilot (v13.13) — un programme peut être piloté en autonomie avec un
+  // plafond d'envoi quotidien ; se suspend automatiquement (autopilotPausedReason
+  // renseigné) si le garde-fou détecte une anomalie (voir autopilot-guardrail).
+  autopilotEnabled?: boolean;
+  autopilotDailyEmailCap?: number;
+  autopilotWeeklyMeetingCap?: number;
+  autopilotPausedReason?: string;
+  autopilotPausedAt?: string;
 }
 
 export interface Goal {
@@ -518,6 +526,11 @@ function mapDbCampaignToUi(r: any): Campaign {
     playbookRunId: r.playbook_run_id || undefined,
     goalType: r.goal_type || undefined,
     targetValue: r.target_value ?? undefined,
+    autopilotEnabled: !!(r.autopilot_enabled === 1 || r.autopilot_enabled === true),
+    autopilotDailyEmailCap: r.autopilot_daily_email_cap ?? undefined,
+    autopilotWeeklyMeetingCap: r.autopilot_weekly_meeting_cap ?? undefined,
+    autopilotPausedReason: r.autopilot_paused_reason || undefined,
+    autopilotPausedAt: r.autopilot_paused_at || undefined,
   };
 }
 
@@ -2731,6 +2744,11 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
     if (fields.playbookRunId !== undefined) { dbFields.push("playbook_run_id = ?"); params.push(fields.playbookRunId || null); }
     if (fields.goalType !== undefined) { dbFields.push("goal_type = ?"); params.push(fields.goalType || null); }
     if (fields.targetValue !== undefined) { dbFields.push("target_value = ?"); params.push(fields.targetValue ?? null); }
+    if (fields.autopilotEnabled !== undefined) { dbFields.push("autopilot_enabled = ?"); params.push(fields.autopilotEnabled ? 1 : 0); }
+    if (fields.autopilotDailyEmailCap !== undefined) { dbFields.push("autopilot_daily_email_cap = ?"); params.push(fields.autopilotDailyEmailCap ?? null); }
+    if (fields.autopilotWeeklyMeetingCap !== undefined) { dbFields.push("autopilot_weekly_meeting_cap = ?"); params.push(fields.autopilotWeeklyMeetingCap ?? null); }
+    if (fields.autopilotPausedReason !== undefined) { dbFields.push("autopilot_paused_reason = ?"); params.push(fields.autopilotPausedReason || null); }
+    if (fields.autopilotPausedAt !== undefined) { dbFields.push("autopilot_paused_at = ?"); params.push(fields.autopilotPausedAt || null); }
     if (electronObj) {
       try {
         if (dbFields.length > 0) {
@@ -2758,6 +2776,11 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
     if (fields.playbookRunId !== undefined) supaFields.playbook_run_id = fields.playbookRunId || null;
     if (fields.goalType !== undefined) supaFields.goal_type = fields.goalType || null;
     if (fields.targetValue !== undefined) supaFields.target_value = fields.targetValue ?? null;
+    if (fields.autopilotEnabled !== undefined) supaFields.autopilot_enabled = fields.autopilotEnabled;
+    if (fields.autopilotDailyEmailCap !== undefined) supaFields.autopilot_daily_email_cap = fields.autopilotDailyEmailCap ?? null;
+    if (fields.autopilotWeeklyMeetingCap !== undefined) supaFields.autopilot_weekly_meeting_cap = fields.autopilotWeeklyMeetingCap ?? null;
+    if (fields.autopilotPausedReason !== undefined) supaFields.autopilot_paused_reason = fields.autopilotPausedReason || null;
+    if (fields.autopilotPausedAt !== undefined) supaFields.autopilot_paused_at = fields.autopilotPausedAt || null;
     try {
       await supabase.from('campaigns').update(supaFields).eq('id', id);
       setCampaigns(prev => prev.map(c => c.id === id ? { ...c, ...fields, updatedAt: new Date().toISOString() } : c));

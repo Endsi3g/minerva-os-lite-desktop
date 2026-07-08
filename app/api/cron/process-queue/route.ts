@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { resolveAccessToken } from '@/lib/google/google-auth-service';
 import { isWithinSendingWindow, getRemainingQuota } from '@/lib/outreach-quota';
+import { createAutopilotCapChecker } from '@/lib/autopilot-guard';
 
 function makeMimeMessage(to: string, subject: string, body: string, isHtml = true): string {
   const utf8Subject = `=?utf-8?B?${Buffer.from(subject).toString('base64')}?=`;
@@ -147,6 +148,7 @@ export async function processQueue(supabase: any, workspaceIdFilter?: string): P
   let totalSent = 0;
   let totalSkipped = 0;
   let totalFailed = 0;
+  const autopilotChecker = createAutopilotCapChecker(supabase);
 
   for (const workspaceId of workspaceIds) {
     const { data: workspace } = await supabase
@@ -188,6 +190,19 @@ export async function processQueue(supabase: any, workspaceIdFilter?: string): P
         .maybeSingle();
 
       if (!item) break;
+
+      // Plafond Autopilot par programme (n'affecte que les leads d'une
+      // campagne avec Autopilot activé — voir lib/autopilot-guard.ts).
+      // `break` et non `continue` : cet item reste 'pending' et serait
+      // re-sélectionné en boucle sinon (c'est toujours "le plus ancien
+      // pending"), consommant tout le budget de ticks sans avancer.
+      if (item.lead_id) {
+        const autopilotCheck = await autopilotChecker.checkAndReserve(item.lead_id);
+        if (!autopilotCheck.allowed) {
+          totalSkipped++;
+          break;
+        }
+      }
 
       // A paused/stopped enrollment must block an already-queued send too — pausing the
       // enrollment alone doesn't retroactively cancel steps already sitting in email_queue.

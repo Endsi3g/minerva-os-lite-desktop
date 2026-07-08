@@ -3,7 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useReach, type Campaign } from '@/lib/reach-context';
-import { ChevronLeft, Megaphone, Tag, MapPin, Calendar, Users, CheckCircle2, TrendingUp, Mail, Play, Pause, Edit2, Check, X, Rocket, FolderKanban, CalendarClock } from 'lucide-react';
+import { ChevronLeft, Megaphone, Tag, MapPin, Calendar, Users, CheckCircle2, TrendingUp, Mail, Play, Pause, Edit2, Check, X, Rocket, FolderKanban, CalendarClock, Zap, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Lead } from '@/lib/mock-data';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -55,6 +55,24 @@ export function CampaignDetailRoot({ id }: { id: string }) {
       .sort((a, b) => a.dueDate.localeCompare(b.dueDate)),
     [tasks, campaignLeadIds]
   );
+
+  // Autopilot (PRD v12, Sprint 3)
+  const [dailyEmailCap, setDailyEmailCap] = useState(campaign?.autopilotDailyEmailCap ?? 30);
+  const [weeklyMeetingCap, setWeeklyMeetingCap] = useState(campaign?.autopilotWeeklyMeetingCap ?? 5);
+  const toggleAutopilot = () => {
+    if (!campaign) return;
+    if (campaign.autopilotEnabled) {
+      updateCampaign(id, { autopilotEnabled: false });
+    } else {
+      updateCampaign(id, {
+        autopilotEnabled: true,
+        autopilotDailyEmailCap: dailyEmailCap,
+        autopilotWeeklyMeetingCap: weeklyMeetingCap,
+        autopilotPausedReason: '',
+        autopilotPausedAt: '',
+      });
+    }
+  };
 
   if (!campaign) {
     return (
@@ -216,6 +234,66 @@ export function CampaignDetailRoot({ id }: { id: string }) {
             </div>
           );
         })()}
+
+        {/* Autopilot (PRD v12, Sprint 3) */}
+        {campaign.goalType && (
+          <div className="rounded-xl border border-[#e5e5e0] bg-white p-4 space-y-3">
+            <div className="flex items-center justify-between gap-4 flex-wrap">
+              <div className="flex items-center gap-2">
+                <Zap className={cn('h-4 w-4', campaign.autopilotEnabled ? 'text-[#059669]' : 'text-[#7a7a76]')} />
+                <span className="text-xs font-bold text-[#26251e]">Autopilot</span>
+                <span className="text-[10px] text-[#7a7a76]">— l&apos;IA gère ce programme dans les limites fixées ci-dessous</span>
+              </div>
+              <button
+                onClick={toggleAutopilot}
+                className={cn(
+                  'px-3 py-1.5 rounded-lg text-xs font-bold transition-colors',
+                  campaign.autopilotEnabled ? 'bg-[#059669] text-white hover:bg-[#047857]' : 'border border-[#e5e5e0] text-[#26251e] hover:bg-[#f4f4f3]'
+                )}
+              >
+                {campaign.autopilotEnabled ? 'Activé — désactiver' : 'Désactivé — activer'}
+              </button>
+            </div>
+
+            {campaign.autopilotPausedReason && (
+              <div className="flex items-start gap-2 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 p-2.5 text-[11px]">
+                <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+                <span>{campaign.autopilotPausedReason}</span>
+              </div>
+            )}
+
+            <div className="flex flex-wrap items-center gap-4">
+              <div className="flex items-center gap-2">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Plafond emails/jour</label>
+                <input
+                  type="number"
+                  min={1}
+                  value={dailyEmailCap}
+                  onChange={(e) => setDailyEmailCap(Number(e.target.value))}
+                  disabled={campaign.autopilotEnabled}
+                  className="w-20 text-xs border border-[#e5e5e0] rounded-lg px-2 py-1.5 disabled:bg-[#f4f4f3] disabled:text-[#7a7a76]"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Cible RDV/semaine</label>
+                <input
+                  type="number"
+                  min={1}
+                  value={weeklyMeetingCap}
+                  onChange={(e) => setWeeklyMeetingCap(Number(e.target.value))}
+                  disabled={campaign.autopilotEnabled}
+                  className="w-20 text-xs border border-[#e5e5e0] rounded-lg px-2 py-1.5 disabled:bg-[#f4f4f3] disabled:text-[#7a7a76]"
+                />
+              </div>
+            </div>
+
+            {campaign.autopilotEnabled && (
+              <p className="text-[10px] text-[#7a7a76]">
+                Plafond actuel : {campaign.autopilotDailyEmailCap ?? '—'} emails/jour · cible {campaign.autopilotWeeklyMeetingCap ?? '—'} RDV/semaine. Se suspend automatiquement si le taux de réponses négatives dépasse 40% (minimum 5 leads contactés).
+              </p>
+            )}
+          </div>
+        )}
 
         {/* KPIs */}
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">

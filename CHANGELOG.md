@@ -5,6 +5,18 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [3.80.0] — Autopilot par programme (PRD v12, Sprint 3) — 8 juillet 2026, 13h30
+
+### Ajouté
+- **Toggle Autopilot** sur la fiche détail d'un programme : plafond d'emails/jour et cible de RDV/semaine configurables. Une fois activé, le programme est piloté dans ces limites sans supervision quotidienne.
+- **Garde-fou réel branché sur les deux moteurs d'envoi existants** (`app/api/cron/email-sequences` et `app/api/cron/process-queue`) via `lib/autopilot-guard.ts` : le plafond quotidien par programme est désormais réellement appliqué au moment de l'envoi — jusqu'ici, `sequenceConfig.dailyVolumeCap` configuré dans le Playbook Wizard était stocké mais jamais lu nulle part. N'affecte aucun lead hors d'un programme Autopilot.
+- **Suspension automatique** : nouveau cron `app/api/cron/autopilot-guardrail` (quotidien) qui suspend un programme Autopilot si son taux de réponses négatives dépasse 40% (minimum 5 leads contactés pour éviter les faux positifs sur les programmes tout juste lancés), et notifie l'utilisateur.
+- Nouvelle migration `20260708140000_v13_13_autopilot.sql` (`campaigns.autopilot_enabled/autopilot_daily_email_cap/autopilot_weekly_meeting_cap/autopilot_paused_reason/autopilot_paused_at`).
+
+### Note d'architecture
+- Deux moteurs de séquence indépendants coexistent dans l'app (`email_sequences`/`email_sequence_steps` et `sequence_enrollments`/`email_queue`) avec des plafonds par utilisateur/workspace déjà existants — le garde-fou Autopilot s'ajoute par-dessus les deux sans les modifier, plutôt que de les unifier (hors scope de ce sprint).
+- La détection de bounce Gmail réel n'existe pas encore (le webhook Resend existant n'est câblé à aucun envoi réel) — seul le taux de réponses négatives (déjà détecté par `cron/gmail-check-replies`) alimente le garde-fou pour l'instant.
+
 ## [3.79.0] — Programmes de croissance, Phase 6 : lien vers projects/agenda — 8 juillet 2026, 12h30
 
 ### Ajouté

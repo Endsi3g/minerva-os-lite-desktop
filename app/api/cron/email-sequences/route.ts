@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { resolveAccessToken } from '@/lib/google/google-auth-service';
+import { createAutopilotCapChecker } from '@/lib/autopilot-guard';
 
 function makeMimeMessage(to: string, subject: string, body: string): string {
   const utf8Subject = `=?utf-8?B?${Buffer.from(subject).toString('base64')}?=`;
@@ -40,7 +41,7 @@ export async function GET(req: NextRequest) {
   // Find all pending steps due now, joined with sequence info
   const { data: dueSteps, error } = await supabase
     .from('email_sequence_steps')
-    .select('*, email_sequences(id, user_id, lead_email, lead_name, status)')
+    .select('*, email_sequences(id, user_id, lead_id, lead_email, lead_name, status)')
     .eq('status', 'pending')
     .lte('scheduled_at', now.toISOString())
     .order('scheduled_at', { ascending: true })
@@ -85,17 +86,29 @@ export async function GET(req: NextRequest) {
   let sent = 0;
   let failed = 0;
   let skippedCap = 0;
+  let skippedAutopilotCap = 0;
   const errors: Array<{ stepId: string; reason: string }> = [];
+  const autopilotChecker = createAutopilotCapChecker(supabase);
 
   for (const step of dueSteps) {
-    const seq = step.email_sequences as { id: string; user_id: string; lead_email: string; lead_name: string; status: string } | null;
+    const seq = step.email_sequences as { id: string; user_id: string; lead_id: string | null; lead_email: string; lead_name: string; status: string } | null;
     if (!seq || seq.status !== 'active') continue;
 
-    // Enforce daily cap
+    // Enforce daily cap (per-user)
     const quota = userQuota[seq.user_id];
     if (quota && quota.sentToday >= quota.cap) {
       skippedCap++;
       continue;
+    }
+
+    // Enforce daily cap (par programme, si Autopilot est activé sur la
+    // campagne de ce lead — n'affecte aucun lead hors programme Autopilot)
+    if (seq.lead_id) {
+      const autopilotCheck = await autopilotChecker.checkAndReserve(seq.lead_id);
+      if (!autopilotCheck.allowed) {
+        skippedAutopilotCap++;
+        continue;
+      }
     }
 
     // Skip non-email steps (Call, LinkedIn, SMS) — they are manual reminders
@@ -163,5 +176,5 @@ export async function GET(req: NextRequest) {
     console.error(`[email-sequences] ${failed} step(s) échouée(s) sur ${dueSteps.length} dues.`);
   }
 
-  return NextResponse.json({ ok: true, sent, failed, skippedCap, errors });
+  return NextResponse.json({ ok: true, sent, failed, skippedCap, skippedAutopilotCap, errors });
 }

@@ -294,6 +294,13 @@ function initDb() {
     // supabase/migrations/20260709030000_v13_10_growth_programs.sql
     db.run(`ALTER TABLE campaigns ADD COLUMN goal_type TEXT`, () => {});
     db.run(`ALTER TABLE campaigns ADD COLUMN target_value REAL`, () => {});
+    // v13.13 — Autopilot par programme : mirrors
+    // supabase/migrations/20260708140000_v13_13_autopilot.sql
+    db.run(`ALTER TABLE campaigns ADD COLUMN autopilot_enabled INTEGER DEFAULT 0`, () => {});
+    db.run(`ALTER TABLE campaigns ADD COLUMN autopilot_daily_email_cap INTEGER`, () => {});
+    db.run(`ALTER TABLE campaigns ADD COLUMN autopilot_weekly_meeting_cap INTEGER`, () => {});
+    db.run(`ALTER TABLE campaigns ADD COLUMN autopilot_paused_reason TEXT`, () => {});
+    db.run(`ALTER TABLE campaigns ADD COLUMN autopilot_paused_at TEXT`, () => {});
     db.run(`CREATE TABLE IF NOT EXISTS growth_program_leads (
       id TEXT PRIMARY KEY,
       workspace_id TEXT,
