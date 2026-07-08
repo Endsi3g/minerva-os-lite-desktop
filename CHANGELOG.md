@@ -5,6 +5,16 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [3.71.0] — Fiabilité IA, import CRM silencieux et messagerie éditable — 7 juillet 2026, 22h15
+
+### Corrigé
+- **"Échec IA — modèle temporairement saturé" alors qu'un provider sain est configuré** : la cascade de repli IA (`lib/ai.ts`) n'essayait qu'un seul provider de secours avant d'abandonner — si ce second provider (souvent OpenRouter sur un modèle `:free`, fréquemment saturé) échouait aussi, un troisième provider correctement configuré (ex. Anthropic) n'était jamais tenté. La cascade essaie maintenant tous les providers configurés dans l'ordre avant de notifier un échec réel. Retrait au passage d'une attente bloquante de 60 secondes sur un 429 OpenRouter qui retardait inutilement le repli.
+- **Import de prospects dans le CRM silencieusement sans effet** : `addLead()` (utilisé par la prospection, l'import CSV/contacts, la création manuelle et l'assistant IA) avalait systématiquement ses erreurs (garde-fou workspace manquant, échec d'insertion Supabase, exception inattendue) sans jamais les remonter à l'appelant. L'interface affichait donc "X prospect(s) importé(s)" même quand rien n'avait été enregistré en base. Toutes ces erreurs sont maintenant propagées, affichées via une notification d'erreur explicite (message réel de la base de données), et n'affichent plus de faux succès — concerne la Prospection (import unique et en masse), l'import CSV et Contacts Google dans Leads, la création manuelle de prospect, et les widgets de création rapide (Pipeline, Aujourd'hui).
+
+### Ajouté
+- **Édition et suppression de ses propres messages** dans Messages (chat d'équipe et messages directs) — menu contextuel au survol d'un message envoyé, édition en ligne ou suppression avec confirmation. Répercuté en temps réel chez les autres membres de la conversation.
+- **Nouveaux composants shadcn/ui** `Attachment`, `Bubble`, `Marker`, `Message`, `MessageScroller` (+ `Avatar`) intégrés dans la refonte de l'interface de Messages : bulles de conversation, séparateurs de date, pièces jointes fichiers, et défilement à ancrage intelligent (bouton "aller au dernier message", suivi automatique du direct).
+
 ## [3.70.0] — Prospection : vrai budget de temps Apify + notifications d'erreurs cliquables — 7 juillet 2026, 20h30
 
 ### Corrigé

@@ -91,22 +91,37 @@ export function resolveAIProvider(settings?: AISettings | null) {
   return { provider: 'openrouter', model: OPENROUTER_DEFAULT, apiKey: '' };
 }
 
-// Provider de repli si l'appel primaire échoue, en respectant le même ordre
-// de priorité (Cloudflare → OpenRouter → Anthropic), clé disponible uniquement.
-function getFallback(
-  primaryProvider: string,
+// Chaîne complète des providers à essayer pour une requête : le provider
+// primaire résolu d'abord, puis chaque AUTRE provider configuré dans l'ordre
+// de priorité (Cloudflare → OpenRouter → Anthropic). L'ancien comportement
+// ("un seul repli") faisait échouer toute la requête si le second provider
+// tenté (souvent OpenRouter sur un modèle :free, fréquemment saturé) échouait
+// lui aussi — même quand une clé Anthropic payante, bien plus fiable, était
+// configurée juste derrière et n'était jamais essayée. C'est la cause directe
+// des notifications "Échec IA — modèle temporairement saturé" alors que
+// l'application dispose d'un provider sain.
+function buildProviderChain(
+  primary: { provider: string; model: string; apiKey: string },
   settings?: AISettings | null,
-): { provider: string; model: string; apiKey: string } | null {
+): Array<{ provider: string; model: string; apiKey: string }> {
   const keys = getGlobalKeys();
   const orKey = settings?.openrouter_key || keys.openrouterKey;
   const candidates: Array<{ provider: string; model: string; apiKey: string } | null> = [
+    primary,
     keys.cloudflareToken && keys.cloudflareAccountId
       ? { provider: 'cloudflare', model: CLOUDFLARE_DEFAULT_MODEL, apiKey: keys.cloudflareToken }
       : null,
-    orKey ? { provider: 'openrouter', model: OPENROUTER_DEFAULT, apiKey: orKey } : null,
+    orKey ? { provider: 'openrouter', model: openrouterModel(settings?.ai_model), apiKey: orKey } : null,
     keys.anthropicKey ? { provider: 'anthropic', model: 'claude-sonnet-5', apiKey: keys.anthropicKey } : null,
   ];
-  return candidates.find((c) => c && c.provider !== primaryProvider) ?? null;
+  const seen = new Set<string>();
+  const chain: Array<{ provider: string; model: string; apiKey: string }> = [];
+  for (const c of candidates) {
+    if (!c || !c.apiKey || seen.has(c.provider)) continue;
+    seen.add(c.provider);
+    chain.push(c);
+  }
+  return chain;
 }
 
 // ── Logging ───────────────────────────────────────────────────────────────────
@@ -289,12 +304,12 @@ async function callOpenRouter(
     method: 'POST', headers, body: JSON.stringify(body),
   });
 
+  // Fail fast on 429 instead of blocking 60s on a synchronous retry against the
+  // same saturated model — the caller's provider chain (buildProviderChain) can
+  // fall through to another configured provider immediately, which is both
+  // faster and more likely to succeed than hammering the same rate limit twice.
   if (resp.status === 429) {
-    await new Promise(r => setTimeout(r, 60_000));
-    const retry = await fetch('https://openrouter.ai/api/v1/chat/completions', { method: 'POST', headers, body: JSON.stringify(body) });
-    if (!retry.ok) throw new Error('Le modèle IA est temporairement saturé. Réessaie dans quelques minutes.');
-    const d = await retry.json();
-    return d.choices?.[0]?.message?.content?.trim() || '';
+    throw new Error('Le modèle IA (OpenRouter) est temporairement saturé.');
   }
 
   if (!resp.ok) {
@@ -394,59 +409,36 @@ export async function generateCompletion(options: AICallOptions): Promise<string
     throw new Error(`Limite IA atteinte — réessaie dans ${rateLimit.retryAfterSeconds}s.`);
   }
 
-  const startTime = Date.now();
-  const requestId = crypto.randomUUID();
-  const { provider, model, apiKey } = resolveAIProvider(options.settings);
   const messages = options.messages.map(m => ({
     role: m.role === 'assistant' ? 'assistant' : m.role === 'system' ? 'system' : 'user',
     content: m.content,
   }));
 
-  if (!apiKey) {
-    const fallback = getFallback(provider, options.settings);
-    if (!fallback) {
-      const message = `Clé API manquante pour le provider : ${provider}`;
-      await notifyAiFailure(options.userId, options.workspaceId, message);
-      throw new Error(message);
-    }
-    return callWithFallback(fallback.provider, fallback.model, fallback.apiKey, messages, options, requestId, startTime);
-  }
-
-  try {
-    const result = await doCall(provider, model, apiKey, messages, options.system, options);
-    logCall({ id: requestId, userId: options.userId, provider, model, latencyMs: Date.now() - startTime, success: true });
-    return result;
-  } catch (err: any) {
-    logCall({ id: requestId, userId: options.userId, provider, model, latencyMs: Date.now() - startTime, success: false });
-    const fallback = getFallback(provider, options.settings);
-    if (!fallback) {
-      const message = err?.message || 'Le modèle IA est temporairement indisponible. Réessaie dans quelques minutes.';
-      await notifyAiFailure(options.userId, options.workspaceId, message);
-      throw new Error(message);
-    }
-    return callWithFallback(fallback.provider, fallback.model, fallback.apiKey, messages, options, crypto.randomUUID(), Date.now());
-  }
-}
-
-async function callWithFallback(
-  provider: string,
-  model: string,
-  apiKey: string,
-  messages: Array<{ role: string; content: string }>,
-  options: AICallOptions,
-  requestId: string,
-  startTime: number,
-): Promise<string> {
-  try {
-    const result = await doCall(provider, model, apiKey, messages, options.system, options);
-    logCall({ id: requestId, userId: options.userId, provider, model, latencyMs: Date.now() - startTime, success: true });
-    return result;
-  } catch (err: any) {
-    logCall({ id: requestId, userId: options.userId, provider, model, latencyMs: Date.now() - startTime, success: false });
-    const message = err?.message || 'Le modèle IA est temporairement indisponible, même après repli sur un second provider.';
+  const primary = resolveAIProvider(options.settings);
+  const chain = buildProviderChain(primary, options.settings);
+  if (chain.length === 0) {
+    const message = `Clé API manquante pour le provider : ${primary.provider}`;
     await notifyAiFailure(options.userId, options.workspaceId, message);
     throw new Error(message);
   }
+
+  let lastError: Error | null = null;
+  for (const step of chain) {
+    const startTime = Date.now();
+    const requestId = crypto.randomUUID();
+    try {
+      const result = await doCall(step.provider, step.model, step.apiKey, messages, options.system, options);
+      logCall({ id: requestId, userId: options.userId, provider: step.provider, model: step.model, latencyMs: Date.now() - startTime, success: true });
+      return result;
+    } catch (err: any) {
+      logCall({ id: requestId, userId: options.userId, provider: step.provider, model: step.model, latencyMs: Date.now() - startTime, success: false });
+      lastError = err;
+    }
+  }
+
+  const message = lastError?.message || 'Le modèle IA est temporairement indisponible, même après repli sur tous les providers configurés.';
+  await notifyAiFailure(options.userId, options.workspaceId, message);
+  throw new Error(message);
 }
 
 // Fait le fetch amont pour un provider donné et renvoie la Response brute (pas
@@ -477,11 +469,10 @@ async function fetchStreamUpstream(
       max_tokens: options.maxTokens || 1500,
       temperature: options.temperature ?? 0.7,
     };
-    let resp = await fetch('https://openrouter.ai/api/v1/chat/completions', { method: 'POST', headers, body: JSON.stringify(body) });
-    if (resp.status === 429) {
-      await new Promise(r => setTimeout(r, 60_000));
-      resp = await fetch('https://openrouter.ai/api/v1/chat/completions', { method: 'POST', headers, body: JSON.stringify(body) });
-    }
+    // Same fail-fast rationale as callOpenRouter — let the provider chain fall
+    // through to the next configured provider instead of blocking 60s here.
+    const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', { method: 'POST', headers, body: JSON.stringify(body) });
+    if (resp.status === 429) throw new Error('Le modèle IA (OpenRouter) est temporairement saturé.');
     if (!resp.ok) throw new Error(`OpenRouter streaming error ${resp.status}`);
     return { resp, model };
   }
@@ -582,49 +573,34 @@ export async function generateStreamCompletion(options: AICallOptions): Promise<
     throw new Error(`Limite IA atteinte — réessaie dans ${rateLimit.retryAfterSeconds}s.`);
   }
 
-  const startTime = Date.now();
-  const requestId = crypto.randomUUID();
-  const { provider, model, apiKey } = resolveAIProvider(options.settings);
   const messages = options.messages.map(m => ({
     role: m.role === 'assistant' ? 'assistant' : m.role === 'system' ? 'system' : 'user',
     content: m.content,
   }));
 
-  // Le provider primaire n'a pas de clé configurée — repli direct sur le suivant
-  // de la cascade, sans même tenter l'appel (comme generateCompletion).
-  if (!apiKey) {
-    const fallback = getFallback(provider, options.settings);
-    if (!fallback) {
-      const message = `Clé API manquante pour le provider : ${provider}`;
-      await notifyAiFailure(options.userId, options.workspaceId, message);
-      throw new Error(message);
-    }
-    const { resp, model: usedModel } = await fetchStreamUpstream(fallback.provider, fallback.model, fallback.apiKey, messages, options);
-    logCall({ id: crypto.randomUUID(), userId: options.userId, provider: fallback.provider, model: usedModel, latencyMs: Date.now() - startTime, success: true });
-    return wrapStreamResponse(fallback.provider, resp);
+  const primary = resolveAIProvider(options.settings);
+  const chain = buildProviderChain(primary, options.settings);
+  if (chain.length === 0) {
+    const message = `Clé API manquante pour le provider : ${primary.provider}`;
+    await notifyAiFailure(options.userId, options.workspaceId, message);
+    throw new Error(message);
   }
 
-  try {
-    const { resp, model: usedModel } = await fetchStreamUpstream(provider, model, apiKey, messages, options);
-    logCall({ id: requestId, userId: options.userId, provider, model: usedModel, latencyMs: Date.now() - startTime, success: true });
-    return wrapStreamResponse(provider, resp);
-  } catch (err: any) {
-    logCall({ id: requestId, userId: options.userId, provider, model, latencyMs: Date.now() - startTime, success: false });
-    const fallback = getFallback(provider, options.settings);
-    if (!fallback) {
-      const message = err?.message || 'Le modèle IA est temporairement indisponible. Réessaie dans quelques minutes.';
-      await notifyAiFailure(options.userId, options.workspaceId, message);
-      throw new Error(message);
-    }
+  let lastError: Error | null = null;
+  for (const step of chain) {
+    const startTime = Date.now();
+    const requestId = crypto.randomUUID();
     try {
-      const { resp, model: usedModel } = await fetchStreamUpstream(fallback.provider, fallback.model, fallback.apiKey, messages, options);
-      logCall({ id: crypto.randomUUID(), userId: options.userId, provider: fallback.provider, model: usedModel, latencyMs: Date.now() - startTime, success: true });
-      return wrapStreamResponse(fallback.provider, resp);
-    } catch (fallbackErr: any) {
-      logCall({ id: crypto.randomUUID(), userId: options.userId, provider: fallback.provider, model: fallback.model, latencyMs: Date.now() - startTime, success: false });
-      const message = fallbackErr?.message || 'Le modèle IA est temporairement indisponible, même après repli sur un second provider.';
-      await notifyAiFailure(options.userId, options.workspaceId, message);
-      throw new Error(message);
+      const { resp, model: usedModel } = await fetchStreamUpstream(step.provider, step.model, step.apiKey, messages, options);
+      logCall({ id: requestId, userId: options.userId, provider: step.provider, model: usedModel, latencyMs: Date.now() - startTime, success: true });
+      return wrapStreamResponse(step.provider, resp);
+    } catch (err: any) {
+      logCall({ id: requestId, userId: options.userId, provider: step.provider, model: step.model, latencyMs: Date.now() - startTime, success: false });
+      lastError = err;
     }
   }
+
+  const message = lastError?.message || 'Le modèle IA est temporairement indisponible, même après repli sur tous les providers configurés.';
+  await notifyAiFailure(options.userId, options.workspaceId, message);
+  throw new Error(message);
 }

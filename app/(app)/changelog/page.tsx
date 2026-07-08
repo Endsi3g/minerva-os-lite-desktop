@@ -20,6 +20,17 @@ interface ChangelogVersion {
 
 const versions: ChangelogVersion[] = [
   {
+    version: 'v3.71.0',
+    date: '7 juillet 2026 · 22h15',
+    title: 'Fiabilité IA, import CRM silencieux et messagerie éditable',
+    highlights: [
+      { text: "Échec IA — modèle temporairement saturé alors qu'un provider sain est configuré : la cascade de repli n'essayait qu'un seul provider de secours avant d'abandonner. Elle essaie maintenant tous les providers configurés dans l'ordre avant de notifier un échec réel, et n'attend plus 60s inutilement sur un 429 OpenRouter." },
+      { text: "Import de prospects dans le CRM silencieusement sans effet : addLead() avalait ses erreurs sans jamais les remonter — l'interface affichait \"importé avec succès\" même quand rien n'était enregistré en base. Concerne la Prospection, l'import CSV/Contacts dans Leads, la création manuelle, et les widgets de création rapide. Les erreurs réelles s'affichent maintenant clairement." },
+      { text: "Édition et suppression de ses propres messages dans Messages (chat d'équipe et messages directs), répercuté en temps réel." },
+      { text: "Nouveaux composants shadcn/ui Attachment, Bubble, Marker, Message, MessageScroller intégrés dans une refonte de l'interface de Messages : bulles de conversation, séparateurs de date, pièces jointes, défilement à ancrage intelligent." },
+    ],
+  },
+  {
     version: 'v3.70.0',
     date: '7 juillet 2026 · 20h30',
     title: 'Prospection : vrai budget de temps Apify + notifications d\'erreurs cliquables',

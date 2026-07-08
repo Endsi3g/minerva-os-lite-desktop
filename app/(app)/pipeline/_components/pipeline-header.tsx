@@ -17,6 +17,7 @@ import {
   SheetFooter
 } from '@/components/ui/sheet';
 import { Lead } from '@/lib/mock-data';
+import { toast } from 'sonner';
 
 interface PipelineHeaderProps {
   selectedNiche: string;
@@ -49,11 +50,16 @@ export function PipelineHeader({
     notes: ''
   });
 
-  const handleLeadSubmit = (e: React.FormEvent) => {
+  const handleLeadSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!leadForm.businessName) return;
-    addLead(leadForm);
-    
+    try {
+      await addLead(leadForm);
+    } catch (err: any) {
+      toast.error(`Échec de la création du prospect : ${err?.message || 'erreur inconnue'}`, { duration: 8000 });
+      return;
+    }
+
     // Reset form
     setLeadForm({
       businessName: '',

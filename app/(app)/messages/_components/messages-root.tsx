@@ -10,7 +10,47 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Send, Search, Users, MessageCircle, Smile, ImageIcon, X, FileText, Mic, Square, Paperclip, Loader2 } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogAction,
+  AlertDialogCancel,
+} from '@/components/ui/alert-dialog';
+import {
+  MessageScrollerProvider,
+  MessageScroller,
+  MessageScrollerViewport,
+  MessageScrollerContent,
+  MessageScrollerItem,
+  MessageScrollerButton,
+} from '@/components/ui/message-scroller';
+import { Message, MessageAvatar, MessageContent as UiMessageContent, MessageHeader, MessageFooter } from '@/components/ui/message';
+import { Bubble, BubbleContent } from '@/components/ui/bubble';
+import { Marker, MarkerContent } from '@/components/ui/marker';
+import {
+  Attachment,
+  AttachmentMedia,
+  AttachmentContent,
+  AttachmentTitle,
+  AttachmentDescription,
+  AttachmentTrigger,
+  AttachmentActions,
+  AttachmentAction,
+} from '@/components/ui/attachment';
+import {
+  Send, Search, Users, MessageCircle, Smile, ImageIcon, X, FileText, Mic, Square, Paperclip, Loader2,
+  MoreHorizontal, Pencil, Trash2, Check,
+} from 'lucide-react';
 import { toast } from 'sonner';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -30,6 +70,8 @@ interface DmMessage {
   content: string;
   recipientId: string | null;
   createdAt: string;
+  updatedAt: string;
+  isEdited: boolean;
 }
 
 // ── Emoji data ─────────────────────────────────────────────────────────────────
@@ -79,8 +121,8 @@ async function compressImage(dataUrl: string, maxWidth = 800, quality = 0.7): Pr
   });
 }
 
-// Avatar
-function Avatar({ name, src, size = 'md' }: { name: string; src?: string | null; size?: 'sm' | 'md' }) {
+// Avatar (maison — génère des initiales sur fond coloré à partir du nom, ou affiche une image)
+function UserAvatar({ name, src, size = 'md' }: { name: string; src?: string | null; size?: 'sm' | 'md' }) {
   const sz = size === 'sm' ? 'w-7 h-7 text-[10px]' : 'w-9 h-9 text-xs';
   const hash = name.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
   const colors = ['bg-indigo-500','bg-emerald-500','bg-sky-500','bg-rose-500','bg-amber-500','bg-violet-500'];
@@ -97,8 +139,8 @@ function Avatar({ name, src, size = 'md' }: { name: string; src?: string | null;
   );
 }
 
-// Message content renderer — handles [[img]]..., plain text, @mentions
-function MessageContent({ content, isMe, onImageClick }: { content: string; isMe: boolean; onImageClick: (src: string) => void }) {
+// Rendu du contenu d'un message — gère [[img]], [[audio]], [[file]], texte brut avec @mentions
+function MessageBody({ content, isMe, onImageClick }: { content: string; isMe: boolean; onImageClick: (src: string) => void }) {
   if (content.startsWith('[[img]]')) {
     const src = content.slice(7);
     return (
@@ -124,18 +166,18 @@ function MessageContent({ content, isMe, onImageClick }: { content: string; isMe
   if (content.startsWith('[[file]]')) {
     const [name, url] = content.slice(8).split('|');
     return (
-      <a
-        href={url}
-        target="_blank"
-        rel="noopener noreferrer"
-        className={cn(
-          'flex items-center gap-2 px-3 py-2 rounded-xl border max-w-[240px] transition-colors',
-          isMe ? 'border-white/30 bg-white/10 hover:bg-white/20' : 'border-[#e5e5e0] bg-[#f4f4f3] hover:bg-[#e5e5e0]/60',
-        )}
-      >
-        <FileText className={cn('w-4 h-4 shrink-0', isMe ? 'text-white' : 'text-[#059669]')} />
-        <span className={cn('text-xs font-semibold truncate', isMe ? 'text-white' : 'text-[#26251e]')}>{name || 'Fichier'}</span>
-      </a>
+      <Attachment size="sm" className="relative max-w-[240px] border-transparent bg-transparent">
+        <AttachmentMedia className={isMe ? 'bg-white/15 text-white' : ''}>
+          <FileText className="w-4 h-4" />
+        </AttachmentMedia>
+        <AttachmentContent>
+          <AttachmentTitle className={isMe ? 'text-white' : 'text-[#26251e]'}>{name || 'Fichier'}</AttachmentTitle>
+          <AttachmentDescription className={isMe ? 'text-white/70' : ''}>Pièce jointe</AttachmentDescription>
+        </AttachmentContent>
+        <AttachmentTrigger asChild>
+          <a href={url} target="_blank" rel="noopener noreferrer" aria-label={`Ouvrir ${name || 'le fichier'}`} />
+        </AttachmentTrigger>
+      </Attachment>
     );
   }
 
@@ -176,9 +218,12 @@ export default function MessagesRoot() {
   const [recordingSeconds, setRecordingSeconds] = useState(0);
   const [uploadingVoice, setUploadingVoice] = useState(false);
   const [uploadingFile, setUploadingFile] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editDraft, setEditDraft] = useState('');
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
 
-  const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const editInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const attachmentInputRef = useRef<HTMLInputElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -267,6 +312,8 @@ export default function MessagesRoot() {
         content: r.content || '',
         recipientId: r.recipient_id ?? null,
         createdAt: r.created_at,
+        updatedAt: r.updated_at || r.created_at,
+        isEdited: Boolean(r.is_edited),
       })));
     } catch (err) {
       console.error('Failed to load messages:', err);
@@ -277,7 +324,7 @@ export default function MessagesRoot() {
 
   useEffect(() => { loadMessages(); }, [loadMessages]);
 
-  // Realtime subscription
+  // Realtime subscription — INSERT (nouveaux messages), UPDATE (édition), DELETE (suppression)
   useEffect(() => {
     if (!activeWorkspace) return;
     const supabase = createClient();
@@ -300,6 +347,8 @@ export default function MessagesRoot() {
           content: r.content || '',
           recipientId: r.recipient_id ?? null,
           createdAt: r.created_at,
+          updatedAt: r.updated_at || r.created_at,
+          isEdited: Boolean(r.is_edited),
         };
         const isGroup = selectedConversation === 'group' && newMsg.recipientId === null;
         const isDm = selectedConversation !== 'group' && newMsg.recipientId !== null && (
@@ -310,20 +359,44 @@ export default function MessagesRoot() {
           setMessages((prev) => prev.some((m) => m.id === newMsg.id) ? prev : [...prev, newMsg]);
         }
       })
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'team_messages',
+        filter: `workspace_id=eq.${activeWorkspace.id}`,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      }, (payload: any) => {
+        const r = payload.new as any;
+        setMessages((prev) => prev.map((m) => m.id === r.id
+          ? { ...m, content: r.content ?? m.content, updatedAt: r.updated_at || m.updatedAt, isEdited: Boolean(r.is_edited) }
+          : m
+        ));
+      })
+      .on('postgres_changes', {
+        // Pas de filtre workspace_id ici : un événement DELETE de Postgres ne contient
+        // par défaut que la clé primaire dans `old` (REPLICA IDENTITY par défaut), donc
+        // un filtre sur workspace_id ne matcherait jamais côté serveur Realtime. On
+        // filtre simplement par présence de l'id dans notre liste locale, déjà scopée
+        // au workspace courant.
+        event: 'DELETE',
+        schema: 'public',
+        table: 'team_messages',
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      }, (payload: any) => {
+        const deletedId = payload.old?.id;
+        if (!deletedId) return;
+        setMessages((prev) => prev.filter((m) => m.id !== deletedId));
+      })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [activeWorkspace, selectedConversation, currentUserId]);
-
-  // Auto-scroll
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
 
   // Core send
   const sendContent = async (content: string) => {
     if (!content || !activeWorkspace || !currentUserId || sending) return;
     setSending(true);
     const optimisticId = `opt_${Date.now()}`;
+    const nowIso = new Date().toISOString();
     const optimistic: DmMessage = {
       id: optimisticId,
       workspaceId: activeWorkspace.id,
@@ -331,7 +404,9 @@ export default function MessagesRoot() {
       senderName: currentUserName,
       content,
       recipientId: selectedConversation === 'group' ? null : selectedConversation,
-      createdAt: new Date().toISOString(),
+      createdAt: nowIso,
+      updatedAt: nowIso,
+      isEdited: false,
     };
     setMessages((prev) => [...prev, optimistic]);
 
@@ -343,17 +418,19 @@ export default function MessagesRoot() {
         sender_name: currentUserName,
         content,
         recipient_id: selectedConversation === 'group' ? null : selectedConversation,
-        created_at: new Date().toISOString(),
+        created_at: nowIso,
       });
       if (error) {
         setMessages((prev) => prev.filter((m) => m.id !== optimisticId));
         console.error('Send error:', error);
+        toast.error(`Échec de l'envoi : ${error.message}`);
       } else {
         setMessages((prev) => prev.filter((m) => m.id !== optimisticId));
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
       setMessages((prev) => prev.filter((m) => m.id !== optimisticId));
+      toast.error(`Échec de l'envoi : ${err?.message || 'erreur inconnue'}`);
     } finally {
       setSending(false);
       inputRef.current?.focus();
@@ -369,6 +446,62 @@ export default function MessagesRoot() {
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
+  };
+
+  // ── Édition ────────────────────────────────────────────────────────────────
+  const startEdit = (msg: DmMessage) => {
+    setEditingId(msg.id);
+    setEditDraft(msg.content);
+    setTimeout(() => editInputRef.current?.focus(), 0);
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditDraft('');
+  };
+
+  const saveEdit = async () => {
+    const id = editingId;
+    const trimmed = editDraft.trim();
+    if (!id || !trimmed) { cancelEdit(); return; }
+    const prevMessages = messages;
+    const nowIso = new Date().toISOString();
+    setMessages((prev) => prev.map((m) => m.id === id ? { ...m, content: trimmed, updatedAt: nowIso, isEdited: true } : m));
+    setEditingId(null);
+    setEditDraft('');
+    try {
+      const supabase = createClient();
+      const { error } = await supabase
+        .from('team_messages')
+        .update({ content: trimmed, updated_at: nowIso, is_edited: true })
+        .eq('id', id);
+      if (error) throw error;
+    } catch (err: any) {
+      setMessages(prevMessages);
+      toast.error(`Échec de la modification : ${err?.message || 'erreur inconnue'}`, { duration: 8000 });
+    }
+  };
+
+  const handleEditKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') { e.preventDefault(); saveEdit(); }
+    if (e.key === 'Escape') { e.preventDefault(); cancelEdit(); }
+  };
+
+  // ── Suppression ───────────────────────────────────────────────────────────
+  const confirmDelete = async () => {
+    const id = deleteTargetId;
+    setDeleteTargetId(null);
+    if (!id) return;
+    const prevMessages = messages;
+    setMessages((prev) => prev.filter((m) => m.id !== id));
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.from('team_messages').delete().eq('id', id);
+      if (error) throw error;
+    } catch (err: any) {
+      setMessages(prevMessages);
+      toast.error(`Échec de la suppression : ${err?.message || 'erreur inconnue'}`, { duration: 8000 });
+    }
   };
 
   // Image upload
@@ -536,7 +669,7 @@ export default function MessagesRoot() {
                 selectedConversation === member.id ? 'bg-[#059669]/10 text-[#059669]' : 'hover:bg-white/70 text-[#26251e]'
               )}
             >
-              <Avatar name={member.name} src={member.avatarBase64} />
+              <UserAvatar name={member.name} src={member.avatarBase64} />
               <div className="min-w-0 flex-1">
                 <p className="text-xs font-semibold truncate">{member.name}</p>
                 <p className="text-[10px] text-[#7a7a76] truncate">{member.email}</p>
@@ -566,7 +699,7 @@ export default function MessagesRoot() {
             </>
           ) : selectedMember ? (
             <>
-              <Avatar name={selectedMember.name} src={selectedMember.avatarBase64} size="sm" />
+              <UserAvatar name={selectedMember.name} src={selectedMember.avatarBase64} size="sm" />
               <div>
                 <p className="text-sm font-semibold text-[#26251e]">{selectedMember.name}</p>
                 <p className="text-[10px] text-[#7a7a76]">{selectedMember.email}</p>
@@ -578,7 +711,7 @@ export default function MessagesRoot() {
         </div>
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto px-4 py-4 pb-2">
+        <div className="flex-1 min-h-0">
           {loadingMessages ? (
             <div className="flex items-center justify-center py-16">
               <div className="h-5 w-5 animate-spin rounded-full border-2 border-[#059669] border-t-transparent" />
@@ -596,99 +729,158 @@ export default function MessagesRoot() {
               </p>
             </div>
           ) : (
-            <div className="space-y-1">
-              {groupedMessages.map(({ date, items }) => (
-                <div key={date}>
-                  <div className="flex items-center gap-3 my-4">
-                    <div className="flex-1 h-px bg-[#e5e5e0]" />
-                    <span className="text-[10px] font-semibold text-[#7a7a76] tracking-wide uppercase shrink-0">
-                      {formatDate(items[0].createdAt)}
-                    </span>
-                    <div className="flex-1 h-px bg-[#e5e5e0]" />
-                  </div>
+            <MessageScrollerProvider autoScroll defaultScrollPosition="end">
+              <MessageScroller className="h-full">
+                <MessageScrollerViewport>
+                  <MessageScrollerContent className="px-4 py-4 pb-2 gap-1">
+                    {groupedMessages.map(({ date, items }) => (
+                      <React.Fragment key={date}>
+                        <MessageScrollerItem className="my-3">
+                          <Marker variant="separator">
+                            <MarkerContent className="text-[10px] font-semibold text-[#7a7a76] tracking-wide uppercase">
+                              {formatDate(items[0].createdAt)}
+                            </MarkerContent>
+                          </Marker>
+                        </MessageScrollerItem>
 
-                  {items.map((msg, idx) => {
-                    const isMe = msg.senderId === currentUserId;
-                    const prevMsg = idx > 0 ? items[idx - 1] : null;
-                    const showSenderInfo = !prevMsg || prevMsg.senderId !== msg.senderId;
+                        {items.map((msg, idx) => {
+                          const isMe = msg.senderId === currentUserId;
+                          const prevMsg = idx > 0 ? items[idx - 1] : null;
+                          const showSenderInfo = !prevMsg || prevMsg.senderId !== msg.senderId;
+                          const isEditingThis = editingId === msg.id;
 
-                    return (
-                      <div
-                        key={msg.id}
-                        className={cn(
-                          'flex gap-2.5',
-                          isMe ? 'flex-row-reverse' : 'flex-row',
-                          showSenderInfo ? 'mt-3' : 'mt-0.5'
-                        )}
-                      >
-                        <div className="shrink-0 w-7">
-                          {showSenderInfo && !isMe && <Avatar name={msg.senderName} size="sm" />}
-                        </div>
+                          return (
+                            <MessageScrollerItem key={msg.id} messageId={msg.id} className={showSenderInfo ? 'mt-2' : 'mt-0.5'}>
+                              <Message align={isMe ? 'end' : 'start'} className="group/msg items-end">
+                                <MessageAvatar className={cn('bg-transparent', (!showSenderInfo || isMe) && 'invisible')}>
+                                  {showSenderInfo && !isMe && <UserAvatar name={msg.senderName} size="sm" />}
+                                </MessageAvatar>
 
-                        <div className={cn('max-w-[70%] flex flex-col', isMe ? 'items-end' : 'items-start')}>
-                          {showSenderInfo && (
-                            <div className={cn('flex items-baseline gap-2 mb-1', isMe ? 'flex-row-reverse' : 'flex-row')}>
-                              <span className="text-[11px] font-semibold text-[#26251e]">
-                                {isMe ? t('messages.you') : msg.senderName}
-                              </span>
-                              <span className="text-[10px] text-[#7a7a76]">{formatTime(msg.createdAt)}</span>
-                            </div>
-                          )}
+                                <UiMessageContent className={cn(isMe ? 'items-end' : 'items-start')}>
+                                  {showSenderInfo && (
+                                    <MessageHeader className={cn('gap-2 px-1', isMe && 'flex-row-reverse')}>
+                                      <span className="text-[11px] font-semibold text-[#26251e]">
+                                        {isMe ? t('messages.you') : msg.senderName}
+                                      </span>
+                                      <span className="text-[10px] text-[#7a7a76]">{formatTime(msg.createdAt)}</span>
+                                    </MessageHeader>
+                                  )}
 
-                          <div
-                            className={cn(
-                              'leading-relaxed break-words overflow-hidden',
-                              msg.content.startsWith('[[img]]')
-                                ? 'p-0 bg-transparent rounded-xl'
-                                : cn(
-                                    'px-3 py-2',
-                                    isMe
-                                      ? 'bg-[#059669] text-white rounded-2xl rounded-tr-sm'
-                                      : 'bg-[#f4f4f3] text-[#26251e] rounded-2xl rounded-tl-sm'
-                                  )
-                            )}
-                          >
-                            <MessageContent content={msg.content} isMe={isMe} onImageClick={setLightboxSrc} />
-                          </div>
+                                  <div className={cn('flex items-center gap-1', isMe ? 'flex-row-reverse' : 'flex-row')}>
+                                    {isEditingThis ? (
+                                      <div className="flex items-center gap-1.5 bg-[#f4f4f3] border border-[#e5e5e0] rounded-xl px-2 py-1 min-w-[200px]">
+                                        <Input
+                                          ref={editInputRef}
+                                          value={editDraft}
+                                          onChange={(e) => setEditDraft(e.target.value)}
+                                          onKeyDown={handleEditKeyDown}
+                                          className="flex-1 h-7 border-0 bg-transparent text-sm p-0 focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none"
+                                        />
+                                        <button onClick={saveEdit} className="text-[#059669] hover:text-[#047857] shrink-0" aria-label="Enregistrer la modification">
+                                          <Check className="w-4 h-4" />
+                                        </button>
+                                        <button onClick={cancelEdit} className="text-[#7a7a76] hover:text-red-500 shrink-0" aria-label="Annuler la modification">
+                                          <X className="w-4 h-4" />
+                                        </button>
+                                      </div>
+                                    ) : (
+                                      <Bubble variant="ghost" align={isMe ? 'end' : 'start'}>
+                                        <BubbleContent
+                                          className={cn(
+                                            'leading-relaxed break-words overflow-hidden',
+                                            msg.content.startsWith('[[img]]')
+                                              ? '!p-0 !bg-transparent rounded-xl'
+                                              : msg.content.startsWith('[[file]]')
+                                                ? '!p-0 !bg-transparent'
+                                                : cn(
+                                                    '!px-3 !py-2',
+                                                    isMe
+                                                      ? '!bg-[#059669] !text-white !rounded-2xl !rounded-tr-sm'
+                                                      : '!bg-[#f4f4f3] !text-[#26251e] !rounded-2xl !rounded-tl-sm'
+                                                  )
+                                          )}
+                                        >
+                                          <MessageBody content={msg.content} isMe={isMe} onImageClick={setLightboxSrc} />
+                                        </BubbleContent>
+                                      </Bubble>
+                                    )}
 
-                          {!showSenderInfo && (
-                            <span className="text-[9px] text-[#7a7a76] mt-0.5 px-1">
-                              {formatTime(msg.createdAt)}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              ))}
-              <div ref={messagesEndRef} />
-            </div>
+                                    {isMe && !isEditingThis && !msg.id.startsWith('opt_') && (
+                                      <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                          <button
+                                            className="opacity-0 group-hover/msg:opacity-100 transition-opacity text-[#7a7a76] hover:text-[#26251e] shrink-0 p-1"
+                                            aria-label="Options du message"
+                                          >
+                                            <MoreHorizontal className="w-3.5 h-3.5" />
+                                          </button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align={isMe ? 'end' : 'start'} className="w-36">
+                                          {!msg.content.startsWith('[[') && (
+                                            <DropdownMenuItem onClick={() => startEdit(msg)} className="gap-2 text-xs">
+                                              <Pencil className="w-3.5 h-3.5" />
+                                              Modifier
+                                            </DropdownMenuItem>
+                                          )}
+                                          <DropdownMenuItem
+                                            onClick={() => setDeleteTargetId(msg.id)}
+                                            className="gap-2 text-xs text-red-600 focus:text-red-600"
+                                          >
+                                            <Trash2 className="w-3.5 h-3.5" />
+                                            Supprimer
+                                          </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                      </DropdownMenu>
+                                    )}
+                                  </div>
+
+                                  {!showSenderInfo && (
+                                    <MessageFooter className="px-1 gap-1">
+                                      <span className="text-[9px] text-[#7a7a76]">{formatTime(msg.createdAt)}</span>
+                                      {msg.isEdited && <span className="text-[9px] text-[#7a7a76] italic">· modifié</span>}
+                                    </MessageFooter>
+                                  )}
+                                  {showSenderInfo && msg.isEdited && (
+                                    <span className={cn('text-[9px] text-[#7a7a76] italic px-1', isMe && 'self-end')}>modifié</span>
+                                  )}
+                                </UiMessageContent>
+                              </Message>
+                            </MessageScrollerItem>
+                          );
+                        })}
+                      </React.Fragment>
+                    ))}
+                  </MessageScrollerContent>
+                </MessageScrollerViewport>
+                <MessageScrollerButton />
+              </MessageScroller>
+            </MessageScrollerProvider>
           )}
         </div>
 
         {/* Image preview */}
         {imagePreview && (
           <div className="px-4 py-2 border-t border-[#e5e5e0] bg-[#f4f4f3] flex items-center gap-3 shrink-0">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={imagePreview} alt="Aperçu" className="h-16 w-16 object-cover rounded-lg border border-[#e5e5e0]" />
-            <div className="flex-1 min-w-0">
-              <p className="text-xs font-medium text-[#26251e]">Image prête à envoyer</p>
-              <p className="text-[10px] text-[#7a7a76]">Cliquez sur Envoyer pour partager</p>
-            </div>
-            <Button
-              onClick={() => setImagePreview(null)}
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 text-[#7a7a76] hover:text-red-500"
-            >
-              <X className="w-4 h-4" />
-            </Button>
+            <Attachment orientation="horizontal" className="flex-1 border-[#e5e5e0] bg-white">
+              <AttachmentMedia variant="image">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={imagePreview} alt="Aperçu" />
+              </AttachmentMedia>
+              <AttachmentContent>
+                <AttachmentTitle>Image prête à envoyer</AttachmentTitle>
+                <AttachmentDescription>Cliquez sur Envoyer pour partager</AttachmentDescription>
+              </AttachmentContent>
+              <AttachmentActions>
+                <AttachmentAction aria-label="Retirer l'image" onClick={() => setImagePreview(null)}>
+                  <X className="w-4 h-4" />
+                </AttachmentAction>
+              </AttachmentActions>
+            </Attachment>
             <Button
               onClick={handleSendImage}
               disabled={sending}
               size="sm"
-              className="h-8 bg-[#059669] hover:bg-[#047857] text-white text-xs"
+              className="h-8 bg-[#059669] hover:bg-[#047857] text-white text-xs shrink-0"
             >
               <Send className="w-3.5 h-3.5 mr-1" />
               Envoyer
@@ -833,6 +1025,24 @@ export default function MessagesRoot() {
           />
         </div>
       )}
+
+      {/* Delete confirmation */}
+      <AlertDialog open={!!deleteTargetId} onOpenChange={(open) => { if (!open) setDeleteTargetId(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Supprimer ce message ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Cette action est irréversible — le message sera supprimé pour tous les membres de la conversation.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-red-600 hover:bg-red-700 text-white">
+              Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

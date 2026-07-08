@@ -903,8 +903,9 @@ export function ProspectingRoot() {
           }
         }, 1500);
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
+      toast.error(`Échec de l'import dans le CRM : ${e?.message || 'erreur inconnue'}`, { duration: 8000 });
     }
     setImporting(false);
   };
@@ -928,38 +929,48 @@ export function ProspectingRoot() {
   const handleBulkImport = async () => {
     setImporting(true);
     let count = 0;
-    for (const id of selectedValidationIds) {
-      const item = leadValidations.find(v => v.id === id);
-      if (item) {
-        const temp: 'Hot' | 'Warm' | 'Cold' = !item.website || item.rating < 3.5 ? 'Hot' : item.rating < 4.2 ? 'Warm' : 'Cold';
-        await addLead({
-          businessName: item.businessName,
-          contactName: '',
-          contactEmail: item.email || '',
-          niche: item.niche,
-          city: item.city,
-          source: `Scraper Minerva (${item.source ?? 'osm'})`,
-          status: 'New',
-          temperature: temp,
-          website: item.website,
-          mapsUrl: item.mapsUrl,
-          address: item.address,
-          rating: item.rating,
-          reviewsCount: item.reviewsCount,
-          latitude: item.latitude,
-          longitude: item.longitude,
-          phone: item.phone,
-          nextAction: !item.website
-            ? "Proposer la création d'un site web"
-            : item.rating < 4.0
-              ? 'Audit SEO local Google Maps gratuit'
-              : 'Présenter le pack automatisation Minerva',
-          nextActionDate: new Date().toISOString().split('T')[0],
-          notes: `Source : ${item.source ?? 'Scraper'}\nNote : ${item.rating}/5 (${item.reviewsCount} avis)\nTél : ${item.phone || 'N/A'}`,
-        });
-        await updateLeadValidation(item.id, { status: 'imported' });
-        count++;
+    try {
+      for (const id of selectedValidationIds) {
+        const item = leadValidations.find(v => v.id === id);
+        if (item) {
+          const temp: 'Hot' | 'Warm' | 'Cold' = !item.website || item.rating < 3.5 ? 'Hot' : item.rating < 4.2 ? 'Warm' : 'Cold';
+          await addLead({
+            businessName: item.businessName,
+            contactName: '',
+            contactEmail: item.email || '',
+            niche: item.niche,
+            city: item.city,
+            source: `Scraper Minerva (${item.source ?? 'osm'})`,
+            status: 'New',
+            temperature: temp,
+            website: item.website,
+            mapsUrl: item.mapsUrl,
+            address: item.address,
+            rating: item.rating,
+            reviewsCount: item.reviewsCount,
+            latitude: item.latitude,
+            longitude: item.longitude,
+            phone: item.phone,
+            nextAction: !item.website
+              ? "Proposer la création d'un site web"
+              : item.rating < 4.0
+                ? 'Audit SEO local Google Maps gratuit'
+                : 'Présenter le pack automatisation Minerva',
+            nextActionDate: new Date().toISOString().split('T')[0],
+            notes: `Source : ${item.source ?? 'Scraper'}\nNote : ${item.rating}/5 (${item.reviewsCount} avis)\nTél : ${item.phone || 'N/A'}`,
+          });
+          await updateLeadValidation(item.id, { status: 'imported' });
+          count++;
+        }
       }
+    } catch (e: any) {
+      console.error(e);
+      toast.error(
+        count > 0
+          ? `Import interrompu après ${count} prospect(s) : ${e?.message || 'erreur inconnue'}`
+          : `Échec de l'import dans le CRM : ${e?.message || 'erreur inconnue'}`,
+        { duration: 8000 }
+      );
     }
     setImportCount(count);
     setSelectedValidationIds([]);
@@ -2476,7 +2487,7 @@ export function ProspectingRoot() {
           </div>
 
         {/* Import success success badge */}
-        {importCount !== null && (
+        {importCount !== null && importCount > 0 && (
           <Card className="border-emerald-200 bg-emerald-50 p-4 flex items-center gap-3 animate-in fade-in">
             <div className="h-8 w-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">
               <Check className="h-4 w-4" />

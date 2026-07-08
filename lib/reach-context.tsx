@@ -7,6 +7,7 @@ import { Lead, Task, Note, AiSuggestion, initialLeads, initialTasks } from './mo
 import { computeLeadScore } from './lead-scoring';
 import { createClient } from './supabase/client';
 import { sendDesktopNotification } from './notification-service';
+import { reportClientError } from './report-client-error';
 
 export interface Workspace {
   id: string;
@@ -1409,7 +1410,9 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
     customFields?: Record<string, string>;
     address?: string;
   }) => {
-    if (!user || !activeWorkspace) return;
+    if (!user || !activeWorkspace) {
+      throw new Error('addLead appelé sans utilisateur ou workspace actif — le lead ne peut pas être enregistré.');
+    }
     const electronObj = typeof window !== 'undefined' && (window as any).electron ? (window as any).electron : null;
 
     // Le champ `source` (ex: "Scraper Minerva (osm)", "manual"...) est un détail technique
@@ -1492,8 +1495,15 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
         electronObj.triggerSync();
         // Fire-and-forget auto-enrichment
         void autoEnrichLead(leadId, leadData.website, leadData.businessName);
-      } catch (err) {
+      } catch (err: any) {
         console.error("Local addLead error:", err);
+        reportClientError({
+          source: 'reach-context/addLead (electron/sqlite)',
+          title: "Échec d'ajout de prospect (local)",
+          message: err?.message || String(err),
+          context: { businessName: leadData.businessName, city: leadData.city, source: leadData.source },
+        });
+        throw err instanceof Error ? err : new Error(String(err));
       }
       return;
     }
@@ -1551,8 +1561,18 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
         console.warn('addLead enriched insert failed, retrying with core payload:', leadError.message ?? JSON.stringify(leadError));
         const fallback = await supabase.from('leads').insert(corePayload).select().single();
         if (fallback.error) {
-          console.error('addLead core insert also failed:', fallback.error.message ?? JSON.stringify(fallback.error));
-          return;
+          const message = fallback.error.message || 'Échec de la création du prospect dans le CRM.';
+          console.error('addLead core insert also failed:', message, JSON.stringify(fallback.error));
+          reportClientError({
+            source: 'reach-context/addLead (supabase)',
+            title: "Échec d'import dans le CRM",
+            message,
+            context: {
+              businessName: leadData.businessName, city: leadData.city, source: leadData.source,
+              enrichedError: leadError.message, coreError: fallback.error.message,
+            },
+          });
+          throw new Error(message);
         }
         newDbLead = fallback.data;
       }
@@ -1585,7 +1605,15 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
         void autoEnrichLead(newDbLead.id, leadData.website, leadData.businessName);
       }
     } catch (err: any) {
-      console.error('addLead unexpected error:', err?.message ?? JSON.stringify(err));
+      const message = err?.message ?? JSON.stringify(err);
+      console.error('addLead unexpected error:', message);
+      reportClientError({
+        source: 'reach-context/addLead (supabase)',
+        title: "Échec d'import dans le CRM",
+        message,
+        context: { businessName: leadData.businessName, city: leadData.city, source: leadData.source },
+      });
+      throw err instanceof Error ? err : new Error(message);
     }
   };
 

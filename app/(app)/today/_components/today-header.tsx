@@ -27,6 +27,7 @@ import {
 } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Lead, Task } from '@/lib/mock-data';
+import { toast } from 'sonner';
 
 interface TodayHeaderProps {
   onAestheticToggle?: () => void;
@@ -58,10 +59,15 @@ export function TodayHeader({ onAestheticToggle }: TodayHeaderProps) {
     category: 'Follow-up' as Task['category']
   });
 
-  const handleLeadSubmit = (e: React.FormEvent) => {
+  const handleLeadSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!leadForm.businessName) return;
-    addLead(leadForm);
+    try {
+      await addLead(leadForm);
+    } catch (err: any) {
+      toast.error(`Échec de la création du prospect : ${err?.message || 'erreur inconnue'}`, { duration: 8000 });
+      return;
+    }
     // Reset form
     setLeadForm({
       businessName: '',

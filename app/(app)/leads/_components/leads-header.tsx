@@ -8,6 +8,7 @@ import { useReach } from '@/lib/reach-context';
 import { Lead } from '@/lib/mock-data';
 import { Plus, Upload, X, FileText, Check, AlertCircle, Users2, Loader2, Trash2, ScanLine } from 'lucide-react';
 import { getApiUrl } from '@/lib/api-helper';
+import { toast } from 'sonner';
 
 // ─── CSV parser ───────────────────────────────────────────────────────────────
 
@@ -135,31 +136,37 @@ export function LeadsHeader() {
     if (!toImport.length) return;
     setContactsImporting(true);
     let count = 0;
-    for (const contact of toImport) {
-      if (!contact.name && !contact.email) continue;
-      await addLead({
-        businessName: contact.company || contact.name || contact.email,
-        contactName: contact.name || '',
-        contactEmail: contact.email || undefined,
-        niche: '',
-        city: '',
-        source: 'Google Contacts',
-        status: 'New' as Lead['status'],
-        temperature: 'Warm',
-        nextAction: '',
-        nextActionDate: new Date().toISOString().split('T')[0],
-        phone: contact.phone || undefined,
-      });
-      count++;
+    try {
+      for (const contact of toImport) {
+        if (!contact.name && !contact.email) continue;
+        await addLead({
+          businessName: contact.company || contact.name || contact.email,
+          contactName: contact.name || '',
+          contactEmail: contact.email || undefined,
+          niche: '',
+          city: '',
+          source: 'Google Contacts',
+          status: 'New' as Lead['status'],
+          temperature: 'Warm',
+          nextAction: '',
+          nextActionDate: new Date().toISOString().split('T')[0],
+          phone: contact.phone || undefined,
+        });
+        count++;
+      }
+    } catch (err: any) {
+      toast.error(`Import interrompu après ${count} contact(s) : ${err?.message || 'erreur inconnue'}`, { duration: 8000 });
     }
     setImportedCount(count);
     setContactsImporting(false);
-    setTimeout(() => {
-      setShowContactsSheet(false);
-      setContacts([]);
-      setSelectedContacts(new Set());
-      setImportedCount(0);
-    }, 1800);
+    if (count > 0) {
+      setTimeout(() => {
+        setShowContactsSheet(false);
+        setContacts([]);
+        setSelectedContacts(new Set());
+        setImportedCount(0);
+      }, 1800);
+    }
   };
 
   // ── Deduplication ─────────────────────────────────────────────────────
@@ -269,22 +276,30 @@ export function LeadsHeader() {
   const handleImport = useCallback(async () => {
     if (!parsedRows.length) return;
     setImporting(true);
-    for (const row of parsedRows) {
-      if (!row.businessName) continue;
-      await addLead({
-        businessName: row.businessName,
-        contactName: row.contactName || '',
-        contactEmail: row.contactEmail || undefined,
-        niche: row.niche || '',
-        city: row.city || '',
-        source: row.source || 'CSV Import',
-        status: (['New','Contacted','Meeting Booked','Proposal Sent','Negotiation','Won','Lost'].includes(row.status) ? row.status : 'New') as Lead['status'],
-        temperature: 'Warm',
-        nextAction: '',
-        nextActionDate: new Date().toISOString().split('T')[0],
-        notes: row.notes || undefined,
-        website: row.website || undefined,
-      });
+    let count = 0;
+    try {
+      for (const row of parsedRows) {
+        if (!row.businessName) continue;
+        await addLead({
+          businessName: row.businessName,
+          contactName: row.contactName || '',
+          contactEmail: row.contactEmail || undefined,
+          niche: row.niche || '',
+          city: row.city || '',
+          source: row.source || 'CSV Import',
+          status: (['New','Contacted','Meeting Booked','Proposal Sent','Negotiation','Won','Lost'].includes(row.status) ? row.status : 'New') as Lead['status'],
+          temperature: 'Warm',
+          nextAction: '',
+          nextActionDate: new Date().toISOString().split('T')[0],
+          notes: row.notes || undefined,
+          website: row.website || undefined,
+        });
+        count++;
+      }
+    } catch (err: any) {
+      setImporting(false);
+      toast.error(`Import CSV interrompu après ${count}/${parsedRows.length} ligne(s) : ${err?.message || 'erreur inconnue'}`, { duration: 8000 });
+      return;
     }
     setImporting(false);
     setImportDone(true);

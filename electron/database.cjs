@@ -217,6 +217,8 @@ function initDb() {
 
     // v2.12.0 team_messages migrations (safe re-run)
     db.run(`ALTER TABLE team_messages ADD COLUMN sender_name TEXT`, () => {});
+    // v13.9 — mirrors supabase/migrations/20260709020000_v13_9_team_messages_edit_delete.sql
+    db.run(`ALTER TABLE team_messages ADD COLUMN is_edited INTEGER DEFAULT 0`, () => {});
 
     // 9. Projects table
     db.run(`CREATE TABLE IF NOT EXISTS projects (

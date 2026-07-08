@@ -113,20 +113,25 @@ export default function NewLeadRoot() {
     e.target.value = '';
   }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.businessName.trim()) return;
 
     const { assignedTo, website, mapsUrl, phone, ...rest } = form;
-    addLead({
-      ...rest,
-      ...(website ? { website } : {}),
-      ...(mapsUrl ? { mapsUrl } : {}),
-      ...(phone ? { phone } : {}),
-      ...(assignedTo ? { assignedTo } : {}),
-      ...(logoBase64 ? { imageUrl: logoBase64 } : {}),
-      customFields: customFormFields,
-    });
+    try {
+      await addLead({
+        ...rest,
+        ...(website ? { website } : {}),
+        ...(mapsUrl ? { mapsUrl } : {}),
+        ...(phone ? { phone } : {}),
+        ...(assignedTo ? { assignedTo } : {}),
+        ...(logoBase64 ? { imageUrl: logoBase64 } : {}),
+        customFields: customFormFields,
+      });
+    } catch (err: any) {
+      toast.error(`Échec de la création du prospect : ${err?.message || 'erreur inconnue'}`, { duration: 8000 });
+      return;
+    }
     router.push('/leads');
   };
 
