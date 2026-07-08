@@ -274,6 +274,7 @@ interface DbLead {
   suggested_emails?: string | null;
   decision_maker_name?: string | null;
   decision_maker_role?: string | null;
+  enrichment_review?: any;
   deal_amount?: number | null;
   deal_probability?: number | null;
   deal_closing_date?: string | null;
@@ -382,6 +383,13 @@ function mapDbLeadToUi(dbLead: DbLead, dbNotes: DbNote[] = []): Lead {
     suggestedEmails: (() => { try { return dbLead.suggested_emails ? JSON.parse(dbLead.suggested_emails as string) : undefined; } catch { return undefined; } })(),
     decisionMakerName: dbLead.decision_maker_name || undefined,
     decisionMakerRole: dbLead.decision_maker_role || undefined,
+    enrichmentReview: (() => {
+      try {
+        const raw = dbLead.enrichment_review;
+        if (!raw) return undefined;
+        return typeof raw === 'string' ? JSON.parse(raw) : raw;
+      } catch { return undefined; }
+    })(),
     dealAmount: dbLead.deal_amount ?? undefined,
     dealProbability: dbLead.deal_probability ?? undefined,
     dealClosingDate: dbLead.deal_closing_date || undefined,

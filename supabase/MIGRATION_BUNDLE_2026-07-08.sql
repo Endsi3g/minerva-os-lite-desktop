@@ -22,6 +22,7 @@
 --  11. v13.12 — tasks.lead_id (lien agenda ↔ lead)
 --  12. v13.13 — Autopilot par programme (campaigns.autopilot_*)
 --  13. v14.1  — Packs de plateforme (workspaces.enabled_packs)
+--  14. v14.2  — Recherche web approfondie pour l'enrichissement (leads.enrichment_review)
 --
 -- PRE-MIGRATION CHECK (exécuter séparément avant tout le reste, noter les
 -- comptes — si un seul est à 0, STOP, ne pas lancer ce script)
@@ -268,6 +269,12 @@ ALTER TABLE public.campaigns ADD COLUMN IF NOT EXISTS autopilot_paused_at TIMEST
 -- (supabase/migrations/20260708150000_v14_1_workspace_packs.sql)
 
 ALTER TABLE public.workspaces ADD COLUMN IF NOT EXISTS enabled_packs JSONB DEFAULT '["acquisition","outreach","field","analytics_growth"]'::jsonb;
+
+
+-- ── 14. v14.2 — Recherche web approfondie pour l'enrichissement ────────────
+-- (supabase/migrations/20260708220000_v14_2_enrichment_review.sql)
+
+ALTER TABLE public.leads ADD COLUMN IF NOT EXISTS enrichment_review JSONB;
 
 
 -- ═══════════════════════════════════════════════════════════════════════════

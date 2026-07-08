@@ -1,5 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { deepSearchBusiness } from '@/lib/enrichment-deep-search';
+
+// Confiance de correspondance entreprise ↔ résultat web (0-100). Au-dessus,
+// on applique les données directement au lead ; en dessous mais au-dessus de
+// 0, on stocke une suggestion à valider manuellement (leads.enrichment_review)
+// plutôt que de risquer d'écraser le lead avec les infos d'une entreprise
+// homonyme dans une autre ville.
+const DEEP_SEARCH_AUTO_APPLY_THRESHOLD = 70;
 
 export const maxDuration = 300;
 
@@ -15,12 +23,13 @@ export async function POST(req: NextRequest) {
     // Load settings
     const { data: settings } = await supabase
       .from('settings')
-      .select('auto_email_on_enrichment, auto_email_template_id, auto_email_delay_hours, daily_email_limit')
+      .select('auto_email_on_enrichment, auto_email_template_id, auto_email_delay_hours, daily_email_limit, ai_provider, ai_model, openrouter_key')
       .eq('user_id', user.id)
       .maybeSingle();
 
     let enriched = 0;
     let failed = 0;
+    let pendingReviews = 0;
     const errors: string[] = [];
     const origin = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
@@ -69,6 +78,56 @@ export async function POST(req: NextRequest) {
             },
             body: JSON.stringify({ leadId }),
           });
+        }
+
+        // Recherche web approfondie (auto) — si l'enrichissement standard n'a
+        // trouvé ni site ni téléphone, on tente de retrouver l'entreprise sur
+        // le web. Haute confiance → appliqué directement ; confiance moyenne
+        // → stocké comme suggestion à valider (leads.enrichment_review) ;
+        // confiance trop basse → ignoré silencieusement.
+        if (mode === 'full') {
+          const { data: afterStandard } = await supabase
+            .from('leads')
+            .select('website, phone')
+            .eq('id', leadId)
+            .maybeSingle();
+
+          if (afterStandard && !afterStandard.website && !afterStandard.phone) {
+            try {
+              const deepResult = await deepSearchBusiness({
+                businessName: lead.business_name,
+                city: lead.city,
+                niche: lead.niche,
+                settings: settings || undefined,
+                userId: user.id,
+              });
+
+              if (deepResult && deepResult.confidence > 0) {
+                if (deepResult.confidence >= DEEP_SEARCH_AUTO_APPLY_THRESHOLD) {
+                  const updateFields: Record<string, unknown> = { updated_at: new Date().toISOString() };
+                  if (deepResult.candidate.website) updateFields.website = deepResult.candidate.website;
+                  if (deepResult.candidate.phone) updateFields.phone = deepResult.candidate.phone;
+                  if (deepResult.candidate.address) updateFields.address = deepResult.candidate.address;
+                  if (deepResult.candidate.socialLinks) updateFields.social_links = deepResult.candidate.socialLinks;
+                  await supabase.from('leads').update(updateFields).eq('id', leadId);
+                } else {
+                  await supabase.from('leads').update({
+                    enrichment_review: {
+                      confidence: deepResult.confidence,
+                      reasoning: deepResult.reasoning,
+                      sourceUrl: deepResult.sourceUrl,
+                      candidate: deepResult.candidate,
+                      foundAt: new Date().toISOString(),
+                    },
+                    updated_at: new Date().toISOString(),
+                  }).eq('id', leadId);
+                  pendingReviews++;
+                }
+              }
+            } catch (err) {
+              console.warn(`[enrich-batch] deep search failed for ${leadId}:`, err);
+            }
+          }
         }
 
         // Update enriched_at
@@ -148,12 +207,11 @@ export async function POST(req: NextRequest) {
       workspace_id: workspaceId,
       type: 'scraping_done',
       title: `Enrichissement terminé : ${enriched} lead${enriched > 1 ? 's' : ''} enrichi${enriched > 1 ? 's' : ''}`,
-      body:
-        failed > 0
-          ? `${failed} échec(s). ${settings?.auto_email_on_enrichment ? 'Emails de prospection envoyés.' : ''}`
-          : settings?.auto_email_on_enrichment
-            ? 'Emails de prospection envoyés automatiquement.'
-            : 'Toutes les données ont été mises à jour.',
+      body: [
+        failed > 0 ? `${failed} échec(s).` : null,
+        pendingReviews > 0 ? `${pendingReviews} suggestion${pendingReviews > 1 ? 's' : ''} trouvée${pendingReviews > 1 ? 's' : ''} en ligne à valider sur la fiche du lead.` : null,
+        settings?.auto_email_on_enrichment ? 'Emails de prospection envoyés automatiquement.' : null,
+      ].filter(Boolean).join(' ') || 'Toutes les données ont été mises à jour.',
       link: '/leads',
       is_read: false,
       created_at: new Date().toISOString(),

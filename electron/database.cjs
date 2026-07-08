@@ -268,6 +268,8 @@ function initDb() {
     db.run(`ALTER TABLE leads ADD COLUMN gmail_thread_id TEXT DEFAULT NULL`, () => {});
     // v2.50.0 — inbox reply_status
     db.run(`ALTER TABLE leads ADD COLUMN reply_status TEXT DEFAULT NULL`, () => {});
+    // v14.2 — mirrors supabase/migrations/20260708220000_v14_2_enrichment_review.sql
+    db.run(`ALTER TABLE leads ADD COLUMN enrichment_review TEXT DEFAULT NULL`, () => {});
     db.run(`ALTER TABLE leads ADD COLUMN latitude REAL DEFAULT NULL`, () => {});
     db.run(`ALTER TABLE leads ADD COLUMN longitude REAL DEFAULT NULL`, () => {});
 

@@ -47,6 +47,14 @@ export interface Lead {
   suggestedEmails?: string[];
   decisionMakerName?: string;
   decisionMakerRole?: string;
+  // Suggestion de recherche web approfondie en attente de validation (v14.2)
+  enrichmentReview?: {
+    confidence: number;
+    reasoning: string;
+    sourceUrl?: string;
+    candidate: { website?: string; phone?: string; address?: string; socialLinks?: Record<string, string> };
+    foundAt: string;
+  };
   // Deal (v2.36.0)
   dealAmount?: number;
   dealProbability?: number;

@@ -20,6 +20,15 @@ interface ChangelogVersion {
 
 const versions: ChangelogVersion[] = [
   {
+    version: 'v3.83.0',
+    date: '8 juillet 2026 · 22h15',
+    title: 'Recherche web approfondie pour l\'enrichissement',
+    highlights: [
+      { text: "Quand l'enrichissement standard ne trouve ni site ni téléphone, une recherche web + IA tente de retrouver l'entreprise, avec un score de confiance." },
+      { text: "Confiance élevée → appliqué directement. Confiance moyenne → suggestion à valider sur la fiche lead (nouvelle bannière avec boutons Accepter/Rejeter), jamais appliqué automatiquement." },
+    ],
+  },
+  {
     version: 'v3.82.0',
     date: '8 juillet 2026 · 21h30',
     title: 'Correctifs : IA, chargement des stats, enrichissement en masse',

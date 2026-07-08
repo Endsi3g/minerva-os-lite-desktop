@@ -70,6 +70,7 @@ import { TimelineRoot } from '@/app/(app)/leads/timeline/_components/timeline-ro
 import { LeadNbaCard } from './lead-nba-card';
 import { CadenceTimeline } from './cadence-timeline';
 import { LeadProgramsBadge } from './lead-programs-badge';
+import { LeadEnrichmentReviewBanner } from './lead-enrichment-review-banner';
 
 function cleanMarkdownForPreview(text: string | null | undefined): string {
   if (!text) return '';
@@ -2623,6 +2624,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
 
           {/* Right Sidebar (Notion Properties Panel) */}
           <div className="border-t lg:border-t-0 lg:border-l border-[#e5e5e0] pt-6 lg:pt-0 lg:pl-6 space-y-6">
+            <LeadEnrichmentReviewBanner lead={lead} />
             <LeadNbaCard leadId={lead.id} workspaceId={activeWorkspace?.id ?? ''} />
             <CadenceTimeline leadId={lead.id} workspaceId={activeWorkspace?.id ?? ''} />
             <LeadProgramsBadge leadId={lead.id} />

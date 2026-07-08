@@ -5,6 +5,16 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [3.83.0] — Recherche web approfondie pour l'enrichissement — 8 juillet 2026, 22h15
+
+### Ajouté
+- **Recherche web approfondie automatique** : quand l'enrichissement standard d'un lead ne trouve ni site web ni téléphone, une recherche web (Firecrawl) + analyse IA tente désormais de retrouver l'entreprise sur internet, avec un score de confiance basé sur la correspondance nom/ville.
+  - **Confiance élevée (≥70%)** : les informations trouvées (site, téléphone, adresse, réseaux sociaux) sont appliquées directement au lead.
+  - **Confiance moyenne** : stockées comme suggestion, jamais appliquées automatiquement — nouvelle bannière sur la fiche lead avec boutons "C'est la bonne entreprise" / "Ce n'est pas la bonne".
+  - **Confiance trop basse** : ignorée silencieusement.
+- Nouvelle migration `20260708220000_v14_2_enrichment_review.sql` (`leads.enrichment_review`).
+- La notification de fin d'enrichissement en masse mentionne désormais le nombre de suggestions à valider.
+
 ## [3.82.0] — Correctifs : IA, chargement des stats, enrichissement en masse — 8 juillet 2026, 21h30
 
 ### Corrigé
