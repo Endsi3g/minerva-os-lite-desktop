@@ -20,6 +20,25 @@ interface ChangelogVersion {
 
 const versions: ChangelogVersion[] = [
   {
+    version: 'v3.74.0',
+    date: '8 juillet 2026 · 08h30',
+    title: 'Programmes de croissance, Phase 1 : modèle de données + objectif',
+    highlights: [
+      { text: "Une campagne devient un \"programme\" suivable dès qu'un objectif de croissance lui est assigné — Remplir mon agenda (RDV), Signer des clients, ou Faire croître le MRR — avec une cible chiffrée. Étape dédiée à la création, badge dans la liste, carte objectif/progression sur la fiche détail." },
+      { text: "Un lead peut désormais appartenir à plusieurs programmes actifs simultanément (nouvelle table de liaison), distinct du lien \"campagne principale\" existant qui reste inchangé." },
+      { text: "Phase 1 sur 5 — bâtie sur l'infrastructure existante (campagnes, séquences, playbooks) plutôt que dupliquée. Prochaines étapes : orchestration du Playbook Wizard, visibilité cockpit, organisation des agents IA, métriques par programme." },
+    ],
+  },
+  {
+    version: 'v3.73.2',
+    date: '8 juillet 2026 · 07h30',
+    title: 'Nettoyage : CI mobile désactivé temporairement + code mort retiré',
+    highlights: [
+      { text: "Le workflow CI mobile révèle deux prérequis manquants dans le repo (dossier natif Android jamais commité, aucun Gemfile pour Fastlane) qui le font échouer plus loin. Déclenchement automatique désactivé en attendant — n'affecte pas le déploiement web." },
+      { text: "Code mort retiré : une route de génération de proposition jamais appelée nulle part, et deux onglets Paramètres (Modèles, Préférences) qui étaient des sélecteurs 100% inertes depuis leur création." },
+    ],
+  },
+  {
     version: 'v3.73.1',
     date: '8 juillet 2026 · 07h00',
     title: 'CI mobile cassé depuis plusieurs releases (export statique + routes API)',

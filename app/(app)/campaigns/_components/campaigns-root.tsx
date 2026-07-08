@@ -4,8 +4,14 @@ import React from 'react';
 import Link from 'next/link';
 import { useReach, type Campaign } from '@/lib/reach-context';
 import { OutreachNavBar } from '@/components/outreach-nav-bar';
-import { Megaphone, Plus, Play, Pause, CheckCircle2, FileEdit, Trash2, Calendar, MapPin, Tag } from 'lucide-react';
+import { Megaphone, Plus, Play, Pause, CheckCircle2, FileEdit, Trash2, Calendar, MapPin, Tag, Rocket } from 'lucide-react';
 import { cn } from '@/lib/utils';
+
+const GOAL_TYPE_LABELS: Record<NonNullable<Campaign['goalType']>, { label: string; unit: string }> = {
+  rdv: { label: 'Remplir mon agenda', unit: 'RDV' },
+  clients: { label: 'Signer des clients', unit: 'clients' },
+  mrr: { label: 'Faire croître le MRR', unit: '$ MRR' },
+};
 
 const STATUS_LABELS: Record<Campaign['status'], string> = {
   active: 'Active',
@@ -93,6 +99,17 @@ export function CampaignsRoot() {
                     {STATUS_LABELS[campaign.status]}
                   </span>
                 </div>
+
+                {/* Programme de croissance */}
+                {campaign.goalType && (
+                  <div className="flex items-center gap-1.5 text-[10px] font-bold text-[#059669] bg-[#059669]/5 border border-[#059669]/20 rounded-lg px-2.5 py-1.5 w-fit">
+                    <Rocket className="h-3 w-3" />
+                    {GOAL_TYPE_LABELS[campaign.goalType].label}
+                    {campaign.targetValue !== undefined && (
+                      <span className="text-[#7a7a76] font-semibold">— cible {campaign.targetValue} {GOAL_TYPE_LABELS[campaign.goalType].unit}</span>
+                    )}
+                  </div>
+                )}
 
                 {/* Tags */}
                 <div className="flex flex-wrap gap-1.5">

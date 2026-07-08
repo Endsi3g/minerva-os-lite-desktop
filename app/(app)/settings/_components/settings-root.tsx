@@ -16,19 +16,15 @@ import { SettingsMinervaAiSection } from './settings-minerva-ai-section';
 import { SettingsBillingSection } from './settings-billing-section';
 import { SettingsSecuritySection } from './settings-security-section';
 import { SettingsNotificationsSection } from './settings-notifications-section';
-import { SettingsModelsSection, type ModelsData } from './settings-models-section';
 import { SettingsProspectingSection } from './settings-prospecting-section';
 import { SettingsRolesSection } from './settings-roles-section';
 import { SettingsApiKeysSection } from './settings-api-keys-section';
 import { SettingsCustomizationsSection, type CustomizationsData } from './settings-customizations-section';
 import { SettingsCustomInstructionsSection, type CustomInstructionsData } from './settings-custom-instructions-section';
-import { SettingsPreferencesSection, type PreferencesData } from './settings-preferences-section';
 import { SettingsWorkspaceApiSection } from './settings-workspace-api-section';
 import { SettingsWorkspaceOverviewSection } from './settings-workspace-overview-section';
 import { createClient } from '@/lib/supabase/client';
 import { getApiUrl } from '@/lib/api-helper';
-import { cn } from '@/lib/utils';
-import type { Locale } from '@/lib/translations';
 
 interface ProfileData {
   firstName: string;
@@ -119,11 +115,6 @@ export function SettingsRoot() {
     digestTime: '08:00',
   });
 
-  const [modelsData, setModelsData] = useState<ModelsData>({
-    defaultChatModel: 'claude-sonnet-5',
-    defaultImageModel: '',
-  });
-
   const [prospectingData, setProspectingData] = useState({
     niches: [] as string[],
     cities: [] as string[],
@@ -145,13 +136,6 @@ export function SettingsRoot() {
     active: false,
     aboutYou: '',
     modelInstructions: '',
-  });
-
-  const [preferencesData, setPreferencesData] = useState<PreferencesData>({
-    defaultModel: 'claude-sonnet-5',
-    defaultImageModel: '',
-    chatCapabilities: [],
-    language: 'fr' as Locale,
   });
 
   useEffect(() => {
@@ -377,14 +361,6 @@ export function SettingsRoot() {
 
           {section === 'security' && <SettingsSecuritySection />}
 
-          {section === 'preferences' && (
-            <SettingsPreferencesSection
-              data={preferencesData}
-              onChange={(updates) => setPreferencesData((prev) => ({ ...prev, ...updates }))}
-              isSaving={false}
-            />
-          )}
-
           {section === 'workspace_general' && (
             <SettingsWorkspaceGeneralSection
               data={settings.workspaceGeneral}
@@ -408,14 +384,6 @@ export function SettingsRoot() {
           )}
 
           {section === 'minerva_ai' && <SettingsMinervaAiSection />}
-
-          {section === 'models' && (
-            <SettingsModelsSection
-              data={modelsData}
-              onChange={(updates) => setModelsData((prev) => ({ ...prev, ...updates }))}
-              isSaving={false}
-            />
-          )}
 
           {section === 'api_keys' && (
             <SettingsApiKeysSection

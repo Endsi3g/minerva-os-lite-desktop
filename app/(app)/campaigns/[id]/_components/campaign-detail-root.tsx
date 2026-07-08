@@ -3,10 +3,16 @@
 import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useReach, type Campaign } from '@/lib/reach-context';
-import { ChevronLeft, Megaphone, Tag, MapPin, Calendar, Users, CheckCircle2, TrendingUp, Mail, Play, Pause, Edit2, Check, X } from 'lucide-react';
+import { ChevronLeft, Megaphone, Tag, MapPin, Calendar, Users, CheckCircle2, TrendingUp, Mail, Play, Pause, Edit2, Check, X, Rocket } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Lead } from '@/lib/mock-data';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+
+const GOAL_TYPE_LABELS: Record<NonNullable<Campaign['goalType']>, { label: string; unit: string }> = {
+  rdv: { label: 'Remplir mon agenda', unit: 'RDV' },
+  clients: { label: 'Signer des clients', unit: 'clients' },
+  mrr: { label: 'Faire croître le MRR', unit: '$ MRR' },
+};
 
 const STATUS_COLORS: Record<Campaign['status'], string> = {
   active: 'bg-[#059669]/10 text-[#059669] border-[#059669]/20',
@@ -141,6 +147,34 @@ export function CampaignDetailRoot({ id }: { id: string }) {
             )}
           </div>
         </div>
+
+        {/* Programme de croissance — objectif & progression */}
+        {campaign.goalType && (() => {
+          const current = campaign.goalType === 'clients' ? kpis.won : campaign.goalType === 'rdv' ? kpis.meeting : null;
+          const target = campaign.targetValue ?? 0;
+          const pct = current !== null && target > 0 ? Math.min(100, Math.round((current / target) * 100)) : null;
+          return (
+            <div className="rounded-xl border border-[#059669]/20 bg-[#059669]/5 p-4 space-y-2">
+              <div className="flex items-center justify-between gap-4 flex-wrap">
+                <div className="flex items-center gap-2">
+                  <Rocket className="h-4 w-4 text-[#059669]" />
+                  <span className="text-xs font-bold text-[#26251e]">{GOAL_TYPE_LABELS[campaign.goalType].label}</span>
+                </div>
+                <span className="text-xs font-bold text-[#059669]">
+                  {current !== null ? `${current} / ${target}` : target} {GOAL_TYPE_LABELS[campaign.goalType].unit}
+                </span>
+              </div>
+              {pct !== null && (
+                <div className="h-1.5 rounded-full bg-white overflow-hidden">
+                  <div className="h-full bg-[#059669] rounded-full transition-all" style={{ width: `${pct}%` }} />
+                </div>
+              )}
+              {campaign.goalType === 'mrr' && (
+                <p className="text-[10px] text-[#7a7a76]">Le suivi en temps réel du MRR généré arrivera avec les métriques de programmes.</p>
+              )}
+            </div>
+          );
+        })()}
 
         {/* KPIs */}
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">

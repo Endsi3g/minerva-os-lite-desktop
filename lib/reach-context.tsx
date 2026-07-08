@@ -81,6 +81,11 @@ export interface Campaign {
   sequenceConfig?: string;
   goals?: string;
   playbookRunId?: string;
+  // Programmes de croissance (v13.10) — une campagne devient un "programme"
+  // dès que goalType est renseigné : objectif choisi par l'utilisateur
+  // (RDV / clients / MRR) et cible chiffrée associée.
+  goalType?: 'rdv' | 'clients' | 'mrr';
+  targetValue?: number;
 }
 
 export interface Goal {
@@ -200,9 +205,14 @@ interface ReachContextType {
     sequenceConfig?: string;
     goals?: string;
     playbookRunId?: string;
+    goalType?: Campaign['goalType'];
+    targetValue?: number;
   }) => Promise<Campaign | null>;
   updateCampaign: (id: string, fields: Partial<Campaign>) => Promise<void>;
   deleteCampaign: (id: string) => Promise<void>;
+  addLeadToProgram: (campaignId: string, leadId: string) => Promise<void>;
+  removeLeadFromProgram: (campaignId: string, leadId: string) => Promise<void>;
+  getProgramLeadIds: (campaignId: string) => Promise<string[]>;
   goals: Goal[];
   addGoal: (data: { metric: Goal['metric']; target: number; period: Goal['period'] }) => Promise<Goal | null>;
   updateGoal: (id: string, fields: Partial<Pick<Goal, 'target' | 'period'>>) => Promise<void>;
@@ -503,6 +513,8 @@ function mapDbCampaignToUi(r: any): Campaign {
     sequenceConfig: sequenceConfig || undefined,
     goals: goals || undefined,
     playbookRunId: r.playbook_run_id || undefined,
+    goalType: r.goal_type || undefined,
+    targetValue: r.target_value ?? undefined,
   };
 }
 
@@ -2618,6 +2630,8 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
     sequenceConfig?: string;
     goals?: string;
     playbookRunId?: string;
+    goalType?: Campaign['goalType'];
+    targetValue?: number;
   }): Promise<Campaign | null> => {
     if (!user || !activeWorkspace) return null;
     const electronObj = typeof window !== 'undefined' && (window as any).electron ? (window as any).electron : null;
@@ -2638,11 +2652,13 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
       sequenceConfig: data.sequenceConfig,
       goals: data.goals,
       playbookRunId: data.playbookRunId,
+      goalType: data.goalType,
+      targetValue: data.targetValue,
     };
     if (electronObj) {
       try {
         await electronObj.dbRun(
-          `INSERT INTO campaigns (id, workspace_id, user_id, name, description, niches, cities, status, start_date, end_date, created_at, updated_at, persona_id, sequence_config, goals, playbook_run_id, sync_status) VALUES (?, ?, ?, ?, ?, ?, ?, 'active', ?, ?, ?, ?, ?, ?, ?, ?, 'pending_insert')`,
+          `INSERT INTO campaigns (id, workspace_id, user_id, name, description, niches, cities, status, start_date, end_date, created_at, updated_at, persona_id, sequence_config, goals, playbook_run_id, goal_type, target_value, sync_status) VALUES (?, ?, ?, ?, ?, ?, ?, 'active', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending_insert')`,
           [
             newCampaign.id,
             newCampaign.workspaceId,
@@ -2658,7 +2674,9 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
             newCampaign.personaId || null,
             newCampaign.sequenceConfig || null,
             newCampaign.goals || null,
-            newCampaign.playbookRunId || null
+            newCampaign.playbookRunId || null,
+            newCampaign.goalType || null,
+            newCampaign.targetValue ?? null,
           ]
         );
         setCampaigns(prev => [newCampaign, ...prev]);
@@ -2678,6 +2696,8 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
         sequence_config: newCampaign.sequenceConfig ? JSON.parse(newCampaign.sequenceConfig) : null,
         goals: newCampaign.goals ? JSON.parse(newCampaign.goals) : null,
         playbook_run_id: newCampaign.playbookRunId || null,
+        goal_type: newCampaign.goalType || null,
+        target_value: newCampaign.targetValue ?? null,
       }).select().single();
       if (error) throw error;
       const mapped = mapDbCampaignToUi(row);
@@ -2702,6 +2722,8 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
     if (fields.sequenceConfig !== undefined) { dbFields.push("sequence_config = ?"); params.push(fields.sequenceConfig || null); }
     if (fields.goals !== undefined) { dbFields.push("goals = ?"); params.push(fields.goals || null); }
     if (fields.playbookRunId !== undefined) { dbFields.push("playbook_run_id = ?"); params.push(fields.playbookRunId || null); }
+    if (fields.goalType !== undefined) { dbFields.push("goal_type = ?"); params.push(fields.goalType || null); }
+    if (fields.targetValue !== undefined) { dbFields.push("target_value = ?"); params.push(fields.targetValue ?? null); }
     if (electronObj) {
       try {
         if (dbFields.length > 0) {
@@ -2727,6 +2749,8 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
     if (fields.sequenceConfig !== undefined) supaFields.sequence_config = fields.sequenceConfig ? JSON.parse(fields.sequenceConfig) : null;
     if (fields.goals !== undefined) supaFields.goals = fields.goals ? JSON.parse(fields.goals) : null;
     if (fields.playbookRunId !== undefined) supaFields.playbook_run_id = fields.playbookRunId || null;
+    if (fields.goalType !== undefined) supaFields.goal_type = fields.goalType || null;
+    if (fields.targetValue !== undefined) supaFields.target_value = fields.targetValue ?? null;
     try {
       await supabase.from('campaigns').update(supaFields).eq('id', id);
       setCampaigns(prev => prev.map(c => c.id === id ? { ...c, ...fields, updatedAt: new Date().toISOString() } : c));
@@ -2749,6 +2773,74 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
       await supabase.from('campaigns').delete().eq('id', id);
       setCampaigns(prev => prev.filter(c => c.id !== id));
     } catch (err) { console.error("Error in deleteCampaign:", err); }
+  };
+
+  // ── Programmes de croissance : rattachement lead ↔ programme (many-to-many) ──
+  // Distinct de leads.campaign_id (une seule "campagne principale" par lead) —
+  // growth_program_leads permet à un lead d'appartenir à plusieurs programmes
+  // actifs simultanément (ex: un lead peut être suivi à la fois dans un
+  // programme "Remplir mon agenda" et un programme "Réactiver mon pipeline").
+  const addLeadToProgram = async (campaignId: string, leadId: string): Promise<void> => {
+    if (!user || !activeWorkspace) return;
+    const electronObj = typeof window !== 'undefined' && (window as any).electron ? (window as any).electron : null;
+    const nowIso = new Date().toISOString();
+    if (electronObj) {
+      try {
+        await electronObj.dbRun(
+          `INSERT OR IGNORE INTO growth_program_leads (id, workspace_id, campaign_id, lead_id, added_at, sync_status) VALUES (?, ?, ?, ?, ?, 'pending_insert')`,
+          [crypto.randomUUID(), activeWorkspace.id, campaignId, leadId, nowIso]
+        );
+        electronObj.triggerSync();
+      } catch (err) { console.error("Local addLeadToProgram error:", err); }
+      return;
+    }
+    const supabase = createClient();
+    try {
+      await supabase.from('growth_program_leads').upsert({
+        id: crypto.randomUUID(),
+        workspace_id: activeWorkspace.id,
+        campaign_id: campaignId,
+        lead_id: leadId,
+        added_at: nowIso,
+      }, { onConflict: 'campaign_id,lead_id', ignoreDuplicates: true });
+    } catch (err) { console.error("Error in addLeadToProgram:", err); }
+  };
+
+  const removeLeadFromProgram = async (campaignId: string, leadId: string): Promise<void> => {
+    if (!user) return;
+    const electronObj = typeof window !== 'undefined' && (window as any).electron ? (window as any).electron : null;
+    if (electronObj) {
+      try {
+        await electronObj.dbRun(
+          `DELETE FROM growth_program_leads WHERE campaign_id = ? AND lead_id = ?`,
+          [campaignId, leadId]
+        );
+        electronObj.triggerSync();
+      } catch (err) { console.error("Local removeLeadFromProgram error:", err); }
+      return;
+    }
+    const supabase = createClient();
+    try {
+      await supabase.from('growth_program_leads').delete().eq('campaign_id', campaignId).eq('lead_id', leadId);
+    } catch (err) { console.error("Error in removeLeadFromProgram:", err); }
+  };
+
+  // Renvoie les IDs de leads rattachés à un programme (campagne avec goalType).
+  // Fetch à la demande (pas de state global) — appelé depuis la page détail
+  // d'un programme, pas depuis le contexte partagé pour rester léger.
+  const getProgramLeadIds = async (campaignId: string): Promise<string[]> => {
+    const electronObj = typeof window !== 'undefined' && (window as any).electron ? (window as any).electron : null;
+    if (electronObj) {
+      try {
+        const rows = await electronObj.dbAll(`SELECT lead_id FROM growth_program_leads WHERE campaign_id = ?`, [campaignId]);
+        return (rows || []).map((r: any) => r.lead_id);
+      } catch (err) { console.error("Local getProgramLeadIds error:", err); return []; }
+    }
+    const supabase = createClient();
+    try {
+      const { data } = await supabase.from('growth_program_leads').select('lead_id').eq('campaign_id', campaignId);
+      return (data || []).map((r: any) => r.lead_id);
+    } catch (err) { console.error("Error in getProgramLeadIds:", err); return []; }
   };
 
   const addGoal = async (data: { metric: Goal['metric']; target: number; period: Goal['period'] }): Promise<Goal | null> => {
@@ -3098,6 +3190,9 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
         addCampaign,
         updateCampaign,
         deleteCampaign,
+        addLeadToProgram,
+        removeLeadFromProgram,
+        getProgramLeadIds,
         goals,
         addGoal,
         updateGoal,

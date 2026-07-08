@@ -167,6 +167,14 @@ const METRIC_OPTIONS = [
   { value: 'leads_won', label: 'Leads gagnés' },
 ];
 
+type GoalType = 'rdv' | 'clients' | 'mrr';
+
+const GOAL_TYPE_OPTIONS: { value: GoalType; label: string; unit: string; description: string }[] = [
+  { value: 'rdv', label: 'Remplir mon agenda', unit: 'RDV', description: 'Objectif en nombre de rendez-vous décrochés.' },
+  { value: 'clients', label: 'Signer des clients', unit: 'clients', description: 'Objectif en nombre de nouveaux clients gagnés.' },
+  { value: 'mrr', label: 'Faire croître le MRR', unit: '$ MRR', description: 'Objectif en revenu récurrent mensuel additionnel.' },
+];
+
 const PERIOD_OPTIONS = [
   { value: 'week', label: 'Semaine' },
   { value: 'month', label: 'Mois' },
@@ -193,6 +201,11 @@ export function NewCampaignRoot() {
   const [targetNumber, setTargetNumber] = useState(50);
   const [period, setPeriod] = useState('month');
 
+  // Objectif de croissance (Programmes) — optionnel : une campagne devient un
+  // "programme" dès qu'un objectif est choisi ici.
+  const [goalType, setGoalType] = useState<GoalType | null>(null);
+  const [goalTargetValue, setGoalTargetValue] = useState(10);
+
   // Automatisation — cadence, canaux, volume, approbation
   const [channels, setChannels] = useState<string[]>(['Email']);
   const [dailyVolumeCap, setDailyVolumeCap] = useState(20);
@@ -213,6 +226,8 @@ export function NewCampaignRoot() {
       cities,
       startDate: startDate || undefined,
       sequenceConfig: JSON.stringify({ channels, dailyVolumeCap, requireApproval }),
+      goalType: goalType || undefined,
+      targetValue: goalType ? goalTargetValue : undefined,
     });
     setSaving(false);
     if (c) {
@@ -364,6 +379,47 @@ export function NewCampaignRoot() {
               Objectif & planning
             </div>
 
+            {/* Objectif de croissance — fait de cette campagne un "programme" suivable */}
+            <div className="space-y-2 pb-4 border-b border-[#e5e5e0]">
+              <label className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">
+                <Target className="h-3 w-3" />
+                Objectif de croissance <span className="normal-case font-normal text-[#7a7a76]">(optionnel — en fait un programme suivable)</span>
+              </label>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                {GOAL_TYPE_OPTIONS.map((g) => (
+                  <button
+                    key={g.value}
+                    type="button"
+                    onClick={() => setGoalType((prev) => (prev === g.value ? null : g.value))}
+                    className={cn(
+                      'text-left p-3 rounded-lg border-2 transition-all',
+                      goalType === g.value
+                        ? 'border-[#059669] bg-[#059669]/5'
+                        : 'border-[#e5e5e0] hover:border-[#059669]/30',
+                    )}
+                  >
+                    <div className={cn('text-xs font-bold', goalType === g.value ? 'text-[#059669]' : 'text-[#26251e]')}>
+                      {g.label}
+                    </div>
+                    <div className="text-[10px] text-[#7a7a76] mt-0.5">{g.description}</div>
+                  </button>
+                ))}
+              </div>
+              {goalType && (
+                <div className="flex items-center gap-2 pt-2">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76] shrink-0">Cible</label>
+                  <input
+                    type="number"
+                    min={1}
+                    value={goalTargetValue}
+                    onChange={(e) => setGoalTargetValue(Number(e.target.value))}
+                    className="w-24 text-xs px-2.5 py-2 border border-[#e5e5e0] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#059669]"
+                  />
+                  <span className="text-[10px] text-[#7a7a76]">{GOAL_TYPE_OPTIONS.find((g) => g.value === goalType)?.unit}</span>
+                </div>
+              )}
+            </div>
+
             <div className="space-y-4">
               <div className="space-y-1.5">
                 <label className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">
@@ -503,6 +559,12 @@ export function NewCampaignRoot() {
                 Récapitulatif
               </div>
               <ReviewRow label="Nom" value={name} />
+              {goalType && (
+                <ReviewRow
+                  label="Programme"
+                  value={`${GOAL_TYPE_OPTIONS.find((g) => g.value === goalType)?.label} — cible ${goalTargetValue} ${GOAL_TYPE_OPTIONS.find((g) => g.value === goalType)?.unit}`}
+                />
+              )}
               <ReviewRow label="Type" value={TYPE_OPTIONS.find((t) => t.value === type)?.label ?? type} />
               {description && <ReviewRow label="Description" value={description} />}
               <ReviewRow

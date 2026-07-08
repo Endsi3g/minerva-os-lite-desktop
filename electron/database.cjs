@@ -288,6 +288,20 @@ function initDb() {
     db.run(`CREATE INDEX IF NOT EXISTS idx_campaigns_workspace_id ON campaigns(workspace_id)`);
     db.run(`CREATE INDEX IF NOT EXISTS idx_campaigns_status ON campaigns(status)`);
     db.run(`CREATE INDEX IF NOT EXISTS idx_leads_campaign_id ON leads(campaign_id)`);
+    // v13.10 — Programmes de croissance : mirrors
+    // supabase/migrations/20260709030000_v13_10_growth_programs.sql
+    db.run(`ALTER TABLE campaigns ADD COLUMN goal_type TEXT`, () => {});
+    db.run(`ALTER TABLE campaigns ADD COLUMN target_value REAL`, () => {});
+    db.run(`CREATE TABLE IF NOT EXISTS growth_program_leads (
+      id TEXT PRIMARY KEY,
+      workspace_id TEXT,
+      campaign_id TEXT,
+      lead_id TEXT,
+      added_at TEXT,
+      sync_status TEXT DEFAULT 'synced'
+    )`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_growth_program_leads_campaign ON growth_program_leads(campaign_id)`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_growth_program_leads_lead ON growth_program_leads(lead_id)`);
 
     // v2.37.0 — activities table
     db.run(`CREATE TABLE IF NOT EXISTS activities (

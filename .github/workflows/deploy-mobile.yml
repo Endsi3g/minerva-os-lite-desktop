@@ -1,9 +1,14 @@
 name: Deploy Mobile Apps (iOS & Android)
 
+# Déclenchement automatique sur tag désactivé temporairement : le pipeline
+# échoue de toute façon avant d'atteindre Fastlane — le dossier natif
+# android/ n'est pas commité dans le repo (`cap add android` jamais exécuté/
+# commité) et aucun Gemfile n'existe nulle part pour Bundler/Fastlane. Tant
+# que ces deux prérequis ne sont pas fournis, ce workflow ne peut pas
+# aboutir. Se déclenche uniquement manuellement (Actions → Run workflow)
+# en attendant — n'affecte pas le déploiement web (Vercel), déjà fonctionnel.
 on:
-  push:
-    tags:
-      - 'v*'
+  workflow_dispatch:
 
 jobs:
   deploy-android:

@@ -5,6 +5,28 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [3.74.0] — Programmes de croissance, Phase 1 : modèle de données + objectif — 8 juillet 2026, 08h30
+
+### Ajouté
+- **Programmes de croissance (Phase 1/5)** : une campagne devient un "programme" suivable dès qu'un objectif de croissance lui est assigné — Remplir mon agenda (RDV), Signer des clients, ou Faire croître le MRR — avec une cible chiffrée. Étape dédiée dans le formulaire de création de campagne, badge visible dans la liste, carte objectif/progression sur la fiche détail (RDV/clients suivis en temps réel via les statuts pipeline existants ; suivi MRR à venir avec les métriques de programmes en Phase 5).
+- Nouvelle table `growth_program_leads` (beaucoup-à-beaucoup) permettant à un lead d'appartenir à **plusieurs programmes actifs simultanément** — distincte du `leads.campaign_id` existant (une seule "campagne principale" par lead), qui reste inchangé.
+- Cette phase construit sur l'infrastructure existante (campagnes, séquences, playbooks) plutôt que de dupliquer une nouvelle entité parallèle — voir `README.md` pour le détail de l'architecture.
+
+### À venir
+- Phase 2 — Orchestration : le Playbook Wizard créera directement un programme (au lieu d'une simple campagne), avec choix explicite de l'objectif dès le lancement d'un playbook.
+- Phase 3 — Visibilité cockpit : programmes actifs dans `/today`, et sur chaque fiche lead, à quels programmes il est rattaché + à quelle phase du parcours 7 étapes.
+- Phase 4 — Organisation des agents IA (Growth / Outreach & Inbox / Terrain).
+- Phase 5 — Métriques rattachées aux programmes (funnel par programme/source/niche, suivi MRR réel, uplift).
+
+## [3.73.2] — Nettoyage : CI mobile désactivé temporairement + code mort retiré — 8 juillet 2026, 07h30
+
+### Corrigé
+- **Workflow "Deploy Mobile Apps"** : le fix de la v3.73.1 corrige bien le bug d'export statique, mais révèle deux prérequis manquants dans le repo (dossier natif `android/` jamais commité, aucun `Gemfile` pour Fastlane/Bundler) qui font échouer le pipeline plus loin, à l'étape Fastlane. Plutôt que d'échouer automatiquement sur chaque tag sans résultat possible, le déclenchement automatique est désactivé (`workflow_dispatch` uniquement) en attendant que ces prérequis soient fournis — n'affecte pas le déploiement web (Vercel).
+
+### Supprimé
+- `app/api/generate-proposal/route.ts` — code mort confirmé (templating statique, aucun appelant nulle part dans le code ; la vraie fonctionnalité de proposition active est `app/api/proposals/generate-section/route.ts`).
+- Onglets Paramètres "Modèles" et "Préférences" — sélecteurs 100% inertes (jamais lus ni sauvegardés en base depuis leur création).
+
 ## [3.73.1] — CI mobile cassé depuis plusieurs releases (export statique + routes API) — 8 juillet 2026, 07h00
 
 ### Corrigé

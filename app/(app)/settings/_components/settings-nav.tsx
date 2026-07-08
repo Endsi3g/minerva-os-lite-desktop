@@ -3,17 +3,17 @@
 import React, { useState } from 'react';
 import {
   User, Sun, Briefcase, Users, Brain, Link2, Target, Globe, FileText, Zap, Activity, Sparkles,
-  CreditCard, Shield, Bell, Cpu, Key, Palette, MessageSquare, Sliders, Terminal, LayoutDashboard,
+  CreditCard, Shield, Bell, Key, Palette, MessageSquare, Terminal, LayoutDashboard,
   ChevronDown, ChevronRight, Gauge,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/lib/language-context';
 
 export type SettingsSection =
-  | 'profile' | 'appearance' | 'notifications' | 'security' | 'preferences'
+  | 'profile' | 'appearance' | 'notifications' | 'security'
   | 'workspace_general' | 'workspace_overview' | 'workspace_api'
   | 'ai' | 'minerva_ai' | 'integrations' | 'goals' | 'agency' | 'automations' | 'diagnostics' | 'monitoring'
-  | 'models' | 'api_keys' | 'prospecting' | 'custom_instructions' | 'customizations' | 'roles' | 'billing';
+  | 'api_keys' | 'prospecting' | 'custom_instructions' | 'customizations' | 'roles' | 'billing';
 
 interface NavGroup {
   label: string;
@@ -37,7 +37,6 @@ export function SettingsNav({ section, onSectionChange }: SettingsNavProps) {
         { id: 'appearance', name: t('settings.tab_appearance'), icon: Sun },
         { id: 'notifications', name: 'Notifications', icon: Bell },
         { id: 'security', name: 'Sécurité', icon: Shield },
-        { id: 'preferences', name: 'Préférences', icon: Sliders },
       ],
     },
     {
@@ -53,7 +52,6 @@ export function SettingsNav({ section, onSectionChange }: SettingsNavProps) {
       items: [
         { id: 'minerva_ai', name: 'Minerva AI', icon: Sparkles },
         { id: 'ai', name: t('settings.tab_ai'), icon: Brain },
-        { id: 'models', name: 'Modèles', icon: Cpu },
         { id: 'api_keys', name: 'Clés API', icon: Key },
         { id: 'diagnostics', name: 'Diagnostics IA', icon: Activity },
         { id: 'monitoring', name: 'Monitoring', icon: Gauge },
