@@ -5,6 +5,11 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [3.71.1] — Apify : mémoire insuffisante causant un plantage systématique du run — 7 juillet 2026, 23h05
+
+### Corrigé
+- **"Apify server responded with HTTP 400: run-failed / Actor run did not succeed"** : l'acteur `compass~crawler-google-places` (scraper Google Maps) tournait avec seulement 1024 Mo de mémoire allouée alors qu'il pilote un navigateur Chromium headless par recherche — largement insuffisant, causant un plantage par manque de mémoire (OOM) avant la fin du run. Ce plantage n'était visible que depuis le correctif précédent (le budget de temps trop court masquait auparavant l'erreur en coupant la requête avant qu'Apify n'ait le temps de la signaler). Mémoire relevée à 4096 Mo (recommandation par défaut d'Apify pour cet acteur). Message d'erreur également enrichi pour distinguer un plantage de run (mémoire/anti-bot) d'un problème de clé API.
+
 ## [3.71.0] — Fiabilité IA, import CRM silencieux et messagerie éditable — 7 juillet 2026, 22h15
 
 ### Corrigé

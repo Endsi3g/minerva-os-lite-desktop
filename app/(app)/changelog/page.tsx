@@ -20,6 +20,14 @@ interface ChangelogVersion {
 
 const versions: ChangelogVersion[] = [
   {
+    version: 'v3.71.1',
+    date: '7 juillet 2026 · 23h05',
+    title: 'Apify : mémoire insuffisante causant un plantage systématique du run',
+    highlights: [
+      { text: "\"Apify server responded with HTTP 400: run-failed / Actor run did not succeed\" : l'acteur de scraping Google Maps tournait avec seulement 1024 Mo de mémoire alors qu'il pilote un navigateur headless par recherche — largement insuffisant, causant un plantage par manque de mémoire avant la fin du run. Mémoire relevée à 4096 Mo (recommandation par défaut d'Apify). Le message d'erreur distingue maintenant un plantage de run (mémoire/anti-bot) d'un problème de clé API." },
+    ],
+  },
+  {
     version: 'v3.71.0',
     date: '7 juillet 2026 · 22h15',
     title: 'Fiabilité IA, import CRM silencieux et messagerie éditable',

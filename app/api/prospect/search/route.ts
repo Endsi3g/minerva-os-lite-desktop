@@ -260,7 +260,12 @@ export async function POST(req: NextRequest) {
         const perSearch = Math.ceil(maxResults / searchTerms.length);
 
         const apifyRes = await fetch(
-          `https://api.apify.com/v2/acts/compass~crawler-google-places/run-sync-get-dataset-items?token=${apifyToken}&timeout=${Math.floor(APIFY_TIMEOUT_MS / 1000) - 5}&memory=1024`,
+          // memory=1024 était trop bas pour cet acteur : il pilote un Chromium headless
+          // par recherche et se fait tuer par manque de mémoire (OOM) bien avant la fin
+          // du run, ce qui remonte comme une erreur générique "run-failed / Actor run did
+          // not succeed" sans aucun autre détail exploitable. 4096 MB est la mémoire par
+          // défaut recommandée par Apify pour compass~crawler-google-places.
+          `https://api.apify.com/v2/acts/compass~crawler-google-places/run-sync-get-dataset-items?token=${apifyToken}&timeout=${Math.floor(APIFY_TIMEOUT_MS / 1000) - 5}&memory=4096`,
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -285,7 +290,16 @@ export async function POST(req: NextRequest) {
           throw new Error('Quota Apify dépassé (HTTP 429) — vérifiez votre plan/crédit Apify');
         }
         if (!apifyRes.ok) {
-          throw new Error(`Apify server responded with HTTP ${apifyRes.status}: ${rawText.slice(0, 200)}`);
+          let detail = rawText.slice(0, 300);
+          try {
+            const parsed = JSON.parse(rawText);
+            if (parsed?.error?.type === 'run-failed') {
+              detail = 'Le run Apify a planté en cours d\'exécution (souvent un manque de mémoire allouée à l\'acteur, ou un blocage anti-bot Google Maps) — pas un problème de clé API.';
+            } else if (parsed?.error?.message) {
+              detail = parsed.error.message;
+            }
+          } catch { /* rawText wasn't JSON, keep the raw slice */ }
+          throw new Error(`Apify server responded with HTTP ${apifyRes.status}: ${detail}`);
         }
 
         if (rawText.trimStart().startsWith('<')) {
