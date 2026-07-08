@@ -41,7 +41,10 @@ export async function POST(req: NextRequest) {
         ],
         settings: settings || undefined,
         jsonMode: true,
-        maxTokens: 600,
+        // Un modèle de raisonnement (Cloudflare Kimi K2) peut consommer une
+        // bonne partie du budget en reasoning_content avant de produire le
+        // JSON final — un plafond trop bas fait échouer l'appel entier.
+        maxTokens: 900,
       });
 
       // Extract JSON array from response

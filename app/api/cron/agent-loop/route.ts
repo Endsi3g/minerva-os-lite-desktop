@@ -54,7 +54,10 @@ ${TOOL_DESCRIPTIONS}`,
         content: `Leads à relancer:\n${leadsContext}\n\nPipeline:\n${JSON.stringify(pipelineSummary)}\n\nMémoire agent:\n${memoryContext}\n\nGénère les actions prioritaires.`,
       }],
       jsonMode: true,
-      maxTokens: 800,
+      // Un modèle de raisonnement (Cloudflare Kimi K2) peut consommer une
+      // bonne partie du budget en reasoning_content avant de produire le
+      // JSON final — un plafond trop bas fait échouer l'appel entier.
+      maxTokens: 1200,
       settings,
       userId,
     });

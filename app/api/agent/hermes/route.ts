@@ -182,7 +182,10 @@ async function toolGenerateEmail(
       },
     ],
     jsonMode: true,
-    maxTokens: 500,
+    // Un modèle de raisonnement (Cloudflare Kimi K2) peut consommer une
+    // bonne partie du budget en reasoning_content avant de produire le JSON
+    // final — un plafond trop bas fait échouer l'appel entier.
+    maxTokens: 900,
     userId,
   });
 

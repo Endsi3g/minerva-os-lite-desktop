@@ -69,7 +69,10 @@ export async function POST(req: NextRequest) {
   try {
     const explanation = await generateCompletion({
       messages: [{ role: 'user', content: prompt }],
-      maxTokens: 256,
+      // Un modèle de raisonnement (Cloudflare Kimi K2) peut consommer une
+      // bonne partie du budget en reasoning_content avant de produire le
+      // texte final — un plafond trop bas fait échouer l'appel entier.
+      maxTokens: 800,
       settings: {
         ai_provider: settingsRow?.ai_provider,
         ai_model: settingsRow?.ai_model,

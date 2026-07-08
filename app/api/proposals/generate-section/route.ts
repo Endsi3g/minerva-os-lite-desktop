@@ -41,7 +41,10 @@ export async function POST(req: NextRequest) {
         ai_model: settings.ai_model,
         openrouter_key: settings.openrouter_key,
       } : undefined,
-      maxTokens: 400,
+      // Un modèle de raisonnement (Cloudflare Kimi K2) peut consommer une
+      // bonne partie du budget en reasoning_content avant de produire le
+      // texte final — un plafond trop bas fait échouer l'appel entier.
+      maxTokens: 900,
       temperature: 0.7,
     });
 

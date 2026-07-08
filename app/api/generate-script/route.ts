@@ -67,7 +67,10 @@ Format de sortie: 3 sections distinctes avec titres (🎯 Accroche, 💡 Valeur,
       system: systemPrompt,
       messages: [{ role: 'user', content: `Génère un script de pitch pour ce prospect:\n\n${contextParts.join('\n')}` }],
       settings: settings || undefined,
-      maxTokens: 600,
+      // Un modèle de raisonnement (Cloudflare Kimi K2) peut consommer une
+      // bonne partie du budget en reasoning_content avant de produire le
+      // texte final — un plafond trop bas fait échouer l'appel entier.
+      maxTokens: 1000,
     });
 
     return NextResponse.json({

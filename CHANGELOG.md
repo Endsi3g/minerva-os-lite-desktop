@@ -5,6 +5,22 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [3.83.1] — Correctif systémique : budget de tokens IA sur 12 appels — 8 juillet 2026, 23h15
+
+### Corrigé
+- **Échec IA "budget de tokens en raisonnement épuisé" (récidive)** : après un premier correctif ciblé sur 4 appels, un audit complet a trouvé 12 appels au total avec des plafonds de tokens trop bas (150-800) pour un modèle de raisonnement (Cloudflare Kimi K2), qui peut consommer une bonne partie du budget en réflexion avant de produire sa réponse finale. Tous relevés à 800-1200 en une seule passe plutôt qu'un correctif par erreur signalée :
+  - `generate-script` (script de pitch/appel à froid) — 600 → 1000
+  - `outreach/voicemail` (script de messagerie vocale) — 150 → 900
+  - `outreach/reply-classify` (classification d'intention) — 200 → 800
+  - `nba/explain` (explication NBA) — 256 → 800
+  - `proposals/generate-section` — 400 → 900
+  - `agent/hermes` (email JSON) — 500 → 900
+  - `inbox/suggest-reply` (suggestions de réponse) — 600 → 900
+  - `insights/weekly` (bilan hebdomadaire) — 600 → 1000
+  - `strategy/learnings` — 600 → 900
+  - `enrich-contact` (décideur deviné + pitch téléphonique) — 600/700 → 900/1000
+  - `cron/agent-loop` (planification d'actions) — 800 → 1200
+
 ## [3.83.0] — Recherche web approfondie pour l'enrichissement — 8 juillet 2026, 22h15
 
 ### Ajouté

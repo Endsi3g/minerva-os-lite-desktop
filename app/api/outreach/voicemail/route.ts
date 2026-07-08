@@ -45,7 +45,10 @@ Le message doit:
 Ton direct, professionnel, pas de pression. Commence directement par le message.`,
       }],
       settings: settings || undefined,
-      maxTokens: 150,
+      // Un modèle de raisonnement (Cloudflare Kimi K2) peut consommer une
+      // bonne partie du budget en reasoning_content avant de produire le
+      // texte final — un plafond trop bas fait échouer l'appel entier.
+      maxTokens: 900,
       userId: user.id,
       workspaceId: settings?.workspace_id || lead.workspace_id || undefined,
     });

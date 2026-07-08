@@ -48,7 +48,10 @@ Niches sous-performantes: ${JSON.stringify(underperforming)}.`;
   const recommendations = await generateCompletion({
     system: 'Tu es Minerva, assistant commercial stratégique expert en prospection B2B.',
     messages: [{ role: 'user', content: prompt }],
-    maxTokens: 600,
+    // Un modèle de raisonnement (Cloudflare Kimi K2) peut consommer une
+    // bonne partie du budget en reasoning_content avant de produire le
+    // texte final — un plafond trop bas fait échouer l'appel entier.
+    maxTokens: 900,
     temperature: 0.5,
     userId: user.id,
   });

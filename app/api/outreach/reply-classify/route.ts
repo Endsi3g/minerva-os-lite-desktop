@@ -39,7 +39,10 @@ Respond with JSON only:
       }],
       settings: settings || undefined,
       jsonMode: true,
-      maxTokens: 200,
+      // Un modèle de raisonnement (Cloudflare Kimi K2) peut consommer une
+      // bonne partie du budget en reasoning_content avant de produire le
+      // JSON final — un plafond trop bas fait échouer l'appel entier.
+      maxTokens: 800,
     });
 
     const result = JSON.parse(text);

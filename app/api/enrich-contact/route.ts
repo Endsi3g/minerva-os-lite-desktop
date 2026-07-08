@@ -251,7 +251,7 @@ Réponds uniquement avec le JSON.`;
           messages: [{ role: 'user', content: prompt }],
           settings: settings || undefined,
           jsonMode: true,
-          maxTokens: 600,
+          maxTokens: 900,
           userId: userId || undefined,
         });
 
@@ -355,7 +355,7 @@ Génère UNIQUEMENT le texte final du pitch, sans titres de section ni balises m
       customPitch = await generateCompletion({
         messages: [{ role: 'user', content: pitchPrompt }],
         settings: settings || undefined,
-        maxTokens: 700,
+        maxTokens: 1000,
         userId: userId || undefined,
       });
       // Replace markdown asterisks just in case

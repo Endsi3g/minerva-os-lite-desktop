@@ -108,7 +108,10 @@ export async function POST(request: NextRequest) {
     const report = await generateCompletion({
       messages: [{ role: 'user', content: prompt }],
       settings: settings || undefined,
-      maxTokens: 600,
+      // Un modèle de raisonnement (Cloudflare Kimi K2) peut consommer une
+      // bonne partie du budget en reasoning_content avant de produire le
+      // texte final — un plafond trop bas fait échouer l'appel entier.
+      maxTokens: 1000,
     });
 
     // Persist as a notification so it surfaces in the bell

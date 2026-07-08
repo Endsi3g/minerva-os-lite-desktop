@@ -20,6 +20,14 @@ interface ChangelogVersion {
 
 const versions: ChangelogVersion[] = [
   {
+    version: 'v3.83.1',
+    date: '8 juillet 2026 · 23h15',
+    title: 'Correctif systémique : budget de tokens IA sur 12 appels',
+    highlights: [
+      { text: "Après un premier correctif ciblé, un audit complet a trouvé 12 appels IA au total avec des plafonds de tokens trop bas pour un modèle de raisonnement — tous relevés en une seule passe (script de pitch, voicemail, classification de réponses, NBA, propositions, agent Hermès, suggestions inbox, bilan hebdo, planification de l'agent...)." },
+    ],
+  },
+  {
     version: 'v3.83.0',
     date: '8 juillet 2026 · 22h15',
     title: 'Recherche web approfondie pour l\'enrichissement',
