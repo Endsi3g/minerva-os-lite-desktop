@@ -5,6 +5,15 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [3.72.0] — Cloudflare Workers AI configuré et rendu primaire — 8 juillet 2026, 03h00
+
+### Corrigé
+- **Le catalogue de modèles dans Paramètres > Minerva AI proposait un modèle Cloudflare déprécié** (`@cf/meta/llama-3.1-8b-instruct`, retiré par Cloudflare le 2026-05-30, tout appel échouait en HTTP 410) au lieu du vrai modèle par défaut utilisé par le backend (`@cf/moonshotai/kimi-k2.7-code`, Kimi K2). Remplacé, avec le badge "Par défaut" déplacé sur cette entrée pour refléter l'ordre de priorité réel de la cascade IA (Cloudflare → OpenRouter → Anthropic).
+- Le repli d'affichage du modèle actif dans Paramètres (quand aucun modèle n'a jamais été choisi explicitement) affichait "Claude Sonnet 4.6" alors que le backend utilise en réalité Cloudflare par défaut dans ce cas — corrigé pour que l'interface reflète fidèlement le comportement réel.
+
+### Ajouté
+- Identifiants Cloudflare Workers AI (`CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`) configurés en production — vérifiés fonctionnels par un appel réel à l'API avant mise en ligne. Cloudflare est maintenant un second provider IA réellement opérationnel, indépendant d'OpenRouter.
+
 ## [3.71.2] — Régression : ID de modèle Cloudflare envoyé à OpenRouter — 8 juillet 2026, 02h15
 
 ### Corrigé

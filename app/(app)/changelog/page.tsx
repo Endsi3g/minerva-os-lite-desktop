@@ -20,6 +20,16 @@ interface ChangelogVersion {
 
 const versions: ChangelogVersion[] = [
   {
+    version: 'v3.72.0',
+    date: '8 juillet 2026 · 03h00',
+    title: 'Cloudflare Workers AI configuré et rendu primaire',
+    highlights: [
+      { text: "Le catalogue de modèles dans Paramètres > Minerva AI proposait un modèle Cloudflare déprécié depuis le 2026-05-30 (tout appel échouait en HTTP 410) au lieu du vrai modèle utilisé par défaut par le backend (Kimi K2). Remplacé, avec le badge \"Par défaut\" déplacé sur cette entrée pour refléter l'ordre de priorité réel de la cascade IA." },
+      { text: "L'affichage du modèle actif dans Paramètres (quand rien n'a jamais été choisi explicitement) montrait Claude Sonnet alors que le backend utilise Cloudflare par défaut dans ce cas — corrigé." },
+      { text: "Identifiants Cloudflare Workers AI configurés en production, vérifiés fonctionnels par un appel réel avant mise en ligne — second provider IA réellement opérationnel, indépendant d'OpenRouter." },
+    ],
+  },
+  {
     version: 'v3.71.2',
     date: '8 juillet 2026 · 02h15',
     title: 'Régression : ID de modèle Cloudflare envoyé à OpenRouter',

@@ -65,7 +65,7 @@ const MINERVA_MODELS = [
     id: 'claude-sonnet-5',
     name: 'Claude Sonnet 4.6',
     provider: 'Anthropic',
-    badge: 'Par défaut',
+    badge: 'Recommandé',
     description: 'Modèle principal — équilibre vitesse/qualité optimal.',
     color: '#059669',
   },
@@ -86,11 +86,16 @@ const MINERVA_MODELS = [
     color: '#7a7a76',
   },
   {
-    id: '@cf/meta/llama-3.1-8b-instruct',
-    name: 'Llama 3.1 8B',
+    // @cf/meta/llama-3.1-8b-instruct (l'ancienne entrée ici) a été déprécié par
+    // Cloudflare le 2026-05-30 — tout appel avec cet ID échoue en HTTP 410.
+    // Kimi K2 est le modèle Cloudflare réellement utilisé par défaut par le
+    // backend (CLOUDFLARE_DEFAULT_MODEL dans lib/ai.ts) quand aucun provider
+    // n'est explicitement sélectionné.
+    id: '@cf/moonshotai/kimi-k2.7-code',
+    name: 'Kimi K2.7 Code',
     provider: 'Cloudflare',
-    badge: 'Edge',
-    description: 'Inférence edge via Cloudflare Workers AI — faible latence.',
+    badge: 'Par défaut',
+    description: 'Inférence edge via Cloudflare Workers AI — faible latence, provider primaire.',
     color: '#f6821f',
   },
   {
@@ -257,7 +262,10 @@ export function SettingsMinervaAiSection({ isSaving }: SettingsMinervaAiSectionP
         .maybeSingle();
       if (row) {
         setData({
-          activeModel: row.ai_model || 'claude-sonnet-5',
+          // Reflète le vrai comportement par défaut du backend (resolveAIProvider
+          // dans lib/ai.ts) quand aucun modèle n'a jamais été explicitement choisi :
+          // Cloudflare Workers AI (Kimi K2) est le provider primaire, pas Claude.
+          activeModel: row.ai_model || '@cf/moonshotai/kimi-k2.7-code',
           firecrawlKeyMasked: row.firecrawl_api_key_masked || null,
           memoryEnabled: row.ai_memory_enabled ?? true,
           spatialAiEnabled: row.ai_spatial_enabled ?? true,
