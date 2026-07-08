@@ -444,7 +444,11 @@ export async function generateCompletion(options: AICallOptions): Promise<string
     throw new Error(message);
   }
 
-  let lastError: Error | null = null;
+  // Trace l'échec de CHAQUE provider de la chaîne, pas seulement le dernier —
+  // sinon un échec Cloudflare (provider primaire) passe totalement inaperçu
+  // dès qu'OpenRouter échoue ensuite à son tour : l'utilisateur ne voit que
+  // "OpenRouter saturé" et pense à tort que Cloudflare n'a jamais été essayé.
+  const failures: string[] = [];
   for (const step of chain) {
     const startTime = Date.now();
     const requestId = crypto.randomUUID();
@@ -454,11 +458,13 @@ export async function generateCompletion(options: AICallOptions): Promise<string
       return result;
     } catch (err: any) {
       logCall({ id: requestId, userId: options.userId, provider: step.provider, model: step.model, latencyMs: Date.now() - startTime, success: false });
-      lastError = err;
+      failures.push(`${step.provider}: ${err?.message || 'erreur inconnue'}`);
     }
   }
 
-  const message = lastError?.message || 'Le modèle IA est temporairement indisponible, même après repli sur tous les providers configurés.';
+  const message = failures.length > 0
+    ? `Tous les providers IA configurés ont échoué — ${failures.join(' · ')}`
+    : 'Le modèle IA est temporairement indisponible, même après repli sur tous les providers configurés.';
   await notifyAiFailure(options.userId, options.workspaceId, message);
   throw new Error(message);
 }
@@ -608,7 +614,9 @@ export async function generateStreamCompletion(options: AICallOptions): Promise<
     throw new Error(message);
   }
 
-  let lastError: Error | null = null;
+  // Voir le commentaire équivalent dans generateCompletion : on trace l'échec
+  // de chaque provider, pas seulement le dernier.
+  const failures: string[] = [];
   for (const step of chain) {
     const startTime = Date.now();
     const requestId = crypto.randomUUID();
@@ -618,11 +626,13 @@ export async function generateStreamCompletion(options: AICallOptions): Promise<
       return wrapStreamResponse(step.provider, resp);
     } catch (err: any) {
       logCall({ id: requestId, userId: options.userId, provider: step.provider, model: step.model, latencyMs: Date.now() - startTime, success: false });
-      lastError = err;
+      failures.push(`${step.provider}: ${err?.message || 'erreur inconnue'}`);
     }
   }
 
-  const message = lastError?.message || 'Le modèle IA est temporairement indisponible, même après repli sur tous les providers configurés.';
+  const message = failures.length > 0
+    ? `Tous les providers IA configurés ont échoué — ${failures.join(' · ')}`
+    : 'Le modèle IA est temporairement indisponible, même après repli sur tous les providers configurés.';
   await notifyAiFailure(options.userId, options.workspaceId, message);
   throw new Error(message);
 }

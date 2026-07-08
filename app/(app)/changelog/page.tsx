@@ -20,6 +20,14 @@ interface ChangelogVersion {
 
 const versions: ChangelogVersion[] = [
   {
+    version: 'v3.72.2',
+    date: '8 juillet 2026 · 04h10',
+    title: 'Diagnostic complet des échecs de la cascade IA + README à jour',
+    highlights: [
+      { text: "La notification \"Échec IA\" ne montrait que l'erreur du dernier provider essayé, jamais celle des providers précédents. Si Cloudflare (primaire) échouait puis OpenRouter échouait aussi, on ne voyait que \"OpenRouter saturé\" sans savoir que Cloudflare avait aussi été tenté. Le message final liste maintenant l'échec de chaque provider de la chaîne." },
+    ],
+  },
+  {
     version: 'v3.72.1',
     date: '8 juillet 2026 · 03h40',
     title: '"Agent planning failed" : réponse vide de Cloudflare traitée comme un succès',

@@ -5,6 +5,14 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [3.72.2] — Diagnostic complet des échecs de la cascade IA + README à jour — 8 juillet 2026, 04h10
+
+### Corrigé
+- **La notification "Échec IA" ne montrait que l'erreur du DERNIER provider essayé**, jamais celle des providers précédents dans la cascade. Résultat : si Cloudflare (primaire) échouait puis OpenRouter échouait aussi, l'utilisateur ne voyait que "OpenRouter saturé" et pouvait raisonnablement penser que Cloudflare n'avait jamais été essayé alors qu'il l'avait bien été. Le message d'erreur final liste maintenant l'échec de **chaque** provider de la chaîne (`cloudflare: ... · openrouter: ...`).
+
+### Documentation
+- `README.md` mis à jour : la section AI Gateway décrivait encore un système à 2 providers (Anthropic primaire, OpenRouter en repli) alors que l'application utilise désormais une cascade à 3 providers (Cloudflare Workers AI primaire → OpenRouter → Anthropic) qui essaie tous les providers configurés avant d'abandonner. Tableau des dernières versions complété jusqu'à la v3.72.1.
+
 ## [3.72.1] — "Agent planning failed" : réponse vide de Cloudflare traitée comme un succès — 8 juillet 2026, 03h40
 
 ### Corrigé

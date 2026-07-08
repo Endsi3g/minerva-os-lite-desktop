@@ -6,7 +6,7 @@
 
 **CRM de prospection B2B autonome pour entrepreneurs québécois**
 
-[![Version](https://img.shields.io/badge/version-v11.0.0-059669?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-v3.72.2-059669?style=flat-square)](CHANGELOG.md)
 [![Next.js](https://img.shields.io/badge/Next.js-15-black?style=flat-square&logo=next.js)](https://nextjs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178c6?style=flat-square&logo=typescript&logoColor=white)](https://typescriptlang.org)
 [![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-3ecf8e?style=flat-square&logo=supabase&logoColor=white)](https://supabase.com)
@@ -80,10 +80,10 @@ Minerva OS Reach Lite est une plateforme CRM all-in-one conçue pour les entrepr
 | **Rapport hebdomadaire** | Analyse comportementale IA : opportunités, recommandations, score de santé du pipeline |
 | **Agent Minerva** | Boucle autonome perceive → plan → act → log avec 7 outils, niveaux d'autonomie par domaine |
 | **Mémoire d'agent** | Apprentissages persistants par workspace (`agent_memory`) — niches, campagnes, décisions |
-| **Assistant IA** | Chat multi-modèle (Anthropic / OpenRouter) + Canvas editor |
+| **Assistant IA** | Chat multi-modèle (Cloudflare Workers AI / OpenRouter / Anthropic) + Canvas editor |
 | **AI Skills** | Packs de compétences IA activables, éditeur de skills personnalisés |
 | **Agents IA** | Agents personnalisés configurables, feed d'activité en temps réel |
-| **AI Gateway** | Provider unifié (Anthropic + OpenRouter), fallover automatique, logs latence par appel |
+| **AI Gateway** | Provider unifié (Cloudflare + OpenRouter + Anthropic), cascade de repli complète, logs latence par appel |
 
 ### Terrain & Agenda
 
@@ -197,19 +197,31 @@ DELETE /api/agent/memory?id=      # Suppression d'une entrée mémoire
 
 | Provider | Modèle par défaut | Clé |
 |----------|------------------|-----|
-| **Anthropic** (primaire) | `claude-sonnet-4-6` | `ANTHROPIC_API_KEY` (serveur) |
-| **OpenRouter** (fallback / alternatif) | `meta-llama/llama-3.3-70b-instruct:free` | `OPENROUTER_API_KEY` (serveur) ou clé utilisateur |
+| **Cloudflare Workers AI** (primaire par défaut) | `@cf/moonshotai/kimi-k2.7-code` | `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` (serveur) |
+| **OpenRouter** (secondaire) | `meta-llama/llama-3.3-70b-instruct:free` | `OPENROUTER_API_KEY` (serveur) ou clé utilisateur |
+| **Anthropic** (tertiaire) | `claude-sonnet-5` | `ANTHROPIC_API_KEY` (serveur) |
 
 ### Cascade de résolution
 
 ```typescript
 resolveAIProvider(settings?) → { provider, model, apiKey }
+buildProviderChain(primary, settings?) → [{ provider, model, apiKey }, ...]
 
-// Priorité :
-// 1. Provider explicite dans settings (si clé disponible)
-// 2. Anthropic si ANTHROPIC_API_KEY présent
-// 3. OpenRouter si OPENROUTER_API_KEY présent
-// 4. Fallback automatique : si Anthropic échoue → OpenRouter, et inversement
+// Ordre de priorité par défaut (aucune sélection explicite utilisateur) :
+// Cloudflare Workers AI → OpenRouter → Anthropic — chaque palier n'est
+// retenu que si sa clé est réellement configurée.
+//
+// Un provider explicitement choisi dans settings.ai_provider (ou un
+// settings.ai_model dont le format identifie le provider, ex. "@cf/..."
+// ou "claude-*") passe devant ce défaut.
+//
+// generateCompletion()/generateStreamCompletion() essaient TOUS les
+// providers configurés dans l'ordre de la chaîne avant d'abandonner —
+// pas un simple repli à un seul palier. Si un provider échoue (erreur
+// HTTP, réponse vide, modèle de raisonnement qui épuise son budget de
+// tokens sans produire de contenu…), l'appel suivant de la chaîne est
+// tenté automatiquement, et le message d'erreur final liste l'échec de
+// chaque provider tenté.
 ```
 
 ### Fonctions publiques
@@ -239,7 +251,7 @@ Chaque appel IA est loggé en fire-and-forget dans `ai_gateway_logs` (via admin 
 | **UI** | Tailwind CSS v4 · shadcn/ui · Radix UI · Framer Motion |
 | **Base de données** | Supabase (PostgreSQL + RLS) · SQLite (Electron, offline-first) |
 | **Auth** | Supabase Auth (OTP + password) + Google OAuth2 |
-| **IA** | Anthropic Claude (primaire) · OpenRouter (fallback / alternatif) |
+| **IA** | Cloudflare Workers AI (primaire) · OpenRouter (secondaire) · Anthropic Claude (tertiaire) |
 | **Email** | Gmail API (OAuth2) · Nodemailer (SMTP Resend) · Resend webhooks (svix) |
 | **SMS** | Twilio Messaging Service · webhooks entrants avec vérification HMAC-SHA1 |
 | **Agenda** | Google Calendar API |
@@ -411,7 +423,7 @@ CREATE POLICY "nom de la policy" ON nom_table FOR ALL
 - **pnpm** ≥ 9
 - Un projet **Supabase** (tier gratuit suffisant)
 - Un projet **Google Cloud** avec Gmail API + Calendar API activées
-- Une clé **Anthropic** (pour l'IA)
+- Au moins une clé IA configurée : **Cloudflare Workers AI** (recommandé, primaire par défaut), **OpenRouter**, ou **Anthropic**
 
 ### Installation
 
@@ -453,11 +465,11 @@ cp .env.example .env.local
 | `SUPABASE_SERVICE_ROLE_KEY` | ✅ | Clé service role — **serveur uniquement, ne jamais exposer** |
 | `GOOGLE_CLIENT_ID` | ✅ | Client ID Google OAuth2 |
 | `GOOGLE_CLIENT_SECRET` | ✅ | Secret Google OAuth2 |
-| `ANTHROPIC_API_KEY` | ✅ | Clé API Anthropic Claude (provider primaire) |
+| `ANTHROPIC_API_KEY` | ⬜ | Clé API Anthropic Claude — provider de repli tertiaire (voir [AI Gateway](#ai-gateway)) |
 | `NEXT_PUBLIC_APP_URL` | ✅ | URL publique de l'app (ex : `https://minerva-os-lite-desktop.vercel.app`) |
 | `CRON_SECRET` | ✅ | Secret pour authentifier les endpoints cron Vercel |
 | `FIRECRAWL_API_KEY` | ⬜ | Optionnel — scraping avancé PagesJaunes via Firecrawl |
-| `OPENROUTER_API_KEY` | ⬜ | Optionnel — fallback AI / modèles alternatifs gratuits |
+| `OPENROUTER_API_KEY` | ⬜ | Provider IA secondaire — modèles alternatifs gratuits ou payants |
 | `SUPPORT_SMTP_HOST` | ⬜ | SMTP pour le formulaire de support (ex : `smtp.gmail.com`) |
 | `SUPPORT_SMTP_PORT` | ⬜ | Port SMTP (`587` STARTTLS · `465` SSL) |
 | `SUPPORT_SMTP_USER` | ⬜ | Login SMTP |
@@ -471,8 +483,10 @@ cp .env.example .env.local
 | `TWILIO_API_KEY_SECRET` | ⬜ | Secret de la clé API Twilio |
 | `TWILIO_MESSAGING_SERVICE_SID` | ⬜ | SID du Messaging Service (commence par `MG`) |
 | `HERMES_SERVICE_TOKEN` | ✅ | Secret d'authentification service-à-service pour les routes `app/api/agent/*` (outils Hermes) — aucun fallback en dur, générer avec `openssl rand -hex 32` |
-| `CLOUDFLARE_API_TOKEN` | ⬜ | Token Cloudflare Workers AI — active le provider de repli Kimi K2 dans `lib/ai.ts` (aucune valeur par défaut) |
+| `CLOUDFLARE_API_TOKEN` | ⬜ | Token Cloudflare Workers AI — **provider IA primaire par défaut** (Kimi K2) dans `lib/ai.ts`, recommandé |
 | `CLOUDFLARE_ACCOUNT_ID` | ⬜ | Account ID Cloudflare associé au token ci-dessus |
+
+> Au moins un provider IA (Cloudflare, OpenRouter ou Anthropic) doit être configuré — sans aucune clé, tout appel IA échoue avec un message explicite plutôt qu'une erreur silencieuse.
 
 ---
 
@@ -679,6 +693,11 @@ Dernières versions :
 
 | Version | Date | Points clés |
 |---------|------|-------------|
+| **v3.72.2** | 2026-07-08 | Diagnostic complet des échecs de la cascade IA (chaque provider tenté est listé, pas juste le dernier) |
+| **v3.72.1** | 2026-07-08 | Fix cascade IA : une réponse vide d'un provider (modèle de raisonnement à court de budget de tokens) était traitée comme un succès au lieu de déclencher le repli sur le provider suivant |
+| **v3.72.0** | 2026-07-08 | Cloudflare Workers AI (Kimi K2) configuré et rendu provider IA primaire ; correctif du catalogue de modèles dans Paramètres |
+| **v3.71.0 – v3.71.2** | 2026-07-07/08 | Cascade IA complète (tous les providers configurés essayés, plus un simple repli à un palier) ; fix des erreurs silencieuses d'import CRM (`addLead`) ; refonte Messages (édition/suppression, composants shadcn Bubble/Message/MessageScroller/Attachment) ; fix mémoire Apify insuffisante (run-failed) |
+| **v3.70.0** | 2026-07-07 | Fix budget de temps Apify (prospection ne trouvait aucun résultat malgré une clé valide) ; système de notifications d'erreurs applicatives cliquables (bell + détail complet) |
 | **v11.0.0** | 2026-07-05 | Audit sécurité complet (secrets en dur retirés), fix build production, monitoring Sentry, Reply Classifier v2, Lead Rescue Center, Deal Risk Score, suite E2E Playwright |
 | **v10.0.0** | 2026-07-02 | Client Reports, Ads & Acquisition redesign, notifications OS |
 | **v9.0.0** | 2026-07-02 | Navigation complète, parité visuelle, /notifications, /contacts |
