@@ -83,6 +83,7 @@ import {
   toggleOnboardingTask
 } from '@/lib/onboarding-store';
 import { ALL_MODULES, routeToModule, type PermissionModule } from '@/lib/permissions';
+import { isRouteEnabled } from '@/lib/packs';
 import { cachedFetch, invalidateClientCache } from '@/lib/fetch-cache';
 import { requestNotificationPermission, sendDesktopNotification, checkAndSendTaskReminders, checkAndSendLeadReminder, checkAndSendLeadAgingAlerts } from '@/lib/notification-service';
 import { VersionChecker } from '@/components/version-checker';
@@ -102,6 +103,7 @@ import {
 } from '@/components/ui/breadcrumb';
 import { Pin, KanbanSquare, Navigation } from 'lucide-react';
 import { CalendarDays, UsersRound } from 'lucide-react';
+import { Layers } from 'lucide-react';
 
 const CURRENT_VERSION = '8.9.1';
 
@@ -815,8 +817,10 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
     },
   ];
 
-  // Filter nav items based on user role permissions
+  // Filter nav items based on user role permissions AND workspace packs
+  // (PRD v12, Sprint 1) — un item n'est visible que si les deux l'autorisent.
   const canShowNavItem = (href: string) => {
+    if (!isRouteEnabled(href, activeWorkspace?.enabled_packs)) return false;
     if (!userPermissions) return true; // show all while loading
     const mod = routeToModule(href);
     if (!mod) return true; // unknown route — always show
@@ -1273,6 +1277,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                       {[
                         { href: '/guide', icon: Zap, label: 'Guide de démarrage' },
                         { href: '/today?tab=pilotage', icon: Gauge, label: 'Revenue OS' },
+                        { href: '/platform', icon: Layers, label: 'Plateforme & packs' },
                         { href: '/analytics', icon: BarChart3, label: 'Statistiques' },
                         { href: '/billing', icon: CreditCard, label: 'Facturation' },
                         { href: '/help', icon: HelpCircle, label: 'Aide & Docs' },

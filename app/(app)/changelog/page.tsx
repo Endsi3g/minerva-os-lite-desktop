@@ -20,6 +20,15 @@ interface ChangelogVersion {
 
 const versions: ChangelogVersion[] = [
   {
+    version: 'v3.81.0',
+    date: '8 juillet 2026 · 14h30',
+    title: 'Plateforme & packs (PRD v12, Sprint 1)',
+    highlights: [
+      { text: "Nouvelle page /platform (Paramètres & Plus) : active/désactive 4 packs par workspace — Acquisition, Outreach, Terrain, Analytics & Growth. Un pack désactivé masque ses pages de la sidebar, réversible à tout moment." },
+      { text: "Tout est activé par défaut — aucun changement pour les workspaces existants tant que rien n'est désactivé explicitement." },
+    ],
+  },
+  {
     version: 'v3.80.0',
     date: '8 juillet 2026 · 13h30',
     title: 'Autopilot par programme (PRD v12, Sprint 3)',

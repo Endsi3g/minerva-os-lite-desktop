@@ -961,6 +961,10 @@ function initDb() {
 
     // v13.7 — custom_columns for workspaces
     db.run(`ALTER TABLE workspaces ADD COLUMN custom_columns TEXT DEFAULT '[]'`, () => {});
+
+    // v14.1 — Packs de plateforme : mirrors
+    // supabase/migrations/20260708150000_v14_1_workspace_packs.sql
+    db.run(`ALTER TABLE workspaces ADD COLUMN enabled_packs TEXT DEFAULT '["acquisition","outreach","field","analytics_growth"]'`, () => {});
   });
 }
 

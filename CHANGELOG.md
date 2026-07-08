@@ -5,6 +5,17 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [3.81.0] — Plateforme & packs (PRD v12, Sprint 1) — 8 juillet 2026, 14h30
+
+### Ajouté
+- **Nouvelle page `/platform`** (accessible depuis "Paramètres & Plus" dans la sidebar) : active/désactive 4 packs de capacités par workspace — Acquisition (scraping, profils cibles, publicité, site web, audit SEO), Outreach (email, inbox, séquences, playbooks, campagnes), Terrain (mode terrain, carte GPS), Analytics & Growth (performance, rapports client, webhooks, activités, campagnes/programmes de croissance). Réservé au propriétaire du workspace.
+- Un pack désactivé masque ses pages de la sidebar (aucune suppression de données, réversible à tout moment) — combiné au système de permissions par rôle déjà existant (`lib/permissions.ts`) via `lib/packs.ts`.
+- Tout est activé par défaut : aucun changement de comportement pour les workspaces existants tant que personne ne désactive rien explicitement.
+- Nouvelle migration `20260708150000_v14_1_workspace_packs.sql` (`workspaces.enabled_packs`).
+
+### À venir
+- Sprint 2 du PRD v12 — Gouvernance IA formalisée (charte de profils Manuel/Contrôlé/Mains libres, mapping modèles IA par tâche).
+
 ## [3.80.0] — Autopilot par programme (PRD v12, Sprint 3) — 8 juillet 2026, 13h30
 
 ### Ajouté

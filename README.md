@@ -6,7 +6,7 @@
 
 **CRM de prospection B2B autonome pour entrepreneurs québécois**
 
-[![Version](https://img.shields.io/badge/version-v3.80.0-059669?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-v3.81.0-059669?style=flat-square)](CHANGELOG.md)
 [![Next.js](https://img.shields.io/badge/Next.js-15-black?style=flat-square&logo=next.js)](https://nextjs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178c6?style=flat-square&logo=typescript&logoColor=white)](https://typescriptlang.org)
 [![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-3ecf8e?style=flat-square&logo=supabase&logoColor=white)](https://supabase.com)
@@ -694,6 +694,7 @@ Dernières versions :
 
 | Version | Date | Points clés |
 |---------|------|-------------|
+| **v3.81.0** | 2026-07-08 | Plateforme & packs (PRD v12, Sprint 1) : /platform active/désactive Acquisition/Outreach/Terrain/Analytics & Growth par workspace |
 | **v3.80.0** | 2026-07-08 | Autopilot par programme (PRD v12, Sprint 3) : plafond d'envoi réellement appliqué, suspension automatique |
 | **v3.79.0** | 2026-07-08 | Programmes de croissance, Phase 6/6 : lien vers projects/agenda (tasks.lead_id) |
 | **v3.78.1** | 2026-07-08 | Correctif critique : leads.campaign_id manquant en production (cassait l'import CRM) |

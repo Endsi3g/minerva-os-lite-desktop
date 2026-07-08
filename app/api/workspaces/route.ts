@@ -191,7 +191,7 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { id, name, description, tag, accent_color, logo_base64, custom_columns } = await request.json();
+  const { id, name, description, tag, accent_color, logo_base64, custom_columns, enabled_packs } = await request.json();
   if (!id) {
     return NextResponse.json({ error: 'ID requis' }, { status: 400 });
   }
@@ -214,6 +214,7 @@ export async function PUT(request: NextRequest) {
   if (accent_color !== undefined) updateFields.accent_color = accent_color;
   if (logo_base64 !== undefined) updateFields.logo_base64 = logo_base64;
   if (custom_columns !== undefined) updateFields.custom_columns = custom_columns;
+  if (enabled_packs !== undefined) updateFields.enabled_packs = enabled_packs;
 
   const { data: updated, error: updateError } = await supabase
     .from('workspaces')

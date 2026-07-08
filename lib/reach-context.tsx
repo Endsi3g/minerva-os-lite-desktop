@@ -21,6 +21,7 @@ export interface Workspace {
   isOwner: boolean;
   ownerName: string;
   custom_columns?: string[];
+  enabled_packs?: string[];
 }
 
 export interface AppErrorDetail {
@@ -806,6 +807,13 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
             } catch {
               return [];
             }
+          })(),
+          enabled_packs: (() => {
+            try {
+              return w.enabled_packs ? (typeof w.enabled_packs === 'string' ? JSON.parse(w.enabled_packs) : w.enabled_packs) : undefined;
+            } catch {
+              return undefined;
+            }
           })()
         }));
 
@@ -1107,9 +1115,9 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
         const updates: string[] = [];
         const params: any[] = [];
         Object.entries(fields).forEach(([key, val]) => {
-          if (['name', 'description', 'tag', 'accent_color', 'logo_base64', 'custom_columns'].includes(key)) {
+          if (['name', 'description', 'tag', 'accent_color', 'logo_base64', 'custom_columns', 'enabled_packs'].includes(key)) {
             updates.push(`${key} = ?`);
-            if (key === 'custom_columns') {
+            if (key === 'custom_columns' || key === 'enabled_packs') {
               params.push(Array.isArray(val) ? JSON.stringify(val) : val);
             } else {
               params.push(val);
