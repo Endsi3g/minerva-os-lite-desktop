@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getAdminClient } from '@/lib/supabase/admin';
 import { generateCompletion } from '@/lib/ai';
+import { reportAppError } from '@/lib/error-notifications';
 import {
   listLeadsToFollowUp,
   summarizePipeline,
@@ -108,13 +109,23 @@ ${recentMemory?.map((m: any) => `[${m.type}] ${m.key}: ${m.content}`).join('\n')
       system: AGENT_SYSTEM,
       messages: [{ role: 'user', content: `Contexte du workspace:\n${contextBlock}\n\nQue dois-je faire maintenant ?` }],
       jsonMode: true,
-      maxTokens: 2000,
+      maxTokens: 4000,
       settings: aiSettings,
       userId: user.id,
+      workspaceId,
     });
     plan = JSON.parse(raw);
-  } catch {
-    return NextResponse.json({ error: 'Agent planning failed' }, { status: 500 });
+  } catch (err: any) {
+    const message = err?.message || 'Erreur inconnue lors de la planification de l\'agent';
+    console.error('[agent/loop] planning failed:', message);
+    await reportAppError({
+      userId: user.id,
+      workspaceId,
+      source: 'agent/loop',
+      title: 'Planification de l\'agent échouée',
+      message,
+    });
+    return NextResponse.json({ error: `Agent planning failed: ${message}` }, { status: 500 });
   }
 
   const actions: AgentAction[] = Array.isArray(plan?.actions) ? plan.actions.slice(0, 5) : [];
@@ -224,12 +235,23 @@ export async function GET(req: NextRequest) {
       system: AGENT_SYSTEM,
       messages: [{ role: 'user', content: contextBlock }],
       jsonMode: true,
-      maxTokens: 2000,
+      maxTokens: 4000,
       settings: aiSettings,
+      userId: ws.owner_id,
+      workspaceId,
     });
     plan = JSON.parse(raw);
-  } catch {
-    return NextResponse.json({ error: 'Planning failed' }, { status: 500 });
+  } catch (err: any) {
+    const message = err?.message || 'Erreur inconnue lors de la planification de l\'agent';
+    console.error('[agent/loop cron] planning failed:', message);
+    await reportAppError({
+      userId: ws.owner_id,
+      workspaceId,
+      source: 'agent/loop (cron)',
+      title: 'Planification de l\'agent échouée',
+      message,
+    });
+    return NextResponse.json({ error: `Planning failed: ${message}` }, { status: 500 });
   }
 
   const actions = Array.isArray(plan?.actions) ? plan.actions.slice(0, 5) : [];

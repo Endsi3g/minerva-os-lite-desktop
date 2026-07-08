@@ -5,6 +5,11 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [3.72.1] — "Agent planning failed" : réponse vide de Cloudflare traitée comme un succès — 8 juillet 2026, 03h40
+
+### Corrigé
+- **"Agent planning failed"** sans aucun détail exploitable : Kimi K2 (modèle Cloudflare) peut épuiser tout son budget de tokens en raisonnement (`reasoning_content`) sans jamais produire de `content` — l'appel HTTP réussit (200 OK) donc `callCloudflare` renvoyait une chaîne vide comme si c'était une réponse valide. La cascade de repli croyait alors que Cloudflare avait "réussi" et n'essayait jamais OpenRouter/Anthropic ensuite, et `JSON.parse('')` plantait avec une erreur générique et invisible pour l'utilisateur. Une réponse vide déclenche maintenant une vraie erreur, ce qui permet à la cascade de retomber sur le provider suivant, et le message d'erreur réel (avec un aperçu du raisonnement tronqué) est maintenant loggé et notifié au lieu d'être avalé silencieusement. Budget de tokens de la planification de l'agent doublé (2000 → 4000) pour laisser aux modèles de raisonnement la place de conclure.
+
 ## [3.72.0] — Cloudflare Workers AI configuré et rendu primaire — 8 juillet 2026, 03h00
 
 ### Corrigé

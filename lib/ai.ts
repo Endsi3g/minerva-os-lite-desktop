@@ -387,6 +387,22 @@ async function callCloudflare(
   let content: string = data.choices?.[0]?.message?.content?.trim() || '';
   // Strip markdown code fences that reasoning models (Kimi K2) wrap JSON in
   content = content.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
+
+  // Kimi K2 (and other reasoning models) can spend the entire max_tokens budget
+  // on `reasoning_content` and never emit anything in `content` — the HTTP call
+  // still succeeds (200 OK), so without this check the caller would treat an
+  // empty string as a valid answer (e.g. JSON.parse('') blowing up downstream
+  // with an opaque error) instead of falling through to the next configured
+  // provider in the chain. Throwing here lets buildProviderChain retry.
+  if (!content) {
+    const reasoningPreview = (data.choices?.[0]?.message?.reasoning_content || '').slice(0, 120);
+    throw new Error(
+      reasoningPreview
+        ? `Cloudflare Workers AI n'a produit aucune réponse exploitable (a épuisé son budget de tokens en raisonnement : "${reasoningPreview}...")`
+        : 'Cloudflare Workers AI a renvoyé une réponse vide'
+    );
+  }
+
   return content;
 }
 

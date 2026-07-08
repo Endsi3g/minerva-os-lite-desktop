@@ -20,6 +20,14 @@ interface ChangelogVersion {
 
 const versions: ChangelogVersion[] = [
   {
+    version: 'v3.72.1',
+    date: '8 juillet 2026 · 03h40',
+    title: '"Agent planning failed" : réponse vide de Cloudflare traitée comme un succès',
+    highlights: [
+      { text: "\"Agent planning failed\" sans aucun détail exploitable : Kimi K2 peut épuiser tout son budget de tokens en raisonnement sans jamais produire de réponse finale — l'appel HTTP réussissait quand même, donc c'était traité comme un succès et le repli vers un autre provider ne se déclenchait jamais. Une réponse vide déclenche maintenant une vraie erreur qui permet à la cascade de retomber sur le provider suivant, et le message d'erreur réel est maintenant loggé et notifié. Budget de tokens de la planification de l'agent doublé (2000 → 4000)." },
+    ],
+  },
+  {
     version: 'v3.72.0',
     date: '8 juillet 2026 · 03h00',
     title: 'Cloudflare Workers AI configuré et rendu primaire',
