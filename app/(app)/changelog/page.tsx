@@ -20,6 +20,17 @@ interface ChangelogVersion {
 
 const versions: ChangelogVersion[] = [
   {
+    version: 'v3.70.0',
+    date: '7 juillet 2026 · 20h30',
+    title: 'Prospection : vrai budget de temps Apify + notifications d\'erreurs cliquables',
+    highlights: [
+      { text: "\"Aucun client trouvé\" malgré une clé Apify valide et connectée : la recherche de prospection coupait l'appel Apify après 42 secondes (budget codé en dur de 55s, en contradiction avec les 120s déclarées côté déploiement), alors que le scraper Google Maps a besoin de 60 à 100+ secondes pour produire des résultats. Le budget est maintenant aligné (jusqu'à 90s pour Apify)." },
+      { text: "Secours OpenStreetMap inefficace : les 3 miroirs étaient interrogés un par un (jusqu'à 60s d'attente cumulée). Ils sont maintenant interrogés en parallèle — le premier à répondre avec des résultats gagne." },
+      { text: "Le message d'erreur Apify (clé invalide, quota dépassé) n'était jamais affiché à cause d'un champ manquant dans la réponse du serveur. Corrigé, avec des messages explicites par type d'échec (401/403/429)." },
+      { text: "Notifications d'erreurs applicatives cliquables : toute erreur significative (prospection sans résultat, erreur serveur, plantage d'interface, erreur JavaScript non gérée) déclenche une notification distincte (point rouge) dans la cloche. Cliquer dessus ouvre le détail complet — message exact, contexte, stack trace — avec un bouton pour copier." },
+    ],
+  },
+  {
     version: 'v3.69.1',
     date: '7 juillet 2026 · 23h30',
     title: 'Colonnes personnalisées de workspace, import manuel et copie rapide',

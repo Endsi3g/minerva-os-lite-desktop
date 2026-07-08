@@ -89,6 +89,9 @@ import { VersionChecker } from '@/components/version-checker';
 import { toast } from 'sonner';
 import { NotificationPermissionPrompt } from '@/components/notification-permission-prompt';
 import { MinervaOwl } from '@/components/minerva-owl';
+import { ErrorDetailDialog } from '@/components/error-detail-dialog';
+
+const NOTIF_TYPES_WITH_DETAIL = new Set(['app_error', 'ai_failure', 'ai_rate_limit']);
 import {
   Breadcrumb,
   BreadcrumbList,
@@ -271,6 +274,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [checkingWelcome, setCheckingWelcome] = useState(true);
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [errorDetailNotif, setErrorDetailNotif] = useState<AppNotification | null>(null);
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
@@ -1541,18 +1545,27 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                         className="p-3 hover:bg-[#f4f4f3]/25 transition-colors flex gap-2.5 items-start cursor-pointer"
                         onClick={() => {
                           if (!notif.isRead) markNotificationRead(notif.id);
-                          if (notif.link) router.push(notif.link);
+                          if (NOTIF_TYPES_WITH_DETAIL.has(notif.type)) {
+                            setErrorDetailNotif(notif);
+                          } else if (notif.link) {
+                            router.push(notif.link);
+                          }
                         }}
                       >
                         {!notif.isRead ? (
-                          <span className="w-1.5 h-1.5 rounded-full bg-[#10b981] mt-1.5 shrink-0" />
+                          <span className={cn("w-1.5 h-1.5 rounded-full mt-1.5 shrink-0", NOTIF_TYPES_WITH_DETAIL.has(notif.type) ? "bg-red-500" : "bg-[#10b981]")} />
                         ) : (
                           <span className="w-1.5 h-1.5 mt-1.5 shrink-0" />
                         )}
                         <div className="space-y-0.5 text-left">
                           <p className="text-xs font-semibold text-[#26251e] leading-snug">{notif.title}</p>
-                          <p className="text-[10px] text-[#7a7a76] leading-relaxed">{notif.body}</p>
-                          <p className="text-[9px] text-neutral-400">{relativeTime(notif.createdAt)}</p>
+                          <p className="text-[10px] text-[#7a7a76] leading-relaxed line-clamp-2">{notif.body}</p>
+                          <div className="flex items-center gap-2">
+                            <p className="text-[9px] text-neutral-400">{relativeTime(notif.createdAt)}</p>
+                            {NOTIF_TYPES_WITH_DETAIL.has(notif.type) && (
+                              <span className="text-[9px] font-semibold text-red-500">Voir le détail →</span>
+                            )}
+                          </div>
                         </div>
                       </div>
                     ))
@@ -2143,6 +2156,8 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
       )}
 
       {pathname !== '/messages' && <BottomBlur height={64} />}
+
+      <ErrorDetailDialog notification={errorDetailNotif} onClose={() => setErrorDetailNotif(null)} />
     </div>
   );
 }

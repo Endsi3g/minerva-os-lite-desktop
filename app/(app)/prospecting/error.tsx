@@ -3,12 +3,19 @@
 import * as Sentry from '@sentry/nextjs';
 import { useEffect } from 'react';
 import { MapPin, RefreshCw } from 'lucide-react';
+import { reportClientError } from '@/lib/report-client-error';
 
 // Même garde-fou que /map — la mini-carte à clusters de cette page utilise le
 // même composant MapLibre sous-jacent.
 export default function ProspectingError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   useEffect(() => {
     Sentry.captureException(error);
+    reportClientError({
+      source: 'prospecting/error-boundary',
+      title: 'Erreur de prospection',
+      message: error.message || String(error),
+      stack: error.stack,
+    });
   }, [error]);
 
   return (

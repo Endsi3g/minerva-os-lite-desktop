@@ -3,6 +3,7 @@
 import * as Sentry from '@sentry/nextjs';
 import { useEffect } from 'react';
 import { MapPin, RefreshCw } from 'lucide-react';
+import { reportClientError } from '@/lib/report-client-error';
 
 // Limite le rayon d'un plantage MapLibre (coordonnées invalides, tuiles
 // indisponibles...) à cette page, au lieu de faire remonter l'erreur jusqu'à
@@ -10,6 +11,12 @@ import { MapPin, RefreshCw } from 'lucide-react';
 export default function MapError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   useEffect(() => {
     Sentry.captureException(error);
+    reportClientError({
+      source: 'map/error-boundary',
+      title: 'Erreur de carte',
+      message: error.message || String(error),
+      stack: error.stack,
+    });
   }, [error]);
 
   return (

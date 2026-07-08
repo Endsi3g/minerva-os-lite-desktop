@@ -3,6 +3,7 @@
 import React from 'react';
 import * as Sentry from '@sentry/nextjs';
 import { Button } from '@/components/ui/button';
+import { reportClientError } from '@/lib/report-client-error';
 
 interface Props {
   children: React.ReactNode;
@@ -26,6 +27,13 @@ export class ErrorBoundary extends React.Component<Props, State> {
   componentDidCatch(error: Error, info: React.ErrorInfo) {
     console.error('[ErrorBoundary]', error, info.componentStack);
     Sentry.captureException(error, { contexts: { react: { componentStack: info.componentStack } } });
+    reportClientError({
+      source: 'react-error-boundary',
+      title: 'Erreur d\'interface',
+      message: error.message || String(error),
+      stack: error.stack,
+      context: { componentStack: info.componentStack },
+    });
   }
 
   render() {

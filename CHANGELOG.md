@@ -5,6 +5,17 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [3.70.0] — Prospection : vrai budget de temps Apify + notifications d'erreurs cliquables — 7 juillet 2026, 20h30
+
+### Corrigé
+- **"Aucun client trouvé" malgré une clé Apify valide et connectée** : la route de recherche de prospection (`/api/prospect/search`) coupait l'appel Apify après 42 secondes (`maxDuration = 55` codé en dur, en contradiction avec les 120s déclarées dans `vercel.json`), alors que le scraper Google Maps a besoin de 60 à 100+ secondes pour produire des résultats. Résultat : Apify renvoyait quasi systématiquement 0 établissement, quel que soit l'état réel de la clé ou du compte. Le budget est maintenant aligné (115s côté fonction, jusqu'à 90s pour Apify).
+- **Secours OpenStreetMap inefficace** : les 3 miroirs Overpass étaient interrogés un par un (jusqu'à 60s d'attente cumulée si le premier miroir est lent ou bloqué), ce qui pouvait à son tour dépasser le budget de la fonction. Les 3 miroirs sont maintenant interrogés en parallèle (le premier à répondre avec des résultats gagne), comme c'était déjà le cas dans le scraper d'arrière-plan mais pas dans la recherche manuelle.
+- **Message d'erreur Apify jamais affiché** : le frontend attendait un champ `apifyError` dans la réponse pour afficher un avertissement, mais le backend ne le renvoyait jamais — ce toast n'apparaissait donc jamais, même en cas d'échec total. Le contrat est corrigé, et les erreurs 401/403/429 d'Apify affichent maintenant un message explicite (clé invalide/expirée, quota dépassé) plutôt qu'un message HTTP générique.
+
+### Ajouté
+- **Notifications d'erreurs applicatives cliquables** : toute erreur significative de l'application (échec de prospection sans aucun résultat, erreur serveur, plantage d'interface non rattrapé, erreur JavaScript non gérée) déclenche maintenant une notification dans la cloche, distincte visuellement (point rouge). Cliquer dessus ouvre une fenêtre de détail complet : message exact, contexte structuré (ex. villes/niches recherchées, erreurs de chaque miroir OSM) et stack trace le cas échéant, avec un bouton pour copier le détail. Anti-spam par signature d'erreur (une même erreur répétée ne notifie qu'une fois toutes les 10 minutes).
+- Couverture de capture : error boundary React, page d'erreur globale (`global-error.tsx`), pages d'erreur dédiées Carte/Prospection, et un nouveau capteur global (`window.onerror` / `unhandledrejection`) pour les erreurs qui n'atteignent aucun de ces gardes-fous.
+
 ## [3.69.1] — Colonnes personnalisées de workspace, import manuel et copie rapide — 7 juillet 2026, 23h30
 
 ### Ajouté

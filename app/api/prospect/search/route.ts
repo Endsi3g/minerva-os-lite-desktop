@@ -1,8 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { reportAppError } from '@/lib/error-notifications';
 
-export const maxDuration = 55;
+// Matches the 120s budget declared in vercel.json for this route — was hardcoded to 55
+// which silently truncated the Apify run (see APIFY_TIMEOUT_MS below) long before the
+// scraper actor had time to produce results, making "0 leads" the default outcome.
+export const maxDuration = 115;
 export const dynamic = 'force-dynamic';
+
+// The compass~crawler-google-places actor drives a headless browser and routinely
+// needs 60-100s to crawl a handful of search terms. 42s (the old budget) was enough
+// for a cold-start ping, never enough for real results.
+const APIFY_TIMEOUT_MS = 90_000;
+// Kept well under (maxDuration * 1000 - APIFY_TIMEOUT_MS) so the OSM fallback always
+// has time to finish even in the worst case (Apify used its full budget and failed).
+const OSM_MIRROR_TIMEOUT_MS = 15_000;
 
 interface ApifyPlace {
   title?: string;
@@ -248,7 +260,7 @@ export async function POST(req: NextRequest) {
         const perSearch = Math.ceil(maxResults / searchTerms.length);
 
         const apifyRes = await fetch(
-          `https://api.apify.com/v2/acts/compass~crawler-google-places/run-sync-get-dataset-items?token=${apifyToken}&timeout=40&memory=1024`,
+          `https://api.apify.com/v2/acts/compass~crawler-google-places/run-sync-get-dataset-items?token=${apifyToken}&timeout=${Math.floor(APIFY_TIMEOUT_MS / 1000) - 5}&memory=1024`,
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -260,12 +272,18 @@ export async function POST(req: NextRequest) {
               countryCode: 'ca',
               scrapeWebsite: false,
             }),
-            signal: AbortSignal.timeout(42000),
+            signal: AbortSignal.timeout(APIFY_TIMEOUT_MS),
           }
         );
 
         const rawText = await apifyRes.text();
 
+        if (apifyRes.status === 401 || apifyRes.status === 403) {
+          throw new Error(`Clé Apify invalide ou expirée (HTTP ${apifyRes.status})`);
+        }
+        if (apifyRes.status === 429) {
+          throw new Error('Quota Apify dépassé (HTTP 429) — vérifiez votre plan/crédit Apify');
+        }
         if (!apifyRes.ok) {
           throw new Error(`Apify server responded with HTTP ${apifyRes.status}: ${rawText.slice(0, 200)}`);
         }
@@ -340,20 +358,34 @@ export async function POST(req: NextRequest) {
       'https://overpass.kumi.systems/api/interpreter',
     ];
 
+    // Race all mirrors instead of trying them one at a time — a single slow/blocked
+    // mirror (overpass-api.de frequently rate-limits datacenter IPs like Vercel's)
+    // used to burn its full 20s timeout before the next mirror even started, which on
+    // its own could exceed the old 55s function budget and made "no results from OSM
+    // either" the common case. A mirror that responds 200 with zero elements is treated
+    // as a failure too, so a slower-but-actually-populated mirror can still win.
+    const osmMirrorErrors: string[] = [];
+    const fetchMirror = async (mirror: string): Promise<OsmElement[]> => {
+      const res = await fetch(mirror, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: `data=${encodeURIComponent(query)}`,
+        signal: AbortSignal.timeout(OSM_MIRROR_TIMEOUT_MS),
+      });
+      if (!res.ok) throw new Error(`${mirror}: HTTP ${res.status}`);
+      const json = await res.json();
+      const els: OsmElement[] = json.elements ?? [];
+      if (els.length === 0) throw new Error(`${mirror}: 0 éléments`);
+      return els;
+    };
+
     let elements: OsmElement[] = [];
-    for (const mirror of MIRRORS) {
-      try {
-        const res = await fetch(mirror, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: `data=${encodeURIComponent(query)}`,
-          signal: AbortSignal.timeout(20000),
-        });
-        if (!res.ok) continue;
-        const json = await res.json();
-        elements = json.elements ?? [];
-        if (elements.length > 0) break;
-      } catch { continue; }
+    try {
+      elements = await Promise.any(
+        MIRRORS.map(m => fetchMirror(m).catch(e => { osmMirrorErrors.push(String(e?.message ?? e)); throw e; }))
+      );
+    } catch {
+      elements = [];
     }
 
     const leads = elements
@@ -361,16 +393,48 @@ export async function POST(req: NextRequest) {
       .filter(Boolean)
       .slice(0, maxResults);
 
+    // Both providers failed to produce anything — this is exactly the "aucun client
+    // trouvé" scenario reported by users despite a "connected" API key. Surface it as
+    // an actionable notification instead of a silent empty list.
+    if (leads.length === 0) {
+      await reportAppError({
+        userId: user.id,
+        source: 'prospect/search',
+        title: 'Prospection : aucun résultat trouvé',
+        message: apifyErrorMsg
+          ? `Apify a échoué (${apifyErrorMsg}) et le secours OpenStreetMap n'a rien trouvé non plus.`
+          : `Aucun résultat via ${hasApify ? 'Apify ni' : ''} OpenStreetMap pour "${niches[0]}" à "${cities[0]}".`,
+        context: {
+          niches, cities, radius, maxResults, hasApify,
+          apifyError: apifyErrorMsg,
+          osmMirrorErrors,
+          searchCenter,
+        },
+      });
+    }
+
     return NextResponse.json({
       leads,
       provider: 'osm',
       searchCenter,
+      apifyError: apifyErrorMsg,
       message: apifyErrorMsg
         ? `Échec Apify (${apifyErrorMsg.slice(0, 50)}). ${leads.length} leads trouvés via OpenStreetMap (secours).`
         : `${leads.length} établissements trouvés via OpenStreetMap`,
     });
   } catch (err: any) {
     console.error('[prospect/search]', err);
+    try {
+      const supabase = await createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      await reportAppError({
+        userId: user?.id,
+        source: 'prospect/search',
+        title: 'Erreur de prospection',
+        message: err?.message ?? 'Erreur interne',
+        stack: err?.stack,
+      });
+    } catch { /* never let error reporting mask the original failure */ }
     return NextResponse.json({ error: err?.message ?? 'Erreur interne' }, { status: 500 });
   }
 }

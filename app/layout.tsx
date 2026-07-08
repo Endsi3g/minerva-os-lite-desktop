@@ -5,6 +5,7 @@ import { LanguageProvider } from "@/lib/language-context"
 import { PageTransition } from "@/components/page-transition"
 import { CapacitorInit } from "@/components/capacitor-init"
 import { ChunkErrorRecovery } from "@/components/chunk-error-recovery"
+import { GlobalErrorReporter } from "@/components/global-error-reporter"
 import { cn } from "@/lib/utils"
 import { Analytics } from "@vercel/analytics/next"
 import { SpeedInsights } from "@vercel/speed-insights/next"
@@ -82,6 +83,7 @@ export default function RootLayout({
       <body>
         <CapacitorInit />
         <ChunkErrorRecovery />
+        <GlobalErrorReporter />
         <ThemeProvider>
           <LanguageProvider>
             <PageTransition>

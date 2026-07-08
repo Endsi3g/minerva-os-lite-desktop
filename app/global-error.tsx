@@ -2,6 +2,7 @@
 
 import * as Sentry from '@sentry/nextjs';
 import { useEffect } from 'react';
+import { reportClientError } from '@/lib/report-client-error';
 
 export default function GlobalError({
   error,
@@ -12,6 +13,13 @@ export default function GlobalError({
 }) {
   useEffect(() => {
     Sentry.captureException(error);
+    reportClientError({
+      source: 'global-error',
+      title: 'Erreur critique de l\'application',
+      message: error.message || String(error),
+      stack: error.stack,
+      context: error.digest ? { digest: error.digest } : undefined,
+    });
   }, [error]);
 
   return (

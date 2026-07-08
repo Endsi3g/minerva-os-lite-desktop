@@ -22,14 +22,23 @@ export interface Workspace {
   custom_columns?: string[];
 }
 
+export interface AppErrorDetail {
+  source: string;
+  message: string;
+  stack?: string | null;
+  context?: Record<string, unknown> | null;
+  timestamp: string;
+}
+
 export interface AppNotification {
   id: string;
   userId: string;
   workspaceId: string;
-  type: 'info' | 'lead_assigned' | 'overdue' | 'digest' | 'report' | 'team_message' | 'email_sent' | 'email_received' | 'scraping_done' | 'lead_aging' | 'task_due' | 'mention' | 'goal_milestone' | 'app_update';
+  type: 'info' | 'lead_assigned' | 'overdue' | 'digest' | 'report' | 'team_message' | 'email_sent' | 'email_received' | 'scraping_done' | 'lead_aging' | 'task_due' | 'mention' | 'goal_milestone' | 'app_update' | 'app_error' | 'ai_failure' | 'ai_rate_limit';
   title: string;
   body: string;
   link?: string;
+  errorDetail?: AppErrorDetail | null;
   isRead: boolean;
   createdAt: string;
   updatedAt: string;
@@ -441,6 +450,7 @@ function mapDbNotifToUi(r: any): AppNotification {
     title: r.title || '',
     body: r.body || '',
     link: r.link || undefined,
+    errorDetail: r.error_detail ?? null,
     isRead: Boolean(r.is_read),
     createdAt: r.created_at,
     updatedAt: r.updated_at,

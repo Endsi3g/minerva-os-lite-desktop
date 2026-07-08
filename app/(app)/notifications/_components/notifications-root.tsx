@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { ErrorDetailDialog } from '@/components/error-detail-dialog';
 
 const TYPE_META: Record<AppNotification['type'], { icon: React.ElementType; label: string; color: string }> = {
   info:            { icon: Info,         label: 'Info',            color: 'text-blue-500 bg-blue-50' },
@@ -28,13 +29,18 @@ const TYPE_META: Record<AppNotification['type'], { icon: React.ElementType; labe
   mention:         { icon: AtSign,       label: 'Mention',          color: 'text-sky-500 bg-sky-50' },
   goal_milestone:  { icon: Target,       label: 'Objectif',         color: 'text-[#059669] bg-[#059669]/10' },
   app_update:      { icon: RefreshCw,    label: 'Mise à jour',      color: 'text-purple-500 bg-purple-50' },
+  app_error:       { icon: AlertTriangle,label: 'Erreur',           color: 'text-red-600 bg-red-50' },
+  ai_failure:      { icon: AlertTriangle,label: 'Erreur IA',        color: 'text-red-600 bg-red-50' },
+  ai_rate_limit:   { icon: Clock,        label: 'Limite IA',        color: 'text-amber-600 bg-amber-50' },
 };
 
 const ALL_TYPES: AppNotification['type'][] = [
   'info', 'lead_assigned', 'overdue', 'digest', 'report',
   'team_message', 'email_sent', 'email_received', 'scraping_done', 'lead_aging',
-  'task_due', 'mention', 'goal_milestone', 'app_update',
+  'task_due', 'mention', 'goal_milestone', 'app_update', 'app_error', 'ai_failure', 'ai_rate_limit',
 ];
+
+const NOTIF_TYPES_WITH_DETAIL = new Set<AppNotification['type']>(['app_error', 'ai_failure', 'ai_rate_limit']);
 
 function groupByDate(notifs: AppNotification[]): { label: string; items: AppNotification[] }[] {
   const now = new Date();
@@ -64,6 +70,7 @@ export function NotificationsRoot() {
   const { notifications, markNotificationRead, markAllNotificationsRead } = useReach();
   const [typeFilter, setTypeFilter] = useState<AppNotification['type'] | 'all'>('all');
   const [showUnreadOnly, setShowUnreadOnly] = useState(false);
+  const [errorDetailNotif, setErrorDetailNotif] = useState<AppNotification | null>(null);
 
   const filtered = useMemo(() => {
     let list = [...notifications].sort(
@@ -181,6 +188,7 @@ export function NotificationsRoot() {
                       key={n.id}
                       notification={n}
                       onRead={() => markNotificationRead(n.id)}
+                      onOpenDetail={() => setErrorDetailNotif(n)}
                     />
                   ))}
                 </div>
@@ -189,6 +197,8 @@ export function NotificationsRoot() {
           </div>
         )}
       </div>
+
+      <ErrorDetailDialog notification={errorDetailNotif} onClose={() => setErrorDetailNotif(null)} />
     </div>
   );
 }
@@ -196,12 +206,15 @@ export function NotificationsRoot() {
 function NotificationCard({
   notification: n,
   onRead,
+  onOpenDetail,
 }: {
   notification: AppNotification;
   onRead: () => void;
+  onOpenDetail: () => void;
 }) {
   const meta = TYPE_META[n.type] ?? TYPE_META.info;
   const Icon = meta.icon;
+  const hasDetail = NOTIF_TYPES_WITH_DETAIL.has(n.type);
 
   const inner = (
     <div
@@ -209,9 +222,13 @@ function NotificationCard({
         'flex items-start gap-3 p-3.5 rounded-xl border transition-all',
         n.isRead
           ? 'bg-white border-[#e5e5e0] opacity-70 hover:opacity-100'
-          : 'bg-white border-[#059669]/20 shadow-sm hover:border-[#059669]/40'
+          : 'bg-white border-[#059669]/20 shadow-sm hover:border-[#059669]/40',
+        hasDetail && 'cursor-pointer'
       )}
-      onClick={!n.isRead ? onRead : undefined}
+      onClick={() => {
+        if (!n.isRead) onRead();
+        if (hasDetail) onOpenDetail();
+      }}
     >
       {/* Icon */}
       <div className={cn('h-8 w-8 rounded-lg flex items-center justify-center shrink-0', meta.color)}>
