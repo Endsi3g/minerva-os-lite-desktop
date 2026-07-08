@@ -20,6 +20,16 @@ interface ChangelogVersion {
 
 const versions: ChangelogVersion[] = [
   {
+    version: 'v3.79.0',
+    date: '8 juillet 2026 · 12h30',
+    title: 'Programmes de croissance, Phase 6 : lien vers projects/agenda',
+    highlights: [
+      { text: "Section \"Projets liés\" sur la fiche détail d'un programme, dérivée des leads du programme." },
+      { text: "Section \"RDV agenda\" : nouvelle colonne tasks.lead_id rattache chaque RDV réservé à son lead (remplace le lien texte fragile précédent), permettant d'afficher les RDV d'un programme." },
+      { text: "Les 6 phases des Programmes de croissance sont livrées — 3 migrations en attente d'exécution manuelle." },
+    ],
+  },
+  {
     version: 'v3.78.1',
     date: '8 juillet 2026 · 12h00',
     title: 'Correctif critique : leads.campaign_id manquant en production',

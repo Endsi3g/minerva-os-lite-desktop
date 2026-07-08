@@ -120,11 +120,13 @@ function initDb() {
       completed INTEGER DEFAULT 0,
       category TEXT DEFAULT 'General',
       due_date TEXT,
+      lead_id TEXT,
       workspace_id TEXT,
       created_at TEXT,
       updated_at TEXT,
       sync_status TEXT DEFAULT 'synced'
     )`);
+    db.run(`ALTER TABLE tasks ADD COLUMN lead_id TEXT DEFAULT NULL`, () => {});
 
     // 6. Workspaces table
     db.run(`CREATE TABLE IF NOT EXISTS workspaces (

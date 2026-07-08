@@ -41,7 +41,7 @@ export function AgendaNewRoot() {
       const endISO = new Date(new Date(startISO).getTime() + duration * 60000).toISOString();
       const description = [notes.trim(), lead ? `Lié au lead ${lead.businessName}${lead.city ? ` (${lead.city})` : ''}.` : ''].filter(Boolean).join('\n');
 
-      addTask(`${time} — ${fullTitle}`, 'Meeting', date);
+      addTask(`${time} — ${fullTitle}`, 'Meeting', date, lead?.id);
 
       let sideRes: { google?: boolean; todoist?: boolean } = {};
       if (addGoogle || addTodoist) {

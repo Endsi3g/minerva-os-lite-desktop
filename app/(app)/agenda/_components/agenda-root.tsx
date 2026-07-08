@@ -133,7 +133,7 @@ export function AgendaRoot() {
       const endISO = new Date(new Date(startISO).getTime() + duration * 60000).toISOString();
 
       // 1. In-app task (Meeting) — instant, persisted
-      addTask(`${time} — ${fullTitle}`, 'Meeting', selectedDate);
+      addTask(`${time} — ${fullTitle}`, 'Meeting', selectedDate, lead?.id);
 
       // 2. Google Calendar + Todoist (server-side side-effects)
       let sideRes: { google?: boolean; todoist?: boolean } = {};

@@ -3,7 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useReach, type Campaign } from '@/lib/reach-context';
-import { ChevronLeft, Megaphone, Tag, MapPin, Calendar, Users, CheckCircle2, TrendingUp, Mail, Play, Pause, Edit2, Check, X, Rocket } from 'lucide-react';
+import { ChevronLeft, Megaphone, Tag, MapPin, Calendar, Users, CheckCircle2, TrendingUp, Mail, Play, Pause, Edit2, Check, X, Rocket, FolderKanban, CalendarClock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Lead } from '@/lib/mock-data';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -34,13 +34,27 @@ const LEAD_STATUS_COLORS: Record<Lead['status'], string> = {
 type Tab = 'overview' | 'leads' | 'analytics';
 
 export function CampaignDetailRoot({ id }: { id: string }) {
-  const { campaigns, leads, updateCampaign } = useReach();
+  const { campaigns, leads, projects, tasks, updateCampaign } = useReach();
   const [tab, setTab] = useState<Tab>('overview');
   const [editingName, setEditingName] = useState(false);
   const [nameVal, setNameVal] = useState('');
 
   const campaign = campaigns.find(c => c.id === id);
   const campaignLeads = useMemo(() => leads.filter(l => l.campaignId === id), [leads, id]);
+
+  // Phase 6 — lien vers projects/agenda (dérivé, aucune nouvelle table pour
+  // les projets ; tasks.leadId pour l'agenda).
+  const campaignLeadIds = useMemo(() => new Set(campaignLeads.map(l => l.id)), [campaignLeads]);
+  const linkedProjects = useMemo(
+    () => projects.filter(p => campaignLeads.some(l => l.projectId === p.id)),
+    [projects, campaignLeads]
+  );
+  const linkedMeetings = useMemo(
+    () => tasks
+      .filter(t => t.category === 'Meeting' && t.leadId && campaignLeadIds.has(t.leadId))
+      .sort((a, b) => a.dueDate.localeCompare(b.dueDate)),
+    [tasks, campaignLeadIds]
+  );
 
   if (!campaign) {
     return (
@@ -251,6 +265,38 @@ export function CampaignDetailRoot({ id }: { id: string }) {
                 </div>
               );
             })()}
+
+            {(linkedProjects.length > 0 || linkedMeetings.length > 0) && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {linkedProjects.length > 0 && (
+                  <div className="rounded-xl border border-[#e5e5e0] bg-white p-4 space-y-2">
+                    <h3 className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">
+                      <FolderKanban className="h-3 w-3" />Projets liés
+                    </h3>
+                    {linkedProjects.map(p => (
+                      <Link key={p.id} href={`/projects/${p.id}`} className="flex items-center justify-between text-xs hover:text-[#059669] transition-colors">
+                        <span className="text-[#26251e]">{p.name}</span>
+                        <span className="text-[#7a7a76]">{campaignLeads.filter(l => l.projectId === p.id).length} lead(s)</span>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+                {linkedMeetings.length > 0 && (
+                  <div className="rounded-xl border border-[#e5e5e0] bg-white p-4 space-y-2">
+                    <h3 className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">
+                      <CalendarClock className="h-3 w-3" />RDV agenda
+                    </h3>
+                    {linkedMeetings.slice(0, 6).map(t => (
+                      <div key={t.id} className="flex items-center justify-between text-xs">
+                        <span className="text-[#26251e] truncate">{t.title}</span>
+                        <span className="text-[#7a7a76] shrink-0 ml-2">{new Date(t.dueDate).toLocaleDateString('fr-CA')}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
             <h3 className="text-xs font-bold text-[#26251e]">Leads récents</h3>
             {campaignLeads.length === 0 ? (
               <div className="py-8 text-center rounded-xl border border-dashed border-[#e5e5e0]">

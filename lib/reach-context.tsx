@@ -171,7 +171,7 @@ interface ReachContextType {
     address?: string;
   }) => Promise<Lead | null>;
   toggleTask: (id: string) => void;
-  addTask: (title: string, category: Task['category'], dueDate?: string) => void;
+  addTask: (title: string, category: Task['category'], dueDate?: string, leadId?: string) => void;
   deleteTask: (id: string) => void;
   updateTask: (id: string, fields: { title?: string; dueDate?: string; category?: Task['category'] }) => void;
   saveQuickNote: (note: string) => void;
@@ -306,6 +306,7 @@ interface DbTask {
   completed: boolean;
   category: Task['category'];
   due_date?: string | null;
+  lead_id?: string | null;
 }
 
 interface DbSuggestion {
@@ -448,7 +449,8 @@ function mapDbTaskToUi(dbTask: DbTask): Task {
     title: dbTask.title,
     completed: dbTask.completed,
     category: dbTask.category,
-    dueDate: dbTask.due_date || ''
+    dueDate: dbTask.due_date || '',
+    leadId: dbTask.lead_id || undefined
   };
 }
 
@@ -1681,7 +1683,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const addTask = async (title: string, category: Task['category'], dueDate?: string) => {
+  const addTask = async (title: string, category: Task['category'], dueDate?: string, leadId?: string) => {
     if (!user || !activeWorkspace) return;
     sendDesktopNotification(
       "Tâche créée",
@@ -1697,9 +1699,9 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
         const resolvedDueDate = dueDate ?? nowStr.split('T')[0];
 
         await electronObj.dbRun(
-          `INSERT INTO tasks (id, user_id, title, completed, category, due_date, workspace_id, created_at, updated_at, sync_status)
-           VALUES (?, ?, ?, 0, ?, ?, ?, ?, ?, 'pending_insert')`,
-          [taskId, user.id, title, category, resolvedDueDate, activeWorkspace.id, nowStr, nowStr]
+          `INSERT INTO tasks (id, user_id, title, completed, category, due_date, lead_id, workspace_id, created_at, updated_at, sync_status)
+           VALUES (?, ?, ?, 0, ?, ?, ?, ?, ?, ?, 'pending_insert')`,
+          [taskId, user.id, title, category, resolvedDueDate, leadId || null, activeWorkspace.id, nowStr, nowStr]
         );
 
         const newUiTask: Task = {
@@ -1707,7 +1709,8 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
           title,
           completed: false,
           category,
-          dueDate: resolvedDueDate
+          dueDate: resolvedDueDate,
+          leadId
         };
 
         setTasks(prev => [newUiTask, ...prev]);
@@ -1727,7 +1730,8 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
           workspace_id: activeWorkspace.id,
           title,
           category,
-          due_date: dueDate ?? new Date().toISOString().split('T')[0]
+          due_date: dueDate ?? new Date().toISOString().split('T')[0],
+          lead_id: leadId || null
         })
         .select()
         .single();

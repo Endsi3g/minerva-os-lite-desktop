@@ -5,6 +5,16 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [3.79.0] — Programmes de croissance, Phase 6 : lien vers projects/agenda — 8 juillet 2026, 12h30
+
+### Ajouté
+- **Section "Projets liés"** sur la fiche détail d'un programme : dérivée des projets des leads du programme (`leads.projectId`), aucune nouvelle table — un programme n'avait jusqu'ici aucun lien visible vers les projets.
+- **Section "RDV agenda"** sur la fiche détail d'un programme : nécessitait une vraie FK côté agenda. `tasks.lead_id` (nouvelle colonne) rattache désormais chaque RDV réservé (`/agenda`, `/agenda/new`) à son lead — auparavant ce lien n'existait que par du texte concaténé dans le titre, sans FK fiable.
+- Nouvelle migration `20260708130000_v13_12_tasks_lead_id.sql`.
+
+### Note de fin de projet (mise à jour)
+- Les 6 phases des Programmes de croissance sont maintenant livrées, y compris le dernier lien identifié manquant (projects/agenda). 3 migrations sont en attente d'exécution manuelle dans l'éditeur SQL Supabase : Phase 1 (`..._v13_10_growth_programs.sql`), le correctif critique `leads.campaign_id` (`..._v13_11...`), et celle-ci (`..._v13_12_tasks_lead_id.sql`).
+
 ## [3.78.1] — Correctif critique : `leads.campaign_id` manquant en production — 8 juillet 2026, 12h00
 
 ### Corrigé
