@@ -5,6 +5,12 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [3.78.1] — Correctif critique : `leads.campaign_id` manquant en production — 8 juillet 2026, 12h00
+
+### Corrigé
+- **Import CRM et création de programme cassés en production** : `leads.campaign_id` est lu/écrit par le code depuis des mois (import CSV, création manuelle, Playbook Wizard, campagnes/programmes de croissance), mais n'avait jamais été appliqué à la base de production — aucun fichier de migration ne le créait. Confirmé en test réel par l'erreur "Could not find the 'campaign_id' column of 'leads' in the schema cache". Même type de dérive de schéma que les correctifs v11.1 et v12.0 précédents (colonnes ajoutées historiquement en direct dans l'éditeur SQL de production, jamais capturées dans une migration versionnée).
+- Nouvelle migration `20260708120000_v13_11_leads_campaign_id_fix.sql` — **à exécuter avant toute autre migration en attente**, sinon rien de ce qui touche aux campagnes/programmes ne peut fonctionner.
+
 ## [3.78.0] — Programmes de croissance, Phase 5 : métriques par programme — 8 juillet 2026, 11h20
 
 ### Ajouté

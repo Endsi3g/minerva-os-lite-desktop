@@ -20,6 +20,14 @@ interface ChangelogVersion {
 
 const versions: ChangelogVersion[] = [
   {
+    version: 'v3.78.1',
+    date: '8 juillet 2026 · 12h00',
+    title: 'Correctif critique : leads.campaign_id manquant en production',
+    highlights: [
+      { text: "leads.campaign_id n'avait jamais été appliqué à la base de production malgré des mois d'utilisation par le code — cassait l'import CRM et toute création de campagne/programme. Nouvelle migration à exécuter en priorité." },
+    ],
+  },
+  {
     version: 'v3.78.0',
     date: '8 juillet 2026 · 11h20',
     title: 'Programmes de croissance, Phase 5 : métriques par programme',
