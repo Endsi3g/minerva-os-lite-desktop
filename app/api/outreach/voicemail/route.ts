@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { generateCompletion } from '@/lib/ai';
+import { reportAppError } from '@/lib/error-notifications';
 
 export async function POST(req: NextRequest) {
   const supabase = await createClient();
@@ -24,10 +25,13 @@ export async function POST(req: NextRequest) {
   const firstName = (lead.contact_name || lead.business_name || '').split(' ')[0] || 'bonjour';
   const descSnippet = lead.website_description ? lead.website_description.slice(0, 200) : '';
 
-  const scriptText = await generateCompletion({
-    messages: [{
-      role: 'user',
-      content: `Tu es un consultant commercial. Rédige un script de voicemail ultra-court (max 30 secondes = ~80 mots) pour laisser un message à ${firstName} de ${lead.business_name || 'cette entreprise'}.
+  let scriptText: string;
+  let aiGenerated = true;
+  try {
+    scriptText = await generateCompletion({
+      messages: [{
+        role: 'user',
+        content: `Tu es un consultant commercial. Rédige un script de voicemail ultra-court (max 30 secondes = ~80 mots) pour laisser un message à ${firstName} de ${lead.business_name || 'cette entreprise'}.
 
 Secteur: ${lead.niche || 'non précisé'}
 Ville: ${lead.city || ''}
@@ -39,10 +43,27 @@ Le message doit:
 3. Promettre une valeur concrète et rapide
 4. Demander un rappel ou laisser un numéro
 Ton direct, professionnel, pas de pression. Commence directement par le message.`,
-    }],
-    settings: settings || undefined,
-    maxTokens: 150,
-  }).catch(() => `Bonjour ${firstName}, c'est [Prénom] de [votre agence]. Je vous appelle au sujet de ${lead.business_name || 'votre entreprise'} — j'ai quelques idées concrètes pour développer votre clientèle. N'hésitez pas à me rappeler au [numéro]. Bonne journée !`);
+      }],
+      settings: settings || undefined,
+      maxTokens: 150,
+      userId: user.id,
+      workspaceId: settings?.workspace_id || lead.workspace_id || undefined,
+    });
+  } catch (err: any) {
+    // Ne plus substituer silencieusement un script générique — l'utilisateur
+    // croyait recevoir un script IA personnalisé alors que les 3 providers
+    // avaient échoué, sans aucune trace ni notification.
+    aiGenerated = false;
+    scriptText = `Bonjour ${firstName}, c'est [Prénom] de [votre agence]. Je vous appelle au sujet de ${lead.business_name || 'votre entreprise'} — j'ai quelques idées concrètes pour développer votre clientèle. N'hésitez pas à me rappeler au [numéro]. Bonne journée !`;
+    await reportAppError({
+      userId: user.id,
+      workspaceId: settings?.workspace_id || lead.workspace_id || undefined,
+      source: 'outreach/voicemail',
+      title: 'Script de voicemail générique utilisé (échec IA)',
+      message: err?.message || 'Erreur inconnue lors de la génération du script IA',
+      context: { leadId, businessName: lead.business_name },
+    });
+  }
 
   // Save to voicemail_queue
   const { data: queueItem } = await supabase.from('voicemail_queue').insert({
@@ -80,10 +101,10 @@ Ton direct, professionnel, pas de pression. Commence directement par le message.
       }).eq('id', queueItem.id);
     }
 
-    return NextResponse.json({ ok: true, script: scriptText, delivered: dcRes?.ok ?? false, dropCowboyId: dcId });
+    return NextResponse.json({ ok: true, script: scriptText, aiGenerated, delivered: dcRes?.ok ?? false, dropCowboyId: dcId });
   }
 
-  return NextResponse.json({ ok: true, script: scriptText, delivered: false, queueId: queueItem?.id });
+  return NextResponse.json({ ok: true, script: scriptText, aiGenerated, delivered: false, queueId: queueItem?.id });
 }
 
 // GET: fetch voicemail queue for a lead or workspace

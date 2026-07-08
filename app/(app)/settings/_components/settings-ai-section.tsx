@@ -243,21 +243,6 @@ export function SettingsAiSection({ data, onChange, onSaveKey, onDeleteKey, isSa
     { id: 'storytelling' as const, name: 'Storytelling', description: 'Ton axé sur la comparaison de concurrents et d\'exemples concrets.' }
   ];
 
-  const providers = [
-    { id: 'anthropic' as const, name: 'Claude (Anthropic)', description: 'Modèle principal — Claude Sonnet via clé serveur. Recommandé.' },
-    { id: 'openrouter' as const, name: 'OpenRouter', description: 'Modèles alternatifs gratuits (Llama, Mistral, Gemini…)' },
-  ];
-
-  const FREE_MODELS = [
-    { id: 'meta-llama/llama-3.3-70b-instruct:free', name: 'Llama 3.3 70B — Recommandé (gratuit)' },
-    { id: 'google/gemini-2.5-flash:free', name: 'Gemini 2.5 Flash (gratuit)' },
-    { id: 'deepseek/deepseek-r1:free', name: 'DeepSeek R1 — Raisonnement (gratuit)' },
-    { id: 'mistralai/mistral-7b-instruct:free', name: 'Mistral 7B (gratuit)' },
-  ];
-
-  const isCustomModel = data.aiProvider === 'openrouter' && !FREE_MODELS.some(m => m.id === data.aiModel);
-  const selectedSelectValue = isCustomModel ? 'custom' : data.aiModel;
-
   const [playgroundPrompt, setPlaygroundPrompt] = useState('Boulangerie L\'Épi d\'Or, Montréal. Proposer un audit de commande en ligne.');
   const [playgroundTone, setPlaygroundTone] = useState<'casual' | 'professional' | 'storytelling'>('casual');
   const [generatingPreview, setGeneratingPreview] = useState(false);
@@ -294,74 +279,27 @@ export function SettingsAiSection({ data, onChange, onSaveKey, onDeleteKey, isSa
     >
       <div className="space-y-6 text-left">
 
-        {/* ── Moteur d'IA ── */}
+        {/* ── Clé API OpenRouter ──
+            Le choix du provider IA primaire (Cloudflare / OpenRouter / Anthropic)
+            et du modèle se fait désormais uniquement dans l'onglet Minerva AI —
+            cette carte ne gère plus que la clé personnelle OpenRouter, pour éviter
+            que deux écrans différents écrivent les mêmes colonnes ai_provider/
+            ai_model avec des règles de résolution différentes (c'est ce qui
+            causait un repli silencieux sur Anthropic malgré Cloudflare configuré). */}
         <Card className="border border-[#e5e5e0] bg-white">
           <CardContent className="p-5 space-y-4">
-            <h3 className="text-xs font-bold text-[#26251e] uppercase tracking-wider">Moteur d'IA</h3>
+            <h3 className="text-xs font-bold text-[#26251e] uppercase tracking-wider">Clé API OpenRouter</h3>
             <p className="text-[11px] text-[#7a7a76] leading-normal">
-              Claude est le modèle principal de Minerva. OpenRouter donne accès à des alternatives gratuites.
+              Le provider IA primaire et le modèle se choisissent dans l'onglet <strong>Minerva AI</strong>. Ta clé personnelle OpenRouter (facultative) sert de repli quand le provider principal échoue.
             </p>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
-              {providers.map((p) => {
-                const isSelected = data.aiProvider === p.id;
-                return (
-                  <button key={p.id} type="button" onClick={() => onChange({ aiProvider: p.id })}
-                    className={cn(
-                      "text-left p-3 rounded-lg border transition-all flex flex-col gap-1 w-full cursor-pointer",
-                      isSelected
-                        ? "border-primary bg-[#059669]/5 text-[#26251e] ring-1 ring-primary/30"
-                        : "border-[#e5e5e0]/70 bg-white hover:border-[#e5e5e0] text-[#7a7a76]"
-                    )}>
-                    <span className="text-xs font-bold text-[#26251e]">{p.name}</span>
-                    <span className="text-[10px] text-[#7a7a76] leading-normal">{p.description}</span>
-                  </button>
-                );
-              })}
-            </div>
-
-            {data.aiProvider === 'openrouter' && (
-              <div className="space-y-4 pt-4 border-t border-[#e5e5e0]/70">
-                <ApiKeyField
-                  label="Clé API OpenRouter"
-                  placeholder="sk-or-v1-..."
-                  hint="Ta clé API est stockée de manière sécurisée et sert uniquement à générer tes messages."
-                  masked={data.openrouterKeyMasked}
-                  onSaveKey={(v) => onSaveKey('openrouter', v)}
-                  onDeleteKey={() => onDeleteKey('openrouter')}
-                />
-
-                <div className="grid gap-1.5">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Modèle</label>
-                  <Select
-                    value={selectedSelectValue}
-                    onValueChange={(val) => onChange({ aiModel: val === 'custom' ? '' : val })}
-                  >
-                    <SelectTrigger className="text-xs bg-white">
-                      <SelectValue placeholder="Choisir un modèle..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {FREE_MODELS.map((m) => (
-                        <SelectItem key={m.id} value={m.id} className="text-xs font-mono">{m.name}</SelectItem>
-                      ))}
-                      <SelectItem value="custom" className="text-xs">Autre (identifiant personnalisé)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {isCustomModel && (
-                  <div className="grid gap-1.5 pl-2 border-l-2 border-primary/40">
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Identifiant personnalisé</label>
-                    <Input
-                      value={data.aiModel}
-                      onChange={(e) => onChange({ aiModel: e.target.value })}
-                      placeholder="meta-llama/llama-3-70b-instruct"
-                      className="text-xs bg-white font-mono"
-                    />
-                  </div>
-                )}
-              </div>
-            )}
+            <ApiKeyField
+              label="Clé API OpenRouter"
+              placeholder="sk-or-v1-..."
+              hint="Ta clé API est stockée de manière sécurisée et sert uniquement à générer tes messages."
+              masked={data.openrouterKeyMasked}
+              onSaveKey={(v) => onSaveKey('openrouter', v)}
+              onDeleteKey={() => onDeleteKey('openrouter')}
+            />
           </CardContent>
         </Card>
 

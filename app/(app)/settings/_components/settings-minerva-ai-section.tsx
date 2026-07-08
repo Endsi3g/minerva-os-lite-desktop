@@ -798,7 +798,7 @@ export function SettingsMinervaAiSection({ isSaving }: SettingsMinervaAiSectionP
             />
             <div className="pt-1 border-t border-[#e5e5e0]/60">
               <p className="text-[10px] text-[#7a7a76]">
-                La clé Anthropic (Claude) est configurée côté serveur par l'administrateur.{' '}
+                Les clés Cloudflare Workers AI et Anthropic (Claude) sont configurées côté serveur par l'administrateur.{' '}
                 <a href="/settings?section=ai" className="text-[#059669] hover:underline font-semibold">
                   Configurer OpenRouter →
                 </a>

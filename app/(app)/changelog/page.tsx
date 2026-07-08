@@ -20,6 +20,18 @@ interface ChangelogVersion {
 
 const versions: ChangelogVersion[] = [
   {
+    version: 'v3.73.0',
+    date: '8 juillet 2026 · 06h00',
+    title: "Audit complet des pages liées à l'IA",
+    highlights: [
+      { text: "Bug critique : les Paramètres réécrasaient silencieusement le provider IA choisi à CHAQUE sauvegarde de n'importe quel onglet (pas seulement l'onglet IA), avec une coercition qui pouvait défaire un choix explicite de Cloudflare en changeant simplement sa photo de profil. Corrigé — un seul écran gère désormais ces réglages." },
+      { text: "/api/nba/explain (bouton \"Pourquoi ?\" sur le score d'un lead) et la recherche web IA faisaient un appel direct codé en dur vers Anthropic, sans passer par la cascade — 100% cassés en production. Routés désormais via la cascade complète." },
+      { text: "La génération de script de voicemail substituait silencieusement un script générique en cas d'échec IA, sans jamais le signaler. Le script générique est conservé comme repli mais l'échec est maintenant visible." },
+      { text: "La génération de site web IA n'envoyait jamais les réglages IA de l'utilisateur, contrairement à toutes ses fonctions sœurs — corrigé." },
+      { text: "FAQ et notes dans Paramètres mises à jour pour refléter la cascade à 3 providers (Cloudflare → OpenRouter → Anthropic) au lieu d'Anthropic seul." },
+    ],
+  },
+  {
     version: 'v3.72.3',
     date: '8 juillet 2026 · 04h35',
     title: 'Résolution du modèle Cloudflare auto-réparante',

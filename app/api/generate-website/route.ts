@@ -148,9 +148,27 @@ Génère en JSON strict (sans markdown) :
 }`;
 
   try {
+    // Contrairement aux routes sœurs (generate-script, generate-sequence,
+    // generate-draft), cet appel n'envoyait jamais `settings` — il ignorait
+    // donc systématiquement le provider/modèle explicitement choisi par
+    // l'utilisateur ainsi que sa clé OpenRouter personnelle.
+    const { data: settingsRow } = await supabase
+      .from('settings')
+      .select('ai_provider, ai_model, openrouter_key')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
     const aiResponse = await generateCompletion({
       messages: [{ role: 'user', content: prompt }],
       system: 'Tu es un expert en copywriting. Génère uniquement du JSON valide, sans markdown, sans backticks, sans commentaires.',
+      jsonMode: true,
+      maxTokens: 3000,
+      settings: {
+        ai_provider: settingsRow?.ai_provider,
+        ai_model: settingsRow?.ai_model,
+        openrouter_key: settingsRow?.openrouter_key,
+      },
+      userId: user.id,
     });
 
     const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
@@ -165,8 +183,8 @@ Génère en JSON strict (sans markdown) :
       niche,
       sections: parsed.sections || [],
     });
-  } catch (e) {
+  } catch (e: any) {
     console.error('[generate-website] error:', e);
-    return NextResponse.json({ error: 'Erreur lors de la génération' }, { status: 500 });
+    return NextResponse.json({ error: e?.message || 'Erreur lors de la génération' }, { status: 500 });
   }
 }

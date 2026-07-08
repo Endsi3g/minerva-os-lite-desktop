@@ -5,6 +5,21 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [3.73.0] — Audit complet des pages liées à l'IA — 8 juillet 2026, 06h00
+
+### Corrigé
+- **Bug critique — les Paramètres réécrasaient silencieusement le provider IA choisi à CHAQUE sauvegarde de n'importe quel onglet** (profil, apparence, workspace...), pas seulement l'onglet IA : `ai_provider`/`ai_model` étaient systématiquement réinjectés dans l'upsert de sauvegarde générique, avec une valeur locale qui coerçait tout provider différent de `'openrouter'` vers `'anthropic'` — donc un choix explicite de Cloudflare (Kimi K2) pouvait être défait simplement en changeant sa photo de profil. C'est très probablement la cause de plusieurs régressions récentes malgré les correctifs de cascade. `settings-minerva-ai-section.tsx` est désormais l'unique propriétaire de ces deux colonnes ; l'onglet "Intelligence & IA" a été simplifié pour ne plus proposer un sélecteur de provider/modèle redondant et non synchronisé (il ne gère plus que la clé OpenRouter personnelle).
+- **`/api/nba/explain`** (bouton "Pourquoi ?" sur le score NBA d'un lead) faisait un appel direct codé en dur vers l'API Anthropic, exigeant `ANTHROPIC_API_KEY` (non configurée en production) sans passer par la cascade IA — 100% cassé en production jusqu'ici. Route désormais via `generateCompletion()`.
+- **`/api/tools/tool-search-firecrawl`** (recherche web IA) avait la même dépendance directe et exclusive à Anthropic. Route désormais via `generateStreamCompletion()`.
+- **`/api/outreach/voicemail`** substituait silencieusement un script générique codé en dur si la génération IA échouait, en répondant quand même comme si tout s'était bien passé — l'utilisateur ne pouvait pas savoir que les 3 providers avaient échoué. Le script générique est conservé comme repli, mais l'échec est maintenant signalé (champ `aiGenerated: false` + notification d'erreur).
+- **`/api/generate-website`** n'envoyait jamais les réglages IA de l'utilisateur (provider/modèle explicite, clé OpenRouter personnelle) à la différence de toutes ses routes sœurs — corrigé, avec ajout du mode JSON strict et d'un budget de tokens plus généreux pour un site complet.
+- Le script terrain (`/field/[planId]/prepare/[leadId]`) demandait explicitement Claude Haiku sans préciser le provider — silencieusement redirigé vers le provider par défaut (Cloudflare) au lieu du modèle demandé. `provider: 'anthropic'` ajouté à la requête.
+- FAQ de la page Aide (`/help`) et note dans Paramètres > Minerva AI mentionnaient encore Anthropic comme unique provider IA — mis à jour pour refléter la cascade à 3 providers.
+
+### Connu — reste à faire
+- `app/api/generate-proposal/route.ts` (templating statique, aucun appelant trouvé nulle part dans le code) semble être du code mort — pas supprimé automatiquement, à confirmer avec l'utilisateur avant suppression.
+- `settings-models-section.tsx` et `settings-preferences-section.tsx` (onglets Paramètres) restent des sélecteurs de modèles 100% inertes (jamais lus ni sauvegardés en base) — non critiques (n'écrivent rien), mais à nettoyer dans un futur passage.
+
 ## [3.72.3] — Résolution du modèle Cloudflare auto-réparante — 8 juillet 2026, 04h35
 
 ### Corrigé

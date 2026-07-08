@@ -6,7 +6,7 @@
 
 **CRM de prospection B2B autonome pour entrepreneurs québécois**
 
-[![Version](https://img.shields.io/badge/version-v3.72.2-059669?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-v3.73.0-059669?style=flat-square)](CHANGELOG.md)
 [![Next.js](https://img.shields.io/badge/Next.js-15-black?style=flat-square&logo=next.js)](https://nextjs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178c6?style=flat-square&logo=typescript&logoColor=white)](https://typescriptlang.org)
 [![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-3ecf8e?style=flat-square&logo=supabase&logoColor=white)](https://supabase.com)
@@ -693,6 +693,7 @@ Dernières versions :
 
 | Version | Date | Points clés |
 |---------|------|-------------|
+| **v3.73.0** | 2026-07-08 | Audit complet des pages liées à l'IA — fix critique des Paramètres qui réécrasaient le provider IA choisi, routes NBA/recherche web/voicemail/génération de site corrigées |
 | **v3.72.2** | 2026-07-08 | Diagnostic complet des échecs de la cascade IA (chaque provider tenté est listé, pas juste le dernier) |
 | **v3.72.1** | 2026-07-08 | Fix cascade IA : une réponse vide d'un provider (modèle de raisonnement à court de budget de tokens) était traitée comme un succès au lieu de déclencher le repli sur le provider suivant |
 | **v3.72.0** | 2026-07-08 | Cloudflare Workers AI (Kimi K2) configuré et rendu provider IA primaire ; correctif du catalogue de modèles dans Paramètres |

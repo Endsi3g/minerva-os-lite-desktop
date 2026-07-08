@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { computeNbaScore, getActionLabel, type NbaLead, type NicheInsight } from '@/lib/nba-engine';
+import { generateCompletion } from '@/lib/ai';
 
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
 function checkRateLimit(key: string, max: number): boolean {
@@ -59,30 +60,26 @@ export async function POST(req: NextRequest) {
 
   const prompt = `Tu es Minerva, un assistant commercial IA. Explique pourquoi ce lead est la prochaine meilleure action, en 2-3 phrases concrètes et actionables. Lead: ${lead.business_name ?? 'Inconnu'}, Niche: ${lead.niche ?? 'Non définie'}, Ville: ${lead.city ?? 'Non définie'}, Score NBA: ${nbaResult.score}/100, Signaux: ${nbaResult.reason}, Action recommandée: ${getActionLabel(nbaResult.action)}. Réponds en français, sois direct et prescriptif.`;
 
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) return NextResponse.json({ error: 'ANTHROPIC_API_KEY not configured' }, { status: 500 });
+  const { data: settingsRow } = await supabase
+    .from('settings')
+    .select('ai_provider, ai_model, openrouter_key')
+    .eq('user_id', user.id)
+    .maybeSingle();
 
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify({
-      model: 'claude-sonnet-5',
-      max_tokens: 256,
+  try {
+    const explanation = await generateCompletion({
       messages: [{ role: 'user', content: prompt }],
-    }),
-  });
-
-  if (!response.ok) {
-    const err = await response.text();
-    return NextResponse.json({ error: `Anthropic API error: ${err}` }, { status: 502 });
+      maxTokens: 256,
+      settings: {
+        ai_provider: settingsRow?.ai_provider,
+        ai_model: settingsRow?.ai_model,
+        openrouter_key: settingsRow?.openrouter_key,
+      },
+      userId: user.id,
+      workspaceId: workspace_id,
+    });
+    return NextResponse.json({ explanation });
+  } catch (err: any) {
+    return NextResponse.json({ error: err?.message || 'Erreur IA' }, { status: 502 });
   }
-
-  const data = await response.json();
-  const explanation = data.content?.[0]?.text ?? '';
-
-  return NextResponse.json({ explanation });
 }

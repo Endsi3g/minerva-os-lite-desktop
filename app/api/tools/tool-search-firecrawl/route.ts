@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import FirecrawlApp from '@mendable/firecrawl-js';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import { generateStreamCompletion } from '@/lib/ai';
 
 export const maxDuration = 55;
 export const dynamic = 'force-dynamic';
@@ -65,10 +66,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'FIRECRAWL_API_KEY non configuré' }, { status: 400 });
   }
 
-  const anthropicKey = process.env.ANTHROPIC_API_KEY;
-  if (!anthropicKey) {
-    return NextResponse.json({ error: 'ANTHROPIC_API_KEY non configuré' }, { status: 400 });
-  }
+  const { data: aiSettingsRow } = await supabase
+    .from('settings')
+    .select('ai_provider, ai_model, openrouter_key')
+    .eq('user_id', user.id)
+    .maybeSingle();
 
   const { query, mode = 'search', url } = await req.json() as {
     query?: string;
@@ -103,37 +105,26 @@ export async function POST(req: NextRequest) {
       summary: (query || url || '').slice(0, 200),
     }).then(() => {}, () => {});
 
-    // Now use Anthropic to synthesize the result
-    const { default: Anthropic } = await import('@anthropic-ai/sdk');
-    const anthropic = new Anthropic({ apiKey: anthropicKey });
-
+    // Synthèse via la cascade IA partagée (Cloudflare → OpenRouter → Anthropic)
+    // au lieu d'un appel Anthropic codé en dur — ne dépendait auparavant que
+    // d'ANTHROPIC_API_KEY, absente en production, rendant cet outil inutilisable
+    // quel que soit l'état des autres providers.
     const rawJson = JSON.stringify(rawResult, null, 2).slice(0, 12000);
     const userMessage = query
       ? `Requête: "${query}"\n\nRésultats bruts Firecrawl:\n${rawJson}\n\nSynthétise ces résultats de façon claire et utile.`
       : `URL crawlée: ${url}\n\nContenu extrait:\n${rawJson}\n\nRésume et structure ce contenu.`;
 
-    const stream = await anthropic.messages.stream({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 1024,
+    const readable = await generateStreamCompletion({
       system: SYSTEM_PROMPT,
       messages: [{ role: 'user', content: userMessage }],
-    });
-
-    // Return as SSE stream compatible with the existing frontend format
-    const encoder = new TextEncoder();
-    const readable = new ReadableStream({
-      async start(controller) {
-        for await (const chunk of stream) {
-          if (chunk.type === 'content_block_delta' && chunk.delta.type === 'text_delta') {
-            const data = JSON.stringify({
-              choices: [{ delta: { content: chunk.delta.text } }],
-            });
-            controller.enqueue(encoder.encode(`data: ${data}\n\n`));
-          }
-        }
-        controller.enqueue(encoder.encode('data: [DONE]\n\n'));
-        controller.close();
+      maxTokens: 1024,
+      settings: {
+        ai_provider: aiSettingsRow?.ai_provider,
+        ai_model: aiSettingsRow?.ai_model,
+        openrouter_key: aiSettingsRow?.openrouter_key,
       },
+      userId: user.id,
+      workspaceId: workspaceId || undefined,
     });
 
     return new Response(readable, {

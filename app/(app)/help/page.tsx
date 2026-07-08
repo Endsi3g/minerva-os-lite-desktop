@@ -49,7 +49,7 @@ const FAQ_ITEMS = [
   {
     id: 'ai',
     question: 'Quels modèles d\'IA sont utilisés ?',
-    answer: 'Minerva OS utilise les modèles Claude d\'Anthropic (via l\'API Anthropic) pour la génération de brouillons d\'emails, les audits de sites et les suggestions d\'actions. Le modèle actuel est claude-sonnet-5, qui offre le meilleur équilibre entre qualité et vitesse.',
+    answer: 'Minerva OS utilise une cascade de providers IA pour la génération de brouillons d\'emails, les audits de sites et les suggestions d\'actions : Cloudflare Workers AI (Kimi K2) en premier, puis OpenRouter, puis Claude d\'Anthropic en dernier recours. Si un provider échoue, Minerva bascule automatiquement sur le suivant sans intervention de votre part.',
   },
 ];
 

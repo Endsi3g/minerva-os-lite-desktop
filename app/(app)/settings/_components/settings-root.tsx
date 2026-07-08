@@ -184,7 +184,11 @@ export function SettingsRoot() {
                 customization: dbSettings.ai_density === 'Standard' ? 'low' : dbSettings.ai_density === 'Profond' ? 'high' : 'medium',
                 autoInsights: dbSettings.auto_insights ?? true,
                 autoFollowUps: dbSettings.auto_follow_ups ?? false,
-                aiProvider: (dbSettings.ai_provider === 'openrouter' ? 'openrouter' : 'anthropic') as 'anthropic' | 'openrouter',
+                // Purement informatif ici — settings-minerva-ai-section.tsx est la
+                // seule source de vérité pour ai_provider/ai_model (voir saveToDb
+                // ci-dessous). Ne PAS forcer à 'anthropic' quand la vraie valeur est
+                // 'cloudflare' ou autre chose : ça ne sert plus qu'à l'affichage.
+                aiProvider: (dbSettings.ai_provider || 'anthropic') as 'anthropic' | 'openrouter',
                 openrouterKeyMasked: null,
                 aiModel: dbSettings.ai_model || 'meta-llama/llama-3.3-70b-instruct:free',
                 agentAutonomy: dbSettings.agent_autonomy ?? {
@@ -282,8 +286,15 @@ export function SettingsRoot() {
               avatar_base64: nextSettings.profile.avatarBase64,
               ai_tone: nextSettings.ai.tone === 'casual' ? 'Calme & Conseil' : nextSettings.ai.tone === 'professional' ? 'Direct & Closer' : 'Storytelling',
               ai_density: nextSettings.ai.customization === 'low' ? 'Standard' : nextSettings.ai.customization === 'medium' ? 'Personnalisé' : 'Profond',
-              ai_provider: nextSettings.ai.aiProvider,
-              ai_model: nextSettings.ai.aiModel,
+              // ai_provider / ai_model NE SONT PLUS écrits ici volontairement.
+              // Cette section réécrivait ces deux colonnes à CHAQUE sauvegarde
+              // de N'IMPORTE QUEL onglet (profil, apparence, workspace...), avec
+              // une valeur locale qui coerçait silencieusement tout provider ≠
+              // 'openrouter' vers 'anthropic' (donc 'cloudflare' → 'anthropic').
+              // Un utilisateur sélectionnant Kimi K2 (Cloudflare) dans l'onglet
+              // Minerva AI puis changeant simplement sa photo de profil voyait
+              // son choix silencieusement écrasé. settings-minerva-ai-section.tsx
+              // est désormais le seul propriétaire de ces deux colonnes.
               auto_insights: nextSettings.ai.autoInsights,
               auto_follow_ups: nextSettings.ai.autoFollowUps,
               agent_autonomy: nextSettings.ai.agentAutonomy,

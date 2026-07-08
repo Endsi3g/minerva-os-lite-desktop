@@ -42,6 +42,12 @@ export default function FieldPreparePage() {
             content: `Tu es un assistant de vente expert. Génère un script de visite terrain court (5-7 points) pour rendre visite à ce prospect :\n\nEntreprise : ${lead.businessName}\nSecteur : ${lead.niche || 'non précisé'}\nSite web : ${lead.website || 'aucun'}\nDescription de l'entreprise : ${lead.websiteDescription || 'non disponible'}\nNote Google : ${lead.rating || 'inconnue'}\nStatut actuel : ${lead.status || 'Nouveau'}\nNotes précédentes : ${lead.notes?.map(n => n.content).join(' | ') || 'aucune'}\n\nFormat : liste numérotée avec accroche, valeur proposée, objections probables et call-to-action. Sois direct, professionnel et adapté au terrain. Réponds en français.`,
           }],
           model: 'claude-haiku-4-5-20251001',
+          // Sans provider explicite, resolveAIProvider() n'honore un modèle
+          // "claude-*" que si settings.ai_provider n'est pas déjà défini sur
+          // autre chose — sans ce champ, la requête est silencieusement
+          // redirigée vers le provider par défaut (Cloudflare) au lieu du
+          // Claude Haiku demandé ici.
+          provider: 'anthropic',
         }),
       });
 
