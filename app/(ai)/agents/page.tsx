@@ -31,6 +31,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useLanguage } from '@/lib/language-context';
 import { TranslationKey } from '@/lib/translations';
 import { getApiUrl } from '@/lib/api-helper';
+import { AgentTeamsOverview } from './_components/agent-teams-overview';
 
 // Static builtin agents — always visible, defined here rather than in the local store.
 const BUILTIN_AGENTS = [
@@ -798,6 +799,9 @@ function AgentsPageInner() {
             </Button>
           </Link>
         </div>
+
+        {/* Équipe d'agents Minerva (Growth / Outreach & Inbox / Terrain) */}
+        <AgentTeamsOverview />
 
         {/* All Agents Section */}
         <div className="space-y-4">

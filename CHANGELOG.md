@@ -5,6 +5,20 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [3.77.0] — Programmes de croissance, Phase 4 : organisation des agents IA — 8 juillet 2026, 10h45
+
+### Ajouté
+- **Vue "Équipe d'agents Minerva"**, en haut de la page `/agents` : organise l'agent autonome unique existant en 3 équipes nommées — **Growth** (pipeline, tâches, séquences), **Outreach & Inbox** (emails, relances, changement de canal), **Terrain** (tournées, visites) — chacune avec son niveau d'autonomie actuel, ses actions des 7 derniers jours (exécutées vs suggérées), le nombre de leads touchés, et le nombre de programmes de croissance distincts touchés.
+- Nouveau module `lib/agent-domains.ts` : classification des `action_type` existants en 3 domaines (aucun nouveau moteur d'agent, une étiquette par-dessus l'infrastructure `agent_actions`/`lib/agent-tools.ts` déjà en place).
+- Nouvelle route `GET /api/agents/team-overview` : agrège `agent_actions` par équipe, croisé avec `growth_program_leads` pour l'attribution aux programmes.
+
+### Note d'architecture
+- La route `/agents` contenait déjà une fonctionnalité sans rapport (marketplace d'agents personnalisés type ChatGPT Store, stockée en `localStorage`) — la nouvelle vue s'ajoute au-dessus plutôt que de la remplacer, pour éviter de casser un flux existant.
+- Au moins 5 endroits distincts de l'app affichent déjà `agent_actions` avec des mappings de libellés dupliqués (Agent Feed, Journal, Prochaine action, Digest quotidien, SLA) — non consolidés dans cette phase, à réconcilier dans un futur passage.
+
+### À venir
+- Phase 5 — Métriques rattachées aux programmes (funnel par programme/source/niche, suivi MRR réel, uplift).
+
 ## [3.76.0] — Programmes de croissance, Phase 3 : visibilité cockpit — 8 juillet 2026, 10h00
 
 ### Ajouté

@@ -20,6 +20,15 @@ interface ChangelogVersion {
 
 const versions: ChangelogVersion[] = [
   {
+    version: 'v3.77.0',
+    date: '8 juillet 2026 · 10h45',
+    title: 'Programmes de croissance, Phase 4 : organisation des agents IA',
+    highlights: [
+      { text: "Vue \"Équipe d'agents Minerva\" en haut de la page /agents : 3 équipes nommées (Growth, Outreach & Inbox, Terrain), chacune avec son niveau d'autonomie, ses actions récentes (exécutées vs suggérées), et les programmes de croissance touchés." },
+      { text: "Aucun nouveau moteur d'agent — une classification des actions existantes par-dessus l'infrastructure déjà en place." },
+    ],
+  },
+  {
     version: 'v3.76.0',
     date: '8 juillet 2026 · 10h00',
     title: 'Programmes de croissance, Phase 3 : visibilité cockpit',

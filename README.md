@@ -6,7 +6,7 @@
 
 **CRM de prospection B2B autonome pour entrepreneurs québécois**
 
-[![Version](https://img.shields.io/badge/version-v3.76.0-059669?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-v3.77.0-059669?style=flat-square)](CHANGELOG.md)
 [![Next.js](https://img.shields.io/badge/Next.js-15-black?style=flat-square&logo=next.js)](https://nextjs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178c6?style=flat-square&logo=typescript&logoColor=white)](https://typescriptlang.org)
 [![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-3ecf8e?style=flat-square&logo=supabase&logoColor=white)](https://supabase.com)
@@ -694,6 +694,7 @@ Dernières versions :
 
 | Version | Date | Points clés |
 |---------|------|-------------|
+| **v3.77.0** | 2026-07-08 | Programmes de croissance, Phase 4/5 : vue "Équipe d'agents" (Growth/Outreach & Inbox/Terrain) sur /agents |
 | **v3.76.0** | 2026-07-08 | Programmes de croissance, Phase 3/5 : programmes actifs dans /today, badge programmes sur la fiche lead |
 | **v3.75.0** | 2026-07-08 | Programmes de croissance, Phase 2/5 : le Playbook Wizard crée un vrai programme au lancement, leads scrapés auto-rattachés |
 | **v3.74.0** | 2026-07-08 | Programmes de croissance, Phase 1/5 : objectif de croissance (RDV/clients/MRR) sur les campagnes, appartenance multi-programme pour les leads |
