@@ -5,6 +5,11 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [3.72.3] — Résolution du modèle Cloudflare auto-réparante — 8 juillet 2026, 04h35
+
+### Corrigé
+- **"Cloudflare Workers AI error 410: Model has been deprecated"** persistait malgré la correction du catalogue de modèles dans Paramètres (v3.72.0) : le catalogue ne fait que proposer des choix dans l'interface, il ne modifie pas une sélection déjà enregistrée. Un utilisateur ayant explicitement sélectionné l'ancien modèle Cloudflare déprécié (`@cf/meta/llama-3.1-8b-instruct`, l'unique option Cloudflare proposée avant la v3.72.0) l'avait donc encore persisté dans `settings.ai_model`, et le retapait à chaque appel indéfiniment. `resolveAIProvider()` ignore maintenant les ID de modèle Cloudflare connus comme dépréciés et retombe automatiquement sur le modèle par défaut (Kimi K2) — auto-réparant, sans action manuelle requise dans Paramètres.
+
 ## [3.72.2] — Diagnostic complet des échecs de la cascade IA + README à jour — 8 juillet 2026, 04h10
 
 ### Corrigé

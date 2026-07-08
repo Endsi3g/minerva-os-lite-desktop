@@ -34,6 +34,23 @@ const STALE_OPENROUTER_MODELS = new Set([
   'qwen/qwen-2-7b-instruct:free', 'llama-3.3-70b-versatile', 'meta-llama/Llama-3-70b-chat-hf',
 ]);
 
+// @cf/meta/llama-3.1-8b-instruct a été déprécié par Cloudflare le 2026-05-30
+// (HTTP 410 sur tout appel). C'était l'unique modèle Cloudflare proposé dans
+// le catalogue de Paramètres avant correction — tout utilisateur ayant
+// explicitement sélectionné ce modèle a cette valeur persistée dans
+// settings.ai_model, et la retape à chaque appel indéfiniment tant qu'il ne
+// resélectionne pas manuellement un modèle dans Paramètres. Écarter ce genre
+// d'ID stale ici rend la résolution auto-réparante sans dépendre de ça.
+const STALE_CLOUDFLARE_MODELS = new Set([
+  '@cf/meta/llama-3.1-8b-instruct',
+]);
+
+function cloudflareModel(rawModel?: string | null): string {
+  return (rawModel && rawModel.startsWith('@cf/') && !STALE_CLOUDFLARE_MODELS.has(rawModel))
+    ? rawModel
+    : CLOUDFLARE_DEFAULT_MODEL;
+}
+
 // Un rawModel peut être au format d'un AUTRE provider (ex. "@cf/..." pour Cloudflare,
 // "claude-*" pour Anthropic) quand il vient de settings.ai_model sélectionné pour le
 // provider primaire — buildProviderChain réutilise ce même rawModel pour construire le
@@ -71,14 +88,12 @@ export function resolveAIProvider(settings?: AISettings | null) {
 
   // 3. Explicit Cloudflare selection — or model name starts with "@cf/"
   if ((explicitProvider === 'cloudflare' || rawModel?.startsWith('@cf/')) && keys.cloudflareToken && keys.cloudflareAccountId) {
-    const model = rawModel?.startsWith('@cf/') ? rawModel : CLOUDFLARE_DEFAULT_MODEL;
-    return { provider: 'cloudflare', model, apiKey: keys.cloudflareToken };
+    return { provider: 'cloudflare', model: cloudflareModel(rawModel), apiKey: keys.cloudflareToken };
   }
 
   // 4. Défaut — Cloudflare Workers AI (primaire)
   if (keys.cloudflareToken && keys.cloudflareAccountId) {
-    const model = rawModel?.startsWith('@cf/') ? rawModel : CLOUDFLARE_DEFAULT_MODEL;
-    return { provider: 'cloudflare', model, apiKey: keys.cloudflareToken };
+    return { provider: 'cloudflare', model: cloudflareModel(rawModel), apiKey: keys.cloudflareToken };
   }
 
   // 5. Défaut — OpenRouter (secondaire)

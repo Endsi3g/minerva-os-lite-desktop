@@ -20,6 +20,14 @@ interface ChangelogVersion {
 
 const versions: ChangelogVersion[] = [
   {
+    version: 'v3.72.3',
+    date: '8 juillet 2026 · 04h35',
+    title: 'Résolution du modèle Cloudflare auto-réparante',
+    highlights: [
+      { text: "\"Cloudflare Workers AI error 410: Model has been deprecated\" persistait malgré la correction du catalogue de modèles : un utilisateur ayant déjà sélectionné l'ancien modèle déprécié l'avait toujours enregistré dans ses paramètres, qui ne se met pas à jour tout seul quand le catalogue change. La résolution du modèle ignore maintenant les ID Cloudflare connus comme dépréciés et retombe automatiquement sur Kimi K2 — plus besoin de resélectionner manuellement." },
+    ],
+  },
+  {
     version: 'v3.72.2',
     date: '8 juillet 2026 · 04h10',
     title: 'Diagnostic complet des échecs de la cascade IA + README à jour',
