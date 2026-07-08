@@ -5,6 +5,16 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [3.78.0] — Programmes de croissance, Phase 5 : métriques par programme — 8 juillet 2026, 11h20
+
+### Ajouté
+- **Suivi MRR réel** sur les programmes "Faire croître le MRR" : la progression affiche désormais la somme réelle des montants de deal (`dealAmount`) des leads gagnés du programme, sur `/today` et sur la fiche détail — remplace le placeholder "à venir" de la Phase 3.
+- **Uplift vs. reste du pipeline** : chaque fiche de programme affiche son taux de conversion comparé à celui de tous les leads hors de ce programme, en points de pourcentage (+/-), pour situer l'impact réel du programme plutôt qu'un chiffre isolé.
+- **Funnel par source et par niche** dans l'onglet Analytics d'une fiche de campagne/programme : nombre de leads et de gagnés pour chaque source d'acquisition et chaque niche ciblée.
+
+### Note de fin de projet
+- Les 5 phases des Programmes de croissance sont maintenant livrées. Aucune n'a encore été testée manuellement — la migration `20260709030000_v13_10_growth_programs.sql` doit être exécutée dans l'éditeur SQL Supabase avant que quoi que ce soit ne fonctionne (colonnes `campaigns.goal_type`/`target_value` et table `growth_program_leads` absentes sinon).
+
 ## [3.77.0] — Programmes de croissance, Phase 4 : organisation des agents IA — 8 juillet 2026, 10h45
 
 ### Ajouté

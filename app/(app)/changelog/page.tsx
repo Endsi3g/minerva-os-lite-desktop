@@ -20,6 +20,17 @@ interface ChangelogVersion {
 
 const versions: ChangelogVersion[] = [
   {
+    version: 'v3.78.0',
+    date: '8 juillet 2026 · 11h20',
+    title: 'Programmes de croissance, Phase 5 : métriques par programme',
+    highlights: [
+      { text: "Suivi MRR réel (somme des montants de deal des leads gagnés) sur les programmes \"Faire croître le MRR\", remplaçant le placeholder de la Phase 3." },
+      { text: "Uplift vs. reste du pipeline : taux de conversion du programme comparé au reste des leads, en points." },
+      { text: "Funnel par source et par niche dans l'onglet Analytics d'une fiche de campagne/programme." },
+      { text: "Les 5 phases des Programmes de croissance sont livrées — la migration SQL de la Phase 1 doit être exécutée avant utilisation." },
+    ],
+  },
+  {
     version: 'v3.77.0',
     date: '8 juillet 2026 · 10h45',
     title: 'Programmes de croissance, Phase 4 : organisation des agents IA',

@@ -6,7 +6,7 @@
 
 **CRM de prospection B2B autonome pour entrepreneurs québécois**
 
-[![Version](https://img.shields.io/badge/version-v3.77.0-059669?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-v3.78.0-059669?style=flat-square)](CHANGELOG.md)
 [![Next.js](https://img.shields.io/badge/Next.js-15-black?style=flat-square&logo=next.js)](https://nextjs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178c6?style=flat-square&logo=typescript&logoColor=white)](https://typescriptlang.org)
 [![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-3ecf8e?style=flat-square&logo=supabase&logoColor=white)](https://supabase.com)
@@ -72,7 +72,7 @@ Minerva OS Reach Lite est une plateforme CRM all-in-one conçue pour les entrepr
 | **Pipeline Kanban** | Colonnes : New → Contacted → Meeting Booked → Proposal Sent → Negotiation → Won / Lost |
 | **Propositions PDF** | Builder multi-sections (intro, problème, solution, prix QC, termes), export PDF natif |
 | **Prévisions revenue** | Forecast pondéré par probabilité et date de close, graphique 6 mois |
-| **Programmes de croissance** *(Phase 1/5)* | Une campagne devient un programme suivable via un objectif choisi (RDV / clients / MRR) + cible chiffrée ; un lead peut appartenir à plusieurs programmes actifs simultanément (`growth_program_leads`) |
+| **Programmes de croissance** | Une campagne devient un programme suivable via un objectif choisi (RDV / clients / MRR) + cible chiffrée, suivi MRR réel, appartenance multi-programme (`growth_program_leads`), visibilité cockpit (/today + fiche lead), équipe d'agents dédiée (Growth/Outreach & Inbox/Terrain), funnel par source/niche et uplift vs. reste du pipeline |
 
 ### Intelligence & Agents
 
@@ -694,6 +694,7 @@ Dernières versions :
 
 | Version | Date | Points clés |
 |---------|------|-------------|
+| **v3.78.0** | 2026-07-08 | Programmes de croissance, Phase 5/5 (finale) : MRR réel, uplift vs. pipeline, funnel par source/niche |
 | **v3.77.0** | 2026-07-08 | Programmes de croissance, Phase 4/5 : vue "Équipe d'agents" (Growth/Outreach & Inbox/Terrain) sur /agents |
 | **v3.76.0** | 2026-07-08 | Programmes de croissance, Phase 3/5 : programmes actifs dans /today, badge programmes sur la fiche lead |
 | **v3.75.0** | 2026-07-08 | Programmes de croissance, Phase 2/5 : le Playbook Wizard crée un vrai programme au lancement, leads scrapés auto-rattachés |

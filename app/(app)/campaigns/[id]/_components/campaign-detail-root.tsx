@@ -58,13 +58,34 @@ export function CampaignDetailRoot({ id }: { id: string }) {
     meeting: campaignLeads.filter(l => l.status === 'Meeting Booked').length,
     won: campaignLeads.filter(l => l.status === 'Won').length,
     conversionRate: campaignLeads.length > 0 ? Math.round((campaignLeads.filter(l => l.status === 'Won').length / campaignLeads.length) * 100) : 0,
+    mrrTotal: campaignLeads.filter(l => l.status === 'Won').reduce((sum, l) => sum + (l.dealAmount ?? 0), 0),
   };
+
+  // Uplift (Phase 5) — conversion des leads de ce programme vs. le reste du
+  // pipeline (leads hors de toute campagne principale ou d'une autre
+  // campagne), pour situer l'impact réel du programme.
+  const baselineLeads = leads.filter(l => l.campaignId !== id);
+  const baselineConversionRate = baselineLeads.length > 0
+    ? Math.round((baselineLeads.filter(l => l.status === 'Won').length / baselineLeads.length) * 100)
+    : 0;
+  const upliftPoints = kpis.conversionRate - baselineConversionRate;
 
   const statusBreakdown = (['New', 'Contacted', 'Meeting Booked', 'Won', 'Lost'] as Lead['status'][]).map(s => ({
     status: s,
     count: campaignLeads.filter(l => l.status === s).length,
     pct: campaignLeads.length > 0 ? Math.round((campaignLeads.filter(l => l.status === s).length / campaignLeads.length) * 100) : 0,
   })).filter(s => s.count > 0);
+
+  // Funnel par source / par niche (Phase 5)
+  const bySource = Array.from(new Set(campaignLeads.map(l => l.source || 'Inconnue'))).map(source => {
+    const group = campaignLeads.filter(l => (l.source || 'Inconnue') === source);
+    return { key: source, total: group.length, won: group.filter(l => l.status === 'Won').length };
+  }).sort((a, b) => b.total - a.total);
+
+  const byNiche = Array.from(new Set(campaignLeads.map(l => l.niche || 'Inconnue'))).map(niche => {
+    const group = campaignLeads.filter(l => (l.niche || 'Inconnue') === niche);
+    return { key: niche, total: group.length, won: group.filter(l => l.status === 'Won').length };
+  }).sort((a, b) => b.total - a.total);
 
   const TABS: { id: Tab; label: string }[] = [
     { id: 'overview', label: 'Vue d\'ensemble' },
@@ -150,9 +171,9 @@ export function CampaignDetailRoot({ id }: { id: string }) {
 
         {/* Programme de croissance — objectif & progression */}
         {campaign.goalType && (() => {
-          const current = campaign.goalType === 'clients' ? kpis.won : campaign.goalType === 'rdv' ? kpis.meeting : null;
+          const current = campaign.goalType === 'clients' ? kpis.won : campaign.goalType === 'rdv' ? kpis.meeting : kpis.mrrTotal;
           const target = campaign.targetValue ?? 0;
-          const pct = current !== null && target > 0 ? Math.min(100, Math.round((current / target) * 100)) : null;
+          const pct = target > 0 ? Math.min(100, Math.round((current / target) * 100)) : null;
           return (
             <div className="rounded-xl border border-[#059669]/20 bg-[#059669]/5 p-4 space-y-2">
               <div className="flex items-center justify-between gap-4 flex-wrap">
@@ -161,7 +182,7 @@ export function CampaignDetailRoot({ id }: { id: string }) {
                   <span className="text-xs font-bold text-[#26251e]">{GOAL_TYPE_LABELS[campaign.goalType].label}</span>
                 </div>
                 <span className="text-xs font-bold text-[#059669]">
-                  {current !== null ? `${current} / ${target}` : target} {GOAL_TYPE_LABELS[campaign.goalType].unit}
+                  {current} / {target} {GOAL_TYPE_LABELS[campaign.goalType].unit}
                 </span>
               </div>
               {pct !== null && (
@@ -169,8 +190,14 @@ export function CampaignDetailRoot({ id }: { id: string }) {
                   <div className="h-full bg-[#059669] rounded-full transition-all" style={{ width: `${pct}%` }} />
                 </div>
               )}
-              {campaign.goalType === 'mrr' && (
-                <p className="text-[10px] text-[#7a7a76]">Le suivi en temps réel du MRR généré arrivera avec les métriques de programmes.</p>
+              {campaignLeads.length > 0 && (
+                <p className="text-[10px] text-[#7a7a76]">
+                  Conversion {kpis.conversionRate}% —{' '}
+                  <span className={cn('font-bold', upliftPoints >= 0 ? 'text-[#059669]' : 'text-red-600')}>
+                    {upliftPoints >= 0 ? '+' : ''}{upliftPoints} pts
+                  </span>{' '}
+                  vs. le reste du pipeline ({baselineConversionRate}%)
+                </p>
               )}
             </div>
           );
@@ -345,7 +372,42 @@ export function CampaignDetailRoot({ id }: { id: string }) {
                 </div>
                 <div className="pt-2 border-t border-[#e5e5e0]/60 text-[10px] text-[#7a7a76]">
                   Taux de conversion : <span className="font-bold text-[#059669]">{kpis.conversionRate}%</span>
+                  {' '}— <span className={cn('font-bold', upliftPoints >= 0 ? 'text-[#059669]' : 'text-red-600')}>{upliftPoints >= 0 ? '+' : ''}{upliftPoints} pts</span> vs. reste du pipeline ({baselineConversionRate}%)
                 </div>
+              </div>
+            )}
+
+            {campaign.goalType === 'mrr' && (
+              <div className="rounded-xl border border-[#e5e5e0] bg-white p-5 flex items-center justify-between">
+                <span className="text-xs font-bold text-[#26251e]">MRR généré par ce programme (leads gagnés)</span>
+                <span className="text-lg font-black text-[#059669]">{kpis.mrrTotal.toLocaleString('fr-CA')} $</span>
+              </div>
+            )}
+
+            {(bySource.length > 0 || byNiche.length > 0) && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {bySource.length > 0 && (
+                  <div className="rounded-xl border border-[#e5e5e0] bg-white p-4 space-y-2">
+                    <h4 className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Funnel par source</h4>
+                    {bySource.map((s) => (
+                      <div key={s.key} className="flex items-center justify-between text-xs">
+                        <span className="text-[#26251e]">{s.key}</span>
+                        <span className="text-[#7a7a76]">{s.total} leads · <span className="font-bold text-[#059669]">{s.won} gagnés</span></span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {byNiche.length > 0 && (
+                  <div className="rounded-xl border border-[#e5e5e0] bg-white p-4 space-y-2">
+                    <h4 className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Funnel par niche</h4>
+                    {byNiche.map((n) => (
+                      <div key={n.key} className="flex items-center justify-between text-xs">
+                        <span className="text-[#26251e]">{n.key}</span>
+                        <span className="text-[#7a7a76]">{n.total} leads · <span className="font-bold text-[#059669]">{n.won} gagnés</span></span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </div>

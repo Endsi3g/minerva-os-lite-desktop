@@ -332,9 +332,9 @@ export function TodayRoot() {
           ? programLeads.filter((l) => l.status === 'Won').length
           : c.goalType === 'rdv'
             ? programLeads.filter((l) => l.status === 'Meeting Booked').length
-            : null;
+            : programLeads.filter((l) => l.status === 'Won').reduce((sum, l) => sum + (l.dealAmount ?? 0), 0);
         const target = c.targetValue ?? 0;
-        const pct = current !== null && target > 0 ? Math.min(100, Math.round((current / target) * 100)) : null;
+        const pct = target > 0 ? Math.min(100, Math.round((current / target) * 100)) : null;
         return { campaign: c, current, target, pct };
       });
   }, [campaigns, leads]);
@@ -492,7 +492,7 @@ export function TodayRoot() {
                             </span>
                           </div>
                           <div className="flex items-center justify-between text-[10px] text-[#7a7a76]">
-                            <span>{current !== null ? `${current} / ${target}` : `Cible ${target}`} {GOAL_TYPE_UNITS[campaign.goalType!]}</span>
+                            <span>{current} / {target} {GOAL_TYPE_UNITS[campaign.goalType!]}</span>
                             {pct !== null && <span className="font-bold text-[#059669]">{pct}%</span>}
                           </div>
                           {pct !== null && (
