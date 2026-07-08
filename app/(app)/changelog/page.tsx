@@ -20,6 +20,14 @@ interface ChangelogVersion {
 
 const versions: ChangelogVersion[] = [
   {
+    version: 'v3.83.2',
+    date: '9 juillet 2026 · 00h05',
+    title: 'Message d\'erreur Cloudflare 429 clarifié',
+    highlights: [
+      { text: "Le message \"Cloudflare streaming error 429\" (sans contexte) est aligné sur le format déjà clair côté OpenRouter. La cascade de repli fonctionnait déjà correctement — un événement de saturation simultanée des deux providers, pas une récidive du bug de budget de tokens." },
+    ],
+  },
+  {
     version: 'v3.83.1',
     date: '8 juillet 2026 · 23h15',
     title: 'Correctif systémique : budget de tokens IA sur 12 appels',

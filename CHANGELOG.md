@@ -5,6 +5,11 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [3.83.2] — Message d'erreur Cloudflare 429 clarifié — 9 juillet 2026, 00h05
+
+### Corrigé
+- Le chemin streaming de `generateStreamCompletion` affichait `Cloudflare streaming error 429` sans contexte quand Cloudflare Workers AI était temporairement limité — contrairement au message déjà clair côté OpenRouter. Aligné sur le même format. La cascade de repli (Cloudflare → OpenRouter → Anthropic) fonctionnait déjà correctement ; ce n'était qu'un problème de lisibilité du message, pas un bug de logique — l'échec observé (Cloudflare 429 + OpenRouter saturé simultanément) était un vrai événement transitoire de saturation des deux providers, pas une récidive du bug de budget de tokens corrigé en v3.83.1.
+
 ## [3.83.1] — Correctif systémique : budget de tokens IA sur 12 appels — 8 juillet 2026, 23h15
 
 ### Corrigé

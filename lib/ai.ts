@@ -394,6 +394,9 @@ async function callCloudflare(
     body: JSON.stringify(body),
   });
 
+  if (resp.status === 429) {
+    throw new Error('Cloudflare Workers AI est temporairement limité (429) — trop de requêtes envoyées récemment.');
+  }
   if (!resp.ok) {
     const text = await resp.text();
     throw new Error(`Cloudflare Workers AI error ${resp.status}: ${text}`);
@@ -536,6 +539,9 @@ async function fetchStreamUpstream(
     };
     const url = `https://api.cloudflare.com/client/v4/accounts/${keys.cloudflareAccountId}/ai/v1/chat/completions`;
     const resp = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body) });
+    // Message clair et cohérent avec le cas OpenRouter (ligne ~518) — sans ça,
+    // l'utilisateur voit juste "Cloudflare streaming error 429" sans contexte.
+    if (resp.status === 429) throw new Error('Cloudflare Workers AI est temporairement limité (429) — trop de requêtes envoyées récemment.');
     if (!resp.ok) throw new Error(`Cloudflare streaming error ${resp.status}`);
     return { resp, model: cfModel };
   }
