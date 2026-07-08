@@ -69,6 +69,7 @@ import { GoogleConnectModal } from '@/components/google-connect-modal';
 import { TimelineRoot } from '@/app/(app)/leads/timeline/_components/timeline-root';
 import { LeadNbaCard } from './lead-nba-card';
 import { CadenceTimeline } from './cadence-timeline';
+import { LeadProgramsBadge } from './lead-programs-badge';
 
 function cleanMarkdownForPreview(text: string | null | undefined): string {
   if (!text) return '';
@@ -2624,6 +2625,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
           <div className="border-t lg:border-t-0 lg:border-l border-[#e5e5e0] pt-6 lg:pt-0 lg:pl-6 space-y-6">
             <LeadNbaCard leadId={lead.id} workspaceId={activeWorkspace?.id ?? ''} />
             <CadenceTimeline leadId={lead.id} workspaceId={activeWorkspace?.id ?? ''} />
+            <LeadProgramsBadge leadId={lead.id} />
 
             {/* Score v2 — multidimensionnel */}
             {(() => {

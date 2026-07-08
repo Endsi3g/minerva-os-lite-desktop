@@ -213,6 +213,7 @@ interface ReachContextType {
   addLeadToProgram: (campaignId: string, leadId: string) => Promise<void>;
   removeLeadFromProgram: (campaignId: string, leadId: string) => Promise<void>;
   getProgramLeadIds: (campaignId: string) => Promise<string[]>;
+  getProgramsForLead: (leadId: string) => Promise<string[]>;
   goals: Goal[];
   addGoal: (data: { metric: Goal['metric']; target: number; period: Goal['period'] }) => Promise<Goal | null>;
   updateGoal: (id: string, fields: Partial<Pick<Goal, 'target' | 'period'>>) => Promise<void>;
@@ -2845,6 +2846,23 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
     } catch (err) { console.error("Error in getProgramLeadIds:", err); return []; }
   };
 
+  // Sens inverse de getProgramLeadIds — pour la fiche lead (Phase 3, visibilité
+  // cockpit) : à quel(s) programme(s) CE lead est-il rattaché.
+  const getProgramsForLead = async (leadId: string): Promise<string[]> => {
+    const electronObj = typeof window !== 'undefined' && (window as any).electron ? (window as any).electron : null;
+    if (electronObj) {
+      try {
+        const rows = await electronObj.dbAll(`SELECT campaign_id FROM growth_program_leads WHERE lead_id = ?`, [leadId]);
+        return (rows || []).map((r: any) => r.campaign_id);
+      } catch (err) { console.error("Local getProgramsForLead error:", err); return []; }
+    }
+    const supabase = createClient();
+    try {
+      const { data } = await supabase.from('growth_program_leads').select('campaign_id').eq('lead_id', leadId);
+      return (data || []).map((r: any) => r.campaign_id);
+    } catch (err) { console.error("Error in getProgramsForLead:", err); return []; }
+  };
+
   const addGoal = async (data: { metric: Goal['metric']; target: number; period: Goal['period'] }): Promise<Goal | null> => {
     if (!user || !activeWorkspace) return null;
     const electronObj = typeof window !== 'undefined' && (window as any).electron ? (window as any).electron : null;
@@ -3195,6 +3213,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
         addLeadToProgram,
         removeLeadFromProgram,
         getProgramLeadIds,
+        getProgramsForLead,
         goals,
         addGoal,
         updateGoal,

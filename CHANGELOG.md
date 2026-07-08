@@ -5,6 +5,18 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [3.76.0] — Programmes de croissance, Phase 3 : visibilité cockpit — 8 juillet 2026, 10h00
+
+### Ajouté
+- **Carte "Programmes actifs" dans `/today`**, juste après le "Parcours client en 7 phases" : objectif, progression (RDV/clients suivis en temps réel), lien direct vers la fiche du programme.
+- **Badge "Programmes" sur la fiche détail d'un lead**, juste après la timeline de cadence existante : affiche le ou les programmes auxquels ce lead est rattaché (`growth_program_leads`), avec lien direct — distinct du sélecteur "Campagne" simple déjà présent (relation 1-1), un lead peut apparaître dans plusieurs programmes à la fois.
+- Nouvelle fonction `getProgramsForLead(leadId)` dans `lib/reach-context.tsx` (sens inverse de `getProgramLeadIds`), suivant le même pattern fetch-à-la-demande.
+- Note d'audit : deux implémentations indépendantes et non synchronisées du "parcours en 7 phases" coexistent déjà dans l'app (`/api/outreach/cadence` alimentant la timeline de la fiche lead, et un calcul local distinct dans `/today`) — cette phase réutilise l'existant plutôt que d'en ajouter une troisième ; leur réconciliation reste à faire dans une prochaine passe.
+
+### À venir
+- Phase 4 — Organisation des agents IA (Growth / Outreach & Inbox / Terrain).
+- Phase 5 — Métriques rattachées aux programmes (funnel par programme/source/niche, suivi MRR réel, uplift).
+
 ## [3.75.0] — Programmes de croissance, Phase 2 : orchestration du Playbook Wizard — 8 juillet 2026, 09h15
 
 ### Ajouté

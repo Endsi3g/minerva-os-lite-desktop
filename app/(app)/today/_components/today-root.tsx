@@ -47,7 +47,18 @@ import {
   Play
 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useReach } from '@/lib/reach-context';
+import { useReach, type Campaign } from '@/lib/reach-context';
+
+const GOAL_TYPE_LABELS: Record<NonNullable<Campaign['goalType']>, string> = {
+  rdv: 'Remplir mon agenda',
+  clients: 'Signer des clients',
+  mrr: 'Faire croître le MRR',
+};
+const GOAL_TYPE_UNITS: Record<NonNullable<Campaign['goalType']>, string> = {
+  rdv: 'RDV',
+  clients: 'clients',
+  mrr: '$ MRR',
+};
 import { updateWidget } from '@/lib/widget-bridge';
 import { V7StrategyModal } from '@/components/v7-strategy-modal';
 import { getApiUrl } from '@/lib/api-helper';
@@ -144,7 +155,7 @@ function PilotageTab({ leads, tasks }: { leads: any[]; tasks: any[] }) {
 export function TodayRoot() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { leads, tasks, aiSuggestions, activeWorkspace } = useReach();
+  const { leads, tasks, aiSuggestions, activeWorkspace, campaigns } = useReach();
   
   const [showAestheticMode, setShowAestheticMode] = useState(false);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'inbox' | 'pilotage'>('dashboard');
@@ -308,6 +319,26 @@ export function TodayRoot() {
     };
   }, [leads]);
 
+  // Programmes de croissance actifs (Phase 3, visibilité cockpit) — une
+  // campagne avec goalType est un "programme" ; progression calculée sur les
+  // leads dont campaign_id pointe vers ce programme (même logique que la
+  // fiche détail de campagne).
+  const activePrograms = useMemo(() => {
+    return campaigns
+      .filter((c) => c.status === 'active' && c.goalType)
+      .map((c) => {
+        const programLeads = leads.filter((l) => l.campaignId === c.id);
+        const current = c.goalType === 'clients'
+          ? programLeads.filter((l) => l.status === 'Won').length
+          : c.goalType === 'rdv'
+            ? programLeads.filter((l) => l.status === 'Meeting Booked').length
+            : null;
+        const target = c.targetValue ?? 0;
+        const pct = current !== null && target > 0 ? Math.min(100, Math.round((current / target) * 100)) : null;
+        return { campaign: c, current, target, pct };
+      });
+  }, [campaigns, leads]);
+
   return (
     <ErrorBoundary>
       <div className="h-full overflow-hidden flex flex-col">
@@ -439,6 +470,41 @@ export function TodayRoot() {
                     <div className="absolute top-4 left-4 right-4 h-[1px] bg-[#e5e5e0] z-0" />
                   </div>
                 </div>
+
+                {/* Programmes de croissance actifs */}
+                {activePrograms.length > 0 && (
+                  <div className="bg-white border border-[#e5e5e0] rounded-2xl p-5 shadow-sm space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-xs font-bold text-[#26251e] uppercase tracking-wider">Programmes actifs</h3>
+                      <Link href="/campaigns" className="text-[10px] font-bold text-[#059669] hover:underline">Voir tous →</Link>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {activePrograms.map(({ campaign, current, target, pct }) => (
+                        <Link
+                          key={campaign.id}
+                          href={`/campaigns/${campaign.id}`}
+                          className="rounded-xl border border-[#e5e5e0] hover:border-[#059669]/30 p-3.5 space-y-2 transition-colors"
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-xs font-bold text-[#26251e] truncate">{campaign.name}</span>
+                            <span className="text-[9px] font-bold uppercase text-[#059669] bg-[#059669]/10 px-1.5 py-0.5 rounded-full shrink-0">
+                              {GOAL_TYPE_LABELS[campaign.goalType!]}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between text-[10px] text-[#7a7a76]">
+                            <span>{current !== null ? `${current} / ${target}` : `Cible ${target}`} {GOAL_TYPE_UNITS[campaign.goalType!]}</span>
+                            {pct !== null && <span className="font-bold text-[#059669]">{pct}%</span>}
+                          </div>
+                          {pct !== null && (
+                            <div className="h-1 rounded-full bg-[#f4f4f3] overflow-hidden">
+                              <div className="h-full bg-[#059669] rounded-full" style={{ width: `${pct}%` }} />
+                            </div>
+                          )}
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {/* Two Column Grid */}
                 <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">

@@ -20,6 +20,15 @@ interface ChangelogVersion {
 
 const versions: ChangelogVersion[] = [
   {
+    version: 'v3.76.0',
+    date: '8 juillet 2026 · 10h00',
+    title: 'Programmes de croissance, Phase 3 : visibilité cockpit',
+    highlights: [
+      { text: "Carte \"Programmes actifs\" dans /today, juste après le parcours en 7 phases : objectif, progression, lien direct vers la fiche du programme." },
+      { text: "Badge \"Programmes\" sur la fiche détail d'un lead : affiche le ou les programmes auxquels ce lead est rattaché, avec lien direct — un lead peut appartenir à plusieurs programmes à la fois." },
+    ],
+  },
+  {
     version: 'v3.75.0',
     date: '8 juillet 2026 · 09h15',
     title: 'Programmes de croissance, Phase 2 : orchestration du Playbook Wizard',
