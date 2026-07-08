@@ -20,6 +20,15 @@ interface ChangelogVersion {
 
 const versions: ChangelogVersion[] = [
   {
+    version: 'v3.75.0',
+    date: '8 juillet 2026 · 09h15',
+    title: 'Programmes de croissance, Phase 2 : orchestration du Playbook Wizard',
+    highlights: [
+      { text: "Le Playbook Wizard crée désormais un vrai programme de croissance au lancement : étape \"Objectif de croissance\" (RDV / clients / MRR) + cible chiffrée, directement dans l'écran de configuration." },
+      { text: "Chaque lead scrapé par un playbook est automatiquement rattaché au programme dès sa création, sans action manuelle — première brique concrète combinant acquisition et suivi de programme." },
+    ],
+  },
+  {
     version: 'v3.74.0',
     date: '8 juillet 2026 · 08h30',
     title: 'Programmes de croissance, Phase 1 : modèle de données + objectif',

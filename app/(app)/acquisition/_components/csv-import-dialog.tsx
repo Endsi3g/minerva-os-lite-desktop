@@ -133,7 +133,7 @@ export function CsvImportDialog({ open, onClose, onImported }: { open: boolean; 
         const reviewsCount = rawReviewsCount ? parseInt(rawReviewsCount, 10) : undefined;
 
         try {
-          await (addLead as (data: Parameters<typeof addLead>[0]) => Promise<void>)({
+          await addLead({
             businessName: businessName.trim(),
             contactName: get('contactName').trim(),
             contactEmail: get('contactEmail').trim() || undefined,

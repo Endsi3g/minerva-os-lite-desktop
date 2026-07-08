@@ -5,6 +5,18 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [3.75.0] — Programmes de croissance, Phase 2 : orchestration du Playbook Wizard — 8 juillet 2026, 09h15
+
+### Ajouté
+- **Le Playbook Wizard crée désormais un vrai programme de croissance** au lancement : étape "Objectif de croissance" (Remplir mon agenda / Signer des clients / Faire croître le MRR) + cible chiffrée, directement dans l'écran "Persona & Objectifs" — visible aussi dans le récapitulatif de lancement.
+- **Orchestration acquisition → programme** : chaque lead scrapé par un playbook est automatiquement rattaché au programme (`growth_program_leads`) dès sa création, sans action manuelle — la première brique concrète combinant Acquisition + suivi de programme.
+- `addLead()` renvoie désormais le lead créé (`Promise<Lead | null>` au lieu de `Promise<void>`) pour permettre ce rattachement immédiat après scraping ; deux appelants avec un cast de type devenu obsolète ont été nettoyés au passage.
+
+### À venir
+- Phase 3 — Visibilité cockpit : programmes actifs dans `/today`, et sur chaque fiche lead, à quels programmes il est rattaché + à quelle phase du parcours 7 étapes.
+- Phase 4 — Organisation des agents IA (Growth / Outreach & Inbox / Terrain).
+- Phase 5 — Métriques rattachées aux programmes.
+
 ## [3.74.0] — Programmes de croissance, Phase 1 : modèle de données + objectif — 8 juillet 2026, 08h30
 
 ### Ajouté

@@ -12,6 +12,14 @@ import {
 } from 'lucide-react';
 import { PLAYBOOKS, CHANNEL_ICONS } from '../../data';
 
+type GoalType = 'rdv' | 'clients' | 'mrr';
+
+const GOAL_TYPE_OPTIONS: { value: GoalType; label: string; unit: string }[] = [
+  { value: 'rdv', label: 'Remplir mon agenda', unit: 'RDV' },
+  { value: 'clients', label: 'Signer des clients', unit: 'clients' },
+  { value: 'mrr', label: 'Faire croître le MRR', unit: '$ MRR' },
+];
+
 const SOURCES = [
   { id: 'google', label: 'Google Maps (Apify)' },
   { id: 'here', label: 'HERE Maps' },
@@ -61,13 +69,19 @@ function TagInput({ tags, setTags, placeholder }: { tags: string[]; setTags: (t:
 
 export function PlaybookWizard({ slug }: { slug: string }) {
   const router = useRouter();
-  const { addCampaign, addLead, activeWorkspace } = useReach();
+  const { addCampaign, addLead, addLeadToProgram, activeWorkspace } = useReach();
   const pb = PLAYBOOKS.find((p) => p.id === slug);
   const [step, setStep] = useState(0);
   const [launching, setLaunching] = useState(false);
   const [launched, setLaunched] = useState(false);
   const [campaignId, setCampaignId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // Objectif de croissance (Programmes) — optionnel : lancer ce playbook crée
+  // un vrai programme suivable dès qu'un objectif est choisi ici, au lieu
+  // d'une simple campagne sans cible de croissance.
+  const [goalType, setGoalType] = useState<GoalType | null>(null);
+  const [goalTargetValue, setGoalTargetValue] = useState(10);
 
   const [state, setState] = useState<WizardState>(() => ({
     goalMetric: 'leads',
@@ -119,7 +133,7 @@ export function PlaybookWizard({ slug }: { slug: string }) {
       const CONCURRENCY = 5;
       for (let i = 0; i < scrapedLeads.length; i += CONCURRENCY) {
         const chunk = scrapedLeads.slice(i, i + CONCURRENCY);
-        await Promise.all(chunk.map((item) => addLead({
+        const created = await Promise.all(chunk.map((item) => addLead({
           businessName: String(item.businessName ?? 'Sans nom'),
           contactName: '',
           contactEmail: '',
@@ -140,6 +154,18 @@ export function PlaybookWizard({ slug }: { slug: string }) {
           campaignId: cId ?? undefined,
         })));
         leadsScraped += chunk.length;
+
+        // Orchestration Programmes (Phase 2) : rattache chaque lead scrapé au
+        // programme (growth_program_leads) quand un objectif de croissance a
+        // été choisi — permet le suivi multi-programme dès l'acquisition,
+        // sans attendre une action manuelle sur la fiche lead.
+        if (goalType && cId) {
+          await Promise.all(
+            created
+              .filter((lead): lead is NonNullable<typeof lead> => !!lead)
+              .map((lead) => addLeadToProgram(cId, lead.id).catch(() => {}))
+          );
+        }
       }
 
       if (runId) {
@@ -176,6 +202,8 @@ export function PlaybookWizard({ slug }: { slug: string }) {
         personaId: pb!.id,
         sequenceConfig: state.useDefaultSequence ? JSON.stringify(pb!.sequence) : undefined,
         goals: JSON.stringify({ metric: state.goalMetric, target: state.goalTarget }),
+        goalType: goalType || undefined,
+        targetValue: goalType ? goalTargetValue : undefined,
       });
 
       const cId = (campaign as { id: string } | undefined)?.id ?? null;
@@ -312,8 +340,38 @@ export function PlaybookWizard({ slug }: { slug: string }) {
               <div>
                 <div className="flex items-center gap-2 mb-3">
                   <Target className="h-3.5 w-3.5 text-[#7a7a76]" />
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Objectifs de campagne</span>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Objectif de croissance <span className="normal-case font-normal">(optionnel — en fait un programme suivable)</span></span>
                 </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-4">
+                  {GOAL_TYPE_OPTIONS.map((g) => (
+                    <button
+                      key={g.value}
+                      type="button"
+                      onClick={() => setGoalType((prev) => (prev === g.value ? null : g.value))}
+                      className={cn(
+                        'text-left p-2.5 rounded-lg border-2 text-xs font-bold transition-all',
+                        goalType === g.value
+                          ? 'border-[#059669] text-[#059669] bg-[#059669]/5'
+                          : 'border-[#e5e5e0] text-[#26251e] hover:border-[#059669]/30',
+                      )}
+                    >
+                      {g.label}
+                    </button>
+                  ))}
+                </div>
+                {goalType && (
+                  <div className="flex items-center gap-2 mb-4">
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76] shrink-0">Cible</label>
+                    <input
+                      type="number"
+                      min={1}
+                      value={goalTargetValue}
+                      onChange={(e) => setGoalTargetValue(Number(e.target.value))}
+                      className="w-24 text-xs border border-[#e5e5e0] rounded-lg px-2.5 py-2 focus:outline-none focus:ring-1 focus:ring-[#059669]"
+                    />
+                    <span className="text-[10px] text-[#7a7a76]">{GOAL_TYPE_OPTIONS.find((g) => g.value === goalType)?.unit}</span>
+                  </div>
+                )}
                 <div className="space-y-3">
                   <div>
                     <label className="text-xs font-bold text-[#26251e] block mb-1.5">Nom de la campagne</label>
@@ -475,6 +533,7 @@ export function PlaybookWizard({ slug }: { slug: string }) {
                 <div className="space-y-3">
                   {[
                     { label: 'Campagne', value: state.campaignName },
+                    ...(goalType ? [{ label: 'Programme', value: `${GOAL_TYPE_OPTIONS.find((g) => g.value === goalType)?.label} — cible ${goalTargetValue} ${GOAL_TYPE_OPTIONS.find((g) => g.value === goalType)?.unit}` }] : []),
                     { label: 'Objectif', value: `${state.goalTarget} ${state.goalMetric}` },
                     { label: 'Niches', value: state.niches.join(', ') || '—' },
                     { label: 'Villes', value: state.cities.join(', ') || '—' },

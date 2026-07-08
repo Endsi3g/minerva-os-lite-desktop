@@ -80,7 +80,7 @@ function CreateLeadDialog({ open, onClose, onCreated }: { open: boolean; onClose
     if (!form.businessName.trim()) return;
     setSubmitting(true);
     try {
-      await (addLead as (data: Parameters<typeof addLead>[0]) => Promise<void>)({
+      await addLead({
         businessName: form.businessName.trim(),
         contactName: form.contactName.trim(),
         contactEmail: form.contactEmail.trim() || undefined,

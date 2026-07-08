@@ -169,7 +169,7 @@ interface ReachContextType {
     campaignId?: string;
     customFields?: Record<string, string>;
     address?: string;
-  }) => void;
+  }) => Promise<Lead | null>;
   toggleTask: (id: string) => void;
   addTask: (title: string, category: Task['category'], dueDate?: string) => void;
   deleteTask: (id: string) => void;
@@ -1507,6 +1507,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
         electronObj.triggerSync();
         // Fire-and-forget auto-enrichment
         void autoEnrichLead(leadId, leadData.website, leadData.businessName);
+        return newUiLead;
       } catch (err: any) {
         console.error("Local addLead error:", err);
         reportClientError({
@@ -1517,7 +1518,6 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
         });
         throw err instanceof Error ? err : new Error(String(err));
       }
-      return;
     }
 
     const supabase = createClient();
@@ -1615,7 +1615,9 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
         setLeads(prev => [newUiLead, ...prev]);
         // Fire-and-forget auto-enrichment
         void autoEnrichLead(newDbLead.id, leadData.website, leadData.businessName);
+        return newUiLead;
       }
+      return null;
     } catch (err: any) {
       const message = err?.message ?? JSON.stringify(err);
       console.error('addLead unexpected error:', message);
