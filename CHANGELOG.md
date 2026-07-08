@@ -5,6 +5,18 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [3.82.0] — Correctifs : IA, chargement des stats, enrichissement en masse — 8 juillet 2026, 21h30
+
+### Corrigé
+- **Échec IA "budget de tokens en raisonnement épuisé"** : 4 appels IA de l'enrichissement de leads utilisaient des plafonds de tokens très bas (200-500), insuffisants pour un modèle de raisonnement (Cloudflare Kimi K2) qui consomme une partie du budget en réflexion avant de produire sa réponse finale. Plafonds relevés à 600-900.
+- **Statistiques affichant des zéros trompeurs pendant le chargement** (`/today`, `/analytics`, fiche détail d'une campagne) : ces pages calculaient leurs indicateurs sur `leads`/`campaigns` encore vides pendant le chargement initial des données, sans aucun état de chargement visible — donnant l'impression qu'un rafraîchissement manuel était nécessaire. Un flag `isDataReady` existait déjà dans `ReachContext` (utilisé uniquement par `/leads`) — étendu aux 3 autres pages avec un skeleton de chargement. Corrige aussi un vrai bug sur la fiche campagne : un accès direct par URL affichait à tort "Campagne introuvable" pendant le chargement.
+
+### Ajouté
+- **Bouton "Enrichir" en masse** sur la liste des leads (sélection multiple) : le backend batch existait déjà (`/api/leads/enrich-batch`, déjà utilisé par le cron et l'assistant IA) mais n'était pas accessible depuis l'interface de la liste.
+
+### À venir
+- Recherche web approfondie automatique (si site/téléphone manquants après l'enrichissement standard) avec score de confiance et validation manuelle des correspondances incertaines — en cours.
+
 ## [3.81.0] — Plateforme & packs (PRD v12, Sprint 1) — 8 juillet 2026, 14h30
 
 ### Ajouté

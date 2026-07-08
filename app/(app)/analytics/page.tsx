@@ -92,7 +92,7 @@ function MiniMetricCard({ label, value, icon: Icon, color }: { label: string; va
 }
 
 function OverviewTab() {
-  const { leads, tasks, projects, notifications } = useReach();
+  const { leads, tasks, projects, notifications, isDataReady } = useReach();
 
   const stats = useMemo(() => {
     const total = leads.length;
@@ -155,6 +155,18 @@ function OverviewTab() {
   const maxStatus = Math.max(...Object.values(stats.statusCounts), 1);
   const maxNiche = stats.topNiches[0]?.[1] ?? 1;
   const maxCity = stats.topCities[0]?.[1] ?? 1;
+
+  if (!isDataReady) {
+    return (
+      <div className="kpi-container">
+        <div className="kpi-grid">
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className="bg-white border border-[#e5e5e0] rounded-xl p-4 h-24 animate-pulse" />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-5">

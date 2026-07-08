@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
       const description = await generateCompletion({
         messages: [{ role: 'user', content: prompt }],
         settings: settings || undefined,
-        maxTokens: 400,
+        maxTokens: 700,
       });
 
       return NextResponse.json({ description: description || cleanFallbackDescription(content) });

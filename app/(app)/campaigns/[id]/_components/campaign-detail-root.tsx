@@ -34,7 +34,7 @@ const LEAD_STATUS_COLORS: Record<Lead['status'], string> = {
 type Tab = 'overview' | 'leads' | 'analytics';
 
 export function CampaignDetailRoot({ id }: { id: string }) {
-  const { campaigns, leads, projects, tasks, updateCampaign } = useReach();
+  const { campaigns, leads, projects, tasks, updateCampaign, isDataReady } = useReach();
   const [tab, setTab] = useState<Tab>('overview');
   const [editingName, setEditingName] = useState(false);
   const [nameVal, setNameVal] = useState('');
@@ -75,6 +75,16 @@ export function CampaignDetailRoot({ id }: { id: string }) {
   };
 
   if (!campaign) {
+    // Un accès direct à l'URL (deep-link/refresh) arrive ici avant que
+    // ReachContext ait fini de charger — sans ce garde-fou, on affichait
+    // "Campagne introuvable" à tort pendant le chargement initial.
+    if (!isDataReady) {
+      return (
+        <div className="flex flex-col items-center justify-center h-full gap-3">
+          <div className="h-8 w-8 rounded-full border-2 border-[#e5e5e0] border-t-[#059669] animate-spin" />
+        </div>
+      );
+    }
     return (
       <div className="flex flex-col items-center justify-center h-full gap-3">
         <Megaphone className="h-8 w-8 text-muted-foreground/40" />

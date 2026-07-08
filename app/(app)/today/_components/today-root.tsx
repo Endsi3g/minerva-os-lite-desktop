@@ -155,7 +155,7 @@ function PilotageTab({ leads, tasks }: { leads: any[]; tasks: any[] }) {
 export function TodayRoot() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { leads, tasks, aiSuggestions, activeWorkspace, campaigns } = useReach();
+  const { leads, tasks, aiSuggestions, activeWorkspace, campaigns, isDataReady } = useReach();
   
   const [showAestheticMode, setShowAestheticMode] = useState(false);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'inbox' | 'pilotage'>('dashboard');
@@ -424,19 +424,19 @@ export function TodayRoot() {
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="bg-white border border-[#e5e5e0] rounded-xl p-4 flex flex-col gap-1 shadow-sm">
                     <span className="text-[10px] font-bold text-[#7a7a76] uppercase tracking-wider">Leads Actifs</span>
-                    <span className="text-2xl font-black text-[#26251e]">{activeLeadsCount}</span>
+                    {isDataReady ? <span className="text-2xl font-black text-[#26251e]">{activeLeadsCount}</span> : <span className="h-7 w-12 rounded bg-[#f4f4f3] animate-pulse" />}
                   </div>
                   <div className="bg-white border border-[#e5e5e0] rounded-xl p-4 flex flex-col gap-1 shadow-sm">
                     <span className="text-[10px] font-bold text-[#7a7a76] uppercase tracking-wider">Taux de Booking</span>
-                    <span className="text-2xl font-black text-[#26251e]">{bookingRate}%</span>
+                    {isDataReady ? <span className="text-2xl font-black text-[#26251e]">{bookingRate}%</span> : <span className="h-7 w-12 rounded bg-[#f4f4f3] animate-pulse" />}
                   </div>
                   <div className="bg-white border border-[#e5e5e0] rounded-xl p-4 flex flex-col gap-1 shadow-sm">
                     <span className="text-[10px] font-bold text-[#7a7a76] uppercase tracking-wider">Réponses Positives</span>
-                    <span className="text-2xl font-black text-[#26251e]">{positiveReplyRate}%</span>
+                    {isDataReady ? <span className="text-2xl font-black text-[#26251e]">{positiveReplyRate}%</span> : <span className="h-7 w-12 rounded bg-[#f4f4f3] animate-pulse" />}
                   </div>
                   <div className="bg-white border border-[#e5e5e0] rounded-xl p-4 flex flex-col gap-1 shadow-sm">
                     <span className="text-[10px] font-bold text-[#7a7a76] uppercase tracking-wider">Score NBA Moyen</span>
-                    <span className="text-2xl font-black text-[#26251e]">{avgNbaScore} pts</span>
+                    {isDataReady ? <span className="text-2xl font-black text-[#26251e]">{avgNbaScore} pts</span> : <span className="h-7 w-12 rounded bg-[#f4f4f3] animate-pulse" />}
                   </div>
                 </div>
 

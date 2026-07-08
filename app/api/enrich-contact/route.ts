@@ -205,7 +205,11 @@ Réponds uniquement avec le JSON strict.`;
         messages: [{ role: 'user', content: prompt }],
         settings: settings || undefined,
         jsonMode: true,
-        maxTokens: 500,
+        // Un modèle de raisonnement (ex: Cloudflare Kimi K2) peut consommer
+        // une bonne partie du budget en reasoning_content avant de produire
+        // le JSON final — un plafond trop bas fait échouer l'appel entier
+        // (voir lib/ai.ts callCloudflare, throw si content vide).
+        maxTokens: 900,
         userId: userId || undefined,
       });
       return JSON.parse(text) as { managerName?: string; managerRole?: string; managerEmail?: string; companyVibe?: string; description?: string };
@@ -247,7 +251,7 @@ Réponds uniquement avec le JSON.`;
           messages: [{ role: 'user', content: prompt }],
           settings: settings || undefined,
           jsonMode: true,
-          maxTokens: 200,
+          maxTokens: 600,
           userId: userId || undefined,
         });
 
@@ -351,7 +355,7 @@ Génère UNIQUEMENT le texte final du pitch, sans titres de section ni balises m
       customPitch = await generateCompletion({
         messages: [{ role: 'user', content: pitchPrompt }],
         settings: settings || undefined,
-        maxTokens: 400,
+        maxTokens: 700,
         userId: userId || undefined,
       });
       // Replace markdown asterisks just in case

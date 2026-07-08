@@ -15,7 +15,7 @@ import {
   AlertDialogAction,
 } from '@/components/ui/alert-dialog';
 import { useReach } from '@/lib/reach-context';
-import { Trash2, X, Sparkles, Loader2 } from 'lucide-react';
+import { Trash2, X, Sparkles, Loader2, Wand2 } from 'lucide-react';
 import { Lead } from '@/lib/mock-data';
 import { getApiUrl } from '@/lib/api-helper';
 import { toast } from 'sonner';
@@ -28,6 +28,7 @@ export function LeadsBulkActionsBar<TData>({ table }: LeadsBulkActionsBarProps<T
   const { deleteLeads, updateLeadsStatus, activeWorkspace } = useReach();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [generatingDrafts, setGeneratingDrafts] = useState(false);
+  const [enriching, setEnriching] = useState(false);
 
   const selectedRows = table.getFilteredSelectedRowModel().rows;
   const selectedCount = selectedRows.length;
@@ -70,6 +71,31 @@ export function LeadsBulkActionsBar<TData>({ table }: LeadsBulkActionsBarProps<T
       toast.error(err instanceof Error ? err.message : 'Erreur lors de la génération des brouillons');
     } finally {
       setGeneratingDrafts(false);
+    }
+  };
+
+  const handleEnrich = async () => {
+    if (!activeWorkspace?.id || enriching) return;
+    setEnriching(true);
+    try {
+      const res = await fetch(getApiUrl('/api/leads/enrich-batch'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ leadIds: selectedIds, workspaceId: activeWorkspace.id, mode: 'full' }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Erreur');
+      const failedCount = data.failed?.length ?? 0;
+      if (data.enriched > 0) {
+        toast.success(`${data.enriched} lead${data.enriched > 1 ? 's' : ''} enrichi${data.enriched > 1 ? 's' : ''}.${failedCount ? ` (${failedCount} échec${failedCount > 1 ? 's' : ''})` : ''}`);
+      } else {
+        toast.error("Aucun lead n'a pu être enrichi pour cette sélection.");
+      }
+      table.toggleAllPageRowsSelected(false);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erreur lors de l'enrichissement");
+    } finally {
+      setEnriching(false);
     }
   };
 
@@ -118,6 +144,18 @@ export function LeadsBulkActionsBar<TData>({ table }: LeadsBulkActionsBarProps<T
               <SelectItem value="Lost" className="text-xs">⚪ Perdu</SelectItem>
             </SelectContent>
           </Select>
+
+          {/* Bulk Enrichment */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleEnrich}
+            disabled={enriching}
+            className="h-8 px-2.5 text-xs text-[#059669] hover:text-[#047857] hover:bg-[#059669]/5 gap-1.5"
+          >
+            {enriching ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Wand2 className="h-3.5 w-3.5" />}
+            <span className="hidden sm:inline">Enrichir</span>
+          </Button>
 
           {/* Bulk AI Draft Generation */}
           <Button

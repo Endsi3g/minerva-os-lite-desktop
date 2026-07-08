@@ -20,6 +20,16 @@ interface ChangelogVersion {
 
 const versions: ChangelogVersion[] = [
   {
+    version: 'v3.82.0',
+    date: '8 juillet 2026 · 21h30',
+    title: 'Correctifs : IA, chargement des stats, enrichissement en masse',
+    highlights: [
+      { text: "Échec IA \"budget de tokens en raisonnement épuisé\" corrigé : plafonds de tokens relevés sur 4 appels d'enrichissement de leads (200-500 → 600-900)." },
+      { text: "/today, /analytics et la fiche campagne n'affichent plus de zéros trompeurs pendant le chargement — état de chargement visible à la place." },
+      { text: "Nouveau bouton \"Enrichir\" en masse sur la liste des leads (sélection multiple)." },
+    ],
+  },
+  {
     version: 'v3.81.0',
     date: '8 juillet 2026 · 14h30',
     title: 'Plateforme & packs (PRD v12, Sprint 1)',
