@@ -1,6 +1,6 @@
 {
   "name": "minerva-os-lite-desktop",
-  "version": "3.73.0",
+  "version": "3.73.1",
   "type": "module",
   "main": "electron/main.cjs",
   "private": true,
@@ -16,6 +16,7 @@
     "cap:sync": "([ -d app/api ] && mv app/api app-api-temp || true); cross-env EXPORT_MODE=true next build; status=$?; ([ -d app-api-temp ] && mv app-api-temp app/api || true); [ $status -eq 0 ] && cap sync",
     "cap:open:ios": "cap open ios",
     "cap:sync:android": "([ -d app/api ] && mv app/api app-api-temp || true); cross-env EXPORT_MODE=true next build; status=$?; ([ -d app-api-temp ] && mv app-api-temp app/api || true); [ $status -eq 0 ] && cap sync android",
+    "cap:sync:ios": "([ -d app/api ] && mv app/api app-api-temp || true); cross-env EXPORT_MODE=true next build; status=$?; ([ -d app-api-temp ] && mv app-api-temp app/api || true); [ $status -eq 0 ] && cap sync ios",
     "cap:open:android": "cap open android",
     "pre-migration": "node scripts/pre-migration-check.js",
     "launch": "node scripts/launcher.js",

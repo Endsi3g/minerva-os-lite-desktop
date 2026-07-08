@@ -5,6 +5,12 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [3.73.1] — CI mobile cassé depuis plusieurs releases (export statique + routes API) — 8 juillet 2026, 07h00
+
+### Corrigé
+- **Le workflow GitHub Actions "Deploy Mobile Apps" échouait sur chaque tag de version depuis plusieurs releases** avec `export const dynamic = "force-static"/export const revalidate not configured on route "/api/ads/attribution" with "output: export"`. Cause réelle : le workflow appelait `next build` directement avec `EXPORT_MODE=true`, sans la dissimulation temporaire de `app/api` que font déjà correctement les scripts `electron:build`/`cap:sync` (une exportation statique Next.js ne peut structurellement pas inclure de routes API server). Ajouter `force-static` route par route (comme suggéré par un outil d'analyse externe) aurait juste déplacé l'erreur sur la route API suivante parmi la centaine que compte l'app, en cassant leur vrai comportement dynamique. Le workflow utilise maintenant les scripts `cap:sync:android`/`cap:sync:ios` (ce dernier ajouté, n'existait pas) qui font la dissimulation + restauration correctement.
+- `working-directory: Minerva OS Lite/minerva-os-lite-desktop` sur les étapes Fastlane pointait vers un chemin qui n'existe pas dans le repo réel (le dossier `fastlane/` est à la racine) — aurait fait échouer le workflow à l'étape suivante une fois le bug d'export corrigé. Retiré.
+
 ## [3.73.0] — Audit complet des pages liées à l'IA — 8 juillet 2026, 06h00
 
 ### Corrigé

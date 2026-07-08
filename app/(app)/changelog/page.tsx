@@ -20,6 +20,15 @@ interface ChangelogVersion {
 
 const versions: ChangelogVersion[] = [
   {
+    version: 'v3.73.1',
+    date: '8 juillet 2026 · 07h00',
+    title: 'CI mobile cassé depuis plusieurs releases (export statique + routes API)',
+    highlights: [
+      { text: "Le workflow GitHub Actions \"Deploy Mobile Apps\" échouait sur chaque tag de version depuis plusieurs releases. Cause réelle : il appelait next build directement en mode export statique, sans la dissimulation temporaire des routes API que font déjà les autres scripts de build — une exportation statique ne peut structurellement pas inclure de routes serveur. Corrigé en utilisant les bons scripts (cap:sync:ios ajouté, n'existait pas)." },
+      { text: "Le chemin de travail des étapes Fastlane pointait vers un dossier qui n'existe pas dans le repo réel — aurait fait échouer le workflow à l'étape suivante. Retiré." },
+    ],
+  },
+  {
     version: 'v3.73.0',
     date: '8 juillet 2026 · 06h00',
     title: "Audit complet des pages liées à l'IA",

@@ -27,19 +27,20 @@ jobs:
       - name: Install Dependencies
         run: pnpm install
 
-      - name: Build Next.js Static Site
-        run: pnpm run build
-        env:
-          EXPORT_MODE: 'true'
-
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
           java-version: '17'
 
-      - name: Sync Android Platform
-        run: npx cap sync android
+      # Build + sync en une seule étape via le script package.json dédié : il
+      # dissimule temporairement app/api avant next build (obligatoire pour
+      # output:'export', les routes API ne peuvent pas être exportées
+      # statiquement) puis le restaure — contrairement à un `next build` +
+      # `cap sync` séparés, qui laissait app/api en place et faisait échouer
+      # le build sur la première route API rencontrée (ex. /api/ads/attribution).
+      - name: Build Next.js Static Site & Sync Android Platform
+        run: pnpm run cap:sync:android
 
       - name: Setup Ruby (Fastlane)
         uses: ruby/setup-ruby@v1
@@ -53,7 +54,6 @@ jobs:
         run: bundle exec fastlane android beta
         env:
           PLAY_STORE_JSON_KEY_PATH: ${{ secrets.PLAY_STORE_JSON_KEY_PATH }}
-        working-directory: Minerva OS Lite/minerva-os-lite-desktop
 
   deploy-ios:
     name: Build & Deploy iOS (TestFlight)
@@ -76,13 +76,11 @@ jobs:
       - name: Install Dependencies
         run: pnpm install
 
-      - name: Build Next.js Static Site
-        run: pnpm run build
-        env:
-          EXPORT_MODE: 'true'
-
-      - name: Sync iOS Platform
-        run: npx cap sync ios
+      # Voir commentaire équivalent dans le job Android — build + sync doivent
+      # rester une seule étape pour que la dissimulation temporaire de app/api
+      # (obligatoire pour output:'export') soit bien restaurée avant la suite.
+      - name: Build Next.js Static Site & Sync iOS Platform
+        run: pnpm run cap:sync:ios
 
       - name: Setup Ruby (Fastlane)
         uses: ruby/setup-ruby@v1
@@ -102,4 +100,3 @@ jobs:
           APP_STORE_CONNECT_API_KEY_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_KEY_ID }}
           APP_STORE_CONNECT_API_KEY_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ISSUER_ID }}
           APP_STORE_CONNECT_API_KEY_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY_KEY }}
-        working-directory: Minerva OS Lite/minerva-os-lite-desktop
