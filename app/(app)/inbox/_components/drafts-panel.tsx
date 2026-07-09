@@ -89,13 +89,17 @@ function DraftCard({
         {expanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
       </button>
 
-      {expanded && (
-        <div className="mx-4 mb-3 rounded-lg bg-[#fafaf8] border border-[#e5e5e0] p-3">
-          <p className="text-[10px] leading-relaxed text-[#26251e] whitespace-pre-wrap font-sans">
-            {draft.body || '(aucun contenu)'}
-          </p>
+      <div className={`grid transition-all duration-300 ease-in-out ${
+        expanded ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
+      }`}>
+        <div className="overflow-hidden">
+          <div className="mx-4 mb-3 rounded-lg bg-[#fafaf8] border border-[#e5e5e0] p-3">
+            <p className="text-[10px] leading-relaxed text-[#26251e] whitespace-pre-wrap font-sans">
+              {draft.body || '(aucun contenu)'}
+            </p>
+          </div>
         </div>
-      )}
+      </div>
 
       <div className="flex items-center gap-2 px-4 pb-4">
         <button
@@ -318,55 +322,65 @@ export function DraftsPanel({ workspaceId }: { workspaceId: string | undefined }
       </div>
 
       {/* Content Area */}
-      <div className="flex-1 overflow-y-auto p-4">
+      <div className="flex-1 relative overflow-hidden bg-white">
         {loading ? (
-          <div className="flex items-center justify-center py-12 text-xs text-[#78716c]">Chargement…</div>
+          <div className="flex items-center justify-center h-full text-xs text-[#78716c]">Chargement…</div>
         ) : filteredDrafts.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 gap-3 text-[#78716c]">
+          <div className="flex flex-col items-center justify-center h-full gap-3 text-[#78716c]">
             <FileText className="h-8 w-8 opacity-30" />
             <p className="text-xs text-center">Aucun brouillon en attente</p>
             <p className="text-[11px] text-[#a8a29e] text-center max-w-[240px]">
               Les brouillons de type {activeChannel === 'Email' ? 'Email (Google)' : 'DM (Facebook/Instagram)'} apparaîtront ici.
             </p>
           </div>
-        ) : selectedLeadId && selectedLeadInfo ? (
-          /* Dedicated Lead Drafts View */
-          <div className="space-y-4">
-            <button
-              onClick={() => setSelectedLeadId(null)}
-              className="flex items-center gap-1.5 text-xs text-[#7a7a76] hover:text-[#26251e] transition-colors cursor-pointer border-0 bg-transparent p-0"
-            >
-              <ArrowLeft className="h-3.5 w-3.5" /> Retour
-            </button>
-            <div className="pb-2 border-b border-[#e5e5e0]">
-              <h3 className="text-sm font-bold text-[#26251e]">{selectedLeadInfo.business_name}</h3>
-              <p className="text-[10px] text-[#7a7a76]">{selectedLeadInfo.city || 'Ville'} · {selectedLeadInfo.niche || 'Niche'}</p>
-            </div>
-            <div className="space-y-3">
-              {selectedLeadDrafts.map(draft => (
-                <DraftCard
-                  key={draft.id}
-                  draft={draft}
-                  busy={busy}
-                  onApprove={(id) => decide(id, 'approve')}
-                  onReject={(id) => decide(id, 'reject')}
-                  onPlan={handlePlan}
+        ) : (
+          <>
+            {/* Grouped / Stacked Leads View */}
+            <div className={`absolute inset-0 p-4 overflow-y-auto space-y-3 transition-all duration-300 ease-in-out transform ${
+              selectedLeadId ? '-translate-x-full opacity-0 pointer-events-none' : 'translate-x-0 opacity-100'
+            }`}>
+              {groupedLeads.map(({ lead, count }) => (
+                <LeadGroupCard
+                  key={lead.id}
+                  lead={lead}
+                  draftCount={count}
+                  onClick={() => setSelectedLeadId(lead.id)}
                 />
               ))}
             </div>
-          </div>
-        ) : (
-          /* Grouped / Stacked Leads View */
-          <div className="space-y-3">
-            {groupedLeads.map(({ lead, count }) => (
-              <LeadGroupCard
-                key={lead.id}
-                lead={lead}
-                draftCount={count}
-                onClick={() => setSelectedLeadId(lead.id)}
-              />
-            ))}
-          </div>
+
+            {/* Dedicated Lead Drafts View */}
+            <div className={`absolute inset-0 p-4 overflow-y-auto space-y-4 transition-all duration-300 ease-in-out transform ${
+              selectedLeadId ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0 pointer-events-none'
+            }`}>
+              {selectedLeadInfo && (
+                <>
+                  <button
+                    onClick={() => setSelectedLeadId(null)}
+                    className="flex items-center gap-1.5 text-xs text-[#7a7a76] hover:text-[#26251e] transition-colors cursor-pointer border-0 bg-transparent p-0"
+                  >
+                    <ArrowLeft className="h-3.5 w-3.5" /> Retour
+                  </button>
+                  <div className="pb-2 border-b border-[#e5e5e0]">
+                    <h3 className="text-sm font-bold text-[#26251e]">{selectedLeadInfo.business_name}</h3>
+                    <p className="text-[10px] text-[#7a7a76]">{selectedLeadInfo.city || 'Ville'} · {selectedLeadInfo.niche || 'Niche'}</p>
+                  </div>
+                  <div className="space-y-3">
+                    {selectedLeadDrafts.map(draft => (
+                      <DraftCard
+                        key={draft.id}
+                        draft={draft}
+                        busy={busy}
+                        onApprove={(id) => decide(id, 'approve')}
+                        onReject={(id) => decide(id, 'reject')}
+                        onPlan={handlePlan}
+                      />
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          </>
         )}
       </div>
     </div>

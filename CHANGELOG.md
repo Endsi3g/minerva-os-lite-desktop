@@ -5,6 +5,13 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [3.86.1] — Animations et transitions fluides (Inbox et Succursales) — 9 juillet 2026, 04h00
+
+### Ajouté
+- **Transition Inbox** : Glissement horizontal (slide-in/out) ultra-fluide avec fondu d'opacité lors du passage de la liste de brouillons empilés à la vue détaillée par Lead.
+- **Déroulement vertical des brouillons** : Animation de hauteur fluide (ease-in-out) combinée à un fondu d'opacité lors du déploiement (expand/collapse) du corps du message d'un brouillon.
+- **Animations succursales** : Entrée (slide-down + fade-in) et sortie (slide-up + fade-out) animées pour les cartes d'adresses multiples dans la fiche Lead.
+
 ## [3.86.0] — Filtrage Google/Facebook des brouillons, empilement par lead, vue dédiée et rollback du design — 9 juillet 2026, 03h50
 
 ### Ajouté

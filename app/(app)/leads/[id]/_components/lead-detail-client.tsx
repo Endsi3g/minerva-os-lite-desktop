@@ -591,6 +591,7 @@ export function LeadDetailClient({ id }: { id: string }) {
   // Multiple locations state
   const [newLocationAddress, setNewLocationAddress] = useState('');
   const [addingLocation, setAddingLocation] = useState(false);
+  const [deletingLocationIndex, setDeletingLocationIndex] = useState<number | null>(null);
 
   const handleAddLocation = async (addressStr: string) => {
     if (!addressStr.trim() || !lead) return;
@@ -2972,29 +2973,44 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                 
                 {lead.locations && lead.locations.length > 0 ? (
                   <div className="grid grid-cols-1 gap-1.5 max-h-40 overflow-y-auto pr-1">
-                    {lead.locations.map((loc, idx) => (
-                      <div key={idx} className="flex items-start justify-between gap-2 p-2 bg-[#f4f4f3]/40 border border-[#e5e5e0]/70 rounded-lg text-xs hover:border-[#059669]/30 transition-all duration-150">
-                        <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-[#26251e] truncate">{loc.address}</p>
-                          {loc.lat && loc.lng && (
-                            <p className="text-[9px] text-[#7a7a76] font-mono mt-0.5">
-                              Coords: {loc.lat.toFixed(5)}, {loc.lng.toFixed(5)}
-                            </p>
+                    {lead.locations.map((loc, idx) => {
+                      const isDeleting = deletingLocationIndex === idx;
+                      return (
+                        <div
+                          key={idx}
+                          className={cn(
+                            "flex items-start justify-between gap-2 p-2 bg-[#f4f4f3]/40 border border-[#e5e5e0]/70 rounded-lg text-xs hover:border-[#059669]/30 transition-all duration-300",
+                            isDeleting
+                              ? "animate-out fade-out slide-out-to-top-2 duration-200 opacity-0 transform -translate-y-1"
+                              : "animate-in fade-in slide-in-from-top-2 duration-300"
                           )}
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const updated = lead.locations!.filter((_, i) => i !== idx);
-                            handleSaveProperty('locations', updated);
-                          }}
-                          className="text-[#7a7a76]/60 hover:text-red-600 transition-colors p-0.5 rounded hover:bg-red-50 shrink-0"
-                          title="Supprimer cette adresse"
                         >
-                          <X className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-                    ))}
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-[#26251e] truncate">{loc.address}</p>
+                            {loc.lat && loc.lng && (
+                              <p className="text-[9px] text-[#7a7a76] font-mono mt-0.5">
+                                Coords: {loc.lat.toFixed(5)}, {loc.lng.toFixed(5)}
+                              </p>
+                            )}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setDeletingLocationIndex(idx);
+                              setTimeout(() => {
+                                const updated = lead.locations!.filter((_, i) => i !== idx);
+                                handleSaveProperty('locations', updated);
+                                setDeletingLocationIndex(null);
+                              }, 200);
+                            }}
+                            className="text-[#7a7a76]/60 hover:text-red-600 transition-colors p-0.5 rounded hover:bg-red-50 shrink-0"
+                            title="Supprimer cette adresse"
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      );
+                    })}
                   </div>
                 ) : (
                   <p className="text-[11px] text-[#7a7a76] italic pl-0.5">Aucune succursale enregistrée.</p>

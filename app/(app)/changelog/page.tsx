@@ -20,6 +20,16 @@ interface ChangelogVersion {
 
 const versions: ChangelogVersion[] = [
   {
+    version: 'v3.86.1',
+    date: '9 juillet 2026 · 04h00',
+    title: 'Animations et transitions fluides (Inbox et Succursales)',
+    highlights: [
+      { text: "Transition Inbox : Glissement horizontal (slide-in/out) ultra-fluide avec fondu lors du passage de la liste de brouillons empilés à la vue détaillée par Lead." },
+      { text: "Déroulement vertical des brouillons : Animation de hauteur fluide (ease-in-out) combinée à un fondu d'opacité lors du déploiement (expand/collapse) du corps du message d'un brouillon." },
+      { text: "Animations succursales : Entrée (slide-down + fade-in) et sortie (slide-up + fade-out) animées pour les cartes d'adresses multiples dans la fiche Lead." }
+    ],
+  },
+  {
     version: 'v3.86.0',
     date: '9 juillet 2026 · 03h50',
     title: 'Filtrage Google/Facebook des brouillons, empilement par lead, vue dédiée et rollback du design',
