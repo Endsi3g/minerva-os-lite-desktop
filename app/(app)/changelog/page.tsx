@@ -20,6 +20,14 @@ interface ChangelogVersion {
 
 const versions: ChangelogVersion[] = [
   {
+    version: 'v3.83.4',
+    date: '9 juillet 2026 · 01h10',
+    title: 'Correctif : création de template email non fonctionnelle',
+    highlights: [
+      { text: "Créer un template email ne faisait rien : le payload omettait user_id, violant silencieusement la policy de sécurité — l'erreur n'était jamais affichée. Corrigé, avec un message clair en cas d'échec désormais." },
+    ],
+  },
+  {
     version: 'v3.83.3',
     date: '9 juillet 2026 · 00h35',
     title: 'Correctif : erreur "Style is not done loading" sur la carte',

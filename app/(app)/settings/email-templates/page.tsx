@@ -8,6 +8,7 @@ import {
 import { createClient } from '@/lib/supabase/client';
 import { useReach } from '@/lib/reach-context';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 interface EmailTemplate {
   id: string;
@@ -100,8 +101,16 @@ export default function EmailTemplatesPage() {
     setSaving(true);
     try {
       const supabase = createClient();
+      // La policy RLS "Users can manage own email templates" exige
+      // auth.uid() = user_id — sans ce champ dans le payload, l'insert
+      // échouait systématiquement (silencieusement, faute de vérifier
+      // l'erreur retournée) puisque user_id valait NULL par défaut.
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Utilisateur non authentifié.');
+
       const payload = {
         workspace_id: activeWorkspace.id,
+        user_id: user.id,
         name: form.name.trim(),
         subject: form.subject.trim(),
         body: form.body.trim(),
@@ -110,19 +119,28 @@ export default function EmailTemplatesPage() {
         variant_b_subject: form.isAb ? form.variantBSubject.trim() : null,
         variant_b_body: form.isAb ? form.variantBBody.trim() : null,
       };
-      if (editing) {
-        await supabase.from('email_templates').update(payload).eq('id', editing.id);
-      } else {
-        await supabase.from('email_templates').insert({ ...payload, sends: 0, opens: 0, clicks: 0 });
-      }
+      const { error } = editing
+        ? await supabase.from('email_templates').update(payload).eq('id', editing.id)
+        : await supabase.from('email_templates').insert({ ...payload, sends: 0, opens: 0, clicks: 0 });
+      if (error) throw error;
+
       await fetchTemplates();
       setShowModal(false);
-    } catch { } finally { setSaving(false); }
+      toast.success(editing ? 'Template mis à jour.' : 'Template créé.');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Échec de l'enregistrement du template.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleDelete = async (id: string) => {
     const supabase = createClient();
-    await supabase.from('email_templates').delete().eq('id', id);
+    const { error } = await supabase.from('email_templates').delete().eq('id', id);
+    if (error) {
+      toast.error('Échec de la suppression du template.');
+      return;
+    }
     setTemplates(prev => prev.filter(t => t.id !== id));
   };
 

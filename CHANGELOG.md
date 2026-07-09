@@ -5,6 +5,11 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [3.83.4] — Correctif : création de template email non fonctionnelle — 9 juillet 2026, 01h10
+
+### Corrigé
+- **Créer un template email ne faisait rien** (`/settings/email-templates`) : le payload d'insertion omettait `user_id`, violant systématiquement la policy RLS `"Users can manage own email templates"` (`auth.uid() = user_id`). L'échec était totalement silencieux — l'erreur retournée par Supabase n'était jamais vérifiée, et le `catch` était vide : la modal se fermait comme si tout s'était bien passé, mais aucun template n'était réellement créé. Corrigé : `user_id` ajouté au payload, erreurs vérifiées et affichées (toast), même correctif appliqué à la suppression.
+
 ## [3.83.3] — Correctif : erreur "Style is not done loading" sur la carte — 9 juillet 2026, 00h35
 
 ### Corrigé
