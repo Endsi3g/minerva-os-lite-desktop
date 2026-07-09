@@ -5,6 +5,11 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [3.83.3] — Correctif : erreur "Style is not done loading" sur la carte — 9 juillet 2026, 00h35
+
+### Corrigé
+- **Page Carte plantait au chargement** ("Style is not done loading.") : `DrawingLayer` (le calque de dessin de zone pour créer une tournée) est rendu dès le montage de la carte, pas seulement quand l'utilisateur dessine — il appelait `addSource`/`addLayer` sans attendre que le style MapLibre ait fini de charger, contrairement aux 3 autres calques du fichier qui ont déjà ce garde-fou. Ajouté le même guard `isLoaded`, plus un `try/catch` par cohérence avec les autres couches.
+
 ## [3.83.2] — Message d'erreur Cloudflare 429 clarifié — 9 juillet 2026, 00h05
 
 ### Corrigé

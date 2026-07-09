@@ -437,7 +437,7 @@ interface DrawingLayerProps {
 }
 
 function DrawingLayer({ leads, onCreateTournee }: DrawingLayerProps) {
-  const { map } = useMap();
+  const { map, isLoaded } = useMap();
   const [isDrawing, setIsDrawing] = useState(false);
   const [vertices, setVertices] = useState<[number, number][]>([]);
   const [closedPolygon, setClosedPolygon] = useState<[number, number][] | null>(null);
@@ -449,26 +449,34 @@ function DrawingLayer({ leads, onCreateTournee }: DrawingLayerProps) {
 
   // Sync polygon to MapLibre source
   useEffect(() => {
-    if (!map) return;
+    // DrawingLayer est rendu inconditionnellement dès que <Map> monte (pas
+    // seulement quand l'utilisateur dessine) — sans le guard isLoaded, cet
+    // effet tourne au tout premier montage, avant que le style ait fini de
+    // charger, et map.addSource() throw "Style is not done loading."
+    if (!map || !isLoaded) return;
     const poly = closedPolygon ?? (vertices.length > 1 ? [...vertices, vertices[0]] : []);
     const geojson: GeoJSON.Feature = {
       type: 'Feature',
       geometry: { type: 'Polygon', coordinates: [poly] },
       properties: {},
     };
-    if (!map.getSource(SRC_ID)) {
-      map.addSource(SRC_ID, { type: 'geojson', data: geojson });
-      map.addLayer({ id: FILL_ID, type: 'fill', source: SRC_ID, paint: { 'fill-color': '#059669', 'fill-opacity': 0.12 } });
-      map.addLayer({ id: LINE_ID, type: 'line', source: SRC_ID, paint: { 'line-color': '#059669', 'line-width': 2, 'line-dasharray': [2, 2] } });
-    } else {
-      (map.getSource(SRC_ID) as any).setData(geojson);
-    }
+    try {
+      if (!map.getSource(SRC_ID)) {
+        map.addSource(SRC_ID, { type: 'geojson', data: geojson });
+        map.addLayer({ id: FILL_ID, type: 'fill', source: SRC_ID, paint: { 'fill-color': '#059669', 'fill-opacity': 0.12 } });
+        map.addLayer({ id: LINE_ID, type: 'line', source: SRC_ID, paint: { 'line-color': '#059669', 'line-width': 2, 'line-dasharray': [2, 2] } });
+      } else {
+        (map.getSource(SRC_ID) as any).setData(geojson);
+      }
+    } catch { /* style pas encore prêt ou instance en cours de destruction — ignoré */ }
     return () => {
-      if (map.getLayer(FILL_ID)) map.removeLayer(FILL_ID);
-      if (map.getLayer(LINE_ID)) map.removeLayer(LINE_ID);
-      if (map.getSource(SRC_ID)) map.removeSource(SRC_ID);
+      try {
+        if (map.getLayer(FILL_ID)) map.removeLayer(FILL_ID);
+        if (map.getLayer(LINE_ID)) map.removeLayer(LINE_ID);
+        if (map.getSource(SRC_ID)) map.removeSource(SRC_ID);
+      } catch { /* ignore */ }
     };
-  }, [map, vertices, closedPolygon]);
+  }, [map, isLoaded, vertices, closedPolygon]);
 
   // Click handler
   useEffect(() => {

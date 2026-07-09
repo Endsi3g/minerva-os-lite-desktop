@@ -20,6 +20,14 @@ interface ChangelogVersion {
 
 const versions: ChangelogVersion[] = [
   {
+    version: 'v3.83.3',
+    date: '9 juillet 2026 · 00h35',
+    title: 'Correctif : erreur "Style is not done loading" sur la carte',
+    highlights: [
+      { text: "La page Carte pouvait planter au chargement : le calque de dessin de zone appelait addSource/addLayer avant que le style MapLibre ait fini de charger. Corrigé avec le même garde-fou que les autres calques." },
+    ],
+  },
+  {
     version: 'v3.83.2',
     date: '9 juillet 2026 · 00h05',
     title: 'Message d\'erreur Cloudflare 429 clarifié',
