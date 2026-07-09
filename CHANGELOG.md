@@ -5,6 +5,13 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [3.87.0] — Édition Google Rating/Reviews, Drag & Drop de Photos et Mode Catalogue de Prospect — 9 juillet 2026, 04h15
+
+### Ajouté
+- **Édition Note/Avis Google** : Les champs Note Google (`rating`) et Nombre d'avis Google (`reviewsCount`) sont désormais directement modifiables depuis la barre latérale de la fiche prospect.
+- **Glisser-déposer de Photos** : Support natif du Drag & Drop pour ajouter ou remplacer la photo de l'établissement dans la fiche prospect.
+- **Mode Catalogue (Galerie de Photos)** : Ajout d'un sélecteur de vue (Tableau vs Catalogue) dans la page Leads, permettant de visualiser les établissements en mosaïque d'images pour faciliter la reconnaissance visuelle sur le terrain.
+
 ## [3.86.1] — Animations et transitions fluides (Inbox et Succursales) — 9 juillet 2026, 04h00
 
 ### Ajouté

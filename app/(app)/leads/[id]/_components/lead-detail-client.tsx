@@ -592,6 +592,41 @@ export function LeadDetailClient({ id }: { id: string }) {
   const [newLocationAddress, setNewLocationAddress] = useState('');
   const [addingLocation, setAddingLocation] = useState(false);
   const [deletingLocationIndex, setDeletingLocationIndex] = useState<number | null>(null);
+  const [dragActive, setDragActive] = useState(false);
+
+  const handleDrag = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+
+    if (isLocked || !lead) return;
+
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      const file = e.dataTransfer.files[0];
+      if (file.type.startsWith("image/")) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          if (event.target?.result) {
+            handleSaveProperty('imageUrl', event.target.result as string);
+            toast.success("Photo de l'établissement mise à jour !");
+          }
+        };
+        reader.readAsDataURL(file);
+      } else {
+        toast.error("Veuillez déposer un fichier image valide (JPG, PNG, WEBP, etc.).");
+      }
+    }
+  };
 
   const handleAddLocation = async (addressStr: string) => {
     if (!addressStr.trim() || !lead) return;
@@ -2902,6 +2937,42 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                   />
                 </div>
 
+                {/* Rating */}
+                <div className="grid grid-cols-[100px_1fr] items-start gap-1.5 py-0.5">
+                  <span className="text-[11px] font-medium text-[#7a7a76] flex items-center gap-1.5 h-6">
+                    <Star className="h-3 w-3 text-amber-500 fill-amber-500 shrink-0" />
+                    Note Google
+                  </span>
+                  <InlineTextEdit 
+                    value={lead.rating !== undefined && lead.rating !== null ? lead.rating.toString() : ''} 
+                    onSave={(val) => {
+                      const parsed = parseFloat(val);
+                      handleSaveProperty('rating', isNaN(parsed) ? undefined : parsed);
+                    }}
+                    placeholder="ex: 4.5"
+                    disabled={isLocked}
+                    onEditStateChange={setIsEditing}
+                  />
+                </div>
+
+                {/* Reviews Count */}
+                <div className="grid grid-cols-[100px_1fr] items-start gap-1.5 py-0.5">
+                  <span className="text-[11px] font-medium text-[#7a7a76] flex items-center gap-1.5 h-6">
+                    <Star className="h-3 w-3 text-[#7a7a76] shrink-0" />
+                    Avis Google
+                  </span>
+                  <InlineTextEdit 
+                    value={lead.reviewsCount !== undefined && lead.reviewsCount !== null ? lead.reviewsCount.toString() : ''} 
+                    onSave={(val) => {
+                      const parsed = parseInt(val, 10);
+                      handleSaveProperty('reviewsCount', isNaN(parsed) ? undefined : parsed);
+                    }}
+                    placeholder="ex: 12"
+                    disabled={isLocked}
+                    onEditStateChange={setIsEditing}
+                  />
+                </div>
+
                 {/* Next action date */}
                 <div className="grid grid-cols-[100px_1fr] items-center gap-1.5 py-0.5">
                   <span className="text-[11px] font-medium text-[#7a7a76] flex items-center gap-1.5">
@@ -3342,14 +3413,23 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
               </div>
 
               {/* Storefront Photo Section */}
-              <div className="pt-5 border-t border-[#e5e5e0] mt-5 space-y-2">
+              <div 
+                className="pt-5 border-t border-[#e5e5e0] mt-5 space-y-2"
+                onDragEnter={handleDrag}
+                onDragOver={handleDrag}
+                onDragLeave={handleDrag}
+                onDrop={handleDrop}
+              >
                 <span className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76] flex items-center gap-1.5">
                   <Camera className="h-3 w-3" />
                   {t('lead.photo_section')}
                 </span>
                 
                 {lead.imageUrl ? (
-                  <div className="relative rounded-lg overflow-hidden border border-[#e5e5e0] group bg-[#f4f4f3] aspect-video flex items-center justify-center">
+                  <div className={cn(
+                    "relative rounded-lg overflow-hidden border group bg-[#f4f4f3] aspect-video flex items-center justify-center transition-all duration-200",
+                    dragActive ? "border-[#059669] bg-[#059669]/5" : "border-[#e5e5e0]"
+                  )}>
                     <img 
                       src={lead.imageUrl} 
                       alt={t('lead.photo_alt')} 
@@ -3386,12 +3466,17 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                       }
                     }}
                     className={cn(
-                      "border border-dashed border-[#e5e5e0] hover:border-primary/50 hover:bg-secondary/10 rounded-lg p-6 flex flex-col items-center justify-center gap-1.5 cursor-pointer transition-all",
+                      "border border-dashed rounded-lg p-6 flex flex-col items-center justify-center gap-1.5 cursor-pointer transition-all duration-200",
+                      dragActive 
+                        ? "border-[#059669] bg-[#059669]/5" 
+                        : "border-[#e5e5e0] hover:border-primary/50 hover:bg-secondary/10",
                       isLocked && "cursor-not-allowed opacity-50 hover:bg-transparent hover:border-transparent"
                     )}
                   >
                     <Camera className="h-5 w-5 text-[#7a7a76]" />
-                    <span className="text-[10px] font-medium text-[#7a7a76]">{t('lead.take_photo_btn')}</span>
+                    <span className="text-[10px] font-medium text-[#7a7a76]">
+                      {dragActive ? "Déposer l'image ici !" : t('lead.take_photo_btn')}
+                    </span>
                   </div>
                 )}
               </div>

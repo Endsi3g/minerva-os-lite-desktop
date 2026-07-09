@@ -20,6 +20,16 @@ interface ChangelogVersion {
 
 const versions: ChangelogVersion[] = [
   {
+    version: 'v3.87.0',
+    date: '9 juillet 2026 · 04h15',
+    title: 'Édition Google Rating/Reviews, Drag & Drop de Photos et Mode Catalogue de Prospect',
+    highlights: [
+      { text: "Édition Note/Avis Google : Les champs Note Google (rating) et Nombre d'avis Google (reviewsCount) sont désormais directement modifiables depuis la barre latérale de la fiche prospect." },
+      { text: "Glisser-déposer de Photos : Support natif du Drag & Drop pour ajouter ou remplacer la photo de l'établissement dans la fiche prospect." },
+      { text: "Mode Catalogue (Galerie de Photos) : Ajout d'un sélecteur de vue (Tableau vs Catalogue) dans la page Leads, permettant de visualiser les établissements en mosaïque d'images pour faciliter la reconnaissance visuelle sur le terrain." }
+    ],
+  },
+  {
     version: 'v3.86.1',
     date: '9 juillet 2026 · 04h00',
     title: 'Animations et transitions fluides (Inbox et Succursales)',

@@ -10,6 +10,8 @@ import {
   SortingState,
   ColumnFiltersState,
 } from '@tanstack/react-table';
+import { useRouter } from 'next/navigation';
+import { Camera, Star } from 'lucide-react';
 import { useReach } from '@/lib/reach-context';
 import { createClient } from '@/lib/supabase/client';
 import type { AuthResponse } from '@supabase/supabase-js';
@@ -45,6 +47,7 @@ export function LeadsRoot() {
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [globalFilter, setGlobalFilter] = useState('');
   const [rowSelection, setRowSelection] = useState({});
+  const [viewMode, setViewMode] = useState<'list' | 'gallery'>('list');
 
   // Fetch current user
   useEffect(() => {
@@ -134,6 +137,10 @@ export function LeadsRoot() {
   // In "Mes leads" mode, empty state checks the merged list; otherwise the workspace list
   const isDatabaseEmpty = !showAssignedToMe && leads.length === 0;
 
+  const filteredLeads = useMemo(() => {
+    return table.getRowModel().rows.map(row => row.original);
+  }, [table.getRowModel().rows]);
+
   return (
     <div className="flex h-full flex-col overflow-hidden">
       <LeadsSubNav />
@@ -146,6 +153,8 @@ export function LeadsRoot() {
           table={table}
           showAssignedToMe={showAssignedToMe}
           onToggleAssignedToMe={() => setShowAssignedToMe(v => !v)}
+          viewMode={viewMode}
+          onViewModeChange={setViewMode}
         />
 
         {!isDataReady ? (
@@ -171,6 +180,8 @@ export function LeadsRoot() {
               table.getColumn('niche')?.setFilterValue(undefined);
             }}
           />
+        ) : viewMode === 'gallery' ? (
+          <LeadsGallery leads={filteredLeads} />
         ) : (
           <DataTable columns={columns} table={table} />
         )}
@@ -181,4 +192,100 @@ export function LeadsRoot() {
     </div>
   );
 }
+
+const STATUS_COLORS: Record<string, string> = {
+  'New': '#10b981',
+  'Contacted': '#f59e0b',
+  'Meeting Booked': '#8b5cf6',
+  'Proposal Sent': '#a855f7',
+  'Negotiation': '#f97316',
+  'Won': '#3b82f6',
+  'Lost': '#ef4444',
+};
+
+const STATUS_LABELS: Record<string, string> = {
+  'New': 'Nouveau',
+  'Contacted': 'Contacté',
+  'Meeting Booked': 'RDV Fixé',
+  'Proposal Sent': 'Proposition envoyée',
+  'Negotiation': 'Négociation',
+  'Won': 'Gagné',
+  'Lost': 'Perdu',
+};
+
+function LeadsGallery({ leads }: { leads: Lead[] }) {
+  const router = useRouter();
+
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 animate-in fade-in duration-300">
+      {leads.map((lead) => (
+        <div
+          key={lead.id}
+          onClick={() => {
+            localStorage.setItem('minerva_last_visited_lead_id', lead.id);
+            router.push(`/leads/${lead.id}`);
+          }}
+          className="bg-white border border-[#e5e5e0] rounded-xl overflow-hidden shadow-xs hover:border-[#7a7a76] cursor-pointer transition-all duration-150 flex flex-col group h-full"
+        >
+          {/* Cover image / storefront */}
+          <div className="aspect-video w-full bg-[#f4f4f3] border-b border-[#e5e5e0] relative flex items-center justify-center overflow-hidden shrink-0">
+            {lead.imageUrl ? (
+              <img
+                src={lead.imageUrl}
+                alt={lead.businessName}
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+              />
+            ) : (
+              <div className="flex flex-col items-center justify-center gap-1.5 p-4 text-[#7a7a76]">
+                <Camera className="h-6 w-6 opacity-30" />
+                <span className="text-[10px] font-medium">Aucune photo</span>
+              </div>
+            )}
+            
+            {/* Quick status badge in top corner */}
+            <div className="absolute top-2 left-2">
+              <span
+                className="text-[9px] font-bold px-2 py-0.5 rounded-full text-white shadow-sm"
+                style={{ backgroundColor: STATUS_COLORS[lead.status || 'New'] }}
+              >
+                {STATUS_LABELS[lead.status || 'New']}
+              </span>
+            </div>
+          </div>
+
+          {/* Card Info */}
+          <div className="p-3 flex-1 flex flex-col justify-between gap-3 bg-white">
+            <div className="space-y-1">
+              <h3 className="text-xs font-bold text-[#26251e] line-clamp-1 group-hover:text-[#059669] transition-colors">
+                {lead.businessName}
+              </h3>
+              <p className="text-[10px] text-[#7a7a76] truncate">
+                {lead.city || 'Ville inconnue'}{lead.niche ? ` · ${lead.niche}` : ''}
+              </p>
+            </div>
+
+            {/* Google review star rating */}
+            {lead.rating !== undefined && lead.rating !== null && (
+              <div className="flex items-center gap-1 text-[10px] leading-none">
+                <Star className="h-3 w-3 fill-amber-400 text-amber-400 shrink-0" />
+                <span className="font-bold text-[#26251e]">{lead.rating.toFixed(1)}</span>
+                {lead.reviewsCount !== undefined && (
+                  <span className="text-[#7a7a76] text-[9px]">({lead.reviewsCount} avis)</span>
+                )}
+              </div>
+            )}
+
+            {/* Website description snippet if exists */}
+            {lead.websiteDescription && (
+              <p className="text-[9px] text-[#7a7a76] line-clamp-2 bg-[#f4f4f3]/40 p-2 rounded border border-[#e5e5e0]/50 italic">
+                {lead.websiteDescription}
+              </p>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default LeadsRoot;

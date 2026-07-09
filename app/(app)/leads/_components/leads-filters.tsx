@@ -5,7 +5,7 @@ import { Table as TableType } from '@tanstack/react-table';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { Search, User, X, Clock } from 'lucide-react';
+import { Search, User, X, Clock, LayoutGrid, List } from 'lucide-react';
 import { useReach } from '@/lib/reach-context';
 import { cn } from '@/lib/utils';
 
@@ -31,9 +31,17 @@ interface LeadsFiltersProps<TData> {
   table: TableType<TData>;
   showAssignedToMe: boolean;
   onToggleAssignedToMe: () => void;
+  viewMode: 'list' | 'gallery';
+  onViewModeChange: (mode: 'list' | 'gallery') => void;
 }
 
-export function LeadsFilters<TData>({ table, showAssignedToMe, onToggleAssignedToMe }: LeadsFiltersProps<TData>) {
+export function LeadsFilters<TData>({ 
+  table, 
+  showAssignedToMe, 
+  onToggleAssignedToMe,
+  viewMode,
+  onViewModeChange,
+}: LeadsFiltersProps<TData>) {
   const { leads } = useReach();
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -253,6 +261,36 @@ export function LeadsFilters<TData>({ table, showAssignedToMe, onToggleAssignedT
             <span>Réinitialiser</span>
           </Button>
         )}
+
+        {/* View Switcher (Table vs Gallery) */}
+        <div className="flex items-center bg-[#f4f4f3] p-0.5 rounded-lg border border-[#e5e5e0] shrink-0 ml-1">
+          <button
+            type="button"
+            onClick={() => onViewModeChange('list')}
+            title="Vue Tableau"
+            className={cn(
+              "p-1.5 rounded-md transition-all cursor-pointer",
+              viewMode === 'list'
+                ? "bg-white text-[#26251e] shadow-xs"
+                : "text-[#7a7a76] hover:text-[#26251e]"
+            )}
+          >
+            <List className="h-3.5 w-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => onViewModeChange('gallery')}
+            title="Vue Catalogue (Photos)"
+            className={cn(
+              "p-1.5 rounded-md transition-all cursor-pointer",
+              viewMode === 'gallery'
+                ? "bg-white text-[#26251e] shadow-xs"
+                : "text-[#7a7a76] hover:text-[#26251e]"
+            )}
+          >
+            <LayoutGrid className="h-3.5 w-3.5" />
+          </button>
+        </div>
       </div>
     </div>
   );
