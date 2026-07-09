@@ -5,6 +5,18 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [3.85.0] — Adresses multiples, édition de téléphone/adresse, refonte premium, et correction d'assignation — 9 juillet 2026, 03h35
+
+### Ajouté
+- **Gestion multi-établissements** : Possibilité d'ajouter plusieurs adresses physiques (succursales) à une entreprise depuis sa fiche prospect. Chaque adresse est géocodée dynamiquement (Nominatim OpenStreetMap) et affichée comme un marqueur distinct sur la carte, ainsi que récapitulée dans la bulle d'information sur la carte.
+- **Édition de téléphone et d'adresse** : Intégration de champs d'édition en ligne interactifs pour le numéro de téléphone et l'adresse principale afin qu'ils soient modifiables à tout moment.
+
+### Corrigé
+- **Correctif d'assignation d'équipe** : Résolution du bug empêchant l'assignation d'un lead à un membre depuis sa fiche détail en alignant le mapping de l'identifiant membre (`id` vers `member_user_id`).
+- **Rendu visuel premium** : Refonte esthétique complète de la rangée de métadonnées, du scraper de site web IA et de la fiche détail, pour un look épuré, dynamique et parfaitement adapté au style de la carte.
+- **Stabilité de la sauvegarde des brouillons** : Suppression définitive de l'erreur de sauvegarde de brouillon en nettoyant les paramètres obsolètes d'insertion SQL.
+- **Nouvelle migration** : `20260709040000_v13_11_leads_locations.sql` ajoutant la colonne `locations` à la table `leads`.
+
 ## [3.84.0] — Correctifs critiques et nouvelles fonctionnalités d'envoi/brouillon, tâche unique, et partage — 9 juillet 2026, 03h15
 
 ### Ajouté

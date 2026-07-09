@@ -9,7 +9,7 @@ import { useLanguage } from '@/lib/language-context';
 import { usePersonas } from '@/lib/use-personas';
 import { takePhoto } from '@/lib/native-bridge';
 import { getApiUrl } from '@/lib/api-helper';
-import { Lead, Note } from '@/lib/mock-data';
+import { Lead, Note, LeadLocation } from '@/lib/mock-data';
 import { computeLeadScoreV2 } from '@/lib/lead-score';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -587,6 +587,51 @@ export function LeadDetailClient({ id }: { id: string }) {
   // Custom columns state
   const [addingCustomField, setAddingCustomField] = useState(false);
   const [newFieldName, setNewFieldName] = useState('');
+
+  // Multiple locations state
+  const [newLocationAddress, setNewLocationAddress] = useState('');
+  const [addingLocation, setAddingLocation] = useState(false);
+
+  const handleAddLocation = async (addressStr: string) => {
+    if (!addressStr.trim() || !lead) return;
+    setAddingLocation(true);
+    let lat: number | undefined = undefined;
+    let lng: number | undefined = undefined;
+
+    try {
+      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(addressStr.trim())}&limit=1`, {
+        headers: { 'User-Agent': 'MinervaOSReachLiteClient/1.0' }
+      });
+      if (res.ok) {
+        const json = await res.json();
+        if (json && json[0]) {
+          lat = parseFloat(json[0].lat);
+          lng = parseFloat(json[0].lon);
+        }
+      }
+    } catch (e) {
+      console.warn('Geocoding new location failed, falling back to jitter:', e);
+    }
+
+    if (lat === undefined || lng === undefined) {
+      const baseLat = lead.latitude || 45.5019;
+      const baseLng = lead.longitude || -73.5674;
+      lat = baseLat + (Math.random() - 0.5) * 0.03;
+      lng = baseLng + (Math.random() - 0.5) * 0.03;
+    }
+
+    const newLoc: LeadLocation = {
+      address: addressStr.trim(),
+      lat,
+      lng
+    };
+
+    const current = lead.locations || [];
+    handleSaveProperty('locations', [...current, newLoc]);
+    setNewLocationAddress('');
+    setAddingLocation(false);
+    toast.success('Succursale ajoutée avec succès !');
+  };
 
   const handleCreateCustomField = () => {
     if (!newFieldName.trim() || !activeWorkspace || !lead) return;
@@ -1230,7 +1275,13 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
         const res = await fetch(getApiUrl(`/api/team/members${ownerParam}`));
         if (res.ok) {
           const data = await res.json();
-          const members = Array.isArray(data) ? data : (data?.members ?? []);
+          const rawMembers = Array.isArray(data) ? data : (data?.members ?? []);
+          const members = rawMembers.map((m: any) => ({
+            id: m.member_user_id || m.id,
+            email: m.email || '',
+            full_name: m.profile?.full_name || m.full_name || m.email?.split('@')[0] || '',
+            role: m.role || '',
+          }));
           setTeamMembers(members);
         }
       } catch (e) {
@@ -1748,31 +1799,35 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
             <div className="h-px bg-border" />
 
             {/* Prospect data from OSM / Google Maps */}
+            {/* Prospect data from OSM / Google Maps */}
             {(lead.rating !== undefined || lead.reviewsCount !== undefined || lead.phone || lead.website || lead.mapsUrl) && (
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-2 px-3 py-2.5 rounded-lg border border-[#e5e5e0]/70 bg-[#f4f4f3]/40 text-xs">
+              <div className="flex flex-wrap items-center gap-2 p-1.5 bg-[#f4f4f3]/40 border border-[#e5e5e0]/60 rounded-xl">
                 {lead.rating !== undefined && (
-                  <div className="flex items-center gap-1">
-                    {[1, 2, 3, 4, 5].map((i) => (
-                      <Star
-                        key={i}
-                        className={cn('h-3 w-3', i <= Math.round(lead.rating!) ? 'fill-amber-400 text-amber-400' : 'text-[#7a7a76]/30')}
-                      />
-                    ))}
-                    <span className="font-bold text-[#26251e] ml-0.5">{lead.rating.toFixed(1)}</span>
+                  <div className="flex items-center gap-1.5 px-3 py-1 bg-white border border-[#e5e5e0]/50 rounded-lg shadow-sm">
+                    <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+                    <span className="text-xs font-bold text-[#26251e]">{lead.rating.toFixed(1)}</span>
                     {lead.reviewsCount !== undefined && (
-                      <span className="text-[#7a7a76]">({lead.reviewsCount} avis)</span>
+                      <span className="text-[10px] text-[#7a7a76]">({lead.reviewsCount} avis)</span>
                     )}
                   </div>
                 )}
                 {lead.phone && (
-                  <a href={`tel:${lead.phone}`} className="flex items-center gap-1 text-[#7a7a76] hover:text-[#26251e] transition-colors">
-                    <Phone className="h-3 w-3 shrink-0" />
+                  <a
+                    href={`tel:${lead.phone}`}
+                    className="flex items-center gap-1.5 px-3 py-1 bg-white border border-[#e5e5e0]/50 rounded-lg shadow-sm text-xs font-medium text-[#7a7a76] hover:text-[#26251e] hover:border-[#059669]/30 transition-all"
+                  >
+                    <Phone className="h-3.5 w-3.5 text-[#059669]" />
                     {lead.phone}
                   </a>
                 )}
                 {lead.website && (
-                  <a href={lead.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-[#059669] hover:underline truncate max-w-[200px]">
-                    <Globe className="h-3 w-3 shrink-0" />
+                  <a
+                    href={lead.website}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 px-3 py-1 bg-white border border-[#e5e5e0]/50 rounded-lg shadow-sm text-xs font-semibold text-[#059669] hover:bg-[#059669]/5 transition-all max-w-[200px] truncate"
+                  >
+                    <Globe className="h-3.5 w-3.5" />
                     {lead.website.replace(/^https?:\/\//, '').replace(/\/$/, '')}
                   </a>
                 )}
@@ -1787,9 +1842,9 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                         window.open(url, '_blank', 'noopener');
                       }
                     }}
-                    className="flex items-center gap-1 text-blue-600 hover:underline text-xs"
+                    className="flex items-center gap-1.5 px-3 py-1 bg-white border border-[#e5e5e0]/50 rounded-lg shadow-sm text-xs font-semibold text-blue-600 hover:bg-blue-50/50 transition-all"
                   >
-                    <GoogleMapsIcon size={12} className="shrink-0" />
+                    <GoogleMapsIcon size={13} className="shrink-0" />
                     Google Maps
                   </button>
                 )}
@@ -1798,10 +1853,10 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
 
             {/* Website scraper — AI business description (fed to the AI script + drafts) */}
             {lead.website && (
-              <div className="rounded-lg border border-[#e5e5e0]/70 bg-[#f4f4f3]/40 p-3.5 space-y-2.5">
+              <div className="rounded-xl border border-[#e5e5e0]/60 bg-gradient-to-br from-white to-[#fafaf8] p-4 shadow-sm hover:shadow-md transition-shadow duration-200 space-y-3 animate-in fade-in duration-200">
                 <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">
-                    <FileText className="h-3.5 w-3.5" />
+                  <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#7a7a76]">
+                    <FileText className="h-4 w-4 text-[#059669]" />
                     Description du site (IA)
                   </div>
                   <Button
@@ -1810,21 +1865,23 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                     variant="outline"
                     onClick={handleScrapeWebsite}
                     disabled={scrapingSite || isLocked}
-                    className="h-7 text-[11px] font-semibold gap-1.5"
+                    className="h-7 text-xs font-bold gap-1.5 border-[#e5e5e0] hover:border-[#059669] transition-all bg-white"
                   >
                     {scrapingSite
-                      ? <Loader2 className="h-3 w-3 animate-spin" />
-                      : <Sparkles className="h-3 w-3 text-[#059669]" />}
+                      ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      : <Sparkles className="h-3.5 w-3.5 text-[#059669]" />}
                     {scrapingSite ? 'Analyse…' : lead.websiteDescription ? 'Régénérer' : 'Scraper le site'}
                   </Button>
                 </div>
                 {scrapeError && (
-                  <p className="text-[11px] text-red-600 font-medium">{scrapeError}</p>
+                  <p className="text-xs text-red-600 font-semibold">{scrapeError}</p>
                 )}
-                <DescriptionEditor
-                  value={lead.websiteDescription || ''}
-                  onSave={val => updateLead(lead.id, { websiteDescription: val })}
-                />
+                <div className="rounded-lg border border-[#e5e5e0]/50 overflow-hidden bg-white">
+                  <DescriptionEditor
+                    value={lead.websiteDescription || ''}
+                    onSave={val => updateLead(lead.id, { websiteDescription: val })}
+                  />
+                </div>
               </div>
             )}
 
@@ -2820,6 +2877,36 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                   />
                 </div>
 
+                {/* Phone */}
+                <div className="grid grid-cols-[100px_1fr] items-start gap-1.5 py-0.5">
+                  <span className="text-[11px] font-medium text-[#7a7a76] flex items-center gap-1.5 h-6">
+                    <Phone className="h-3 w-3" />
+                    Téléphone
+                  </span>
+                  <InlineTextEdit 
+                    value={lead.phone || ''} 
+                    onSave={(val) => handleSaveProperty('phone', val)}
+                    placeholder="Numéro de téléphone"
+                    disabled={isLocked}
+                    onEditStateChange={setIsEditing}
+                  />
+                </div>
+
+                {/* Address */}
+                <div className="grid grid-cols-[100px_1fr] items-start gap-1.5 py-0.5">
+                  <span className="text-[11px] font-medium text-[#7a7a76] flex items-center gap-1.5 h-6">
+                    <MapPin className="h-3 w-3" />
+                    Adresse
+                  </span>
+                  <InlineTextEdit 
+                    value={lead.address || ''} 
+                    onSave={(val) => handleSaveProperty('address', val)}
+                    placeholder="Adresse de l'entreprise"
+                    disabled={isLocked}
+                    onEditStateChange={setIsEditing}
+                  />
+                </div>
+
                 {/* Next action date */}
                 <div className="grid grid-cols-[100px_1fr] items-center gap-1.5 py-0.5">
                   <span className="text-[11px] font-medium text-[#7a7a76] flex items-center gap-1.5">
@@ -2880,6 +2967,71 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                     <Plus className="w-3 h-3" /> Ajouter un champ
                   </button>
                 )}
+              </div>
+
+              {/* Adresses Multiples (Locations) */}
+              <div className="pt-4 border-t border-[#e5e5e0] mt-4 space-y-2">
+                <h4 className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76] flex items-center gap-1.5 font-sans">
+                  <MapPin className="h-3.5 w-3.5 text-[#059669]" />
+                  Autres établissements / succursales ({lead.locations?.length || 0})
+                </h4>
+                
+                {lead.locations && lead.locations.length > 0 ? (
+                  <div className="grid grid-cols-1 gap-1.5 max-h-40 overflow-y-auto pr-1">
+                    {lead.locations.map((loc, idx) => (
+                      <div key={idx} className="flex items-start justify-between gap-2 p-2 bg-[#f4f4f3]/40 border border-[#e5e5e0]/70 rounded-lg text-xs hover:border-[#059669]/30 transition-all duration-150">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-[#26251e] truncate">{loc.address}</p>
+                          {loc.lat && loc.lng && (
+                            <p className="text-[9px] text-[#7a7a76] font-mono mt-0.5">
+                              Coords: {loc.lat.toFixed(5)}, {loc.lng.toFixed(5)}
+                            </p>
+                          )}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const updated = lead.locations!.filter((_, i) => i !== idx);
+                            handleSaveProperty('locations', updated);
+                          }}
+                          className="text-[#7a7a76]/60 hover:text-red-600 transition-colors p-0.5 rounded hover:bg-red-50 shrink-0"
+                          title="Supprimer cette adresse"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-[11px] text-[#7a7a76] italic pl-0.5">Aucune succursale enregistrée.</p>
+                )}
+
+                {/* Form to add a location */}
+                <div className="flex gap-1.5 mt-2.5">
+                  <Input
+                    placeholder="Saisir une nouvelle adresse et appuyer sur Entrée..."
+                    value={newLocationAddress}
+                    onChange={(e) => setNewLocationAddress(e.target.value)}
+                    className="h-7 text-xs border-[#e5e5e0] focus:ring-[#059669] flex-1 bg-white"
+                    disabled={addingLocation || isLocked}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAddLocation(newLocationAddress);
+                      }
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="h-7 text-xs font-semibold px-3 shrink-0"
+                    disabled={addingLocation || isLocked || !newLocationAddress.trim()}
+                    onClick={() => handleAddLocation(newLocationAddress)}
+                  >
+                    {addingLocation ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Ajouter'}
+                  </Button>
+                </div>
               </div>
 
               {/* Scripts Contextuels (Phase 3) */}

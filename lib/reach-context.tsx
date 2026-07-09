@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { getApiUrl } from './api-helper';
 import { User as SupabaseUser, AuthChangeEvent, Session } from '@supabase/supabase-js';
-import { Lead, Task, Note, AiSuggestion, initialLeads, initialTasks } from './mock-data';
+import { Lead, Task, Note, AiSuggestion, LeadLocation, initialLeads, initialTasks } from './mock-data';
 import { computeLeadScore } from './lead-scoring';
 import { createClient } from './supabase/client';
 import { sendDesktopNotification } from './notification-service';
@@ -316,6 +316,7 @@ interface DbLead {
   // Tags (v4.0) — JSON string in SQLite, text[] in Supabase
   tags?: string | string[] | null;
   custom_fields?: string | Record<string, string> | null;
+  locations?: string | LeadLocation[] | null;
 }
 
 interface DbNote {
@@ -425,6 +426,7 @@ function mapDbLeadToUi(dbLead: DbLead, dbNotes: DbNote[] = []): Lead {
     scoreRevenue: dbLead.score_revenue ?? undefined,
     projectId: dbLead.project_id || undefined,
     tags: (() => { try { return dbLead.tags ? (Array.isArray(dbLead.tags) ? dbLead.tags : JSON.parse(dbLead.tags as string)) : []; } catch { return []; } })(),
+    locations: (() => { try { return dbLead.locations ? (Array.isArray(dbLead.locations) ? dbLead.locations : JSON.parse(dbLead.locations as string)) : []; } catch { return []; } })(),
     customFields,
     notes: dbNotes
       .filter(n => n.lead_id === dbLead.id)
@@ -2013,6 +2015,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
         if (fields.phone !== undefined) { dbFields.push("phone = ?"); params.push(fields.phone || null); }
         if (fields.tags !== undefined) { dbFields.push("tags = ?"); params.push(JSON.stringify(fields.tags || [])); }
         if (fields.address !== undefined) { dbFields.push("address = ?"); params.push(fields.address || null); }
+        if (fields.locations !== undefined) { dbFields.push("locations = ?"); params.push(fields.locations ? JSON.stringify(fields.locations) : null); }
         if (fields.notes !== undefined) {
           const noteText = typeof fields.notes === 'string'
             ? fields.notes
@@ -2091,6 +2094,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
     if (fields.phone !== undefined) dbFields.phone = fields.phone || null;
     if (fields.tags !== undefined) dbFields.tags = fields.tags || [];
     if (fields.address !== undefined) dbFields.address = fields.address || null;
+    if (fields.locations !== undefined) dbFields.locations = (fields.locations ?? null) as any;
     if (fields.notes !== undefined) {
       dbFields.notes = typeof fields.notes === 'string'
         ? fields.notes

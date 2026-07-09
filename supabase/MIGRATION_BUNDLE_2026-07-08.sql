@@ -277,9 +277,17 @@ ALTER TABLE public.workspaces ADD COLUMN IF NOT EXISTS enabled_packs JSONB DEFAU
 ALTER TABLE public.leads ADD COLUMN IF NOT EXISTS enrichment_review JSONB;
 
 
+-- ── 15. v13.11 — locations (adresses multiples par lead) ─────────────────────
+-- (supabase/migrations/20260709040000_v13_11_leads_locations.sql)
+
+ALTER TABLE public.leads ADD COLUMN IF NOT EXISTS locations JSONB DEFAULT '[]'::jsonb;
+
+
 -- ═══════════════════════════════════════════════════════════════════════════
 -- FIN DU BUNDLE — vérification rapide après exécution :
 -- SELECT column_name FROM information_schema.columns WHERE table_name = 'leads' AND column_name = 'campaign_id';
 -- SELECT column_name FROM information_schema.columns WHERE table_name = 'campaigns' AND column_name = 'goal_type';
 -- SELECT column_name FROM information_schema.columns WHERE table_name = 'tasks' AND column_name = 'lead_id';
+-- SELECT column_name FROM information_schema.columns WHERE table_name = 'leads' AND column_name = 'locations';
 -- ═══════════════════════════════════════════════════════════════════════════
+

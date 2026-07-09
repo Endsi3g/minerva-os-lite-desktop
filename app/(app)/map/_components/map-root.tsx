@@ -83,14 +83,42 @@ function CrmLeadsLayer({
   const heatmapId = `crm-heat-${uid}`;
   const initialized = useRef(false);
 
-  const geojson = useMemo<GeoJSON.FeatureCollection>(() => ({
-    type: 'FeatureCollection',
-    features: leads.map(l => ({
-      type: 'Feature',
-      geometry: { type: 'Point', coordinates: [l._lng, l._lat] },
-      properties: { id: l.id, status: l.status || 'New', name: l.businessName || '' },
-    })),
-  }), [leads]);
+  const geojson = useMemo<GeoJSON.FeatureCollection>(() => {
+    const features: GeoJSON.Feature[] = [];
+
+    leads.forEach(l => {
+      // Main location
+      features.push({
+        type: 'Feature',
+        geometry: { type: 'Point', coordinates: [l._lng, l._lat] },
+        properties: { id: l.id, status: l.status || 'New', name: l.businessName || '', isMain: true },
+      });
+
+      // Branch locations
+      if (l.locations && Array.isArray(l.locations)) {
+        l.locations.forEach((loc) => {
+          if (loc.lat && loc.lng) {
+            features.push({
+              type: 'Feature',
+              geometry: { type: 'Point', coordinates: [loc.lng, loc.lat] },
+              properties: {
+                id: l.id,
+                status: l.status || 'New',
+                name: `${l.businessName} (Succursale) - ${loc.address}`,
+                isBranch: true,
+                address: loc.address
+              },
+            });
+          }
+        });
+      }
+    });
+
+    return {
+      type: 'FeatureCollection',
+      features
+    };
+  }, [leads]);
 
   // Init layers once
   useEffect(() => {
@@ -778,6 +806,20 @@ function LeadMapPopup({ lead, onClose, onOpenDetail, distanceKm }: LeadMapPopupP
           <div className="px-4 pb-2 space-y-1">
             {lead.contactEmail && <p className="text-[9px] text-[#7a7a76] truncate flex items-center gap-1"><Mail className="h-2.5 w-2.5 shrink-0" />{lead.contactEmail}</p>}
             {lead.phone && <p className="text-[9px] text-[#7a7a76] truncate">📞 {lead.phone}</p>}
+          </div>
+        )}
+        {lead.locations && lead.locations.length > 0 && (
+          <div className="px-4 pb-2 border-t border-[#f0f0ec] pt-2 mt-1.5 space-y-1">
+            <p className="text-[9px] font-bold text-[#059669] flex items-center gap-1">
+              <MapPin className="h-2.5 w-2.5 shrink-0" />
+              Multi-établissement ({lead.locations.length + 1} adresses)
+            </p>
+            <div className="max-h-16 overflow-y-auto space-y-0.5 pr-1">
+              <p className="text-[8px] text-[#7a7a76] truncate">• {lead.address || 'Adresse principale'}</p>
+              {lead.locations.map((loc, idx) => (
+                <p key={idx} className="text-[8px] text-[#7a7a76] truncate">• {loc.address}</p>
+              ))}
+            </div>
           </div>
         )}
         <div className="px-4 pb-3 flex gap-2">

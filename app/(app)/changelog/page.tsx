@@ -20,6 +20,18 @@ interface ChangelogVersion {
 
 const versions: ChangelogVersion[] = [
   {
+    version: 'v3.85.0',
+    date: '9 juillet 2026 · 03h35',
+    title: 'Adresses multiples (succursales), édition de téléphone/adresse, refonte visuelle premium, et correctif d\'assignation',
+    highlights: [
+      { text: "Gestion multi-établissements : Possibilité d'ajouter plusieurs adresses physiques (succursales) à une entreprise depuis sa fiche prospect. Chaque adresse est géocodée dynamiquement (Nominatim OpenStreetMap) et affichée comme un marqueur distinct sur la carte." },
+      { text: "Rendu visuelle premium : Refonte esthétique des widgets de notation, du scraper de site web IA et de la fiche detail, alignée sur le design épuré de la carte." },
+      { text: "Édition de téléphone/adresse : Intégration de champs d'édition en ligne interactifs pour le numéro de téléphone et l'adresse principale afin qu'ils soient modifiables à tout moment." },
+      { text: "Correctif d'assignation d'équipe : Résolution du bug empêchant l'assignation d'un lead à un membre depuis sa fiche détail (correction du mapping d'identifiant de team_members vers member_user_id)." },
+      { text: "Correctif de brouillons : Suppression définitive de l'erreur de sauvegarde de brouillon en nettoyant les paramètres obsolètes d'insertion SQL." }
+    ],
+  },
+  {
     version: 'v3.84.0',
     date: '9 juillet 2026 · 03h15',
     title: 'Correctifs critiques et nouvelles fonctionnalités d\'envoi/brouillon, tâche unique, et partage',

@@ -6,6 +6,12 @@ export interface Note {
   createdAt: string;
 }
 
+export interface LeadLocation {
+  address: string;
+  lat?: number;
+  lng?: number;
+}
+
 export interface Lead {
   id: string;
   businessName: string;
@@ -31,6 +37,7 @@ export interface Lead {
   reviewsCount?: number;
   mapsUrl?: string;
   address?: string;
+  locations?: LeadLocation[];
   photos?: string[];
   socialLinks?: Record<string, string>;
   assignedTo?: string;
