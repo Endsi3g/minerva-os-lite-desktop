@@ -20,6 +20,20 @@ interface ChangelogVersion {
 
 const versions: ChangelogVersion[] = [
   {
+    version: 'v3.84.0',
+    date: '9 juillet 2026 · 03h15',
+    title: 'Correctifs critiques et nouvelles fonctionnalités d\'envoi/brouillon, tâche unique, et partage',
+    highlights: [
+      { text: "Envoi email Leads corrigé : Le Composer inline de la fiche lead redirige maintenant correctement vers /api/send-email au lieu de create-draft pour un envoi direct." },
+      { text: "Brouillons d'email fonctionnels : Correction de l'insertion en base Supabase (colonnes workspace_id et channel rajoutées) résolvant l'erreur 500." },
+      { text: "Description de site IA persistante : Désactivation de la branche SQLite Electron sur le navigateur web permettant aux modifications d'être sauvegardées correctement sur Supabase." },
+      { text: "Déduplication de tâches : Éradication du doublon de tâche en ajoutant un guard de déduplication par ID dans le listener de changements en temps réel." },
+      { text: "Auto-création de contacts : Les prospects à qui un email est envoyé sont immédiatement et automatiquement ajoutés aux contacts de l'application." },
+      { text: "Gestion intelligente des notifications : Limitation à 6 notifications web empilées (avec notification de résumé) et déduplication intelligente sous 2 secondes. Electron continue à utiliser les notifications système natives." },
+      { text: "Score NBA réparé : L'API GET filtre désormais par lead_id pour retrouver instantanément le score calculé du prospect actuel." }
+    ],
+  },
+  {
     version: 'v3.83.4',
     date: '9 juillet 2026 · 01h10',
     title: 'Correctif : création de template email non fonctionnelle',

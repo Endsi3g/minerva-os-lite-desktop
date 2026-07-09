@@ -16,6 +16,7 @@ contextBridge.exposeInMainWorld('electron', {
   },
   
   // Database API (SQLite disabled - direct Supabase Cloud used instead)
+  sqliteEnabled: false,
   dbAll: () => Promise.resolve([]),
   dbRun: () => Promise.resolve({ lastID: 0, changes: 0 }),
   dbGet: () => Promise.resolve(null),

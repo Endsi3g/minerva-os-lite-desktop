@@ -41,23 +41,67 @@ function playNotifSound(type: 'soft' | 'alert' = 'soft') {
   }
 }
 
+// ── Web notification cap & dedup ───────────────────────────────────────────────
+
+// Track active Web Notifications to cap at 6 simultaneous ones
+let activeWebNotifCount = 0;
+const MAX_WEB_NOTIF = 6;
+
+// Recent notification dedup: title+body → timestamp
+const recentNotifCache = new Map<string, number>();
+const DEDUP_WINDOW_MS = 2000;
+
+function isDuplicate(title: string, body: string): boolean {
+  const key = `${title}||${body}`;
+  const last = recentNotifCache.get(key);
+  const now = Date.now();
+  if (last && now - last < DEDUP_WINDOW_MS) return true;
+  recentNotifCache.set(key, now);
+  // Prune old entries to avoid memory leak
+  if (recentNotifCache.size > 50) {
+    const oldest = [...recentNotifCache.entries()].sort((a, b) => a[1] - b[1])[0];
+    recentNotifCache.delete(oldest[0]);
+  }
+  return false;
+}
+
 // ── Core send ──────────────────────────────────────────────────────────────────
 
 export function sendDesktopNotification(title: string, body: string, options?: { sound?: boolean; soundType?: 'soft' | 'alert' }): void {
   if (typeof window === 'undefined') return;
+
+  // Dedup: skip if same title+body was sent within the last 2s
+  if (isDuplicate(title, body)) return;
+
   const electron = (window as any).electron;
 
   if (electron?.sendNotification) {
-    // Electron: always works natively
+    // Electron: always use native OS notification (1 per event, OS manages stacking)
     electron.sendNotification(title, body);
   } else if ('Notification' in window) {
     if (Notification.permission === 'granted') {
-      new Notification(title, { body, icon: '/icon-192.png' });
+      if (activeWebNotifCount >= MAX_WEB_NOTIF) {
+        // Already at cap — show a summary notification instead of stacking more
+        if (!isDuplicate('Minerva OS', `${activeWebNotifCount} notifications en attente`)) {
+          const summary = new Notification('Minerva OS', {
+            body: `${activeWebNotifCount} notifications en attente`,
+            icon: '/icon-192.png',
+          });
+          activeWebNotifCount++;
+          summary.onclose = () => { activeWebNotifCount = Math.max(0, activeWebNotifCount - 1); };
+        }
+      } else {
+        const notif = new Notification(title, { body, icon: '/icon-192.png' });
+        activeWebNotifCount++;
+        notif.onclose = () => { activeWebNotifCount = Math.max(0, activeWebNotifCount - 1); };
+      }
     } else if (Notification.permission === 'default') {
       // Auto-request permission and fire notification if granted
       Notification.requestPermission().then(perm => {
         if (perm === 'granted') {
-          new Notification(title, { body, icon: '/icon-192.png' });
+          const notif = new Notification(title, { body, icon: '/icon-192.png' });
+          activeWebNotifCount++;
+          notif.onclose = () => { activeWebNotifCount = Math.max(0, activeWebNotifCount - 1); };
         }
       }).catch(() => { /* silently ignore */ });
     }

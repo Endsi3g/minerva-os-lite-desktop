@@ -11,6 +11,22 @@ export async function GET(req: NextRequest) {
   const workspaceId = req.nextUrl.searchParams.get('workspace_id');
   if (!workspaceId) return NextResponse.json({ error: 'workspace_id required' }, { status: 400 });
 
+  const leadId = req.nextUrl.searchParams.get('lead_id');
+
+  // Single lead query — used by LeadNbaCard
+  if (leadId) {
+    const { data: lead, error } = await supabase
+      .from('leads')
+      .select('id, business_name, niche, city, status, temperature, nba_score, nba_action, nba_reason, nba_channel, nba_computed_at')
+      .eq('workspace_id', workspaceId)
+      .eq('id', leadId)
+      .maybeSingle();
+
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ lead: lead ?? null, stale: !lead?.nba_computed_at });
+  }
+
+  // Workspace-level top-10 query
   const { data: leads, error } = await supabase
     .from('leads')
     .select('id, business_name, niche, city, status, temperature, nba_score, nba_action, nba_reason, nba_channel, nba_computed_at')

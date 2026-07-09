@@ -5,6 +5,20 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [3.84.0] — Correctifs critiques et nouvelles fonctionnalités d'envoi/brouillon, tâche unique, et partage — 9 juillet 2026, 03h15
+
+### Ajouté
+- **Auto-création de contacts** : Les prospects à qui un email est envoyé sont immédiatement et automatiquement ajoutés aux contacts de l'application (`contacts`) s'ils n'y figurent pas déjà.
+- **Gestion intelligente des notifications** : Limitation à 6 notifications web empilées (avec notification de résumé) et déduplication intelligente sous 2 secondes. Electron continue à utiliser les notifications système natives sans duplication.
+- **Partage et Copie de Lead** : Fonctionnalités de partage de fiches prospects (lien public, partage d'équipe et copie des informations) entièrement fonctionnelles suite aux correctifs d'architecture.
+
+### Corrigé
+- **Envoi email Leads** : Le Composer inline de la fiche lead redirige maintenant correctement vers `/api/send-email` au lieu de `create-draft` pour un envoi direct d'email.
+- **Brouillons d'email** : Correction de l'insertion de brouillon en base Supabase (colonnes `workspace_id` et `channel` manquantes qui provoquaient une erreur 500 serveur).
+- **Description de site IA persistante** : Désactivation de la branche SQLite Electron sur le navigateur web qui interceptait les écritures sans persister sur Supabase.
+- **Tâche créée en double** : Déduplication de tâche par ID dans le listener de changements Supabase Realtime en temps réel pour contrer l'insertion optimiste.
+- **Score NBA** : L'API GET filtre désormais par `lead_id` pour retrouver instantanément le score calculé du prospect actuel, plutôt que d'être restreint à un top 10 arbitraire.
+
 ## [3.83.4] — Correctif : création de template email non fonctionnelle — 9 juillet 2026, 01h10
 
 ### Corrigé

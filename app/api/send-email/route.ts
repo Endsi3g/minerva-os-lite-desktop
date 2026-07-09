@@ -123,10 +123,43 @@ export async function POST(req: NextRequest) {
 
     if (noteErr) throw noteErr;
 
+    // 6. Auto-create or update contact for this lead in the contacts table
+    let contactCreated = false;
+    try {
+      const { data: existingContact } = await supabase
+        .from('contacts')
+        .select('id')
+        .eq('workspace_id', lead.workspace_id)
+        .eq('email', recipientEmail)
+        .maybeSingle();
+
+      if (!existingContact) {
+        const { error: contactErr } = await supabase
+          .from('contacts')
+          .insert({
+            workspace_id: lead.workspace_id,
+            user_id: user.id,
+            name: lead.contact_name || lead.business_name || recipientEmail,
+            email: recipientEmail,
+            phone: lead.phone || null,
+            company: lead.business_name || null,
+            lead_id: leadId,
+            source: 'email_sent',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          });
+        if (!contactErr) contactCreated = true;
+      }
+    } catch (contactEx) {
+      // Non-critical: contact creation failure should not block email success response
+      console.warn('Auto-contact creation failed:', contactEx);
+    }
+
     return NextResponse.json({
       success: true,
       recipient: recipientEmail,
-      status: 'Contacted'
+      status: 'Contacted',
+      contactCreated,
     });
 
   } catch (err) {

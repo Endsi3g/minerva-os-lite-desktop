@@ -160,6 +160,12 @@ export function TemplateComposer({ lead }: TemplateComposerProps) {
           description: `Sujet : ${composedSubject || 'Sans objet'}`,
           duration: 5000,
         });
+        if (data.contactCreated) {
+          toast.success(`Contact ajouté : ${lead.contactEmail}`, {
+            description: 'Le prospect a été automatiquement ajouté à vos contacts.',
+            duration: 4000,
+          });
+        }
         // Native Electron notification
         if ((window as any).electron?.sendNotification) {
           (window as any).electron.sendNotification(

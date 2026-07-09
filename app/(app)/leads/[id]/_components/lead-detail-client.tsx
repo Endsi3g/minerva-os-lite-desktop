@@ -2455,7 +2455,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                 </div>
               ) : activeTab === 'composer' ? (
                 /* ── Composer unifié ── */
-                <ComposerPanel lead={lead} addNoteToLead={addNoteToLead} addTask={addTask} />
+                <ComposerPanel lead={lead} addNoteToLead={addNoteToLead} addTask={addTask} workspaceId={activeWorkspace?.id || ''} />
               ) : activeTab === 'timeline' ? (
                 /* Timeline Panel — unified timeline for this lead */
                 <div className="-mx-4 -mb-4 h-[500px] overflow-hidden">
@@ -4045,10 +4045,12 @@ function ComposerPanel({
   lead,
   addNoteToLead,
   addTask,
+  workspaceId,
 }: {
   lead: Lead;
   addNoteToLead: (leadId: string, content: string, type: Note['type']) => void;
   addTask: (title: string, category: 'Follow-up' | 'Preparation' | 'General' | 'Meeting', dueDate?: string) => void;
+  workspaceId: string;
 }) {
   const { t } = useLanguage();
   const [tab, setTab] = useState<ComposerTab>('email');
@@ -4080,33 +4082,35 @@ function ComposerPanel({
 
   const handleSendEmail = async () => {
     if (!emailSubject || !emailBody) return;
+    if (!lead.contactEmail) {
+      toast.error("Ce lead n'a pas d'email de contact.");
+      return;
+    }
     setEmailSending(true);
     setEmailMsg(null);
     try {
-      // Create a Gmail draft — does NOT send the email
-      const res = await fetch(getApiUrl('/api/create-draft'), {
+      // Send the email directly via Gmail API
+      const res = await fetch(getApiUrl('/api/send-email'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          to: lead.contactEmail || '',
+          leadId: lead.id,
           subject: emailSubject,
           body: emailBody,
-          leadId: lead.id,
         }),
       });
+      const data = await res.json().catch(() => ({}));
       if (res.ok) {
-        const data = await res.json();
-        const msg = data.simulated
-          ? 'Brouillon sauvegardé (Google non connecté).'
-          : `Brouillon créé dans Gmail. Ouvrez Gmail pour envoyer.`;
-        setEmailMsg({ type: 'success', text: msg });
-        toast.success(msg);
-        addNoteToLead(lead.id, `Brouillon créé : ${emailSubject}`, 'email');
+        setEmailMsg({ type: 'success', text: `Email envoyé à ${lead.contactEmail}` });
+        toast.success(`Email envoyé à ${lead.contactEmail}`, {
+          description: `Sujet : ${emailSubject}`,
+          duration: 5000,
+        });
+        addNoteToLead(lead.id, `Email envoyé : ${emailSubject}`, 'email');
         setEmailSubject('');
         setEmailBody('');
       } else {
-        const errData = await res.json().catch(() => ({}));
-        const errMsg = (errData as { error?: string }).error || t('composer.error');
+        const errMsg = (data as { error?: string }).error || t('composer.error');
         setEmailMsg({ type: 'error', text: errMsg });
         toast.error(errMsg);
       }
@@ -4127,15 +4131,55 @@ function ComposerPanel({
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
-    await supabase.from('drafts').insert({
+
+    // First try to create a Gmail draft if Google is connected
+    let gmailDraftId: string | null = null;
+    if (type === 'email') {
+      try {
+        const gmailRes = await fetch(getApiUrl('/api/create-draft'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            to: lead.contactEmail || '',
+            subject,
+            body,
+            leadId: lead.id,
+          }),
+        });
+        if (gmailRes.ok) {
+          const gmailData = await gmailRes.json();
+          gmailDraftId = gmailData.draftId || null;
+        }
+      } catch {
+        // Gmail not available, save locally only
+      }
+    }
+
+    // Always save to Supabase DB so it appears in Inbox → Brouillons
+    const { error } = await supabase.from('drafts').insert({
       user_id: user.id,
       lead_id: lead.id,
+      workspace_id: workspaceId,
       content: body,
       subject: type === 'email' ? subject : `DM ${dmPlatform} — ${lead.businessName}`,
+      channel: type === 'email' ? 'Email' : 'DM',
+      source: 'user',
       draft_type: type,
+      gmail_draft_id: gmailDraftId,
+      created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
-    }).select().maybeSingle();
-    toast.success(`Brouillon ${type === 'email' ? 'email' : 'DM'} sauvegardé.`);
+    });
+
+    if (error) {
+      toast.error('Erreur lors de la sauvegarde du brouillon.');
+      console.error('handleSaveDraft error:', error);
+      return;
+    }
+
+    const msg = gmailDraftId
+      ? `Brouillon créé dans Gmail et sauvegardé dans l'app.`
+      : `Brouillon sauvegardé dans l'app (visible dans Inbox → Brouillons).`;
+    toast.success(msg);
   };
 
   const handleLogCall = () => {
@@ -4243,11 +4287,12 @@ function ComposerPanel({
           <div className="flex items-center gap-2 flex-wrap">
             <Button
               onClick={handleSendEmail}
-              disabled={emailSending || !emailSubject || !emailBody}
+              disabled={emailSending || !emailSubject || !emailBody || !lead.contactEmail}
               className="h-8 bg-[#059669] hover:bg-[#047857] text-white font-bold text-xs gap-1.5"
+              title={!lead.contactEmail ? "Aucun email de contact" : undefined}
             >
               {emailSending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
-              Brouillon Gmail
+              Envoyer
             </Button>
             <Button
               variant="outline"
@@ -4256,9 +4301,9 @@ function ComposerPanel({
               className="h-8 border-[#e5e5e0] text-xs font-bold gap-1.5"
             >
               <FileText className="w-3.5 h-3.5" />
-              Sauvegarder
+              Brouillon
             </Button>
-            <p className="text-[9px] text-[#7a7a76] w-full">Le brouillon Gmail n&apos;est pas envoyé. &quot;Sauvegarder&quot; conserve le texte dans l&apos;app.</p>
+            <p className="text-[9px] text-[#7a7a76] w-full">&quot;Envoyer&quot; expédie l&apos;email via Gmail. &quot;Brouillon&quot; le sauvegarde dans l&apos;app et Gmail.</p>
           </div>
         </div>
       )}
