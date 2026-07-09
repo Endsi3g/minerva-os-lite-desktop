@@ -4144,6 +4144,7 @@ function ComposerPanel({
             subject,
             body,
             leadId: lead.id,
+            workspaceId: workspaceId,
           }),
         });
         if (gmailRes.ok) {
@@ -4165,9 +4166,7 @@ function ComposerPanel({
       channel: type === 'email' ? 'Email' : 'DM',
       source: 'user',
       draft_type: type,
-      gmail_draft_id: gmailDraftId,
       created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
     });
 
     if (error) {
@@ -4175,6 +4174,7 @@ function ComposerPanel({
       console.error('handleSaveDraft error:', error);
       return;
     }
+
 
     const msg = gmailDraftId
       ? `Brouillon créé dans Gmail et sauvegardé dans l'app.`
