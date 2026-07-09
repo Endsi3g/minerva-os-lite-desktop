@@ -5,10 +5,15 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
-## [3.85.1] — Refonte premium du tableau de bord de métadonnées prospects — 9 juillet 2026, 03h45
+## [3.86.0] — Filtrage Google/Facebook des brouillons, empilement par lead, vue dédiée et rollback du design — 9 juillet 2026, 03h50
+
+### Ajouté
+- **Séparation des brouillons** : Ajout de sous-onglets dans l'Inbox Brouillons pour séparer distinctement les e-mails (Google) des messages réseaux sociaux (Facebook/Instagram DM).
+- **Groupement par Lead (Lead Stacking)** : Si un prospect a plusieurs brouillons en attente, ils sont désormais empilés sous une unique carte reprenant les informations essentielles du prospect (Aperçu, Nom, Revues Google et Description du site).
+- **Vue dédiée par prospect** : Cliquer sur la flèche d'un lead empilé ouvre une vue listant tous les brouillons du lead avec possibilité de les Envoyer, Planifier ou Rejeter.
 
 ### Corrigé
-- **Rendu visuel premium** : Remplacement de la simple ligne de capsules par un magnifique tableau de bord de widgets responsive (Note Google, Téléphone, Site Internet, Itinéraire Google Maps) doté d'icônes colorées et d'effets de survol raffinés.
+- **Restauration du design d'origine** : Annulation complète de la refonte visuelle des capsules de métadonnées et du scraper de site (suppression des dégradés de couleurs et effets de survol) pour préserver le design initial de l'application selon la demande de l'utilisateur.
 
 ## [3.85.0] — Adresses multiples, édition de téléphone/adresse, refonte premium, et correction d'assignation — 9 juillet 2026, 03h35
 

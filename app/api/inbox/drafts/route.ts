@@ -16,12 +16,12 @@ export async function GET(req: NextRequest) {
     // aliased to `body` to match the shape /api/outreach/approvals already returns.
     // channel='Email' excludes call-pitch drafts (e.g. enrich-contact's phone-script fallback),
     // which read like a phone opener and have no subject — confusing inside an email inbox tab.
-    .select('id, lead_id, subject, body:content, intent_type, source, created_at, leads(id, business_name, contact_email)')
+    .select('id, lead_id, subject, body:content, intent_type, source, created_at, channel, leads(id, business_name, contact_email, rating, reviews_count, city, niche, website_description, website)')
     .eq('workspace_id', workspaceId)
-    .eq('channel', 'Email')
+    .in('channel', ['Email', 'DM'])
     .is('approved', null)
     .order('created_at', { ascending: false })
-    .limit(50);
+    .limit(100);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 

@@ -1800,51 +1800,32 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
 
             {/* Prospect data from OSM / Google Maps */}
             {(lead.rating !== undefined || lead.reviewsCount !== undefined || lead.phone || lead.website || lead.mapsUrl) && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-2 px-3 py-2.5 rounded-lg border border-[#e5e5e0]/70 bg-[#f4f4f3]/40 text-xs">
                 {lead.rating !== undefined && (
-                  <div className="flex items-center gap-3 p-3 bg-gradient-to-br from-amber-50/60 to-white border border-amber-200/60 rounded-xl shadow-sm hover:shadow-md transition-all duration-200">
-                    <div className="p-2 bg-amber-100 rounded-lg text-amber-500">
-                      <Star className="h-4.5 w-4.5 fill-current" />
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-bold text-[#7a7a76] uppercase tracking-wider">Note Google</p>
-                      <p className="text-xs font-extrabold text-[#26251e] mt-0.5">
-                        {lead.rating.toFixed(1)} <span className="text-[10px] font-normal text-[#7a7a76] ml-0.5">({lead.reviewsCount || 0} avis)</span>
-                      </p>
-                    </div>
+                  <div className="flex items-center gap-1">
+                    {[1, 2, 3, 4, 5].map((i) => (
+                      <Star
+                        key={i}
+                        className={cn('h-3 w-3', i <= Math.round(lead.rating!) ? 'fill-amber-400 text-amber-400' : 'text-[#7a7a76]/30')}
+                      />
+                    ))}
+                    <span className="font-bold text-[#26251e] ml-0.5">{lead.rating.toFixed(1)}</span>
+                    {lead.reviewsCount !== undefined && (
+                      <span className="text-[#7a7a76]">({lead.reviewsCount} avis)</span>
+                    )}
                   </div>
                 )}
                 {lead.phone && (
-                  <a
-                    href={`tel:${lead.phone}`}
-                    className="flex items-center gap-3 p-3 bg-gradient-to-br from-emerald-50/30 to-white border border-[#e5e5e0]/60 rounded-xl shadow-sm hover:shadow-md hover:border-[#059669]/40 transition-all duration-200"
-                  >
-                    <div className="p-2 bg-emerald-50 rounded-lg text-[#059669]">
-                      <Phone className="h-4.5 w-4.5" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-[10px] font-bold text-[#7a7a76] uppercase tracking-wider">Téléphone</p>
-                      <p className="text-xs font-bold text-[#26251e] mt-0.5 truncate">{lead.phone}</p>
-                    </div>
+                  <a href={`tel:${lead.phone}`} className="flex items-center gap-1 text-[#7a7a76] hover:text-[#26251e] transition-colors">
+                    <Phone className="h-3 w-3 shrink-0" />
+                    {lead.phone}
                   </a>
                 )}
                 {lead.website && (
-                  <div className="flex items-center gap-3 p-3 bg-gradient-to-br from-blue-50/30 to-white border border-[#e5e5e0]/60 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 group">
-                    <div className="p-2 bg-blue-50 rounded-lg text-blue-500">
-                      <Globe className="h-4.5 w-4.5" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-[10px] font-bold text-[#7a7a76] uppercase tracking-wider">Site Internet</p>
-                      <a
-                        href={lead.website}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-xs font-bold text-[#059669] hover:underline mt-0.5 truncate block"
-                      >
-                        {lead.website.replace(/^https?:\/\//, '').replace(/\/$/, '')}
-                      </a>
-                    </div>
-                  </div>
+                  <a href={lead.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-[#059669] hover:underline truncate max-w-[200px]">
+                    <Globe className="h-3 w-3 shrink-0" />
+                    {lead.website.replace(/^https?:\/\//, '').replace(/\/$/, '')}
+                  </a>
                 )}
                 {lead.mapsUrl && (
                   <button
@@ -1857,15 +1838,10 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                         window.open(url, '_blank', 'noopener');
                       }
                     }}
-                    className="flex items-center gap-3 p-3 bg-gradient-to-br from-rose-50/30 to-white border border-[#e5e5e0]/60 rounded-xl shadow-sm hover:shadow-md hover:border-rose-300/40 transition-all duration-200 text-left w-full group"
+                    className="flex items-center gap-1 text-blue-600 hover:underline text-xs"
                   >
-                    <div className="p-2 bg-rose-50 rounded-lg text-rose-500">
-                      <GoogleMapsIcon size={18} className="shrink-0" />
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-bold text-[#7a7a76] uppercase tracking-wider">Itinéraire</p>
-                      <p className="text-xs font-bold text-[#26251e] mt-0.5 group-hover:underline">Google Maps</p>
-                    </div>
+                    <GoogleMapsIcon size={12} className="shrink-0" />
+                    Google Maps
                   </button>
                 )}
               </div>
@@ -1873,10 +1849,10 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
 
             {/* Website scraper — AI business description (fed to the AI script + drafts) */}
             {lead.website && (
-              <div className="rounded-xl border border-[#e5e5e0]/60 bg-gradient-to-br from-white to-[#fafaf8] p-4 shadow-sm hover:shadow-md transition-shadow duration-200 space-y-3 animate-in fade-in duration-200">
+              <div className="rounded-lg border border-[#e5e5e0]/70 bg-[#f4f4f3]/40 p-3.5 space-y-2.5">
                 <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#7a7a76]">
-                    <FileText className="h-4 w-4 text-[#059669]" />
+                  <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">
+                    <FileText className="h-3.5 w-3.5" />
                     Description du site (IA)
                   </div>
                   <Button
@@ -1885,23 +1861,21 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                     variant="outline"
                     onClick={handleScrapeWebsite}
                     disabled={scrapingSite || isLocked}
-                    className="h-7 text-xs font-bold gap-1.5 border-[#e5e5e0] hover:border-[#059669] transition-all bg-white"
+                    className="h-7 text-[11px] font-semibold gap-1.5"
                   >
                     {scrapingSite
-                      ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      : <Sparkles className="h-3.5 w-3.5 text-[#059669]" />}
+                      ? <Loader2 className="h-3 w-3 animate-spin" />
+                      : <Sparkles className="h-3 w-3 text-[#059669]" />}
                     {scrapingSite ? 'Analyse…' : lead.websiteDescription ? 'Régénérer' : 'Scraper le site'}
                   </Button>
                 </div>
                 {scrapeError && (
-                  <p className="text-xs text-red-600 font-semibold">{scrapeError}</p>
+                  <p className="text-[11px] text-red-600 font-medium">{scrapeError}</p>
                 )}
-                <div className="rounded-lg border border-[#e5e5e0]/50 overflow-hidden bg-white">
-                  <DescriptionEditor
-                    value={lead.websiteDescription || ''}
-                    onSave={val => updateLead(lead.id, { websiteDescription: val })}
-                  />
-                </div>
+                <DescriptionEditor
+                  value={lead.websiteDescription || ''}
+                  onSave={val => updateLead(lead.id, { websiteDescription: val })}
+                />
               </div>
             )}
 

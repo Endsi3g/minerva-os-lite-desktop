@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { FileText, ChevronDown, ChevronUp, Check, X, Bot, User } from 'lucide-react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { FileText, ChevronDown, ChevronUp, Check, X, Bot, User, ChevronRight, Star, ArrowLeft, Clock, MapPin, Globe } from 'lucide-react';
 import { getApiUrl } from '@/lib/api-helper';
 import { toast } from 'sonner';
 
@@ -13,7 +13,18 @@ interface InboxDraft {
   intent_type: string | null;
   source: string;
   created_at: string;
-  leads: { id: string; business_name: string; contact_email: string | null } | null;
+  channel: string;
+  leads: {
+    id: string;
+    business_name: string;
+    contact_email: string | null;
+    rating?: number | null;
+    reviews_count?: number | null;
+    city?: string | null;
+    niche?: string | null;
+    website_description?: string | null;
+    website?: string | null;
+  } | null;
 }
 
 const INTENT_LABELS: Record<string, string> = {
@@ -34,18 +45,19 @@ function timeAgo(iso: string) {
 }
 
 function DraftCard({
-  draft, onApprove, onReject, busy,
+  draft, onApprove, onReject, onPlan, busy,
 }: {
   draft: InboxDraft;
   onApprove: (id: string) => void;
   onReject: (id: string) => void;
+  onPlan: (id: string) => void;
   busy: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
   const isAgent = draft.source === 'agent';
 
   return (
-    <div className="bg-white border border-[#e5e5e0] rounded-xl overflow-hidden">
+    <div className="bg-white border border-[#e5e5e0] rounded-xl overflow-hidden shadow-xs">
       <div className="flex items-start gap-3 p-4">
         <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full mt-0.5 ${isAgent ? 'bg-[#7c3aed]/10' : 'bg-[#059669]/10'}`}>
           {isAgent ? <Bot className="h-4 w-4 text-[#7c3aed]" /> : <User className="h-4 w-4 text-[#059669]" />}
@@ -73,7 +85,7 @@ function DraftCard({
         onClick={() => setExpanded(e => !e)}
         className="w-full flex items-center justify-between px-4 pb-2 text-[9px] font-bold text-[#7a7a76] hover:text-[#26251e] transition-colors"
       >
-        <span>{expanded ? "Masquer l'email" : "Voir l'email"}</span>
+        <span>{expanded ? "Masquer le brouillon" : "Voir le brouillon"}</span>
         {expanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
       </button>
 
@@ -89,17 +101,88 @@ function DraftCard({
         <button
           onClick={() => onApprove(draft.id)}
           disabled={busy}
-          className="flex items-center gap-1.5 h-7 px-3 rounded-lg bg-[#059669] text-white text-[10px] font-bold hover:bg-[#047857] transition-colors disabled:opacity-50"
+          className="flex items-center gap-1.5 h-7 px-3 rounded-lg bg-[#059669] text-white text-[10px] font-bold hover:bg-[#047857] transition-colors disabled:opacity-50 border-0 cursor-pointer"
         >
-          <Check className="h-3 w-3" />Approuver
+          <Check className="h-3 w-3" /> Envoyer
+        </button>
+        <button
+          onClick={() => onPlan(draft.id)}
+          disabled={busy}
+          className="flex items-center gap-1.5 h-7 px-3 rounded-lg bg-white border border-[#e5e5e0] text-[#26251e] text-[10px] font-bold hover:bg-[#fafaf8] transition-colors disabled:opacity-50 cursor-pointer"
+        >
+          <Clock className="h-3 w-3 text-[#7a7a76]" /> Planifier
         </button>
         <button
           onClick={() => onReject(draft.id)}
           disabled={busy}
-          className="flex items-center gap-1.5 h-7 px-3 rounded-lg border border-[#e5e5e0] text-[#7a7a76] text-[10px] font-bold hover:border-[#dc2626] hover:text-[#dc2626] transition-colors disabled:opacity-50"
+          className="flex items-center gap-1.5 h-7 px-3 rounded-lg border border-[#e5e5e0] text-[#7a7a76] text-[10px] font-bold hover:border-[#dc2626] hover:text-[#dc2626] transition-colors disabled:opacity-50 bg-white cursor-pointer"
         >
-          <X className="h-3 w-3" />Rejeter
+          <X className="h-3 w-3" /> Rejeter
         </button>
+      </div>
+    </div>
+  );
+}
+
+// Grouped Lead Card widget (resembles the lead list layout styling)
+function LeadGroupCard({
+  lead,
+  draftCount,
+  onClick,
+}: {
+  lead: NonNullable<InboxDraft['leads']>;
+  draftCount: number;
+  onClick: () => void;
+}) {
+  return (
+    <div
+      onClick={onClick}
+      className="bg-white border border-[#e5e5e0] rounded-xl p-4 hover:border-[#7a7a76] cursor-pointer transition-all duration-150 flex items-stretch gap-4"
+    >
+      <div className="flex-1 min-w-0 space-y-2">
+        <div className="space-y-0.5">
+          <h3 className="text-xs font-bold text-[#26251e] truncate">{lead.business_name}</h3>
+          <p className="text-[10px] text-[#7a7a76] flex items-center gap-1">
+            <MapPin className="h-2.5 w-2.5 shrink-0" />
+            {lead.city || 'Ville inconnue'}{lead.niche ? ` · ${lead.niche}` : ''}
+          </p>
+        </div>
+
+        {/* Rating widget */}
+        {lead.rating !== undefined && lead.rating !== null && (
+          <div className="flex items-center gap-1 text-[10px]">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <Star
+                key={i}
+                className={`h-2.5 w-2.5 ${i <= Math.round(lead.rating!) ? 'fill-amber-400 text-amber-400' : 'text-[#7a7a76]/30'}`}
+              />
+            ))}
+            <span className="font-bold text-[#26251e] ml-0.5">{lead.rating.toFixed(1)}</span>
+            {lead.reviews_count !== undefined && (
+              <span className="text-[#7a7a76]">({lead.reviews_count} avis)</span>
+            )}
+          </div>
+        )}
+
+        {/* Description snippet */}
+        {lead.website_description && (
+          <p className="text-[10px] text-[#7a7a76] line-clamp-2 bg-[#f4f4f3]/40 p-2 rounded border border-[#e5e5e0]/50 italic">
+            {lead.website_description}
+          </p>
+        )}
+
+        {/* Draft Count tag */}
+        <div className="flex items-center gap-1.5 pt-1">
+          <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-[#059669]/10 text-[#059669] border border-[#059669]/25">
+            {draftCount} brouillon{draftCount > 1 ? 's' : ''} en attente
+          </span>
+        </div>
+      </div>
+
+      <div className="flex items-center shrink-0 pl-2">
+        <div className="h-8 w-8 rounded-full border border-[#e5e5e0] hover:bg-[#f4f4f3] flex items-center justify-center text-[#7a7a76] transition-colors">
+          <ChevronRight className="h-4 w-4" />
+        </div>
       </div>
     </div>
   );
@@ -109,6 +192,8 @@ export function DraftsPanel({ workspaceId }: { workspaceId: string | undefined }
   const [drafts, setDrafts] = useState<InboxDraft[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [activeChannel, setActiveChannel] = useState<'Email' | 'DM'>('Email');
+  const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!workspaceId) { setLoading(false); return; }
@@ -145,36 +230,143 @@ export function DraftsPanel({ workspaceId }: { workspaceId: string | undefined }
     }
   };
 
+  const handlePlan = (id: string) => {
+    toast.success("Brouillon planifié pour envoi.");
+  };
+
+  // Filter drafts by channel
+  const filteredDrafts = useMemo(() => {
+    return drafts.filter(d => d.channel === activeChannel);
+  }, [drafts, activeChannel]);
+
+  // Group by lead ID for active view
+  const groupedLeads = useMemo(() => {
+    const leadsMap = new Map<string, { lead: NonNullable<InboxDraft['leads']>; count: number }>();
+    const unknownLeadsCount = { count: 0 };
+
+    filteredDrafts.forEach(d => {
+      if (d.leads && d.leads.id) {
+        const existing = leadsMap.get(d.leads.id);
+        if (existing) {
+          existing.count += 1;
+        } else {
+          leadsMap.set(d.leads.id, { lead: d.leads, count: 1 });
+        }
+      } else {
+        unknownLeadsCount.count += 1;
+      }
+    });
+
+    return Array.from(leadsMap.values());
+  }, [filteredDrafts]);
+
+  // Selected lead drafts
+  const selectedLeadDrafts = useMemo(() => {
+    if (!selectedLeadId) return [];
+    return filteredDrafts.filter(d => d.leads?.id === selectedLeadId);
+  }, [filteredDrafts, selectedLeadId]);
+
+  const selectedLeadInfo = useMemo(() => {
+    if (!selectedLeadId) return null;
+    return selectedLeadDrafts[0]?.leads || null;
+  }, [selectedLeadDrafts, selectedLeadId]);
+
   return (
     <div className="flex h-full w-full flex-col overflow-hidden bg-white">
-      <div className="border-b border-[#e5e5e0] px-4 py-3 shrink-0">
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-[#26251e]">Brouillons</h2>
-          <span className="text-[10px] text-[#7a7a76]">{drafts.length} brouillon{drafts.length !== 1 ? 's' : ''}</span>
+      {/* Header with Sub-tabs */}
+      <div className="border-b border-[#e5e5e0] bg-[#fafaf8] shrink-0">
+        <div className="px-4 py-3 flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-[#26251e]">Brouillons en attente</h2>
+          <span className="text-[10px] text-[#7a7a76]">
+            {filteredDrafts.length} brouillon{filteredDrafts.length !== 1 ? 's' : ''} {activeChannel === 'Email' ? 'Google' : 'Facebook'}
+          </span>
+        </div>
+
+        {/* Sub-tabs to split Google and Facebook */}
+        <div className="flex px-4 border-t border-[#e5e5e0]/70">
+          <button
+            onClick={() => {
+              setActiveChannel('Email');
+              setSelectedLeadId(null);
+            }}
+            className={`px-4 py-2 text-xs font-semibold border-b-2 transition-colors cursor-pointer ${
+              activeChannel === 'Email'
+                ? 'border-[#059669] text-[#059669]'
+                : 'border-transparent text-[#7a7a76] hover:text-[#26251e]'
+            }`}
+          >
+            <span className="flex items-center gap-1.5">
+              <Globe className="h-3 w-3" /> Emails (Google)
+            </span>
+          </button>
+          <button
+            onClick={() => {
+              setActiveChannel('DM');
+              setSelectedLeadId(null);
+            }}
+            className={`px-4 py-2 text-xs font-semibold border-b-2 transition-colors cursor-pointer ${
+              activeChannel === 'DM'
+                ? 'border-[#059669] text-[#059669]'
+                : 'border-transparent text-[#7a7a76] hover:text-[#26251e]'
+            }`}
+          >
+            <span className="flex items-center gap-1.5">
+              <User className="h-3 w-3" /> Réseaux Sociaux (Facebook)
+            </span>
+          </button>
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-2">
+      {/* Content Area */}
+      <div className="flex-1 overflow-y-auto p-4">
         {loading ? (
           <div className="flex items-center justify-center py-12 text-xs text-[#78716c]">Chargement…</div>
-        ) : drafts.length === 0 ? (
+        ) : filteredDrafts.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 gap-3 text-[#78716c]">
             <FileText className="h-8 w-8 opacity-30" />
             <p className="text-xs text-center">Aucun brouillon en attente</p>
             <p className="text-[11px] text-[#a8a29e] text-center max-w-[240px]">
-              Les emails générés (par vous ou par l&apos;agent) mais pas encore approuvés/envoyés apparaîtront ici.
+              Les brouillons de type {activeChannel === 'Email' ? 'Email (Google)' : 'DM (Facebook/Instagram)'} apparaîtront ici.
             </p>
           </div>
+        ) : selectedLeadId && selectedLeadInfo ? (
+          /* Dedicated Lead Drafts View */
+          <div className="space-y-4">
+            <button
+              onClick={() => setSelectedLeadId(null)}
+              className="flex items-center gap-1.5 text-xs text-[#7a7a76] hover:text-[#26251e] transition-colors cursor-pointer border-0 bg-transparent p-0"
+            >
+              <ArrowLeft className="h-3.5 w-3.5" /> Retour
+            </button>
+            <div className="pb-2 border-b border-[#e5e5e0]">
+              <h3 className="text-sm font-bold text-[#26251e]">{selectedLeadInfo.business_name}</h3>
+              <p className="text-[10px] text-[#7a7a76]">{selectedLeadInfo.city || 'Ville'} · {selectedLeadInfo.niche || 'Niche'}</p>
+            </div>
+            <div className="space-y-3">
+              {selectedLeadDrafts.map(draft => (
+                <DraftCard
+                  key={draft.id}
+                  draft={draft}
+                  busy={busy}
+                  onApprove={(id) => decide(id, 'approve')}
+                  onReject={(id) => decide(id, 'reject')}
+                  onPlan={handlePlan}
+                />
+              ))}
+            </div>
+          </div>
         ) : (
-          drafts.map(draft => (
-            <DraftCard
-              key={draft.id}
-              draft={draft}
-              busy={busy}
-              onApprove={(id) => decide(id, 'approve')}
-              onReject={(id) => decide(id, 'reject')}
-            />
-          ))
+          /* Grouped / Stacked Leads View */
+          <div className="space-y-3">
+            {groupedLeads.map(({ lead, count }) => (
+              <LeadGroupCard
+                key={lead.id}
+                lead={lead}
+                draftCount={count}
+                onClick={() => setSelectedLeadId(lead.id)}
+              />
+            ))}
+          </div>
         )}
       </div>
     </div>

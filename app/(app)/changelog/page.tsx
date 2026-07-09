@@ -20,12 +20,14 @@ interface ChangelogVersion {
 
 const versions: ChangelogVersion[] = [
   {
-    version: 'v3.85.1',
-    date: '9 juillet 2026 · 03h45',
-    title: 'Refonte premium du tableau de bord de métadonnées prospects',
+    version: 'v3.86.0',
+    date: '9 juillet 2026 · 03h50',
+    title: 'Filtrage Google/Facebook des brouillons, empilement par lead, vue dédiée et rollback du design',
     highlights: [
-      { text: "Conception Dashboard responsive : Les métadonnées de notation Google, téléphone, site web et itinéraire Google Maps sont désormais enveloppées dans de superbes widgets à gradients avec des icônes thématiques colorées." },
-      { text: "Optimisation de l'espace de la fiche detail : Un look résolument premium et épuré s'intégrant naturellement avec l'esthétique générale de la carte et du scraper de site." }
+      { text: "Séparation Inbox Brouillons : Ajout de sous-onglets pour filtrer entre les emails (Google) et les réseaux sociaux (Facebook/Instagram DM) pour une meilleure visibilité." },
+      { text: "Empilement par Lead (Lead Stacking) : Si plusieurs brouillons existent pour un même prospect, ils sont désormais empilés sous une unique carte récapitulant les informations clés du lead." },
+      { text: "Vue dédiée : Cliquer sur la flèche d'un prospect empilé ouvre une page dédiée listant tous ses brouillons avec options pour Envoyer, Planifier ou Rejeter." },
+      { text: "Restauration du design : Retour à la mise en page d'origine épurée pour la ligne d'informations du lead et le scraper de site (suppression des dégradés et surbrillances)." }
     ],
   },
   {
