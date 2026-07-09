@@ -1,6 +1,6 @@
 {
   "name": "minerva-os-lite-desktop",
-  "version": "3.85.0",
+  "version": "3.85.1",
   "type": "module",
   "main": "electron/main.cjs",
   "private": true,

@@ -20,6 +20,15 @@ interface ChangelogVersion {
 
 const versions: ChangelogVersion[] = [
   {
+    version: 'v3.85.1',
+    date: '9 juillet 2026 · 03h45',
+    title: 'Refonte premium du tableau de bord de métadonnées prospects',
+    highlights: [
+      { text: "Conception Dashboard responsive : Les métadonnées de notation Google, téléphone, site web et itinéraire Google Maps sont désormais enveloppées dans de superbes widgets à gradients avec des icônes thématiques colorées." },
+      { text: "Optimisation de l'espace de la fiche detail : Un look résolument premium et épuré s'intégrant naturellement avec l'esthétique générale de la carte et du scraper de site." }
+    ],
+  },
+  {
     version: 'v3.85.0',
     date: '9 juillet 2026 · 03h35',
     title: 'Adresses multiples (succursales), édition de téléphone/adresse, refonte visuelle premium, et correctif d\'assignation',

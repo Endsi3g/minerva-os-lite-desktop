@@ -5,6 +5,11 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [3.85.1] — Refonte premium du tableau de bord de métadonnées prospects — 9 juillet 2026, 03h45
+
+### Corrigé
+- **Rendu visuel premium** : Remplacement de la simple ligne de capsules par un magnifique tableau de bord de widgets responsive (Note Google, Téléphone, Site Internet, Itinéraire Google Maps) doté d'icônes colorées et d'effets de survol raffinés.
+
 ## [3.85.0] — Adresses multiples, édition de téléphone/adresse, refonte premium, et correction d'assignation — 9 juillet 2026, 03h35
 
 ### Ajouté

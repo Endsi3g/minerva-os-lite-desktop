@@ -1799,37 +1799,52 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
             <div className="h-px bg-border" />
 
             {/* Prospect data from OSM / Google Maps */}
-            {/* Prospect data from OSM / Google Maps */}
             {(lead.rating !== undefined || lead.reviewsCount !== undefined || lead.phone || lead.website || lead.mapsUrl) && (
-              <div className="flex flex-wrap items-center gap-2 p-1.5 bg-[#f4f4f3]/40 border border-[#e5e5e0]/60 rounded-xl">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                 {lead.rating !== undefined && (
-                  <div className="flex items-center gap-1.5 px-3 py-1 bg-white border border-[#e5e5e0]/50 rounded-lg shadow-sm">
-                    <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-                    <span className="text-xs font-bold text-[#26251e]">{lead.rating.toFixed(1)}</span>
-                    {lead.reviewsCount !== undefined && (
-                      <span className="text-[10px] text-[#7a7a76]">({lead.reviewsCount} avis)</span>
-                    )}
+                  <div className="flex items-center gap-3 p-3 bg-gradient-to-br from-amber-50/60 to-white border border-amber-200/60 rounded-xl shadow-sm hover:shadow-md transition-all duration-200">
+                    <div className="p-2 bg-amber-100 rounded-lg text-amber-500">
+                      <Star className="h-4.5 w-4.5 fill-current" />
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-bold text-[#7a7a76] uppercase tracking-wider">Note Google</p>
+                      <p className="text-xs font-extrabold text-[#26251e] mt-0.5">
+                        {lead.rating.toFixed(1)} <span className="text-[10px] font-normal text-[#7a7a76] ml-0.5">({lead.reviewsCount || 0} avis)</span>
+                      </p>
+                    </div>
                   </div>
                 )}
                 {lead.phone && (
                   <a
                     href={`tel:${lead.phone}`}
-                    className="flex items-center gap-1.5 px-3 py-1 bg-white border border-[#e5e5e0]/50 rounded-lg shadow-sm text-xs font-medium text-[#7a7a76] hover:text-[#26251e] hover:border-[#059669]/30 transition-all"
+                    className="flex items-center gap-3 p-3 bg-gradient-to-br from-emerald-50/30 to-white border border-[#e5e5e0]/60 rounded-xl shadow-sm hover:shadow-md hover:border-[#059669]/40 transition-all duration-200"
                   >
-                    <Phone className="h-3.5 w-3.5 text-[#059669]" />
-                    {lead.phone}
+                    <div className="p-2 bg-emerald-50 rounded-lg text-[#059669]">
+                      <Phone className="h-4.5 w-4.5" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[10px] font-bold text-[#7a7a76] uppercase tracking-wider">Téléphone</p>
+                      <p className="text-xs font-bold text-[#26251e] mt-0.5 truncate">{lead.phone}</p>
+                    </div>
                   </a>
                 )}
                 {lead.website && (
-                  <a
-                    href={lead.website}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-1.5 px-3 py-1 bg-white border border-[#e5e5e0]/50 rounded-lg shadow-sm text-xs font-semibold text-[#059669] hover:bg-[#059669]/5 transition-all max-w-[200px] truncate"
-                  >
-                    <Globe className="h-3.5 w-3.5" />
-                    {lead.website.replace(/^https?:\/\//, '').replace(/\/$/, '')}
-                  </a>
+                  <div className="flex items-center gap-3 p-3 bg-gradient-to-br from-blue-50/30 to-white border border-[#e5e5e0]/60 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 group">
+                    <div className="p-2 bg-blue-50 rounded-lg text-blue-500">
+                      <Globe className="h-4.5 w-4.5" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[10px] font-bold text-[#7a7a76] uppercase tracking-wider">Site Internet</p>
+                      <a
+                        href={lead.website}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs font-bold text-[#059669] hover:underline mt-0.5 truncate block"
+                      >
+                        {lead.website.replace(/^https?:\/\//, '').replace(/\/$/, '')}
+                      </a>
+                    </div>
+                  </div>
                 )}
                 {lead.mapsUrl && (
                   <button
@@ -1842,10 +1857,15 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                         window.open(url, '_blank', 'noopener');
                       }
                     }}
-                    className="flex items-center gap-1.5 px-3 py-1 bg-white border border-[#e5e5e0]/50 rounded-lg shadow-sm text-xs font-semibold text-blue-600 hover:bg-blue-50/50 transition-all"
+                    className="flex items-center gap-3 p-3 bg-gradient-to-br from-rose-50/30 to-white border border-[#e5e5e0]/60 rounded-xl shadow-sm hover:shadow-md hover:border-rose-300/40 transition-all duration-200 text-left w-full group"
                   >
-                    <GoogleMapsIcon size={13} className="shrink-0" />
-                    Google Maps
+                    <div className="p-2 bg-rose-50 rounded-lg text-rose-500">
+                      <GoogleMapsIcon size={18} className="shrink-0" />
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-bold text-[#7a7a76] uppercase tracking-wider">Itinéraire</p>
+                      <p className="text-xs font-bold text-[#26251e] mt-0.5 group-hover:underline">Google Maps</p>
+                    </div>
                   </button>
                 )}
               </div>
