@@ -5,6 +5,17 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [3.90.0] — Refonte mobile, phase 1 : navigation unifiée et tableau de bord allégé — 10 juillet 2026, 19h02
+
+### Corrigé
+- **Double système de navigation sur mobile** : en plus de la barre d'onglets en bas déjà en place, un bouton hamburger ouvrait aussi la sidebar desktop complète en superposition — deux systèmes de navigation concurrents sur le même écran. Le hamburger et la superposition ont été retirés ; la barre d'onglets + le tiroir "Plus" sont désormais l'unique navigation mobile.
+- **Pages inatteignables depuis le mobile** : Équipe, Activités, Publicité, Site Web, Rapports client et Webhooks n'apparaissaient dans aucun menu mobile (ni la barre du bas, ni le tiroir "Plus") alors qu'elles étaient toutes présentes dans la sidebar desktop. Ajoutées au tiroir "Plus", réorganisé en 5 sections calquées sur les catégories desktop.
+
+### Ajouté
+- **Cibles tactiles plus grandes** : le tiroir "Plus" passe de 4 à 3 colonnes, avec un peu plus de respiration par bouton.
+- **Tableau de bord "Aujourd'hui" allégé sur mobile** : la pile d'une vingtaine de cartes (parcours 7 phases, programmes, agenda, feed IA, statistiques…) est repliée par défaut derrière un bouton "Voir plus" ; seuls les KPI, les objectifs, le centre d'approbation Outreach et les tâches du jour restent visibles d'emblée. Aucun changement sur desktop.
+- Nouveau hook partagé `lib/use-is-mobile.ts` remplaçant la détection de largeur d'écran dupliquée en dur dans `app/(app)/layout.tsx`.
+
 ## [3.89.0] — Campagnes utiles : leads, activité et séquence — 10 juillet 2026, 18h50
 
 ### Ajouté

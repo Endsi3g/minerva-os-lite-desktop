@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { getApiUrl } from '@/lib/api-helper';
+import { useIsMobile } from '@/lib/use-is-mobile';
 import {
   PenSquare,
   Search,
@@ -16,7 +17,6 @@ import {
   ChevronRight,
   ChevronUp,
   Settings as SettingsIcon,
-  Menu,
   Bell,
   LogOut,
   FileText,
@@ -273,18 +273,10 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
     router.push('/assistant');
   };
 
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [checkingWelcome, setCheckingWelcome] = useState(true);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [errorDetailNotif, setErrorDetailNotif] = useState<AppNotification | null>(null);
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth < 768);
-    check();
-    window.addEventListener('resize', check);
-    return () => window.removeEventListener('resize', check);
-  }, []);
+  const isMobile = useIsMobile();
   const [moreSheetOpen, setMoreSheetOpen] = useState(false);
   const [footerExpanded, setFooterExpanded] = useState(false);
 
@@ -846,21 +838,13 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-white text-[#26251e] font-sans selection:bg-[#10b981]/10">
-      {/* Mobile Sidebar Overlay */}
-      {sidebarOpen && (
-        <div 
-          className="fixed inset-0 z-40 bg-black/20 md:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
-
-      {/* Sidebar */}
+      {/* Sidebar — hidden entirely on mobile; the bottom tab bar + "Plus" sheet
+          are the sole mobile navigation (no more redundant hamburger overlay
+          duplicating the same desktop nav tree). */}
       <motion.aside
         animate={{
-          // Mobile: slide the fixed sidebar in/out via x
-          // Desktop: animate width (layout push) + inner content slides via x
           ...(isMobile
-            ? { x: sidebarOpen ? 0 : -240, width: 240 }
+            ? { width: 0, x: -240 }
             : { width: isCollapsed ? 0 : 240, x: 0 }
           ),
         }}
@@ -1040,7 +1024,6 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                 <Link
                   key={item.name}
                   href={item.href}
-                  onClick={() => setSidebarOpen(false)}
                   className={cn(
                     "flex items-center rounded-md text-xs font-medium transition-all duration-150",
                     isCollapsed ? "justify-center p-2" : "gap-2.5 px-2.5 py-1.5",
@@ -1106,8 +1089,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                             <Link
                               key={item.name}
                               href={item.href}
-                              onClick={() => setSidebarOpen(false)}
-                              className={cn(
+                                          className={cn(
                                 "flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-all duration-150",
                                 isActive
                                   ? "bg-[#e5e5e2] text-[#26251e] font-semibold"
@@ -1291,8 +1273,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                           <Link
                             key={href}
                             href={href}
-                            onClick={() => setSidebarOpen(false)}
-                            className={cn(
+                                      className={cn(
                               "flex items-center gap-2.5 text-xs font-semibold px-2.5 py-1.5 rounded-md transition-colors",
                               isFooterActive
                                 ? "bg-[#e5e5e2] text-[#26251e]"
@@ -1359,19 +1340,8 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
         {/* Topbar */}
         <header className="flex h-12 items-center justify-between border-b border-[#e5e5e0] bg-white px-4 md:px-6 shrink-0">
           
-          {/* Left Action (Menu Trigger) */}
+          {/* Left Action (desktop sidebar collapse — mobile uses the bottom tab bar instead) */}
           <div className="flex items-center gap-2 md:gap-4">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="md:hidden h-8 w-8"
-              onClick={() => setSidebarOpen(true)}
-              title="Ouvrir le menu"
-              aria-label="Ouvrir le menu"
-            >
-              <Menu className="h-4 w-4" />
-            </Button>
-
             <button
               onClick={toggleCollapse}
               className="h-8 w-8 hidden md:flex items-center justify-center rounded text-[#7a7a76] hover:bg-[#e5e5e2]/60 transition-colors"
@@ -1709,101 +1679,85 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                 <div className="w-10 h-1 rounded-full bg-[#e5e5e0]" />
               </div>
 
-              {/* Section principale */}
-              <p className="text-[9px] font-black uppercase tracking-widest text-[#7a7a76] px-5 pt-3 pb-1">Ventes</p>
-              <div className="grid grid-cols-4 gap-0.5 px-3">
-                {([
-                  { name: 'Prospects',    href: '/prospecting',  icon: PenSquare },
-                  { name: 'Profils cibles', href: '/personas',   icon: UserCog },
-                  { name: 'Pipeline',     href: '/pipeline',     icon: Kanban },
-                  { name: 'Inbox',        href: '/inbox',        icon: Inbox },
-                  { name: 'Terrain',      href: '/field',        icon: MapPin },
-                ] as { name: string; href: string; icon: React.ElementType }[]).map(({ name, href, icon: Icon }) => {
-                  const isActive = pathname.startsWith(href);
-                  return (
-                    <Link key={href} href={href} onClick={() => setMoreSheetOpen(false)}
-                      className={cn("flex flex-col items-center gap-1.5 p-3 rounded-xl transition-colors",
-                        isActive ? "bg-[#059669]/8 text-[#059669]" : "text-[#555552] active:bg-[#f4f4f3]")}
-                    >
-                      <Icon className="h-5 w-5" strokeWidth={isActive ? 2.2 : 1.5} />
-                      <span className="text-[9px] font-semibold text-center leading-tight">{name}</span>
-                    </Link>
-                  );
-                })}
-              </div>
-
-              {/* Section Outils */}
-              <p className="text-[9px] font-black uppercase tracking-widest text-[#7a7a76] px-5 pt-3 pb-1">Outils</p>
-              <div className="grid grid-cols-4 gap-0.5 px-3">
-                {([
-                  { name: 'Tâches',     href: '/tasks',         icon: ListChecks },
-                  { name: 'Contacts',   href: '/contacts',      icon: Users },
-                  { name: 'Notifs',     href: '/notifications', icon: Bell },
-                  { name: 'Messages',   href: '/messages',      icon: MessageCircle },
-                  { name: 'Séquences',  href: '/sequences',     icon: Mail },
-                  { name: 'Campagnes',  href: '/campaigns',     icon: Megaphone },
-                  { name: 'Playbooks',  href: '/playbooks',     icon: BookOpen },
-                  { name: 'Acquisition',href: '/acquisition',   icon: TrendingUp },
-                  { name: 'Audit SEO',  href: '/audit',         icon: ShieldCheck },
-                ] as { name: string; href: string; icon: React.ElementType }[]).map(({ name, href, icon: Icon }) => {
-                  const isActive = pathname.startsWith(href);
-                  return (
-                    <Link key={href} href={href} onClick={() => setMoreSheetOpen(false)}
-                      className={cn("flex flex-col items-center gap-1.5 p-3 rounded-xl transition-colors",
-                        isActive ? "bg-[#059669]/8 text-[#059669]" : "text-[#555552] active:bg-[#f4f4f3]")}
-                    >
-                      <Icon className="h-5 w-5" strokeWidth={isActive ? 2.2 : 1.5} />
-                      <span className="text-[9px] font-semibold text-center leading-tight">{name}</span>
-                    </Link>
-                  );
-                })}
-              </div>
-
-              {/* Section IA */}
-              <p className="text-[9px] font-black uppercase tracking-widest text-[#7a7a76] px-5 pt-3 pb-1">Minerva AI</p>
-              <div className="grid grid-cols-4 gap-0.5 px-3">
-                {([
-                  { name: 'Assistant',    href: '/assistant',    icon: Sparkles },
-                  { name: 'Intelligence', href: '/intelligence', icon: Brain },
-                  { name: 'Agents',       href: '/agents',       icon: Bot },
-                  { name: 'Skills',       href: '/skills',       icon: Zap },
-                ] as { name: string; href: string; icon: React.ElementType }[]).map(({ name, href, icon: Icon }) => {
-                  const isActive = pathname.startsWith(href);
-                  return (
-                    <Link key={href} href={href} onClick={() => setMoreSheetOpen(false)}
-                      className={cn("flex flex-col items-center gap-1.5 p-3 rounded-xl transition-colors",
-                        isActive ? "bg-[#059669]/8 text-[#059669]" : "text-[#555552] active:bg-[#f4f4f3]")}
-                    >
-                      <Icon className="h-5 w-5" strokeWidth={isActive ? 2.2 : 1.5} />
-                      <span className="text-[9px] font-semibold text-center leading-tight">{name}</span>
-                    </Link>
-                  );
-                })}
-              </div>
-
-              {/* Section réglages */}
-              <p className="text-[9px] font-black uppercase tracking-widest text-[#7a7a76] px-5 pt-3 pb-1">App</p>
-              <div className="grid grid-cols-4 gap-0.5 px-3 pb-6">
-                {([
-                  { name: 'Paramètres',   href: '/settings',     icon: SettingsIcon },
-                  { name: 'Intégrations', href: '/integrations', icon: Plug },
-                  { name: 'Performance',  href: '/performance',  icon: BarChart3 },
-                  { name: 'Changelog',    href: '/changelog',    icon: Megaphone },
-                  { name: 'Bibliothèque', href: '/library',      icon: Folder },
-                  { name: 'Récupération', href: '/recovery',     icon: RefreshCw },
-                ] as { name: string; href: string; icon: React.ElementType }[]).map(({ name, href, icon: Icon }) => {
-                  const isActive = pathname.startsWith(href);
-                  return (
-                    <Link key={href} href={href} onClick={() => setMoreSheetOpen(false)}
-                      className={cn("flex flex-col items-center gap-1.5 p-3 rounded-xl transition-colors",
-                        isActive ? "bg-[#059669]/8 text-[#059669]" : "text-[#555552] active:bg-[#f4f4f3]")}
-                    >
-                      <Icon className="h-5 w-5" strokeWidth={isActive ? 2.2 : 1.5} />
-                      <span className="text-[9px] font-semibold text-center leading-tight">{name}</span>
-                    </Link>
-                  );
-                })}
-              </div>
+              {/* Sections dérivées des mêmes destinations que la sidebar desktop (pinnedItems /
+                  navCategories / footer) — 3 colonnes au lieu de 4 pour des cibles tactiles
+                  plus grandes. Équipe, Activités, Publicité, Site Web, Rapports client et
+                  Webhooks manquaient ici : inatteignables depuis la navigation mobile. */}
+              {([
+                {
+                  label: 'Ventes',
+                  items: [
+                    { name: 'Prospects',      href: '/prospecting', icon: PenSquare },
+                    { name: 'Profils cibles', href: '/personas',    icon: UserCog },
+                    { name: 'Pipeline',       href: '/pipeline',    icon: Kanban },
+                    { name: 'Inbox',          href: '/inbox',       icon: Inbox },
+                    { name: 'Terrain',        href: '/field',       icon: MapPin },
+                    { name: 'Équipe',         href: '/team',        icon: UsersRound },
+                  ],
+                },
+                {
+                  label: 'Outils',
+                  items: [
+                    { name: 'Tâches',     href: '/tasks',         icon: ListChecks },
+                    { name: 'Activités',  href: '/activities',    icon: Activity },
+                    { name: 'Contacts',   href: '/contacts',      icon: Users },
+                    { name: 'Notifs',     href: '/notifications', icon: Bell },
+                    { name: 'Messages',   href: '/messages',      icon: MessageCircle },
+                    { name: 'Séquences',  href: '/sequences',     icon: Mail },
+                    { name: 'Campagnes',  href: '/campaigns',     icon: Megaphone },
+                    { name: 'Playbooks',  href: '/playbooks',     icon: BookOpen },
+                  ],
+                },
+                {
+                  label: 'Marketing',
+                  items: [
+                    { name: 'Publicité',       href: '/ads',            icon: Target },
+                    { name: 'Acquisition',     href: '/acquisition',    icon: TrendingUp },
+                    { name: 'Site Web',        href: '/website-builder',icon: Globe },
+                    { name: 'Audit SEO',       href: '/audit',          icon: ShieldCheck },
+                    { name: 'Rapports client', href: '/client-reports', icon: FileText },
+                    { name: 'Webhooks',        href: '/webhooks',       icon: Zap },
+                  ],
+                },
+                {
+                  label: 'Minerva AI',
+                  items: [
+                    { name: 'Assistant',    href: '/assistant',    icon: Sparkles },
+                    { name: 'Intelligence', href: '/intelligence', icon: Brain },
+                    { name: 'Agents',       href: '/agents',       icon: Bot },
+                    { name: 'Skills',       href: '/skills',       icon: Zap },
+                  ],
+                },
+                {
+                  label: 'App',
+                  items: [
+                    { name: 'Paramètres',   href: '/settings',     icon: SettingsIcon },
+                    { name: 'Intégrations', href: '/integrations', icon: Plug },
+                    { name: 'Performance',  href: '/performance',  icon: BarChart3 },
+                    { name: 'Changelog',    href: '/changelog',    icon: Megaphone },
+                    { name: 'Bibliothèque', href: '/library',      icon: Folder },
+                    { name: 'Récupération', href: '/recovery',     icon: RefreshCw },
+                  ],
+                },
+              ] as { label: string; items: { name: string; href: string; icon: React.ElementType }[] }[]).map((section, sectionIdx) => (
+                <React.Fragment key={section.label}>
+                  <p className="text-[9px] font-black uppercase tracking-widest text-[#7a7a76] px-5 pt-3 pb-1">{section.label}</p>
+                  <div className={cn("grid grid-cols-3 gap-0.5 px-3", sectionIdx === 4 && "pb-6")}>
+                    {section.items.map(({ name, href, icon: Icon }) => {
+                      const isActive = pathname.startsWith(href);
+                      return (
+                        <Link key={href} href={href} onClick={() => setMoreSheetOpen(false)}
+                          className={cn("flex flex-col items-center gap-1.5 p-3.5 rounded-xl transition-colors",
+                            isActive ? "bg-[#059669]/8 text-[#059669]" : "text-[#555552] active:bg-[#f4f4f3]")}
+                        >
+                          <Icon className="h-5 w-5" strokeWidth={isActive ? 2.2 : 1.5} />
+                          <span className="text-[9px] font-semibold text-center leading-tight">{name}</span>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </React.Fragment>
+              ))}
             </motion.div>
           </>
         )}

@@ -20,6 +20,17 @@ interface ChangelogVersion {
 
 const versions: ChangelogVersion[] = [
   {
+    version: 'v3.90.0',
+    date: '10 juillet 2026 · 19h02',
+    title: 'Refonte mobile, phase 1 : navigation unifiée et tableau de bord allégé',
+    highlights: [
+      { text: "Retrait du double système de navigation mobile : le hamburger qui ouvrait la sidebar desktop en superposition, en plus de la barre d'onglets déjà en place, est supprimé — une seule navigation mobile désormais." },
+      { text: "Équipe, Activités, Publicité, Site Web, Rapports client et Webhooks étaient inatteignables depuis le mobile (absents de tous les menus) — ajoutés au tiroir \"Plus\", réorganisé en 5 sections." },
+      { text: "Tiroir \"Plus\" passé de 4 à 3 colonnes pour des cibles tactiles plus grandes." },
+      { text: "Tableau de bord Aujourd'hui : la vingtaine de cartes est repliée par défaut sur mobile derrière un bouton \"Voir plus\" — seuls KPI, objectifs, approbations et tâches du jour restent visibles d'emblée. Aucun changement sur desktop." }
+    ],
+  },
+  {
     version: 'v3.89.0',
     date: '10 juillet 2026 · 18h50',
     title: 'Campagnes utiles : leads, activité et séquence',

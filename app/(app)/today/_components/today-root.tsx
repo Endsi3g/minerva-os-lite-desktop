@@ -44,7 +44,8 @@ import {
   ArrowRight,
   ChevronRight,
   AlertTriangle,
-  Play
+  Play,
+  ChevronDown
 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useReach, type Campaign } from '@/lib/reach-context';
@@ -59,6 +60,7 @@ const GOAL_TYPE_UNITS: Record<NonNullable<Campaign['goalType']>, string> = {
   clients: 'clients',
   mrr: '$ MRR',
 };
+import { useIsMobile } from '@/lib/use-is-mobile';
 import { updateWidget } from '@/lib/widget-bridge';
 import { V7StrategyModal } from '@/components/v7-strategy-modal';
 import { getApiUrl } from '@/lib/api-helper';
@@ -159,6 +161,8 @@ export function TodayRoot() {
   
   const [showAestheticMode, setShowAestheticMode] = useState(false);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'inbox' | 'pilotage'>('dashboard');
+  const isMobile = useIsMobile();
+  const [mobileExpanded, setMobileExpanded] = useState(false);
 
   // Unified Cockpit & Operations states
   const [nextActions, setNextActions] = useState<NextActionData | null>(null);
@@ -443,130 +447,151 @@ export function TodayRoot() {
                 {/* Monthly Goals */}
                 <TodayGoalsCard />
 
-                {/* Canonical 7-Phase Journey map */}
+                {/* Outreach Control Center - approvals — l'action la plus concrète du jour,
+                    toujours visible même sur mobile (pas caché derrière "Voir plus"). */}
                 <div className="bg-white border border-[#e5e5e0] rounded-2xl p-5 shadow-sm">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-xs font-bold text-[#26251e] uppercase tracking-wider">Parcours client en 7 phases</h3>
-                    <span className="text-[10px] font-bold text-[#7a7a76]">{leads.length} prospects au total</span>
+                  <div className="flex items-center gap-2 mb-3">
+                    <Zap className="h-4.5 w-4.5 text-[#059669]" />
+                    <h3 className="text-xs font-bold text-[#26251e] uppercase tracking-wider">Outreach Control Center — Approbations</h3>
                   </div>
-                  <div className="grid grid-cols-7 gap-1 text-center relative">
-                    {[
-                      { label: 'Initial Email', val: phaseCounts.step1 },
-                      { label: 'Relance', val: phaseCounts.step2 },
-                      { label: 'Appel/Intérêt', val: phaseCounts.step3 },
-                      { label: 'Réponse (+)', val: phaseCounts.step4 },
-                      { label: 'RDV Booké', val: phaseCounts.step5 },
-                      { label: 'Proposition', val: phaseCounts.step6 },
-                      { label: 'Gagné', val: phaseCounts.step7 },
-                    ].map((step, idx) => (
-                      <div key={idx} className="flex flex-col items-center relative z-10">
-                        <div className="w-8 h-8 rounded-full border border-[#e5e5e0] bg-[#fafaf8] flex items-center justify-center font-black text-xs text-[#26251e] mb-1">
-                          {step.val}
-                        </div>
-                        <span className="text-[9px] font-bold text-[#7a7a76] uppercase truncate w-full px-1">{step.label}</span>
+                  <div className="flex flex-col gap-2">
+                    {loadingActions ? (
+                      <div className="flex items-center gap-1.5 py-4 text-xs text-[#7a7a76]">
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        Chargement des actions en attente...
                       </div>
-                    ))}
-                    {/* Background connector line */}
-                    <div className="absolute top-4 left-4 right-4 h-[1px] bg-[#e5e5e0] z-0" />
+                    ) : nextActions?.action ? (
+                      <div key={nextActions.action.id} className="flex items-center justify-between gap-3 p-3 rounded-xl bg-[#f0fdf9] border border-[#059669]/20 shadow-sm">
+                        <div>
+                          <p className="text-xs font-bold text-[#26251e]">{nextActions.action.action_type}</p>
+                          <p className="text-[10px] text-[#7a7a76] mt-0.5">{nextActions.action.reasoning ?? "Aucun motif fourni par l'agent"}</p>
+                          {nextActions.action.lead_name && <p className="text-[10px] font-semibold text-[#059669] mt-1">Lead: {nextActions.action.lead_name}</p>}
+                        </div>
+                        <button
+                          onClick={() => handleApprove(nextActions.action!.id)}
+                          disabled={approvingId === nextActions.action.id}
+                          className="bg-[#059669] hover:bg-[#047857] disabled:opacity-50 text-white font-bold text-[10px] px-3 py-1.5 rounded-lg shrink-0 transition-all flex items-center gap-1"
+                        >
+                          {approvingId === nextActions.action.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Play className="h-3 w-3" />}
+                          Approuver
+                        </button>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-[#7a7a76] py-3">Aucun projet de relance ou action de l'agent en attente d'approbation.</p>
+                    )}
                   </div>
                 </div>
 
-                {/* Programmes de croissance actifs */}
-                {activePrograms.length > 0 && (
-                  <div className="bg-white border border-[#e5e5e0] rounded-2xl p-5 shadow-sm space-y-3">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-xs font-bold text-[#26251e] uppercase tracking-wider">Programmes actifs</h3>
-                      <Link href="/campaigns" className="text-[10px] font-bold text-[#059669] hover:underline">Voir tous →</Link>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {activePrograms.map(({ campaign, current, target, pct }) => (
-                        <Link
-                          key={campaign.id}
-                          href={`/campaigns/${campaign.id}`}
-                          className="rounded-xl border border-[#e5e5e0] hover:border-[#059669]/30 p-3.5 space-y-2 transition-colors"
-                        >
-                          <div className="flex items-center justify-between gap-2">
-                            <span className="text-xs font-bold text-[#26251e] truncate">{campaign.name}</span>
-                            <span className="text-[9px] font-bold uppercase text-[#059669] bg-[#059669]/10 px-1.5 py-0.5 rounded-full shrink-0">
-                              {GOAL_TYPE_LABELS[campaign.goalType!]}
-                            </span>
-                          </div>
-                          <div className="flex items-center justify-between text-[10px] text-[#7a7a76]">
-                            <span>{current} / {target} {GOAL_TYPE_UNITS[campaign.goalType!]}</span>
-                            {pct !== null && <span className="font-bold text-[#059669]">{pct}%</span>}
-                          </div>
-                          {pct !== null && (
-                            <div className="h-1 rounded-full bg-[#f4f4f3] overflow-hidden">
-                              <div className="h-full bg-[#059669] rounded-full" style={{ width: `${pct}%` }} />
-                            </div>
-                          )}
-                        </Link>
-                      ))}
-                    </div>
-                  </div>
+                {/* Tâches du jour — reste aussi toujours visible sur mobile */}
+                <TodayTasksCard />
+
+                {/* Sur mobile, le reste (parcours 7 phases, programmes, agenda, feed IA, stats...)
+                    est replié par défaut au lieu d'empiler ~18-20 cartes d'un coup dans un seul
+                    scroll interminable — c'était le principal reproche sur la version mobile. */}
+                {isMobile && (
+                  <button
+                    type="button"
+                    onClick={() => setMobileExpanded(v => !v)}
+                    className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-dashed border-[#e5e5e0] text-xs font-bold text-[#7a7a76] active:bg-[#f4f4f3] transition-colors"
+                  >
+                    {mobileExpanded ? 'Voir moins' : 'Voir plus (agenda, IA, statistiques…)'}
+                    <ChevronDown className={cn('h-3.5 w-3.5 transition-transform', mobileExpanded && 'rotate-180')} />
+                  </button>
                 )}
 
-                {/* Two Column Grid */}
-                <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-                  {/* Left column */}
-                  <div className="flex flex-col gap-5">
-                    {/* Outreach Control Center - approvals */}
+                {(!isMobile || mobileExpanded) && (
+                  <>
+                    {/* Canonical 7-Phase Journey map */}
                     <div className="bg-white border border-[#e5e5e0] rounded-2xl p-5 shadow-sm">
-                      <div className="flex items-center gap-2 mb-3">
-                        <Zap className="h-4.5 w-4.5 text-[#059669]" />
-                        <h3 className="text-xs font-bold text-[#26251e] uppercase tracking-wider">Outreach Control Center — Approbations</h3>
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-xs font-bold text-[#26251e] uppercase tracking-wider">Parcours client en 7 phases</h3>
+                        <span className="text-[10px] font-bold text-[#7a7a76]">{leads.length} prospects au total</span>
                       </div>
-                      <div className="flex flex-col gap-2">
-                        {loadingActions ? (
-                          <div className="flex items-center gap-1.5 py-4 text-xs text-[#7a7a76]">
-                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                            Chargement des actions en attente...
-                          </div>
-                        ) : nextActions?.action ? (
-                          <div key={nextActions.action.id} className="flex items-center justify-between gap-3 p-3 rounded-xl bg-[#f0fdf9] border border-[#059669]/20 shadow-sm">
-                            <div>
-                              <p className="text-xs font-bold text-[#26251e]">{nextActions.action.action_type}</p>
-                              <p className="text-[10px] text-[#7a7a76] mt-0.5">{nextActions.action.reasoning ?? "Aucun motif fourni par l'agent"}</p>
-                              {nextActions.action.lead_name && <p className="text-[10px] font-semibold text-[#059669] mt-1">Lead: {nextActions.action.lead_name}</p>}
+                      <div className="grid grid-cols-7 gap-1 text-center relative">
+                        {[
+                          { label: 'Initial Email', val: phaseCounts.step1 },
+                          { label: 'Relance', val: phaseCounts.step2 },
+                          { label: 'Appel/Intérêt', val: phaseCounts.step3 },
+                          { label: 'Réponse (+)', val: phaseCounts.step4 },
+                          { label: 'RDV Booké', val: phaseCounts.step5 },
+                          { label: 'Proposition', val: phaseCounts.step6 },
+                          { label: 'Gagné', val: phaseCounts.step7 },
+                        ].map((step, idx) => (
+                          <div key={idx} className="flex flex-col items-center relative z-10">
+                            <div className="w-8 h-8 rounded-full border border-[#e5e5e0] bg-[#fafaf8] flex items-center justify-center font-black text-xs text-[#26251e] mb-1">
+                              {step.val}
                             </div>
-                            <button
-                              onClick={() => handleApprove(nextActions.action!.id)}
-                              disabled={approvingId === nextActions.action.id}
-                              className="bg-[#059669] hover:bg-[#047857] disabled:opacity-50 text-white font-bold text-[10px] px-3 py-1.5 rounded-lg shrink-0 transition-all flex items-center gap-1"
-                            >
-                              {approvingId === nextActions.action.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Play className="h-3 w-3" />}
-                              Approuver
-                            </button>
+                            <span className="text-[9px] font-bold text-[#7a7a76] uppercase truncate w-full px-1">{step.label}</span>
                           </div>
-                        ) : (
-                          <p className="text-xs text-[#7a7a76] py-3">Aucun projet de relance ou action de l'agent en attente d'approbation.</p>
-                        )}
+                        ))}
+                        {/* Background connector line */}
+                        <div className="absolute top-4 left-4 right-4 h-[1px] bg-[#e5e5e0] z-0" />
                       </div>
                     </div>
 
-                    <TodayAgendaCard />
-                    <TodayGoogleCalendarCard />
-                    <TodaySequenceStepsCard />
-                    <FollowUpListCard />
-                    <TodayTasksCard />
-                  </div>
+                    {/* Programmes de croissance actifs */}
+                    {activePrograms.length > 0 && (
+                      <div className="bg-white border border-[#e5e5e0] rounded-2xl p-5 shadow-sm space-y-3">
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-xs font-bold text-[#26251e] uppercase tracking-wider">Programmes actifs</h3>
+                          <Link href="/campaigns" className="text-[10px] font-bold text-[#059669] hover:underline">Voir tous →</Link>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          {activePrograms.map(({ campaign, current, target, pct }) => (
+                            <Link
+                              key={campaign.id}
+                              href={`/campaigns/${campaign.id}`}
+                              className="rounded-xl border border-[#e5e5e0] hover:border-[#059669]/30 p-3.5 space-y-2 transition-colors"
+                            >
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="text-xs font-bold text-[#26251e] truncate">{campaign.name}</span>
+                                <span className="text-[9px] font-bold uppercase text-[#059669] bg-[#059669]/10 px-1.5 py-0.5 rounded-full shrink-0">
+                                  {GOAL_TYPE_LABELS[campaign.goalType!]}
+                                </span>
+                              </div>
+                              <div className="flex items-center justify-between text-[10px] text-[#7a7a76]">
+                                <span>{current} / {target} {GOAL_TYPE_UNITS[campaign.goalType!]}</span>
+                                {pct !== null && <span className="font-bold text-[#059669]">{pct}%</span>}
+                              </div>
+                              {pct !== null && (
+                                <div className="h-1 rounded-full bg-[#f4f4f3] overflow-hidden">
+                                  <div className="h-full bg-[#059669] rounded-full" style={{ width: `${pct}%` }} />
+                                </div>
+                              )}
+                            </Link>
+                          ))}
+                        </div>
+                      </div>
+                    )}
 
-                  {/* Right Column */}
-                  <div className="flex flex-col gap-5">
-                    {/* Minerva Agent Feed */}
-                    <AgentFeed />
-                    
-                    <NextBestActionCard />
-                    <DailyDigestCard />
-                    <AgentPrioritiesCard />
-                    <TodayFocusCard />
-                    <TodayAiSuggestionsCard />
-                    <TodayActivityFeedCard />
-                    <TodayTeamActivityCard />
-                    <TodayStatsCard />
-                    <TodayProjectsCard />
-                  </div>
-                </div>
+                    {/* Two Column Grid */}
+                    <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+                      {/* Left column */}
+                      <div className="flex flex-col gap-5">
+                        <TodayAgendaCard />
+                        <TodayGoogleCalendarCard />
+                        <TodaySequenceStepsCard />
+                        <FollowUpListCard />
+                      </div>
+
+                      {/* Right Column */}
+                      <div className="flex flex-col gap-5">
+                        {/* Minerva Agent Feed */}
+                        <AgentFeed />
+
+                        <NextBestActionCard />
+                        <DailyDigestCard />
+                        <AgentPrioritiesCard />
+                        <TodayFocusCard />
+                        <TodayAiSuggestionsCard />
+                        <TodayActivityFeedCard />
+                        <TodayTeamActivityCard />
+                        <TodayStatsCard />
+                        <TodayProjectsCard />
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
             )}
 
