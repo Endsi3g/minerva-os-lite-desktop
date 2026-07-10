@@ -5,6 +5,15 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [3.88.0] — Onglet Avis Google sur la fiche lead — 10 juillet 2026, 18h35
+
+### Ajouté
+- **Onglet "Avis"** sur la fiche lead : remplace la petite carte "Google Insights" tronquée à 2 avis par un véritable onglet listant tous les avis disponibles (jusqu'à 5 via l'API officielle Google Places), avec nom de l'auteur, photo de profil, note en étoiles, texte intégral et date relative.
+- **Photos de l'établissement** : récupération des photos Google Places, affichées en grille avec visionneuse plein écran (`components/media-lightbox.tsx`, nouveau composant partagé), servies via une route proxy (`/api/leads/[id]/place-photo`) qui ne laisse jamais transiter la clé API vers le navigateur.
+- **Bouton "Copier tous les avis"** : copie tous les avis dans le presse-papier, formatés pour être collés directement dans un brouillon d'e-mail ou un script d'appel.
+- **Recherche complémentaire d'avis** (bouton "Chercher plus d'avis") : scraping best-effort de la page Google Maps réelle du lead via Firecrawl, en complément manuel de la limite de 5 avis de l'API officielle, avec dédoublonnage contre les avis déjà connus.
+- L'onglet est visible uniquement lorsque le compte Google est connecté et que le lead a un lien Google Maps ; un état vide explicite s'affiche si `GOOGLE_PLACES_API_KEY` n'est pas configurée côté serveur (au lieu d'un échec silencieux).
+
 ## [3.87.1] — Correctifs push mobile et fausse confirmation d'envoi d'e-mail — 10 juillet 2026, 17h35
 
 ### Corrigé

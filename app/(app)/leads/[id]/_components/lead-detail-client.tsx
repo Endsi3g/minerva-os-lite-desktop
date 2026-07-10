@@ -9,7 +9,7 @@ import { useLanguage } from '@/lib/language-context';
 import { usePersonas } from '@/lib/use-personas';
 import { takePhoto } from '@/lib/native-bridge';
 import { getApiUrl } from '@/lib/api-helper';
-import { Lead, Note, LeadLocation } from '@/lib/mock-data';
+import { Lead, Note, LeadLocation, GooglePlaceData } from '@/lib/mock-data';
 import { computeLeadScoreV2 } from '@/lib/lead-score';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -71,6 +71,7 @@ import { LeadNbaCard } from './lead-nba-card';
 import { CadenceTimeline } from './cadence-timeline';
 import { LeadProgramsBadge } from './lead-programs-badge';
 import { LeadEnrichmentReviewBanner } from './lead-enrichment-review-banner';
+import { MediaLightboxGrid } from '@/components/media-lightbox';
 
 function cleanMarkdownForPreview(text: string | null | undefined): string {
   if (!text) return '';
@@ -763,7 +764,7 @@ export function LeadDetailClient({ id }: { id: string }) {
   // Auto-enrich with Google Places data on mount
   useEffect(() => {
     if (!lead?.id) return;
-    const cached = (lead as any).google_place_data;
+    const cached = lead.googlePlaceData;
     if (cached) { setGooglePlaceData(cached); return; }
     setEnrichingGoogle(true);
     fetch(getApiUrl('/api/leads/enrich-google'), {
@@ -775,6 +776,7 @@ export function LeadDetailClient({ id }: { id: string }) {
       .then(d => {
         if (d.ok && d.data) {
           setGooglePlaceData(d.data);
+          setGoogleEnrichError(null);
           updateLead(lead.id, {
             rating: lead.rating || d.data.rating || undefined,
             reviewsCount: lead.reviewsCount || d.data.review_count || undefined,
@@ -783,6 +785,8 @@ export function LeadDetailClient({ id }: { id: string }) {
             mapsUrl: lead.mapsUrl || `https://www.google.com/maps/place/?q=place_id:${d.data.place_id}`,
             address: lead.address || d.data.formattedAddress || undefined,
           });
+        } else if (d.error) {
+          setGoogleEnrichError(d.error as string);
         }
       })
       .catch(() => {})
@@ -920,14 +924,20 @@ export function LeadDetailClient({ id }: { id: string }) {
   }
 
   // AI draft states
-  const [activeTab, setActiveTab] = useState<'notes' | 'drafts' | 'composer' | 'timeline' | 'gmail' | 'agenda' | 'outreach'>('notes');
+  const [activeTab, setActiveTab] = useState<'notes' | 'drafts' | 'composer' | 'timeline' | 'gmail' | 'agenda' | 'outreach' | 'reviews'>('notes');
   const prevTabRef = useRef<string>('notes');
   const [drafts, setDrafts] = useState<Draft[]>([]);
   const [loadingDrafts, setLoadingDrafts] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [aiStage, setAiStage] = useState<'idle' | 'thinking' | 'reading' | 'writing' | 'done'>('idle');
-  const [googlePlaceData, setGooglePlaceData] = useState<Record<string, any> | null>(null);
+  const [googlePlaceData, setGooglePlaceData] = useState<GooglePlaceData | null>(null);
   const [enrichingGoogle, setEnrichingGoogle] = useState(false);
+  const [googleEnrichError, setGoogleEnrichError] = useState<string | null>(null);
+  const [reviewsGoogleConnected, setReviewsGoogleConnected] = useState<boolean | null>(null);
+  const [showReviewsConnectModal, setShowReviewsConnectModal] = useState(false);
+  const [reviewsCopied, setReviewsCopied] = useState(false);
+  const [scrapingMoreReviews, setScrapingMoreReviews] = useState(false);
+  const [scrapeReviewsError, setScrapeReviewsError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!generating) {
@@ -996,6 +1006,48 @@ export function LeadDetailClient({ id }: { id: string }) {
       });
     return () => { cancelled = true; };
   }, [activeTab, lead?.contactEmail]);
+
+  // Google account connection status for the "Avis" (reviews) tab — GOOGLE_PLACES_API_KEY
+  // itself is a separate server-only credential (checked by the API routes), this only
+  // gates whether the tab's UI is shown at all, per product decision.
+  useEffect(() => {
+    if (activeTab !== 'reviews' || reviewsGoogleConnected !== null) return;
+    let cancelled = false;
+    fetch(getApiUrl('/api/google/auth/status'))
+      .then((r) => r.json())
+      .then((data) => { if (!cancelled) setReviewsGoogleConnected(!!data.connected); })
+      .catch(() => { if (!cancelled) setReviewsGoogleConnected(false); });
+    return () => { cancelled = true; };
+  }, [activeTab, reviewsGoogleConnected]);
+
+  const handleCopyAllReviews = useCallback(() => {
+    const reviews = googlePlaceData?.reviews || [];
+    if (reviews.length === 0) return;
+    const text = reviews
+      .map((r) => `${'⭐'.repeat(Math.max(1, Math.min(5, Math.round(r.rating || 5))))} ${r.authorName || 'Client'}${r.time ? ` (${r.time})` : ''}\n${r.text}`)
+      .join('\n\n---\n\n');
+    navigator.clipboard.writeText(text).then(() => {
+      setReviewsCopied(true);
+      setTimeout(() => setReviewsCopied(false), 2000);
+    }).catch(() => {});
+  }, [googlePlaceData]);
+
+  const handleScrapeMoreReviews = useCallback(() => {
+    if (!lead?.id || scrapingMoreReviews) return;
+    setScrapingMoreReviews(true);
+    setScrapeReviewsError(null);
+    fetch(getApiUrl(`/api/leads/${lead.id}/enrich-google-reviews-scrape`), { method: 'POST' })
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.ok && d.data) {
+          setGooglePlaceData(d.data);
+        } else {
+          setScrapeReviewsError(d.error || 'Échec de la recherche d\'avis supplémentaires.');
+        }
+      })
+      .catch((err) => setScrapeReviewsError(err.message))
+      .finally(() => setScrapingMoreReviews(false));
+  }, [lead?.id, scrapingMoreReviews]);
 
   // Google Calendar lead events state (Feature 3)
   const [leadCalEvents, setLeadCalEvents] = useState<Array<{
@@ -1918,46 +1970,33 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
             {/* Social Links + Instagram Gallery */}
             <SocialLinksSection lead={lead} onSave={(fields) => updateLead(lead.id, fields)} />
 
-            {/* Google Insights — auto-enrichi depuis Google Places */}
+            {/* Google Insights teaser — le détail complet (avis, photos, copier tout) vit dans l'onglet "Avis" */}
             {(googlePlaceData || enrichingGoogle) && (
-              <div className="rounded-xl border border-[#e5e5e0] bg-[#f9fafb] overflow-hidden">
-                <div className="flex items-center gap-2 px-3 py-2 border-b border-[#e5e5e0] bg-white">
-                  <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 shrink-0" fill="none">
-                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z" fill="#4285F4"/>
-                    <path d="M17.6 12.2c0-.4 0-.7-.1-1H12v1.9h3.1c-.1.7-.6 1.8-1.6 2.5l2.4 1.9c1.4-1.3 2.2-3.2 2.2-5.3z" fill="#4285F4"/>
-                    <path d="M12 18c1.6 0 2.9-.5 3.9-1.4l-2.4-1.9c-.5.4-1.2.6-1.5.6-1.7 0-3.2-1.1-3.7-2.7H5.6l-2.5 1.9C4.5 16.5 8 18 12 18z" fill="#34A853"/>
-                    <path d="M8.3 12.6c-.1-.4-.2-.8-.2-1.2s.1-.8.2-1.2V8.3L5.6 6.5C4.8 8 4.3 9.9 4.3 12s.5 3.9 1.3 5.5l2.7-2.4-.3-2.5z" fill="#FBBC05"/>
-                    <path d="M12 6.6c1.3 0 2.5.4 3.4 1.3L17.6 6c-1.4-1.3-3.2-2-5.6-2-3.9 0-7.3 2.2-9 5.4l2.7 2.1C6.8 9.3 9.2 6.6 12 6.6z" fill="#EA4335"/>
-                  </svg>
-                  <span className="text-[10px] font-bold text-[#26251e] tracking-tight">Google Insights</span>
-                  {enrichingGoogle && <span className="ml-auto text-[9px] text-[#7a7a76]">Enrichissement…</span>}
-                  {googlePlaceData && (
-                    <div className="ml-auto flex items-center gap-1.5">
-                      {googlePlaceData.rating && (
-                        <span className="text-[10px] font-bold text-amber-600">⭐ {googlePlaceData.rating}</span>
-                      )}
-                      {googlePlaceData.review_count && (
-                        <span className="text-[9px] text-[#7a7a76]">({googlePlaceData.review_count} avis)</span>
-                      )}
-                    </div>
-                  )}
-                </div>
+              <button
+                type="button"
+                onClick={() => setActiveTab('reviews')}
+                className="w-full flex items-center gap-2 px-3 py-2 rounded-xl border border-[#e5e5e0] bg-[#f9fafb] hover:bg-[#f4f4f3] transition-colors text-left"
+              >
+                <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 shrink-0" fill="none">
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z" fill="#4285F4"/>
+                  <path d="M17.6 12.2c0-.4 0-.7-.1-1H12v1.9h3.1c-.1.7-.6 1.8-1.6 2.5l2.4 1.9c1.4-1.3 2.2-3.2 2.2-5.3z" fill="#4285F4"/>
+                  <path d="M12 18c1.6 0 2.9-.5 3.9-1.4l-2.4-1.9c-.5.4-1.2.6-1.5.6-1.7 0-3.2-1.1-3.7-2.7H5.6l-2.5 1.9C4.5 16.5 8 18 12 18z" fill="#34A853"/>
+                  <path d="M8.3 12.6c-.1-.4-.2-.8-.2-1.2s.1-.8.2-1.2V8.3L5.6 6.5C4.8 8 4.3 9.9 4.3 12s.5 3.9 1.3 5.5l2.7-2.4-.3-2.5z" fill="#FBBC05"/>
+                  <path d="M12 6.6c1.3 0 2.5.4 3.4 1.3L17.6 6c-1.4-1.3-3.2-2-5.6-2-3.9 0-7.3 2.2-9 5.4l2.7 2.1C6.8 9.3 9.2 6.6 12 6.6z" fill="#EA4335"/>
+                </svg>
+                <span className="text-[10px] font-bold text-[#26251e] tracking-tight">Google Insights</span>
+                {enrichingGoogle && <span className="ml-auto text-[9px] text-[#7a7a76]">Enrichissement…</span>}
                 {googlePlaceData && (
-                  <div className="p-3 space-y-2">
-                    {(googlePlaceData.generative_summary || googlePlaceData.editorial_summary) && (
-                      <p className="text-[11px] text-[#26251e] leading-relaxed">
-                        {googlePlaceData.generative_summary || googlePlaceData.editorial_summary}
-                      </p>
+                  <div className="ml-auto flex items-center gap-1.5">
+                    {googlePlaceData.rating && (
+                      <span className="text-[10px] font-bold text-amber-600">⭐ {googlePlaceData.rating}</span>
                     )}
-                    {googlePlaceData.reviews?.slice(0, 2).map((r: any, i: number) => r.text ? (
-                      <div key={i} className="flex gap-2 items-start">
-                        <span className="text-[9px] text-amber-500 mt-0.5 shrink-0">{"⭐".repeat(Math.min(r.rating || 5, 5))}</span>
-                        <p className="text-[10px] text-[#555552] leading-relaxed italic line-clamp-2">"{r.text.slice(0, 140)}"</p>
-                      </div>
-                    ) : null)}
+                    {googlePlaceData.review_count && (
+                      <span className="text-[9px] text-[#7a7a76]">({googlePlaceData.review_count} avis) — voir tout →</span>
+                    )}
                   </div>
                 )}
-              </div>
+              </button>
             )}
 
             {/* Tabs Selector for Notes vs AI Drafts */}
@@ -2052,6 +2091,21 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                   <Zap className="h-3 w-3" />
                   Outreach
                 </button>
+                {(lead.mapsUrl || lead.googlePlaceId) && (
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('reviews')}
+                    className={cn(
+                      "pb-3 text-[10px] font-bold uppercase tracking-wider border-b-2 px-1 transition-all cursor-pointer flex items-center gap-1 whitespace-nowrap shrink-0",
+                      activeTab === 'reviews'
+                        ? "border-[#059669] text-[#059669] font-extrabold"
+                        : "border-transparent text-[#7a7a76] hover:text-[#26251e]"
+                    )}
+                  >
+                    <Star className="h-3 w-3" />
+                    Avis {googlePlaceData?.review_count ? `(${googlePlaceData.review_count})` : ''}
+                  </button>
+                )}
               </div>
 
               <AnimatePresence mode="wait" initial={false}>
@@ -2703,6 +2757,128 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                 </div>
               ) : activeTab === 'outreach' ? (
                 <OutreachPanel lead={lead} />
+              ) : activeTab === 'reviews' ? (
+                /* Avis Google — reviews, photos, copier tout (Places API + complément Firecrawl best-effort) */
+                <div className="space-y-4">
+                  {reviewsGoogleConnected === null ? (
+                    <div className="h-20 rounded-lg border border-[#e5e5e0] bg-[#f4f4f3]/50 animate-pulse" />
+                  ) : reviewsGoogleConnected === false ? (
+                    <div className="flex flex-col items-center gap-3 py-6 text-center">
+                      <p className="text-xs text-[#7a7a76]">Connectez Google pour voir les avis Maps de ce lead.</p>
+                      <button
+                        onClick={() => setShowReviewsConnectModal(true)}
+                        className="flex items-center gap-1.5 px-3 h-8 rounded-lg bg-[#059669] hover:bg-[#047857] text-white text-xs font-bold transition-colors"
+                      >
+                        <Star className="h-3.5 w-3.5" />
+                        Connecter Google
+                      </button>
+                      <GoogleConnectModal
+                        open={showReviewsConnectModal}
+                        onClose={() => setShowReviewsConnectModal(false)}
+                        pack="identity"
+                        redirect={`/leads/${lead.id}`}
+                      />
+                    </div>
+                  ) : enrichingGoogle ? (
+                    <div className="flex flex-col gap-2">
+                      {[1, 2, 3].map((i) => (
+                        <div key={i} className="h-16 rounded-lg border border-[#e5e5e0] bg-[#f4f4f3]/50 animate-pulse" />
+                      ))}
+                    </div>
+                  ) : googleEnrichError ? (
+                    <div className="py-6 text-center space-y-1">
+                      <p className="text-xs text-red-600 font-medium">{googleEnrichError}</p>
+                      {googleEnrichError.includes('GOOGLE_PLACES_API_KEY') && (
+                        <p className="text-[11px] text-[#7a7a76]">Configuration requise côté serveur — voir .env.example.</p>
+                      )}
+                    </div>
+                  ) : !googlePlaceData ? (
+                    <p className="text-xs text-[#7a7a76] italic py-4 text-center">Aucune donnée Google Maps pour ce lead.</p>
+                  ) : (
+                    <>
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          {googlePlaceData.rating !== undefined && (
+                            <span className="text-sm font-bold text-amber-600">⭐ {googlePlaceData.rating.toFixed(1)}</span>
+                          )}
+                          {googlePlaceData.review_count !== undefined && (
+                            <span className="text-xs text-[#7a7a76]">({googlePlaceData.review_count} avis au total sur Maps)</span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={handleScrapeMoreReviews}
+                            disabled={scrapingMoreReviews}
+                            className="h-7 text-[11px] font-semibold gap-1.5"
+                          >
+                            {scrapingMoreReviews
+                              ? <Loader2 className="h-3 w-3 animate-spin" />
+                              : <Sparkles className="h-3 w-3 text-[#059669]" />}
+                            {scrapingMoreReviews ? 'Recherche…' : "Chercher plus d'avis"}
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={handleCopyAllReviews}
+                            disabled={!googlePlaceData.reviews?.length}
+                            className="h-7 text-[11px] font-semibold gap-1.5"
+                          >
+                            {reviewsCopied ? <Check className="h-3 w-3 text-[#059669]" /> : <Copy className="h-3 w-3" />}
+                            {reviewsCopied ? 'Copié !' : 'Copier tous les avis'}
+                          </Button>
+                        </div>
+                      </div>
+
+                      {scrapeReviewsError && (
+                        <p className="text-[11px] text-red-600">{scrapeReviewsError}</p>
+                      )}
+
+                      {(googlePlaceData.generative_summary || googlePlaceData.editorial_summary) && (
+                        <p className="text-xs text-[#26251e] leading-relaxed bg-[#f4f4f3]/40 border border-[#e5e5e0]/70 rounded-lg p-3">
+                          {googlePlaceData.generative_summary || googlePlaceData.editorial_summary}
+                        </p>
+                      )}
+
+                      {googlePlaceData.photos && googlePlaceData.photos.length > 0 && (
+                        <MediaLightboxGrid
+                          images={googlePlaceData.photos.map((name) => getApiUrl(`/api/leads/${lead.id}/place-photo?name=${encodeURIComponent(name)}`))}
+                          alt="Photo de l'établissement"
+                        />
+                      )}
+
+                      <div className="space-y-3">
+                        {(googlePlaceData.reviews || []).length === 0 ? (
+                          <p className="text-xs text-[#7a7a76] italic py-2 text-center">Aucun avis disponible pour ce lieu.</p>
+                        ) : (
+                          googlePlaceData.reviews!.map((r, i) => (
+                            <div key={i} className="flex gap-2.5 items-start p-3 rounded-lg border border-[#e5e5e0]/70 bg-white">
+                              {r.authorPhotoUrl ? (
+                                /* eslint-disable-next-line @next/next/no-img-element */
+                                <img src={r.authorPhotoUrl} alt={r.authorName || 'Avis'} className="h-8 w-8 rounded-full shrink-0 object-cover" />
+                              ) : (
+                                <div className="h-8 w-8 rounded-full shrink-0 bg-[#f4f4f3] flex items-center justify-center text-[11px] font-bold text-[#7a7a76]">
+                                  {(r.authorName || '?').charAt(0).toUpperCase()}
+                                </div>
+                              )}
+                              <div className="min-w-0 flex-1 space-y-1">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-xs font-semibold text-[#26251e] truncate">{r.authorName || 'Client Google'}</span>
+                                  <span className="text-[10px] text-[#7a7a76] shrink-0">{r.time}</span>
+                                </div>
+                                <span className="text-[10px] text-amber-500">{'⭐'.repeat(Math.max(1, Math.min(5, Math.round(r.rating))))}</span>
+                                {r.text && <p className="text-xs text-[#555552] leading-relaxed">{r.text}</p>}
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </>
+                  )}
+                </div>
               ) : null}
               </motion.div>
               </AnimatePresence>

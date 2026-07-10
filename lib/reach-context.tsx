@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { getApiUrl } from './api-helper';
 import { User as SupabaseUser, AuthChangeEvent, Session } from '@supabase/supabase-js';
-import { Lead, Task, Note, AiSuggestion, LeadLocation, initialLeads, initialTasks } from './mock-data';
+import { Lead, Task, Note, AiSuggestion, LeadLocation, GooglePlaceData, initialLeads, initialTasks } from './mock-data';
 import { computeLeadScore } from './lead-scoring';
 import { createClient } from './supabase/client';
 import { sendDesktopNotification } from './notification-service';
@@ -317,6 +317,8 @@ interface DbLead {
   tags?: string | string[] | null;
   custom_fields?: string | Record<string, string> | null;
   locations?: string | LeadLocation[] | null;
+  google_place_id?: string | null;
+  google_place_data?: string | GooglePlaceData | null; // JSON string in SQLite, jsonb in Supabase
 }
 
 interface DbNote {
@@ -428,6 +430,13 @@ function mapDbLeadToUi(dbLead: DbLead, dbNotes: DbNote[] = []): Lead {
     tags: (() => { try { return dbLead.tags ? (Array.isArray(dbLead.tags) ? dbLead.tags : JSON.parse(dbLead.tags as string)) : []; } catch { return []; } })(),
     locations: (() => { try { return dbLead.locations ? (Array.isArray(dbLead.locations) ? dbLead.locations : JSON.parse(dbLead.locations as string)) : []; } catch { return []; } })(),
     customFields,
+    googlePlaceId: dbLead.google_place_id || undefined,
+    googlePlaceData: (() => {
+      try {
+        if (!dbLead.google_place_data) return undefined;
+        return typeof dbLead.google_place_data === 'string' ? JSON.parse(dbLead.google_place_data) : dbLead.google_place_data;
+      } catch { return undefined; }
+    })(),
     notes: dbNotes
       .filter(n => n.lead_id === dbLead.id)
       .map(n => ({

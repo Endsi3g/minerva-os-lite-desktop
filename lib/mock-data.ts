@@ -117,6 +117,34 @@ export interface Lead {
   // Tags (v4.0)
   tags?: string[];
   customFields?: Record<string, string>;
+  // Google Places enrichment (v3.88.0)
+  googlePlaceId?: string;
+  googlePlaceData?: GooglePlaceData;
+}
+
+export interface GooglePlaceReview {
+  text: string;
+  rating: number;
+  time: string;
+  authorName?: string;
+  authorPhotoUrl?: string;
+}
+
+export interface GooglePlaceData {
+  place_id?: string;
+  name?: string;
+  rating?: number;
+  review_count?: number;
+  editorial_summary?: string | null;
+  generative_summary?: string | null;
+  reviews?: GooglePlaceReview[];
+  // Places API photo resource names (e.g. "places/XXX/photos/YYY") — never a direct URL,
+  // fetched through /api/leads/[id]/place-photo so GOOGLE_PLACES_API_KEY stays server-only.
+  photos?: string[];
+  opening_hours?: { openNow?: boolean; weekdayDescriptions?: string[] } | null;
+  website?: string | null;
+  phone?: string | null;
+  insights?: string[];
 }
 
 export interface LeadEvent {

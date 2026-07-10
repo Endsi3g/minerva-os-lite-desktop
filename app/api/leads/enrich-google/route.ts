@@ -17,6 +17,7 @@ interface PlaceResult {
     text?: { text: string };
     rating?: number;
     relativePublishTimeDescription?: string;
+    authorAttribution?: { displayName?: string; photoUri?: string };
   }>;
   generativeSummary?: {
     overview?: { text: string };
@@ -24,6 +25,7 @@ interface PlaceResult {
   websiteUri?: string;
   nationalPhoneNumber?: string;
   formattedAddress?: string;
+  photos?: Array<{ name?: string }>;
 }
 
 async function searchPlace(businessName: string, city: string): Promise<PlaceResult | null> {
@@ -46,6 +48,7 @@ async function searchPlace(businessName: string, city: string): Promise<PlaceRes
         'places.websiteUri',
         'places.nationalPhoneNumber',
         'places.formattedAddress',
+        'places.photos',
       ].join(','),
     },
     body: JSON.stringify({
@@ -127,11 +130,19 @@ export async function POST(req: NextRequest) {
     review_count: place.userRatingCount,
     editorial_summary: place.editorialSummary?.text ?? null,
     generative_summary: place.generativeSummary?.overview?.text ?? null,
-    reviews: (place.reviews || []).slice(0, 3).map(r => ({
+    reviews: (place.reviews || []).slice(0, 5).map(r => ({
       text: r.text?.text ?? '',
       rating: r.rating ?? 0,
       time: r.relativePublishTimeDescription ?? '',
+      authorName: r.authorAttribution?.displayName ?? undefined,
+      // Reviewer profile photo — a public googleusercontent.com URL, safe to use directly
+      // (unlike place photos below, it isn't gated behind our GOOGLE_PLACES_API_KEY).
+      authorPhotoUrl: r.authorAttribution?.photoUri ?? undefined,
     })),
+    // Photo resource names only (e.g. "places/XXX/photos/YYY"), never a direct media URL —
+    // the actual image bytes are fetched server-side via /api/leads/[id]/place-photo so the
+    // API key never reaches the client.
+    photos: (place.photos || []).slice(0, 6).map(p => p.name).filter(Boolean) as string[],
     opening_hours: place.regularOpeningHours ?? null,
     website: place.websiteUri ?? null,
     phone: place.nationalPhoneNumber ?? null,

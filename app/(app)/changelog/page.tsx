@@ -20,6 +20,16 @@ interface ChangelogVersion {
 
 const versions: ChangelogVersion[] = [
   {
+    version: 'v3.88.0',
+    date: '10 juillet 2026 · 18h35',
+    title: 'Onglet Avis Google sur la fiche lead',
+    highlights: [
+      { text: "Onglet \"Avis\" : remplace la carte tronquée à 2 avis par une liste complète (jusqu'à 5 avis via l'API officielle Google Places) avec auteur, photo, note, texte intégral et date." },
+      { text: "Photos de l'établissement en grille avec visionneuse plein écran, servies via une route proxy qui protège la clé API." },
+      { text: "Bouton \"Copier tous les avis\" prêt à coller dans un brouillon ou un script, et bouton \"Chercher plus d'avis\" (scraping complémentaire best-effort de la vraie page Maps)." }
+    ],
+  },
+  {
     version: 'v3.87.1',
     date: '10 juillet 2026 · 17h35',
     title: "Correctifs push mobile et fausse confirmation d'envoi d'e-mail",
