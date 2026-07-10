@@ -5,6 +5,11 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [3.92.0] — Bouton "Copier tout" sur la page Nouveautés — 10 juillet 2026, 19h31
+
+### Ajouté
+- Bouton "Copier tout" sur la page Changelog (`/changelog`) : copie l'ensemble des entrées (version, date, titre, points marquants) dans le presse-papier en texte brut.
+
 ## [3.91.1] — Refonte mobile, phase 3 : correctif du bouton Appeler en Mode Terrain — 10 juillet 2026, 19h23
 
 ### Corrigé

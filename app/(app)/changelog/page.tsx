@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { Copy, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 type Lang = 'fr' | 'en' | 'de';
@@ -19,6 +20,14 @@ interface ChangelogVersion {
 // ─── Versions data ─────────────────────────────────────────────────────────────
 
 const versions: ChangelogVersion[] = [
+  {
+    version: 'v3.92.0',
+    date: '10 juillet 2026 · 19h31',
+    title: 'Bouton "Copier tout" sur la page Nouveautés',
+    highlights: [
+      { text: "Copie l'ensemble des entrées du changelog (version, date, titre, points marquants) dans le presse-papier en texte brut." }
+    ],
+  },
   {
     version: 'v3.91.1',
     date: '10 juillet 2026 · 19h23',
@@ -1574,6 +1583,7 @@ export default function ChangelogPage() {
   useEffect(() => { document.title = 'Changelog — Minerva'; }, []);
 
   const [lang, setLang] = useState<Lang>('fr');
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     const stored = localStorage.getItem('minerva_changelog_lang') as Lang | null;
@@ -1585,6 +1595,16 @@ export default function ChangelogPage() {
     localStorage.setItem('minerva_changelog_lang', l);
   };
 
+  const handleCopyAll = () => {
+    const text = versions
+      .map((v) => `${v.version} — ${v.date}\n${v.title}\n${v.highlights.map((h) => `- ${h.text}`).join('\n')}`)
+      .join('\n\n');
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }).catch(() => {});
+  };
+
   return (
     <div className="h-full overflow-y-auto bg-[#fafaf8] text-[#26251e] relative">
       <div className="absolute inset-0 opacity-[0.25] pointer-events-none bg-grid-pattern-20 z-0" />
@@ -1592,11 +1612,21 @@ export default function ChangelogPage() {
 
         {/* ── Header ── */}
         <div className="space-y-4">
-          <div className="space-y-1">
-            <h1 className="text-2xl font-black tracking-tight text-[#26251e]">Nouveautés</h1>
-            <p className="text-sm text-[#7a7a76]">
-              Toutes les mises à jour de Minerva OS, des plus récentes aux plus anciennes.
-            </p>
+          <div className="flex items-start justify-between gap-4">
+            <div className="space-y-1">
+              <h1 className="text-2xl font-black tracking-tight text-[#26251e]">Nouveautés</h1>
+              <p className="text-sm text-[#7a7a76]">
+                Toutes les mises à jour de Minerva OS, des plus récentes aux plus anciennes.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handleCopyAll}
+              className="shrink-0 flex items-center gap-1.5 h-8 px-3 rounded-lg border border-[#e5e5e0] bg-white hover:bg-[#f4f4f3] text-[11px] font-bold text-[#26251e] transition-colors"
+            >
+              {copied ? <Check className="h-3.5 w-3.5 text-[#059669]" /> : <Copy className="h-3.5 w-3.5" />}
+              {copied ? 'Copié !' : 'Copier tout'}
+            </button>
           </div>
 
           {/* Language selector */}
