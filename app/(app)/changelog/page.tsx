@@ -20,6 +20,15 @@ interface ChangelogVersion {
 
 const versions: ChangelogVersion[] = [
   {
+    version: 'v3.91.0',
+    date: '10 juillet 2026 · 19h08',
+    title: 'Refonte mobile, phase 2 : Leads en galerie et accès rapide sur la fiche',
+    highlights: [
+      { text: "Vue galerie par défaut sur mobile pour la liste des leads, au lieu du tableau dense — vue tableau toujours accessible en un tap." },
+      { text: "Bandeau d'accès rapide sur la fiche lead (mobile) : statut, température, Appeler et E-mail tout en haut, sans devoir défiler tout le contenu et les onglets." }
+    ],
+  },
+  {
     version: 'v3.90.0',
     date: '10 juillet 2026 · 19h02',
     title: 'Refonte mobile, phase 1 : navigation unifiée et tableau de bord allégé',

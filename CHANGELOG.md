@@ -5,6 +5,12 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [3.91.0] — Refonte mobile, phase 2 : Leads en galerie et accès rapide sur la fiche — 10 juillet 2026, 19h08
+
+### Ajouté
+- **Vue galerie par défaut sur mobile** : la liste des leads bascule automatiquement sur la vue catalogue (déjà existante, responsive) plutôt que le tableau dense au chargement sous le seuil mobile — l'utilisateur reste libre de repasser en vue tableau ensuite.
+- **Bandeau d'accès rapide sur la fiche lead (mobile)** : sur écran étroit, le statut, la température et les boutons Appeler/E-mail apparaissent tout en haut de la fiche au lieu d'être uniquement accessibles après avoir défilé tout le contenu et les onglets jusqu'à la colonne de propriétés.
+
 ## [3.90.0] — Refonte mobile, phase 1 : navigation unifiée et tableau de bord allégé — 10 juillet 2026, 19h02
 
 ### Corrigé

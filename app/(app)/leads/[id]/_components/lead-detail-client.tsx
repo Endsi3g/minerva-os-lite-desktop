@@ -1863,9 +1863,70 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
           </div>
         )}
 
+        {/* Mobile quick actions — sur écran étroit, la colonne de propriétés (statut,
+            température, actions) ne se voit qu'après avoir défilé tout le contenu
+            principal et ses onglets. Ce bandeau donne un accès immédiat au strict
+            nécessaire sans dupliquer la logique (mêmes handleSaveProperty/setActiveTab
+            que le panneau complet plus bas). */}
+        <div className="xl:hidden flex flex-col gap-2 bg-white border border-[#e5e5e0] rounded-lg shadow-sm p-3">
+          <div className="grid grid-cols-2 gap-2">
+            <Select
+              value={lead.status}
+              onValueChange={(val: Lead['status']) => handleSaveProperty('status', val)}
+              disabled={isLocked}
+            >
+              <SelectTrigger className={cn("h-8 w-full text-xs font-semibold", getStatusColor(lead.status))}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="New" className="text-xs">🔴 {t('lead.status_new')}</SelectItem>
+                <SelectItem value="Contacted" className="text-xs">🟡 {t('lead.status_contacted')}</SelectItem>
+                <SelectItem value="Meeting Booked" className="text-xs">🟣 {t('lead.status_meeting')}</SelectItem>
+                <SelectItem value="Proposal Sent" className="text-xs">🟪 Proposition envoyée</SelectItem>
+                <SelectItem value="Negotiation" className="text-xs">🟠 Négociation</SelectItem>
+                <SelectItem value="Won" className="text-xs">🟢 {t('lead.status_won')}</SelectItem>
+                <SelectItem value="Lost" className="text-xs">⚪ {t('lead.status_lost')}</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select
+              value={lead.temperature}
+              onValueChange={(val: Lead['temperature']) => handleSaveProperty('temperature', val)}
+              disabled={isLocked}
+            >
+              <SelectTrigger className={cn("h-8 w-full text-xs font-semibold", getTemperatureColor(lead.temperature))}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Hot" className="text-xs">🔥 {t('lead.temp_hot')}</SelectItem>
+                <SelectItem value="Warm" className="text-xs">🌤️ {t('lead.temp_warm')}</SelectItem>
+                <SelectItem value="Cold" className="text-xs">❄️ {t('lead.temp_cold')}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            {lead.phone ? (
+              <a
+                href={`tel:${lead.phone}`}
+                className="flex items-center justify-center gap-1.5 h-9 rounded-lg border border-[#e5e5e0] text-xs font-bold text-[#26251e] active:bg-[#f4f4f3] transition-colors"
+              >
+                <Phone className="h-3.5 w-3.5" />Appeler
+              </a>
+            ) : <div />}
+            {lead.contactEmail ? (
+              <button
+                type="button"
+                onClick={() => setActiveTab('composer')}
+                className="flex items-center justify-center gap-1.5 h-9 rounded-lg bg-[#059669] hover:bg-[#047857] text-white text-xs font-bold transition-colors"
+              >
+                <Mail className="h-3.5 w-3.5" />E-mail
+              </button>
+            ) : <div />}
+          </div>
+        </div>
+
         {/* Notion Document Canvas */}
         <div className="grid grid-cols-1 xl:grid-cols-[1fr_300px] gap-6 bg-white border border-[#e5e5e0] rounded-lg shadow-sm p-4 sm:p-6">
-          
+
           {/* Main Content Side (Document Body) */}
           <div className="space-y-8 min-w-0">
             {/* Lead Title Heading (Notion style click-to-edit header) */}

@@ -18,6 +18,7 @@ import type { AuthResponse } from '@supabase/supabase-js';
 import { getApiUrl } from '@/lib/api-helper';
 import { cachedFetch } from '@/lib/fetch-cache';
 import { Lead } from '@/lib/mock-data';
+import { useIsMobile } from '@/lib/use-is-mobile';
 import { buildColumns } from '../columns';
 import { TEAM_ASSIGN_VALUE } from './leads-assign-cell';
 import { DataTable } from '../data-table';
@@ -48,6 +49,15 @@ export function LeadsRoot() {
   const [globalFilter, setGlobalFilter] = useState('');
   const [rowSelection, setRowSelection] = useState({});
   const [viewMode, setViewMode] = useState<'list' | 'gallery'>('list');
+  const isMobile = useIsMobile();
+
+  // Le tableau (colonnes denses, scroll horizontal) est peu utilisable sur petit écran —
+  // la vue galerie (déjà responsive, une seule colonne sur mobile) devient la vue par
+  // défaut dès que l'écran passe sous le seuil mobile. L'utilisateur reste libre de
+  // repasser en liste ensuite ; ce n'est qu'un défaut initial, pas un verrou.
+  useEffect(() => {
+    if (isMobile) setViewMode('gallery');
+  }, [isMobile]);
 
   // Fetch current user
   useEffect(() => {
