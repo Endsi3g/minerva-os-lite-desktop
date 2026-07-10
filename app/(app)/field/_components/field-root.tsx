@@ -192,8 +192,8 @@ function LeadCard({
 
       {/* Quick links */}
       <div className="flex gap-3">
-        {lead.contactEmail && (
-          <a href={`tel:${lead.contactEmail}`} className="flex items-center gap-1 text-[10px] text-[#059669] hover:underline">
+        {lead.phone && (
+          <a href={`tel:${lead.phone}`} className="flex items-center gap-1 text-[10px] text-[#059669] hover:underline">
             <Phone className="h-3 w-3" />
             Appeler
           </a>

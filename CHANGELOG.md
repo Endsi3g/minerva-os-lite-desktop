@@ -5,6 +5,11 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [3.91.1] — Refonte mobile, phase 3 : correctif du bouton Appeler en Mode Terrain — 10 juillet 2026, 19h23
+
+### Corrigé
+- **Bouton "Appeler" cassé sur les cartes du Mode Terrain** : le lien `tel:` utilisait `contactEmail` (une adresse e-mail) au lieu de `phone` — le bouton n'a donc jamais pu composer un vrai numéro. Le Mode Terrain était déjà le meilleur exemple de patron mobile de l'application (colonne unique, une action principale par carte, liens `tel:`/itinéraire) ; c'était l'unique incohérence trouvée en le passant en revue comme référence pour les phases précédentes.
+
 ## [3.91.0] — Refonte mobile, phase 2 : Leads en galerie et accès rapide sur la fiche — 10 juillet 2026, 19h08
 
 ### Ajouté

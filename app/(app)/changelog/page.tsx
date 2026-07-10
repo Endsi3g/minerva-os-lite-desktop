@@ -20,6 +20,14 @@ interface ChangelogVersion {
 
 const versions: ChangelogVersion[] = [
   {
+    version: 'v3.91.1',
+    date: '10 juillet 2026 · 19h23',
+    title: 'Refonte mobile, phase 3 : correctif du bouton Appeler en Mode Terrain',
+    highlights: [
+      { text: "Le bouton \"Appeler\" des cartes du Mode Terrain utilisait l'adresse e-mail du contact au lieu de son numéro de téléphone dans le lien tel: — corrigé. Seule incohérence trouvée en revoyant ce mode, déjà le meilleur exemple de design mobile de l'application." }
+    ],
+  },
+  {
     version: 'v3.91.0',
     date: '10 juillet 2026 · 19h08',
     title: 'Refonte mobile, phase 2 : Leads en galerie et accès rapide sur la fiche',
