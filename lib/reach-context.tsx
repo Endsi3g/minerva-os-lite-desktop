@@ -111,6 +111,8 @@ export interface Campaign {
   autopilotWeeklyMeetingCap?: number;
   autopilotPausedReason?: string;
   autopilotPausedAt?: string;
+  // Séquence e-mail attachée à la campagne (v3.89.0) — référence un sequence_templates.id
+  sequenceIds?: string[];
 }
 
 export interface Goal {
@@ -531,8 +533,10 @@ function mapDbMsgToUi(r: any): TeamMessage {
 function mapDbCampaignToUi(r: any): Campaign {
   let niches: string[] = [];
   let cities: string[] = [];
+  let sequenceIds: string[] = [];
   try { niches = typeof r.niches === 'string' ? JSON.parse(r.niches) : (Array.isArray(r.niches) ? r.niches : []); } catch { niches = []; }
   try { cities = typeof r.cities === 'string' ? JSON.parse(r.cities) : (Array.isArray(r.cities) ? r.cities : []); } catch { cities = []; }
+  try { sequenceIds = typeof r.sequence_ids === 'string' ? JSON.parse(r.sequence_ids) : (Array.isArray(r.sequence_ids) ? r.sequence_ids : []); } catch { sequenceIds = []; }
   
   let sequenceConfig = r.sequence_config;
   if (sequenceConfig && typeof sequenceConfig !== 'string') {
@@ -567,6 +571,7 @@ function mapDbCampaignToUi(r: any): Campaign {
     autopilotWeeklyMeetingCap: r.autopilot_weekly_meeting_cap ?? undefined,
     autopilotPausedReason: r.autopilot_paused_reason || undefined,
     autopilotPausedAt: r.autopilot_paused_at || undefined,
+    sequenceIds,
   };
 }
 
@@ -2795,6 +2800,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
     if (fields.autopilotWeeklyMeetingCap !== undefined) { dbFields.push("autopilot_weekly_meeting_cap = ?"); params.push(fields.autopilotWeeklyMeetingCap ?? null); }
     if (fields.autopilotPausedReason !== undefined) { dbFields.push("autopilot_paused_reason = ?"); params.push(fields.autopilotPausedReason || null); }
     if (fields.autopilotPausedAt !== undefined) { dbFields.push("autopilot_paused_at = ?"); params.push(fields.autopilotPausedAt || null); }
+    if (fields.sequenceIds !== undefined) { dbFields.push("sequence_ids = ?"); params.push(JSON.stringify(fields.sequenceIds || [])); }
     if (electronObj) {
       try {
         if (dbFields.length > 0) {
@@ -2827,6 +2833,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
     if (fields.autopilotWeeklyMeetingCap !== undefined) supaFields.autopilot_weekly_meeting_cap = fields.autopilotWeeklyMeetingCap ?? null;
     if (fields.autopilotPausedReason !== undefined) supaFields.autopilot_paused_reason = fields.autopilotPausedReason || null;
     if (fields.autopilotPausedAt !== undefined) supaFields.autopilot_paused_at = fields.autopilotPausedAt || null;
+    if (fields.sequenceIds !== undefined) supaFields.sequence_ids = fields.sequenceIds || [];
     try {
       await supabase.from('campaigns').update(supaFields).eq('id', id);
       setCampaigns(prev => prev.map(c => c.id === id ? { ...c, ...fields, updatedAt: new Date().toISOString() } : c));

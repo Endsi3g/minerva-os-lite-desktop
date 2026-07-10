@@ -5,6 +5,15 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [3.89.0] — Campagnes utiles : leads, activité et séquence — 10 juillet 2026, 18h50
+
+### Ajouté
+- **Cartes de campagnes cliquables** : l'onglet Outreach > Campagnes ne montrait que des statistiques agrégées sans rien de cliquable — chaque carte pointe désormais vers la page de détail complète déjà existante (`/campaigns/[id]`), jusqu'ici jamais reliée.
+- **Onglet Leads enrichi** : ajout/retrait de leads dans la campagne directement depuis un panneau de recherche, en plus de la liste déjà existante.
+- **Onglet Activité** : flux des événements e-mail (envoyé/ouvert/cliqué/échec) des leads de la campagne, avec actions rapides marquer chaud/froid et relancer.
+- **Onglet Séquence** : création ou édition de la séquence e-mail attachée à la campagne, directement depuis sa fiche (l'éditeur de séquence existant gère désormais un vrai mode édition en plus de la création).
+- **Dupliquer une campagne** et **créer depuis un segment de leads existant** (réutilise le moteur de segments déjà utilisé par les séquences), disponibles depuis la liste des campagnes, la fiche détail et l'assistant de création.
+
 ## [3.88.0] — Onglet Avis Google sur la fiche lead — 10 juillet 2026, 18h35
 
 ### Ajouté

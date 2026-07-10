@@ -1,11 +1,13 @@
 'use client';
 
-import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useReach } from '@/lib/reach-context';
+import { createClient } from '@/lib/supabase/client';
+import { getSegmentMembers, type LeadSegment } from '@/lib/lead-segments';
 import {
   ChevronLeft, ChevronRight, Megaphone, Tag, MapPin, Target,
-  Calendar, CheckCircle2, Loader2, X, Plus,
+  Calendar, CheckCircle2, Loader2, X, Plus, Users, Layers,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -182,10 +184,39 @@ const PERIOD_OPTIONS = [
 
 export function NewCampaignRoot() {
   const router = useRouter();
-  const { addCampaign } = useReach();
+  const searchParams = useSearchParams();
+  const { addCampaign, campaigns, leads, updateLead, activeWorkspace } = useReach();
 
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
+
+  // Dupliquer une campagne existante (?duplicate=<id>)
+  const duplicateId = searchParams.get('duplicate');
+  const duplicateSource = duplicateId ? campaigns.find(c => c.id === duplicateId) : undefined;
+
+  // Créer depuis un segment de leads existant
+  const [segments, setSegments] = useState<LeadSegment[]>([]);
+  const [selectedSegmentId, setSelectedSegmentId] = useState<string>('');
+  const selectedSegment = segments.find(s => s.id === selectedSegmentId);
+  const segmentMembers = useMemo(
+    () => (selectedSegment ? getSegmentMembers(leads, selectedSegment.rules) : []),
+    [selectedSegment, leads]
+  );
+
+  useEffect(() => {
+    if (!activeWorkspace?.id) return;
+    const supabase = createClient();
+    supabase
+      .from('lead_segments')
+      .select('id, workspace_id, name, rules, created_at')
+      .eq('workspace_id', activeWorkspace.id)
+      .then(({ data }: { data: any[] | null }) => {
+        setSegments((data || []).map((s: any) => ({
+          id: s.id, workspaceId: s.workspace_id, name: s.name,
+          rules: Array.isArray(s.rules) ? s.rules : [], createdAt: s.created_at,
+        })));
+      });
+  }, [activeWorkspace?.id]);
 
   // Step 1 state
   const [name, setName] = useState('');
@@ -212,6 +243,23 @@ export function NewCampaignRoot() {
   const [requireApproval, setRequireApproval] = useState(true);
   const [startDate, setStartDate] = useState('');
 
+  useEffect(() => {
+    if (!duplicateSource) return;
+    setName(`${duplicateSource.name} (copie)`);
+    setDescription(duplicateSource.description || '');
+    setNiches(duplicateSource.niches || []);
+    setCities(duplicateSource.cities || []);
+    setGoalType(duplicateSource.goalType || null);
+    if (duplicateSource.targetValue) setGoalTargetValue(duplicateSource.targetValue);
+    try {
+      const config = duplicateSource.sequenceConfig ? JSON.parse(duplicateSource.sequenceConfig) : null;
+      if (config?.channels) setChannels(config.channels);
+      if (config?.dailyVolumeCap) setDailyVolumeCap(config.dailyVolumeCap);
+      if (config?.requireApproval !== undefined) setRequireApproval(config.requireApproval);
+    } catch { /* ignore malformed config */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [duplicateSource?.id]);
+
   const canNext = () => {
     if (step === 0) return name.trim().length > 0;
     return true;
@@ -229,9 +277,14 @@ export function NewCampaignRoot() {
       goalType: goalType || undefined,
       targetValue: goalType ? goalTargetValue : undefined,
     });
+    if (c && selectedSegment) {
+      // Assigne la campagne principale des leads du segment choisi (écrase leur
+      // éventuelle campagne précédente — cohérent avec la relation 1-1 de leads.campaign_id).
+      await Promise.all(segmentMembers.map(l => updateLead(l.id, { campaignId: c.id })));
+    }
     setSaving(false);
     if (c) {
-      router.push('/campaigns');
+      router.push(`/campaigns/${c.id}`);
     }
   };
 
@@ -249,9 +302,11 @@ export function NewCampaignRoot() {
           <div>
             <div className="flex items-center gap-2">
               <Megaphone className="h-4 w-4 text-[#059669]" />
-              <h1 className="text-sm font-bold text-[#26251e]">Nouvelle campagne</h1>
+              <h1 className="text-sm font-bold text-[#26251e]">{duplicateSource ? 'Dupliquer une campagne' : 'Nouvelle campagne'}</h1>
             </div>
-            <p className="text-[10px] text-[#7a7a76] mt-0.5">Configuration en {STEPS.length} étapes</p>
+            <p className="text-[10px] text-[#7a7a76] mt-0.5">
+              {duplicateSource ? `À partir de « ${duplicateSource.name} »` : `Configuration en ${STEPS.length} étapes`}
+            </p>
           </div>
         </div>
 
@@ -331,6 +386,31 @@ export function NewCampaignRoot() {
             <div className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">
               Audience cible
             </div>
+
+            {segments.length > 0 && (
+              <div className="space-y-1.5 pb-4 border-b border-[#e5e5e0]">
+                <label className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">
+                  <Layers className="h-3 w-3" />
+                  Créer depuis un segment <span className="normal-case font-normal text-[#7a7a76]">(optionnel)</span>
+                </label>
+                <select
+                  value={selectedSegmentId}
+                  onChange={(e) => setSelectedSegmentId(e.target.value)}
+                  className="w-full text-xs px-2.5 py-2 border border-[#e5e5e0] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#059669] bg-white"
+                >
+                  <option value="">Aucun — audience définie manuellement</option>
+                  {segments.map((s) => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
+                </select>
+                {selectedSegment && (
+                  <p className="flex items-center gap-1.5 text-[10px] text-[#059669] font-semibold pt-1">
+                    <Users className="h-3 w-3" />
+                    {segmentMembers.length} lead{segmentMembers.length > 1 ? 's' : ''} de ce segment seront assignés à la campagne à la création.
+                  </p>
+                )}
+              </div>
+            )}
 
             <div className="space-y-4">
               <div className="space-y-1.5">

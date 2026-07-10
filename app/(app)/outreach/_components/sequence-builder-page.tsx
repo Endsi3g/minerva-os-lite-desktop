@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useEditor, EditorContent } from '@tiptap/react';
@@ -299,15 +299,39 @@ const DEFAULT_STEPS: Step[] = [
 
 // ── Main component ─────────────────────────────────────────────────────────────
 
-export default function SequenceBuilderPage() {
+interface SequenceBuilderPageProps {
+  /** When set, loads and PATCHes this existing sequence_templates row instead of creating a new one. */
+  templateId?: string;
+  /** When set, the "back"/cancel links return here and a newly-created template gets attached to this campaign. */
+  campaignId?: string;
+}
+
+export default function SequenceBuilderPage({ templateId, campaignId }: SequenceBuilderPageProps = {}) {
   const { t } = useLanguage();
   const router = useRouter();
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [steps, setSteps] = useState<Step[]>(DEFAULT_STEPS);
+  const [steps, setSteps] = useState<Step[]>(templateId ? [] : DEFAULT_STEPS);
   const [saving, setSaving] = useState(false);
+  const [loadingTemplate, setLoadingTemplate] = useState(!!templateId);
   const [toast, setToast] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
+  const backHref = campaignId ? `/campaigns/${campaignId}` : '/outreach';
+
+  useEffect(() => {
+    if (!templateId) return;
+    fetch(getApiUrl(`/api/outreach/sequences?id=${templateId}`))
+      .then((r) => r.json())
+      .then((data) => {
+        if (data?.id) {
+          setName(data.name || '');
+          setDescription(data.description || '');
+          setSteps(Array.isArray(data.steps) && data.steps.length > 0 ? data.steps : DEFAULT_STEPS);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setLoadingTemplate(false));
+  }, [templateId]);
 
   const showToast = (type: 'success' | 'error', msg: string) => {
     setToast({ type, msg });
@@ -338,7 +362,7 @@ export default function SequenceBuilderPage() {
     setSteps(newSteps);
   };
 
-  // Save
+  // Save (POST to create, PATCH when editing an existing template)
   const handleSave = async () => {
     if (!name.trim()) {
       showToast('error', 'Veuillez donner un nom à la séquence');
@@ -347,13 +371,27 @@ export default function SequenceBuilderPage() {
     setSaving(true);
     try {
       const res = await fetch(getApiUrl('/api/outreach/sequences'), {
-        method: 'POST',
+        method: templateId ? 'PATCH' : 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: name.trim(), description: description.trim() || null, steps }),
+        body: JSON.stringify({
+          ...(templateId ? { id: templateId } : {}),
+          name: name.trim(),
+          description: description.trim() || null,
+          steps,
+        }),
       });
       if (res.ok) {
+        const saved = await res.json();
+        // First save from a campaign's "Séquence" tab — attach the new template to it.
+        if (!templateId && campaignId && saved?.id) {
+          await fetch(getApiUrl('/api/outreach/campaigns'), {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: campaignId, sequence_ids: [saved.id] }),
+          }).catch(() => {});
+        }
         showToast('success', t('sequence.saved_success'));
-        setTimeout(() => router.push('/outreach'), 1200);
+        setTimeout(() => router.push(backHref), 1200);
       } else {
         const data = await res.json();
         showToast('error', data.error || t('sequence.save_error'));
@@ -368,7 +406,7 @@ export default function SequenceBuilderPage() {
   const timeline = buildTimeline(steps);
 
   return (
-    <div className="flex flex-col h-full overflow-hidden bg-[#fafaf8] text-[#26251e]">
+    <div className="relative flex flex-col h-full overflow-hidden bg-[#fafaf8] text-[#26251e]">
       {/* Toast */}
       {toast && (
         <div
@@ -399,15 +437,23 @@ export default function SequenceBuilderPage() {
       >
         <div className="relative z-10">
           <Link
-            href="/outreach"
+            href={backHref}
             className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#7a7a76] hover:text-[#26251e] transition-colors mb-3"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             {t('sequence.back')}
           </Link>
-          <h1 className="text-2xl font-bold text-[#26251e] tracking-tight">{t('sequence.new_title')}</h1>
+          <h1 className="text-2xl font-bold text-[#26251e] tracking-tight">
+            {templateId ? 'Éditer la séquence' : t('sequence.new_title')}
+          </h1>
         </div>
       </div>
+
+      {loadingTemplate && (
+        <div className="absolute inset-0 top-[93px] bg-[#fafaf8] flex items-center justify-center z-20">
+          <Loader2 className="w-5 h-5 animate-spin text-[#7a7a76]" />
+        </div>
+      )}
 
       {/* Name + description bar */}
       <div className="px-6 py-3 border-b border-[#e5e5e0] bg-white shrink-0 flex items-center gap-4">
@@ -500,7 +546,7 @@ export default function SequenceBuilderPage() {
               {t('sequence.save')}
             </Button>
             <Button
-              onClick={() => router.push('/outreach')}
+              onClick={() => router.push(backHref)}
               variant="outline"
               className="h-8 px-4 text-xs font-semibold border-[#e5e5e0] text-[#7a7a76] hover:bg-[#f4f4f3]"
             >

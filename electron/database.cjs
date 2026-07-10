@@ -303,6 +303,9 @@ function initDb() {
     db.run(`ALTER TABLE campaigns ADD COLUMN autopilot_weekly_meeting_cap INTEGER`, () => {});
     db.run(`ALTER TABLE campaigns ADD COLUMN autopilot_paused_reason TEXT`, () => {});
     db.run(`ALTER TABLE campaigns ADD COLUMN autopilot_paused_at TEXT`, () => {});
+    // v3.89.0 — Séquence attachée à la campagne : mirrors
+    // supabase/migrations/20260705232011_v12_schema_drift_fix.sql (sequence_ids, jsonb there)
+    db.run(`ALTER TABLE campaigns ADD COLUMN sequence_ids TEXT DEFAULT '[]'`, () => {});
     db.run(`CREATE TABLE IF NOT EXISTS growth_program_leads (
       id TEXT PRIMARY KEY,
       workspace_id TEXT,

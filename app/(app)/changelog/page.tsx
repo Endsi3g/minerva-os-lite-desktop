@@ -20,6 +20,18 @@ interface ChangelogVersion {
 
 const versions: ChangelogVersion[] = [
   {
+    version: 'v3.89.0',
+    date: '10 juillet 2026 · 18h50',
+    title: 'Campagnes utiles : leads, activité et séquence',
+    highlights: [
+      { text: "Cartes de campagnes cliquables : chaque carte de l'onglet Outreach > Campagnes pointe désormais vers sa page de détail complète (déjà existante mais jamais reliée)." },
+      { text: "Onglet Leads : ajout/retrait de leads dans la campagne via un panneau de recherche." },
+      { text: "Onglet Activité : flux des événements e-mail (envoyé/ouvert/cliqué/échec) avec actions rapides marquer chaud/froid et relancer." },
+      { text: "Onglet Séquence : création ou édition directe de la séquence e-mail attachée à la campagne." },
+      { text: "Dupliquer une campagne ou en créer une depuis un segment de leads existant." }
+    ],
+  },
+  {
     version: 'v3.88.0',
     date: '10 juillet 2026 · 18h35',
     title: 'Onglet Avis Google sur la fiche lead',

@@ -4,7 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { useReach, type Campaign } from '@/lib/reach-context';
 import { OutreachNavBar } from '@/components/outreach-nav-bar';
-import { Megaphone, Plus, Play, Pause, CheckCircle2, FileEdit, Trash2, Calendar, MapPin, Tag, Rocket } from 'lucide-react';
+import { Megaphone, Plus, Play, Pause, CheckCircle2, FileEdit, Trash2, Calendar, MapPin, Tag, Rocket, Copy } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const GOAL_TYPE_LABELS: Record<NonNullable<Campaign['goalType']>, { label: string; unit: string }> = {
@@ -162,6 +162,9 @@ export function CampaignsRoot() {
                     </button>
                     <Link href={`/campaigns/${campaign.id}`} className="p-1.5 rounded hover:bg-[#f4f4f3] text-[#7a7a76] hover:text-[#26251e] transition-colors">
                       <FileEdit className="h-3 w-3" />
+                    </Link>
+                    <Link href={`/campaigns/new?duplicate=${campaign.id}`} title="Dupliquer" className="p-1.5 rounded hover:bg-[#f4f4f3] text-[#7a7a76] hover:text-[#26251e] transition-colors">
+                      <Copy className="h-3 w-3" />
                     </Link>
                     <button onClick={() => deleteCampaign(campaign.id)} title="Supprimer" className="p-1.5 rounded hover:bg-red-50 text-[#7a7a76] hover:text-red-500 transition-colors">
                       <Trash2 className="h-3 w-3" />

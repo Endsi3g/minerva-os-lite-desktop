@@ -1,13 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
-// GET: fetch sequence templates for workspace
+// GET: fetch sequence templates for workspace, or a single one via ?id=
 export async function GET(req: NextRequest) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const { data: settings } = await supabase.from('settings').select('workspace_id').eq('user_id', user.id).single();
   if (!settings) return NextResponse.json({ error: 'No workspace' }, { status: 400 });
+
+  const id = req.nextUrl.searchParams.get('id');
+  if (id) {
+    const { data, error } = await supabase
+      .from('sequence_templates')
+      .select('*')
+      .eq('workspace_id', settings.workspace_id)
+      .eq('id', id)
+      .maybeSingle();
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (!data) return NextResponse.json({ error: 'Séquence introuvable' }, { status: 404 });
+    return NextResponse.json(data);
+  }
+
   const status = req.nextUrl.searchParams.get('status') || 'active';
   const { data, error } = await supabase
     .from('sequence_templates')

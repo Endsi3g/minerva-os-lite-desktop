@@ -1,10 +1,17 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { useReach, type Campaign } from '@/lib/reach-context';
-import { ChevronLeft, Megaphone, Tag, MapPin, Calendar, Users, CheckCircle2, TrendingUp, Mail, Play, Pause, Edit2, Check, X, Rocket, FolderKanban, CalendarClock, Zap, AlertTriangle } from 'lucide-react';
+import { createClient } from '@/lib/supabase/client';
+import { getApiUrl } from '@/lib/api-helper';
+import {
+  ChevronLeft, Megaphone, Tag, MapPin, Calendar, Users, CheckCircle2, TrendingUp, Mail, Play, Pause,
+  Edit2, Check, X, Rocket, FolderKanban, CalendarClock, Zap, AlertTriangle, Plus, Flame, Snowflake,
+  Send, MailOpen, MousePointerClick, XCircle, Sparkles, Search, Copy,
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 import type { Lead } from '@/lib/mock-data';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
@@ -31,16 +38,24 @@ const LEAD_STATUS_COLORS: Record<Lead['status'], string> = {
   'Lost': 'bg-red-50 text-red-600',
 };
 
-type Tab = 'overview' | 'leads' | 'analytics';
+type Tab = 'overview' | 'leads' | 'activity' | 'sequence' | 'analytics';
 
 export function CampaignDetailRoot({ id }: { id: string }) {
-  const { campaigns, leads, projects, tasks, updateCampaign, isDataReady } = useReach();
+  const { campaigns, leads, projects, tasks, updateCampaign, updateLead, isDataReady } = useReach();
   const [tab, setTab] = useState<Tab>('overview');
   const [editingName, setEditingName] = useState(false);
   const [nameVal, setNameVal] = useState('');
+  const [showAddLeads, setShowAddLeads] = useState(false);
+  const [addLeadsQuery, setAddLeadsQuery] = useState('');
 
   const campaign = campaigns.find(c => c.id === id);
   const campaignLeads = useMemo(() => leads.filter(l => l.campaignId === id), [leads, id]);
+  const availableLeads = useMemo(
+    () => leads.filter(l => l.campaignId !== id && (
+      !addLeadsQuery.trim() || l.businessName.toLowerCase().includes(addLeadsQuery.trim().toLowerCase())
+    )),
+    [leads, id, addLeadsQuery]
+  );
 
   // Phase 6 — lien vers projects/agenda (dérivé, aucune nouvelle table pour
   // les projets ; tasks.leadId pour l'agenda).
@@ -132,6 +147,8 @@ export function CampaignDetailRoot({ id }: { id: string }) {
   const TABS: { id: Tab; label: string }[] = [
     { id: 'overview', label: 'Vue d\'ensemble' },
     { id: 'leads', label: `Leads (${kpis.total})` },
+    { id: 'activity', label: 'Activité' },
+    { id: 'sequence', label: 'Séquence' },
     { id: 'analytics', label: 'Analytics' },
   ];
 
@@ -188,6 +205,12 @@ export function CampaignDetailRoot({ id }: { id: string }) {
                   <Play className="h-3 w-3" />Reprendre
                 </button>
               ) : null}
+              <Link
+                href={`/campaigns/new?duplicate=${id}`}
+                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-[#e5e5e0] text-[#26251e] text-xs font-bold hover:bg-[#f4f4f3] transition-colors"
+              >
+                <Copy className="h-3 w-3" />Dupliquer
+              </Link>
             </div>
           </div>
 
@@ -422,18 +445,63 @@ export function CampaignDetailRoot({ id }: { id: string }) {
 
         {/* Leads tab */}
         {tab === 'leads' && (
-          <div>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-xs text-[#7a7a76]">Ajouter ou retirer des leads assigne/efface leur campagne principale (une seule à la fois).</p>
+              <Button
+                onClick={() => setShowAddLeads(v => !v)}
+                className="h-8 px-3 text-xs font-bold bg-[#059669] hover:bg-[#047857] text-white rounded-lg gap-1.5 shrink-0"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Ajouter des leads
+              </Button>
+            </div>
+
+            {showAddLeads && (
+              <div className="rounded-xl border border-[#e5e5e0] bg-white p-3 space-y-2">
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#7a7a76]" />
+                  <input
+                    value={addLeadsQuery}
+                    onChange={e => setAddLeadsQuery(e.target.value)}
+                    placeholder="Rechercher un lead à ajouter…"
+                    className="w-full h-8 pl-8 pr-3 text-xs border border-[#e5e5e0] rounded-lg focus:outline-none focus:border-[#059669]"
+                  />
+                </div>
+                <div className="max-h-64 overflow-y-auto divide-y divide-[#e5e5e0]/60">
+                  {availableLeads.length === 0 ? (
+                    <p className="text-xs text-[#7a7a76] py-3 text-center">Aucun lead disponible.</p>
+                  ) : (
+                    availableLeads.slice(0, 50).map(l => (
+                      <div key={l.id} className="flex items-center justify-between gap-2 py-2">
+                        <div className="min-w-0">
+                          <p className="text-xs font-semibold text-[#26251e] truncate">{l.businessName}</p>
+                          <p className="text-[10px] text-[#7a7a76]">{l.city} · {l.niche}{l.campaignId ? ' · déjà dans une autre campagne' : ''}</p>
+                        </div>
+                        <button
+                          onClick={() => updateLead(l.id, { campaignId: id })}
+                          className="shrink-0 flex items-center gap-1 px-2 py-1 rounded-lg bg-[#059669]/10 text-[#059669] text-[10px] font-bold hover:bg-[#059669]/20 transition-colors"
+                        >
+                          <Plus className="h-3 w-3" />Ajouter
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+
             {campaignLeads.length === 0 ? (
               <div className="py-12 text-center rounded-xl border border-dashed border-[#e5e5e0]">
                 <Users className="h-7 w-7 text-[#7a7a76]/30 mx-auto mb-2" />
-                <p className="text-xs text-[#7a7a76]">Aucun lead. Assignez des leads à cette campagne via leur fiche.</p>
+                <p className="text-xs text-[#7a7a76]">Aucun lead. Ajoutez-en depuis le bouton ci-dessus ou via leur fiche.</p>
               </div>
             ) : (
               <div className="rounded-xl border border-[#e5e5e0] overflow-hidden">
                 <table className="w-full text-xs">
                   <thead className="bg-[#f4f4f3] border-b border-[#e5e5e0]">
                     <tr>
-                      {['Business', 'Contact', 'Ville', 'Niche', 'Statut', 'Fit', 'Score'].map(h => (
+                      {['Business', 'Contact', 'Ville', 'Niche', 'Statut', 'Fit', 'Score', ''].map(h => (
                         <th key={h} className="text-left px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">{h}</th>
                       ))}
                     </tr>
@@ -456,6 +524,14 @@ export function CampaignDetailRoot({ id }: { id: string }) {
                           ) : '—'}
                         </td>
                         <td className="px-4 py-2.5 font-mono">{l.score ?? '—'}</td>
+                        <td className="px-4 py-2.5">
+                          <button
+                            onClick={() => updateLead(l.id, { campaignId: '' })}
+                            className="text-[10px] font-bold text-[#7a7a76] hover:text-red-600 transition-colors"
+                          >
+                            Retirer
+                          </button>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -463,6 +539,16 @@ export function CampaignDetailRoot({ id }: { id: string }) {
               </div>
             )}
           </div>
+        )}
+
+        {/* Activity tab — flux d'événements e-mail (email_events) pour les leads de cette campagne */}
+        {tab === 'activity' && (
+          <CampaignActivityTab campaignLeads={campaignLeads} updateLead={updateLead} />
+        )}
+
+        {/* Sequence tab — séquence e-mail attachée à la campagne (v3.89.0) */}
+        {tab === 'sequence' && (
+          <CampaignSequenceTab campaignId={id} sequenceIds={campaign.sequenceIds} />
         )}
 
         {/* Analytics tab */}
@@ -546,6 +632,182 @@ export function CampaignDetailRoot({ id }: { id: string }) {
             )}
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+// ── Activity tab — per-lead email_events feed for this campaign's leads ─────────
+
+interface EmailEvent {
+  id: string;
+  event_type: string;
+  subject: string | null;
+  lead_id: string | null;
+  created_at: string;
+}
+
+const EVENT_CONFIG: Record<string, { label: string; icon: typeof Send; color: string }> = {
+  'email.sent': { label: 'Envoyé', icon: Send, color: '#7a7a76' },
+  'email.delivered': { label: 'Envoyé', icon: Send, color: '#7a7a76' },
+  'email.opened': { label: 'Ouvert', icon: MailOpen, color: '#3b82f6' },
+  'email.clicked': { label: 'Cliqué', icon: MousePointerClick, color: '#8b5cf6' },
+  'email.bounced': { label: 'Échec', icon: XCircle, color: '#dc2626' },
+  'email.complained': { label: 'Plainte', icon: XCircle, color: '#dc2626' },
+};
+
+function CampaignActivityTab({ campaignLeads, updateLead }: { campaignLeads: Lead[]; updateLead: (id: string, fields: Partial<Lead>) => void }) {
+  const [events, setEvents] = useState<EmailEvent[]>([]);
+  const [loading, setLoading] = useState(true);
+  const leadById = useMemo(() => new Map(campaignLeads.map(l => [l.id, l])), [campaignLeads]);
+
+  useEffect(() => {
+    const leadIds = campaignLeads.map(l => l.id);
+    if (leadIds.length === 0) { setEvents([]); setLoading(false); return; }
+    let cancelled = false;
+    setLoading(true);
+    const supabase = createClient();
+    supabase
+      .from('email_events')
+      .select('id, event_type, subject, lead_id, created_at')
+      .in('lead_id', leadIds)
+      .order('created_at', { ascending: false })
+      .limit(50)
+      .then(({ data }: { data: EmailEvent[] | null }) => { if (!cancelled) setEvents(data || []); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [campaignLeads.map(l => l.id).join(',')]);
+
+  if (loading) {
+    return (
+      <div className="flex flex-col gap-2">
+        {[1, 2, 3].map(i => <div key={i} className="h-14 rounded-lg border border-[#e5e5e0] bg-[#f4f4f3]/50 animate-pulse" />)}
+      </div>
+    );
+  }
+
+  if (events.length === 0) {
+    return (
+      <div className="py-12 text-center rounded-xl border border-dashed border-[#e5e5e0]">
+        <Mail className="h-7 w-7 text-[#7a7a76]/30 mx-auto mb-2" />
+        <p className="text-xs text-[#7a7a76]">Aucun événement e-mail pour les leads de cette campagne.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      {events.map(ev => {
+        const conf = EVENT_CONFIG[ev.event_type] || { label: ev.event_type, icon: Mail, color: '#7a7a76' };
+        const Icon = conf.icon;
+        const lead = ev.lead_id ? leadById.get(ev.lead_id) : undefined;
+        return (
+          <div key={ev.id} className="flex items-center gap-3 p-3 rounded-lg border border-[#e5e5e0] bg-white">
+            <div className="w-7 h-7 rounded-lg bg-[#f4f4f3] flex items-center justify-center shrink-0">
+              <Icon className="h-3.5 w-3.5" style={{ color: conf.color }} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2">
+                {lead ? (
+                  <Link href={`/leads/${lead.id}`} className="text-xs font-semibold text-[#26251e] hover:text-[#059669] transition-colors truncate">{lead.businessName}</Link>
+                ) : (
+                  <span className="text-xs font-semibold text-[#7a7a76]">Lead inconnu</span>
+                )}
+                <span className="text-[9px] font-bold uppercase tracking-wide" style={{ color: conf.color }}>{conf.label}</span>
+              </div>
+              {ev.subject && <p className="text-[10px] text-[#7a7a76] truncate">{ev.subject}</p>}
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <span className="text-[10px] text-[#7a7a76]">{new Date(ev.created_at).toLocaleDateString('fr-CA', { day: '2-digit', month: '2-digit' })}</span>
+              {lead && (
+                <>
+                  <button onClick={() => updateLead(lead.id, { temperature: 'Hot' })} title="Marquer chaud" className="p-1 rounded hover:bg-[#f4f4f3] text-[#7a7a76] hover:text-orange-500 transition-colors">
+                    <Flame className="h-3.5 w-3.5" />
+                  </button>
+                  <button onClick={() => updateLead(lead.id, { temperature: 'Cold' })} title="Marquer froid" className="p-1 rounded hover:bg-[#f4f4f3] text-[#7a7a76] hover:text-blue-500 transition-colors">
+                    <Snowflake className="h-3.5 w-3.5" />
+                  </button>
+                  <Link href={`/leads/${lead.id}`} title="Relancer" className="p-1 rounded hover:bg-[#f4f4f3] text-[#7a7a76] hover:text-[#059669] transition-colors">
+                    <Send className="h-3.5 w-3.5" />
+                  </Link>
+                </>
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ── Sequence tab — sequence_templates row attached via campaigns.sequence_ids ───
+
+interface SequenceTemplateSummary {
+  id: string;
+  name: string;
+  description: string | null;
+  steps: Array<{ type: string }>;
+}
+
+function CampaignSequenceTab({ campaignId, sequenceIds }: { campaignId: string; sequenceIds?: string[] }) {
+  const templateId = sequenceIds?.[0];
+  const [template, setTemplate] = useState<SequenceTemplateSummary | null>(null);
+  const [loading, setLoading] = useState(!!templateId);
+
+  useEffect(() => {
+    if (!templateId) { setTemplate(null); setLoading(false); return; }
+    let cancelled = false;
+    setLoading(true);
+    fetch(getApiUrl(`/api/outreach/sequences?id=${templateId}`))
+      .then(r => r.json())
+      .then(data => { if (!cancelled && data?.id) setTemplate(data); })
+      .catch(() => {})
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [templateId]);
+
+  if (loading) {
+    return <div className="h-24 rounded-xl border border-[#e5e5e0] bg-[#f4f4f3]/50 animate-pulse" />;
+  }
+
+  if (!template) {
+    return (
+      <div className="py-12 text-center rounded-xl border border-dashed border-[#e5e5e0] space-y-3">
+        <Sparkles className="h-7 w-7 text-[#7a7a76]/30 mx-auto" />
+        <p className="text-xs text-[#7a7a76]">Aucune séquence e-mail attachée à cette campagne.</p>
+        <Link
+          href={`/outreach/sequences/new?campaignId=${campaignId}`}
+          className="inline-flex items-center gap-1.5 px-3 h-8 rounded-lg bg-[#059669] hover:bg-[#047857] text-white text-xs font-bold transition-colors"
+        >
+          <Plus className="h-3.5 w-3.5" />Créer une séquence
+        </Link>
+      </div>
+    );
+  }
+
+  const stepCounts = template.steps.reduce<Record<string, number>>((acc, s) => { acc[s.type] = (acc[s.type] || 0) + 1; return acc; }, {});
+
+  return (
+    <div className="rounded-xl border border-[#e5e5e0] bg-white p-4 space-y-3">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-sm font-bold text-[#26251e]">{template.name}</p>
+          {template.description && <p className="text-xs text-[#7a7a76] mt-0.5">{template.description}</p>}
+        </div>
+        <Link
+          href={`/outreach/sequences/${template.id}/edit?campaignId=${campaignId}`}
+          className="shrink-0 inline-flex items-center gap-1.5 px-3 h-8 rounded-lg border border-[#e5e5e0] hover:bg-[#f4f4f3] text-xs font-bold text-[#26251e] transition-colors"
+        >
+          <Edit2 className="h-3 w-3" />Éditer
+        </Link>
+      </div>
+      <div className="flex flex-wrap gap-2 pt-2 border-t border-[#e5e5e0]/60">
+        {Object.entries(stepCounts).map(([type, count]) => (
+          <span key={type} className="text-[10px] font-semibold text-[#7a7a76] bg-[#f4f4f3] px-2 py-1 rounded-lg">
+            {count}× {type === 'email' ? 'e-mail' : type === 'delay' ? 'délai' : type === 'task' ? 'tâche' : 'condition'}
+          </span>
+        ))}
       </div>
     </div>
   );

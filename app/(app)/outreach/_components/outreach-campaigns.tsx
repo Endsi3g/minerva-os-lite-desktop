@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import Link from 'next/link';
 import {
   Megaphone, Plus, RefreshCw, TrendingUp, Users, Mail,
   CalendarCheck, AlertTriangle, Play, Pause, MoreHorizontal,
@@ -59,7 +60,10 @@ function CampaignCard({ campaign, onToggle }: { campaign: Campaign; onToggle: (i
   const replyRate = pct(campaign.total_replies, campaign.total_sent);
 
   return (
-    <div className="bg-white border border-[#e5e5e0] rounded-xl overflow-hidden hover:border-[#d5d5d0] transition-colors">
+    <Link
+      href={`/campaigns/${campaign.id}`}
+      className="block bg-white border border-[#e5e5e0] rounded-xl overflow-hidden hover:border-[#059669]/40 hover:shadow-sm transition-all"
+    >
       {campaign.alert && (
         <div className="flex items-center gap-2 px-4 py-2 bg-[#fffbeb] border-b border-[#fde68a]">
           <AlertTriangle className="h-3 w-3 text-[#d97706] shrink-0" />
@@ -93,7 +97,7 @@ function CampaignCard({ campaign, onToggle }: { campaign: Campaign; onToggle: (i
           </div>
 
           <button
-            onClick={() => onToggle(campaign.id, campaign.status)}
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); onToggle(campaign.id, campaign.status); }}
             className="shrink-0 p-1.5 rounded-lg hover:bg-[#f4f4f3] text-[#7a7a76] hover:text-[#26251e] transition-colors"
             title={campaign.status === 'active' ? 'Mettre en pause' : 'Relancer'}
           >
@@ -110,7 +114,7 @@ function CampaignCard({ campaign, onToggle }: { campaign: Campaign; onToggle: (i
           <StatChip label="RDV" value={campaign.meetings_booked} accent />
         </div>
       </div>
-    </div>
+    </Link>
   );
 }
 
