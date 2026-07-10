@@ -20,6 +20,15 @@ interface ChangelogVersion {
 
 const versions: ChangelogVersion[] = [
   {
+    version: 'v3.87.1',
+    date: '10 juillet 2026 · 17h35',
+    title: "Correctifs push mobile et fausse confirmation d'envoi d'e-mail",
+    highlights: [
+      { text: "Notifications push mobiles : la confirmation reçue à l'activation n'était qu'une notification locale sans lien avec un vrai appareil — ajout de l'enregistrement natif FCM/APNs, du stockage des tokens et d'un service d'envoi serveur réel branché sur l'agent IA et les notifications d'équipe." },
+      { text: "Faux succès d'envoi d'e-mail : l'agent IA affichait « action effectuée » même quand l'envoi échouait réellement (ex. Gmail non connecté). La notification de succès se base désormais sur le résultat réel de l'action, avec un rapport d'erreur explicite en cas d'échec." }
+    ],
+  },
+  {
     version: 'v3.87.0',
     date: '9 juillet 2026 · 04h15',
     title: 'Édition Google Rating/Reviews, Drag & Drop de Photos et Mode Catalogue de Prospect',

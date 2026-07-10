@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { createClient as createAdminClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
+import { sendPushToUser } from '@/lib/push-service';
 
 function getAdminClient() {
   return createAdminClient(
@@ -94,6 +95,11 @@ export async function POST(request: NextRequest) {
     if (insertError) {
       return NextResponse.json({ error: insertError.message }, { status: 500 });
     }
+
+    // Native mobile push — best-effort, one per recipient; failures never block the response.
+    Promise.all(
+      Array.from(recipientIds).map((uid) => sendPushToUser(uid, { title, body: body || '' }))
+    ).catch(() => {});
 
     // Fan-out to Slack if the workspace owner has a webhook configured
     try {

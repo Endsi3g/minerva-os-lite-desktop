@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getAdminClient } from '@/lib/supabase/admin';
 import { generateCompletion } from '@/lib/ai';
 import { reportAppError } from '@/lib/error-notifications';
+import { sendPushToUser } from '@/lib/push-service';
 import {
   listLeadsToFollowUp,
   summarizePipeline,
@@ -147,11 +148,25 @@ ${recentMemory?.map((m: any) => `[${m.type}] ${m.key}: ${m.content}`).join('\n')
       }
     }
 
+    const succeeded = executed && !(result && typeof result === 'object' && 'error' in result && result.error);
+
+    if (executed && !succeeded) {
+      await reportAppError({
+        userId: user.id,
+        workspaceId,
+        source: 'agent/loop',
+        title: `Action agent échouée — ${action.tool}`,
+        message: (result?.error as string) || 'Action non exécutée : cause inconnue.',
+        context: { tool: action.tool, params: action.params },
+      });
+    }
+
     const logEntry: AgentActionResult = {
       ...action,
       id: crypto.randomUUID(),
       result,
       executed,
+      succeeded,
       created_at: new Date().toISOString(),
       autonomy_level: (autonomy as any)[(action.tool)] ?? 'suggest',
     };
@@ -174,8 +189,9 @@ ${recentMemory?.map((m: any) => `[${m.type}] ${m.key}: ${m.content}`).join('\n')
     }).then(() => {}, () => {});
   }
 
-  const executedCount = results.filter((r) => r.executed).length;
-  if (executedCount > 0) {
+  const succeededCount = results.filter((r) => r.succeeded).length;
+  const failedCount = results.filter((r) => r.executed && !r.succeeded).length;
+  if (succeededCount > 0) {
     // Notification native — jusqu'ici aucune action de l'agent IA ne déclenchait
     // de notification, malgré la souscription Realtime déjà en place côté client
     // (reach-context.tsx) sur les INSERT de la table `notifications`.
@@ -184,17 +200,23 @@ ${recentMemory?.map((m: any) => `[${m.type}] ${m.key}: ${m.content}`).join('\n')
       user_id: user.id,
       workspace_id: workspaceId,
       type: 'agent_action',
-      title: `Agent IA — ${executedCount} action${executedCount > 1 ? 's' : ''} effectuée${executedCount > 1 ? 's' : ''}`,
+      title: `Agent IA — ${succeededCount} action${succeededCount > 1 ? 's' : ''} effectuée${succeededCount > 1 ? 's' : ''}`,
       body: plan.reasoning?.slice(0, 200) || 'L\'agent a exécuté des actions sur votre pipeline.',
       is_read: false,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     }).then(() => {}, () => {});
+
+    sendPushToUser(user.id, {
+      title: `Agent IA — ${succeededCount} action${succeededCount > 1 ? 's' : ''} effectuée${succeededCount > 1 ? 's' : ''}`,
+      body: plan.reasoning?.slice(0, 200) || 'L\'agent a exécuté des actions sur votre pipeline.',
+    }).catch(() => {});
   }
 
   return NextResponse.json({
     reasoning: plan.reasoning,
-    actions_executed: executedCount,
+    actions_executed: succeededCount,
+    actions_failed: failedCount,
     actions_suggested: results.filter((r) => !r.executed).length,
     results,
   });
@@ -258,7 +280,19 @@ export async function GET(req: NextRequest) {
   let executed = 0;
   for (const action of actions) {
     if (canExecute(action.tool, autonomy)) {
-      try { await dispatchTool(action.tool, action.params, ctx); executed++; } catch { /* log silently */ }
+      try {
+        await dispatchTool(action.tool, action.params, ctx);
+        executed++;
+      } catch (err: any) {
+        await reportAppError({
+          userId: ws.owner_id,
+          workspaceId,
+          source: 'agent/loop (cron)',
+          title: `Action agent échouée — ${action.tool}`,
+          message: err?.message || 'Action non exécutée : cause inconnue.',
+          context: { tool: action.tool, params: action.params },
+        });
+      }
     }
   }
 
@@ -274,6 +308,11 @@ export async function GET(req: NextRequest) {
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     }).then(() => {}, () => {});
+
+    sendPushToUser(ws.owner_id, {
+      title: `Agent IA — ${executed} action${executed > 1 ? 's' : ''} effectuée${executed > 1 ? 's' : ''}`,
+      body: plan.reasoning?.slice(0, 200) || 'L\'agent a exécuté des actions sur votre pipeline.',
+    }).catch(() => {});
   }
 
   return NextResponse.json({ ok: true, actions_planned: actions.length, actions_executed: executed });

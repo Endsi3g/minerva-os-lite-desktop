@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import { toast } from 'sonner';
+import { isNativePlatform } from '@/lib/native-bridge';
 
 export function NotificationPermissionPrompt() {
   const shown = useRef(false);
@@ -12,6 +13,11 @@ export function NotificationPermissionPrompt() {
 
     if (typeof window === 'undefined') return;
     if ((window as any).electron) return;
+    // Native push registration + permission request is handled by CapacitorInit via
+    // lib/native-bridge.ts's registerPushNotifications(). The browser Notification API
+    // used below is foreground-only and cannot deliver pushes while the app is
+    // backgrounded, so it must not run inside the Capacitor WebView.
+    if (isNativePlatform()) return;
     if (!('Notification' in window)) return;
 
     if (Notification.permission === 'denied') {

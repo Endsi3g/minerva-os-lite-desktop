@@ -41,6 +41,8 @@ export interface AgentActionResult extends AgentAction {
   id: string;
   result: Record<string, unknown> | null;
   executed: boolean;
+  /** True only when `executed` and the tool call did not return an `error`. */
+  succeeded: boolean;
   created_at: string;
 }
 

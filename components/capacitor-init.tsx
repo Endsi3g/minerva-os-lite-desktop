@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect } from 'react';
-import { isNativePlatform } from '@/lib/native-bridge';
+import { isNativePlatform, registerPushNotifications } from '@/lib/native-bridge';
+import { getApiUrl } from '@/lib/api-helper';
 
 export function CapacitorInit() {
   useEffect(() => {
@@ -24,6 +25,21 @@ export function CapacitorInit() {
         const { Keyboard } = await import('@capacitor/keyboard');
         Keyboard.setAccessoryBarVisible({ isVisible: false });
       } catch {}
+
+      try {
+        const { Capacitor } = await import('@capacitor/core');
+        const token = await registerPushNotifications();
+        if (token) {
+          await fetch(getApiUrl('/api/push/register-device'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ token, platform: Capacitor.getPlatform() }),
+          });
+        }
+      } catch (err) {
+        console.error('Failed to register device for push notifications:', err);
+      }
     }
 
     init();

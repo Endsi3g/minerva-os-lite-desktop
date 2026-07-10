@@ -5,6 +5,12 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [3.87.1] — Correctifs push mobile et fausse confirmation d'envoi d'e-mail — 10 juillet 2026, 17h35
+
+### Corrigé
+- **Notifications push mobiles silencieuses après la première** : la confirmation reçue à l'activation des notifications était une notification locale au premier plan (`components/notification-permission-prompt.tsx`), sans lien avec un vrai token d'appareil FCM/APNs — `registerPushNotifications()` (`lib/native-bridge.ts`) n'était jamais appelé, et aucun envoi serveur réel n'existait. Ajout de l'enregistrement natif dans `CapacitorInit`, d'une table `device_push_tokens` (migration `20260710000000_device_push_tokens.sql`) et d'une route `/api/push/register-device`, d'un service d'envoi FCM HTTP v1 (`lib/push-service.ts`, no-op tant que `FIREBASE_SERVICE_ACCOUNT_JSON` n'est pas configuré), branché sur l'agent IA et le fan-out d'équipe. Le prompt web est désormais désactivé sur Capacitor pour ne plus se substituer au vrai flux natif.
+- **Succès d'envoi d'e-mail affiché malgré un échec réel** (ex. Gmail non connecté) : `app/api/agent/loop/route.ts` confondait « action autorisée » (`executed`) et « action réussie » — une erreur capturée dans `result.error` ne faisait pas basculer l'action en échec, donc la notification « Agent IA — action(s) effectuée(s) » s'affichait même sur échec. Ajout d'un flag `succeeded` distinct (`lib/agent-tools.ts`), notification de succès désormais basée dessus, et rapport d'erreur explicite (`reportAppError`) sur les actions tentées mais échouées.
+
 ## [3.87.0] — Édition Google Rating/Reviews, Drag & Drop de Photos et Mode Catalogue de Prospect — 9 juillet 2026, 04h15
 
 ### Ajouté
