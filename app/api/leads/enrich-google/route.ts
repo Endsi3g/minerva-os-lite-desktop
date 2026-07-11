@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
-const PLACES_API_KEY = process.env.GOOGLE_PLACES_API_KEY;
-
 interface PlaceResult {
   id?: string;
   displayName?: { text: string };
@@ -28,14 +26,12 @@ interface PlaceResult {
   photos?: Array<{ name?: string }>;
 }
 
-async function searchPlace(businessName: string, city: string): Promise<PlaceResult | null> {
-  if (!PLACES_API_KEY) return null;
-
+async function searchPlace(businessName: string, city: string, apiKey: string): Promise<PlaceResult | null> {
   const res = await fetch('https://places.googleapis.com/v1/places:searchText', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'X-Goog-Api-Key': PLACES_API_KEY,
+      'X-Goog-Api-Key': apiKey,
       'X-Goog-FieldMask': [
         'places.id',
         'places.displayName',
@@ -111,14 +107,23 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  if (!PLACES_API_KEY) {
+  // Clé par utilisateur (Paramètres > Intégrations) en priorité, sinon la clé
+  // globale du déploiement — même pattern que here_api_key/yelp_api_key/firecrawl_api_key.
+  const { data: settingsRow } = await supabase
+    .from('settings')
+    .select('google_places_api_key')
+    .eq('user_id', user.id)
+    .maybeSingle();
+  const apiKey: string = settingsRow?.google_places_api_key || process.env.GOOGLE_PLACES_API_KEY || '';
+
+  if (!apiKey) {
     return NextResponse.json({
       ok: false,
-      error: 'GOOGLE_PLACES_API_KEY non configurée dans les variables d\'environnement',
+      error: 'Clé Google Places API non configurée — ajoutez-la dans Paramètres > Intégrations.',
     }, { status: 400 });
   }
 
-  const place = await searchPlace(lead.business_name, lead.city || '');
+  const place = await searchPlace(lead.business_name, lead.city || '', apiKey);
   if (!place) {
     return NextResponse.json({ ok: false, error: 'Lieu introuvable sur Google Places' }, { status: 404 });
   }

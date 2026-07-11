@@ -31,6 +31,8 @@ export function SettingsIntegrationsSection() {
   const [savingYelp, setSavingYelp] = useState(false);
   const [firecrawlApiKey, setFirecrawlApiKey] = useState('');
   const [savingFirecrawl, setSavingFirecrawl] = useState(false);
+  const [googlePlacesApiKey, setGooglePlacesApiKey] = useState('');
+  const [savingGooglePlaces, setSavingGooglePlaces] = useState(false);
 
   // Slack + Notion
   const [slackWebhookUrl, setSlackWebhookUrl] = useState('');
@@ -99,7 +101,7 @@ export function SettingsIntegrationsSection() {
         if (user) {
           const { data } = await supabase
             .from('settings')
-            .select('apify_token, smtp_config, here_api_key, yelp_api_key, firecrawl_api_key, slack_webhook_url, notion_token, notion_database_id')
+            .select('apify_token, smtp_config, here_api_key, yelp_api_key, firecrawl_api_key, google_places_api_key, slack_webhook_url, notion_token, notion_database_id')
             .eq('user_id', user.id)
             .maybeSingle();
 
@@ -125,6 +127,7 @@ export function SettingsIntegrationsSection() {
             if ((data as any).here_api_key) setHereApiKey((data as any).here_api_key);
             if ((data as any).yelp_api_key) setYelpApiKey((data as any).yelp_api_key);
             if ((data as any).firecrawl_api_key) setFirecrawlApiKey((data as any).firecrawl_api_key);
+            if ((data as any).google_places_api_key) setGooglePlacesApiKey((data as any).google_places_api_key);
             if ((data as any).slack_webhook_url) setSlackWebhookUrl((data as any).slack_webhook_url);
             if ((data as any).notion_token) setNotionToken((data as any).notion_token);
             if ((data as any).notion_database_id) setNotionDatabaseId((data as any).notion_database_id);
@@ -229,6 +232,19 @@ export function SettingsIntegrationsSection() {
       }
     } catch (e) { console.error(e); toast.error('Impossible d\'enregistrer la clé Firecrawl. Vérifiez la clé et réessayez.'); }
     setSavingFirecrawl(false);
+  };
+
+  const handleSaveGooglePlaces = async () => {
+    setSavingGooglePlaces(true);
+    try {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase.from('settings').update({ google_places_api_key: googlePlacesApiKey.trim() || null, updated_at: new Date().toISOString() }).eq('user_id', user.id);
+        toast.success('Clé Google Places enregistrée !');
+      }
+    } catch (e) { console.error(e); toast.error('Impossible d\'enregistrer la clé Google Places. Vérifiez la clé et réessayez.'); }
+    setSavingGooglePlaces(false);
   };
 
   const handleSaveSmtp = async () => {
@@ -855,6 +871,58 @@ export function SettingsIntegrationsSection() {
               >
                 {savingFirecrawl ? 'Sauvegarde...' : 'Enregistrer'}
               </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Google Places API Card */}
+        <Card className="border border-[#e5e5e0] bg-white">
+          <CardContent className="p-5 flex flex-col sm:flex-row items-start justify-between gap-4">
+            <div className="flex gap-4 min-w-0 flex-1">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#059669]/10 text-[#059669] shrink-0">
+                <Globe className="h-5 w-5" />
+              </div>
+              <div className="space-y-2 min-w-0 flex-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-xs font-bold text-[#26251e] truncate">Google Places API</span>
+                  {!!googlePlacesApiKey ? (
+                    <Badge variant="outline" className="text-[9px] font-bold rounded px-1.5 py-0 bg-emerald-50 text-emerald-700 border-emerald-200">
+                      Configuré
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className="text-[9px] font-bold rounded px-1.5 py-0 bg-slate-50 text-slate-500 border-slate-200">
+                      Non configuré
+                    </Badge>
+                  )}
+                </div>
+                <p className="text-[11px] text-[#7a7a76] leading-relaxed">
+                  Avis Google Maps, photos et note sur la fiche prospect (onglet Avis). Activez "Places API (New)" et créez une clé sur{' '}
+                  <a href="https://console.cloud.google.com/apis/library/places.googleapis.com" target="_blank" rel="noopener noreferrer" className="text-[#059669] underline">Google Cloud Console →</a>
+                </p>
+                <div className="flex gap-2 items-center pt-1">
+                  <div className="relative flex-1 max-w-xs">
+                    <Key className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-[#7a7a76]" />
+                    <Input
+                      type="password"
+                      placeholder={googlePlacesApiKey ? 'AIza****' : 'Clé Google Places API'}
+                      value={googlePlacesApiKey}
+                      onChange={(e) => setGooglePlacesApiKey(e.target.value)}
+                      className="pl-8 text-xs bg-white h-8"
+                      autoComplete="off"
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={handleSaveGooglePlaces}
+                    disabled={savingGooglePlaces}
+                    className="h-8 text-xs font-bold gap-1 px-3 bg-[#059669] hover:bg-[#059669]/95 text-white shrink-0"
+                  >
+                    {savingGooglePlaces ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+                    Enregistrer
+                  </Button>
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>

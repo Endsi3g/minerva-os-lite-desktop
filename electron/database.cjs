@@ -187,6 +187,10 @@ function initDb() {
     // v2.63.0 Firecrawl API key migration
     db.run(`ALTER TABLE settings ADD COLUMN firecrawl_api_key TEXT DEFAULT NULL`, () => {});
 
+    // v3.94.0 Google Places API key migration: mirrors
+    // supabase/migrations/20260710234153_v14_4_google_places_api_key.sql
+    db.run(`ALTER TABLE settings ADD COLUMN google_places_api_key TEXT DEFAULT NULL`, () => {});
+
     // OpenRouter and AI configuration migrations (replicated from Supabase settings schema)
     db.run(`ALTER TABLE settings ADD COLUMN openrouter_key TEXT DEFAULT NULL`, () => {});
     db.run(`ALTER TABLE settings ADD COLUMN ai_provider TEXT DEFAULT 'anthropic'`, () => {});

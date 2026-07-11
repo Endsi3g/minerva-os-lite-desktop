@@ -5,6 +5,11 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [3.94.0] — Clé Google Places API configurable par utilisateur — 10 juillet 2026, 23h44
+
+### Ajouté
+- **Carte "Google Places API" dans Paramètres > Intégrations** : la clé utilisée par l'onglet Avis (avis, photos, note) était jusqu'ici uniquement une variable d'environnement globale du déploiement (`GOOGLE_PLACES_API_KEY`) — chaque utilisateur peut désormais configurer sa propre clé, même pattern que les cartes HERE/Yelp/Firecrawl déjà en place. La clé par utilisateur est prioritaire ; la variable d'environnement reste un défaut de secours.
+
 ## [3.93.0] — Moteur de contrôle Autopilot des programmes — 10 juillet 2026, 20h25
 
 ### Ajouté

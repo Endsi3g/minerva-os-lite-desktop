@@ -21,6 +21,14 @@ interface ChangelogVersion {
 
 const versions: ChangelogVersion[] = [
   {
+    version: 'v3.94.0',
+    date: '10 juillet 2026 · 23h44',
+    title: 'Clé Google Places API configurable par utilisateur',
+    highlights: [
+      { text: "Nouvelle carte dans Paramètres > Intégrations pour la clé Google Places (avis, photos, note sur l'onglet Avis) — jusqu'ici uniquement une variable d'environnement globale. Chaque utilisateur peut configurer la sienne, même pattern que HERE/Yelp/Firecrawl." }
+    ],
+  },
+  {
     version: 'v3.93.0',
     date: '10 juillet 2026 · 20h25',
     title: 'Moteur de contrôle Autopilot des programmes',
