@@ -21,6 +21,17 @@ interface ChangelogVersion {
 
 const versions: ChangelogVersion[] = [
   {
+    version: 'v3.93.0',
+    date: '10 juillet 2026 · 20h25',
+    title: 'Moteur de contrôle Autopilot des programmes',
+    highlights: [
+      { text: "État Autopilot formalisé en 5 états (draft/active/autopilot/suspended/completed) au lieu d'un simple booléen — distingue enfin une pause manuelle d'une suspension automatique pour anomalie." },
+      { text: "lib/autopilot-controller.ts : transitions (activer/suspendre/reprendre) et cycle quotidien qui reprend la règle de suspension déjà en place (>40% de réponses négatives) et y ajoute le suivi des emails envoyés et RDV créés par programme." },
+      { text: "Nouvelle table program_actions_log : journal lisible d'une ligne par action, avec indicateur d'incident — remplace l'absence de trace durable." },
+      { text: "Carte \"Autopilot status\" sur la fiche programme : état courant, dernière raison, boutons Activer/Suspendre/Reprendre, journal des 10 dernières actions." }
+    ],
+  },
+  {
     version: 'v3.92.0',
     date: '10 juillet 2026 · 19h31',
     title: 'Bouton "Copier tout" sur la page Nouveautés',

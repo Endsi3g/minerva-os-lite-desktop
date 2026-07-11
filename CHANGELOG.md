@@ -5,6 +5,15 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [3.93.0] — Moteur de contrôle Autopilot des programmes — 10 juillet 2026, 20h25
+
+### Ajouté
+- **État Autopilot formalisé** (`campaigns.autopilot_state`) : draft / active / autopilot / suspended / completed, au lieu d'un simple booléen orthogonal au statut — distingue enfin une pause manuelle d'une suspension automatique pour anomalie. `autopilot_enabled` reste lu tel quel par le garde-fou de plafond quotidien existant (`lib/autopilot-guard.ts`), gardé synchronisé par le nouveau contrôleur.
+- **`lib/autopilot-controller.ts`** : moteur central des transitions (`activateAutopilot`, `suspendProgram`, `resumeProgram`) et du cycle quotidien (`runAutopilotCycle`) — reprend la règle de suspension automatique déjà en place (taux de réponses négatives > 40% sur 5 leads contactés minimum) et y ajoute le calcul des emails envoyés aujourd'hui et des RDV créés cette semaine par programme.
+- **Table `program_actions_log`** : journal lisible d'une ligne par transition/cycle (raison en texte + résultat structuré + indicateur d'incident), remplace l'absence totale de trace durable des actions Autopilot (seule une notification éphémère existait avant).
+- **Carte "Autopilot status"** sur la fiche programme : état courant, dernière raison, boutons Activer/Suspendre/Reprendre câblés sur une nouvelle route (`/api/campaigns/[id]/autopilot`), et le journal des 10 dernières actions avec indicateur d'incident.
+- Le cron quotidien `autopilot-guardrail` (déjà planifié) devient un simple déclencheur du contrôleur partagé, sans duplication de logique.
+
 ## [3.92.0] — Bouton "Copier tout" sur la page Nouveautés — 10 juillet 2026, 19h31
 
 ### Ajouté

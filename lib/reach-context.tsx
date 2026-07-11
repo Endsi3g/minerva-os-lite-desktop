@@ -113,6 +113,8 @@ export interface Campaign {
   autopilotPausedAt?: string;
   // Séquence e-mail attachée à la campagne (v3.89.0) — référence un sequence_templates.id
   sequenceIds?: string[];
+  // État du moteur de contrôle Autopilot (v3.93.0) — voir lib/autopilot-controller.ts
+  autopilotState?: 'draft' | 'active' | 'autopilot' | 'suspended' | 'completed';
 }
 
 export interface Goal {
@@ -572,6 +574,7 @@ function mapDbCampaignToUi(r: any): Campaign {
     autopilotPausedReason: r.autopilot_paused_reason || undefined,
     autopilotPausedAt: r.autopilot_paused_at || undefined,
     sequenceIds,
+    autopilotState: (r.autopilot_state || 'draft') as Campaign['autopilotState'],
   };
 }
 
@@ -2801,6 +2804,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
     if (fields.autopilotPausedReason !== undefined) { dbFields.push("autopilot_paused_reason = ?"); params.push(fields.autopilotPausedReason || null); }
     if (fields.autopilotPausedAt !== undefined) { dbFields.push("autopilot_paused_at = ?"); params.push(fields.autopilotPausedAt || null); }
     if (fields.sequenceIds !== undefined) { dbFields.push("sequence_ids = ?"); params.push(JSON.stringify(fields.sequenceIds || [])); }
+    if (fields.autopilotState !== undefined) { dbFields.push("autopilot_state = ?"); params.push(fields.autopilotState || 'draft'); }
     if (electronObj) {
       try {
         if (dbFields.length > 0) {
@@ -2834,6 +2838,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
     if (fields.autopilotPausedReason !== undefined) supaFields.autopilot_paused_reason = fields.autopilotPausedReason || null;
     if (fields.autopilotPausedAt !== undefined) supaFields.autopilot_paused_at = fields.autopilotPausedAt || null;
     if (fields.sequenceIds !== undefined) supaFields.sequence_ids = fields.sequenceIds || [];
+    if (fields.autopilotState !== undefined) supaFields.autopilot_state = fields.autopilotState || 'draft';
     try {
       await supabase.from('campaigns').update(supaFields).eq('id', id);
       setCampaigns(prev => prev.map(c => c.id === id ? { ...c, ...fields, updatedAt: new Date().toISOString() } : c));

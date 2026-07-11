@@ -8,7 +8,7 @@ import { getApiUrl } from '@/lib/api-helper';
 import {
   ChevronLeft, Megaphone, Tag, MapPin, Calendar, Users, CheckCircle2, TrendingUp, Mail, Play, Pause,
   Edit2, Check, X, Rocket, FolderKanban, CalendarClock, Zap, AlertTriangle, Plus, Flame, Snowflake,
-  Send, MailOpen, MousePointerClick, XCircle, Sparkles, Search, Copy,
+  Send, MailOpen, MousePointerClick, XCircle, Sparkles, Search, Copy, Loader2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -71,21 +71,40 @@ export function CampaignDetailRoot({ id }: { id: string }) {
     [tasks, campaignLeadIds]
   );
 
-  // Autopilot (PRD v12, Sprint 3)
+  // Autopilot (v3.93.0 — moteur de contrôle, lib/autopilot-controller.ts)
   const [dailyEmailCap, setDailyEmailCap] = useState(campaign?.autopilotDailyEmailCap ?? 30);
   const [weeklyMeetingCap, setWeeklyMeetingCap] = useState(campaign?.autopilotWeeklyMeetingCap ?? 5);
-  const toggleAutopilot = () => {
-    if (!campaign) return;
-    if (campaign.autopilotEnabled) {
-      updateCampaign(id, { autopilotEnabled: false });
-    } else {
-      updateCampaign(id, {
-        autopilotEnabled: true,
-        autopilotDailyEmailCap: dailyEmailCap,
-        autopilotWeeklyMeetingCap: weeklyMeetingCap,
-        autopilotPausedReason: '',
-        autopilotPausedAt: '',
+  const [autopilotActionLoading, setAutopilotActionLoading] = useState(false);
+  const [autopilotLogRefreshKey, setAutopilotLogRefreshKey] = useState(0);
+
+  const handleAutopilotAction = async (action: 'activate' | 'suspend' | 'resume') => {
+    if (!campaign || autopilotActionLoading) return;
+    setAutopilotActionLoading(true);
+    try {
+      if (action === 'activate') {
+        // Persiste les plafonds saisis avant l'activation — la route serveur
+        // ne fait que la transition d'état + le journal.
+        updateCampaign(id, {
+          autopilotDailyEmailCap: dailyEmailCap,
+          autopilotWeeklyMeetingCap: weeklyMeetingCap,
+        });
+      }
+      const res = await fetch(getApiUrl(`/api/campaigns/${id}/autopilot`), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action }),
       });
+      if (res.ok) {
+        const optimistic = action === 'activate'
+          ? { autopilotState: 'autopilot' as const, autopilotEnabled: true, status: 'active' as const, autopilotPausedReason: '', autopilotPausedAt: '' }
+          : action === 'resume'
+          ? { autopilotState: 'autopilot' as const, autopilotEnabled: true, autopilotPausedReason: '', autopilotPausedAt: '' }
+          : { autopilotState: 'suspended' as const, autopilotEnabled: false, status: 'paused' as const, autopilotPausedReason: 'Suspendu manuellement.', autopilotPausedAt: new Date().toISOString() };
+        updateCampaign(id, optimistic);
+        setAutopilotLogRefreshKey((k) => k + 1);
+      }
+    } finally {
+      setAutopilotActionLoading(false);
     }
   };
 
@@ -268,64 +287,18 @@ export function CampaignDetailRoot({ id }: { id: string }) {
           );
         })()}
 
-        {/* Autopilot (PRD v12, Sprint 3) */}
+        {/* Autopilot status — moteur de contrôle (v3.93.0) */}
         {campaign.goalType && (
-          <div className="rounded-xl border border-[#e5e5e0] bg-white p-4 space-y-3">
-            <div className="flex items-center justify-between gap-4 flex-wrap">
-              <div className="flex items-center gap-2">
-                <Zap className={cn('h-4 w-4', campaign.autopilotEnabled ? 'text-[#059669]' : 'text-[#7a7a76]')} />
-                <span className="text-xs font-bold text-[#26251e]">Autopilot</span>
-                <span className="text-[10px] text-[#7a7a76]">— l&apos;IA gère ce programme dans les limites fixées ci-dessous</span>
-              </div>
-              <button
-                onClick={toggleAutopilot}
-                className={cn(
-                  'px-3 py-1.5 rounded-lg text-xs font-bold transition-colors',
-                  campaign.autopilotEnabled ? 'bg-[#059669] text-white hover:bg-[#047857]' : 'border border-[#e5e5e0] text-[#26251e] hover:bg-[#f4f4f3]'
-                )}
-              >
-                {campaign.autopilotEnabled ? 'Activé — désactiver' : 'Désactivé — activer'}
-              </button>
-            </div>
-
-            {campaign.autopilotPausedReason && (
-              <div className="flex items-start gap-2 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 p-2.5 text-[11px]">
-                <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
-                <span>{campaign.autopilotPausedReason}</span>
-              </div>
-            )}
-
-            <div className="flex flex-wrap items-center gap-4">
-              <div className="flex items-center gap-2">
-                <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Plafond emails/jour</label>
-                <input
-                  type="number"
-                  min={1}
-                  value={dailyEmailCap}
-                  onChange={(e) => setDailyEmailCap(Number(e.target.value))}
-                  disabled={campaign.autopilotEnabled}
-                  className="w-20 text-xs border border-[#e5e5e0] rounded-lg px-2 py-1.5 disabled:bg-[#f4f4f3] disabled:text-[#7a7a76]"
-                />
-              </div>
-              <div className="flex items-center gap-2">
-                <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Cible RDV/semaine</label>
-                <input
-                  type="number"
-                  min={1}
-                  value={weeklyMeetingCap}
-                  onChange={(e) => setWeeklyMeetingCap(Number(e.target.value))}
-                  disabled={campaign.autopilotEnabled}
-                  className="w-20 text-xs border border-[#e5e5e0] rounded-lg px-2 py-1.5 disabled:bg-[#f4f4f3] disabled:text-[#7a7a76]"
-                />
-              </div>
-            </div>
-
-            {campaign.autopilotEnabled && (
-              <p className="text-[10px] text-[#7a7a76]">
-                Plafond actuel : {campaign.autopilotDailyEmailCap ?? '—'} emails/jour · cible {campaign.autopilotWeeklyMeetingCap ?? '—'} RDV/semaine. Se suspend automatiquement si le taux de réponses négatives dépasse 40% (minimum 5 leads contactés).
-              </p>
-            )}
-          </div>
+          <AutopilotStatusCard
+            campaign={campaign}
+            dailyEmailCap={dailyEmailCap}
+            weeklyMeetingCap={weeklyMeetingCap}
+            onDailyEmailCapChange={setDailyEmailCap}
+            onWeeklyMeetingCapChange={setWeeklyMeetingCap}
+            onAction={handleAutopilotAction}
+            actionLoading={autopilotActionLoading}
+            logRefreshKey={autopilotLogRefreshKey}
+          />
         )}
 
         {/* KPIs */}
@@ -808,6 +781,203 @@ function CampaignSequenceTab({ campaignId, sequenceIds }: { campaignId: string; 
             {count}× {type === 'email' ? 'e-mail' : type === 'delay' ? 'délai' : type === 'task' ? 'tâche' : 'condition'}
           </span>
         ))}
+      </div>
+    </div>
+  );
+}
+
+// ── Autopilot status — moteur de contrôle (v3.93.0, lib/autopilot-controller.ts) ─
+
+interface ProgramActionLogRow {
+  id: string;
+  action_type: 'autopilot_activated' | 'autopilot_suspended' | 'autopilot_resumed' | 'autopilot_cycle';
+  reasoning: string | null;
+  result: Record<string, unknown> | null;
+  incident: boolean;
+  created_at: string;
+}
+
+const AUTOPILOT_STATE_CONFIG: Record<NonNullable<Campaign['autopilotState']>, { label: string; classes: string }> = {
+  draft: { label: 'Brouillon', classes: 'bg-muted/60 text-muted-foreground border-border' },
+  active: { label: 'Active (manuel)', classes: 'bg-blue-50 text-blue-700 border-blue-200' },
+  autopilot: { label: 'Autopilot actif', classes: 'bg-[#059669]/10 text-[#059669] border-[#059669]/20' },
+  suspended: { label: 'Suspendu', classes: 'bg-red-50 text-red-600 border-red-200' },
+  completed: { label: 'Terminé', classes: 'bg-muted/60 text-muted-foreground border-border' },
+};
+
+const LOG_ACTION_CONFIG: Record<ProgramActionLogRow['action_type'], { label: string; icon: typeof Zap }> = {
+  autopilot_activated: { label: 'Activé', icon: Play },
+  autopilot_resumed: { label: 'Repris', icon: Play },
+  autopilot_suspended: { label: 'Suspendu', icon: Pause },
+  autopilot_cycle: { label: 'Cycle', icon: Zap },
+};
+
+function AutopilotStatusCard({
+  campaign,
+  dailyEmailCap,
+  weeklyMeetingCap,
+  onDailyEmailCapChange,
+  onWeeklyMeetingCapChange,
+  onAction,
+  actionLoading,
+  logRefreshKey,
+}: {
+  campaign: Campaign;
+  dailyEmailCap: number;
+  weeklyMeetingCap: number;
+  onDailyEmailCapChange: (v: number) => void;
+  onWeeklyMeetingCapChange: (v: number) => void;
+  onAction: (action: 'activate' | 'suspend' | 'resume') => void;
+  actionLoading: boolean;
+  logRefreshKey: number;
+}) {
+  const [logs, setLogs] = useState<ProgramActionLogRow[]>([]);
+  const [loadingLogs, setLoadingLogs] = useState(true);
+  const state = campaign.autopilotState ?? 'draft';
+  const stateConf = AUTOPILOT_STATE_CONFIG[state];
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoadingLogs(true);
+    const supabase = createClient();
+    supabase
+      .from('program_actions_log')
+      .select('id, action_type, reasoning, result, incident, created_at')
+      .eq('campaign_id', campaign.id)
+      .order('created_at', { ascending: false })
+      .limit(10)
+      .then(({ data }: { data: ProgramActionLogRow[] | null }) => { if (!cancelled) setLogs(data || []); })
+      .finally(() => { if (!cancelled) setLoadingLogs(false); });
+    return () => { cancelled = true; };
+  }, [campaign.id, logRefreshKey]);
+
+  const lastLog = logs[0];
+  const capsLocked = state === 'autopilot';
+
+  return (
+    <div className="rounded-xl border border-[#e5e5e0] bg-white p-4 space-y-3">
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <div className="flex items-center gap-2">
+          <Zap className={cn('h-4 w-4', state === 'autopilot' ? 'text-[#059669]' : 'text-[#7a7a76]')} />
+          <span className="text-xs font-bold text-[#26251e]">Autopilot</span>
+          <span className={cn('text-[9px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full border', stateConf.classes)}>
+            {stateConf.label}
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          {actionLoading && <Loader2 className="h-3.5 w-3.5 animate-spin text-[#7a7a76]" />}
+          {state === 'autopilot' ? (
+            <button
+              onClick={() => onAction('suspend')}
+              disabled={actionLoading}
+              className="px-3 py-1.5 rounded-lg text-xs font-bold border border-red-200 text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50"
+            >
+              Suspendre
+            </button>
+          ) : state === 'suspended' ? (
+            <button
+              onClick={() => onAction('resume')}
+              disabled={actionLoading}
+              className="px-3 py-1.5 rounded-lg text-xs font-bold bg-[#059669] text-white hover:bg-[#047857] transition-colors disabled:opacity-50"
+            >
+              Reprendre
+            </button>
+          ) : state !== 'completed' ? (
+            <button
+              onClick={() => onAction('activate')}
+              disabled={actionLoading}
+              className="px-3 py-1.5 rounded-lg text-xs font-bold border border-[#e5e5e0] text-[#26251e] hover:bg-[#f4f4f3] transition-colors disabled:opacity-50"
+            >
+              Activer Autopilot
+            </button>
+          ) : null}
+        </div>
+      </div>
+
+      {campaign.autopilotPausedReason && state === 'suspended' && (
+        <div className="flex items-start gap-2 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 p-2.5 text-[11px]">
+          <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+          <span>{campaign.autopilotPausedReason}</span>
+        </div>
+      )}
+
+      <div className="flex flex-wrap items-center gap-4">
+        <div className="flex items-center gap-2">
+          <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Plafond emails/jour</label>
+          <input
+            type="number"
+            min={1}
+            value={dailyEmailCap}
+            onChange={(e) => onDailyEmailCapChange(Number(e.target.value))}
+            disabled={capsLocked}
+            className="w-20 text-xs border border-[#e5e5e0] rounded-lg px-2 py-1.5 disabled:bg-[#f4f4f3] disabled:text-[#7a7a76]"
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Cible RDV/semaine</label>
+          <input
+            type="number"
+            min={1}
+            value={weeklyMeetingCap}
+            onChange={(e) => onWeeklyMeetingCapChange(Number(e.target.value))}
+            disabled={capsLocked}
+            className="w-20 text-xs border border-[#e5e5e0] rounded-lg px-2 py-1.5 disabled:bg-[#f4f4f3] disabled:text-[#7a7a76]"
+          />
+        </div>
+      </div>
+
+      {state === 'autopilot' && (
+        <p className="text-[10px] text-[#7a7a76]">
+          Plafond actuel : {campaign.autopilotDailyEmailCap ?? '—'} emails/jour · cible {campaign.autopilotWeeklyMeetingCap ?? '—'} RDV/semaine. Se suspend automatiquement si le taux de réponses négatives dépasse 40% (minimum 5 leads contactés).
+        </p>
+      )}
+
+      {/* Journal — dernières actions/cycles du contrôleur */}
+      <div className="pt-2 border-t border-[#e5e5e0]/60 space-y-1.5">
+        <p className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Journal</p>
+        {loadingLogs ? (
+          <div className="h-10 rounded-lg bg-[#f4f4f3] animate-pulse" />
+        ) : logs.length === 0 ? (
+          <p className="text-[11px] text-[#7a7a76] italic">Aucune action Autopilot enregistrée pour ce programme.</p>
+        ) : (
+          <div className="space-y-1.5 max-h-56 overflow-y-auto">
+            {logs.map((log) => {
+              const conf = LOG_ACTION_CONFIG[log.action_type];
+              const Icon = conf?.icon ?? Zap;
+              return (
+                <div key={log.id} className="flex items-start gap-2 text-[11px]">
+                  <Icon className={cn('h-3 w-3 shrink-0 mt-0.5', log.incident ? 'text-red-500' : 'text-[#7a7a76]')} />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5">
+                      <span className={cn('font-bold', log.incident ? 'text-red-600' : 'text-[#26251e]')}>{conf?.label ?? log.action_type}</span>
+                      {log.incident && (
+                        <span className="text-[8px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-red-50 text-red-600 border border-red-200">Incident</span>
+                      )}
+                      <span className="text-[9px] text-[#7a7a76] shrink-0">
+                        {new Date(log.created_at).toLocaleDateString('fr-CA', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+                    {log.reasoning && <p className="text-[#555552] leading-relaxed">{log.reasoning}</p>}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+        {lastLog?.result && Object.keys(lastLog.result).length > 0 && (
+          <div className="flex flex-wrap gap-2 pt-1">
+            {'emailsSentToday' in lastLog.result && (
+              <span className="text-[9px] font-semibold text-[#7a7a76] bg-[#f4f4f3] px-2 py-1 rounded-lg">
+                {String(lastLog.result.emailsSentToday)} emails envoyés aujourd&apos;hui
+              </span>
+            )}
+            {'meetingsThisWeek' in lastLog.result && (
+              <span className="text-[9px] font-semibold text-[#7a7a76] bg-[#f4f4f3] px-2 py-1 rounded-lg">
+                {String(lastLog.result.meetingsThisWeek)} RDV cette semaine
+              </span>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

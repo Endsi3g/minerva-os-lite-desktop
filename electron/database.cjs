@@ -317,6 +317,23 @@ function initDb() {
     db.run(`CREATE INDEX IF NOT EXISTS idx_growth_program_leads_campaign ON growth_program_leads(campaign_id)`);
     db.run(`CREATE INDEX IF NOT EXISTS idx_growth_program_leads_lead ON growth_program_leads(lead_id)`);
 
+    // v3.93.0 — Moteur de contrôle Autopilot : mirrors
+    // supabase/migrations/20260710201913_v14_3_autopilot_controller.sql
+    db.run(`ALTER TABLE campaigns ADD COLUMN autopilot_state TEXT DEFAULT 'draft'`, () => {});
+    db.run(`CREATE TABLE IF NOT EXISTS program_actions_log (
+      id TEXT PRIMARY KEY,
+      workspace_id TEXT,
+      campaign_id TEXT,
+      action_type TEXT,
+      reasoning TEXT,
+      result TEXT DEFAULT '{}',
+      executed INTEGER DEFAULT 1,
+      incident INTEGER DEFAULT 0,
+      created_at TEXT,
+      sync_status TEXT DEFAULT 'synced'
+    )`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_program_actions_log_campaign ON program_actions_log(campaign_id, created_at DESC)`);
+
     // v2.37.0 — activities table
     db.run(`CREATE TABLE IF NOT EXISTS activities (
       id TEXT PRIMARY KEY,
