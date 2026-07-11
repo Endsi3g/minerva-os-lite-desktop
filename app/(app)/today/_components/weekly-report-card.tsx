@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { BarChart3, RefreshCw, Loader2, ChevronDown, ChevronUp } from 'lucide-react';
+import Link from 'next/link';
+import { BarChart3, RefreshCw, Loader2, ChevronDown, ChevronUp, ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useReach } from '@/lib/reach-context';
 import { getApiUrl } from '@/lib/api-helper';
@@ -104,6 +105,14 @@ export function WeeklyReportCard() {
             <p className="text-[10px] text-[#7a7a76]">{dateRange}</p>
           </div>
         </div>
+        <div className="flex items-center gap-2 shrink-0">
+        <Link
+          href="/weekly-report"
+          className="flex items-center gap-1 rounded-lg border border-[#e5e5e0] bg-[#fafaf8] hover:bg-[#f0f0ef] px-2.5 py-1.5 text-[10px] font-bold text-[#059669] transition-colors"
+        >
+          Bilan complet
+          <ArrowRight className="h-3 w-3" />
+        </Link>
         <button
           onClick={() => fetchReport(true)}
           disabled={loading}
@@ -116,6 +125,7 @@ export function WeeklyReportCard() {
           )}
           {report ? 'Actualiser' : 'Générer'}
         </button>
+        </div>
       </div>
 
       {metrics && (

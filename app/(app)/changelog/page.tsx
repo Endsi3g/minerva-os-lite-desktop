@@ -21,6 +21,19 @@ interface ChangelogVersion {
 
 const versions: ChangelogVersion[] = [
   {
+    version: 'v3.95.0',
+    date: '11 juillet 2026 · 17h12',
+    title: 'Bilan hebdomadaire quotidien, agent IA plus autonome et refonte mobile',
+    highlights: [
+      { text: "Notification quotidienne du bilan de la semaine (16h) en plus du rapport IA du lundi — un aperçu chiffré pousse vers le nouveau centre de notifications pour que le bilan redevienne un réflexe quotidien." },
+      { text: "Nouvelle page /weekly-report : rapport IA complet, toutes les métriques, et un journal chronologique de toutes les actions IA/app de la semaine — plus qu'un résumé, un vrai bilan complet." },
+      { text: "Les recommandations du moteur NBA (relance, appel, changement de canal, visite terrain, RDV, nurture, pause) alimentent désormais directement l'agent IA autonome au lieu d'être uniquement affichées." },
+      { text: "Corrigé : le cron quotidien de l'agent IA forçait l'autonomie à 'auto' pour tout le monde et n'accédait qu'à 3 outils sur 14 — il partage désormais le même moteur que la route interactive et respecte les vrais réglages d'autonomie de chacun." },
+      { text: "Corrigé : ton et signature incohérents dans les brouillons d'e-mails IA — la signature est désormais ajoutée automatiquement (jamais oubliée), et chaque ton/type de message reçoit une consigne de style concrète." },
+      { text: "Refonte visuelle mobile : tableau de bord Aujourd'hui repensé, panneaux flottants glassmorphiques sur la Carte, fiche de campagne retravaillée." },
+    ],
+  },
+  {
     version: 'v3.94.0',
     date: '10 juillet 2026 · 23h44',
     title: 'Clé Google Places API configurable par utilisateur',

@@ -157,7 +157,7 @@ function PilotageTab({ leads, tasks }: { leads: any[]; tasks: any[] }) {
 export function TodayRoot() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { leads, tasks, aiSuggestions, activeWorkspace, campaigns, isDataReady } = useReach();
+  const { leads, tasks, aiSuggestions, activeWorkspace, campaigns, isDataReady, user } = useReach();
   
   const [showAestheticMode, setShowAestheticMode] = useState(false);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'inbox' | 'pilotage'>('dashboard');
@@ -418,31 +418,156 @@ export function TodayRoot() {
 
             {activeTab === 'dashboard' && (
               <div className="flex flex-col gap-5 p-4 sm:p-6 md:p-8">
-                {/* Banner Setup */}
-                <TodaySetupBanner />
+                {isMobile ? (
+                  /* Redesigned Mobile Dashboard (Financial App Styling) */
+                  <div className="flex flex-col gap-4">
+                    {/* Greeting & Quick Performance Header (Dark Green Card) */}
+                    <div className="bg-[#064e3b] text-white rounded-2xl p-5 shadow-lg relative overflow-hidden flex flex-col gap-4">
+                      {/* Decorative glowing gradient inside */}
+                      <div className="absolute -right-16 -top-16 w-48 h-48 rounded-full bg-[#10b981]/15 blur-3xl pointer-events-none" />
+                      
+                      <div className="flex justify-between items-start z-10">
+                        <div className="max-w-[65%]">
+                          <p className="text-[#10b981] text-[10px] font-bold uppercase tracking-widest">Revenue OS · Cockpit</p>
+                          <h2 className="text-lg font-black tracking-tight mt-1 truncate">
+                            Hello, {user?.user_metadata?.name || user?.email?.split('@')[0] || 'Kael'} !
+                          </h2>
+                          <p className="text-emerald-100/70 text-[11px] mt-1 leading-relaxed">
+                            Concentrons-nous sur les relances chaudes du jour.
+                          </p>
+                        </div>
+                        
+                        {/* Circular Performance Indicator */}
+                        <div className="flex flex-col items-center gap-1 shrink-0">
+                          <div className="relative w-14 h-14 flex items-center justify-center">
+                            <svg className="w-full h-full transform -rotate-90">
+                              <circle
+                                cx="28"
+                                cy="28"
+                                r="22"
+                                className="text-emerald-950"
+                                strokeWidth="3"
+                                stroke="currentColor"
+                                fill="transparent"
+                              />
+                              <circle
+                                cx="28"
+                                cy="28"
+                                r="22"
+                                className="text-[#10b981] transition-all duration-500"
+                                strokeWidth="3"
+                                strokeDasharray={2 * Math.PI * 22}
+                                strokeDashoffset={2 * Math.PI * 22 * (1 - (tasks.length > 0 ? tasks.filter(t => t.completed || (t as any).status === 'completed').length / tasks.length : 0.75))}
+                                strokeLinecap="round"
+                                stroke="currentColor"
+                                fill="transparent"
+                              />
+                            </svg>
+                            <span className="absolute text-[10px] font-black font-mono text-[#10b981]">
+                              {tasks.length > 0 ? Math.round((tasks.filter(t => t.completed || (t as any).status === 'completed').length / tasks.length) * 100) : 75}%
+                            </span>
+                          </div>
+                          <span className="text-[7px] text-[#10b981] font-bold uppercase tracking-wider">Perf. Tâches</span>
+                        </div>
+                      </div>
 
-                {/* Banner Header */}
-                <TodayHeader onAestheticToggle={() => setShowAestheticMode(true)} />
+                      {/* Performance Notification Banner */}
+                      <div className="bg-emerald-950/40 border border-emerald-500/20 rounded-xl px-3 py-2 flex items-center justify-between gap-2 z-10">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <TrendingUp className="h-3.5 w-3.5 text-[#10b981] shrink-0" />
+                          <span className="text-[10px] text-emerald-100 font-medium truncate">
+                            Taux de booking augmenté de 40% cette semaine
+                          </span>
+                        </div>
+                        <span className="text-[8px] bg-[#10b981] text-emerald-950 font-black px-1.5 py-0.5 rounded-full uppercase tracking-wider shrink-0">
+                          Active
+                        </span>
+                      </div>
+                    </div>
 
-                {/* Unified KPI Metrics bar */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="bg-white border border-[#e5e5e0] rounded-xl p-4 flex flex-col gap-1 shadow-sm">
-                    <span className="text-[10px] font-bold text-[#7a7a76] uppercase tracking-wider">Leads Actifs</span>
-                    {isDataReady ? <span className="text-2xl font-black text-[#26251e]">{activeLeadsCount}</span> : <span className="h-7 w-12 rounded bg-[#f4f4f3] animate-pulse" />}
+                    {/* Financial Reference Grid (2 columns on mobile) */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="bg-[#f4f4f3] border border-[#e5e5e0] rounded-xl p-3.5 flex flex-col justify-between h-20 relative shadow-xs">
+                        <span className="text-[9px] font-bold text-[#7a7a76] uppercase tracking-wider">Leads Actifs</span>
+                        <div className="flex items-baseline justify-between mt-1">
+                          {isDataReady ? (
+                            <span className="text-lg font-black font-mono text-[#26251e]">{activeLeadsCount}</span>
+                          ) : (
+                            <span className="h-5 w-12 rounded bg-[#e5e5e0] animate-pulse" />
+                          )}
+                          <span className="text-[8px] text-[#059669] font-bold bg-[#059669]/10 px-1.5 py-0.5 rounded-full">CRM</span>
+                        </div>
+                      </div>
+
+                      <div className="bg-[#f4f4f3] border border-[#e5e5e0] rounded-xl p-3.5 flex flex-col justify-between h-20 relative shadow-xs">
+                        <span className="text-[9px] font-bold text-[#7a7a76] uppercase tracking-wider">Taux de Booking</span>
+                        <div className="flex items-baseline justify-between mt-1">
+                          {isDataReady ? (
+                            <span className="text-lg font-black font-mono text-[#26251e]">{bookingRate}%</span>
+                          ) : (
+                            <span className="h-5 w-12 rounded bg-[#e5e5e0] animate-pulse" />
+                          )}
+                          <span className="text-[8px] text-blue-600 font-bold bg-blue-50 px-1.5 py-0.5 rounded-full">RDV</span>
+                        </div>
+                      </div>
+
+                      <div className="bg-[#f4f4f3] border border-[#e5e5e0] rounded-xl p-3.5 flex flex-col justify-between h-20 relative shadow-xs">
+                        <span className="text-[9px] font-bold text-[#7a7a76] uppercase tracking-wider">Réponses Positives</span>
+                        <div className="flex items-baseline justify-between mt-1">
+                          {isDataReady ? (
+                            <span className="text-lg font-black font-mono text-[#26251e]">{positiveReplyRate}%</span>
+                          ) : (
+                            <span className="h-5 w-12 rounded bg-[#e5e5e0] animate-pulse" />
+                          )}
+                          <span className="text-[8px] text-[#7c3aed] font-bold bg-[#7c3aed]/10 px-1.5 py-0.5 rounded-full">Mail</span>
+                        </div>
+                      </div>
+
+                      <div className="bg-[#f4f4f3] border border-[#e5e5e0] rounded-xl p-3.5 flex flex-col justify-between h-20 relative shadow-xs">
+                        <span className="text-[9px] font-bold text-[#7a7a76] uppercase tracking-wider">Score NBA</span>
+                        <div className="flex items-baseline justify-between mt-1">
+                          {isDataReady ? (
+                            <span className="text-lg font-black font-mono text-[#26251e]">{avgNbaScore} <span className="text-[10px] font-normal text-[#7a7a76]">pts</span></span>
+                          ) : (
+                            <span className="h-5 w-12 rounded bg-[#e5e5e0] animate-pulse" />
+                          )}
+                          <span className="text-[8px] text-amber-600 font-bold bg-amber-50 px-1.5 py-0.5 rounded-full">IA</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Today Header (contains Actions like adding tasks / leads, styled neatly) */}
+                    <div className="border-b border-[#e5e5e0]/60 pb-2">
+                      <TodayHeader onAestheticToggle={() => setShowAestheticMode(true)} />
+                    </div>
                   </div>
-                  <div className="bg-white border border-[#e5e5e0] rounded-xl p-4 flex flex-col gap-1 shadow-sm">
-                    <span className="text-[10px] font-bold text-[#7a7a76] uppercase tracking-wider">Taux de Booking</span>
-                    {isDataReady ? <span className="text-2xl font-black text-[#26251e]">{bookingRate}%</span> : <span className="h-7 w-12 rounded bg-[#f4f4f3] animate-pulse" />}
-                  </div>
-                  <div className="bg-white border border-[#e5e5e0] rounded-xl p-4 flex flex-col gap-1 shadow-sm">
-                    <span className="text-[10px] font-bold text-[#7a7a76] uppercase tracking-wider">Réponses Positives</span>
-                    {isDataReady ? <span className="text-2xl font-black text-[#26251e]">{positiveReplyRate}%</span> : <span className="h-7 w-12 rounded bg-[#f4f4f3] animate-pulse" />}
-                  </div>
-                  <div className="bg-white border border-[#e5e5e0] rounded-xl p-4 flex flex-col gap-1 shadow-sm">
-                    <span className="text-[10px] font-bold text-[#7a7a76] uppercase tracking-wider">Score NBA Moyen</span>
-                    {isDataReady ? <span className="text-2xl font-black text-[#26251e]">{avgNbaScore} pts</span> : <span className="h-7 w-12 rounded bg-[#f4f4f3] animate-pulse" />}
-                  </div>
-                </div>
+                ) : (
+                  /* Original Desktop Dashboard Layout */
+                  <>
+                    <TodaySetupBanner />
+                    <TodayHeader onAestheticToggle={() => setShowAestheticMode(true)} />
+                    
+                    {/* Unified KPI Metrics bar */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="bg-white border border-[#e5e5e0] rounded-xl p-4 flex flex-col gap-1 shadow-sm">
+                        <span className="text-[10px] font-bold text-[#7a7a76] uppercase tracking-wider">Leads Actifs</span>
+                        {isDataReady ? <span className="text-2xl font-black text-[#26251e]">{activeLeadsCount}</span> : <span className="h-7 w-12 rounded bg-[#f4f4f3] animate-pulse" />}
+                      </div>
+                      <div className="bg-white border border-[#e5e5e0] rounded-xl p-4 flex flex-col gap-1 shadow-sm">
+                        <span className="text-[10px] font-bold text-[#7a7a76] uppercase tracking-wider">Taux de Booking</span>
+                        {isDataReady ? <span className="text-2xl font-black text-[#26251e]">{bookingRate}%</span> : <span className="h-7 w-12 rounded bg-[#f4f4f3] animate-pulse" />}
+                      </div>
+                      <div className="bg-white border border-[#e5e5e0] rounded-xl p-4 flex flex-col gap-1 shadow-sm">
+                        <span className="text-[10px] font-bold text-[#7a7a76] uppercase tracking-wider">Réponses Positives</span>
+                        {isDataReady ? <span className="text-2xl font-black text-[#26251e]">{positiveReplyRate}%</span> : <span className="h-7 w-12 rounded bg-[#f4f4f3] animate-pulse" />}
+                      </div>
+                      <div className="bg-white border border-[#e5e5e0] rounded-xl p-4 flex flex-col gap-1 shadow-sm">
+                        <span className="text-[10px] font-bold text-[#7a7a76] uppercase tracking-wider">Score NBA Moyen</span>
+                        {isDataReady ? <span className="text-2xl font-black text-[#26251e]">{avgNbaScore} pts</span> : <span className="h-7 w-12 rounded bg-[#f4f4f3] animate-pulse" />}
+                      </div>
+                    </div>
+                  </>
+                )}
 
                 {/* Monthly Goals */}
                 <TodayGoalsCard />

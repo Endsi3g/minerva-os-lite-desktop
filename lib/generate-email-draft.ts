@@ -17,6 +17,24 @@ export interface GeneratedDraft {
 
 const VALID_TONES = ['Calme & Conseil', 'Direct', 'Dynamique'];
 
+// Concrete stylistic directives per tone — without these, "aiTone" was just a bare
+// label the model had to interpret from scratch on every call, which is what produced
+// visibly inconsistent tone across drafts for the same user/setting.
+const TONE_GUIDANCE: Record<string, string> = {
+  'Calme & Conseil': "Voix posée de conseiller de confiance : phrases courtes, aucune exclamation, on suggère plutôt qu'on pousse.",
+  'Direct': "Voix franche et sans détour : va droit à la valeur et à la demande, zéro formule de politesse superflue, phrases courtes et affirmatives.",
+  'Dynamique': "Voix énergique et enthousiaste : rythme vif, vocabulaire concret et actif, une pointe d'enthousiasme sincère (jamais criard).",
+};
+
+// Per templateType tone shift — sans ça, un email de closing et un email de
+// réactivation après silence radio recevaient exactement les mêmes règles de ton.
+const TEMPLATE_TONE_GUIDANCE: Record<string, string> = {
+  follow_up: "C'est une relance : reste bref, apporte un élément nouveau depuis le dernier contact, ne répète pas ce qui a déjà été dit.",
+  introduction: "C'est un premier contact : mise entièrement sur la curiosité et la personnalisation, aucune pression, l'objectif est une réponse pas une signature.",
+  closing: "C'est un email de closing : sois plus direct et assumé qu'à l'habitude, lève l'objection ou l'hésitation probable, et propose une action précise et datée.",
+  reactivation: "C'est une réactivation après silence : reconnais le silence sans reproche, apporte un nouvel angle ou une nouvelle info, ton doux et sans pression.",
+};
+
 // Canonical per-lead draft generator — the single function every entry point (the
 // lead-detail composer, the AI agent tool, manual batch generation, and the auto-draft
 // cron) calls to produce one personalized email. Pulls in every signal enrich-contact
@@ -121,9 +139,12 @@ export async function generateEmailDraftForLead(
     } catch { /* malformed templates JSON — skip, not fatal */ }
   }
 
+  const toneGuidance = TONE_GUIDANCE[aiTone] ?? TONE_GUIDANCE['Calme & Conseil'];
+  const templateGuidance = params.templateType ? TEMPLATE_TONE_GUIDANCE[params.templateType] : null;
+
   const baseSystemPrompt = `Tu es un copilote de prospection pour ${fullName} de l'agence "${companyName}".
 Ton but est de rédiger un message de prospection ultra-personnalisé, chaleureux et orienté relation d'affaires à long terme (pas une vente ponctuelle), court et percutant, en français.
-Canal : ${channel}. Ton : ${aiTone}.
+Canal : ${channel}. Ton : ${aiTone} — ${toneGuidance}${templateGuidance ? `\nType de message : ${templateGuidance}` : ''}
 Retourne uniquement du JSON strict, sans markdown ni enrobage : { "subject": "...", "body": "..." }
 
 RÈGLES ABSOLUES :
@@ -131,8 +152,9 @@ RÈGLES ABSOLUES :
 2. Ligne 2-3 : valeur concrète et rapide que tu apportes (chiffre ou résultat).
 3. Dernière ligne : appel à l'action simple (ex: "5 minutes cette semaine ?").
 4. Sois concis : 3 paragraphes max pour email, 2 phrases pour DM.
-5. Vouvoiement si email, tutoiement si DM Instagram/Facebook.
-6. Le ton doit refléter une relation d'affaires à long terme, pas une vente ponctuelle — évoque une collaboration continue, pas juste "signer un contrat".${emailSignature ? `\n7. Signature exacte à utiliser :\n${emailSignature}` : ''}`;
+5. Formalité SANS EXCEPTION selon le canal : Canal = Email → vouvoiement du début à la fin. Canal = DM (Instagram/Facebook) → tutoiement du début à la fin. Ne jamais mélanger les deux dans un même message.
+6. Le ton doit refléter une relation d'affaires à long terme, pas une vente ponctuelle — évoque une collaboration continue, pas juste "signer un contrat".
+7. N'écris JAMAIS de formule de signature/salutation finale (ex: "Cordialement", "Au plaisir", ton nom) — le corps ("body") doit se terminer directement sur l'appel à l'action de la règle 3. La signature est ajoutée automatiquement par le système, pas par toi.`;
 
   const systemPrompt = `${settings?.ai_system_prompt ? `${settings.ai_system_prompt}\n\n` : ''}${baseSystemPrompt}${personaContext}${styleReferenceContext}`;
 
@@ -185,9 +207,17 @@ Réponds uniquement avec le JSON demandé.`;
   let parsed: { subject?: string; body?: string };
   try { parsed = JSON.parse(raw); } catch { parsed = { subject: `Prospection — ${lead.business_name}`, body: raw }; }
 
+  let content = parsed.body || raw;
+  // Deterministic signature: appended here rather than left to the model (rule 7 above)
+  // so it's always present, always exact, and never duplicated — regardless of whether
+  // the model complied with the prompt or the JSON parse fell back to raw text.
+  if (emailSignature && channel === 'Email' && !content.includes(emailSignature.trim())) {
+    content = `${content.trimEnd()}\n\n${emailSignature}`;
+  }
+
   return {
     subject: parsed.subject || `Prospection — ${lead.business_name}`,
-    content: parsed.body || raw,
+    content,
     tone: aiTone,
   };
 }

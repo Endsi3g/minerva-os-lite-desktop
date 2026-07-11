@@ -23,7 +23,7 @@ Tu es concis, pragmatique, et tu justifies chaque action par des signaux concret
 
 ${TOOL_DESCRIPTIONS}
 
-Limite à 5 actions maximum par cycle. Priorise les leads à score élevé et les plus dormants.`;
+Limite à 10 actions maximum par cycle. Priorise les leads à score élevé et les plus dormants.`;
 
 export async function POST(req: NextRequest) {
   const supabase = await createClient();
@@ -97,7 +97,7 @@ Pipeline actuel:
 ${JSON.stringify(pipelineSummary, null, 2)}
 
 Leads prioritaires à relancer (${leadsToFollowUp.length}):
-${leadsToFollowUp.slice(0, 10).map((l: any) => `- ${l.business_name} (${l.niche}) | Score: ${l.score} | Statut: ${l.status} | Dernier contact: ${l.last_activity_at || 'jamais'}`).join('\n')}
+${leadsToFollowUp.slice(0, 10).map((l: any) => `- ${l.business_name} (${l.niche}) | Score: ${l.score} | Statut: ${l.status} | Dernier contact: ${l.last_activity_at || 'jamais'} | Recommandation NBA: ${l.nba_action} via ${l.nba_channel} (urgence ${l.nba_urgency}) — ${l.nba_reason}`).join('\n')}
 
 Mémoire agent (apprentissages récents):
 ${recentMemory?.map((m: any) => `[${m.type}] ${m.key}: ${m.content}`).join('\n') || 'Aucune mémoire enregistrée.'}
@@ -129,7 +129,7 @@ ${recentMemory?.map((m: any) => `[${m.type}] ${m.key}: ${m.content}`).join('\n')
     return NextResponse.json({ error: `Agent planning failed: ${message}` }, { status: 500 });
   }
 
-  const actions: AgentAction[] = Array.isArray(plan?.actions) ? plan.actions.slice(0, 5) : [];
+  const actions: AgentAction[] = Array.isArray(plan?.actions) ? plan.actions.slice(0, 10) : [];
 
   // ── 3. Act + Log ─────────────────────────────────────────────────────────────
   const results: AgentActionResult[] = [];
@@ -249,7 +249,7 @@ export async function GET(req: NextRequest) {
     summarizePipeline(ctx),
   ]);
 
-  const contextBlock = `Pipeline: ${JSON.stringify(pipelineSummary)}\n\nLeads à relancer: ${leadsToFollowUp.slice(0, 10).map((l: any) => `${l.business_name} (score: ${l.score})`).join(', ')}`;
+  const contextBlock = `Pipeline: ${JSON.stringify(pipelineSummary)}\n\nLeads à relancer:\n${leadsToFollowUp.slice(0, 10).map((l: any) => `- ${l.business_name} (score: ${l.score}) | Recommandation NBA: ${l.nba_action} via ${l.nba_channel} (urgence ${l.nba_urgency}) — ${l.nba_reason}`).join('\n')}`;
 
   let plan: { reasoning: string; actions: AgentAction[] };
   try {
@@ -276,7 +276,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: `Planning failed: ${message}` }, { status: 500 });
   }
 
-  const actions = Array.isArray(plan?.actions) ? plan.actions.slice(0, 5) : [];
+  const actions = Array.isArray(plan?.actions) ? plan.actions.slice(0, 10) : [];
   let executed = 0;
   for (const action of actions) {
     if (canExecute(action.tool, autonomy)) {

@@ -40,7 +40,7 @@ export async function GET(req: NextRequest) {
         type: 'report',
         title: `Bilan hebdomadaire Minerva — ${new Date().toLocaleDateString('fr-CA', { day: 'numeric', month: 'long' })}`,
         body: `${data.metrics?.bookingsThisWeek ?? 0} bookings · ${data.metrics?.positiveRepliesThisWeek ?? 0} réponses positives · ${data.metrics?.nbaAcceptanceRate ?? 0}% NBA accepté`,
-        link: '/cockpit',
+        link: '/weekly-report',
         is_read: false,
       });
 

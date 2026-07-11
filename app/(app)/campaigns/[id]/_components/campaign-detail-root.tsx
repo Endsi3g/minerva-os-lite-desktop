@@ -14,6 +14,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import type { Lead } from '@/lib/mock-data';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { useIsMobile } from '@/lib/use-is-mobile';
 
 const GOAL_TYPE_LABELS: Record<NonNullable<Campaign['goalType']>, { label: string; unit: string }> = {
   rdv: { label: 'Remplir mon agenda', unit: 'RDV' },
@@ -42,6 +43,7 @@ type Tab = 'overview' | 'leads' | 'activity' | 'sequence' | 'analytics';
 
 export function CampaignDetailRoot({ id }: { id: string }) {
   const { campaigns, leads, projects, tasks, updateCampaign, updateLead, isDataReady } = useReach();
+  const isMobile = useIsMobile();
   const [tab, setTab] = useState<Tab>('overview');
   const [editingName, setEditingName] = useState(false);
   const [nameVal, setNameVal] = useState('');
@@ -258,6 +260,67 @@ export function CampaignDetailRoot({ id }: { id: string }) {
           const current = campaign.goalType === 'clients' ? kpis.won : campaign.goalType === 'rdv' ? kpis.meeting : kpis.mrrTotal;
           const target = campaign.targetValue ?? 0;
           const pct = target > 0 ? Math.min(100, Math.round((current / target) * 100)) : null;
+
+          if (isMobile) {
+            return (
+              <div className="bg-[#064e3b] text-white rounded-2xl p-5 shadow-lg relative overflow-hidden flex items-center justify-between gap-4">
+                <div className="absolute -right-12 -top-12 w-36 h-36 rounded-full bg-[#10b981]/15 blur-2xl pointer-events-none" />
+                
+                <div className="z-10 flex-1 min-w-0">
+                  <span className="text-[#10b981] text-[9px] font-bold uppercase tracking-wider">Objectif de Croissance</span>
+                  <h3 className="text-sm font-bold text-white mt-1 leading-snug">
+                    {GOAL_TYPE_LABELS[campaign.goalType].label}
+                  </h3>
+                  <div className="flex items-baseline gap-1 mt-2 text-white/95">
+                    <span className="text-xl font-mono font-black">{current}</span>
+                    <span className="text-xs text-emerald-300">/ {target} {GOAL_TYPE_LABELS[campaign.goalType].unit}</span>
+                  </div>
+                  {campaignLeads.length > 0 && (
+                    <p className="text-[10px] text-emerald-200/70 mt-1.5 leading-snug">
+                      Conversion {kpis.conversionRate}% ·{' '}
+                      <span className={cn('font-bold', upliftPoints >= 0 ? 'text-[#10b981]' : 'text-red-400')}>
+                        {upliftPoints >= 0 ? '+' : ''}{upliftPoints} pts
+                      </span> vs baseline ({baselineConversionRate}%)
+                    </p>
+                  )}
+                </div>
+
+                {pct !== null && (
+                  <div className="flex flex-col items-center gap-1 shrink-0 z-10">
+                    <div className="relative w-14 h-14 flex items-center justify-center">
+                      <svg className="w-full h-full transform -rotate-90">
+                        <circle
+                          cx="28"
+                          cy="28"
+                          r="22"
+                          className="text-emerald-950"
+                          strokeWidth="3"
+                          stroke="currentColor"
+                          fill="transparent"
+                        />
+                        <circle
+                          cx="28"
+                          cy="28"
+                          r="22"
+                          className="text-[#10b981] transition-all duration-500"
+                          strokeWidth="3"
+                          strokeDasharray={2 * Math.PI * 22}
+                          strokeDashoffset={2 * Math.PI * 22 * (1 - pct / 100)}
+                          strokeLinecap="round"
+                          stroke="currentColor"
+                          fill="transparent"
+                        />
+                      </svg>
+                      <span className="absolute text-[10px] font-black font-mono text-[#10b981]">{pct}%</span>
+                    </div>
+                    <span className="text-[7px] text-[#10b981] font-bold uppercase tracking-wider">Progression</span>
+                  </div>
+                )}
+              </div>
+            );
+          }
+
+          // Original Desktop Layout
           return (
             <div className="rounded-xl border border-[#059669]/20 bg-[#059669]/5 p-4 space-y-2">
               <div className="flex items-center justify-between gap-4 flex-wrap">
@@ -302,25 +365,58 @@ export function CampaignDetailRoot({ id }: { id: string }) {
         )}
 
         {/* KPIs */}
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-          {[
-            { label: 'Leads', value: kpis.total, icon: Users, color: '#26251e' },
-            { label: 'Contactés', value: kpis.contacted, icon: Mail, color: '#3b82f6' },
-            { label: 'RDV', value: kpis.meeting, icon: Calendar, color: '#8b5cf6' },
-            { label: 'Gagnés', value: kpis.won, icon: CheckCircle2, color: '#059669' },
-            { label: 'Conversion', value: `${kpis.conversionRate}%`, icon: TrendingUp, color: '#f59e0b' },
-          ].map(k => (
-            <div key={k.label} className="rounded-xl border border-[#e5e5e0] bg-white p-4 flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-[#f4f4f3] flex items-center justify-center shrink-0">
-                <k.icon className="h-4 w-4" style={{ color: k.color }} />
+        {isMobile ? (
+          /* Mobile Financial-style grid (2 columns) */
+          <div className="grid grid-cols-2 gap-3">
+            {[
+              { label: 'Leads', value: kpis.total, icon: Users, color: '#059669', bg: '#f0fdf4', tag: 'Total' },
+              { label: 'Contactés', value: kpis.contacted, icon: Mail, color: '#3b82f6', bg: '#eff6ff', tag: 'Outbound' },
+              { label: 'Rendez-vous', value: kpis.meeting, icon: Calendar, color: '#8b5cf6', bg: '#f5f3ff', tag: 'Agenda' },
+              { label: 'Gagnés', value: kpis.won, icon: CheckCircle2, color: '#059669', bg: '#f0fdf4', tag: 'Won' },
+              { label: 'Conversion', value: `${kpis.conversionRate}%`, icon: TrendingUp, color: '#f59e0b', bg: '#fffbeb', tag: 'Ratio' },
+            ].map((k, idx) => (
+              <div 
+                key={k.label} 
+                className={cn(
+                  "rounded-xl border border-[#e5e5e0] bg-[#f4f4f3] p-3.5 flex flex-col justify-between h-20 relative shadow-xs",
+                  idx === 4 && "col-span-2 h-16 flex-row items-center justify-between"
+                )}
+              >
+                <div className={cn("flex items-center justify-between w-full", idx === 4 && "w-auto gap-4")}>
+                  <span className="text-[9px] font-bold text-[#7a7a76] uppercase tracking-wider">{k.label}</span>
+                  <span className="text-[8px] font-bold text-[#7a7a76] bg-white border border-[#e5e5e0] px-1.5 py-0.5 rounded-full shrink-0">{k.tag}</span>
+                </div>
+                <div className={cn("flex items-baseline justify-between w-full mt-1", idx === 4 && "w-auto mt-0 gap-3")}>
+                  <span className="text-lg font-mono font-black text-[#26251e]">{k.value}</span>
+                  <div className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: k.bg }}>
+                    <k.icon className="h-3 w-3" style={{ color: k.color }} />
+                  </div>
+                </div>
               </div>
-              <div>
-                <p className="text-[10px] text-[#7a7a76]">{k.label}</p>
-                <p className="text-base font-black text-[#26251e]">{k.value}</p>
+            ))}
+          </div>
+        ) : (
+          /* Desktop original grid */
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+            {[
+              { label: 'Leads', value: kpis.total, icon: Users, color: '#26251e' },
+              { label: 'Contactés', value: kpis.contacted, icon: Mail, color: '#3b82f6' },
+              { label: 'RDV', value: kpis.meeting, icon: Calendar, color: '#8b5cf6' },
+              { label: 'Gagnés', value: kpis.won, icon: CheckCircle2, color: '#059669' },
+              { label: 'Conversion', value: `${kpis.conversionRate}%`, icon: TrendingUp, color: '#f59e0b' },
+            ].map(k => (
+              <div key={k.label} className="rounded-xl border border-[#e5e5e0] bg-white p-4 flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-[#f4f4f3] flex items-center justify-center shrink-0">
+                  <k.icon className="h-4 w-4" style={{ color: k.color }} />
+                </div>
+                <div>
+                  <p className="text-[10px] text-[#7a7a76]">{k.label}</p>
+                  <p className="text-base font-black text-[#26251e]">{k.value}</p>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
 
         {/* Tabs */}
         <div className="flex gap-1 p-1 rounded-lg bg-[#f4f4f3] border border-[#e5e5e0] w-fit">
@@ -854,13 +950,23 @@ function AutopilotStatusCard({
   const lastLog = logs[0];
   const capsLocked = state === 'autopilot';
 
+  const lastResult = lastLog?.result as {
+    emailsSentToday?: number;
+    meetingsThisWeek?: number;
+  } | undefined;
+
+  const emailsSentToday = lastResult?.emailsSentToday ?? 0;
+  const meetingsThisWeek = lastResult?.meetingsThisWeek ?? 0;
+
   return (
-    <div className="rounded-xl border border-[#e5e5e0] bg-white p-4 space-y-3">
-      <div className="flex items-center justify-between gap-4 flex-wrap">
+    <div className="rounded-xl border border-[#e5e5e0] bg-white p-4 space-y-4 shadow-sm">
+      {/* Header bar */}
+      <div className="flex items-center justify-between gap-4 flex-wrap pb-2 border-b border-[#e5e5e0]/60">
         <div className="flex items-center gap-2">
-          <Zap className={cn('h-4 w-4', state === 'autopilot' ? 'text-[#059669]' : 'text-[#7a7a76]')} />
-          <span className="text-xs font-bold text-[#26251e]">Autopilot</span>
-          <span className={cn('text-[9px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full border', stateConf.classes)}>
+          <Zap className={cn('h-4 w-4', state === 'autopilot' ? 'text-[#059669] animate-pulse' : 'text-[#7a7a76]')} />
+          <span className="text-xs font-bold text-[#26251e]">Contrôle Autopilot</span>
+          <span className={cn('text-[9px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full border flex items-center gap-1', stateConf.classes)}>
+            <span className={cn('w-1 h-1 rounded-full', state === 'autopilot' ? 'bg-[#059669] animate-ping' : state === 'suspended' ? 'bg-red-500' : 'bg-[#7a7a76]')} />
             {stateConf.label}
           </span>
         </div>
@@ -894,88 +1000,131 @@ function AutopilotStatusCard({
         </div>
       </div>
 
+      {/* Warning banner */}
       {campaign.autopilotPausedReason && state === 'suspended' && (
-        <div className="flex items-start gap-2 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 p-2.5 text-[11px]">
+        <div className="flex items-start gap-2 rounded-lg bg-red-50 border border-red-150 text-red-700 p-2.5 text-[11px] leading-relaxed">
           <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
           <span>{campaign.autopilotPausedReason}</span>
         </div>
       )}
 
-      <div className="flex flex-wrap items-center gap-4">
-        <div className="flex items-center gap-2">
-          <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Plafond emails/jour</label>
-          <input
-            type="number"
-            min={1}
-            value={dailyEmailCap}
-            onChange={(e) => onDailyEmailCapChange(Number(e.target.value))}
-            disabled={capsLocked}
-            className="w-20 text-xs border border-[#e5e5e0] rounded-lg px-2 py-1.5 disabled:bg-[#f4f4f3] disabled:text-[#7a7a76]"
-          />
+      {/* ShipX-style 2x2 KPI metrics blocks */}
+      <div className="grid grid-cols-2 gap-3">
+        {/* Metric 1: Daily Email Cap (Editable Input) */}
+        <div className="bg-[#f4f4f3] border border-[#e5e5e0] rounded-xl p-3.5 flex flex-col justify-between h-20 relative transition-all hover:bg-[#f9f9f6]">
+          <div className="flex justify-between items-center w-full">
+            <span className="text-[9px] font-bold text-[#7a7a76] uppercase tracking-wider">Limite emails / jour</span>
+            <Mail className="h-3 w-3 text-[#059669]" />
+          </div>
+          <div className="flex items-center justify-between w-full mt-1">
+            <input
+              type="number"
+              min={1}
+              value={dailyEmailCap}
+              onChange={(e) => onDailyEmailCapChange(Number(e.target.value))}
+              disabled={capsLocked}
+              className="w-16 text-lg font-mono font-black text-[#26251e] bg-transparent border-b border-transparent hover:border-[#e5e5e0] focus:border-[#059669] focus:outline-none transition-all"
+            />
+            <span className="text-[8px] text-[#7a7a76] uppercase tracking-wider font-semibold">Max Cap</span>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Cible RDV/semaine</label>
-          <input
-            type="number"
-            min={1}
-            value={weeklyMeetingCap}
-            onChange={(e) => onWeeklyMeetingCapChange(Number(e.target.value))}
-            disabled={capsLocked}
-            className="w-20 text-xs border border-[#e5e5e0] rounded-lg px-2 py-1.5 disabled:bg-[#f4f4f3] disabled:text-[#7a7a76]"
-          />
+
+        {/* Metric 2: Weekly Meeting Target (Editable Input) */}
+        <div className="bg-[#f4f4f3] border border-[#e5e5e0] rounded-xl p-3.5 flex flex-col justify-between h-20 relative transition-all hover:bg-[#f9f9f6]">
+          <div className="flex justify-between items-center w-full">
+            <span className="text-[9px] font-bold text-[#7a7a76] uppercase tracking-wider">Objectif RDV / semaine</span>
+            <Calendar className="h-3 w-3 text-blue-600" />
+          </div>
+          <div className="flex items-center justify-between w-full mt-1">
+            <input
+              type="number"
+              min={1}
+              value={weeklyMeetingCap}
+              onChange={(e) => onWeeklyMeetingCapChange(Number(e.target.value))}
+              disabled={capsLocked}
+              className="w-16 text-lg font-mono font-black text-[#26251e] bg-transparent border-b border-transparent hover:border-[#e5e5e0] focus:border-[#059669] focus:outline-none transition-all"
+            />
+            <span className="text-[8px] text-[#7a7a76] uppercase tracking-wider font-semibold">Cible</span>
+          </div>
+        </div>
+
+        {/* Metric 3: Emails Sent Today */}
+        <div className="bg-[#f4f4f3] border border-[#e5e5e0] rounded-xl p-3.5 flex flex-col justify-between h-20 relative">
+          <div className="flex justify-between items-center w-full">
+            <span className="text-[9px] font-bold text-[#7a7a76] uppercase tracking-wider">Envoyés aujourd&apos;hui</span>
+            <Send className="h-3 w-3 text-[#059669]" />
+          </div>
+          <div className="flex items-baseline justify-between w-full mt-1">
+            <span className="text-lg font-mono font-black text-[#26251e]">
+              {emailsSentToday} <span className="text-[10px] font-normal text-[#7a7a76]">/ {campaign.autopilotDailyEmailCap ?? '—'}</span>
+            </span>
+            <span className="text-[8px] text-[#059669] font-bold bg-[#059669]/10 px-1.5 py-0.5 rounded-full">Actuel</span>
+          </div>
+        </div>
+
+        {/* Metric 4: Meetings Booked This Week */}
+        <div className="bg-[#f4f4f3] border border-[#e5e5e0] rounded-xl p-3.5 flex flex-col justify-between h-20 relative">
+          <div className="flex justify-between items-center w-full">
+            <span className="text-[9px] font-bold text-[#7a7a76] uppercase tracking-wider">RDV bookés cette semaine</span>
+            <CheckCircle2 className="h-3 w-3 text-blue-600" />
+          </div>
+          <div className="flex items-baseline justify-between w-full mt-1">
+            <span className="text-lg font-mono font-black text-[#26251e]">
+              {meetingsThisWeek} <span className="text-[10px] font-normal text-[#7a7a76]">/ {campaign.autopilotWeeklyMeetingCap ?? '—'}</span>
+            </span>
+            <span className="text-[8px] text-blue-600 font-bold bg-blue-50 px-1.5 py-0.5 rounded-full">Actuel</span>
+          </div>
         </div>
       </div>
 
       {state === 'autopilot' && (
-        <p className="text-[10px] text-[#7a7a76]">
-          Plafond actuel : {campaign.autopilotDailyEmailCap ?? '—'} emails/jour · cible {campaign.autopilotWeeklyMeetingCap ?? '—'} RDV/semaine. Se suspend automatiquement si le taux de réponses négatives dépasse 40% (minimum 5 leads contactés).
+        <p className="text-[9px] text-[#7a7a76] leading-relaxed">
+          💡 Autopilot est actif dans les limites définies ci-dessus. Se suspend automatiquement si le taux de réponses négatives dépasse 40% (minimum 5 contacts).
         </p>
       )}
 
-      {/* Journal — dernières actions/cycles du contrôleur */}
-      <div className="pt-2 border-t border-[#e5e5e0]/60 space-y-1.5">
-        <p className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Journal</p>
+      {/* Journal - timeline version */}
+      <div className="pt-3 border-t border-[#e5e5e0]/60 space-y-3">
+        <p className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Journal d&apos;activité</p>
+        
         {loadingLogs ? (
           <div className="h-10 rounded-lg bg-[#f4f4f3] animate-pulse" />
         ) : logs.length === 0 ? (
-          <p className="text-[11px] text-[#7a7a76] italic">Aucune action Autopilot enregistrée pour ce programme.</p>
+          <p className="text-[10px] text-[#7a7a76] italic">Aucune action Autopilot enregistrée pour ce programme.</p>
         ) : (
-          <div className="space-y-1.5 max-h-56 overflow-y-auto">
+          <div className="relative border-l border-[#e5e5e0] ml-1.5 pl-3 py-1 space-y-4 max-h-52 overflow-y-auto">
             {logs.map((log) => {
               const conf = LOG_ACTION_CONFIG[log.action_type];
               const Icon = conf?.icon ?? Zap;
               return (
-                <div key={log.id} className="flex items-start gap-2 text-[11px]">
-                  <Icon className={cn('h-3 w-3 shrink-0 mt-0.5', log.incident ? 'text-red-500' : 'text-[#7a7a76]')} />
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-1.5">
-                      <span className={cn('font-bold', log.incident ? 'text-red-600' : 'text-[#26251e]')}>{conf?.label ?? log.action_type}</span>
+                <div key={log.id} className="relative text-[11px] leading-relaxed">
+                  {/* Timeline point */}
+                  <span className={cn(
+                    "absolute -left-[16.5px] top-1 w-2.5 h-2.5 rounded-full border border-white flex items-center justify-center shadow-xs",
+                    log.incident ? "bg-red-500" : "bg-[#e5e5e0]"
+                  )} />
+                  
+                  <div className="space-y-0.5">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className={cn('font-bold text-[#26251e]', log.incident && 'text-red-600')}>
+                        {conf?.label ?? log.action_type}
+                      </span>
                       {log.incident && (
-                        <span className="text-[8px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-red-50 text-red-600 border border-red-200">Incident</span>
+                        <span className="text-[8px] font-bold uppercase tracking-wide px-1.5 py-0.2 rounded-full bg-red-50 text-red-600 border border-red-200">Incident</span>
                       )}
-                      <span className="text-[9px] text-[#7a7a76] shrink-0">
+                      <span className="text-[9px] text-[#7a7a76] shrink-0 font-mono">
                         {new Date(log.created_at).toLocaleDateString('fr-CA', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
                       </span>
                     </div>
-                    {log.reasoning && <p className="text-[#555552] leading-relaxed">{log.reasoning}</p>}
+                    {log.reasoning && (
+                      <p className="text-[#555552] text-[10px] bg-[#fafaf8] p-1.5 rounded-md border border-[#e5e5e0]/30 mt-0.5">
+                        {log.reasoning}
+                      </p>
+                    )}
                   </div>
                 </div>
               );
             })}
-          </div>
-        )}
-        {lastLog?.result && Object.keys(lastLog.result).length > 0 && (
-          <div className="flex flex-wrap gap-2 pt-1">
-            {'emailsSentToday' in lastLog.result && (
-              <span className="text-[9px] font-semibold text-[#7a7a76] bg-[#f4f4f3] px-2 py-1 rounded-lg">
-                {String(lastLog.result.emailsSentToday)} emails envoyés aujourd&apos;hui
-              </span>
-            )}
-            {'meetingsThisWeek' in lastLog.result && (
-              <span className="text-[9px] font-semibold text-[#7a7a76] bg-[#f4f4f3] px-2 py-1 rounded-lg">
-                {String(lastLog.result.meetingsThisWeek)} RDV cette semaine
-              </span>
-            )}
           </div>
         )}
       </div>

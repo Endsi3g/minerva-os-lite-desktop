@@ -1092,14 +1092,14 @@ Retourne UNIQUEMENT un JSON valide (pas de texte autour) avec ces clés optionne
   const mapCenter: [number, number] = [-73.5674, 45.5019];
 
   return (
-    <div className="relative w-full h-full overflow-hidden flex">
+    <div className="relative w-full h-full overflow-hidden flex bg-[#fafaf8]">
 
-      {/* ── Left sidebar ─────────────────────────────────────────────────────── */}
+      {/* ── Left sidebar (Floating Glassmorphic Panel) ── */}
       <div className={cn(
-        'relative z-20 flex flex-col bg-white border-r border-[#e5e5e0] shrink-0 transition-all duration-300 overflow-hidden',
-        showSidebar ? 'w-72' : 'w-0',
+        'absolute left-4 top-4 bottom-4 z-20 flex flex-col bg-white/85 backdrop-blur-lg border border-white/45 shadow-2xl rounded-2xl transition-all duration-300 overflow-hidden',
+        showSidebar ? 'w-72 translate-x-0 opacity-100' : 'w-0 -translate-x-80 opacity-0 pointer-events-none',
       )}>
-        <div className="w-72 flex flex-col h-full">
+        <div className="w-72 flex flex-col h-full bg-transparent">
 
           {/* Tab bar */}
           <div className="flex border-b border-[#e5e5e0] shrink-0">
@@ -1345,8 +1345,8 @@ Retourne UNIQUEMENT un JSON valide (pas de texte autour) avec ces clés optionne
         </div>
       </div>
 
-      {/* ── Map area ──────────────────────────────────────────────────────────── */}
-      <div className="relative flex-1 overflow-hidden">
+      {/* ── Map area ── */}
+      <div className="relative flex-1 w-full h-full overflow-hidden z-0">
         <div className="absolute inset-0">
           <Map center={mapCenter} zoom={11} theme="light" className="w-full h-full">
             <MapControls position="bottom-right" />
@@ -1414,11 +1414,14 @@ Retourne UNIQUEMENT un JSON valide (pas de texte autour) avec ces clés optionne
         </div>
 
         {/* Floating topbar */}
-        <div className="absolute top-3 left-3 right-3 z-20 flex items-center gap-2 pointer-events-none">
+        <div className={cn(
+          'absolute top-4 z-20 flex items-center gap-2 pointer-events-none transition-all duration-300',
+          showSidebar ? 'left-[304px] right-4' : 'left-4 right-4'
+        )}>
           <button
             onClick={() => setShowSidebar(v => !v)}
-            className={cn('pointer-events-auto flex items-center justify-center h-9 w-9 rounded-xl border shadow-sm backdrop-blur-md transition-colors',
-              showSidebar ? 'bg-[#059669] text-white border-[#059669]' : 'bg-white/90 text-[#26251e] border-[#e5e5e0] hover:bg-white')}
+            className={cn('pointer-events-auto flex items-center justify-center h-9 w-9 rounded-xl border shadow-md backdrop-blur-md transition-colors',
+              showSidebar ? 'bg-[#059669] text-white border-[#059669]' : 'bg-white/80 text-[#26251e] border-white/40 hover:bg-white')}
           >
             <PanelLeft className="h-3.5 w-3.5" />
           </button>
@@ -1429,15 +1432,15 @@ Retourne UNIQUEMENT un JSON valide (pas de texte autour) avec ces clés optionne
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               placeholder="Chercher un lead…"
-              className="w-full h-9 pl-9 pr-3 text-xs font-semibold bg-white/90 backdrop-blur-md border border-[#e5e5e0] rounded-xl shadow-sm outline-none focus:ring-1 focus:ring-[#059669] text-[#26251e] placeholder:text-[#7a7a76]"
+              className="w-full h-9 pl-9 pr-3 text-xs font-semibold bg-white/80 backdrop-blur-md border border-white/45 rounded-xl shadow-md outline-none focus:ring-1 focus:ring-[#059669] text-[#26251e] placeholder:text-[#7a7a76]"
             />
           </div>
 
           {/* Heatmap toggle */}
           <button
             onClick={() => setShowHeatmap(v => !v)}
-            className={cn('pointer-events-auto flex items-center gap-1.5 h-9 px-3 rounded-xl border text-xs font-bold shadow-sm backdrop-blur-md transition-colors',
-              showHeatmap ? 'bg-[#059669] text-white border-[#059669]' : 'bg-white/90 text-[#26251e] border-[#e5e5e0] hover:bg-white')}
+            className={cn('pointer-events-auto flex items-center gap-1.5 h-9 px-3 rounded-xl border text-xs font-bold shadow-md backdrop-blur-md transition-colors',
+              showHeatmap ? 'bg-[#059669] text-white border-[#059669]' : 'bg-white/80 text-[#26251e] border-white/40 hover:bg-white')}
             title="Heatmap densité"
           >
             <Activity className="h-3.5 w-3.5" />
@@ -1447,8 +1450,8 @@ Retourne UNIQUEMENT un JSON valide (pas de texte autour) avec ces clés optionne
           {/* 3D buildings toggle */}
           <button
             onClick={() => setShow3D(v => !v)}
-            className={cn('pointer-events-auto flex items-center gap-1.5 h-9 px-3 rounded-xl border text-xs font-bold shadow-sm backdrop-blur-md transition-colors',
-              show3D ? 'bg-[#26251e] text-white border-[#26251e]' : 'bg-white/90 text-[#26251e] border-[#e5e5e0] hover:bg-white')}
+            className={cn('pointer-events-auto flex items-center gap-1.5 h-9 px-3 rounded-xl border text-xs font-bold shadow-md backdrop-blur-md transition-colors',
+              show3D ? 'bg-[#26251e] text-white border-[#26251e]' : 'bg-white/80 text-[#26251e] border-white/40 hover:bg-white')}
             title="Bâtiments 3D"
           >
             <Building2 className="h-3.5 w-3.5" />
@@ -1458,8 +1461,8 @@ Retourne UNIQUEMENT un JSON valide (pas de texte autour) avec ces clés optionne
           {/* Satellite toggle */}
           <button
             onClick={() => setShowSatellite(v => !v)}
-            className={cn('pointer-events-auto flex items-center gap-1.5 h-9 px-3 rounded-xl border text-xs font-bold shadow-sm backdrop-blur-md transition-colors',
-              showSatellite ? 'bg-[#0369a1] text-white border-[#0369a1]' : 'bg-white/90 text-[#26251e] border-[#e5e5e0] hover:bg-white')}
+            className={cn('pointer-events-auto flex items-center gap-1.5 h-9 px-3 rounded-xl border text-xs font-bold shadow-md backdrop-blur-md transition-colors',
+              showSatellite ? 'bg-[#0369a1] text-white border-[#0369a1]' : 'bg-white/80 text-[#26251e] border-white/40 hover:bg-white')}
             title="Vue satellite Esri"
           >
             <Satellite className="h-3.5 w-3.5" />
@@ -1469,22 +1472,22 @@ Retourne UNIQUEMENT un JSON valide (pas de texte autour) avec ces clés optionne
           {/* AI spatial query */}
           <button
             onClick={() => setShowAiQueryBar(v => !v)}
-            className={cn('pointer-events-auto flex items-center gap-1.5 h-9 px-3 rounded-xl border text-xs font-bold shadow-sm backdrop-blur-md transition-colors',
-              showAiQueryBar ? 'bg-[#059669] text-white border-[#059669]' : 'bg-white/90 text-[#26251e] border-[#e5e5e0] hover:bg-white')}
+            className={cn('pointer-events-auto flex items-center gap-1.5 h-9 px-3 rounded-xl border text-xs font-bold shadow-md backdrop-blur-md transition-colors',
+              showAiQueryBar ? 'bg-[#059669] text-white border-[#059669]' : 'bg-white/80 text-[#26251e] border-white/40 hover:bg-white')}
             title="Filtrage IA — langage naturel"
           >
             <Brain className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">IA</span>
           </button>
 
-          <div className="pointer-events-auto flex items-center gap-1.5 h-9 px-3 rounded-xl bg-white/90 backdrop-blur-md border border-[#e5e5e0] shadow-sm">
+          <div className="pointer-events-auto flex items-center gap-1.5 h-9 px-3 rounded-xl bg-white/80 backdrop-blur-md border border-white/45 shadow-md">
             <Users className="h-3.5 w-3.5 text-[#059669]" />
             <span className="text-xs font-bold text-[#26251e]">{filteredLeads.length}</span>
             <span className="text-xs text-[#7a7a76]">leads</span>
           </div>
 
           {prospResults.length > 0 && (
-            <div className="pointer-events-auto flex items-center gap-1.5 h-9 px-3 rounded-xl bg-[#eff6ff] border border-[#bfdbfe] shadow-sm">
+            <div className="pointer-events-auto flex items-center gap-1.5 h-9 px-3 rounded-xl bg-[#eff6ff]/80 backdrop-blur-md border border-[#bfdbfe]/50 shadow-md">
               <Search className="h-3.5 w-3.5 text-[#2563eb]" />
               <span className="text-xs font-bold text-[#1d4ed8]">{prospResults.length}</span>
               <span className="text-xs text-[#3b82f6]">prospects</span>
@@ -1494,8 +1497,11 @@ Retourne UNIQUEMENT un JSON valide (pas de texte autour) avec ces clés optionne
 
         {/* AI Query bar */}
         {showAiQueryBar && (
-          <div className="absolute top-16 left-3 right-3 z-30 pointer-events-auto">
-            <div className="flex items-center gap-2 bg-white/95 backdrop-blur-md border border-[#059669]/30 rounded-2xl shadow-xl px-4 py-2.5">
+          <div className={cn(
+            'absolute top-16 z-30 pointer-events-auto transition-all duration-300',
+            showSidebar ? 'left-[304px] right-4' : 'left-4 right-4'
+          )}>
+            <div className="flex items-center gap-2 bg-white/90 backdrop-blur-lg border border-[#059669]/30 rounded-2xl shadow-2xl px-4 py-2.5">
               <Brain className="h-4 w-4 text-[#059669] shrink-0" />
               <input
                 autoFocus
@@ -1517,35 +1523,38 @@ Retourne UNIQUEMENT un JSON valide (pas de texte autour) avec ces clés optionne
                 </button>
               )}
             </div>
-            <p className="text-[9px] text-[#7a7a76] mt-1 ml-4">Langage naturel → filtres automatiques · Entrée pour confirmer · Échap pour annuler</p>
+            <p className="text-[9px] text-[#7a7a76] mt-1 ml-4 font-semibold">Langage naturel → filtres automatiques · Entrée pour confirmer · Échap pour annuler</p>
           </div>
         )}
 
         {/* Legend */}
-        <div className="absolute bottom-12 left-3 z-20 bg-white/90 backdrop-blur-md rounded-xl border border-[#e5e5e0] shadow p-2 space-y-1">
+        <div className={cn(
+          'absolute bottom-12 z-20 bg-white/80 backdrop-blur-md rounded-xl border border-white/45 shadow-lg p-2.5 space-y-1 transition-all duration-300',
+          showSidebar ? 'left-[304px]' : 'left-4'
+        )}>
           {Object.entries(STATUS_LABELS).map(([key, label]) => (
             <div key={key} className="flex items-center gap-2">
               <div className="w-3 h-3 rounded-full border border-white shadow-sm" style={{ background: STATUS_COLORS[key] }} />
-              <span className="text-[9px] font-semibold text-[#555552]">{label}</span>
+              <span className="text-[9px] font-bold text-[#555552]">{label}</span>
             </div>
           ))}
           {prospResults.length > 0 && (
             <div className="flex items-center gap-2 pt-1 border-t border-[#f0f0ec] mt-1">
               <div className="w-3 h-3 rounded-full border border-white shadow-sm bg-[#3b82f6]" />
-              <span className="text-[9px] text-[#2563eb] font-semibold">Prospect OSM</span>
+              <span className="text-[9px] text-[#2563eb] font-bold">Prospect OSM</span>
             </div>
           )}
           {tourWaypoints.length > 0 && (
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded-full border border-white shadow-sm bg-[#7c3aed]" />
-              <span className="text-[9px] text-[#7c3aed] font-semibold">Tournée</span>
+              <span className="text-[9px] text-[#7c3aed] font-bold">Tournée</span>
             </div>
           )}
         </div>
 
         {/* Lead detail panel — opens when user clicks "Voir détails" in popup */}
         {selectedLead && showDetailPanel && (
-          <div className="absolute right-0 top-0 bottom-0 w-80 bg-white shadow-2xl z-30 flex flex-col border-l border-[#e5e5e0]">
+          <div className="absolute right-4 top-4 bottom-4 w-80 bg-white/85 backdrop-blur-lg border border-white/45 shadow-2xl z-30 flex flex-col rounded-2xl overflow-hidden transition-all duration-300">
             <div className="p-4 border-b border-[#f0f0ec]">
               <div className="flex items-start justify-between">
                 <div className="flex-1 min-w-0">

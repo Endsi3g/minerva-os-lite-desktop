@@ -6,7 +6,7 @@ import { useReach, type AppNotification } from '@/lib/reach-context';
 import {
   Bell, BellOff, Check, CheckCheck, Info, UserCheck, Clock, FileBarChart,
   MessageCircle, Mail, Rss, AlertTriangle, Filter, Trash2,
-  CalendarClock, AtSign, Target, RefreshCw,
+  CalendarClock, AtSign, Target, RefreshCw, BarChart3, Sparkles,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -32,12 +32,17 @@ const TYPE_META: Record<AppNotification['type'], { icon: React.ElementType; labe
   app_error:       { icon: AlertTriangle,label: 'Erreur',           color: 'text-red-600 bg-red-50' },
   ai_failure:      { icon: AlertTriangle,label: 'Erreur IA',        color: 'text-red-600 bg-red-50' },
   ai_rate_limit:   { icon: Clock,        label: 'Limite IA',        color: 'text-amber-600 bg-amber-50' },
+  weekly_report_reminder: { icon: BarChart3, label: 'Bilan de la semaine', color: 'text-[#059669] bg-[#059669]/10' },
+  weekly_insight:  { icon: BarChart3,    label: 'Bilan de la semaine', color: 'text-[#059669] bg-[#059669]/10' },
+  daily_digest_summary: { icon: Rss,     label: 'Récap du jour',    color: 'text-purple-500 bg-purple-50' },
+  agent_action:    { icon: Sparkles,     label: 'Agent IA',         color: 'text-[#059669] bg-[#059669]/10' },
 };
 
 const ALL_TYPES: AppNotification['type'][] = [
   'info', 'lead_assigned', 'overdue', 'digest', 'report',
   'team_message', 'email_sent', 'email_received', 'scraping_done', 'lead_aging',
   'task_due', 'mention', 'goal_milestone', 'app_update', 'app_error', 'ai_failure', 'ai_rate_limit',
+  'weekly_report_reminder', 'weekly_insight', 'daily_digest_summary', 'agent_action',
 ];
 
 const NOTIF_TYPES_WITH_DETAIL = new Set<AppNotification['type']>(['app_error', 'ai_failure', 'ai_rate_limit']);

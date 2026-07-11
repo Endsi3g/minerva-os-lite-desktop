@@ -52,7 +52,7 @@ export interface AppNotification {
   id: string;
   userId: string;
   workspaceId: string;
-  type: 'info' | 'lead_assigned' | 'overdue' | 'digest' | 'report' | 'team_message' | 'email_sent' | 'email_received' | 'scraping_done' | 'lead_aging' | 'task_due' | 'mention' | 'goal_milestone' | 'app_update' | 'app_error' | 'ai_failure' | 'ai_rate_limit';
+  type: 'info' | 'lead_assigned' | 'overdue' | 'digest' | 'report' | 'team_message' | 'email_sent' | 'email_received' | 'scraping_done' | 'lead_aging' | 'task_due' | 'mention' | 'goal_milestone' | 'app_update' | 'app_error' | 'ai_failure' | 'ai_rate_limit' | 'weekly_report_reminder' | 'weekly_insight' | 'daily_digest_summary' | 'agent_action';
   title: string;
   body: string;
   link?: string;

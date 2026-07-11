@@ -2,6 +2,7 @@ import { generateCompletion, type AISettings } from '@/lib/ai';
 import { logLeadEvent } from '@/lib/timeline-logger';
 import { resolveAccessToken } from '@/lib/google/google-auth-service';
 import { generateEmailDraftForLead } from '@/lib/generate-email-draft';
+import { computeNbaScore, type NbaLead } from '@/lib/nba-engine';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 export type AutonomyLevel = 'off' | 'suggest' | 'prepare' | 'act_with_approval' | 'auto';
@@ -57,7 +58,7 @@ export async function listLeadsToFollowUp(
 
   const { data } = await ctx.supabase
     .from('leads')
-    .select('id, business_name, niche, status, score, last_activity_at')
+    .select('id, business_name, niche, status, score, last_activity_at, temperature, next_action_date, reply_detected_at, reply_status, email_opens_count, email_clicks_count')
     .eq('workspace_id', ctx.workspaceId)
     .not('status', 'in', '("Won","Lost")')
     .or(`last_activity_at.lt.${cutoff},last_activity_at.is.null`)
@@ -65,7 +66,32 @@ export async function listLeadsToFollowUp(
     .order('score', { ascending: false })
     .limit(20);
 
-  return data ?? [];
+  // Ground every lead with a deterministic next-best-action (lib/nba-engine.ts) so
+  // callers — chiefly the agent loop's LLM planner — get a concrete recommendation
+  // per lead instead of guessing freely from a bare name/score list.
+  return (data ?? []).map((lead) => {
+    const nbaLead: NbaLead = {
+      id: lead.id,
+      niche: lead.niche ?? '',
+      status: lead.status ?? 'New',
+      temperature: lead.temperature ?? 'Cold',
+      nextActionDate: lead.next_action_date ?? undefined,
+      lastActivityAt: lead.last_activity_at ?? undefined,
+      replyDetectedAt: lead.reply_detected_at ?? undefined,
+      replyStatus: lead.reply_status ?? null,
+      emailOpensCount: lead.email_opens_count ?? 0,
+      emailClicksCount: lead.email_clicks_count ?? 0,
+      score: lead.score ?? undefined,
+    };
+    const nba = computeNbaScore(nbaLead);
+    return {
+      ...lead,
+      nba_action: nba.action,
+      nba_channel: nba.channel,
+      nba_urgency: nba.urgency,
+      nba_reason: nba.reason,
+    };
+  });
 }
 
 // ── Tool: create task ─────────────────────────────────────────────────────────
@@ -566,6 +592,16 @@ OUTREACH:
 
 MÉMOIRE:
 - update_agent_memory(type, key, content) : mémorise un apprentissage
+
+RECOMMANDATION NBA PAR LEAD (nba_action dans le contexte) — chaque lead listé porte une
+recommandation déterministe calculée par le moteur de scoring. Traduis-la en outil concret :
+- nba_action = "email_followup" → generate_email_draft (puis send_email si autonomie le permet)
+- nba_action = "call" ou "switch_channel" → create_task(lead_id, type: "call", ...)
+- nba_action = "field_visit" → create_task(lead_id, type: "field_visit", ...)
+- nba_action = "book_meeting" → create_task(lead_id, type: "meeting", ...)
+- nba_action = "nurture" → enroll_in_sequence(lead_id, sequence_id)
+- nba_action = "pause" → pause_sequence(enrollment_id, reason) si le lead a un enrollment actif, sinon ignore-le
+Suis cette recommandation par défaut — elle est basée sur des signaux réels (délai de contact, engagement, historique de niche). Si tu choisis une action différente, explique pourquoi dans "reasoning".
 
 Réponds UNIQUEMENT avec du JSON valide :
 {

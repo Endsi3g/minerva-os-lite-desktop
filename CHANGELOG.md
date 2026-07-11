@@ -5,6 +5,20 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [3.95.0] — Bilan hebdomadaire quotidien, agent IA plus autonome et refonte mobile — 11 juillet 2026, 17h12
+
+### Ajouté
+- **Notification quotidienne du bilan de la semaine** : nouveau cron `weekly-report-reminder` (tous les jours à 16h, en plus du rapport IA complet déjà envoyé le lundi) qui pousse un aperçu chiffré (bookings, réponses positives, leads avancés) directement dans le centre de notifications, pour que le bilan redevienne un réflexe quotidien plutôt qu'un artefact du lundi.
+- **Page dédiée `/weekly-report`** : bilan complet de la semaine — rapport IA intégral (plus tronqué), toutes les métriques, et surtout un **journal chronologique de toutes les actions IA/app de la semaine** (brouillons générés, tâches créées, séquences, relances, etc.) via la nouvelle route `GET /api/insights/weekly/activity`. Accessible depuis la notification quotidienne et depuis un nouveau lien "Bilan complet" sur la carte `/today`.
+- **Recommandations NBA branchées sur l'agent autonome** : le moteur de scoring `lib/nba-engine.ts` (déjà utilisé pour l'affichage) alimente désormais directement le contexte envoyé à l'agent IA (`listLeadsToFollowUp`) avec une action recommandée par lead (relance email, appel, changement de canal, visite terrain, RDV, nurture, pause) — l'agent ne devine plus dans le vide, il suit un signal déterministe basé sur les données réelles.
+
+### Corrigé
+- **Cron quotidien de l'agent IA (`/api/cron/agent-loop`, seule exécution automatique sans supervision) ignorait complètement les réglages d'autonomie de l'utilisateur** : il forçait `autonomy_level: 'auto'` pour tout le monde et ne donnait accès qu'à 3 des 14 outils de l'agent (au lieu de passer par le même dispatcher que la route interactive). C'était la cause principale du sentiment que "l'IA ne fait pas grand-chose" — corrigé pour partager `dispatchTool`/`canExecute` avec `app/api/agent/loop/route.ts`, respecter les réglages réels, et traiter jusqu'à 8 actions sur 12 leads prioritaires par cycle (contre 3 actions sur 5 leads avant).
+- **Ton et signature incohérents dans les brouillons d'e-mails générés par IA** (`lib/generate-email-draft.ts`) : la signature n'était qu'une instruction de prompt (jamais garantie, absente en cas d'échec du parsing JSON) — elle est désormais ajoutée automatiquement et de façon déterministe après génération. Le vouvoiement/tutoiement selon le canal est maintenant une règle sans exception, et chaque ton (Calme & Conseil / Direct / Dynamique) ainsi que chaque type de message (introduction/relance/closing/réactivation) reçoit une consigne de style concrète au lieu d'une simple étiquette.
+- **Types de notification non mappés** (`weekly_insight`, `daily_digest_summary`, `agent_action`) : déjà insérés en base mais absents du typage et de l'UI du centre de notifications, ils retombaient silencieusement sur le style générique — ajoutés avec icône et libellé dédiés.
+- **Lien de notification cassé du bilan hebdomadaire** : pointait vers `/cockpit` (route inexistante) puis vers `/today` — redirige désormais vers la nouvelle page `/weekly-report`.
+- **Refonte visuelle mobile** : tableau de bord Aujourd'hui repensé (carte de bienvenue, indicateur de performance circulaire), panneaux flottants glassmorphiques sur la Carte, et fiche de campagne retravaillée.
+
 ## [3.94.0] — Clé Google Places API configurable par utilisateur — 10 juillet 2026, 23h44
 
 ### Ajouté

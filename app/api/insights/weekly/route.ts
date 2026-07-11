@@ -121,7 +121,7 @@ export async function POST(request: NextRequest) {
       type: 'weekly_insight',
       title: "Bilan hebdomadaire d'opportunités",
       body: report.slice(0, 280),
-      link: '/today',
+      link: '/weekly-report',
       is_read: false,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
