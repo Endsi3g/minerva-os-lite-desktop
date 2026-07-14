@@ -761,10 +761,10 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
     { name: 'Outreach', href: '/outreach', icon: Send },
     { name: 'Carte',    href: '/map',      icon: MapPin },
     { name: 'Agenda',   href: '/agenda',   icon: CalendarDays },
-    { name: 'Équipe',   href: '/team',     icon: UsersRound },
+    { name: 'Équipe',   href: '/team',     icon: UsersRound, badge: 'NEW' },
   ];
 
-  const navCategories: Array<{ id: string; label: string; items: { name: string; href: string; icon: React.ElementType }[] }> = [
+  const navCategories: Array<{ id: string; label: string; items: Array<{ name: string; href: string; icon: React.ElementType; badge?: string }> }> = [
     {
       id: 'sales',
       label: 'Ventes',
@@ -781,7 +781,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
       label: 'Quotidien',
       items: [
         { name: 'Tâches',       href: '/tasks',          icon: ListChecks },
-        { name: 'Bilan semaine',href: '/weekly-report',  icon: BarChart3 },
+        { name: 'Bilan semaine',href: '/weekly-report',  icon: BarChart3, badge: 'NEW' },
         { name: 'Activités',    href: '/activities',     icon: Activity },
         { name: 'Messages',     href: '/messages',       icon: MessageCircle },
         { name: 'Contacts',     href: '/contacts',       icon: Users },
@@ -1051,6 +1051,11 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                     aria-hidden="true"
                   />
                   {!isCollapsed && <span className="truncate">{item.name}</span>}
+                  {!isCollapsed && (item as any).badge && (
+                    <span className="ml-auto text-[8px] font-black uppercase tracking-wider bg-[#059669]/10 text-[#059669] px-1.5 py-0.5 rounded border border-[#059669]/15">
+                      {(item as any).badge}
+                    </span>
+                  )}
                 </Link>
               );
 
@@ -1115,6 +1120,11 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                                 aria-hidden="true"
                               />
                               <span className="truncate">{item.name}</span>
+                              {item.badge && (
+                                <span className="ml-auto text-[8px] font-black uppercase tracking-wider bg-[#059669]/10 text-[#059669] px-1.5 py-0.5 rounded border border-[#059669]/15">
+                                  {item.badge}
+                                </span>
+                              )}
                             </Link>
                           );
                         })}
@@ -1779,13 +1789,21 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                     <div className={cn("grid grid-cols-3 gap-0.5 px-3", sectionIdx === 4 && "pb-6")}>
                       {section.items.map(({ name, href, icon: Icon }) => {
                         const isActive = pathname.startsWith(href);
+                        const match = allNavItems.find(x => x.href === href);
+                        const hasBadge = match && (match as any).badge;
                         return (
                           <Link key={href} href={href} onClick={() => setMoreSheetOpen(false)}
-                            className={cn("flex flex-col items-center gap-1.5 p-3.5 rounded-xl transition-colors",
+                            className={cn("flex flex-col items-center gap-1.5 p-3.5 rounded-xl transition-colors relative",
                               isActive ? "bg-[#059669]/8 text-[#059669]" : "text-[#555552] active:bg-[#f4f4f3]")}
                           >
                             <Icon className="h-5 w-5" strokeWidth={isActive ? 2.2 : 1.5} />
                             <span className="text-[9px] font-semibold text-center leading-tight">{name}</span>
+                            {hasBadge && (
+                              <span className="absolute top-2 right-2 flex h-2 w-2">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                              </span>
+                            )}
                           </Link>
                         );
                       })}
