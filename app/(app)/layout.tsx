@@ -768,11 +768,12 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
       id: 'daily',
       label: 'Quotidien',
       items: [
-        { name: 'Tâches',       href: '/tasks',         icon: ListChecks },
-        { name: 'Activités',    href: '/activities',    icon: Activity },
-        { name: 'Messages',     href: '/messages',      icon: MessageCircle },
-        { name: 'Contacts',     href: '/contacts',      icon: Users },
-        { name: 'Notifications',href: '/notifications', icon: Bell },
+        { name: 'Tâches',       href: '/tasks',          icon: ListChecks },
+        { name: 'Bilan semaine',href: '/weekly-report',  icon: BarChart3 },
+        { name: 'Activités',    href: '/activities',     icon: Activity },
+        { name: 'Messages',     href: '/messages',       icon: MessageCircle },
+        { name: 'Contacts',     href: '/contacts',       icon: Users },
+        { name: 'Notifications',href: '/notifications',  icon: Bell },
       ],
     },
     {
@@ -1386,11 +1387,20 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
               <Mic className="h-3.5 w-3.5" />
             </button>
 
-            <div className="relative w-44 md:block hidden">
+            {/* Global search — icon-only on mobile (no keyboard for the "/" shortcut), full box on desktop */}
+            <button
+              onClick={() => setShowSearchModal(true)}
+              className="md:hidden flex h-8 w-8 items-center justify-center rounded-md border border-[#e5e5e0] bg-white text-[#7a7a76] hover:text-[#059669] hover:bg-[#fafaf8] hover:border-[#059669]/30 transition-all cursor-pointer shrink-0"
+              aria-label={t('search.global_placeholder')}
+            >
+              <Search className="h-3.5 w-3.5" />
+            </button>
+
+            <div className="relative w-44 hidden md:block">
               <span className="absolute inset-y-0 left-2 flex items-center text-[#7a7a76]">
                 <Search className="h-3 w-3" />
               </span>
-              <button 
+              <button
                 onClick={() => setShowSearchModal(true)}
                 className="flex w-full items-center justify-between rounded border border-[#e5e5e0] bg-white py-1 pl-7 pr-2 text-left text-[10px] text-[#7a7a76] hover:bg-[#f4f4f3] transition-colors cursor-pointer"
               >
@@ -1698,14 +1708,15 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                 {
                   label: 'Outils',
                   items: [
-                    { name: 'Tâches',     href: '/tasks',         icon: ListChecks },
-                    { name: 'Activités',  href: '/activities',    icon: Activity },
-                    { name: 'Contacts',   href: '/contacts',      icon: Users },
-                    { name: 'Notifs',     href: '/notifications', icon: Bell },
-                    { name: 'Messages',   href: '/messages',      icon: MessageCircle },
-                    { name: 'Séquences',  href: '/sequences',     icon: Mail },
-                    { name: 'Campagnes',  href: '/campaigns',     icon: Megaphone },
-                    { name: 'Playbooks',  href: '/playbooks',     icon: BookOpen },
+                    { name: 'Tâches',       href: '/tasks',          icon: ListChecks },
+                    { name: 'Bilan semaine',href: '/weekly-report',  icon: BarChart3 },
+                    { name: 'Activités',    href: '/activities',     icon: Activity },
+                    { name: 'Contacts',     href: '/contacts',       icon: Users },
+                    { name: 'Notifs',       href: '/notifications',  icon: Bell },
+                    { name: 'Messages',     href: '/messages',       icon: MessageCircle },
+                    { name: 'Séquences',    href: '/sequences',      icon: Mail },
+                    { name: 'Campagnes',    href: '/campaigns',      icon: Megaphone },
+                    { name: 'Playbooks',    href: '/playbooks',      icon: BookOpen },
                   ],
                 },
                 {

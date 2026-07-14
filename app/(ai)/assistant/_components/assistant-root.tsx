@@ -64,6 +64,7 @@ import {
 } from './assistant-db';
 import { Pin, PinOff } from 'lucide-react';
 import { Marker, MarkerIcon, MarkerContent } from '@/components/ui/marker';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Spinner } from '@/components/ui/spinner';
 import { AiEmailTool } from '@/components/ui/ai-email-tool';
 import { AiImageSearch } from '@/components/ui/ai-image-search';
@@ -1759,6 +1760,49 @@ Important : ne génère un bloc action QUE si l'utilisateur demande explicitemen
     setShowLibraryDropdown(false);
   };
 
+  // Canvas right-panel body — shared between the desktop inline panel and the mobile bottom sheet
+  const canvasPanelBody = canvasRightPanel === 'comments' ? (
+    <>
+      <p className="text-[10px] font-bold uppercase tracking-wider text-[#807d72]">{t('assistant.notes_header')}</p>
+      <div className="flex-1 space-y-2 overflow-y-auto max-h-64">
+        {canvasComments.map((c, i) => (
+          <div key={i} className="p-2 bg-amber-50 border border-amber-200 rounded text-[10px]">
+            <p className="text-[#807d72] mb-1 font-mono">{new Date(c.ts).toLocaleTimeString(locale === 'de' ? 'de-DE' : locale === 'en' ? 'en-US' : 'fr-FR', { hour: '2-digit', minute: '2-digit' })}</p>
+            <p>{c.text}</p>
+          </div>
+        ))}
+      </div>
+      <div className="flex gap-1">
+        <input value={canvasComment} onChange={e => setCanvasComment(e.target.value)} placeholder={t('assistant.add_note_placeholder')} className="flex-1 text-[10px] border border-neutral-200 rounded px-2 py-1 focus:outline-none" onKeyDown={e => { if (e.key === 'Enter' && canvasComment.trim()) { setCanvasComments(c => [...c, { text: canvasComment.trim(), ts: new Date().toISOString() }]); setCanvasComment(''); }}} />
+        <button onClick={() => { if (canvasComment.trim()) { setCanvasComments(c => [...c, { text: canvasComment.trim(), ts: new Date().toISOString() }]); setCanvasComment(''); }}} className="text-[10px] bg-neutral-100 hover:bg-neutral-200 rounded px-2 py-1">+</button>
+      </div>
+    </>
+  ) : canvasRightPanel === 'history' ? (
+    <>
+      <p className="text-[10px] font-bold uppercase tracking-wider text-[#807d72]">{t('assistant.canvas_docs')}</p>
+      <div className="flex-1 space-y-1.5 overflow-y-auto max-h-64">
+        {canvasDocs.length === 0 && <p className="text-[10px] text-[#7a7a76] italic">{t('assistant.no_docs')}</p>}
+        {canvasDocs.map(doc => (
+          <button key={doc.id} onClick={() => { setCanvasDoc({ id: doc.id, title: doc.title, content: doc.content, lastSaved: doc.updatedAt }); setCanvasRightPanel('none'); }} className="w-full text-left p-2 rounded hover:bg-neutral-50 text-[10px] border border-neutral-100 transition-colors">
+            <p className="font-bold truncate">{doc.title || t('assistant.untitled_doc')}</p>
+            <p className="text-[#7a7a76] font-mono">{new Date(doc.updatedAt).toLocaleDateString(locale === 'de' ? 'de-DE' : locale === 'en' ? 'en-US' : 'fr-FR')}</p>
+          </button>
+        ))}
+      </div>
+    </>
+  ) : canvasRightPanel === 'settings' ? (
+    <>
+      <p className="text-[10px] font-bold uppercase tracking-wider text-[#807d72]">{t('assistant.text_size')}</p>
+      <div className="flex gap-2">
+        {(['sm', 'base', 'lg'] as const).map(size => (
+          <button key={size} onClick={() => setCanvasFontSize(size)} className={`flex-1 py-1 text-[10px] font-bold rounded border transition-colors ${canvasFontSize === size ? 'bg-[#26251e] text-white border-[#26251e]' : 'border-neutral-200 hover:bg-neutral-50'}`}>
+            {size === 'sm' ? 'S' : size === 'base' ? 'M' : 'L'}
+          </button>
+        ))}
+      </div>
+    </>
+  ) : null;
+
   return (
     <div className="h-full w-full flex overflow-hidden bg-[#f7f7f4] relative select-none">
       <style>{`
@@ -2742,8 +2786,8 @@ Important : ne génère un bloc action QUE si l'utilisateur demande explicitemen
               />
             </div>
 
-            {/* Right floating options gutter */}
-            <div className="hidden lg:flex flex-col gap-2 ml-4 self-start border-l border-neutral-100 pl-4 shrink-0 select-none">
+            {/* Right floating options gutter — always reachable, not just on large screens */}
+            <div className="flex flex-col gap-2 ml-2 lg:ml-4 self-start border-l border-neutral-100 pl-2 lg:pl-4 shrink-0 select-none">
               <button
                 onClick={() => setCanvasRightPanel(p => p === 'comments' ? 'none' : 'comments')}
                 className={`h-8 w-8 rounded-lg flex items-center justify-center transition-colors ${canvasRightPanel === 'comments' ? 'bg-emerald-50 text-emerald-700' : 'hover:bg-neutral-50 text-[#807d72] hover:text-[#26251e]'}`}
@@ -2767,55 +2811,27 @@ Important : ne génère un bloc action QUE si l'utilisateur demande explicitemen
               </button>
             </div>
 
-            {/* Right panel content */}
+            {/* Right panel content — inline beside the editor on large screens only (a 200px
+                column would otherwise crush the editor on phones/tablets); same content
+                reappears as a bottom sheet below `lg` via canvasPanelBody. */}
             {canvasRightPanel !== 'none' && (
               <div className="hidden lg:flex flex-col w-[200px] shrink-0 border-l border-neutral-100 ml-4 pl-4 gap-3">
-                {canvasRightPanel === 'comments' && (
-                  <>
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-[#807d72]">{t('assistant.notes_header')}</p>
-                    <div className="flex-1 space-y-2 overflow-y-auto max-h-64">
-                      {canvasComments.map((c, i) => (
-                        <div key={i} className="p-2 bg-amber-50 border border-amber-200 rounded text-[10px]">
-                          <p className="text-[#807d72] mb-1 font-mono">{new Date(c.ts).toLocaleTimeString(locale === 'de' ? 'de-DE' : locale === 'en' ? 'en-US' : 'fr-FR', { hour: '2-digit', minute: '2-digit' })}</p>
-                          <p>{c.text}</p>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="flex gap-1">
-                      <input value={canvasComment} onChange={e => setCanvasComment(e.target.value)} placeholder={t('assistant.add_note_placeholder')} className="flex-1 text-[10px] border border-neutral-200 rounded px-2 py-1 focus:outline-none" onKeyDown={e => { if (e.key === 'Enter' && canvasComment.trim()) { setCanvasComments(c => [...c, { text: canvasComment.trim(), ts: new Date().toISOString() }]); setCanvasComment(''); }}} />
-                      <button onClick={() => { if (canvasComment.trim()) { setCanvasComments(c => [...c, { text: canvasComment.trim(), ts: new Date().toISOString() }]); setCanvasComment(''); }}} className="text-[10px] bg-neutral-100 hover:bg-neutral-200 rounded px-2 py-1">+</button>
-                    </div>
-                  </>
-                )}
-                {canvasRightPanel === 'history' && (
-                  <>
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-[#807d72]">{t('assistant.canvas_docs')}</p>
-                    <div className="flex-1 space-y-1.5 overflow-y-auto max-h-64">
-                      {canvasDocs.length === 0 && <p className="text-[10px] text-[#7a7a76] italic">{t('assistant.no_docs')}</p>}
-                      {canvasDocs.map(doc => (
-                        <button key={doc.id} onClick={() => { setCanvasDoc({ id: doc.id, title: doc.title, content: doc.content, lastSaved: doc.updatedAt }); setCanvasRightPanel('none'); }} className="w-full text-left p-2 rounded hover:bg-neutral-50 text-[10px] border border-neutral-100 transition-colors">
-                          <p className="font-bold truncate">{doc.title || t('assistant.untitled_doc')}</p>
-                          <p className="text-[#7a7a76] font-mono">{new Date(doc.updatedAt).toLocaleDateString(locale === 'de' ? 'de-DE' : locale === 'en' ? 'en-US' : 'fr-FR')}</p>
-                        </button>
-                      ))}
-                    </div>
-                  </>
-                )}
-                {canvasRightPanel === 'settings' && (
-                  <>
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-[#807d72]">{t('assistant.text_size')}</p>
-                    <div className="flex gap-2">
-                      {(['sm', 'base', 'lg'] as const).map(size => (
-                        <button key={size} onClick={() => setCanvasFontSize(size)} className={`flex-1 py-1 text-[10px] font-bold rounded border transition-colors ${canvasFontSize === size ? 'bg-[#26251e] text-white border-[#26251e]' : 'border-neutral-200 hover:bg-neutral-50'}`}>
-                          {size === 'sm' ? 'S' : size === 'base' ? 'M' : 'L'}
-                        </button>
-                      ))}
-                    </div>
-                  </>
-                )}
+                {canvasPanelBody}
               </div>
             )}
           </div>
+
+          {/* Canvas right panel — bottom sheet below `lg`, mirrors the inline panel above */}
+          <Sheet open={canvasRightPanel !== 'none'} onOpenChange={(open) => { if (!open) setCanvasRightPanel('none'); }}>
+            <SheetContent side="bottom" className="lg:hidden max-h-[70vh] flex flex-col gap-3 p-4">
+              <SheetHeader className="sr-only">
+                <SheetTitle>
+                  {canvasRightPanel === 'comments' ? t('assistant.notes_header') : canvasRightPanel === 'history' ? t('assistant.canvas_docs') : t('assistant.text_size')}
+                </SheetTitle>
+              </SheetHeader>
+              {canvasPanelBody}
+            </SheetContent>
+          </Sheet>
 
           {/* Save to Library prompt */}
           {showSaveToLibraryPrompt && (

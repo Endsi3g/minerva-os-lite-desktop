@@ -275,6 +275,8 @@ export interface Task {
   isTodoist?: boolean;
   rawTodoistId?: string;
   leadId?: string;
+  assignedTo?: string;
+  assignedToName?: string;
 }
 
 export interface AiSuggestion {

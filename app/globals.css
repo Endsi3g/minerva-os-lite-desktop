@@ -512,3 +512,48 @@ html {
   color: transparent;
   animation: shimmer-text 1.5s linear infinite;
 }
+
+/* ─── Mobile-specific utilities ───────────────────────────────────────────────
+   Safe-area insets for iOS notch / home indicator.
+   bottom-nav-safe ensures the fixed bottom bar is above the iOS home indicator.
+   mobile-main-content ensures page content is not occluded by the bottom nav.
+   ─────────────────────────────────────────────────────────────────────────── */
+.bottom-nav-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* On mobile, main content needs bottom padding to clear the fixed bottom nav (64px) +
+   safe-area-inset-bottom for iOS home indicator */
+@media (max-width: 767px) {
+  .mobile-main-content {
+    padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* Prevent horizontal overflow on mobile — any overflowing content should scroll */
+  main, .mobile-main-content {
+    overflow-x: hidden;
+  }
+
+  /* Tables: allow horizontal scroll on narrow screens */
+  .table-responsive-mobile {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Hide scrollbars on mobile drawers/sheets (for UX cleanliness) */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Prevent text selection on nav items (tap-highlight on mobile) */
+@media (max-width: 767px) {
+  nav a, nav button {
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+}

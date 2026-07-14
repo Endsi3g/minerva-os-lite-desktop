@@ -538,24 +538,25 @@ export function FieldRoot({ planId, refreshToken = '' }: { planId: string; refre
           </div>
           <button
             onClick={() => router.push('/field/gallery')}
-            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold border border-[#e5e5e0] text-[#555552] hover:bg-[#f4f4f3] transition-colors"
+            className="flex items-center gap-1.5 px-2 sm:px-3 py-1.5 rounded-lg text-[10px] font-bold border border-[#e5e5e0] text-[#555552] hover:bg-[#f4f4f3] transition-colors shrink-0"
             title="Galerie des preuves de visite"
           >
             <Camera className="h-3 w-3" />
-            Preuves
+            <span className="hidden sm:inline">Preuves</span>
           </button>
           <button
             onClick={handleNotifyDeparture}
             disabled={notifyingTeam || teamNotified || totalCount === 0}
+            title={teamNotified ? 'Équipe prévenue' : 'Prévenir l\'équipe'}
             className={cn(
-              'hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold transition-colors disabled:opacity-70',
+              'flex items-center gap-1.5 px-2 sm:px-3 py-1.5 rounded-lg text-[10px] font-bold transition-colors disabled:opacity-70 shrink-0',
               teamNotified
                 ? 'bg-[#059669]/10 text-[#059669] border border-[#059669]/20'
                 : 'border border-[#e5e5e0] text-[#555552] hover:bg-[#f4f4f3]',
             )}
           >
             {notifyingTeam ? <Loader2 className="h-3 w-3 animate-spin" /> : <Users className="h-3 w-3" />}
-            {teamNotified ? 'Équipe prévenue' : 'Prévenir l\'équipe'}
+            <span className="hidden sm:inline">{teamNotified ? 'Équipe prévenue' : 'Prévenir l\'équipe'}</span>
           </button>
           <button
             onClick={handleSync}

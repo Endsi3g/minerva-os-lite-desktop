@@ -1,11 +1,25 @@
 // POST /api/insights/weekly
 // Scans the workspace lead portfolio and produces an AI "opportunity report".
-// Triggered from the dashboard on weekends when auto_insights is enabled (the client
-// guards it to run at most once per week). Returns a markdown report.
+// Reports are persisted in weekly_reports table for catalogue access.
+// Uses plain text only — no markdown syntax.
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { generateCompletion } from '@/lib/ai';
+
+function getWeekBounds() {
+  const now = new Date();
+  const start = new Date(now);
+  start.setDate(now.getDate() - now.getDay() + 1); // Monday
+  start.setHours(0, 0, 0, 0);
+  const end = new Date(start);
+  end.setDate(start.getDate() + 6); // Sunday
+  end.setHours(23, 59, 59, 999);
+  return {
+    weekStart: start.toISOString().split('T')[0],
+    weekEnd: end.toISOString().split('T')[0],
+  };
+}
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
@@ -102,17 +116,44 @@ export async function POST(request: NextRequest) {
     .map(l => `- ${l.business_name} (${l.niche || '?'}, ${l.city || '?'}) — statut ${l.status}, ${l.rating ? `note ${l.rating}` : 'pas de note'}${l.website ? '' : ', SANS site web'}`)
     .join('\n');
 
-  const prompt = `Tu es analyste commercial. Voici l'état du portefeuille de prospection cette semaine :\n\nTotal : ${total} leads\nStatuts : ${JSON.stringify(byStatus)}\nTempératures : ${JSON.stringify(byTemp)}\nSans site web : ${noWebsite}\n\nÉchantillon de leads prioritaires :\n${hotSample}\n\nImpact Minerva cette semaine : ${nbaExecuted ?? 0} actions exécutées (${nbaAcceptanceRate}% acceptées), ${bookingsThisWeek ?? 0} bookings, ${positiveRepliesThisWeek ?? 0} réponses positives, ${leadsAdvanced ?? 0} leads avancés dans le pipeline.${topNiche ? ` Niche top : ${topNiche}.` : ''}\n\nRédige un bilan hebdomadaire d'opportunités concis (Markdown, ~150 mots) : 3 opportunités concrètes à saisir cette semaine, les leads à relancer en priorité, et 1 recommandation stratégique. Sois actionnable et direct, en français.`;
+  // IMPORTANT: plain text only — no markdown syntax
+  const prompt = `Tu es analyste commercial. Voici l'état du portefeuille de prospection cette semaine :\n\nTotal : ${total} leads\nStatuts : ${JSON.stringify(byStatus)}\nTempératures : ${JSON.stringify(byTemp)}\nSans site web : ${noWebsite}\n\nÉchantillon de leads prioritaires :\n${hotSample}\n\nImpact Minerva cette semaine : ${nbaExecuted ?? 0} actions exécutées (${nbaAcceptanceRate}% acceptées), ${bookingsThisWeek ?? 0} bookings, ${positiveRepliesThisWeek ?? 0} réponses positives, ${leadsAdvanced ?? 0} leads avancés dans le pipeline.${topNiche ? ` Niche top : ${topNiche}.` : ''}\n\nRédige un bilan hebdomadaire d'opportunités concis (~150 mots) : 3 opportunités concrètes à saisir cette semaine, les leads à relancer en priorité, et 1 recommandation stratégique. Sois actionnable et direct, en français.\n\nRÈGLE ABSOLUE : Réponds en texte brut uniquement. N'utilise PAS de syntaxe Markdown (pas de #, pas de **, pas de -, pas de *). Utilise des chiffres (1. 2. 3.) pour les listes. Pas de titres, pas de formatage spécial.`;
+
+  const metrics = {
+    nbaAcceptanceRate,
+    nbaSuggested: nbaSuggested ?? 0,
+    nbaExecuted: nbaExecuted ?? 0,
+    bookingsThisWeek: bookingsThisWeek ?? 0,
+    positiveRepliesThisWeek: positiveRepliesThisWeek ?? 0,
+    leadsAdvanced: leadsAdvanced ?? 0,
+    topNiche,
+  };
+
+  const { weekStart, weekEnd } = getWeekBounds();
+
+  const persistReport = async (reportText: string) => {
+    try {
+      await supabase.from('weekly_reports').upsert({
+        workspace_id: workspaceId,
+        week_start: weekStart,
+        week_end: weekEnd,
+        report: reportText,
+        metrics,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'workspace_id,week_start' });
+    } catch (e) {
+      console.error('[insights/weekly] persist error:', e);
+    }
+  };
 
   try {
     const report = await generateCompletion({
       messages: [{ role: 'user', content: prompt }],
       settings: settings || undefined,
-      // Un modèle de raisonnement (Cloudflare Kimi K2) peut consommer une
-      // bonne partie du budget en reasoning_content avant de produire le
-      // texte final — un plafond trop bas fait échouer l'appel entier.
       maxTokens: 1000,
     });
+
+    await persistReport(report);
 
     // Persist as a notification so it surfaces in the bell
     await supabase.from('notifications').insert({
@@ -127,32 +168,13 @@ export async function POST(request: NextRequest) {
       updated_at: new Date().toISOString(),
     });
 
-    return NextResponse.json({
-      report,
-      metrics: {
-        nbaAcceptanceRate,
-        nbaSuggested: nbaSuggested ?? 0,
-        nbaExecuted: nbaExecuted ?? 0,
-        bookingsThisWeek: bookingsThisWeek ?? 0,
-        positiveRepliesThisWeek: positiveRepliesThisWeek ?? 0,
-        leadsAdvanced: leadsAdvanced ?? 0,
-        topNiche,
-      },
-    });
+    return NextResponse.json({ report, metrics });
   } catch (e) {
     console.error('[insights/weekly] AI error, falling back to heuristic report:', e);
-    const report = `## Bilan hebdomadaire d'opportunités\n\n- **${total}** leads au portefeuille.\n- Répartition statut : ${Object.entries(byStatus).map(([k, v]) => `${k}: ${v}`).join(', ')}.\n- Températures : ${Object.entries(byTemp).map(([k, v]) => `${k}: ${v}`).join(', ')}.\n- **${noWebsite}** prospects sans site web (opportunité d'audit/refonte).\n\nPriorisez les leads chauds et contactés cette semaine.`;
-    return NextResponse.json({
-      report,
-      metrics: {
-        nbaAcceptanceRate,
-        nbaSuggested: nbaSuggested ?? 0,
-        nbaExecuted: nbaExecuted ?? 0,
-        bookingsThisWeek: bookingsThisWeek ?? 0,
-        positiveRepliesThisWeek: positiveRepliesThisWeek ?? 0,
-        leadsAdvanced: leadsAdvanced ?? 0,
-        topNiche,
-      },
-    });
+    const report = `Bilan hebdomadaire — ${total} leads au portefeuille.\n\nRépartition statut : ${Object.entries(byStatus).map(([k, v]) => `${k}: ${v}`).join(', ')}.\nTempératures : ${Object.entries(byTemp).map(([k, v]) => `${k}: ${v}`).join(', ')}.\n${noWebsite} prospects sans site web — opportunité d'audit ou de refonte.\n\nPriorisez les leads chauds et contactés cette semaine.`;
+
+    await persistReport(report);
+
+    return NextResponse.json({ report, metrics });
   }
 }

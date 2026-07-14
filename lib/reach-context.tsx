@@ -201,7 +201,7 @@ interface ReachContextType {
     address?: string;
   }) => Promise<Lead | null>;
   toggleTask: (id: string) => void;
-  addTask: (title: string, category: Task['category'], dueDate?: string, leadId?: string) => void;
+  addTask: (title: string, category: Task['category'], dueDate?: string, leadId?: string, assignedTo?: string, assignedToName?: string) => void;
   deleteTask: (id: string) => void;
   updateTask: (id: string, fields: { title?: string; dueDate?: string; category?: Task['category'] }) => void;
   saveQuickNote: (note: string) => void;
@@ -499,7 +499,9 @@ function mapDbTaskToUi(dbTask: DbTask): Task {
     completed: dbTask.completed,
     category: dbTask.category,
     dueDate: dbTask.due_date || '',
-    leadId: dbTask.lead_id || undefined
+    leadId: dbTask.lead_id || undefined,
+    assignedTo: (dbTask as any).assigned_to || undefined,
+    assignedToName: (dbTask as any).assigned_to_name || undefined,
   };
 }
 
@@ -1748,7 +1750,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const addTask = async (title: string, category: Task['category'], dueDate?: string, leadId?: string) => {
+  const addTask = async (title: string, category: Task['category'], dueDate?: string, leadId?: string, assignedTo?: string, assignedToName?: string) => {
     if (!user || !activeWorkspace) return;
     // Note: notification is fired via addNotification if the caller wants one.
     // Removed direct sendDesktopNotification here to prevent double-firing.
@@ -1772,7 +1774,9 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
           completed: false,
           category,
           dueDate: resolvedDueDate,
-          leadId
+          leadId,
+          assignedTo,
+          assignedToName,
         };
 
         setTasks(prev => [newUiTask, ...prev]);
@@ -1793,7 +1797,9 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
           title,
           category,
           due_date: dueDate ?? new Date().toISOString().split('T')[0],
-          lead_id: leadId || null
+          lead_id: leadId || null,
+          assigned_to: assignedTo || null,
+          assigned_to_name: assignedToName || null,
         })
         .select()
         .single();

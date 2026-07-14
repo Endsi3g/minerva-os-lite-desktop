@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useReach } from '@/lib/reach-context';
 import { useLanguage } from '@/lib/language-context';
 import { Task } from '@/lib/mock-data';
@@ -41,14 +41,21 @@ import {
   Mic,
   MicOff,
   Loader2,
+  Users,
+  User,
+  CheckCircle2,
+  ChevronRight,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { format, isToday, parseISO } from 'date-fns';
+import { format } from 'date-fns';
 import { toast } from 'sonner';
+import { createClient } from '@/lib/supabase/client';
+import { getApiUrl } from '@/lib/api-helper';
 
 type FilterType = 'all' | 'today' | 'pending' | 'done';
 type ViewType = 'list' | 'calendar';
 type CategoryType = Task['category'] | 'All';
+type TaskTab = 'mine' | 'team';
 
 const CATEGORY_COLORS: Record<Task['category'], string> = {
   'Follow-up': 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/30 dark:text-blue-300 dark:border-blue-800',
@@ -64,11 +71,35 @@ const CATEGORY_LABELS: Record<Task['category'], string> = {
   'General': 'Général',
 };
 
-function TaskItem({ task, onToggle, onDelete, onUpdate }: {
+interface TeamMember {
+  id: string;
+  email: string;
+  member_user_id: string | null;
+  profile?: { full_name?: string | null; avatar_base64?: string | null } | null;
+}
+
+function MemberAvatar({ member, size = 'sm' }: { member: TeamMember; size?: 'sm' | 'md' }) {
+  const name = member.profile?.full_name || member.email.split('@')[0];
+  const avatar = member.profile?.avatar_base64;
+  const sz = size === 'sm' ? 'w-5 h-5 text-[8px]' : 'w-7 h-7 text-xs';
+  return (
+    <div className={cn('rounded-full overflow-hidden bg-[#e5e5e2] flex items-center justify-center shrink-0 border border-[#e5e5e0]', sz)}>
+      {avatar ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={avatar} alt={name} className="w-full h-full object-cover" />
+      ) : (
+        <span className="font-bold text-[#807d72]">{name.charAt(0).toUpperCase()}</span>
+      )}
+    </div>
+  );
+}
+
+function TaskItem({ task, onToggle, onDelete, onUpdate, teamMembers }: {
   task: Task;
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
   onUpdate: (id: string, fields: { title?: string; dueDate?: string; category?: Task['category'] }) => void;
+  teamMembers: TeamMember[];
 }) {
   const handleMoveToTomorrow = () => {
     const tomorrow = new Date();
@@ -80,6 +111,10 @@ function TaskItem({ task, onToggle, onDelete, onUpdate }: {
     onUpdate(task.id, { title: `🔥 [URGENT] ${task.title.replace('🔥 [URGENT] ', '')}` });
   };
 
+  const assignedMember = task.assignedTo
+    ? teamMembers.find(m => m.member_user_id === task.assignedTo || m.id === task.assignedTo)
+    : null;
+
   return (
     <div className="flex items-center justify-between p-3 rounded-lg border border-border bg-card/60 hover:bg-muted/30 transition-all group">
       <div className="flex items-start gap-3 min-w-0">
@@ -87,7 +122,7 @@ function TaskItem({ task, onToggle, onDelete, onUpdate }: {
           id={`task-${task.id}`}
           checked={task.completed}
           onCheckedChange={() => onToggle(task.id)}
-          className="mt-0.5"
+          className="mt-0.5 shrink-0"
         />
         <div className="flex flex-col gap-0.5 min-w-0">
           <label
@@ -99,22 +134,31 @@ function TaskItem({ task, onToggle, onDelete, onUpdate }: {
           >
             {task.title}
           </label>
-          {task.dueDate && (
-            <span className="text-[10px] text-amber-600 font-semibold flex items-center gap-1 mt-0.5">
-              <CalendarIcon className="w-2.5 h-2.5" />
-              {task.dueDate}
-            </span>
-          )}
+          <div className="flex items-center gap-2 flex-wrap">
+            {task.dueDate && (
+              <span className="text-[10px] text-amber-600 font-semibold flex items-center gap-1 mt-0.5">
+                <CalendarIcon className="w-2.5 h-2.5" />
+                {task.dueDate}
+              </span>
+            )}
+            {task.assignedToName && (
+              <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                <User className="w-2.5 h-2.5" />
+                {task.assignedToName}
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
       <div className="flex items-center gap-2 shrink-0">
+        {assignedMember && <MemberAvatar member={assignedMember} size="sm" />}
         {task.isTodoist && (
-          <Badge variant="outline" className="text-[8px] bg-red-50 text-red-700 border-red-200 px-1.5 py-0.5 font-bold">
+          <Badge variant="outline" className="text-[8px] bg-red-50 text-red-700 border-red-200 px-1.5 py-0.5 font-bold hidden sm:flex">
             Todoist
           </Badge>
         )}
-        <Badge variant="outline" className={cn('text-[9px] font-semibold uppercase px-2 py-0.5 rounded border', CATEGORY_COLORS[task.category])}>
+        <Badge variant="outline" className={cn('text-[9px] font-semibold uppercase px-2 py-0.5 rounded border hidden sm:flex', CATEGORY_COLORS[task.category])}>
           {CATEGORY_LABELS[task.category]}
         </Badge>
         <DropdownMenu>
@@ -144,19 +188,93 @@ function TaskItem({ task, onToggle, onDelete, onUpdate }: {
   );
 }
 
+// Grouped view by assignee for Team tab
+function TeamTaskGroup({ member, tasks, onToggle, onDelete, onUpdate, teamMembers }: {
+  member: TeamMember | null;
+  tasks: Task[];
+  onToggle: (id: string) => void;
+  onDelete: (id: string) => void;
+  onUpdate: (id: string, fields: { title?: string; dueDate?: string; category?: Task['category'] }) => void;
+  teamMembers: TeamMember[];
+}) {
+  const [expanded, setExpanded] = useState(true);
+  const name = member
+    ? (member.profile?.full_name || member.email.split('@')[0])
+    : 'Non assigné';
+  const done = tasks.filter(t => t.completed).length;
+
+  return (
+    <div className="space-y-2">
+      <button
+        onClick={() => setExpanded(v => !v)}
+        className="w-full flex items-center gap-2 py-1"
+      >
+        {member ? <MemberAvatar member={member} size="md" /> : <User className="w-6 h-6 text-muted-foreground" />}
+        <span className="text-sm font-semibold text-foreground">{name}</span>
+        <span className="text-xs text-muted-foreground">({tasks.length} tâches, {done} complétées)</span>
+        <ChevronRight className={cn('h-3.5 w-3.5 text-muted-foreground ml-auto transition-transform', expanded && 'rotate-90')} />
+      </button>
+      {expanded && (
+        <div className="space-y-2 pl-2 border-l-2 border-[#059669]/20 ml-3">
+          {tasks.map(task => (
+            <TaskItem key={task.id} task={task} onToggle={onToggle} onDelete={onDelete} onUpdate={onUpdate} teamMembers={teamMembers} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function TasksRoot() {
   const { tasks, addTask, toggleTask, deleteTask, updateTask } = useReach();
   const { t } = useLanguage();
 
+  const [taskTab, setTaskTab] = useState<TaskTab>('mine');
   const [view, setView] = useState<ViewType>('list');
   const [filter, setFilter] = useState<FilterType>('all');
   const [categoryFilter, setCategoryFilter] = useState<CategoryType>('All');
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
 
-  // Voice recognition and recording state
+  // Team members for assignment
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [loadingMembers, setLoadingMembers] = useState(false);
+
+  // Voice recognition
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessingVoice, setIsProcessingVoice] = useState(false);
   const recognitionRef = React.useRef<any>(null);
+
+  // Add task form state
+  const [newTitle, setNewTitle] = useState('');
+  const [newCategory, setNewCategory] = useState<Task['category']>('General');
+  const [newDueDate, setNewDueDate] = useState('');
+  const [dueDateOpen, setDueDateOpen] = useState(false);
+  const [dueDatePicker, setDueDatePicker] = useState<Date | undefined>(undefined);
+  const [assignedMemberId, setAssignedMemberId] = useState<string>('none');
+  const [assignMemberOpen, setAssignMemberOpen] = useState(false);
+
+  const today = new Date().toISOString().split('T')[0];
+
+  // Fetch current user + team members
+  useEffect(() => {
+    const loadData = async () => {
+      setLoadingMembers(true);
+      try {
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) setCurrentUserId(user.id);
+
+        const res = await fetch(getApiUrl('/api/team/members'));
+        if (res.ok) {
+          const data = await res.json();
+          setTeamMembers(data.members ?? []);
+        }
+      } catch { /* non-fatal */ }
+      finally { setLoadingMembers(false); }
+    };
+    loadData();
+  }, []);
 
   const startRecording = () => {
     if (typeof window === 'undefined') return;
@@ -165,119 +283,51 @@ export default function TasksRoot() {
       toast.error("La dictée vocale n'est pas supportée par votre navigateur.");
       return;
     }
-
     try {
       const rec = new SpeechRecognition();
       rec.lang = 'fr-FR';
       rec.interimResults = false;
       rec.maxAlternatives = 1;
-
-      rec.onstart = () => {
-        setIsRecording(true);
-      };
-
+      rec.onstart = () => setIsRecording(true);
       rec.onresult = async (event: any) => {
         const text = event.results[0][0].transcript;
         if (text?.trim()) {
-          // Store voice query in localStorage
           localStorage.setItem('minerva_pending_voice_query', text);
-          // Clean up state
           setIsRecording(false);
           setIsProcessingVoice(false);
           toast.success("Redirection vers l'Assistant IA...");
-          // Redirect to Assistant page
           window.location.href = '/assistant';
         }
       };
-
       rec.onerror = (e: any) => {
-        console.error("Speech recognition error:", e);
         setIsRecording(false);
-        if (e.error === 'not-allowed') {
-          toast.error("Accès au microphone refusé.");
-        } else {
-          toast.error(`Erreur de dictée: ${e.error}`);
-        }
+        if (e.error === 'not-allowed') toast.error("Accès au microphone refusé.");
+        else toast.error(`Erreur de dictée: ${e.error}`);
       };
-
-      rec.onend = () => {
-        setIsRecording(false);
-      };
-
+      rec.onend = () => setIsRecording(false);
       recognitionRef.current = rec;
       rec.start();
     } catch (err) {
-      console.error(err);
       setIsRecording(false);
     }
   };
 
   const stopRecording = () => {
-    if (recognitionRef.current) {
-      recognitionRef.current.stop();
-    }
+    if (recognitionRef.current) recognitionRef.current.stop();
   };
 
-  const processVoiceTask = async (text: string) => {
-    try {
-      const todayStr = new Date().toISOString().split('T')[0];
-      const systemPrompt = `Tu es un assistant qui extrait des tâches de prospection à partir d'une dictée vocale.
-Aujourd'hui nous sommes le ${todayStr}.
-Analyse la transcription audio fournie par l'utilisateur et renvoie UNIQUEMENT un objet JSON valide avec les clés suivantes :
-- "title": Titre clair et court de la tâche (ex: "Appeler Jean de la Boulangerie")
-- "dueDate": Date d'échéance au format YYYY-MM-DD (ex: s'il dit "demain", calcule la date. Si aucune date n'est spécifiée, renvoie null)
-- "category": Une des catégories suivantes uniquement : "General", "Follow-up", "Preparation", "Meeting" (si l'utilisateur dit "rdv" ou "rencontre", choisis "Meeting". S'il dit "relance" ou "appeler", choisis "Follow-up")
+  const myTasks = useMemo(() => tasks.filter(t =>
+    !t.assignedTo || t.assignedTo === currentUserId
+  ), [tasks, currentUserId]);
 
-Règle absolue : Réponds UNIQUEMENT avec l'objet JSON. Pas de blabla, pas de markdown, pas de balises.`;
+  const teamTasks = useMemo(() => tasks.filter(t =>
+    t.assignedTo && t.assignedTo !== currentUserId
+  ), [tasks, currentUserId]);
 
-      const res = await fetch('/api/ai/gateway/completions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          messages: [{ role: 'user', content: text }],
-          system: systemPrompt,
-          max_tokens: 256
-        })
-      });
-
-      if (!res.ok) throw new Error("Erreur serveur API");
-      const data = await res.json();
-      if (data.error) throw new Error(data.error);
-
-      let taskObj;
-      try {
-        const cleanJson = data.content.trim().replace(/^```json/, '').replace(/```$/, '').trim();
-        taskObj = JSON.parse(cleanJson);
-      } catch {
-        taskObj = {
-          title: text,
-          dueDate: null,
-          category: 'General'
-        };
-      }
-
-      if (!taskObj.title) {
-        taskObj.title = text;
-      }
-
-      addTask(taskObj.title, taskObj.category || 'General', taskObj.dueDate || undefined);
-      return taskObj;
-    } finally {
-      setIsProcessingVoice(false);
-    }
-  };
-
-  // Add task form state
-  const [newTitle, setNewTitle] = useState('');
-  const [newCategory, setNewCategory] = useState<Task['category']>('General');
-  const [newDueDate, setNewDueDate] = useState('');
-  const [dueDateOpen, setDueDateOpen] = useState(false);
-  const [dueDatePicker, setDueDatePicker] = useState<Date | undefined>(undefined);
-
-  const today = new Date().toISOString().split('T')[0];
+  const activeTasks = taskTab === 'mine' ? myTasks : teamTasks;
 
   const filteredTasks = useMemo(() => {
-    let result = [...tasks];
+    let result = [...activeTasks];
 
     if (view === 'calendar' && selectedDate) {
       const sel = selectedDate.toISOString().split('T')[0];
@@ -296,45 +346,79 @@ Règle absolue : Réponds UNIQUEMENT avec l'objet JSON. Pas de blabla, pas de ma
       if (a.completed !== b.completed) return a.completed ? 1 : -1;
       return (a.dueDate || '9999') < (b.dueDate || '9999') ? -1 : 1;
     });
-  }, [tasks, filter, categoryFilter, view, selectedDate, today]);
+  }, [activeTasks, filter, categoryFilter, view, selectedDate, today]);
+
+  // For team tab: group tasks by assignee
+  const teamTasksByMember = useMemo(() => {
+    if (taskTab !== 'team') return [];
+    const groups: Record<string, Task[]> = {};
+    for (const task of filteredTasks) {
+      const key = task.assignedTo ?? 'unassigned';
+      (groups[key] ||= []).push(task);
+    }
+    return Object.entries(groups).map(([key, tasks]) => ({
+      memberId: key,
+      member: key === 'unassigned' ? null : (teamMembers.find(m => m.member_user_id === key || m.id === key) ?? null),
+      tasks,
+    }));
+  }, [taskTab, filteredTasks, teamMembers]);
 
   // Days that have tasks (for calendar indicators)
   const taskDays = useMemo(() => {
     const days = new Set<string>();
-    tasks.forEach(t => { if (t.dueDate) days.add(t.dueDate); });
+    activeTasks.forEach(t => { if (t.dueDate) days.add(t.dueDate); });
     return days;
-  }, [tasks]);
+  }, [activeTasks]);
 
   const handleAddTask = () => {
     const title = newTitle.trim();
     if (!title) return;
-    addTask(title, newCategory, newDueDate || undefined);
+
+    let assignedTo: string | undefined;
+    let assignedToName: string | undefined;
+
+    if (assignedMemberId && assignedMemberId !== 'none') {
+      const m = teamMembers.find(m => m.id === assignedMemberId);
+      if (m) {
+        assignedTo = m.member_user_id ?? m.id;
+        assignedToName = m.profile?.full_name || m.email.split('@')[0];
+      }
+    }
+
+    addTask(title, newCategory, newDueDate || undefined, undefined, assignedTo, assignedToName);
     setNewTitle('');
     setNewCategory('General');
     setNewDueDate('');
     setDueDatePicker(undefined);
+    setAssignedMemberId('none');
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') handleAddTask();
   };
 
-  const pendingCount = tasks.filter(t => !t.completed).length;
-  const doneCount = tasks.filter(t => t.completed).length;
+  const pendingCount = myTasks.filter(t => !t.completed).length;
+  const doneCount = myTasks.filter(t => t.completed).length;
+  const teamPendingCount = teamTasks.filter(t => !t.completed).length;
+  const teamDoneCount = teamTasks.filter(t => t.completed).length;
+
+  const selectedMember = assignedMemberId !== 'none'
+    ? teamMembers.find(m => m.id === assignedMemberId)
+    : null;
 
   return (
     <div className="h-full overflow-y-auto bg-background">
-      <div className="max-w-4xl mx-auto px-4 py-6 md:px-6 md:py-8 space-y-6">
+      <div className="max-w-4xl mx-auto px-3 py-5 md:px-6 md:py-8 space-y-5">
 
         {/* Header */}
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex items-start justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-[#059669]/10 flex items-center justify-center">
+            <div className="h-10 w-10 rounded-xl bg-[#059669]/10 flex items-center justify-center shrink-0">
               <ClipboardList className="h-5 w-5 text-[#059669]" />
             </div>
             <div>
               <h1 className="text-xl font-bold text-foreground">{t('tasks.title')}</h1>
-              <p className="text-sm text-muted-foreground">{t('tasks.subtitle')}</p>
+              <p className="text-sm text-muted-foreground hidden sm:block">{t('tasks.subtitle')}</p>
             </div>
           </div>
           <div className="flex items-center gap-1 bg-muted/60 rounded-lg p-1">
@@ -345,7 +429,7 @@ Règle absolue : Réponds UNIQUEMENT avec l'objet JSON. Pas de blabla, pas de ma
               className={cn('h-7 px-2 gap-1.5 text-xs', view === 'list' && 'bg-background shadow-sm text-foreground')}
             >
               <List className="h-3.5 w-3.5" />
-              {t('tasks.view_list')}
+              <span className="hidden sm:inline">{t('tasks.view_list')}</span>
             </Button>
             <Button
               variant="ghost"
@@ -354,43 +438,85 @@ Règle absolue : Réponds UNIQUEMENT avec l'objet JSON. Pas de blabla, pas de ma
               className={cn('h-7 px-2 gap-1.5 text-xs', view === 'calendar' && 'bg-background shadow-sm text-foreground')}
             >
               <CalendarDays className="h-3.5 w-3.5" />
-              {t('tasks.view_calendar')}
+              <span className="hidden sm:inline">{t('tasks.view_calendar')}</span>
             </Button>
           </div>
         </div>
 
+        {/* Tabs: Mine / Team */}
+        <div className="flex items-center gap-0 bg-muted/40 rounded-xl p-1">
+          <button
+            onClick={() => setTaskTab('mine')}
+            className={cn(
+              'flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-semibold transition-all',
+              taskTab === 'mine' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'
+            )}
+          >
+            <User className="h-3.5 w-3.5" />
+            Mes tâches
+            <span className={cn(
+              'ml-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-full',
+              taskTab === 'mine' ? 'bg-[#059669] text-white' : 'bg-muted text-muted-foreground'
+            )}>
+              {myTasks.filter(t => !t.completed).length}
+            </span>
+          </button>
+          <button
+            onClick={() => setTaskTab('team')}
+            className={cn(
+              'flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-semibold transition-all',
+              taskTab === 'team' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'
+            )}
+          >
+            <Users className="h-3.5 w-3.5" />
+            Équipe
+            {teamTasks.filter(t => !t.completed).length > 0 && (
+              <span className={cn(
+                'ml-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-full',
+                taskTab === 'team' ? 'bg-[#059669] text-white' : 'bg-muted text-muted-foreground'
+              )}>
+                {teamTasks.filter(t => !t.completed).length}
+              </span>
+            )}
+          </button>
+        </div>
+
         {/* Stats */}
         <div className="grid grid-cols-3 gap-3">
-          {[
-            { label: 'Total', value: tasks.length },
+          {(taskTab === 'mine' ? [
+            { label: 'Total', value: myTasks.length, accent: false },
             { label: t('tasks.filter_pending'), value: pendingCount, accent: true },
-            { label: t('tasks.filter_done'), value: doneCount },
-          ].map(s => (
+            { label: t('tasks.filter_done'), value: doneCount, accent: false },
+          ] : [
+            { label: 'Total équipe', value: teamTasks.length, accent: false },
+            { label: 'En cours', value: teamPendingCount, accent: true },
+            { label: 'Complétées', value: teamDoneCount, accent: false },
+          ]).map(s => (
             <div key={s.label} className="rounded-xl border border-border bg-card/60 p-3 text-center">
               <div className={cn('text-2xl font-bold', s.accent ? 'text-[#059669]' : 'text-foreground')}>{s.value}</div>
-              <div className="text-xs text-muted-foreground mt-0.5">{s.label}</div>
+              <div className="text-xs text-muted-foreground mt-0.5 truncate">{s.label}</div>
             </div>
           ))}
         </div>
 
         {/* Add task form */}
-        <div className="flex flex-col sm:flex-row gap-2 p-3 rounded-xl border border-border bg-card/40">
-          <div className="relative flex-1 flex items-center">
+        <div className="flex flex-col gap-2 p-3 rounded-xl border border-border bg-card/40">
+          {/* Title + mic row */}
+          <div className="relative flex items-center">
             <Input
               placeholder={t('tasks.new_task_placeholder')}
               value={newTitle}
               onChange={e => setNewTitle(e.target.value)}
               onKeyDown={handleKeyDown}
-              className="h-8 text-sm pr-9 flex-1"
+              className="h-9 text-sm pr-9 flex-1"
             />
-            {/* Pulsing Dictaphone Mic Button */}
             <button
               onClick={isRecording ? stopRecording : startRecording}
               disabled={isProcessingVoice}
               className={cn(
                 "absolute right-2 p-1.5 rounded-full transition-all duration-300",
-                isRecording 
-                  ? "bg-red-500 hover:bg-red-600 text-white animate-pulse" 
+                isRecording
+                  ? "bg-red-500 hover:bg-red-600 text-white animate-pulse"
                   : "text-muted-foreground hover:text-foreground hover:bg-muted"
               )}
               title="Dicter une tâche avec l'IA"
@@ -404,44 +530,103 @@ Règle absolue : Réponds UNIQUEMENT avec l'objet JSON. Pas de blabla, pas de ma
               )}
             </button>
           </div>
-          <Select value={newCategory} onValueChange={v => setNewCategory(v as Task['category'])}>
-            <SelectTrigger className="h-8 w-36 text-xs">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {(['General', 'Follow-up', 'Preparation', 'Meeting'] as Task['category'][]).map(c => (
-                <SelectItem key={c} value={c} className="text-xs">{CATEGORY_LABELS[c]}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Popover open={dueDateOpen} onOpenChange={setDueDateOpen}>
-            <PopoverTrigger asChild>
-              <Button variant="outline" className="h-8 text-xs gap-1.5 w-28 justify-start">
-                <CalendarIcon className="h-3 w-3" />
-                {newDueDate || t('tasks.due_date')}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar
-                mode="single"
-                selected={dueDatePicker}
-                onSelect={d => {
-                  setDueDatePicker(d);
-                  setNewDueDate(d ? d.toISOString().split('T')[0] : '');
-                  setDueDateOpen(false);
-                }}
-              />
-            </PopoverContent>
-          </Popover>
-          <Button
-            size="sm"
-            onClick={handleAddTask}
-            disabled={!newTitle.trim()}
-            className="h-8 bg-[#059669] hover:bg-[#047857] text-white gap-1.5 text-xs"
-          >
-            <Plus className="h-3.5 w-3.5" />
-            {t('tasks.add')}
-          </Button>
+
+          {/* Category + date + assign + submit row */}
+          <div className="flex flex-wrap gap-2">
+            <Select value={newCategory} onValueChange={v => setNewCategory(v as Task['category'])}>
+              <SelectTrigger className="h-8 w-28 text-xs shrink-0">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {(['General', 'Follow-up', 'Preparation', 'Meeting'] as Task['category'][]).map(c => (
+                  <SelectItem key={c} value={c} className="text-xs">{CATEGORY_LABELS[c]}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Popover open={dueDateOpen} onOpenChange={setDueDateOpen}>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="h-8 text-xs gap-1.5 w-28 justify-start shrink-0">
+                  <CalendarIcon className="h-3 w-3" />
+                  {newDueDate || t('tasks.due_date')}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={dueDatePicker}
+                  onSelect={d => {
+                    setDueDatePicker(d);
+                    setNewDueDate(d ? d.toISOString().split('T')[0] : '');
+                    setDueDateOpen(false);
+                  }}
+                />
+              </PopoverContent>
+            </Popover>
+
+            {/* Assign member */}
+            {teamMembers.length > 0 && (
+              <Popover open={assignMemberOpen} onOpenChange={setAssignMemberOpen}>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="h-8 text-xs gap-1.5 min-w-[90px] justify-start shrink-0">
+                    {selectedMember ? (
+                      <>
+                        <MemberAvatar member={selectedMember} size="sm" />
+                        <span className="truncate max-w-[80px]">
+                          {selectedMember.profile?.full_name || selectedMember.email.split('@')[0]}
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <Users className="h-3 w-3" />
+                        Assigner
+                      </>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-52 p-1.5" align="start">
+                  <div className="space-y-0.5">
+                    <button
+                      onClick={() => { setAssignedMemberId('none'); setAssignMemberOpen(false); }}
+                      className={cn(
+                        'w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs font-medium transition-colors',
+                        assignedMemberId === 'none' ? 'bg-[#059669]/8 text-[#059669]' : 'hover:bg-muted'
+                      )}
+                    >
+                      <User className="h-3.5 w-3.5" />
+                      Moi-même
+                    </button>
+                    {teamMembers.map(m => {
+                      const name = m.profile?.full_name || m.email.split('@')[0];
+                      return (
+                        <button
+                          key={m.id}
+                          onClick={() => { setAssignedMemberId(m.id); setAssignMemberOpen(false); }}
+                          className={cn(
+                            'w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs font-medium transition-colors',
+                            assignedMemberId === m.id ? 'bg-[#059669]/8 text-[#059669]' : 'hover:bg-muted'
+                          )}
+                        >
+                          <MemberAvatar member={m} size="sm" />
+                          <span className="truncate">{name}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </PopoverContent>
+              </Popover>
+            )}
+
+            <Button
+              size="sm"
+              onClick={handleAddTask}
+              disabled={!newTitle.trim()}
+              className="h-8 bg-[#059669] hover:bg-[#047857] text-white gap-1.5 text-xs ml-auto"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              {t('tasks.add')}
+            </Button>
+          </div>
         </div>
 
         {/* Calendar view */}
@@ -467,7 +652,7 @@ Règle absolue : Réponds UNIQUEMENT avec l'objet JSON. Pas de blabla, pas de ma
                 <p className="text-sm text-muted-foreground py-6 text-center">Aucune tâche ce jour.</p>
               ) : (
                 filteredTasks.map(task => (
-                  <TaskItem key={task.id} task={task} onToggle={toggleTask} onDelete={deleteTask} onUpdate={updateTask} />
+                  <TaskItem key={task.id} task={task} onToggle={toggleTask} onDelete={deleteTask} onUpdate={updateTask} teamMembers={teamMembers} />
                 ))
               )}
             </div>
@@ -512,7 +697,7 @@ Règle absolue : Réponds UNIQUEMENT avec l'objet JSON. Pas de blabla, pas de ma
 
             {/* Task list */}
             <div className="space-y-2">
-              {filteredTasks.length === 0 ? (
+              {filteredTasks.length === 0 && teamTasksByMember.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
                   <ClipboardList className="h-10 w-10 text-muted-foreground/40" />
                   <p className="text-sm text-muted-foreground">{t('tasks.empty')}</p>
@@ -525,9 +710,32 @@ Règle absolue : Réponds UNIQUEMENT avec l'objet JSON. Pas de blabla, pas de ma
                     {t('tasks.add')}
                   </Button>
                 </div>
+              ) : taskTab === 'team' ? (
+                // Team view — grouped by member
+                <div className="space-y-5">
+                  {teamTasksByMember.map(group => (
+                    <TeamTaskGroup
+                      key={group.memberId}
+                      member={group.member}
+                      tasks={group.tasks}
+                      onToggle={toggleTask}
+                      onDelete={deleteTask}
+                      onUpdate={updateTask}
+                      teamMembers={teamMembers}
+                    />
+                  ))}
+                  {teamTasksByMember.length === 0 && (
+                    <div className="flex flex-col items-center justify-center py-12 gap-3 text-center">
+                      <Users className="h-10 w-10 text-muted-foreground/40" />
+                      <p className="text-sm text-muted-foreground">Aucune tâche d&apos;équipe assignée</p>
+                      <p className="text-xs text-muted-foreground/60">Créez une tâche et assignez-la à un membre ci-dessus</p>
+                    </div>
+                  )}
+                </div>
               ) : (
+                // My tasks flat list
                 filteredTasks.map(task => (
-                  <TaskItem key={task.id} task={task} onToggle={toggleTask} onDelete={deleteTask} onUpdate={updateTask} />
+                  <TaskItem key={task.id} task={task} onToggle={toggleTask} onDelete={deleteTask} onUpdate={updateTask} teamMembers={teamMembers} />
                 ))
               )}
             </div>

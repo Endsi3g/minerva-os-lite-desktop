@@ -22,9 +22,11 @@ import {
   ClipboardList,
   MessageSquare,
   ArrowUpRight,
+  Menu,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import type { Lead, Task } from "@/lib/mock-data";
@@ -82,6 +84,96 @@ function StatCard({ label, value, sub }: { label: string; value: string; sub?: s
   );
 }
 
+// Client list — shared between the desktop sidebar and the mobile sheet
+function ClientListPanel({
+  clients,
+  filteredClients,
+  selectedClient,
+  onSelect,
+  searchQuery,
+  setSearchQuery,
+}: {
+  clients: Lead[];
+  filteredClients: Lead[];
+  selectedClient: Lead | null;
+  onSelect: (client: Lead) => void;
+  searchQuery: string;
+  setSearchQuery: (v: string) => void;
+}) {
+  return (
+    <>
+      <div className="p-4 border-b border-[#e5e5e0] space-y-3">
+        <div className="flex items-center gap-2">
+          <Users className="h-4 w-4 text-[#059669]" />
+          <h2 className="text-xs font-bold text-[#26251e] uppercase tracking-wider">Vos clients</h2>
+          <span className="ml-auto text-[10px] font-semibold text-[#807d72] bg-[#e5e5e0] rounded-full px-2 py-0.5">
+            {clients.length}
+          </span>
+        </div>
+        {/* Search */}
+        <div className="relative">
+          <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-[#807d72]" />
+          <input
+            type="text"
+            placeholder="Rechercher un client..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-8 pr-3 py-2 text-xs bg-white border border-[#e5e5e0] rounded-lg focus:outline-none focus:border-[#059669] transition-colors"
+          />
+        </div>
+      </div>
+
+      {/* Client list */}
+      <div className="flex-1 overflow-y-auto divide-y divide-[#e5e5e0]/60">
+        {filteredClients.length === 0 ? (
+          <div className="p-6 text-center space-y-2">
+            <Users className="h-8 w-8 text-[#807d72]/30 mx-auto" />
+            <p className="text-xs text-[#807d72]">
+              {clients.length === 0
+                ? "Aucun client gagné pour l'instant"
+                : "Aucun résultat"}
+            </p>
+            {clients.length === 0 && (
+              <Link href="/leads" className="text-[10px] text-[#059669] hover:underline font-semibold">
+                Voir vos prospects →
+              </Link>
+            )}
+          </div>
+        ) : (
+          filteredClients.map((client) => (
+            <button
+              key={client.id}
+              onClick={() => onSelect(client)}
+              className={cn(
+                "w-full text-left px-4 py-3 hover:bg-[#e5e5e0]/40 transition-colors group",
+                selectedClient?.id === client.id && "bg-[#059669]/8 border-r-2 border-[#059669]"
+              )}
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-bold text-[#26251e] truncate">{client.businessName}</p>
+                  <p className="text-[10px] text-[#807d72] truncate mt-0.5">{client.contactName}</p>
+                  <p className="text-[10px] text-[#807d72] truncate">{client.city}</p>
+                </div>
+                <div className="shrink-0 text-right">
+                  <span className="text-[10px] font-bold text-[#059669] bg-[#059669]/10 px-1.5 py-0.5 rounded-full block">
+                    Gagné
+                  </span>
+                  {client.dealAmount && (
+                    <p className="text-[10px] font-semibold text-[#26251e] mt-1">
+                      {client.dealAmount.toLocaleString("fr-CA")} $
+                    </p>
+                  )}
+                </div>
+              </div>
+            </button>
+          ))
+        )}
+      </div>
+    </>
+  );
+}
+
 // ── Main Component ──────────────────────────────────────────────────────────────
 
 export function ClientReportsRoot() {
@@ -95,6 +187,7 @@ export function ClientReportsRoot() {
   const [selectedClient, setSelectedClient] = useState<Lead | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [copiedLink, setCopiedLink] = useState(false);
+  const [mobileClientListOpen, setMobileClientListOpen] = useState(false);
 
   // Livrables stored per lead in localStorage
   const [livrables, setLivrables] = useState<Livrable[]>([]);
@@ -192,82 +285,53 @@ export function ClientReportsRoot() {
 
       {/* ── Left panel: Client list ── */}
       <aside className="relative z-10 hidden md:flex flex-col w-72 shrink-0 border-r border-[#e5e5e0] bg-[#f4f4f3] overflow-hidden print:hidden">
-        {/* Panel header */}
-        <div className="p-4 border-b border-[#e5e5e0] space-y-3">
-          <div className="flex items-center gap-2">
-            <Users className="h-4 w-4 text-[#059669]" />
-            <h2 className="text-xs font-bold text-[#26251e] uppercase tracking-wider">Vos clients</h2>
-            <span className="ml-auto text-[10px] font-semibold text-[#807d72] bg-[#e5e5e0] rounded-full px-2 py-0.5">
-              {clients.length}
-            </span>
-          </div>
-          {/* Search */}
-          <div className="relative">
-            <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-[#807d72]" />
-            <input
-              type="text"
-              placeholder="Rechercher un client..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-8 pr-3 py-2 text-xs bg-white border border-[#e5e5e0] rounded-lg focus:outline-none focus:border-[#059669] transition-colors"
-            />
-          </div>
-        </div>
-
-        {/* Client list */}
-        <div className="flex-1 overflow-y-auto divide-y divide-[#e5e5e0]/60">
-          {filteredClients.length === 0 ? (
-            <div className="p-6 text-center space-y-2">
-              <Users className="h-8 w-8 text-[#807d72]/30 mx-auto" />
-              <p className="text-xs text-[#807d72]">
-                {clients.length === 0
-                  ? "Aucun client gagné pour l'instant"
-                  : "Aucun résultat"}
-              </p>
-              {clients.length === 0 && (
-                <Link href="/leads" className="text-[10px] text-[#059669] hover:underline font-semibold">
-                  Voir vos prospects →
-                </Link>
-              )}
-            </div>
-          ) : (
-            filteredClients.map((client) => (
-              <button
-                key={client.id}
-                onClick={() => setSelectedClient(client)}
-                className={cn(
-                  "w-full text-left px-4 py-3 hover:bg-[#e5e5e0]/40 transition-colors group",
-                  selectedClient?.id === client.id && "bg-[#059669]/8 border-r-2 border-[#059669]"
-                )}
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0 flex-1">
-                    <p className="text-xs font-bold text-[#26251e] truncate">{client.businessName}</p>
-                    <p className="text-[10px] text-[#807d72] truncate mt-0.5">{client.contactName}</p>
-                    <p className="text-[10px] text-[#807d72] truncate">{client.city}</p>
-                  </div>
-                  <div className="shrink-0 text-right">
-                    <span className="text-[10px] font-bold text-[#059669] bg-[#059669]/10 px-1.5 py-0.5 rounded-full block">
-                      Gagné
-                    </span>
-                    {client.dealAmount && (
-                      <p className="text-[10px] font-semibold text-[#26251e] mt-1">
-                        {client.dealAmount.toLocaleString("fr-CA")} $
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </button>
-            ))
-          )}
-        </div>
+        <ClientListPanel
+          clients={clients}
+          filteredClients={filteredClients}
+          selectedClient={selectedClient}
+          onSelect={setSelectedClient}
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+        />
       </aside>
 
+      {/* ── Mobile client switcher — slides over from the left ── */}
+      <Sheet open={mobileClientListOpen} onOpenChange={setMobileClientListOpen}>
+        <SheetContent side="left" className="w-72 p-0 flex flex-col bg-[#f4f4f3]">
+          <SheetHeader className="sr-only">
+            <SheetTitle>Vos clients</SheetTitle>
+          </SheetHeader>
+          <ClientListPanel
+            clients={clients}
+            filteredClients={filteredClients}
+            selectedClient={selectedClient}
+            onSelect={(client) => { setSelectedClient(client); setMobileClientListOpen(false); }}
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+          />
+        </SheetContent>
+      </Sheet>
+
       {/* ── Right panel: Report ── */}
-      <main className="relative z-10 flex-1 overflow-y-auto">
+      <main className="relative z-10 flex-1 overflow-y-auto flex flex-col">
+        {/* Mobile-only bar: switch between clients */}
+        <div className="md:hidden flex items-center gap-2 px-4 py-3 border-b border-[#e5e5e0] bg-white shrink-0 print:hidden">
+          <button
+            type="button"
+            onClick={() => setMobileClientListOpen(true)}
+            className="p-1.5 -ml-1.5 text-[#807d72] hover:text-[#26251e] transition-colors shrink-0"
+            aria-label="Changer de client"
+          >
+            <Menu className="h-5 w-5" />
+          </button>
+          <p className="text-sm font-bold text-[#26251e] truncate">
+            {selectedClient ? selectedClient.businessName : "Sélectionner un client"}
+          </p>
+        </div>
+
         {!selectedClient ? (
           /* Empty state */
-          <div className="h-full flex flex-col items-center justify-center gap-4 p-8 text-center">
+          <div className="flex-1 flex flex-col items-center justify-center gap-4 p-8 text-center">
             <div className="w-16 h-16 rounded-2xl bg-[#e5e5e0]/60 border border-[#e5e5e0] flex items-center justify-center">
               <Users className="h-8 w-8 text-[#807d72]/50" />
             </div>
@@ -276,7 +340,14 @@ export function ClientReportsRoot() {
               <p className="text-xs text-[#807d72]">
                 {clients.length === 0
                   ? "Marquez un prospect comme \"Gagné\" pour le retrouver ici."
-                  : `${clients.length} client${clients.length > 1 ? "s" : ""} disponible${clients.length > 1 ? "s" : ""} dans le panneau gauche.`}
+                  : (
+                    <>
+                      <span className="md:hidden">Touchez le menu ci-dessus pour choisir un client.</span>
+                      <span className="hidden md:inline">
+                        {clients.length} client{clients.length > 1 ? "s" : ""} disponible{clients.length > 1 ? "s" : ""} dans le panneau gauche.
+                      </span>
+                    </>
+                  )}
               </p>
             </div>
             {clients.length === 0 && (

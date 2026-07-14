@@ -49,9 +49,11 @@ import {
 } from '@/components/ui/attachment';
 import {
   Send, Search, Users, MessageCircle, Smile, ImageIcon, X, FileText, Mic, Square, Paperclip, Loader2,
-  MoreHorizontal, Pencil, Trash2, Check,
+  MoreHorizontal, Pencil, Trash2, Check, Menu,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import type { TranslationKey } from '@/lib/translations';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -196,6 +198,89 @@ function MessageBody({ content, isMe, onImageClick }: { content: string; isMe: b
   );
 }
 
+// ── Conversation list (shared between desktop sidebar and mobile sheet) ────────
+
+function ConversationList({
+  t,
+  searchQuery,
+  setSearchQuery,
+  selectedConversation,
+  onSelect,
+  members,
+  filteredMembers,
+}: {
+  t: (key: TranslationKey, fallback?: string) => string;
+  searchQuery: string;
+  setSearchQuery: (v: string) => void;
+  selectedConversation: 'group' | string;
+  onSelect: (id: 'group' | string) => void;
+  members: Member[];
+  filteredMembers: Member[];
+}) {
+  return (
+    <>
+      <div className="px-4 pt-5 pb-3">
+        <h1 className="text-sm font-bold text-[#26251e] tracking-tight mb-3">{t('messages.title')}</h1>
+        <div className="relative">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#7a7a76]" />
+          <Input
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder={t('messages.search_members')}
+            className="pl-8 h-8 text-xs bg-white border-[#e5e5e0] rounded-lg"
+          />
+        </div>
+      </div>
+
+      <div className="flex-1 overflow-y-auto px-2 pb-4">
+        <button
+          onClick={() => onSelect('group')}
+          className={cn(
+            'w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left transition-colors mb-1',
+            selectedConversation === 'group' ? 'bg-[#059669]/10 text-[#059669]' : 'hover:bg-white/70 text-[#26251e]'
+          )}
+        >
+          <div className="w-9 h-9 rounded-full bg-[#059669]/15 flex items-center justify-center shrink-0">
+            <Users className="w-4 h-4 text-[#059669]" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-semibold truncate">{t('messages.group_chat')}</p>
+            <p className="text-[10px] text-[#7a7a76] truncate">Chat d'équipe</p>
+          </div>
+        </button>
+
+        {filteredMembers.length > 0 && (
+          <>
+            <Separator className="my-2 bg-[#e5e5e0]" />
+            <p className="text-[10px] font-semibold tracking-wider uppercase text-[#7a7a76] px-2.5 mb-1">Membres</p>
+          </>
+        )}
+
+        {filteredMembers.map((member) => (
+          <button
+            key={member.id}
+            onClick={() => onSelect(member.id)}
+            className={cn(
+              'w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left transition-colors mb-0.5',
+              selectedConversation === member.id ? 'bg-[#059669]/10 text-[#059669]' : 'hover:bg-white/70 text-[#26251e]'
+            )}
+          >
+            <UserAvatar name={member.name} src={member.avatarBase64} />
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-semibold truncate">{member.name}</p>
+              <p className="text-[10px] text-[#7a7a76] truncate">{member.email}</p>
+            </div>
+          </button>
+        ))}
+
+        {members.length === 0 && (
+          <p className="text-[11px] text-[#7a7a76] px-2.5 py-3 text-center">Aucun membre actif</p>
+        )}
+      </div>
+    </>
+  );
+}
+
 // ── Main component ─────────────────────────────────────────────────────────────
 
 export default function MessagesRoot() {
@@ -221,6 +306,7 @@ export default function MessagesRoot() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState('');
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
+  const [mobileListOpen, setMobileListOpen] = useState(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const editInputRef = useRef<HTMLInputElement>(null);
@@ -623,70 +709,47 @@ export default function MessagesRoot() {
     <div className="flex h-full w-full overflow-hidden bg-white text-[#26251e]">
       {/* Left panel — hidden on mobile, visible on md+ */}
       <div className="hidden md:flex w-56 lg:w-64 flex-shrink-0 border-r border-[#e5e5e0] bg-[#f4f4f3] flex-col">
-        <div className="px-4 pt-5 pb-3">
-          <h1 className="text-sm font-bold text-[#26251e] tracking-tight mb-3">{t('messages.title')}</h1>
-          <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#7a7a76]" />
-            <Input
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={t('messages.search_members')}
-              className="pl-8 h-8 text-xs bg-white border-[#e5e5e0] rounded-lg"
-            />
-          </div>
-        </div>
-
-        <div className="flex-1 overflow-y-auto px-2 pb-4">
-          <button
-            onClick={() => setSelectedConversation('group')}
-            className={cn(
-              'w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left transition-colors mb-1',
-              selectedConversation === 'group' ? 'bg-[#059669]/10 text-[#059669]' : 'hover:bg-white/70 text-[#26251e]'
-            )}
-          >
-            <div className="w-9 h-9 rounded-full bg-[#059669]/15 flex items-center justify-center shrink-0">
-              <Users className="w-4 h-4 text-[#059669]" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-xs font-semibold truncate">{t('messages.group_chat')}</p>
-              <p className="text-[10px] text-[#7a7a76] truncate">Chat d'équipe</p>
-            </div>
-          </button>
-
-          {filteredMembers.length > 0 && (
-            <>
-              <Separator className="my-2 bg-[#e5e5e0]" />
-              <p className="text-[10px] font-semibold tracking-wider uppercase text-[#7a7a76] px-2.5 mb-1">Membres</p>
-            </>
-          )}
-
-          {filteredMembers.map((member) => (
-            <button
-              key={member.id}
-              onClick={() => setSelectedConversation(member.id)}
-              className={cn(
-                'w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left transition-colors mb-0.5',
-                selectedConversation === member.id ? 'bg-[#059669]/10 text-[#059669]' : 'hover:bg-white/70 text-[#26251e]'
-              )}
-            >
-              <UserAvatar name={member.name} src={member.avatarBase64} />
-              <div className="min-w-0 flex-1">
-                <p className="text-xs font-semibold truncate">{member.name}</p>
-                <p className="text-[10px] text-[#7a7a76] truncate">{member.email}</p>
-              </div>
-            </button>
-          ))}
-
-          {members.length === 0 && (
-            <p className="text-[11px] text-[#7a7a76] px-2.5 py-3 text-center">Aucun membre actif</p>
-          )}
-        </div>
+        <ConversationList
+          t={t}
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+          selectedConversation={selectedConversation}
+          onSelect={setSelectedConversation}
+          members={members}
+          filteredMembers={filteredMembers}
+        />
       </div>
+
+      {/* Mobile conversation switcher — slides over from the left */}
+      <Sheet open={mobileListOpen} onOpenChange={setMobileListOpen}>
+        <SheetContent side="left" className="w-72 p-0 flex flex-col bg-[#f4f4f3]">
+          <SheetHeader className="sr-only">
+            <SheetTitle>{t('messages.title')}</SheetTitle>
+          </SheetHeader>
+          <ConversationList
+            t={t}
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            selectedConversation={selectedConversation}
+            onSelect={(id) => { setSelectedConversation(id); setMobileListOpen(false); }}
+            members={members}
+            filteredMembers={filteredMembers}
+          />
+        </SheetContent>
+      </Sheet>
 
       {/* Right panel */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Header */}
         <div className="h-14 flex items-center gap-3 px-5 border-b border-[#e5e5e0] shrink-0 bg-white z-10">
+          <button
+            type="button"
+            onClick={() => setMobileListOpen(true)}
+            className="md:hidden -ml-1 mr-1 p-1.5 text-[#7a7a76] hover:text-[#26251e] transition-colors shrink-0"
+            aria-label="Changer de conversation"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
           {selectedConversation === 'group' ? (
             <>
               <div className="w-8 h-8 rounded-full bg-[#059669]/15 flex items-center justify-center">
