@@ -929,9 +929,11 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
       } catch { /* non-blocking */ }
 
       const res = await fetch(getApiUrl('/api/workspaces'));
+      console.log("[reach-context] GET /api/workspaces response status:", res.status);
       if (res.ok) {
         const data = await res.json();
         const list: Workspace[] = data.workspaces || [];
+        console.log("[reach-context] Workspaces loaded:", list.map(w => w.name), "activeWorkspaceId from DB:", data.activeWorkspaceId);
         setWorkspacesList(list);
 
         // Active workspace: prefer DB setting (settings.active_workspace_id), fallback to owned workspace
@@ -940,6 +942,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
         if (!active && list.length > 0) {
           active = list.find((w) => w.isOwner) || list[0];
         }
+        console.log("[reach-context] Resolved active workspace:", active?.name || 'NONE');
 
         if (!active && list.length === 0) {
           // No workspace at all (edge case: onboarding skipped workspace creation)
