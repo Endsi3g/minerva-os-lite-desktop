@@ -1800,11 +1800,11 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
               <span>{t('lead.back_to_portfolio')}</span>
             </Link>
           </Button>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
             {/* Copy lead info button */}
             <button
               onClick={handleCopyLeadInfo}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#e5e5e0] bg-white hover:bg-[#f4f4f3] text-[11px] font-bold text-[#26251e] transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#e5e5e0] bg-white hover:bg-[#f4f4f3] text-[11px] font-bold text-[#26251e] transition-colors whitespace-nowrap shrink-0"
             >
               <Copy className="h-3 w-3" />
               Copier les infos
@@ -1815,13 +1815,13 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
               <button
                 onClick={handleShareLead}
                 disabled={sharingLead}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#e5e5e0] bg-white hover:bg-[#f4f4f3] text-[11px] font-bold text-[#26251e] transition-colors disabled:opacity-60"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#e5e5e0] bg-white hover:bg-[#f4f4f3] text-[11px] font-bold text-[#26251e] transition-colors disabled:opacity-60 whitespace-nowrap shrink-0"
               >
                 {sharingLead ? <Loader2 className="h-3 w-3 animate-spin" /> : <Share2 className="h-3 w-3" />}
                 Partager
               </button>
             ) : (
-              <div className="flex items-center gap-1.5 bg-emerald-50 border border-emerald-200 rounded-lg px-2 py-1.5">
+              <div className="flex items-center gap-1.5 bg-emerald-50 border border-emerald-200 rounded-lg px-2 py-1.5 shrink-0">
                 <LinkIcon className="h-3 w-3 text-[#059669]" />
                 <span className="text-[10px] text-[#059669] font-semibold max-w-[140px] truncate">{shareLink}</span>
                 <button
@@ -1838,7 +1838,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                 </button>
               </div>
             )}
-            <div className="text-[10px] text-[#7a7a76] font-mono">
+            <div className="text-[10px] text-[#7a7a76] font-mono hidden sm:block">
               {t('lead.last_updated')} {new Date(lead.updatedAt).toLocaleString('fr-FR')}
             </div>
           </div>

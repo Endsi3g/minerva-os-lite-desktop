@@ -91,7 +91,7 @@ export default function RootLayout({
             </PageTransition>
           </LanguageProvider>
         </ThemeProvider>
-        <Toaster position="top-right" richColors closeButton />
+        <Toaster position="bottom-right" richColors closeButton />
         <Analytics />
         <SpeedInsights />
       </body>

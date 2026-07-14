@@ -362,7 +362,9 @@ export function InboxRoot() {
   if (!isConnected && viewMode !== 'drafts') {
     return (
       <div className="flex h-full flex-col overflow-hidden bg-white">
-        <OutreachNavBar />
+        <div className="hidden md:block">
+          <OutreachNavBar />
+        </div>
         <div className="flex items-center gap-0 border-b border-[#e5e5e0] bg-[#fafaf8] px-4 shrink-0">
           <button
             onClick={() => setViewMode('drafts')}
@@ -379,7 +381,9 @@ export function InboxRoot() {
 
   return (
     <div className="flex h-full flex-col overflow-hidden bg-white">
-      <OutreachNavBar />
+      <div className="hidden md:block">
+        <OutreachNavBar />
+      </div>
       {/* View mode tabs */}
       <div className="flex items-center gap-0 border-b border-[#e5e5e0] bg-[#fafaf8] px-4 shrink-0">
         <button

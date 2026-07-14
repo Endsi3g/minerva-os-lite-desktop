@@ -21,6 +21,19 @@ interface ChangelogVersion {
 
 const versions: ChangelogVersion[] = [
   {
+    version: 'v3.96.0',
+    date: '14 juillet 2026 · 09h08',
+    title: "Refoute Mobile Complète, UI/UX Aujourd'hui haute fidélité et correctifs de navigation",
+    highlights: [
+      { text: "Refonte de l'interface Aujourd'hui (Today) sur mobile : nouveau header épuré (avatar à gauche, Bonjour James, cloche de notification à droite), barre de recherche de prospects arrondie et widget de progression de la campagne sous forme de jauge semi-circulaire 85% avec bouton d'action 'Continuer la campagne'." },
+      { text: "Intégration d'un carrousel horizontal de catégories de prospects ('PME Québécoises', 'Grandes Entreprises', 'Startups Tech') et cartes de tâches quotidiennes compactes avec avatars d'attribution." },
+      { text: "Masquage de la double barre de navigation de l'Inbox sur mobile en désactivant OutreachNavBar sur les petits écrans." },
+      { text: "Décalage et positionnement optimisé du Toaster Sonner en bas à droite (bottom-right) pour éviter d'obstruer le header de l'application sur mobile." },
+      { text: "Adaptation responsive du header de détail du prospect : masquage de la date de mise à jour sur mobile et boutons d'actions nowrap pour éviter les retours à la ligne tronqués ('Copier les infos')." },
+      { text: "Correction du drawer mobile de fonctionnalités 'Plus' pour le rendre entièrement scrollable (max-h-85vh, overflow-y-auto) et rétractable via un bouton de fermeture dédié." }
+    ]
+  },
+  {
     version: 'v3.95.0',
     date: '11 juillet 2026 · 17h12',
     title: 'Bilan hebdomadaire quotidien, agent IA plus autonome et refonte mobile',

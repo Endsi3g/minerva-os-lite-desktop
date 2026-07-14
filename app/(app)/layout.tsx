@@ -1415,7 +1415,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
               onClick={() => router.push('/team/invite')}
               variant="ghost" 
               size="sm" 
-              className="h-8 text-xs font-semibold text-[#555552] hover:text-[#26251e] hover:bg-[#e5e5e2]/60 flex items-center gap-1.5 rounded-md px-3 border border-[#e5e5e0] cursor-pointer"
+              className="h-8 text-xs font-semibold text-[#555552] hover:text-[#26251e] hover:bg-[#e5e5e2]/60 hidden md:flex items-center gap-1.5 rounded-md px-3 border border-[#e5e5e0] cursor-pointer"
             >
               <UserPlus className="h-3.5 w-3.5" />
               <span>{t('nav.invite_members')}</span>
