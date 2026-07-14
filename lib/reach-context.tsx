@@ -2369,7 +2369,13 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
         table: 'leads',
         filter: `workspace_id=eq.${activeWorkspace.id}`
       }, (payload: { new: DbLead }) => {
-        setLeads(prev => prev.map(l => l.id === (payload.new as DbLead).id ? mapDbLeadToUi(payload.new as DbLead) : l));
+        setLeads(prev => prev.map(l => {
+          if (l.id === (payload.new as DbLead).id) {
+            const mapped = mapDbLeadToUi(payload.new as DbLead);
+            return { ...mapped, notes: l.notes };
+          }
+          return l;
+        }));
       })
       .on('postgres_changes', {
         event: 'DELETE',
@@ -2378,6 +2384,52 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
         filter: `workspace_id=eq.${activeWorkspace.id}`
       }, (payload: { old: { id: string } }) => {
         setLeads(prev => prev.filter(l => l.id !== (payload.old as { id: string }).id));
+      })
+      .subscribe();
+    return () => { channel.unsubscribe(); };
+  }, [activeWorkspace?.id]);
+
+  // Supabase Realtime subscription for notes (web only)
+  useEffect(() => {
+    const electronObj = getElectronSqlite();
+    if (electronObj || !activeWorkspace?.id) return;
+    const supabase = createClient();
+    const channel = supabase.channel(`notes_rt_${activeWorkspace.id}`)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'notes',
+        filter: `workspace_id=eq.${activeWorkspace.id}`
+      }, (payload: { new: DbNote }) => {
+        const note = payload.new;
+        setLeads(prev => prev.map(l => {
+          if (l.id === note.lead_id) {
+            if (l.notes.some(n => n.id === note.id)) return l;
+            return {
+              ...l,
+              notes: [...l.notes, {
+                id: note.id,
+                leadId: note.lead_id,
+                type: note.type,
+                content: note.content,
+                createdAt: note.created_at
+              }],
+              updatedAt: new Date().toISOString()
+            };
+          }
+          return l;
+        }));
+      })
+      .on('postgres_changes', {
+        event: 'DELETE',
+        schema: 'public',
+        table: 'notes',
+        filter: `workspace_id=eq.${activeWorkspace.id}`
+      }, (payload: { old: { id: string } }) => {
+        setLeads(prev => prev.map(l => ({
+          ...l,
+          notes: l.notes.filter(n => n.id !== payload.old.id)
+        })));
       })
       .subscribe();
     return () => { channel.unsubscribe(); };

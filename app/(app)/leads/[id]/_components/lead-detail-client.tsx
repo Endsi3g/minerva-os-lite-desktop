@@ -1997,13 +1997,13 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
             )}
 
             {/* Website scraper — AI business description (fed to the AI script + drafts) */}
-            {lead.website && (
-              <div className="rounded-lg border border-[#e5e5e0]/70 bg-[#f4f4f3]/40 p-3.5 space-y-2.5">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">
-                    <FileText className="h-3.5 w-3.5" />
-                    Description du site (IA)
-                  </div>
+            <div className="rounded-lg border border-[#e5e5e0]/70 bg-[#f4f4f3]/40 p-3.5 space-y-2.5">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">
+                  <FileText className="h-3.5 w-3.5" />
+                  Description de l&apos;entreprise
+                </div>
+                {lead.website && (
                   <Button
                     type="button"
                     size="sm"
@@ -2017,16 +2017,16 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                       : <Sparkles className="h-3 w-3 text-[#059669]" />}
                     {scrapingSite ? 'Analyse…' : lead.websiteDescription ? 'Régénérer' : 'Scraper le site'}
                   </Button>
-                </div>
-                {scrapeError && (
-                  <p className="text-[11px] text-red-600 font-medium">{scrapeError}</p>
                 )}
-                <DescriptionEditor
-                  value={lead.websiteDescription || ''}
-                  onSave={val => updateLead(lead.id, { websiteDescription: val })}
-                />
               </div>
-            )}
+              {scrapeError && (
+                <p className="text-[11px] text-red-600 font-medium">{scrapeError}</p>
+              )}
+              <DescriptionEditor
+                value={lead.websiteDescription || ''}
+                onSave={val => updateLead(lead.id, { websiteDescription: val })}
+              />
+            </div>
 
             {/* Social Links + Instagram Gallery */}
             <SocialLinksSection lead={lead} onSave={(fields) => updateLead(lead.id, fields)} />

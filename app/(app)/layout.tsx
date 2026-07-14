@@ -629,14 +629,26 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
       .catch(() => setUserPermissions(ALL_MODULES));
   }, [contextUser?.id, activeWorkspace?.id]);
 
-  // Listen for avatar updates broadcasted from settings save
+  // Listen for avatar, name and company updates broadcasted from settings save
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'minerva_avatar' && e.newValue !== null) {
+      if (e.key === 'minerva_avatar') {
         setUserProfile((prev) => prev ? { ...prev, avatarBase64: e.newValue } : prev);
         if (contextUser) {
-          setMemberAvatars((prev) => ({ ...prev, [contextUser.id]: e.newValue! }));
+          if (e.newValue) {
+            setMemberAvatars((prev) => ({ ...prev, [contextUser.id]: e.newValue! }));
+          } else {
+            setMemberAvatars((prev) => {
+              const copy = { ...prev };
+              delete copy[contextUser.id];
+              return copy;
+            });
+          }
         }
+      } else if (e.key === 'minerva_profile_name' && e.newValue !== null) {
+        setUserProfile((prev) => prev ? { ...prev, fullName: e.newValue! } : prev);
+      } else if (e.key === 'minerva_company_name' && e.newValue !== null) {
+        setUserProfile((prev) => prev ? { ...prev, companyName: e.newValue! } : prev);
       }
     };
     window.addEventListener('storage', handleStorageChange);

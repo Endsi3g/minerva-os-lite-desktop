@@ -244,12 +244,33 @@ export function SettingsRoot() {
       const nextSettings = { ...prev, [secKey]: newSectionData };
       localStorage.setItem('minerva_reach_settings', JSON.stringify(nextSettings));
 
-      // Broadcast avatar update so the topbar reflects it immediately
-      if (secKey === 'profile' && nextSettings.profile.avatarBase64) {
-        localStorage.setItem('minerva_avatar', nextSettings.profile.avatarBase64);
+      // Broadcast avatar, name and company updates so the topbar reflects it immediately
+      if (secKey === 'profile') {
+        if (nextSettings.profile.avatarBase64) {
+          localStorage.setItem('minerva_avatar', nextSettings.profile.avatarBase64);
+        } else {
+          localStorage.removeItem('minerva_avatar');
+        }
         window.dispatchEvent(new StorageEvent('storage', {
           key: 'minerva_avatar',
-          newValue: nextSettings.profile.avatarBase64,
+          newValue: nextSettings.profile.avatarBase64 || null,
+          storageArea: localStorage,
+        }));
+
+        const fullName = `${nextSettings.profile.firstName} ${nextSettings.profile.lastName}`.trim();
+        localStorage.setItem('minerva_profile_name', fullName);
+        window.dispatchEvent(new StorageEvent('storage', {
+          key: 'minerva_profile_name',
+          newValue: fullName,
+          storageArea: localStorage,
+        }));
+      }
+
+      if (secKey === 'workspaceGeneral') {
+        localStorage.setItem('minerva_company_name', nextSettings.workspaceGeneral.workspaceName);
+        window.dispatchEvent(new StorageEvent('storage', {
+          key: 'minerva_company_name',
+          newValue: nextSettings.workspaceGeneral.workspaceName,
           storageArea: localStorage,
         }));
       }
@@ -261,10 +282,10 @@ export function SettingsRoot() {
           if (user) {
             const { error: baseError } = await supabase.from('settings').upsert({
               user_id: user.id,
-              full_name: nextSettings.profile.firstName,
+              full_name: `${nextSettings.profile.firstName} ${nextSettings.profile.lastName}`.trim(),
               last_name: nextSettings.profile.lastName,
               phone: nextSettings.profile.phone,
-              company_name: nextSettings.profile.email,
+              email: nextSettings.profile.email,
               timezone: nextSettings.profile.timezone,
               bio: nextSettings.profile.bio,
               avatar_base64: nextSettings.profile.avatarBase64,
@@ -290,6 +311,7 @@ export function SettingsRoot() {
               const { error: wgError } = await supabase.from('settings').upsert({
                 user_id: user.id,
                 workspace_name: wg.workspaceName,
+                company_name: wg.workspaceName,
                 company_description: wg.companyDescription,
                 workspace_icon_base64: wg.workspaceIconBase64,
               });

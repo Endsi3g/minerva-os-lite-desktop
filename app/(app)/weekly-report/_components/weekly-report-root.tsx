@@ -87,16 +87,23 @@ function renderReport(text: string): React.ReactNode[] {
   const cleaned = stripMarkdown(text);
   const paragraphs = cleaned.split(/\n{2,}/).filter(Boolean);
   return paragraphs.map((para, i) => {
-    // Numbered items (1. 2. 3.) get slight emphasis styling
     const isNumbered = /^\d+\./.test(para.trim());
     const lines = para.split('\n').filter(Boolean);
     return (
-      <div key={i} className={cn('space-y-0.5', isNumbered ? 'pl-0' : '')}>
-        {lines.map((line, j) => (
-          <p key={j} className="text-sm text-[#26251e] leading-relaxed">
-            {line}
-          </p>
-        ))}
+      <div key={i} className={cn('space-y-1.5 border-l-2 pl-3.5 transition-colors duration-200', isNumbered ? 'border-[#059669]/25 hover:border-[#059669]' : 'border-transparent')}>
+        {lines.map((line, j) => {
+          const isBullet = line.trim().startsWith('-') || line.trim().startsWith('•');
+          const cleanLine = isBullet ? line.trim().replace(/^[-•]\s*/, '') : line;
+          return (
+            <p key={j} className={cn(
+              "text-xs leading-relaxed text-[#4a4a45]",
+              isNumbered && j === 0 ? "font-bold text-[#1c1b18] text-sm mb-1" : "",
+              isBullet ? "flex items-start gap-2 before:content-['•'] before:text-[#059669] before:font-bold before:text-sm pl-2" : ""
+            )}>
+              {cleanLine}
+            </p>
+          );
+        })}
       </div>
     );
   });
@@ -212,7 +219,7 @@ export function WeeklyReportRoot() {
     : dateRange;
 
   return (
-    <div className="relative min-h-full overflow-x-hidden bg-[#fafaf8]">
+    <div className="relative min-h-full overflow-x-hidden bg-[#fafaf8] selection:bg-[#059669]/10 text-[#26251e] font-sans">
       {/* === Background visual matching Home/Team pages === */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden" aria-hidden>
         {/* Radial orbs */}
@@ -232,17 +239,17 @@ export function WeeklyReportRoot() {
 
       <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 md:px-8 py-6 md:py-10">
         {/* === HEADER === */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
           <div className="flex items-center gap-3">
-            <Link href="/today" className="flex items-center justify-center h-9 w-9 rounded-lg border border-[#e5e5e0] bg-white hover:bg-[#f4f4f3] transition-colors shrink-0">
-              <ArrowLeft className="h-4 w-4 text-[#26251e]" />
+            <Link href="/today" className="flex items-center justify-center h-10 w-10 rounded-xl border border-[#e5e5e0] bg-white hover:bg-[#f4f4f3] hover:shadow-xs transition-all shrink-0">
+              <ArrowLeft className="h-4.5 w-4.5 text-[#26251e]" />
             </Link>
             <div>
-              <h1 className="text-lg font-black text-[#26251e] flex items-center gap-2">
+              <h1 className="text-xl font-black text-[#26251e] tracking-tight flex items-center gap-2">
                 <BarChart3 className="h-5 w-5 text-[#059669]" />
                 Bilan de la semaine
               </h1>
-              <p className="text-xs text-[#7a7a76] mt-0.5">{activeRange}</p>
+              <p className="text-xs text-[#7a7a76] mt-0.5 font-medium">{activeRange}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -250,7 +257,7 @@ export function WeeklyReportRoot() {
             <button
               onClick={() => setHistoryOpen(v => !v)}
               className={cn(
-                'flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-bold transition-colors shrink-0',
+                'flex items-center gap-1.5 rounded-xl border px-3.5 py-2.5 text-xs font-bold transition-all shrink-0 shadow-xs hover:-translate-y-0.5 active:translate-y-0',
                 historyOpen
                   ? 'border-[#059669] bg-[#059669]/8 text-[#059669]'
                   : 'border-[#e5e5e0] bg-white hover:bg-[#f4f4f3] text-[#26251e]'
@@ -259,7 +266,7 @@ export function WeeklyReportRoot() {
               <Clock className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Historique</span>
               {history.length > 0 && (
-                <span className="bg-[#059669] text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">
+                <span className="bg-[#059669] text-white text-[9px] font-black px-2 py-0.5 rounded-full ml-1">
                   {history.length}
                 </span>
               )}
@@ -267,7 +274,7 @@ export function WeeklyReportRoot() {
             <button
               onClick={() => { fetchReport(); fetchActivity(); }}
               disabled={loadingReport || loadingActivity}
-              className="flex items-center gap-1.5 rounded-lg border border-[#e5e5e0] bg-white hover:bg-[#f4f4f3] disabled:opacity-50 px-3 py-2 text-xs font-bold text-[#26251e] transition-colors shrink-0"
+              className="flex items-center gap-1.5 rounded-xl border border-[#e5e5e0] bg-white hover:bg-[#f4f4f3] disabled:opacity-50 px-3.5 py-2.5 text-xs font-bold text-[#26251e] transition-all shrink-0 shadow-xs hover:-translate-y-0.5 active:translate-y-0"
             >
               {loadingReport || loadingActivity ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
               <span className="hidden sm:inline">Actualiser</span>
@@ -275,33 +282,33 @@ export function WeeklyReportRoot() {
           </div>
         </div>
 
-        <div className="flex flex-col lg:flex-row gap-5">
+        <div className="flex flex-col lg:flex-row gap-6">
           {/* === HISTORY SIDEBAR === */}
           {historyOpen && (
-            <div className="lg:w-56 shrink-0">
-              <div className="rounded-xl border border-[#e5e5e0] bg-white/80 backdrop-blur-sm overflow-hidden">
-                <div className="px-4 py-3 border-b border-[#e5e5e0]">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Bilans précédents</p>
+            <div className="lg:w-60 shrink-0 animate-in fade-in slide-in-from-left-2 duration-300">
+              <div className="rounded-2xl border border-[#e5e5e0] bg-white/90 backdrop-blur-md overflow-hidden shadow-sm">
+                <div className="px-5 py-4 border-b border-[#e5e5e0] bg-[#fafaf8]">
+                  <p className="text-[10px] font-black uppercase tracking-wider text-[#7a7a76]">Bilans précédents</p>
                 </div>
-                <div className="divide-y divide-[#e5e5e0] max-h-[400px] overflow-y-auto">
+                <div className="divide-y divide-[#e5e5e0]/60 max-h-[400px] overflow-y-auto">
                   {/* Current week */}
                   <button
                     onClick={() => setSelectedWeek(null)}
                     className={cn(
-                      'w-full text-left px-4 py-3 hover:bg-[#f4f4f3] transition-colors',
-                      !selectedWeek ? 'bg-[#059669]/6' : ''
+                      'w-full text-left px-5 py-4 hover:bg-[#f4f4f3] transition-colors',
+                      !selectedWeek ? 'bg-[#059669]/6 border-l-2 border-l-[#059669]' : 'border-l-2 border-l-transparent'
                     )}
                   >
-                    <p className={cn('text-xs font-bold', !selectedWeek ? 'text-[#059669]' : 'text-[#26251e]')}>
+                    <p className={cn('text-xs font-black', !selectedWeek ? 'text-[#059669]' : 'text-[#26251e]')}>
                       Cette semaine
                     </p>
-                    <p className="text-[10px] text-[#7a7a76] mt-0.5">{dateRange}</p>
+                    <p className="text-[10px] text-[#7a7a76] mt-0.5 font-semibold">{dateRange}</p>
                   </button>
 
                   {history.length === 0 && (
-                    <div className="px-4 py-4 text-center">
+                    <div className="px-5 py-6 text-center">
                       <p className="text-xs text-[#7a7a76]">Aucun bilan enregistré.</p>
-                      <p className="text-[10px] text-[#b0b0a8] mt-1">Générez votre premier rapport ci-contre.</p>
+                      <p className="text-[10px] text-[#b0b0a8] mt-1 font-semibold">Générez votre premier rapport.</p>
                     </div>
                   )}
 
@@ -310,15 +317,15 @@ export function WeeklyReportRoot() {
                       key={r.id}
                       onClick={() => setSelectedWeek(r)}
                       className={cn(
-                        'w-full text-left px-4 py-3 hover:bg-[#f4f4f3] transition-colors flex items-center justify-between gap-2',
-                        selectedWeek?.id === r.id ? 'bg-[#059669]/6' : ''
+                        'w-full text-left px-5 py-4 hover:bg-[#f4f4f3] transition-colors flex items-center justify-between gap-2 border-l-2',
+                        selectedWeek?.id === r.id ? 'bg-[#059669]/6 border-l-[#059669]' : 'border-l-transparent'
                       )}
                     >
                       <div className="min-w-0">
-                        <p className={cn('text-xs font-bold truncate', selectedWeek?.id === r.id ? 'text-[#059669]' : 'text-[#26251e]')}>
+                        <p className={cn('text-xs font-black truncate', selectedWeek?.id === r.id ? 'text-[#059669]' : 'text-[#26251e]')}>
                           {formatWeekLabel(r.week_start, r.week_end)}
                         </p>
-                        <p className="text-[10px] text-[#7a7a76] mt-0.5">
+                        <p className="text-[10px] text-[#7a7a76] mt-0.5 font-semibold">
                           {formatDistanceToNow(new Date(r.created_at), { addSuffix: true, locale: fr })}
                         </p>
                       </div>
@@ -331,122 +338,137 @@ export function WeeklyReportRoot() {
           )}
 
           {/* === MAIN CONTENT === */}
-          <div className="flex-1 min-w-0 space-y-5">
+          <div className="flex-1 min-w-0 space-y-6">
 
             {/* Selected week banner */}
             {selectedWeek && (
-              <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#059669]/8 border border-[#059669]/20">
-                <Clock className="h-3.5 w-3.5 text-[#059669] shrink-0" />
+              <div className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-[#059669]/8 border border-[#059669]/20 shadow-xs animate-in fade-in slide-in-from-top-1 duration-200">
+                <Clock className="h-4 w-4 text-[#059669] shrink-0" />
                 <p className="text-xs font-bold text-[#059669]">
                   Bilan archivé — semaine du {formatWeekLabel(selectedWeek.week_start, selectedWeek.week_end)}
                 </p>
-                <button onClick={() => setSelectedWeek(null)} className="ml-auto text-[10px] text-[#7a7a76] hover:text-[#26251e] transition-colors font-bold">
+                <button onClick={() => setSelectedWeek(null)} className="ml-auto text-[10px] text-[#7a7a76] hover:text-[#26251e] transition-colors font-black uppercase tracking-wider">
                   Semaine actuelle →
                 </button>
               </div>
             )}
 
             {/* Metrics */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
               {[
-                { label: 'NBA accepté', value: activeMetrics ? `${activeMetrics.nbaAcceptanceRate}%` : '—', accent: activeMetrics && activeMetrics.nbaAcceptanceRate > 50 ? '#059669' : '#d97706' },
-                { label: 'Bookings', value: activeMetrics?.bookingsThisWeek ?? totals?.bookingsThisWeek ?? '—', accent: '#26251e' },
-                { label: 'Réponses positives', value: activeMetrics?.positiveRepliesThisWeek ?? totals?.positiveRepliesThisWeek ?? '—', accent: '#26251e' },
-                { label: 'Leads avancés', value: activeMetrics?.leadsAdvanced ?? '—', accent: '#26251e' },
-                { label: 'Brouillons générés', value: totals?.draftsGenerated ?? '—', accent: '#26251e' },
-                { label: 'Actions IA exécutées', value: activeMetrics?.nbaExecuted ?? totals?.actionsExecuted ?? '—', accent: '#059669' },
-              ].map(({ label, value, accent }) => (
-                <div key={label} className="rounded-xl border border-[#e5e5e0] bg-white/80 backdrop-blur-sm px-4 py-3 flex flex-col gap-1">
-                  <p className="text-2xl font-black leading-none" style={{ color: accent }}>{value}</p>
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">{label}</p>
+                { label: 'NBA accepté', value: activeMetrics ? `${activeMetrics.nbaAcceptanceRate}%` : '—', accent: activeMetrics && activeMetrics.nbaAcceptanceRate > 50 ? '#059669' : '#d97706', bg: 'from-emerald-50/40 to-transparent' },
+                { label: 'Bookings', value: activeMetrics?.bookingsThisWeek ?? totals?.bookingsThisWeek ?? '—', accent: '#26251e', bg: 'from-stone-50/40 to-transparent' },
+                { label: 'Réponses positives', value: activeMetrics?.positiveRepliesThisWeek ?? totals?.positiveRepliesThisWeek ?? '—', accent: '#26251e', bg: 'from-stone-50/40 to-transparent' },
+                { label: 'Leads avancés', value: activeMetrics?.leadsAdvanced ?? '—', accent: '#26251e', bg: 'from-stone-50/40 to-transparent' },
+                { label: 'Brouillons générés', value: totals?.draftsGenerated ?? '—', accent: '#26251e', bg: 'from-stone-50/40 to-transparent' },
+                { label: 'Actions IA exécutées', value: activeMetrics?.nbaExecuted ?? totals?.actionsExecuted ?? '—', accent: '#059669', bg: 'from-emerald-50/40 to-transparent' },
+              ].map(({ label, value, accent, bg }) => (
+                <div key={label} className={cn(
+                  "relative group overflow-hidden rounded-2xl border border-[#e5e5e0] bg-white p-5 flex flex-col justify-between transition-all duration-300 hover:shadow-md hover:border-[#059669]/20 hover:-translate-y-0.5",
+                  "bg-gradient-to-br"
+                )} style={{ backgroundImage: bg ? undefined : `linear-gradient(to bottom right, ${accent}04, transparent)` }}>
+                  <p className="text-[10px] font-black uppercase tracking-wider text-[#7a7a76]">{label}</p>
+                  <p className="text-3xl font-black leading-none mt-3 transition-transform duration-300 group-hover:scale-[1.02]" style={{ color: accent }}>{value}</p>
                 </div>
               ))}
             </div>
 
             {activeMetrics?.topNiche && (
-              <span className="inline-flex items-center gap-1 bg-[#059669]/10 text-[#059669] text-xs font-bold px-2.5 py-1 rounded-full w-fit">
-                <Sparkles className="h-3 w-3" />
-                Niche top : {activeMetrics.topNiche}
+              <span className="inline-flex items-center gap-1.5 bg-[#059669]/8 text-[#059669] text-xs font-bold px-3 py-1.5 rounded-full border border-[#059669]/15 shadow-xs transition-all hover:bg-[#059669]/12">
+                <Sparkles className="h-3.5 w-3.5 animate-pulse" />
+                Niche performante : <strong className="font-black underline decoration-dotted">{activeMetrics.topNiche}</strong>
               </span>
             )}
 
-            {/* AI Report — plain text */}
-            <div className="rounded-xl border border-[#e5e5e0] bg-white/80 backdrop-blur-sm p-5 space-y-3">
-              <div className="flex items-center gap-2">
-                <BrainCircuit className="h-4 w-4 text-[#059669]" />
-                <h2 className="text-xs font-bold uppercase tracking-wider text-[#7a7a76]">Rapport IA</h2>
+            {/* AI Report — premium card */}
+            <div className="group rounded-2xl border border-[#e5e5e0] border-t-2 border-t-[#059669] bg-white/90 backdrop-blur-md p-6 space-y-4 shadow-sm hover:shadow-md transition-all duration-300">
+              <div className="flex items-center justify-between border-b border-[#f4f4f3] pb-3">
+                <div className="flex items-center gap-2">
+                  <div className="h-7 w-7 rounded-lg bg-[#059669]/8 flex items-center justify-center text-[#059669]">
+                    <BrainCircuit className="h-4 w-4" />
+                  </div>
+                  <h2 className="text-xs font-black uppercase tracking-wider text-[#26251e]">Rapport Intelligence</h2>
+                </div>
+                <div className="flex items-center gap-1 text-[10px] text-[#7a7a76] font-semibold bg-[#fafaf8] px-2 py-0.5 rounded-md border border-[#e5e5e0]/30">
+                  <Sparkles className="h-3 w-3 text-[#059669] animate-pulse" />
+                  Généré par IA
+                </div>
               </div>
+              
               {loadingReport && !activeReport && (
-                <div className="space-y-2 pt-1">
+                <div className="space-y-3 pt-1">
                   {[1, 2, 3].map((i) => (
-                    <div key={i} className="h-4 rounded bg-[#f4f4f3] animate-pulse" style={{ width: `${90 - i * 10}%` }} />
+                    <div key={i} className="h-4 rounded bg-[#f4f4f3] animate-pulse" style={{ width: `${95 - i * 12}%` }} />
                   ))}
                 </div>
               )}
               {reportError && !loadingReport && !selectedWeek && (
-                <p className="text-xs text-[#7a7a76]">Rapport non disponible — vérifiez vos paramètres IA.</p>
+                <p className="text-xs text-[#7a7a76] font-semibold">Rapport non disponible — vérifiez vos paramètres IA.</p>
               )}
               {activeReport && (
-                <div className="space-y-3 pt-1">
+                <div className="space-y-4 pt-1 text-[#3c3c3a] leading-relaxed selection:bg-[#059669]/10">
                   {renderReport(activeReport)}
                 </div>
               )}
               {!activeReport && !loadingReport && !reportError && (
-                <p className="text-xs text-[#7a7a76]">Cliquez sur "Actualiser" pour générer le bilan de cette semaine.</p>
+                <p className="text-xs text-[#7a7a76] font-semibold">Cliquez sur &quot;Actualiser&quot; pour générer le bilan de cette semaine.</p>
               )}
             </div>
 
             {/* Activity log — only shown for current week */}
             {!selectedWeek && (
-              <div className="space-y-3">
-                <h2 className="text-xs font-bold uppercase tracking-wider text-[#7a7a76] px-1">
+              <div className="space-y-3 pt-2">
+                <h2 className="text-xs font-black uppercase tracking-wider text-[#7a7a76] px-1.5">
                   Journal complet des actions ({activity.length})
                 </h2>
 
                 {loadingActivity && activity.length === 0 && (
-                  <div className="rounded-xl border border-[#e5e5e0] bg-white/80 p-5 space-y-2">
+                  <div className="rounded-2xl border border-[#e5e5e0] bg-white/80 p-6 space-y-3">
                     {[1, 2, 3].map((i) => <div key={i} className="h-10 rounded bg-[#f4f4f3] animate-pulse" />)}
                   </div>
                 )}
 
                 {!loadingActivity && activity.length === 0 && (
-                  <div className="rounded-xl border border-[#e5e5e0] bg-white/80 p-5">
-                    <p className="text-xs text-[#7a7a76]">Aucune action enregistrée cette semaine.</p>
+                  <div className="rounded-2xl border border-[#e5e5e0] bg-white/80 p-6">
+                    <p className="text-xs text-[#7a7a76] font-semibold">Aucune action enregistrée cette semaine.</p>
                   </div>
                 )}
 
                 {grouped.map((group) => (
-                  <div key={group.label} className="space-y-1.5">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76] px-1 capitalize">{group.label}</p>
-                    <div className="rounded-xl border border-[#e5e5e0] bg-white/80 divide-y divide-[#e5e5e0]">
+                  <div key={group.label} className="space-y-2.5">
+                    <p className="text-[10px] font-black uppercase tracking-wider text-[#7a7a76] px-1.5 capitalize flex items-center gap-1.5">
+                      <span className="w-1 h-1 rounded-full bg-[#7a7a76]" />
+                      {group.label}
+                    </p>
+                    <div className="rounded-2xl border border-[#e5e5e0] bg-white/80 backdrop-blur-sm divide-y divide-[#f4f4f3] overflow-hidden shadow-xs">
                       {group.items.map((item) => {
                         const Icon = TOOL_ICONS[item.tool] ?? Sparkles;
                         return (
-                          <div key={item.id} className="flex items-start gap-3 px-4 py-3">
+                          <div key={item.id} className="flex items-start gap-3.5 px-5 py-4 transition-all duration-300 hover:bg-[#fafaf8]/60">
                             <div className={cn(
-                              'flex items-center justify-center h-8 w-8 rounded-lg shrink-0',
-                              item.executed ? 'bg-[#059669]/10 text-[#059669]' : 'bg-[#f4f4f3] text-[#7a7a76]',
+                              'flex items-center justify-center h-9 w-9 rounded-xl shrink-0 transition-transform duration-300 hover:scale-105',
+                              item.executed ? 'bg-[#059669]/8 text-[#059669]' : 'bg-stone-100/80 text-stone-500',
                             )}>
-                              <Icon className="h-4 w-4" />
+                              <Icon className="h-4.5 w-4.5" />
                             </div>
-                            <div className="flex-1 min-w-0">
+                            <div className="flex-1 min-w-0 space-y-0.5">
                               <div className="flex items-center gap-2 flex-wrap">
-                                <p className="text-xs font-bold text-[#26251e]">{item.label}</p>
+                                <p className="text-xs font-black text-[#26251e] leading-snug">{item.label}</p>
                                 {item.leadId && item.leadName && (
-                                  <Link href={`/leads/${item.leadId}`} className="text-[10px] font-bold text-[#059669] hover:text-[#047857] transition-colors">
+                                  <Link href={`/leads/${item.leadId}`} className="text-[10px] font-black text-[#059669] hover:underline decoration-wavy flex items-center gap-0.5 bg-[#059669]/5 px-2 py-0.5 rounded-md">
                                     {item.leadName}
                                   </Link>
                                 )}
                                 <span className={cn(
-                                  'text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full',
-                                  item.executed ? 'bg-[#059669]/10 text-[#059669]' : 'bg-amber-50 text-amber-600',
+                                  'text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border',
+                                  item.executed ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-amber-50 text-amber-600 border-amber-100',
                                 )}>
                                   {item.executed ? 'Exécutée' : 'Suggérée'}
                                 </span>
                               </div>
-                              {item.reasoning && <p className="text-[11px] text-[#7a7a76] mt-0.5 leading-relaxed">{item.reasoning}</p>}
+                              {item.reasoning && <p className="text-[11px] text-[#7a7a76] leading-relaxed max-w-2xl">{item.reasoning}</p>}
                             </div>
-                            <span className="text-[10px] text-[#7a7a76] shrink-0 whitespace-nowrap">
+                            <span className="text-[9px] font-bold text-[#b0b0a8] shrink-0 whitespace-nowrap bg-[#f4f4f3]/40 px-2 py-0.5 rounded border border-[#e5e5e0]/30">
                               {formatDistanceToNow(new Date(item.createdAt), { addSuffix: true, locale: fr })}
                             </span>
                           </div>

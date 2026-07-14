@@ -30,7 +30,7 @@ import {
   AreaChart,
 } from 'recharts';
 import { createClient } from '@/lib/supabase/client';
-import { format, parseISO, eachDayOfInterval, subDays, startOfDay } from 'date-fns';
+import { format, parseISO, eachDayOfInterval, subDays } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
 interface Member {
@@ -210,7 +210,7 @@ export default function MemberProfilePage() {
   const effectivePerms = DEFAULT_ROLE_PERMISSIONS[selectedRole] ?? [];
   const displayName = member?.profile?.full_name || member?.email?.split('@')[0] || 'Membre';
   const avatar = member?.profile?.avatar_base64;
-  const activeRole = DEFAULT_ROLE_CONFIG.find(r => r.key === selectedRole);
+  const activeRoleConfig = DEFAULT_ROLE_CONFIG.find(r => r.key === selectedRole);
   const joinedAt = member?.joined_at || member?.invited_at;
   const joinedLabel = joinedAt ? format(parseISO(joinedAt), 'd MMMM yyyy', { locale: fr }) : null;
 
@@ -248,8 +248,8 @@ export default function MemberProfilePage() {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-4 bg-[#fafaf8] px-6 text-center">
         <AlertCircle className="h-10 w-10 text-red-400" />
-        <p className="text-sm font-semibold text-[#555552]">{error}</p>
-        <button onClick={() => router.back()} className="text-xs font-bold text-[#059669] hover:underline">
+        <p className="text-sm font-bold text-[#26251e]">{error}</p>
+        <button onClick={() => router.back()} className="text-xs font-black text-[#059669] hover:underline">
           ← Retour
         </button>
       </div>
@@ -259,23 +259,31 @@ export default function MemberProfilePage() {
   const totalActivity = dailyActivity.reduce((s, d) => s + d.leads + d.tasks, 0);
 
   return (
-    <div className="relative min-h-full bg-[#fafaf8] text-[#26251e] font-sans overflow-x-hidden">
+    <div className="relative min-h-full bg-[#fafaf8] text-[#26251e] font-sans overflow-x-hidden selection:bg-[#059669]/10">
       {/* Background orbs */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden" aria-hidden>
-        <div className="absolute -top-32 -right-32 w-[400px] h-[400px] rounded-full bg-[#059669]/6 blur-[100px]" />
-        <div className="absolute top-1/2 -left-24 w-[320px] h-[320px] rounded-full bg-[#059669]/4 blur-[80px]" />
+        <div className="absolute -top-32 -right-32 w-[500px] h-[500px] rounded-full bg-[#059669]/6 blur-[120px]" />
+        <div className="absolute top-1/2 -left-24 w-[360px] h-[360px] rounded-full bg-[#059669]/4 blur-[100px]" />
+        <div
+          className="absolute inset-0 opacity-[0.015]"
+          style={{
+            backgroundImage:
+              'linear-gradient(to right, #26251e 1px, transparent 1px), linear-gradient(to bottom, #26251e 1px, transparent 1px)',
+            backgroundSize: '48px 48px',
+          }}
+        />
       </div>
 
       <div className="relative z-10">
         {/* ── HERO ── */}
         <div className="relative overflow-hidden">
-          <div className="h-32 sm:h-40 bg-gradient-to-br from-[#059669]/12 via-[#f4f4f3] to-[#059669]/6 border-b border-[#e5e5e0]" />
+          <div className="h-36 sm:h-44 bg-gradient-to-br from-[#059669]/10 via-[#fafaf8] to-[#059669]/4 border-b border-[#e5e5e0]" />
 
           <div className="max-w-3xl mx-auto px-4 sm:px-6 md:px-8">
             <div className="absolute top-4 left-4 sm:left-6 md:left-8">
               <button
                 onClick={() => router.back()}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#e5e5e0] bg-white/80 backdrop-blur-sm hover:bg-white transition-colors text-xs font-semibold text-[#555552]"
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-[#e5e5e0] bg-white/80 backdrop-blur-md hover:bg-white hover:shadow-xs transition-all text-xs font-black text-[#26251e]"
               >
                 <ArrowLeft className="h-3.5 w-3.5" />
                 Retour
@@ -284,7 +292,7 @@ export default function MemberProfilePage() {
 
             <div className="flex flex-col items-center -mt-16 sm:-mt-20 pb-4">
               <div className="relative">
-                <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-full border-4 border-white shadow-xl overflow-hidden bg-[#e5e5e2] flex items-center justify-center">
+                <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-full border-4 border-white shadow-xl overflow-hidden bg-[#e5e5e2] flex items-center justify-center transition-transform duration-300 hover:scale-[1.02]">
                   {avatar ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={avatar} alt={displayName} className="w-full h-full object-cover" />
@@ -295,35 +303,35 @@ export default function MemberProfilePage() {
                   )}
                 </div>
                 <div className={cn(
-                  'absolute bottom-2 right-2 w-4 h-4 rounded-full border-2 border-white',
+                  'absolute bottom-2 right-2 w-5 h-5 rounded-full border-4 border-white shadow-sm',
                   member?.status === 'active' ? 'bg-[#059669]' : 'bg-[#d4d4cd]'
                 )} />
               </div>
 
-              <div className="text-center mt-3 space-y-1">
-                <h1 className="text-xl sm:text-2xl font-black text-[#26251e]">{displayName}</h1>
-                <p className="text-sm text-[#7a7a76]">{member?.email}</p>
-                <div className="flex items-center justify-center gap-2 flex-wrap mt-2">
+              <div className="text-center mt-4 space-y-1.5">
+                <h1 className="text-xl sm:text-2xl font-black text-[#26251e] tracking-tight">{displayName}</h1>
+                <p className="text-xs font-semibold text-[#7a7a76]">{member?.email}</p>
+                <div className="flex items-center justify-center gap-2 flex-wrap mt-2.5">
                   {member?.isOwner && (
-                    <span className="text-[9px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full border bg-[#059669]/8 text-[#059669] border-[#059669]/20">
+                    <span className="text-[9px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full border bg-[#059669]/8 text-[#059669] border-[#059669]/15">
                       Propriétaire
                     </span>
                   )}
                   <span className={cn(
-                    'text-[9px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full border',
+                    'text-[9px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full border',
                     member?.status === 'active'
-                      ? 'bg-emerald-50 text-emerald-600 border-emerald-200'
-                      : 'bg-[#f4f4f3] text-[#7a7a76] border-[#e5e5e0]'
+                      ? 'bg-emerald-50 text-emerald-600 border-emerald-100'
+                      : 'bg-stone-50 text-stone-500 border-stone-200'
                   )}>
                     {member?.status === 'active' ? 'Actif' : 'En attente'}
                   </span>
-                  <span className="text-[9px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full bg-[#f4f4f3] border border-[#e5e5e0] text-[#555552]">
+                  <span className="text-[9px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full bg-stone-100 border border-stone-200 text-stone-600">
                     {DEFAULT_ROLE_CONFIG.find(r => r.key === member?.role)?.label ?? member?.role ?? 'Éditeur'}
                   </span>
                 </div>
                 {joinedLabel && (
-                  <p className="text-xs text-[#7a7a76] flex items-center justify-center gap-1 mt-1">
-                    <CalendarDays className="h-3 w-3" />
+                  <p className="text-xs font-semibold text-[#7a7a76] flex items-center justify-center gap-1.5 mt-2">
+                    <CalendarDays className="h-3.5 w-3.5 text-[#059669]" />
                     A rejoint le {joinedLabel}
                   </p>
                 )}
@@ -333,23 +341,24 @@ export default function MemberProfilePage() {
         </div>
 
         {/* ── TABS ── */}
-        <div className="border-b border-[#e5e5e0] bg-white/60 backdrop-blur-sm sticky top-0 z-20">
+        <div className="border-b border-[#e5e5e0] bg-white/80 backdrop-blur-md sticky top-0 z-20 shadow-xs">
           <div className="max-w-3xl mx-auto px-4 sm:px-6 md:px-8">
-            <div className="flex overflow-x-auto scrollbar-hide gap-0">
+            <div className="flex gap-2">
               {tabs.map(tab => {
                 const Icon = tab.icon;
+                const isActive = activeTab === tab.id;
                 return (
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
                     className={cn(
-                      'flex items-center gap-1.5 px-4 py-3 text-xs font-bold whitespace-nowrap border-b-2 transition-all',
-                      activeTab === tab.id
+                      'flex items-center gap-2 px-4 py-4 text-xs font-black whitespace-nowrap border-b-2 transition-all duration-200',
+                      isActive
                         ? 'border-[#059669] text-[#059669]'
                         : 'border-transparent text-[#7a7a76] hover:text-[#26251e]'
                     )}
                   >
-                    <Icon className="h-3.5 w-3.5" />
+                    <Icon className="h-4 w-4" />
                     {tab.label}
                   </button>
                 );
@@ -359,50 +368,55 @@ export default function MemberProfilePage() {
         </div>
 
         {/* ── CONTENT ── */}
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 md:px-8 py-6 space-y-5">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 md:px-8 py-6 space-y-6">
           {error && (
-            <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700 font-semibold">
-              <AlertCircle className="h-4 w-4 shrink-0" />
+            <div className="flex items-center gap-2.5 p-4 bg-red-50 border border-red-200 rounded-2xl text-xs text-red-700 font-bold shadow-xs">
+              <AlertCircle className="h-4.5 w-4.5 shrink-0" />
               {error}
             </div>
           )}
 
           {/* ── OVERVIEW TAB ── */}
           {activeTab === 'overview' && (
-            <div className="space-y-5 animate-in fade-in duration-200">
+            <div className="space-y-6 animate-in fade-in duration-200">
               {/* Quick stat cards — real data only */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 {[
-                  { label: 'Leads',       value: memberLeadCount,        icon: Target,       color: '#059669' },
-                  { label: 'Tâches',      value: memberTasks.length,     icon: ListChecks,   color: '#26251e' },
-                  { label: 'Complétées',  value: completedTasks.length,  icon: CheckCircle2, color: '#059669' },
-                  { label: 'Complétion',  value: memberTasks.length > 0 ? `${completionRate}%` : '—', icon: TrendingUp, color: completionRate >= 70 ? '#059669' : '#d97706' },
-                ].map(({ label, value, icon: Icon, color }) => (
-                  <div key={label} className="rounded-xl border border-[#e5e5e0] bg-white p-4 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">{label}</p>
-                      <div className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ background: `${color}15` }}>
-                        <Icon className="h-3 w-3" style={{ color }} />
+                  { label: 'Leads',       value: memberLeadCount,        icon: Target,       color: '#059669', bg: 'from-emerald-50/40 to-transparent' },
+                  { label: 'Tâches',      value: memberTasks.length,     icon: ListChecks,   color: '#26251e', bg: 'from-stone-50/40 to-transparent' },
+                  { label: 'Complétées',  value: completedTasks.length,  icon: CheckCircle2, color: '#059669', bg: 'from-emerald-50/40 to-transparent' },
+                  { label: 'Complétion',  value: memberTasks.length > 0 ? `${completionRate}%` : '—', icon: TrendingUp, color: completionRate >= 70 ? '#059669' : '#d97706', bg: completionRate >= 70 ? 'from-emerald-50/40 to-transparent' : 'from-amber-50/40 to-transparent' },
+                ].map(({ label, value, icon: Icon, color, bg }) => (
+                  <div key={label} className={cn(
+                    "relative group overflow-hidden rounded-2xl border border-[#e5e5e0] bg-white p-5 flex flex-col justify-between transition-all duration-300 hover:shadow-md hover:border-[#059669]/20 hover:-translate-y-0.5",
+                    "bg-gradient-to-br"
+                  )} style={{ backgroundImage: bg ? undefined : `linear-gradient(to bottom right, ${color}04, transparent)` }}>
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-[10px] font-black uppercase tracking-wider text-[#7a7a76]">{label}</p>
+                      <div className="w-6 h-6 rounded-lg flex items-center justify-center animate-in duration-300" style={{ background: `${color}10` }}>
+                        <Icon className="h-3.5 w-3.5" style={{ color }} />
                       </div>
                     </div>
-                    <p className="text-2xl font-black leading-none" style={{ color }}>{loadingStats ? '…' : value}</p>
+                    <p className="text-2xl font-black leading-none mt-3" style={{ color }}>{loadingStats ? '…' : value}</p>
                   </div>
                 ))}
               </div>
 
               {/* 14-day activity from real data */}
-              <div className="rounded-xl border border-[#e5e5e0] bg-white p-5">
-                <div className="flex items-center justify-between mb-4">
+              <div className="rounded-2xl border border-[#e5e5e0] bg-white p-6 shadow-sm hover:shadow-md transition-all duration-300">
+                <div className="flex items-center justify-between mb-5 border-b border-[#f4f4f3] pb-3">
                   <div>
                     <h3 className="text-sm font-black text-[#26251e]">Activité — 14 derniers jours</h3>
-                    <p className="text-[11px] text-[#7a7a76] mt-0.5">{totalActivity} actions enregistrées</p>
+                    <p className="text-[10px] text-[#7a7a76] mt-0.5 font-semibold">{totalActivity} actions enregistrées</p>
                   </div>
-                  <Activity className="h-4 w-4 text-[#059669]" />
+                  <div className="h-7 w-7 rounded-lg bg-[#059669]/8 flex items-center justify-center text-[#059669]">
+                    <Activity className="h-4 w-4" />
+                  </div>
                 </div>
                 {loadingStats ? (
-                  <div className="h-28 rounded-lg bg-[#f4f4f3] animate-pulse" />
+                  <div className="h-28 rounded-xl bg-[#f4f4f3] animate-pulse" />
                 ) : dailyActivity.every(d => d.leads === 0 && d.tasks === 0) ? (
-                  <div className="h-28 flex items-center justify-center text-xs text-[#7a7a76]">
+                  <div className="h-28 flex items-center justify-center text-xs text-[#7a7a76] font-semibold">
                     Aucune activité sur les 14 derniers jours
                   </div>
                 ) : (
@@ -416,8 +430,8 @@ export default function MemberProfilePage() {
                           </linearGradient>
                         </defs>
                         <CartesianGrid strokeDasharray="3 3" stroke="#f0f0ec" />
-                        <XAxis dataKey="day" tick={{ fontSize: 9, fill: '#7a7a76' }} />
-                        <YAxis tick={{ fontSize: 9, fill: '#7a7a76' }} allowDecimals={false} />
+                        <XAxis dataKey="day" tick={{ fontSize: 9, fill: '#7a7a76', fontWeight: 600 }} />
+                        <YAxis tick={{ fontSize: 9, fill: '#7a7a76', fontWeight: 600 }} allowDecimals={false} />
                         <ReTooltip
                           contentStyle={{ fontSize: 11, borderRadius: 8, border: '1px solid #e5e5e0', background: '#fff' }}
                           labelStyle={{ fontWeight: 700 }}
@@ -426,12 +440,12 @@ export default function MemberProfilePage() {
                         <Area type="monotone" dataKey="tasks" stroke="#3b82f6" strokeWidth={2} fill="transparent" dot={false} strokeDasharray="4 2" name="Tâches" />
                       </AreaChart>
                     </ResponsiveContainer>
-                    <div className="flex items-center gap-4 mt-2 justify-center">
-                      <div className="flex items-center gap-1.5 text-xs text-[#7a7a76]">
+                    <div className="flex items-center gap-4 mt-3 justify-center">
+                      <div className="flex items-center gap-1.5 text-xs font-semibold text-[#7a7a76]">
                         <div className="w-3 h-0.5 bg-[#059669] rounded" />
                         Leads créés
                       </div>
-                      <div className="flex items-center gap-1.5 text-xs text-[#7a7a76]">
+                      <div className="flex items-center gap-1.5 text-xs font-semibold text-[#7a7a76]">
                         <div className="w-3 border-t-2 border-dashed border-[#3b82f6]" />
                         Tâches assignées
                       </div>
@@ -442,21 +456,21 @@ export default function MemberProfilePage() {
 
               {/* Pending tasks preview */}
               {pendingTasks.length > 0 && (
-                <div className="rounded-xl border border-[#e5e5e0] bg-white p-5 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-[#7a7a76]">Tâches en cours</h3>
-                    <button onClick={() => setActiveTab('tasks')} className="text-[10px] font-bold text-[#059669] hover:text-[#047857] transition-colors">
+                <div className="rounded-2xl border border-[#e5e5e0] bg-white p-6 shadow-sm hover:shadow-md transition-all duration-300 space-y-4">
+                  <div className="flex items-center justify-between border-b border-[#f4f4f3] pb-2.5">
+                    <h3 className="text-xs font-black uppercase tracking-wider text-[#7a7a76]">Tâches en cours</h3>
+                    <button onClick={() => setActiveTab('tasks')} className="text-[10px] font-black uppercase tracking-wider text-[#059669] hover:underline decoration-wavy">
                       Voir tout →
                     </button>
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     {pendingTasks.slice(0, 4).map(t => (
-                      <div key={t.id} className="flex items-center gap-3 py-1">
-                        <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: CATEGORY_COLORS[t.category] ?? '#8b8b85' }} />
-                        <p className="text-xs text-[#26251e] flex-1 truncate">{t.title}</p>
+                      <div key={t.id} className="flex items-center gap-3 py-1 hover:translate-x-0.5 transition-transform duration-200">
+                        <div className="w-2 h-2 rounded-full shrink-0" style={{ background: CATEGORY_COLORS[t.category] ?? '#8b8b85' }} />
+                        <p className="text-xs font-semibold text-[#26251e] flex-1 truncate">{t.title}</p>
                         {t.due_date && (
-                          <span className="text-[10px] text-amber-600 shrink-0 flex items-center gap-0.5 font-semibold">
-                            <Clock className="h-2.5 w-2.5" />
+                          <span className="text-[10px] text-amber-600 shrink-0 flex items-center gap-1 font-semibold bg-amber-50 px-2 py-0.5 rounded border border-amber-100/30">
+                            <Clock className="h-3 w-3" />
                             {t.due_date}
                           </span>
                         )}
@@ -467,17 +481,17 @@ export default function MemberProfilePage() {
               )}
 
               {!loadingStats && member?.member_user_id && memberTasks.length === 0 && memberLeadCount === 0 && (
-                <div className="rounded-xl border border-[#e5e5e0] bg-white p-6 text-center space-y-2">
-                  <Users className="h-8 w-8 text-[#d4d4cd] mx-auto" />
-                  <p className="text-sm font-semibold text-[#7a7a76]">Aucune activité enregistrée</p>
-                  <p className="text-xs text-[#b0b0a8]">Ce membre n&apos;a pas encore de leads ni de tâches assignées.</p>
+                <div className="rounded-2xl border border-[#e5e5e0] bg-white p-8 text-center space-y-3 shadow-xs">
+                  <Users className="h-10 w-10 text-[#d4d4cd] mx-auto animate-pulse" />
+                  <p className="text-sm font-black text-[#7a7a76]">Aucune activité enregistrée</p>
+                  <p className="text-xs text-[#b0b0a8] font-semibold">Ce membre n&apos;a pas encore de leads ni de tâches assignées.</p>
                 </div>
               )}
 
               {!member?.member_user_id && (
-                <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-center space-y-1">
-                  <p className="text-xs font-semibold text-amber-700">Invitation en attente</p>
-                  <p className="text-[11px] text-amber-600">Ce membre n&apos;a pas encore accepté son invitation — aucune activité disponible.</p>
+                <div className="rounded-2xl border border-amber-200 bg-amber-50/50 p-5 text-center space-y-1.5 shadow-xs">
+                  <p className="text-xs font-black text-amber-700 uppercase tracking-wider">Invitation en attente</p>
+                  <p className="text-xs text-amber-600 font-semibold">Ce membre n&apos;a pas encore accepté son invitation — aucune activité disponible.</p>
                 </div>
               )}
             </div>
@@ -485,32 +499,34 @@ export default function MemberProfilePage() {
 
           {/* ── STATS TAB ── */}
           {activeTab === 'stats' && (
-            <div className="space-y-5 animate-in fade-in duration-200">
+            <div className="space-y-6 animate-in fade-in duration-200">
               {loadingStats ? (
-                <div className="space-y-3">
-                  {[1, 2, 3].map(i => <div key={i} className="h-40 rounded-xl bg-[#f4f4f3] animate-pulse" />)}
+                <div className="space-y-4">
+                  {[1, 2, 3].map(i => <div key={i} className="h-40 rounded-2xl bg-[#f4f4f3] animate-pulse" />)}
                 </div>
               ) : (
                 <>
                   {/* Daily bar chart — real data */}
-                  <div className="rounded-xl border border-[#e5e5e0] bg-white p-5">
-                    <div className="flex items-center justify-between mb-4">
+                  <div className="rounded-2xl border border-[#e5e5e0] bg-white p-6 shadow-sm hover:shadow-md transition-all duration-300">
+                    <div className="flex items-center justify-between mb-5 border-b border-[#f4f4f3] pb-3">
                       <div>
                         <h3 className="text-sm font-black text-[#26251e]">Activité journalière</h3>
-                        <p className="text-[11px] text-[#7a7a76] mt-0.5">14 derniers jours — leads + tâches</p>
+                        <p className="text-[10px] text-[#7a7a76] mt-0.5 font-semibold">14 derniers jours — leads + tâches</p>
                       </div>
-                      <BarChart3 className="h-4 w-4 text-[#059669]" />
+                      <div className="h-7 w-7 rounded-lg bg-[#059669]/8 flex items-center justify-center text-[#059669]">
+                        <BarChart3 className="h-4 w-4" />
+                      </div>
                     </div>
                     {totalActivity === 0 ? (
-                      <div className="h-32 flex items-center justify-center text-xs text-[#7a7a76]">
+                      <div className="h-32 flex items-center justify-center text-xs text-[#7a7a76] font-semibold">
                         Aucune donnée d&apos;activité disponible
                       </div>
                     ) : (
                       <ResponsiveContainer width="100%" height={160}>
                         <BarChart data={dailyActivity} margin={{ top: 0, right: 0, left: -20, bottom: 0 }} barSize={16} barGap={2}>
                           <CartesianGrid strokeDasharray="3 3" stroke="#f0f0ec" vertical={false} />
-                          <XAxis dataKey="day" tick={{ fontSize: 9, fill: '#7a7a76' }} />
-                          <YAxis tick={{ fontSize: 9, fill: '#7a7a76' }} allowDecimals={false} />
+                          <XAxis dataKey="day" tick={{ fontSize: 9, fill: '#7a7a76', fontWeight: 600 }} />
+                          <YAxis tick={{ fontSize: 9, fill: '#7a7a76', fontWeight: 600 }} allowDecimals={false} />
                           <ReTooltip contentStyle={{ fontSize: 11, borderRadius: 8, border: '1px solid #e5e5e0', background: '#fff' }} />
                           <Bar dataKey="leads" name="Leads" fill="#059669" radius={[3, 3, 0, 0]} opacity={0.85} />
                           <Bar dataKey="tasks" name="Tâches" fill="#3b82f6" radius={[3, 3, 0, 0]} opacity={0.7} />
@@ -521,10 +537,12 @@ export default function MemberProfilePage() {
 
                   {/* Task category donut + completion rate */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="rounded-xl border border-[#e5e5e0] bg-white p-5">
-                      <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-xs font-bold uppercase tracking-wider text-[#7a7a76]">Types de tâches</h3>
-                        <ListChecks className="h-4 w-4 text-[#059669]" />
+                    <div className="rounded-2xl border border-[#e5e5e0] bg-white p-6 shadow-sm hover:shadow-md transition-all duration-300">
+                      <div className="flex items-center justify-between mb-4 border-b border-[#f4f4f3] pb-2.5">
+                        <h3 className="text-xs font-black uppercase tracking-wider text-[#7a7a76]">Types de tâches</h3>
+                        <div className="h-6 w-6 rounded-lg bg-[#059669]/8 flex items-center justify-center text-[#059669]">
+                          <ListChecks className="h-3.5 w-3.5" />
+                        </div>
                       </div>
                       {categoryPieData.length > 0 ? (
                         <>
@@ -543,33 +561,35 @@ export default function MemberProfilePage() {
                               <ReTooltip contentStyle={{ fontSize: 10, borderRadius: 8 }} />
                             </PieChart>
                           </ResponsiveContainer>
-                          <div className="flex flex-wrap gap-x-3 gap-y-1 justify-center mt-2">
+                          <div className="flex flex-wrap gap-x-3 gap-y-1 justify-center mt-3">
                             {categoryPieData.map(d => (
-                              <div key={d.name} className="flex items-center gap-1 text-[10px] text-[#7a7a76]">
-                                <div className="w-2 h-2 rounded-full" style={{ background: d.color }} />
+                              <div key={d.name} className="flex items-center gap-1.5 text-[10px] text-[#7a7a76] font-semibold">
+                                <div className="w-2.5 h-2.5 rounded-full" style={{ background: d.color }} />
                                 {d.name} ({d.value})
                               </div>
                             ))}
                           </div>
                         </>
                       ) : (
-                        <div className="h-28 flex items-center justify-center text-xs text-[#7a7a76]">
+                        <div className="h-28 flex items-center justify-center text-xs text-[#7a7a76] font-semibold">
                           Aucune tâche assignée
                         </div>
                       )}
                     </div>
 
-                    <div className="rounded-xl border border-[#e5e5e0] bg-white p-5">
-                      <div className="flex items-center justify-between mb-2">
-                        <h3 className="text-xs font-bold uppercase tracking-wider text-[#7a7a76]">Taux de complétion</h3>
-                        <Trophy className="h-4 w-4 text-[#059669]" />
+                    <div className="rounded-2xl border border-[#e5e5e0] bg-white p-6 shadow-sm hover:shadow-md transition-all duration-300">
+                      <div className="flex items-center justify-between mb-4 border-b border-[#f4f4f3] pb-2.5">
+                        <h3 className="text-xs font-black uppercase tracking-wider text-[#7a7a76]">Taux de complétion</h3>
+                        <div className="h-6 w-6 rounded-lg bg-[#059669]/8 flex items-center justify-center text-[#059669]">
+                          <Trophy className="h-3.5 w-3.5" />
+                        </div>
                       </div>
                       {memberTasks.length === 0 ? (
-                        <div className="h-28 flex items-center justify-center text-xs text-[#7a7a76]">
+                        <div className="h-28 flex items-center justify-center text-xs text-[#7a7a76] font-semibold">
                           Aucune tâche
                         </div>
                       ) : (
-                        <div className="flex items-center gap-4 mt-4">
+                        <div className="flex items-center gap-5 mt-2">
                           <ResponsiveContainer width={100} height={100}>
                             <RadialBarChart
                               cx="50%" cy="50%"
@@ -580,10 +600,10 @@ export default function MemberProfilePage() {
                               <RadialBar dataKey="value" fill="#059669" cornerRadius={6} background={{ fill: '#f0f0ec' }} />
                             </RadialBarChart>
                           </ResponsiveContainer>
-                          <div className="space-y-1">
-                            <p className="text-3xl font-black text-[#059669]">{completionRate}%</p>
-                            <p className="text-xs text-[#7a7a76]">{completedTasks.length} complétées</p>
-                            <p className="text-xs text-[#7a7a76]">{pendingTasks.length} en attente</p>
+                          <div className="space-y-1.5">
+                            <p className="text-3xl font-black text-[#059669] leading-none">{completionRate}%</p>
+                            <p className="text-xs font-semibold text-stone-600">{completedTasks.length} complétées</p>
+                            <p className="text-xs font-semibold text-[#7a7a76]">{pendingTasks.length} en attente</p>
                           </div>
                         </div>
                       )}
@@ -591,13 +611,13 @@ export default function MemberProfilePage() {
                   </div>
 
                   {/* Leads total */}
-                  <div className="rounded-xl border border-[#e5e5e0] bg-white p-5 flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-[#059669]/10 flex items-center justify-center shrink-0">
-                      <Target className="h-6 w-6 text-[#059669]" />
+                  <div className="rounded-2xl border border-[#e5e5e0] bg-white p-5 flex items-center gap-4 shadow-sm hover:shadow-md transition-all duration-300">
+                    <div className="w-12 h-12 rounded-xl bg-[#059669]/8 flex items-center justify-center shrink-0 text-[#059669] transition-transform duration-300 hover:scale-105">
+                      <Target className="h-6 w-6" />
                     </div>
                     <div>
-                      <p className="text-2xl font-black text-[#26251e]">{memberLeadCount}</p>
-                      <p className="text-xs font-bold text-[#7a7a76] uppercase tracking-wider">Leads dans le portefeuille</p>
+                      <p className="text-2xl font-black text-[#26251e] leading-tight">{memberLeadCount}</p>
+                      <p className="text-xs font-black text-[#7a7a76] uppercase tracking-wider mt-0.5">Leads dans le portefeuille</p>
                     </div>
                   </div>
                 </>
@@ -607,41 +627,41 @@ export default function MemberProfilePage() {
 
           {/* ── TASKS TAB ── */}
           {activeTab === 'tasks' && (
-            <div className="space-y-4 animate-in fade-in duration-200">
+            <div className="space-y-5 animate-in fade-in duration-200">
               {loadingStats ? (
-                <div className="space-y-2">
-                  {[1, 2, 3].map(i => <div key={i} className="h-12 rounded-xl bg-[#f4f4f3] animate-pulse" />)}
+                <div className="space-y-3">
+                  {[1, 2, 3].map(i => <div key={i} className="h-12 rounded-2xl bg-[#f4f4f3] animate-pulse" />)}
                 </div>
               ) : memberTasks.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
-                  <ListChecks className="h-10 w-10 text-[#d4d4cd]" />
-                  <p className="text-sm font-semibold text-[#7a7a76]">Aucune tâche assignée à ce membre</p>
-                  <p className="text-xs text-[#b0b0a8]">Créez une tâche et assignez-la depuis la page Tâches</p>
-                  <Link href="/tasks" className="text-xs font-bold text-[#059669] hover:text-[#047857] transition-colors mt-1">
+                  <ListChecks className="h-12 w-12 text-[#d4d4cd] animate-bounce duration-1000" />
+                  <p className="text-sm font-black text-[#7a7a76]">Aucune tâche assignée à ce membre</p>
+                  <p className="text-xs text-[#b0b0a8] font-semibold">Créez une tâche et assignez-la depuis la page Tâches</p>
+                  <Link href="/tasks" className="text-xs font-black text-[#059669] hover:underline decoration-wavy mt-2">
                     Aller aux tâches →
                   </Link>
                 </div>
               ) : (
                 <>
                   {pendingTasks.length > 0 && (
-                    <div className="space-y-2">
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76] px-1">
+                    <div className="space-y-3">
+                      <p className="text-[10px] font-black uppercase tracking-wider text-[#7a7a76] px-1.5">
                         En cours ({pendingTasks.length})
                       </p>
-                      <div className="rounded-xl border border-[#e5e5e0] bg-white divide-y divide-[#e5e5e0]">
+                      <div className="rounded-2xl border border-[#e5e5e0] bg-white divide-y divide-[#f4f4f3] overflow-hidden shadow-xs">
                         {pendingTasks.map(t => (
-                          <div key={t.id} className="flex items-center gap-3 px-4 py-3">
-                            <div className="w-2 h-2 rounded-full shrink-0" style={{ background: CATEGORY_COLORS[t.category] ?? '#8b8b85' }} />
+                          <div key={t.id} className="flex items-center gap-3 px-5 py-4 transition-colors hover:bg-[#fafaf8]/50">
+                            <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: CATEGORY_COLORS[t.category] ?? '#8b8b85' }} />
                             <div className="flex-1 min-w-0">
-                              <p className="text-xs font-semibold text-[#26251e] truncate">{t.title}</p>
+                              <p className="text-xs font-black text-[#26251e] truncate">{t.title}</p>
                               {t.due_date && (
-                                <p className="text-[10px] text-amber-600 flex items-center gap-0.5 mt-0.5 font-semibold">
-                                  <Clock className="h-2.5 w-2.5" />
+                                <p className="text-[10px] text-amber-600 flex items-center gap-1 mt-1 font-semibold">
+                                  <Clock className="h-3 w-3" />
                                   {t.due_date}
                                 </p>
                               )}
                             </div>
-                            <span className="text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-600 shrink-0">
+                            <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-50 text-amber-600 border border-amber-100/30 shrink-0">
                               {t.category}
                             </span>
                           </div>
@@ -651,15 +671,15 @@ export default function MemberProfilePage() {
                   )}
 
                   {completedTasks.length > 0 && (
-                    <div className="space-y-2">
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76] px-1">
+                    <div className="space-y-3">
+                      <p className="text-[10px] font-black uppercase tracking-wider text-[#7a7a76] px-1.5">
                         Complétées ({completedTasks.length})
                       </p>
-                      <div className="rounded-xl border border-[#e5e5e0] bg-white divide-y divide-[#e5e5e0]">
+                      <div className="rounded-2xl border border-[#e5e5e0] bg-white divide-y divide-[#f4f4f3] overflow-hidden shadow-xs">
                         {completedTasks.map(t => (
-                          <div key={t.id} className="flex items-center gap-3 px-4 py-3 opacity-60">
-                            <CheckCircle2 className="h-3.5 w-3.5 text-[#059669] shrink-0" />
-                            <p className="text-xs text-[#555552] truncate line-through">{t.title}</p>
+                          <div key={t.id} className="flex items-center gap-3.5 px-5 py-4 opacity-60 hover:opacity-80 transition-opacity">
+                            <CheckCircle2 className="h-4.5 w-4.5 text-[#059669] shrink-0" />
+                            <p className="text-xs font-semibold text-stone-600 truncate line-through">{t.title}</p>
                           </div>
                         ))}
                       </div>
@@ -672,34 +692,38 @@ export default function MemberProfilePage() {
 
           {/* ── ACCESS TAB ── */}
           {activeTab === 'access' && (
-            <div className="space-y-5 animate-in fade-in duration-200">
-              <div className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Niveau d&apos;accès</div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                {DEFAULT_ROLE_CONFIG.map(role => {
-                  const Icon = role.icon;
-                  const isSelected = selectedRole === role.key;
+            <div className="space-y-6 animate-in fade-in duration-200">
+              <div className="text-[10px] font-black uppercase tracking-wider text-[#7a7a76] px-1.5">Niveau d&apos;accès</div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {DEFAULT_ROLE_CONFIG.map(roleConfig => {
+                  const Icon = roleConfig.icon;
+                  const isSelected = selectedRole === roleConfig.key;
                   return (
                     <button
-                      key={role.key}
-                      onClick={() => setSelectedRole(role.key)}
+                      key={roleConfig.key}
+                      onClick={() => setSelectedRole(roleConfig.key)}
                       className={cn(
-                        'group text-left p-4 rounded-xl border transition-all space-y-2.5 bg-white',
-                        isSelected ? 'border-transparent ring-2 shadow-sm' : 'border-[#e5e5e0] hover:border-[#c5c5c0]'
+                        'group text-left p-5 rounded-2xl border transition-all duration-300 flex flex-col justify-between space-y-4 bg-white hover:shadow-md',
+                        isSelected ? 'border-transparent ring-2 shadow-md' : 'border-[#e5e5e0] hover:border-[#059669]/30'
                       )}
-                      style={isSelected ? { boxShadow: `0 0 0 2px ${role.color}`, background: `${role.color}08` } : undefined}
+                      style={isSelected ? { background: `${roleConfig.color}06`, boxShadow: `0 0 0 2px ${roleConfig.color}` } : undefined}
                     >
-                      <div className="flex items-center justify-between">
-                        <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: `${role.color}15`, color: role.color }}>
-                          <Icon className="h-4 w-4" />
+                      <div className="flex items-center justify-between w-full">
+                        <div className="w-9 h-9 rounded-xl flex items-center justify-center transition-transform group-hover:scale-105" style={{ background: `${roleConfig.color}12`, color: roleConfig.color }}>
+                          <Icon className="h-4.5 w-4.5" />
                         </div>
-                        {isSelected && <Check className="h-4 w-4" style={{ color: role.color }} />}
+                        {isSelected && (
+                          <div className="w-5 h-5 rounded-full flex items-center justify-center" style={{ background: roleConfig.color }}>
+                            <Check className="h-3 w-3 text-white" />
+                          </div>
+                        )}
                       </div>
-                      <div>
-                        <p className="text-xs font-bold text-[#26251e]">{role.label}</p>
-                        <p className="text-[10px] text-[#7a7a76] leading-tight mt-0.5">{role.desc}</p>
+                      <div className="space-y-1">
+                        <p className="text-xs font-black text-[#26251e]">{roleConfig.label}</p>
+                        <p className="text-[10px] text-[#7a7a76] leading-relaxed font-semibold">{roleConfig.desc}</p>
                       </div>
-                      <p className="text-[9px] font-bold text-[#b0b0a8]">
-                        {DEFAULT_ROLE_PERMISSIONS[role.key]?.length ?? 0} modules accessibles
+                      <p className="text-[9px] font-black text-[#b0b0a8] uppercase tracking-wider border-t border-[#f4f4f3] pt-2 w-full">
+                        {DEFAULT_ROLE_PERMISSIONS[roleConfig.key]?.length ?? 0} modules accessibles
                       </p>
                     </button>
                   );
@@ -707,23 +731,23 @@ export default function MemberProfilePage() {
               </div>
 
               {effectivePerms.length > 0 && (
-                <div className="border border-[#e5e5e0] rounded-xl p-5 bg-white space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Accès accordés</div>
+                <div className="border border-[#e5e5e0] rounded-2xl p-6 bg-white space-y-4 shadow-sm">
+                  <div className="flex items-center justify-between border-b border-[#f4f4f3] pb-2.5">
+                    <div className="text-[10px] font-black uppercase tracking-wider text-[#7a7a76]">Accès accordés</div>
                     <span
-                      className="text-[9px] font-bold px-2 py-0.5 rounded-full"
-                      style={activeRole ? { background: `${activeRole.color}15`, color: activeRole.color } : undefined}
+                      className="text-[9px] font-black px-2.5 py-0.5 rounded-full"
+                      style={activeRoleConfig ? { background: `${activeRoleConfig.color}15`, color: activeRoleConfig.color } : undefined}
                     >
                       {effectivePerms.length} modules
                     </span>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
                     {effectivePerms.map(m => {
                       const Icon = MODULE_ICONS[m] ?? Check;
                       return (
-                        <div key={m} className="flex items-center gap-2 text-[11px] font-semibold text-[#26251e] py-1">
-                          <div className="w-5 h-5 rounded-md bg-[#f4f4f3] border border-[#e5e5e0] flex items-center justify-center shrink-0">
-                            <Icon className="h-3 w-3 text-[#7a7a76]" />
+                        <div key={m} className="flex items-center gap-2.5 text-[11px] font-bold text-[#26251e] py-1">
+                          <div className="w-6 h-6 rounded-lg bg-stone-50 border border-stone-200/80 flex items-center justify-center shrink-0">
+                            <Icon className="h-3.5 w-3.5 text-stone-500" />
                           </div>
                           {PERMISSION_MODULES[m]?.label ?? m}
                         </div>
@@ -733,17 +757,17 @@ export default function MemberProfilePage() {
                 </div>
               )}
 
-              <div className="flex gap-3 pt-1">
+              <div className="flex gap-4 pt-2">
                 <button
                   onClick={() => router.back()}
-                  className="flex-1 py-2.5 text-sm font-semibold border border-[#e5e5e0] bg-white text-[#555552] rounded-lg hover:bg-[#f4f4f3] transition-colors"
+                  className="flex-1 py-3 text-xs font-black uppercase tracking-wider border border-[#e5e5e0] bg-white text-stone-600 rounded-xl hover:bg-[#f4f4f3] hover:shadow-xs transition-all"
                 >
                   Annuler
                 </button>
                 <button
                   onClick={handleSave}
                   disabled={saving || saved || member?.isOwner}
-                  className="flex-1 py-2.5 text-sm font-bold text-white rounded-lg flex items-center justify-center gap-2 transition-all disabled:opacity-60 bg-[#059669] hover:bg-[#047857]"
+                  className="flex-1 py-3 text-xs font-black uppercase tracking-wider text-white rounded-xl flex items-center justify-center gap-2 transition-all disabled:opacity-60 bg-[#059669] hover:bg-[#047857] hover:shadow-xs active:translate-y-0"
                 >
                   {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : saved ? <Check className="h-4 w-4" /> : null}
                   {member?.isOwner ? 'Propriétaire (non modifiable)' : saved ? 'Enregistré ✓' : 'Enregistrer le rôle'}
