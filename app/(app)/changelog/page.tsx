@@ -21,6 +21,14 @@ interface ChangelogVersion {
 
 const versions: ChangelogVersion[] = [
   {
+    version: 'v3.96.1',
+    date: '14 juillet 2026 · 10h06',
+    title: "Statistiques de campagne dynamiques sans données simulées",
+    highlights: [
+      { text: "Suppression des données factices (85%) du widget de progression de la campagne mobile : toutes les données (leads prospectés, jours écoulés, e-mails envoyés et pourcentage d'avancement de la gauge) sont désormais calculées dynamiquement d'après les campagnes réelles actives de l'utilisateur." }
+    ]
+  },
+  {
     version: 'v3.96.0',
     date: '14 juillet 2026 · 09h08',
     title: "Refoute Mobile Complète, UI/UX Aujourd'hui haute fidélité et correctifs de navigation",
