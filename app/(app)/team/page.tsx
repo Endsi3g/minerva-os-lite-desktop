@@ -9,7 +9,7 @@ import {
   MessageSquare, Send, Link2, Copy, Shield, Star, Eye,
   Smile, ImagePlus,
   Plus, Pencil, LogOut, Palette, ChevronRight,
-  UsersRound, BarChart2, TrendingUp, Users2,
+  UsersRound, BarChart2, TrendingUp, Users2, Share2,
 } from 'lucide-react';
 import { WorkloadBoard } from './_components/workload-board';
 import { RevenueFeed } from './_components/revenue-feed';
@@ -1093,405 +1093,546 @@ export default function TeamPage() {
             </div>
           </div>
 
-          {/* ── Members List Table ── */}
-          <div className="border border-neutral-200/60 rounded-xl overflow-hidden bg-white shadow-2xs">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse table-auto">
-                <thead>
-                  <tr className="border-b border-neutral-200/60 bg-neutral-50/30 text-[10px] font-bold uppercase tracking-wider text-neutral-400 select-none">
-                    <th className="py-3 px-4 w-[40%] cursor-pointer hover:bg-neutral-100/30 transition-colors" onClick={() => triggerSort('email')}>
-                      <div className="flex items-center gap-1">
-                        <span>{t('team.table_name')}</span>
-                        <ArrowUpDown className="w-3 h-3 text-neutral-300" />
-                      </div>
-                    </th>
-                    <th className="py-3 px-4 w-[20%] cursor-pointer hover:bg-neutral-100/30 transition-colors" onClick={() => triggerSort('role')}>
-                      <div className="flex items-center gap-1">
-                        <span>{t('team.table_role')}</span>
-                        <ArrowUpDown className="w-3 h-3 text-neutral-300" />
-                      </div>
-                    </th>
-                    <th className="py-3 px-4 w-[20%] cursor-pointer hover:bg-neutral-100/30 transition-colors" onClick={() => triggerSort('plan')}>
-                      <div className="flex items-center gap-1">
-                        <span>{t('team.table_plan')}</span>
-                        <ArrowUpDown className="w-3 h-3 text-neutral-300" />
-                      </div>
-                    </th>
-                    <th className="py-3 px-4 w-[15%]">{t('team.table_usage')}</th>
-                    <th className="py-3 px-4 w-[5%]"></th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-neutral-100">
-                  
-                  {/* Current User Row (Owner - Always render first if search query matches) */}
-                  {currentUser && (searchQuery === '' || 
-                    currentUser.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                    currentUser.email.toLowerCase().includes(searchQuery.toLowerCase())) && (
-                    <tr className="hover:bg-neutral-50/40 transition-colors group">
-                      {/* Name/Email */}
-                      <td className="py-3.5 px-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full overflow-hidden bg-neutral-100 flex items-center justify-center shrink-0 border border-neutral-200">
-                            {currentUser.avatar ? (
-                              <img src={currentUser.avatar} alt="" className="w-full h-full object-cover" />
-                            ) : (
-                              <span className="font-extrabold text-xs text-neutral-600">
-                                {currentUser.name.slice(0, 2).toUpperCase()}
-                              </span>
-                            )}
-                          </div>
-                          <div className="min-w-0">
-                            <p className="text-xs font-bold text-neutral-900 truncate">
-                              {currentUser.name} (You)
-                            </p>
-                            <p className="text-[10px] text-neutral-400 font-medium truncate mt-0.5">
-                              {currentUser.email}
-                            </p>
-                          </div>
-                        </div>
-                      </td>
-
-                      {/* Role dropdown */}
-                      <td className="py-3.5 px-4 relative">
-                        <button
-                          onClick={() => setActiveDropdown(activeDropdown?.id === 'current_user' && activeDropdown?.type === 'role' ? null : { id: 'current_user', type: 'role' })}
-                          className="h-7 px-2 border border-neutral-200 rounded-md bg-white text-neutral-700 hover:bg-neutral-50 flex items-center justify-between gap-1.5 text-[11px] font-semibold transition-colors select-none w-24"
-                        >
-                          <span>Admin</span>
-                          <ChevronDown className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
-                        </button>
-                        
-                        {activeDropdown?.id === 'current_user' && activeDropdown?.type === 'role' && (
-                          <>
-                            <div className="fixed inset-0 z-[80]" onClick={() => setActiveDropdown(null)} />
-                            <div className="absolute left-4 top-11 bg-white border border-neutral-200 rounded-lg shadow-lg py-1 z-[90] min-w-[120px] text-left">
-                              <button
-                                onClick={() => setActiveDropdown(null)}
-                                className="w-full flex items-center justify-between px-3 py-1.5 text-[11px] font-bold text-blue-600 bg-neutral-50 hover:bg-neutral-50"
-                              >
-                                <span>Admin</span>
-                                <Check className="w-3.5 h-3.5 text-blue-600" />
-                              </button>
-                              {['editor', 'viewer'].map((r) => (
-                                <button
-                                  key={r}
-                                  onClick={() => {
-                                    triggerToast('Cannot change owner permissions');
-                                    setActiveDropdown(null);
-                                  }}
-                                  className="w-full px-3 py-1.5 text-[11px] font-semibold text-neutral-600 hover:bg-neutral-50 text-left capitalize"
-                                >
-                                  {r === 'editor' ? 'Editeur' : 'Lecteur'}
-                                </button>
-                              ))}
-                            </div>
-                          </>
-                        )}
-                      </td>
-
-                      {/* Plan dropdown */}
-                      <td className="py-3.5 px-4 relative">
-                        <button
-                          onClick={() => setActiveDropdown(activeDropdown?.id === 'current_user' && activeDropdown?.type === 'plan' ? null : { id: 'current_user', type: 'plan' })}
-                          className="h-7 px-2 border border-neutral-200 rounded-md bg-white text-neutral-700 hover:bg-neutral-50 flex items-center justify-between gap-1.5 text-[11px] font-semibold transition-colors select-none w-24"
-                        >
-                          <span>Business</span>
-                          <ChevronDown className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
-                        </button>
-
-                        {activeDropdown?.id === 'current_user' && activeDropdown?.type === 'plan' && (
-                          <>
-                            <div className="fixed inset-0 z-[80]" onClick={() => setActiveDropdown(null)} />
-                            <div className="absolute left-4 top-11 bg-white border border-neutral-200 rounded-lg shadow-lg py-1 z-[90] min-w-[120px] text-left">
-                              <button
-                                onClick={() => setActiveDropdown(null)}
-                                className="w-full flex items-center justify-between px-3 py-1.5 text-[11px] font-bold text-blue-600 bg-neutral-50 hover:bg-neutral-50"
-                              >
-                                <span>Business</span>
-                                <Check className="w-3.5 h-3.5 text-blue-600" />
-                              </button>
-                              {['Pro', 'Free'].map((p) => (
-                                <button
-                                  key={p}
-                                  onClick={() => {
-                                    triggerToast('Workspace plan is linked to billing');
-                                    setActiveDropdown(null);
-                                  }}
-                                  className="w-full px-3 py-1.5 text-[11px] font-semibold text-neutral-600 hover:bg-neutral-50 text-left"
-                                >
-                                  {p}
-                                </button>
-                              ))}
-                            </div>
-                          </>
-                        )}
-                      </td>
-
-                      {/* Usage */}
-                      <td className="py-3.5 px-4">
+          {/* ── Members List Table / Cards Responsive ── */}
+          <div className="space-y-3">
+            
+            {/* Desktop Table View */}
+            <div className="hidden md:block border border-neutral-200/60 rounded-xl overflow-hidden bg-white shadow-2xs">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse table-auto">
+                  <thead>
+                    <tr className="border-b border-neutral-200/60 bg-neutral-50/30 text-[10px] font-bold uppercase tracking-wider text-neutral-400 select-none">
+                      <th className="py-3 px-4 w-[40%] cursor-pointer hover:bg-neutral-100/30 transition-colors" onClick={() => triggerSort('email')}>
                         <div className="flex items-center gap-1">
-                          {[1, 2, 3, 4].map((dot) => (
-                            <span key={dot} className="w-1.5 h-1.5 rounded-full bg-neutral-300" />
-                          ))}
+                          <span>{t('team.table_name')}</span>
+                          <ArrowUpDown className="w-3.5 h-3.5 text-neutral-300" />
                         </div>
-                      </td>
-
-                      {/* Actions */}
-                      <td className="py-3.5 px-4"></td>
-                    </tr>
-                  )}
-
-                  {/* Loading State */}
-                  {loading ? (
-                    <tr>
-                      <td colSpan={5} className="py-10 text-center">
-                        <div className="flex items-center justify-center gap-2 text-neutral-400">
-                          <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
-                          <span className="text-xs font-semibold">Chargement des membres...</span>
+                      </th>
+                      <th className="py-3 px-4 w-[20%] cursor-pointer hover:bg-neutral-100/30 transition-colors" onClick={() => triggerSort('role')}>
+                        <div className="flex items-center gap-1">
+                          <span>{t('team.table_role')}</span>
+                          <ArrowUpDown className="w-3.5 h-3.5 text-neutral-300" />
                         </div>
-                      </td>
+                      </th>
+                      <th className="py-3 px-4 w-[20%] cursor-pointer hover:bg-neutral-100/30 transition-colors" onClick={() => triggerSort('plan')}>
+                        <div className="flex items-center gap-1">
+                          <span>{t('team.table_plan')}</span>
+                          <ArrowUpDown className="w-3.5 h-3.5 text-neutral-300" />
+                        </div>
+                      </th>
+                      <th className="py-3 px-4 w-[15%]">{t('team.table_usage')}</th>
+                      <th className="py-3 px-4 w-[5%]"></th>
                     </tr>
-                  ) : sortedMembers.length === 0 ? (
-                    <tr>
-                      <td colSpan={5} className="py-10 text-center text-xs text-neutral-400 font-medium">
-                        Aucun membre trouvé
-                      </td>
-                    </tr>
-                  ) : (
-                    sortedMembers.map((member) => {
-                      const isInvited = member.status === 'pending';
-                      const formattedDate = new Date(member.invited_at).toLocaleDateString(locale, {
-                        month: 'short',
-                        day: 'numeric',
-                        year: 'numeric',
-                      });
-
-                      const isDropdownOpen = activeDropdown?.id === member.id;
-                      const isUpdating = updatingMemberId === member.id;
-
-                      const hasAppAccess = !isInvited && !!member.member_user_id;
-                      const isOnline = hasAppAccess && onlineUserIds.has(member.member_user_id!);
-                      const joinedDate = member.joined_at
-                        ? new Date(member.joined_at).toLocaleDateString(locale, { month: 'short', day: 'numeric', year: 'numeric' })
-                        : null;
-
-                      const memberAvatar = member.profile?.avatar_base64;
-                      return (
-                        <tr key={member.id} className="hover:bg-neutral-50/40 transition-colors group">
-
-                          {/* Name/Email */}
-                          <td className="py-3.5 px-4">
-                            <div className="flex items-center gap-3">
-                              {isInvited ? (
-                                <div className="w-8 h-8 rounded-full bg-neutral-50 border border-neutral-200/80 flex items-center justify-center shrink-0">
-                                  <Mail className="w-3.5 h-3.5 text-neutral-400" />
-                                </div>
+                  </thead>
+                  <tbody className="divide-y divide-neutral-100">
+                    
+                    {/* Current User Row */}
+                    {currentUser && (searchQuery === '' || 
+                      currentUser.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                      currentUser.email.toLowerCase().includes(searchQuery.toLowerCase())) && (
+                      <tr className="hover:bg-neutral-50/40 transition-colors group">
+                        <td className="py-3.5 px-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full overflow-hidden bg-neutral-100 flex items-center justify-center shrink-0 border border-neutral-200">
+                              {currentUser.avatar ? (
+                                <img src={currentUser.avatar} alt="" className="w-full h-full object-cover" />
                               ) : (
-                                <div className="relative shrink-0">
-                                  <div className="w-8 h-8 rounded-full overflow-hidden bg-neutral-100 flex items-center justify-center border border-neutral-200">
-                                    {memberAvatar ? (
-                                      <img src={memberAvatar} alt="" className="w-full h-full object-cover" />
+                                <span className="font-extrabold text-xs text-neutral-600">
+                                  {currentUser.name.slice(0, 2).toUpperCase()}
+                                </span>
+                              )}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-xs font-bold text-neutral-900 truncate">
+                                {currentUser.name} (You)
+                              </p>
+                              <p className="text-[10px] text-neutral-400 font-medium truncate mt-0.5">
+                                {currentUser.email}
+                              </p>
+                            </div>
+                          </div>
+                        </td>
+
+                        <td className="py-3.5 px-4 relative">
+                          <button
+                            onClick={() => setActiveDropdown(activeDropdown?.id === 'current_user' && activeDropdown?.type === 'role' ? null : { id: 'current_user', type: 'role' })}
+                            className="h-7 px-2 border border-neutral-200 rounded-md bg-white text-neutral-700 hover:bg-neutral-50 flex items-center justify-between gap-1.5 text-[11px] font-semibold transition-colors select-none w-24"
+                          >
+                            <span>Admin</span>
+                            <ChevronDown className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
+                          </button>
+                          
+                          {activeDropdown?.id === 'current_user' && activeDropdown?.type === 'role' && (
+                            <>
+                              <div className="fixed inset-0 z-[80]" onClick={() => setActiveDropdown(null)} />
+                              <div className="absolute left-4 top-11 bg-white border border-neutral-200 rounded-lg shadow-lg py-1 z-[90] min-w-[120px] text-left">
+                                <button
+                                  onClick={() => setActiveDropdown(null)}
+                                  className="w-full flex items-center justify-between px-3 py-1.5 text-[11px] font-bold text-[#059669] bg-[#ecfdf5] hover:bg-neutral-50"
+                                >
+                                  <span>Admin</span>
+                                  <Check className="w-3.5 h-3.5 text-[#059669]" />
+                                </button>
+                                {['editor', 'viewer'].map((r) => (
+                                  <button
+                                    key={r}
+                                    onClick={() => {
+                                      triggerToast('Cannot change owner permissions');
+                                      setActiveDropdown(null);
+                                    }}
+                                    className="w-full px-3 py-1.5 text-[11px] font-semibold text-neutral-600 hover:bg-neutral-50 text-left capitalize"
+                                  >
+                                    {r === 'editor' ? 'Editeur' : 'Lecteur'}
+                                  </button>
+                                ))}
+                              </div>
+                            </>
+                          )}
+                        </td>
+
+                        <td className="py-3.5 px-4 relative">
+                          <button
+                            onClick={() => setActiveDropdown(activeDropdown?.id === 'current_user' && activeDropdown?.type === 'plan' ? null : { id: 'current_user', type: 'plan' })}
+                            className="h-7 px-2 border border-neutral-200 rounded-md bg-white text-neutral-700 hover:bg-neutral-50 flex items-center justify-between gap-1.5 text-[11px] font-semibold transition-colors select-none w-24"
+                          >
+                            <span>Business</span>
+                            <ChevronDown className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
+                          </button>
+
+                          {activeDropdown?.id === 'current_user' && activeDropdown?.type === 'plan' && (
+                            <>
+                              <div className="fixed inset-0 z-[80]" onClick={() => setActiveDropdown(null)} />
+                              <div className="absolute left-4 top-11 bg-white border border-neutral-200 rounded-lg shadow-lg py-1 z-[90] min-w-[120px] text-left">
+                                <button
+                                  onClick={() => setActiveDropdown(null)}
+                                  className="w-full flex items-center justify-between px-3 py-1.5 text-[11px] font-bold text-[#059669] bg-[#ecfdf5] hover:bg-neutral-50"
+                                >
+                                  <span>Business</span>
+                                  <Check className="w-3.5 h-3.5 text-[#059669]" />
+                                </button>
+                                {['Pro', 'Free'].map((p) => (
+                                  <button
+                                    key={p}
+                                    onClick={() => {
+                                      triggerToast('Workspace plan is linked to billing');
+                                      setActiveDropdown(null);
+                                    }}
+                                    className="w-full px-3 py-1.5 text-[11px] font-semibold text-neutral-600 hover:bg-neutral-50 text-left"
+                                  >
+                                    {p}
+                                  </button>
+                                ))}
+                              </div>
+                            </>
+                          )}
+                        </td>
+
+                        <td className="py-3.5 px-4">
+                          <div className="flex items-center gap-1">
+                            {[1, 2, 3, 4].map((dot) => (
+                              <span key={dot} className="w-1.5 h-1.5 rounded-full bg-neutral-350" />
+                            ))}
+                          </div>
+                        </td>
+                        <td className="py-3.5 px-4"></td>
+                      </tr>
+                    )}
+
+                    {/* Members Rows */}
+                    {loading ? (
+                      <tr>
+                        <td colSpan={5} className="py-10 text-center">
+                          <div className="flex items-center justify-center gap-2 text-neutral-400">
+                            <Loader2 className="w-4 h-4 animate-spin text-[#059669]" />
+                            <span className="text-xs font-semibold">Chargement des membres...</span>
+                          </div>
+                        </td>
+                      </tr>
+                    ) : sortedMembers.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="py-10 text-center text-xs text-neutral-400 font-medium">
+                          Aucun membre trouvé
+                        </td>
+                      </tr>
+                    ) : (
+                      sortedMembers.map((member) => {
+                        const isInvited = member.status === 'pending';
+                        const formattedDate = new Date(member.invited_at).toLocaleDateString(locale, {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric',
+                        });
+                        const isDropdownOpen = activeDropdown?.id === member.id;
+                        const isUpdating = updatingMemberId === member.id;
+                        const hasAppAccess = !isInvited && !!member.member_user_id;
+                        const isOnline = hasAppAccess && onlineUserIds.has(member.member_user_id!);
+                        const joinedDate = member.joined_at
+                          ? new Date(member.joined_at).toLocaleDateString(locale, { month: 'short', day: 'numeric', year: 'numeric' })
+                          : null;
+                        const memberAvatar = member.profile?.avatar_base64;
+                        return (
+                          <tr key={member.id} className="hover:bg-neutral-50/40 transition-colors group">
+                            <td className="py-3.5 px-4">
+                              <div className="flex items-center gap-3">
+                                {isInvited ? (
+                                  <div className="w-8 h-8 rounded-full bg-neutral-50 border border-neutral-200/80 flex items-center justify-center shrink-0">
+                                    <Mail className="w-3.5 h-3.5 text-neutral-400" />
+                                  </div>
+                                ) : (
+                                  <div className="relative shrink-0">
+                                    <div className="w-8 h-8 rounded-full overflow-hidden bg-neutral-100 flex items-center justify-center border border-neutral-200">
+                                      {memberAvatar ? (
+                                        <img src={memberAvatar} alt="" className="w-full h-full object-cover" />
+                                      ) : (
+                                        <span className="font-extrabold text-xs text-neutral-600">
+                                          {(member.profile?.full_name || member.email.split('@')[0]).slice(0, 2).toUpperCase()}
+                                        </span>
+                                      )}
+                                    </div>
+                                    {isOnline && (
+                                      <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-[#059669] border-2 border-white z-10" />
+                                    )}
+                                  </div>
+                                )}
+
+                                <div className="min-w-0">
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    <span className="text-xs font-bold text-neutral-900 truncate">
+                                      {isInvited ? member.email : (member.profile?.full_name || member.email.split('@')[0])}
+                                    </span>
+                                    {isInvited ? (
+                                      <span className="bg-amber-50 text-amber-600 border border-amber-200 text-[9px] font-bold px-1.5 py-0.5 rounded select-none shrink-0">
+                                        En attente
+                                      </span>
+                                    ) : hasAppAccess ? (
+                                      <span className="bg-[#ecfdf5] text-[#059669] border border-[#6ee7b7]/60 text-[9px] font-bold px-1.5 py-0.5 rounded select-none shrink-0 flex items-center gap-0.5">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-[#059669] inline-block" />
+                                        Accès app
+                                      </span>
                                     ) : (
-                                      <span className="font-extrabold text-xs text-neutral-600">
-                                        {(member.profile?.full_name || member.email.split('@')[0]).slice(0, 2).toUpperCase()}
+                                      <span className="bg-neutral-100 text-neutral-500 border border-neutral-200/80 text-[9px] font-bold px-1.5 py-0.5 rounded select-none shrink-0">
+                                        Actif
                                       </span>
                                     )}
                                   </div>
-                                  {/* Online presence dot */}
-                                  {isOnline && (
-                                    <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-[#059669] border-2 border-white z-10" title="En ligne" />
+                                  <p className="text-[10px] text-neutral-400 font-medium truncate mt-0.5">
+                                    {isInvited ? `Invité le ${formattedDate}` : joinedDate ? `A rejoint le ${joinedDate} · ${member.email}` : member.email}
+                                  </p>
+                                </div>
+                              </div>
+                            </td>
+
+                            <td className="py-3.5 px-4 relative">
+                              {isUpdating ? (
+                                <Loader2 className="w-3.5 h-3.5 animate-spin text-[#059669]" />
+                              ) : isInvited ? (
+                                <span className="text-[11px] text-neutral-550 font-semibold capitalize">{member.role}</span>
+                              ) : (
+                                <>
+                                  <button
+                                    onClick={() => setActiveDropdown(isDropdownOpen && activeDropdown?.type === 'role' ? null : { id: member.id, type: 'role' })}
+                                    className="h-7 px-2 border border-neutral-200 rounded-md bg-white text-neutral-700 hover:bg-neutral-50 flex items-center justify-between gap-1.5 text-[11px] font-semibold transition-colors select-none w-24"
+                                  >
+                                    <span className="capitalize">{member.role}</span>
+                                    <ChevronDown className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
+                                  </button>
+
+                                  {isDropdownOpen && activeDropdown?.type === 'role' && (
+                                    <>
+                                      <div className="fixed inset-0 z-[80]" onClick={() => setActiveDropdown(null)} />
+                                      <div className="absolute left-4 top-11 bg-white border border-neutral-200 rounded-lg shadow-lg py-1 z-[90] min-w-[120px] text-left">
+                                        {(['admin', 'editor', 'viewer'] as Role[]).map((r) => (
+                                          <button
+                                            key={r}
+                                            onClick={() => handleUpdateField(member.id, { role: r })}
+                                            className={cn(
+                                              "w-full flex items-center justify-between px-3 py-1.5 text-[11px] font-semibold text-neutral-600 hover:bg-neutral-50 text-left capitalize",
+                                              member.role === r && "text-[#059669] font-bold bg-[#ecfdf5]"
+                                            )}
+                                          >
+                                            <span>{r}</span>
+                                            {member.role === r && <Check className="w-3.5 h-3.5 text-[#059669]" />}
+                                          </button>
+                                        ))}
+                                      </div>
+                                    </>
                                   )}
+                                </>
+                              )}
+                            </td>
+
+                            <td className="py-3.5 px-4 relative">
+                              {isUpdating ? (
+                                <Loader2 className="w-3.5 h-3.5 animate-spin text-[#059669]" />
+                              ) : isInvited ? (
+                                <span className="inline-block bg-neutral-100 text-neutral-600 border border-neutral-200/50 text-[9px] font-bold px-2 py-0.5 rounded-full select-none">{member.plan || 'Business'}</span>
+                              ) : (
+                                <>
+                                  <button
+                                    onClick={() => setActiveDropdown(isDropdownOpen && activeDropdown?.type === 'plan' ? null : { id: member.id, type: 'plan' })}
+                                    className="h-7 px-2 border border-neutral-200 rounded-md bg-white text-neutral-700 hover:bg-neutral-50 flex items-center justify-between gap-1.5 text-[11px] font-semibold transition-colors select-none w-24"
+                                  >
+                                    <span>{member.plan || 'Business'}</span>
+                                    <ChevronDown className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
+                                  </button>
+
+                                  {isDropdownOpen && activeDropdown?.type === 'plan' && (
+                                    <>
+                                      <div className="fixed inset-0 z-[80]" onClick={() => setActiveDropdown(null)} />
+                                      <div className="absolute left-4 top-11 bg-white border border-neutral-200 rounded-lg shadow-lg py-1 z-[90] min-w-[120px] text-left">
+                                        {(['Business', 'Pro', 'Free'] as Plan[]).map((p) => (
+                                          <button
+                                            key={p}
+                                            onClick={() => handleUpdateField(member.id, { plan: p })}
+                                            className={cn(
+                                              "w-full flex items-center justify-between px-3 py-1.5 text-[11px] font-semibold text-neutral-600 hover:bg-neutral-50 text-left",
+                                              (member.plan || 'Business') === p && "text-[#059669] font-bold bg-[#ecfdf5]"
+                                            )}
+                                          >
+                                            <span>{p}</span>
+                                            {(member.plan || 'Business') === p && <Check className="w-3.5 h-3.5 text-[#059669]" />}
+                                          </button>
+                                        ))}
+                                      </div>
+                                    </>
+                                  )}
+                                </>
+                              )}
+                            </td>
+
+                            <td className="py-3.5 px-4">
+                              {!isInvited && (
+                                <div className="flex items-center gap-1 select-none">
+                                  {Array.from({ length: 4 }).map((_, i) => {
+                                    const fillCount = member.usage_count || 0;
+                                    return (
+                                      <span
+                                        key={i}
+                                        className={cn(
+                                          "w-1.5 h-1.5 rounded-full transition-colors",
+                                          i < fillCount ? "bg-neutral-400" : "bg-neutral-250"
+                                        )}
+                                        onClick={() => handleUpdateField(member.id, { usageCount: i + 1 })}
+                                      />
+                                    );
+                                  })}
                                 </div>
                               )}
+                            </td>
 
-                              <div className="min-w-0">
-                                <div className="flex items-center gap-1.5 flex-wrap">
-                                  <span className="text-xs font-bold text-neutral-900 truncate">
-                                    {isInvited ? member.email : (member.profile?.full_name || member.email.split('@')[0])}
-                                  </span>
-                                  {isInvited ? (
-                                    <span className="bg-amber-50 text-amber-600 border border-amber-200 text-[9px] font-bold px-1.5 py-0.5 rounded select-none shrink-0">
-                                      En attente
-                                    </span>
-                                  ) : hasAppAccess ? (
-                                    <span className="bg-[#ecfdf5] text-[#059669] border border-[#6ee7b7]/60 text-[9px] font-bold px-1.5 py-0.5 rounded select-none shrink-0 flex items-center gap-0.5">
-                                      <span className="w-1.5 h-1.5 rounded-full bg-[#059669] inline-block" />
-                                      Accès app
-                                    </span>
-                                  ) : (
-                                    <span className="bg-neutral-100 text-neutral-500 border border-neutral-200/80 text-[9px] font-bold px-1.5 py-0.5 rounded select-none shrink-0">
-                                      Actif
-                                    </span>
-                                  )}
-                                  {isOnline && (
-                                    <span className="text-[9px] font-bold text-[#059669]">• En ligne</span>
-                                  )}
+                            <td className="py-3.5 px-4 text-right">
+                              {confirmRemoveId === member.id ? (
+                                <div className="flex items-center gap-1 justify-end">
+                                  <button
+                                    onClick={() => handleRemoveMember(member.id)}
+                                    disabled={removingId === member.id}
+                                    className="w-5 h-5 flex items-center justify-center bg-red-550 hover:bg-red-600 text-white rounded transition-colors"
+                                  >
+                                    {removingId === member.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
+                                  </button>
+                                  <button
+                                    onClick={() => setConfirmRemoveId(null)}
+                                    className="w-5 h-5 flex items-center justify-center bg-neutral-100 hover:bg-neutral-200 text-neutral-600 rounded border border-[#e6e5e0] transition-colors"
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </button>
                                 </div>
-                                <p className="text-[10px] text-neutral-400 font-medium truncate mt-0.5">
-                                  {isInvited
-                                    ? `Invité le ${formattedDate}`
-                                    : joinedDate
-                                    ? `A rejoint le ${joinedDate} · ${member.email}`
-                                    : member.email}
-                                </p>
-                              </div>
+                              ) : (
+                                <div className="flex items-center gap-1 md:opacity-0 md:group-hover:opacity-100 md:focus-within:opacity-100 transition-opacity">
+                                  <Link
+                                    href={`/team/member/${member.id}`}
+                                    className="w-7 h-7 flex items-center justify-center rounded hover:bg-[#f4f4f3] text-neutral-400 hover:text-[#26251e] transition-colors"
+                                  >
+                                    <ChevronRight className="w-3.5 h-3.5" />
+                                  </Link>
+                                  <button
+                                    onClick={() => setConfirmRemoveId(member.id)}
+                                    className="w-7 h-7 flex items-center justify-center rounded hover:bg-red-50 text-neutral-400 hover:text-red-600 transition-colors"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Mobile Stacked Card View */}
+            <div className="md:hidden space-y-3">
+              {currentUser && (searchQuery === '' || 
+                currentUser.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                currentUser.email.toLowerCase().includes(searchQuery.toLowerCase())) && (
+                <div className="bg-white border border-neutral-200/60 rounded-xl p-3.5 space-y-2.5 shadow-2xs">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full overflow-hidden bg-neutral-100 flex items-center justify-center shrink-0 border border-neutral-200">
+                      {currentUser.avatar ? (
+                        <img src={currentUser.avatar} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="font-extrabold text-xs text-neutral-600">
+                          {currentUser.name.slice(0, 2).toUpperCase()}
+                        </span>
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="text-xs font-bold text-neutral-900 truncate">{currentUser.name} (You)</span>
+                        <span className="bg-[#ecfdf5] text-[#059669] border border-[#6ee7b7]/60 text-[9px] font-bold px-1.5 py-0.5 rounded">Owner</span>
+                      </div>
+                      <p className="text-[10px] text-neutral-400 mt-0.5">{currentUser.email}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between border-t border-neutral-100 pt-2.5 text-[11px] font-semibold text-neutral-600">
+                    <span>Admin</span>
+                    <span>Business</span>
+                  </div>
+                </div>
+              )}
+
+              {loading ? (
+                <div className="flex flex-col items-center justify-center py-10 bg-white border border-neutral-200/60 rounded-xl">
+                  <Loader2 className="w-5 h-5 animate-spin text-[#059669]" />
+                  <span className="text-xs font-semibold text-neutral-400 mt-2">Chargement...</span>
+                </div>
+              ) : sortedMembers.length === 0 ? (
+                <div className="py-10 text-center bg-white border border-neutral-200/60 rounded-xl text-xs text-neutral-400 font-medium">
+                  Aucun membre trouvé
+                </div>
+              ) : (
+                sortedMembers.map((member) => {
+                  const isInvited = member.status === 'pending';
+                  const hasAppAccess = !isInvited && !!member.member_user_id;
+                  const isOnline = hasAppAccess && onlineUserIds.has(member.member_user_id!);
+                  const isUpdating = updatingMemberId === member.id;
+                  const memberAvatar = member.profile?.avatar_base64;
+                  return (
+                    <div key={member.id} className="bg-white border border-neutral-200/60 rounded-xl p-3.5 space-y-3 shadow-2xs">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          {isInvited ? (
+                            <div className="w-8 h-8 rounded-full bg-neutral-50 border border-neutral-200/80 flex items-center justify-center shrink-0">
+                              <Mail className="w-3.5 h-3.5 text-neutral-400" />
                             </div>
-                          </td>
-
-                          {/* Role cell */}
-                          <td className="py-3.5 px-4 relative">
-                            {isUpdating ? (
-                              <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-600" />
-                            ) : isInvited ? (
-                              <span className="text-[11px] text-neutral-500 font-semibold capitalize">
-                                {member.role === 'admin' ? 'Admin' : member.role === 'editor' ? 'Editor' : 'Viewer'}
-                              </span>
-                            ) : (
-                              <>
-                                <button
-                                  onClick={() => setActiveDropdown(isDropdownOpen && activeDropdown?.type === 'role' ? null : { id: member.id, type: 'role' })}
-                                  className="h-7 px-2 border border-neutral-200 rounded-md bg-white text-neutral-700 hover:bg-neutral-50 flex items-center justify-between gap-1.5 text-[11px] font-semibold transition-colors select-none w-24"
-                                >
-                                  <span className="capitalize">{member.role}</span>
-                                  <ChevronDown className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
-                                </button>
-
-                                {isDropdownOpen && activeDropdown?.type === 'role' && (
-                                  <>
-                                    <div className="fixed inset-0 z-[80]" onClick={() => setActiveDropdown(null)} />
-                                    <div className="absolute left-4 top-11 bg-white border border-neutral-200 rounded-lg shadow-lg py-1 z-[90] min-w-[120px] text-left">
-                                      {(['admin', 'editor', 'viewer'] as Role[]).map((r) => (
-                                        <button
-                                          key={r}
-                                          onClick={() => handleUpdateField(member.id, { role: r })}
-                                          className={cn(
-                                            "w-full flex items-center justify-between px-3 py-1.5 text-[11px] font-semibold text-neutral-600 hover:bg-neutral-50 text-left capitalize",
-                                            member.role === r && "text-blue-600 font-bold bg-neutral-50"
-                                          )}
-                                        >
-                                          <span>{r}</span>
-                                          {member.role === r && <Check className="w-3.5 h-3.5 text-blue-600" />}
-                                        </button>
-                                      ))}
-                                    </div>
-                                  </>
+                          ) : (
+                            <div className="relative shrink-0">
+                              <div className="w-8 h-8 rounded-full overflow-hidden bg-neutral-100 flex items-center justify-center border border-neutral-200">
+                                {memberAvatar ? (
+                                  <img src={memberAvatar} alt="" className="w-full h-full object-cover" />
+                                ) : (
+                                  <span className="font-extrabold text-xs text-neutral-600">
+                                    {(member.profile?.full_name || member.email.split('@')[0]).slice(0, 2).toUpperCase()}
+                                  </span>
                                 )}
-                              </>
-                            )}
-                          </td>
+                              </div>
+                              {isOnline && (
+                                <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-[#059669] border-2 border-white z-10" />
+                              )}
+                            </div>
+                          )}
 
-                          {/* Plan cell */}
-                          <td className="py-3.5 px-4 relative">
-                            {isUpdating ? (
-                              <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-600" />
-                            ) : isInvited ? (
-                              <span className="inline-block bg-neutral-100 text-neutral-600 border border-neutral-200/50 text-[9px] font-bold px-2 py-0.5 rounded-full select-none">
-                                {member.plan || 'Business'}
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="text-xs font-bold text-neutral-900 truncate">
+                                {isInvited ? member.email : (member.profile?.full_name || member.email.split('@')[0])}
                               </span>
-                            ) : (
-                              <>
-                                <button
-                                  onClick={() => setActiveDropdown(isDropdownOpen && activeDropdown?.type === 'plan' ? null : { id: member.id, type: 'plan' })}
-                                  className="h-7 px-2 border border-neutral-200 rounded-md bg-white text-neutral-700 hover:bg-neutral-50 flex items-center justify-between gap-1.5 text-[11px] font-semibold transition-colors select-none w-24"
-                                >
-                                  <span>{member.plan || 'Business'}</span>
-                                  <ChevronDown className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
-                                </button>
+                              {isInvited ? (
+                                <span className="bg-amber-50 text-amber-600 border border-amber-200 text-[8px] font-bold px-1.5 py-0.2 rounded shrink-0">En attente</span>
+                              ) : hasAppAccess ? (
+                                <span className="bg-[#ecfdf5] text-[#059669] border border-[#6ee7b7]/60 text-[8px] font-bold px-1.5 py-0.2 rounded shrink-0">Accès app</span>
+                              ) : (
+                                <span className="bg-neutral-100 text-neutral-500 border border-neutral-200/80 text-[8px] font-bold px-1.5 py-0.2 rounded shrink-0">Actif</span>
+                              )}
+                            </div>
+                            <p className="text-[10px] text-neutral-400 truncate mt-0.5">{member.email}</p>
+                          </div>
+                        </div>
 
-                                {isDropdownOpen && activeDropdown?.type === 'plan' && (
-                                  <>
-                                    <div className="fixed inset-0 z-[80]" onClick={() => setActiveDropdown(null)} />
-                                    <div className="absolute left-4 top-11 bg-white border border-neutral-200 rounded-lg shadow-lg py-1 z-[90] min-w-[120px] text-left">
-                                      {(['Business', 'Pro', 'Free'] as Plan[]).map((p) => (
-                                        <button
-                                          key={p}
-                                          onClick={() => handleUpdateField(member.id, { plan: p })}
-                                          className={cn(
-                                            "w-full flex items-center justify-between px-3 py-1.5 text-[11px] font-semibold text-neutral-600 hover:bg-neutral-50 text-left",
-                                            (member.plan || 'Business') === p && "text-blue-600 font-bold bg-neutral-50"
-                                          )}
-                                        >
-                                          <span>{p}</span>
-                                          {(member.plan || 'Business') === p && <Check className="w-3.5 h-3.5 text-blue-600" />}
-                                        </button>
-                                      ))}
-                                    </div>
-                                  </>
-                                )}
-                              </>
-                            )}
-                          </td>
+                        {/* Card Actions */}
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <Link
+                            href={`/team/member/${member.id}`}
+                            className="w-7 h-7 flex items-center justify-center rounded-lg border border-neutral-200 bg-[#fafaf7] text-neutral-500"
+                          >
+                            <ChevronRight className="w-3.5 h-3.5" />
+                          </Link>
+                          {confirmRemoveId === member.id ? (
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={() => handleRemoveMember(member.id)}
+                                disabled={removingId === member.id}
+                                className="w-7 h-7 flex items-center justify-center bg-red-550 text-white rounded-lg"
+                              >
+                                {removingId === member.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+                              </button>
+                              <button
+                                onClick={() => setConfirmRemoveId(null)}
+                                className="w-7 h-7 flex items-center justify-center bg-neutral-100 text-neutral-500 border border-neutral-200 rounded-lg"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => setConfirmRemoveId(member.id)}
+                              className="w-7 h-7 flex items-center justify-center rounded-lg border border-neutral-200 bg-red-50/50 hover:bg-red-50 text-red-500"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
 
-                          {/* Usage cell */}
-                          <td className="py-3.5 px-4">
-                            {!isInvited && (
-                              <div className="flex items-center gap-1 select-none">
-                                {Array.from({ length: 4 }).map((_, i) => {
-                                  const fillCount = member.usage_count || 0;
-                                  return (
-                                    <span
-                                      key={i}
-                                      className={cn(
-                                        "w-1.5 h-1.5 rounded-full transition-colors",
-                                        i < fillCount ? "bg-neutral-400" : "bg-neutral-200"
-                                      )}
-                                      onClick={() => handleUpdateField(member.id, { usageCount: i + 1 })}
-                                      title={`Définir l'utilisation à ${i + 1}/4`}
-                                    />
-                                  );
-                                })}
-                              </div>
-                            )}
-                          </td>
+                      {/* Dropdowns details inside card */}
+                      <div className="flex items-center gap-2 pt-2.5 border-t border-neutral-100 text-xs">
+                        {isUpdating ? (
+                          <Loader2 className="w-3 h-3 animate-spin text-[#059669] mx-auto" />
+                        ) : (
+                          <>
+                            {/* Role Select */}
+                            <div className="flex-1 flex items-center gap-1 bg-[#fafaf7] px-2 py-1 rounded-lg border border-neutral-200">
+                              <span className="text-[9px] text-neutral-400 font-bold uppercase">Rôle:</span>
+                              <select
+                                value={member.role}
+                                disabled={isInvited}
+                                onChange={(e) => handleUpdateField(member.id, { role: e.target.value as Role })}
+                                className="bg-transparent text-neutral-700 font-bold text-[10px] uppercase tracking-wide focus:outline-none flex-1 border-0"
+                              >
+                                <option value="editor">Editeur</option>
+                                <option value="admin">Admin</option>
+                                <option value="viewer">Lecteur</option>
+                              </select>
+                            </div>
 
-                          {/* Actions cell */}
-                          <td className="py-3.5 px-4 text-right">
-                            {confirmRemoveId === member.id ? (
-                              <div className="flex items-center gap-1 justify-end">
-                                <button
-                                  onClick={() => handleRemoveMember(member.id)}
-                                  disabled={removingId === member.id}
-                                  className="w-5 h-5 flex items-center justify-center bg-red-500 hover:bg-red-600 text-white rounded transition-colors"
-                                >
-                                  {removingId === member.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
-                                </button>
-                                <button
-                                  onClick={() => setConfirmRemoveId(null)}
-                                  className="w-5 h-5 flex items-center justify-center bg-neutral-100 hover:bg-neutral-200 text-neutral-600 rounded border border-neutral-200 transition-colors"
-                                >
-                                  <X className="w-3 h-3" />
-                                </button>
-                              </div>
-                            ) : (
-                              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
-                                <Link
-                                  href={`/team/member/${member.id}`}
-                                  className="w-7 h-7 flex items-center justify-center rounded hover:bg-[#f4f4f3] text-neutral-400 hover:text-[#26251e] transition-colors"
-                                  title="Gérer le rôle"
-                                >
-                                  <ChevronRight className="w-3.5 h-3.5" />
-                                </Link>
-                                <button
-                                  onClick={() => setConfirmRemoveId(member.id)}
-                                  className="w-7 h-7 flex items-center justify-center rounded hover:bg-red-50 text-neutral-400 hover:text-red-600 transition-colors"
-                                  title="Supprimer ce membre"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
-                              </div>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
+                            {/* Plan Select */}
+                            <div className="flex-1 flex items-center gap-1 bg-[#fafaf7] px-2 py-1 rounded-lg border border-neutral-200">
+                              <span className="text-[9px] text-neutral-400 font-bold uppercase">Plan:</span>
+                              <select
+                                value={member.plan || 'Business'}
+                                disabled={isInvited}
+                                onChange={(e) => handleUpdateField(member.id, { plan: e.target.value as Plan })}
+                                className="bg-transparent text-neutral-700 font-bold text-[10px] uppercase tracking-wide focus:outline-none flex-1 border-0"
+                              >
+                                <option value="Business">Business</option>
+                                <option value="Pro">Pro</option>
+                                <option value="Free">Free</option>
+                              </select>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
             </div>
           </div>
         </div>
-
-        </>}
+      </>}
 
         {/* ── Workload Tab ── */}
         {activeTab === 'workload' && activeWorkspace && (
@@ -1703,81 +1844,83 @@ export default function TeamPage() {
 
       {/* ── Invite User Modal Overlay ── */}
       {showInviteModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-xs animate-fade-in">
-          <div className="w-full max-w-sm bg-white border border-neutral-200 rounded-xl p-5 space-y-4 shadow-xl animate-in fade-in zoom-in-95 duration-150 text-left">
-            <div className="flex items-start justify-between">
-              <div className="space-y-1">
-                <h3 className="text-sm font-bold text-neutral-900">
-                  {t('team.btn_invite')}
-                </h3>
-                <p className="text-[11px] text-neutral-400 font-medium">
-                  Renseignez l&apos;e-mail pour envoyer une invitation au workspace.
-                </p>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-xs animate-fade-in px-4">
+          <div className="w-full max-w-sm bg-white border border-neutral-200 rounded-2xl p-4 space-y-3.5 shadow-2xl animate-in fade-in zoom-in-95 duration-150 text-left">
+            
+            {/* Header: compact with share icon on the left and app branding on the right */}
+            <div className="flex items-center justify-between border-b border-neutral-100 pb-2">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowInviteModal(false);
+                    setShowLinkModal(true);
+                    setGeneratedLink(null);
+                    setLinkCopied(false);
+                  }}
+                  className="p-1.5 rounded-lg bg-neutral-50 hover:bg-neutral-100 text-[#059669] transition-colors"
+                  title="Partager un lien d'invitation"
+                >
+                  <Share2 className="w-3.5 h-3.5" />
+                </button>
+                <span className="text-xs font-bold text-neutral-800">Inviter</span>
               </div>
-              <button 
-                type="button" 
-                onClick={() => setShowInviteModal(false)}
-                className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-neutral-100 transition-colors text-neutral-400"
-              >
-                <X className="w-4 h-4" />
-              </button>
+              
+              <div className="flex items-center gap-1.5">
+                {/* Minerva Logo icon SVG */}
+                <div className="flex items-center gap-1 text-[10px] font-black text-neutral-900 tracking-tighter">
+                  <span className="text-[#059669]">●</span> Minerva
+                </div>
+                <button 
+                  type="button" 
+                  onClick={() => setShowInviteModal(false)}
+                  className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-neutral-100 transition-colors text-neutral-400"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
 
-            <form onSubmit={handleInviteSubmit} className="space-y-4">
+            <form onSubmit={handleInviteSubmit} className="space-y-3">
               {/* Email Input */}
               <div className="space-y-1">
-                <label className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">Adresse e-mail</label>
+                <label className="text-[9px] font-bold uppercase tracking-wider text-neutral-400">Adresse e-mail</label>
                 <input
                   type="email"
                   required
                   placeholder="collaborateur@entreprise.com"
                   value={inviteEmail}
                   onChange={(e) => setInviteEmail(e.target.value)}
-                  className="w-full h-8 text-xs px-3 border border-neutral-200 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-600 bg-white placeholder:text-neutral-400"
+                  className="w-full h-8 text-xs px-3 border border-neutral-200 rounded-md focus:outline-none focus:ring-1 focus:ring-[#059669] bg-white placeholder:text-neutral-400"
                 />
               </div>
 
-              {/* Role Select */}
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">Rôle</label>
-                <div className="flex gap-2">
-                  {(['admin', 'editor', 'viewer'] as Role[]).map((r) => (
-                    <button
-                      key={r}
-                      type="button"
-                      onClick={() => setInviteRole(r)}
-                      className={cn(
-                        "flex-1 py-1.5 text-[10px] font-bold rounded-md border capitalize transition-all",
-                        inviteRole === r
-                          ? "bg-neutral-900 text-white border-neutral-900"
-                          : "bg-white text-neutral-600 border-neutral-200 hover:bg-neutral-50"
-                      )}
-                    >
-                      {r}
-                    </button>
-                  ))}
+              {/* Role + Plan selector on a single line (compact select tags) */}
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <label className="text-[9px] font-bold uppercase tracking-wider text-neutral-400">Rôle</label>
+                  <select
+                    value={inviteRole}
+                    onChange={(e) => setInviteRole(e.target.value as Role)}
+                    className="w-full h-8 text-xs px-2 border border-neutral-200 rounded-md bg-white text-neutral-700 focus:outline-none focus:ring-1 focus:ring-[#059669] font-medium"
+                  >
+                    <option value="editor">Éditeur</option>
+                    <option value="admin">Admin</option>
+                    <option value="viewer">Lecteur</option>
+                  </select>
                 </div>
-              </div>
 
-              {/* Plan Select */}
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">Forfait</label>
-                <div className="flex gap-2">
-                  {(['Business', 'Pro', 'Free'] as Plan[]).map((p) => (
-                    <button
-                      key={p}
-                      type="button"
-                      onClick={() => setInvitePlan(p)}
-                      className={cn(
-                        "flex-1 py-1.5 text-[10px] font-bold rounded-md border transition-all",
-                        invitePlan === p
-                          ? "bg-neutral-900 text-white border-neutral-900"
-                          : "bg-white text-neutral-600 border-neutral-200 hover:bg-neutral-50"
-                      )}
-                    >
-                      {p}
-                    </button>
-                  ))}
+                <div className="space-y-1">
+                  <label className="text-[9px] font-bold uppercase tracking-wider text-neutral-400">Forfait</label>
+                  <select
+                    value={invitePlan}
+                    onChange={(e) => setInvitePlan(e.target.value as Plan)}
+                    className="w-full h-8 text-xs px-2 border border-neutral-200 rounded-md bg-white text-neutral-700 focus:outline-none focus:ring-1 focus:ring-[#059669] font-medium"
+                  >
+                    <option value="Business">Business</option>
+                    <option value="Pro">Pro</option>
+                    <option value="Free">Free</option>
+                  </select>
                 </div>
               </div>
 
@@ -1789,21 +1932,21 @@ export default function TeamPage() {
               )}
 
               {/* Actions */}
-              <div className="flex justify-end gap-2 text-xs pt-1">
+              <div className="flex justify-end gap-2 text-xs pt-2 border-t border-neutral-100">
                 <button
                   type="button"
                   onClick={() => setShowInviteModal(false)}
-                  className="h-8 rounded-md border border-neutral-200 bg-white hover:bg-neutral-50 px-4 text-xs font-semibold text-neutral-600 transition-colors"
+                  className="h-8 rounded-md border border-neutral-200 bg-white hover:bg-neutral-50 px-3 text-xs font-semibold text-neutral-500 transition-colors"
                 >
                   Annuler
                 </button>
                 <button
                   type="submit"
                   disabled={isSending || !inviteEmail}
-                  className="h-8 bg-blue-600 hover:bg-blue-700 disabled:bg-neutral-100 disabled:text-neutral-400 text-white text-xs font-semibold rounded-md px-4 flex items-center justify-center gap-1.5 transition-colors"
+                  className="h-8 bg-[#059669] hover:bg-[#047857] disabled:bg-neutral-100 disabled:text-neutral-400 text-white text-xs font-semibold rounded-md px-4 flex items-center justify-center gap-1.5 transition-colors"
                 >
-                  {isSending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                  <span>Envoyer l&apos;invitation</span>
+                  {isSending && <Loader2 className="w-3 h-3 animate-spin" />}
+                  <span>Envoyer</span>
                 </button>
               </div>
             </form>

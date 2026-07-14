@@ -1675,7 +1675,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.15 }}
-              className="fixed inset-0 z-[60] bg-black/30 md:hidden"
+              className="fixed inset-0 z-[60] bg-black/40 backdrop-blur-xs md:hidden"
               onClick={() => setMoreSheetOpen(false)}
             />
             <motion.div
@@ -1683,92 +1683,104 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
               transition={{ type: 'spring', stiffness: 300, damping: 30, mass: 1 }}
-              className="fixed bottom-0 left-0 right-0 z-[61] md:hidden bg-white rounded-t-2xl shadow-xl pb-safe"
+              className="fixed bottom-0 left-0 right-0 z-[61] md:hidden bg-white rounded-t-2xl shadow-xl pb-safe max-h-[85vh] flex flex-col"
             >
-              <div className="flex justify-center pt-3 pb-1">
+              {/* Drawer handle */}
+              <div className="flex justify-center pt-2.5 pb-1 shrink-0">
                 <div className="w-10 h-1 rounded-full bg-[#e5e5e0]" />
               </div>
 
-              {/* Sections dérivées des mêmes destinations que la sidebar desktop (pinnedItems /
-                  navCategories / footer) — 3 colonnes au lieu de 4 pour des cibles tactiles
-                  plus grandes. Équipe, Activités, Publicité, Site Web, Rapports client et
-                  Webhooks manquaient ici : inatteignables depuis la navigation mobile. */}
-              {([
-                {
-                  label: 'Ventes',
-                  items: [
-                    { name: 'Prospects',      href: '/prospecting', icon: PenSquare },
-                    { name: 'Profils cibles', href: '/personas',    icon: UserCog },
-                    { name: 'Pipeline',       href: '/pipeline',    icon: Kanban },
-                    { name: 'Inbox',          href: '/inbox',       icon: Inbox },
-                    { name: 'Terrain',        href: '/field',       icon: MapPin },
-                    { name: 'Équipe',         href: '/team',        icon: UsersRound },
-                  ],
-                },
-                {
-                  label: 'Outils',
-                  items: [
-                    { name: 'Tâches',       href: '/tasks',          icon: ListChecks },
-                    { name: 'Bilan semaine',href: '/weekly-report',  icon: BarChart3 },
-                    { name: 'Activités',    href: '/activities',     icon: Activity },
-                    { name: 'Contacts',     href: '/contacts',       icon: Users },
-                    { name: 'Notifs',       href: '/notifications',  icon: Bell },
-                    { name: 'Messages',     href: '/messages',       icon: MessageCircle },
-                    { name: 'Séquences',    href: '/sequences',      icon: Mail },
-                    { name: 'Campagnes',    href: '/campaigns',      icon: Megaphone },
-                    { name: 'Playbooks',    href: '/playbooks',      icon: BookOpen },
-                  ],
-                },
-                {
-                  label: 'Marketing',
-                  items: [
-                    { name: 'Publicité',       href: '/ads',            icon: Target },
-                    { name: 'Acquisition',     href: '/acquisition',    icon: TrendingUp },
-                    { name: 'Site Web',        href: '/website-builder',icon: Globe },
-                    { name: 'Audit SEO',       href: '/audit',          icon: ShieldCheck },
-                    { name: 'Rapports client', href: '/client-reports', icon: FileText },
-                    { name: 'Webhooks',        href: '/webhooks',       icon: Zap },
-                  ],
-                },
-                {
-                  label: 'Minerva AI',
-                  items: [
-                    { name: 'Assistant',    href: '/assistant',    icon: Sparkles },
-                    { name: 'Intelligence', href: '/intelligence', icon: Brain },
-                    { name: 'Agents',       href: '/agents',       icon: Bot },
-                    { name: 'Skills',       href: '/skills',       icon: Zap },
-                  ],
-                },
-                {
-                  label: 'App',
-                  items: [
-                    { name: 'Paramètres',   href: '/settings',     icon: SettingsIcon },
-                    { name: 'Intégrations', href: '/integrations', icon: Plug },
-                    { name: 'Performance',  href: '/performance',  icon: BarChart3 },
-                    { name: 'Changelog',    href: '/changelog',    icon: Megaphone },
-                    { name: 'Bibliothèque', href: '/library',      icon: Folder },
-                    { name: 'Récupération', href: '/recovery',     icon: RefreshCw },
-                  ],
-                },
-              ] as { label: string; items: { name: string; href: string; icon: React.ElementType }[] }[]).map((section, sectionIdx) => (
-                <React.Fragment key={section.label}>
-                  <p className="text-[9px] font-black uppercase tracking-widest text-[#7a7a76] px-5 pt-3 pb-1">{section.label}</p>
-                  <div className={cn("grid grid-cols-3 gap-0.5 px-3", sectionIdx === 4 && "pb-6")}>
-                    {section.items.map(({ name, href, icon: Icon }) => {
-                      const isActive = pathname.startsWith(href);
-                      return (
-                        <Link key={href} href={href} onClick={() => setMoreSheetOpen(false)}
-                          className={cn("flex flex-col items-center gap-1.5 p-3.5 rounded-xl transition-colors",
-                            isActive ? "bg-[#059669]/8 text-[#059669]" : "text-[#555552] active:bg-[#f4f4f3]")}
-                        >
-                          <Icon className="h-5 w-5" strokeWidth={isActive ? 2.2 : 1.5} />
-                          <span className="text-[9px] font-semibold text-center leading-tight">{name}</span>
-                        </Link>
-                      );
-                    })}
-                  </div>
-                </React.Fragment>
-              ))}
+              {/* Drawer Header */}
+              <div className="flex items-center justify-between px-5 py-2 border-b border-[#e5e5e0]/60 shrink-0">
+                <span className="text-xs font-black uppercase tracking-wider text-[#26251e]">Toutes les fonctionnalités</span>
+                <button
+                  onClick={() => setMoreSheetOpen(false)}
+                  className="w-7 h-7 flex items-center justify-center rounded-full bg-[#fafaf7] border border-[#e5e5e0] text-[#7a7a76] hover:text-[#26251e] active:scale-95 transition-all"
+                  aria-label="Fermer"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              {/* Scrollable grid area */}
+              <div className="flex-1 overflow-y-auto scrollbar-hide py-2">
+                {([
+                  {
+                    label: 'Ventes',
+                    items: [
+                      { name: 'Prospects',      href: '/prospecting', icon: PenSquare },
+                      { name: 'Profils cibles', href: '/personas',    icon: UserCog },
+                      { name: 'Pipeline',       href: '/pipeline',    icon: Kanban },
+                      { name: 'Inbox',          href: '/inbox',       icon: Inbox },
+                      { name: 'Terrain',        href: '/field',       icon: MapPin },
+                      { name: 'Équipe',         href: '/team',        icon: UsersRound },
+                    ],
+                  },
+                  {
+                    label: 'Outils',
+                    items: [
+                      { name: 'Tâches',       href: '/tasks',          icon: ListChecks },
+                      { name: 'Bilan semaine',href: '/weekly-report',  icon: BarChart3 },
+                      { name: 'Activités',    href: '/activities',     icon: Activity },
+                      { name: 'Contacts',     href: '/contacts',       icon: Users },
+                      { name: 'Notifs',       href: '/notifications',  icon: Bell },
+                      { name: 'Messages',     href: '/messages',       icon: MessageCircle },
+                      { name: 'Séquences',    href: '/sequences',      icon: Mail },
+                      { name: 'Campagnes',    href: '/campaigns',      icon: Megaphone },
+                      { name: 'Playbooks',    href: '/playbooks',      icon: BookOpen },
+                    ],
+                  },
+                  {
+                    label: 'Marketing',
+                    items: [
+                      { name: 'Publicité',       href: '/ads',            icon: Target },
+                      { name: 'Acquisition',     href: '/acquisition',    icon: TrendingUp },
+                      { name: 'Site Web',        href: '/website-builder',icon: Globe },
+                      { name: 'Audit SEO',       href: '/audit',          icon: ShieldCheck },
+                      { name: 'Rapports client', href: '/client-reports', icon: FileText },
+                      { name: 'Webhooks',        href: '/webhooks',       icon: Zap },
+                    ],
+                  },
+                  {
+                    label: 'Minerva AI',
+                    items: [
+                      { name: 'Assistant',    href: '/assistant',    icon: Sparkles },
+                      { name: 'Intelligence', href: '/intelligence', icon: Brain },
+                      { name: 'Agents',       href: '/agents',       icon: Bot },
+                      { name: 'Skills',       href: '/skills',       icon: Zap },
+                    ],
+                  },
+                  {
+                    label: 'App',
+                    items: [
+                      { name: 'Paramètres',   href: '/settings',     icon: SettingsIcon },
+                      { name: 'Intégrations', href: '/integrations', icon: Plug },
+                      { name: 'Performance',  href: '/performance',  icon: BarChart3 },
+                      { name: 'Changelog',    href: '/changelog',    icon: Megaphone },
+                      { name: 'Bibliothèque', href: '/library',      icon: Folder },
+                      { name: 'Récupération', href: '/recovery',     icon: RefreshCw },
+                    ],
+                  },
+                ] as { label: string; items: { name: string; href: string; icon: React.ElementType }[] }[]).map((section, sectionIdx) => (
+                  <React.Fragment key={section.label}>
+                    <p className="text-[9px] font-black uppercase tracking-widest text-[#7a7a76] px-5 pt-3 pb-1">{section.label}</p>
+                    <div className={cn("grid grid-cols-3 gap-0.5 px-3", sectionIdx === 4 && "pb-6")}>
+                      {section.items.map(({ name, href, icon: Icon }) => {
+                        const isActive = pathname.startsWith(href);
+                        return (
+                          <Link key={href} href={href} onClick={() => setMoreSheetOpen(false)}
+                            className={cn("flex flex-col items-center gap-1.5 p-3.5 rounded-xl transition-colors",
+                              isActive ? "bg-[#059669]/8 text-[#059669]" : "text-[#555552] active:bg-[#f4f4f3]")}
+                          >
+                            <Icon className="h-5 w-5" strokeWidth={isActive ? 2.2 : 1.5} />
+                            <span className="text-[9px] font-semibold text-center leading-tight">{name}</span>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  </React.Fragment>
+                ))}
+              </div>
             </motion.div>
           </>
         )}
