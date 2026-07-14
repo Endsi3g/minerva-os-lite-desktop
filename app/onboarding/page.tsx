@@ -11,6 +11,7 @@ import {
   HelpCircle,
   PlayCircle,
   Loader2,
+  X,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
@@ -407,15 +408,36 @@ function SmartNavigation({
 
 // ── Help ShiftCard (fixed bottom-right) ────────────────────────────────────
 function HelpShiftCard() {
+  // Hidden on small screens — on mobile this floating card was wide/tall enough
+  // to sit on top of the "Suivant"/"Commencer" button with no way to reach it,
+  // which blocked the onboarding flow entirely. Also dismissible on desktop.
+  const [dismissed, setDismissed] = useState(false)
+
+  if (dismissed) return null
+
   return (
-    <div className="fixed bottom-6 right-6 z-50">
+    <div className="fixed bottom-6 right-6 z-50 hidden sm:block">
       <ShiftCard
+        className="relative"
         topContent={
-          <div className="flex items-center gap-2">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#059669]/15">
-              <HelpCircle className="h-3.5 w-3.5 text-[#059669]" />
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#059669]/15">
+                <HelpCircle className="h-3.5 w-3.5 text-[#059669]" />
+              </div>
+              <span className="text-xs font-bold text-[#26251e]">Aide</span>
             </div>
-            <span className="text-xs font-bold text-[#26251e]">Aide</span>
+            <button
+              type="button"
+              aria-label="Fermer"
+              onClick={e => {
+                e.stopPropagation()
+                setDismissed(true)
+              }}
+              className="flex h-6 w-6 items-center justify-center rounded-md text-[#7a7a76] hover:bg-[#f7f7f4] hover:text-[#26251e] transition-colors"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
           </div>
         }
         middleContent={

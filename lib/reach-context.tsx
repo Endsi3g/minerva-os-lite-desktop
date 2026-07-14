@@ -8,6 +8,7 @@ import { computeLeadScore } from './lead-scoring';
 import { createClient } from './supabase/client';
 import { sendDesktopNotification } from './notification-service';
 import { reportClientError } from './report-client-error';
+import { toast } from 'sonner';
 
 /**
  * Returns the Electron IPC object ONLY when:
@@ -2128,11 +2129,16 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
 
       if (error) throw error;
 
-      setLeads(prev => prev.map(lead => 
+      setLeads(prev => prev.map(lead =>
         lead.id === leadId ? { ...lead, ...fields, updatedAt: new Date().toISOString() } : lead
       ));
     } catch (err) {
       console.error("Error in updateLead:", err);
+      toast.error(
+        fields.assignedTo !== undefined
+          ? "Impossible d'assigner ce lead. Vérifiez vos droits d'accès à l'espace de travail."
+          : "Impossible de mettre à jour ce lead."
+      );
     }
   };
 
