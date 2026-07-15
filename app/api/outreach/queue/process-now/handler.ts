@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { processQueue } from '@/app/api/cron/process-queue/route';
+import { processQueue } from '@/app/api/cron/process-queue/handler';
 
 // POST: lets a user drain their own workspace's pending email_queue immediately
 // (e.g. right after approving a batch of drafts) instead of waiting for the next

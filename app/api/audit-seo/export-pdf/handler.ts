@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import type { SeoAuditResult } from '@/app/api/audit-seo/route';
+import type { SeoAuditResult } from '@/app/api/audit-seo/handler';
 
 function scoreColor(score: number): string {
   if (score >= 70) return '#059669';
