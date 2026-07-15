@@ -712,12 +712,40 @@ function ChannelsTab({ leads }: { leads: Lead[] }) {
 function RoiTab({ leads }: { leads: Lead[] }) {
   const [budgets, setBudgets] = useState<Record<string, number>>({});
 
-  // Load budgets from Supabase on mount
+  // Load budgets from Supabase on mount with localStorage fallback/migration
   useEffect(() => {
     fetch('/api/settings/user-prefs')
-      .then(r => r.ok ? r.json() : null)
-      .then(d => { if (d?.acquisition_budgets) setBudgets(d.acquisition_budgets); })
-      .catch(() => {});
+      .then(r => {
+        if (!r.ok) throw new Error();
+        return r.json();
+      })
+      .then(d => {
+        if (d?.acquisition_budgets && Object.keys(d.acquisition_budgets).length > 0) {
+          setBudgets(d.acquisition_budgets);
+        } else {
+          // If empty in DB, check local storage for migration
+          const local = localStorage.getItem('acquisition_budgets');
+          if (local) {
+            try {
+              const parsed = JSON.parse(local);
+              setBudgets(parsed);
+              // Migrate to DB
+              fetch('/api/settings/user-prefs', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ acquisition_budgets: parsed }),
+              }).catch(() => {});
+            } catch {}
+          }
+        }
+      })
+      .catch(() => {
+        // Fallback to local storage on API error (e.g. 404 Vercel Protection)
+        const local = localStorage.getItem('acquisition_budgets');
+        if (local) {
+          try { setBudgets(JSON.parse(local)); } catch {}
+        }
+      });
   }, []);
 
   const updateBudget = (ch: string, val: number) => {
@@ -864,17 +892,46 @@ function GoalsTab({ leads }: { leads: Lead[] }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<Goals>(goals);
 
-  // Load goals from Supabase on mount
+  // Load goals from Supabase on mount with localStorage fallback/migration
   useEffect(() => {
     fetch('/api/settings/user-prefs')
-      .then(r => r.ok ? r.json() : null)
+      .then(r => {
+        if (!r.ok) throw new Error();
+        return r.json();
+      })
       .then(d => {
         if (d?.acquisition_goals) {
           setGoals(d.acquisition_goals);
           setDraft(d.acquisition_goals);
+        } else {
+          // Check local storage for migration
+          const local = localStorage.getItem('acquisition_goals');
+          if (local) {
+            try {
+              const parsed = JSON.parse(local);
+              setGoals(parsed);
+              setDraft(parsed);
+              // Migrate to DB
+              fetch('/api/settings/user-prefs', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ acquisition_goals: parsed }),
+              }).catch(() => {});
+            } catch {}
+          }
         }
       })
-      .catch(() => {});
+      .catch(() => {
+        // Fallback to local storage on API error (e.g. 404 Vercel Protection)
+        const local = localStorage.getItem('acquisition_goals');
+        if (local) {
+          try {
+            const parsed = JSON.parse(local);
+            setGoals(parsed);
+            setDraft(parsed);
+          } catch {}
+        }
+      });
   }, []);
 
   const saveGoals = () => {

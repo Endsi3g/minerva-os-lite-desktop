@@ -125,21 +125,29 @@ function AILayoutContent({ children }: { children: React.ReactNode }) {
     })();
   }, [router]);
 
-  // Load assistant sessions
+  // Load assistant sessions with localStorage fallback
   const loadSessions = useCallback(async () => {
     const workspaceId = activeWorkspace?.id || localStorage.getItem('minerva_active_workspace_id') || '';
     if (!workspaceId || !userId) return;
     const sessions = await dbGetSessions(userId, workspaceId);
     setAssistantSessions(sessions);
     // Load active session from Supabase
+    let loadedSessId: string | null = null;
     try {
       const res = await fetch('/api/settings/user-prefs');
       if (res.ok) {
         const prefs = await res.json();
-        const storedSessId = prefs?.active_ai_sessions?.[workspaceId] ?? null;
-        if (storedSessId) setActiveSessionId(storedSessId);
+        loadedSessId = prefs?.active_ai_sessions?.[workspaceId] ?? null;
       }
     } catch {}
+
+    if (loadedSessId) {
+      setActiveSessionId(loadedSessId);
+    } else {
+      // Fallback
+      const local = localStorage.getItem(`minerva_active_sess_${workspaceId}`);
+      if (local) setActiveSessionId(local);
+    }
   }, [activeWorkspace?.id, userId]);
 
   useEffect(() => { loadSessions(); }, [loadSessions]);

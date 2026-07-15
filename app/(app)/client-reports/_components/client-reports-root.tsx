@@ -203,19 +203,50 @@ export function ClientReportsRoot() {
       c.contactName?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // Load livrables from Supabase on client change
+  // Load livrables from Supabase on client change with localStorage fallback/migration
   useEffect(() => {
     if (!selectedClient) return;
     fetch(`/api/leads/${selectedClient.id}/livrables`)
-      .then(r => r.ok ? r.json() : null)
-      .then(d => {
-        // lead_livrables is stored as { items: Livrable[] } or a plain array
-        const raw = d?.livrables;
-        if (Array.isArray(raw)) setLivrables(raw);
-        else if (raw?.items && Array.isArray(raw.items)) setLivrables(raw.items);
-        else setLivrables([]);
+      .then(r => {
+        if (!r.ok) throw new Error();
+        return r.json();
       })
-      .catch(() => setLivrables([]));
+      .then(d => {
+        const raw = d?.livrables;
+        let items: Livrable[] = [];
+        if (Array.isArray(raw)) items = raw;
+        else if (raw?.items && Array.isArray(raw.items)) items = raw.items;
+
+        if (items.length > 0) {
+          setLivrables(items);
+        } else {
+          // If empty in DB, check local storage for migration
+          const local = localStorage.getItem(`minerva_livrables_${selectedClient.id}`);
+          if (local) {
+            try {
+              const parsed = JSON.parse(local);
+              setLivrables(parsed);
+              // Migrate to DB
+              fetch(`/api/leads/${selectedClient.id}/livrables`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ livrables: parsed }),
+              }).catch(() => {});
+            } catch {}
+          } else {
+            setLivrables([]);
+          }
+        }
+      })
+      .catch(() => {
+        // Fallback to local storage on API error (e.g. 404 Vercel Protection)
+        const local = localStorage.getItem(`minerva_livrables_${selectedClient.id}`);
+        if (local) {
+          try { setLivrables(JSON.parse(local)); } catch { setLivrables([]); }
+        } else {
+          setLivrables([]);
+        }
+      });
     setLivrableForm({ service: "", description: "", prix: "", dateLivraison: "" });
     setNewStep({ title: "", dueDate: "" });
   }, [selectedClient?.id]);

@@ -721,28 +721,52 @@ export function AssistantRoot() {
       const docsList = await dbGetCanvasDocs(userId, workspaceId);
       setCanvasDocs(docsList);
 
-      // Load active session/canvas from Supabase user-prefs
+      // Load active session/canvas from Supabase user-prefs with localStorage fallback/migration
       let storedSessId: string | null = null;
       let storedCanvasId: string | null = null;
+      let fetchSuccess = false;
       try {
         const prefsRes = await fetch('/api/settings/user-prefs');
         if (prefsRes.ok) {
           const prefs = await prefsRes.json();
           storedSessId = prefs?.active_ai_sessions?.[workspaceId] ?? null;
           storedCanvasId = prefs?.active_canvases?.[workspaceId] ?? null;
+          fetchSuccess = true;
         }
       } catch {}
+
+      if (!fetchSuccess || (!storedSessId && !storedCanvasId)) {
+        // Fallback to local storage
+        const localSess = localStorage.getItem(`minerva_active_sess_${workspaceId}`);
+        const localCanvas = localStorage.getItem(`minerva_active_canvas_${workspaceId}`);
+        if (localSess) storedSessId = localSess;
+        if (localCanvas) storedCanvasId = localCanvas;
+
+        // If we found them locally and the fetch was successful (but returned empty), migrate them
+        if (fetchSuccess && (localSess || localCanvas)) {
+          const patch: Record<string, any> = {};
+          if (localSess) patch.active_ai_sessions = { [workspaceId]: localSess };
+          if (localCanvas) patch.active_canvases = { [workspaceId]: localCanvas };
+          fetch('/api/settings/user-prefs', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(patch),
+          }).catch(() => {});
+        }
+      }
 
       // Prefer stored session, fall back to most recently updated session
       const activeSess = sessList.find(s => s.id === storedSessId) ?? sessList[0] ?? null;
       if (activeSess) {
         setCurrentSession(activeSess);
-        // Persist active session back to Supabase
-        fetch('/api/settings/user-prefs', {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ active_ai_sessions: { [workspaceId]: activeSess.id } }),
-        }).catch(() => {});
+        // Persist active session back to Supabase if it was successful
+        if (fetchSuccess) {
+          fetch('/api/settings/user-prefs', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ active_ai_sessions: { [workspaceId]: activeSess.id } }),
+          }).catch(() => {});
+        }
         const msgs = await dbGetMessages(activeSess.id);
         setMessages(msgs);
       } else {

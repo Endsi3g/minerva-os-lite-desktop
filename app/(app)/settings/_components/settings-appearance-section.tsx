@@ -28,12 +28,19 @@ export function SettingsAppearanceSection({ data, onChange, isSaving }: Settings
   const [radius, setRadius] = useState('10px');
   const [gridOpacity, setGridOpacity] = useState(100);
 
-  // Load UI preferences from Supabase on mount
+  // Load UI preferences from Supabase on mount with localStorage fallback/migration
   useEffect(() => {
+    const localRadius = localStorage.getItem('minerva_ui_radius');
+    const localOpacity = localStorage.getItem('minerva_ui_grid_opacity');
+    const localDensity = localStorage.getItem('minerva_ui_density');
+
     fetch('/api/settings/user-prefs')
-      .then(r => r.ok ? r.json() : null)
+      .then(r => {
+        if (!r.ok) throw new Error();
+        return r.json();
+      })
       .then(d => {
-        if (d?.ui_preferences) {
+        if (d?.ui_preferences && (d.ui_preferences.radius || d.ui_preferences.density)) {
           const prefs = d.ui_preferences;
           if (prefs.radius) {
             setRadius(prefs.radius);
@@ -46,9 +53,44 @@ export function SettingsAppearanceSection({ data, onChange, isSaving }: Settings
           if (prefs.density) {
             document.documentElement.classList.toggle('compact', prefs.density === 'compact');
           }
+        } else {
+          // If empty/default in DB, check local storage for migration
+          if (localRadius || localOpacity || localDensity) {
+            const rad = localRadius || '10px';
+            const opac = Number(localOpacity || '100');
+            const dens = localDensity || 'comfortable';
+
+            setRadius(rad);
+            setGridOpacity(opac);
+            document.documentElement.style.setProperty('--radius', rad);
+            document.documentElement.style.setProperty('--grid-opacity', String(opac / 100));
+            document.documentElement.classList.toggle('compact', dens === 'compact');
+
+            // Migrate to DB
+            fetch('/api/settings/user-prefs', {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                ui_preferences: { radius: rad, gridOpacity: opac, density: dens }
+              }),
+            }).catch(() => {});
+          }
         }
       })
-      .catch(() => {});
+      .catch(() => {
+        // Fallback to local storage on API error (e.g. 404 Vercel Protection)
+        if (localRadius) {
+          setRadius(localRadius);
+          document.documentElement.style.setProperty('--radius', localRadius);
+        }
+        if (localOpacity) {
+          setGridOpacity(Number(localOpacity));
+          document.documentElement.style.setProperty('--grid-opacity', String(Number(localOpacity) / 100));
+        }
+        if (localDensity) {
+          document.documentElement.classList.toggle('compact', localDensity === 'compact');
+        }
+      });
   }, []);
 
   const handleThemeChange = (val: 'system' | 'light' | 'dark') => {

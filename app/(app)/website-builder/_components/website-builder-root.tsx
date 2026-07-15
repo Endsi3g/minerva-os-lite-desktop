@@ -329,13 +329,41 @@ export default function WebsiteBuilderRoot() {
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
   const selectedLead = useMemo(() => leads.find(l => l.id === selectedLeadId) ?? null, [leads, selectedLeadId]);
 
-  // Gallery — stored in Supabase
+  // Gallery — stored in Supabase with localStorage fallback/migration
   const [savedSites, setSavedSites] = useState<SavedSite[]>([]);
   useEffect(() => {
     fetch('/api/websites')
-      .then(r => r.ok ? r.json() : null)
-      .then(d => { if (Array.isArray(d?.websites)) setSavedSites(d.websites); })
-      .catch(() => {});
+      .then(r => {
+        if (!r.ok) throw new Error();
+        return r.json();
+      })
+      .then(d => {
+        if (Array.isArray(d?.websites) && d.websites.length > 0) {
+          setSavedSites(d.websites);
+        } else {
+          // If empty in DB, check local storage for migration
+          const local = localStorage.getItem('minerva_saved_sites');
+          if (local) {
+            try {
+              const parsed = JSON.parse(local);
+              setSavedSites(parsed);
+              // Migrate to DB
+              fetch('/api/websites', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ websites: parsed }),
+              }).catch(() => {});
+            } catch {}
+          }
+        }
+      })
+      .catch(() => {
+        // Fallback to local storage on API error (e.g. 404 Vercel Protection)
+        const local = localStorage.getItem('minerva_saved_sites');
+        if (local) {
+          try { setSavedSites(JSON.parse(local)); } catch {}
+        }
+      });
   }, []);
 
   // Form state

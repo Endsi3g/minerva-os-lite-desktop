@@ -203,36 +203,65 @@ export function AgentDetailRoot({ agentId }: { agentId: string }) {
   const isBuiltin = agentId in BUILTIN_META;
   const builtinData = isBuiltin ? BUILTIN_META[agentId] : null;
 
-  // Load reviews from Supabase
+  // Load reviews from Supabase with localStorage fallback/migration
   const loadReviews = useCallback(async () => {
+    let success = false;
     try {
       const res = await fetch(`/api/agents/${agentId}/reviews`);
       if (res.ok) {
         const d = await res.json();
         if (Array.isArray(d?.reviews) && d.reviews.length > 0) {
           setReviews(d.reviews);
-          return;
+          success = true;
         }
       }
     } catch {}
+
     // Fallback: legacy Supabase agent_reviews table
-    try {
-      const supabase = createClient();
-      const { data } = await supabase
-        .from('agent_reviews')
-        .select('*')
-        .eq('agent_id', agentId)
-        .order('created_at', { ascending: false });
-      if (data && data.length > 0) {
-        setReviews(data.map((r: any) => ({
-          id: r.id,
-          userName: r.user_name || 'Utilisateur',
-          rating: r.rating,
-          comment: r.comment,
-          createdAt: r.created_at,
-        })));
+    if (!success) {
+      try {
+        const supabase = createClient();
+        const { data } = await supabase
+          .from('agent_reviews')
+          .select('*')
+          .eq('agent_id', agentId)
+          .order('created_at', { ascending: false });
+        if (data && data.length > 0) {
+          const mapped = data.map((r: any) => ({
+            id: r.id,
+            userName: r.user_name || 'Utilisateur',
+            rating: r.rating,
+            comment: r.comment,
+            createdAt: r.created_at,
+          }));
+          setReviews(mapped);
+          success = true;
+          // Migrate to new reviews endpoint if it was empty
+          fetch(`/api/agents/${agentId}/reviews`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ reviews: mapped }),
+          }).catch(() => {});
+        }
+      } catch {}
+    }
+
+    // Fallback: local storage (migration from local storage to Supabase)
+    if (!success) {
+      const local = localStorage.getItem(`minerva_agent_reviews_${agentId}`);
+      if (local) {
+        try {
+          const parsed = JSON.parse(local);
+          setReviews(parsed);
+          // Migrate to DB
+          fetch(`/api/agents/${agentId}/reviews`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ reviews: parsed }),
+          }).catch(() => {});
+        } catch {}
       }
-    } catch {}
+    }
   }, [agentId]);
 
   useEffect(() => {
