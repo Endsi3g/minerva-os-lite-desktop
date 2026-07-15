@@ -203,8 +203,19 @@ export function AgentDetailRoot({ agentId }: { agentId: string }) {
   const isBuiltin = agentId in BUILTIN_META;
   const builtinData = isBuiltin ? BUILTIN_META[agentId] : null;
 
-  // Load reviews from Supabase or localStorage
+  // Load reviews from Supabase
   const loadReviews = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/agents/${agentId}/reviews`);
+      if (res.ok) {
+        const d = await res.json();
+        if (Array.isArray(d?.reviews) && d.reviews.length > 0) {
+          setReviews(d.reviews);
+          return;
+        }
+      }
+    } catch {}
+    // Fallback: legacy Supabase agent_reviews table
     try {
       const supabase = createClient();
       const { data } = await supabase
@@ -220,13 +231,8 @@ export function AgentDetailRoot({ agentId }: { agentId: string }) {
           comment: r.comment,
           createdAt: r.created_at,
         })));
-        return;
       }
     } catch {}
-    const stored = localStorage.getItem(`minerva_agent_reviews_${agentId}`);
-    if (stored) {
-      try { setReviews(JSON.parse(stored)); } catch {}
-    }
   }, [agentId]);
 
   useEffect(() => {
@@ -452,7 +458,12 @@ export function AgentDetailRoot({ agentId }: { agentId: string }) {
 
     const updated = [review, ...reviews];
     setReviews(updated);
-    localStorage.setItem(`minerva_agent_reviews_${agentId}`, JSON.stringify(updated));
+    // Persist to Supabase via API
+    fetch(`/api/agents/${agentId}/reviews`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reviews: updated }),
+    }).catch(() => {});
     setNewComment('');
     setNewRating(5);
     setSubmitting(false);

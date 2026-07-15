@@ -24,6 +24,21 @@ interface PlaceResult {
   nationalPhoneNumber?: string;
   formattedAddress?: string;
   photos?: Array<{ name?: string }>;
+  allowsDogs?: boolean;
+  accessibilityOptions?: {
+    wheelchairAccessibleEntrance?: boolean;
+    wheelchairAccessibleParking?: boolean;
+    wheelchairAccessibleRestroom?: boolean;
+    wheelchairAccessibleSeating?: boolean;
+  };
+  evChargeOptions?: {
+    connectorCount?: number;
+    connectorAggregation?: Array<{
+      connectorType?: string;
+      maxChargeRateKw?: number;
+      count?: number;
+    }>;
+  };
 }
 
 async function searchPlace(businessName: string, city: string, apiKey: string): Promise<PlaceResult | null> {
@@ -45,6 +60,9 @@ async function searchPlace(businessName: string, city: string, apiKey: string): 
         'places.nationalPhoneNumber',
         'places.formattedAddress',
         'places.photos',
+        'places.allowsDogs',
+        'places.accessibilityOptions',
+        'places.evChargeOptions',
       ].join(','),
     },
     body: JSON.stringify({
@@ -152,6 +170,9 @@ export async function POST(req: NextRequest) {
     website: place.websiteUri ?? null,
     phone: place.nationalPhoneNumber ?? null,
     insights: extractInsights(place),
+    allows_dogs: place.allowsDogs ?? null,
+    accessibility_options: place.accessibilityOptions ?? null,
+    ev_charging_options: place.evChargeOptions ?? null,
   };
 
   const updatePayload: any = {

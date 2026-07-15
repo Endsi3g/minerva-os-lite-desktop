@@ -5,6 +5,27 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [3.97.0] — Zéro localStorage pour données utilisateur & Places API (New) — 14 juillet 2026, 23h59
+
+### Ajouté
+- **Zéro localStorage pour les données utilisateur persistantes** : Migration de toutes les données métier stockées localement vers des colonnes JSONB persistantes dans Supabase (table `settings`, `leads`, et `ai_agents`). Sont désormais stockés et synchronisés côté serveur :
+  - Les budgets mensuels d'acquisition (`acquisition_budgets`)
+  - Les objectifs d'acquisition (`acquisition_goals`)
+  - Les sites web sauvegardés du Website Builder (`saved_websites`)
+  - Les avis/reviews rédigés sur les agents IA (`agent_reviews`)
+  - Les préférences d'apparence de l'interface (`ui_preferences` : rayon, densité, opacité de grille)
+  - L'état de session active de l'assistant IA et du Canvas actif par espace de travail (`active_ai_sessions`, `active_canvases`)
+- **Intégration native Google Places API (New)** : Remplacement de l'ancienne logique par la nouvelle API Google Places avec gestion native de la pagination, attributs étendus (bornes de recharge VE, accessibilité fauteuil roulant, acceptation des chiens), et design moderne du widget "Google Insights" sous forme de badges esthétiques.
+- **Nouvelle migration SQL** : Script `supabase_migration_v5_5_no_localstorage.sql` ajoutant automatiquement les colonnes JSONB requises de manière sécurisée et idempotente.
+- **Nouvelles routes API** :
+  - `/api/settings/user-prefs` (GET/PATCH)
+  - `/api/leads/[id]/livrables` (GET/PATCH)
+  - `/api/websites` (GET/PATCH)
+  - `/api/agents/[id]/reviews` (GET/POST)
+
+### Supprimé
+- **Suppression du seeding de données fictives (Mock)** : Retrait complet des données d'onboarding `initialLeads` et `initialTasks` de `lib/mock-data.ts`. La fonction `importDemoData` / `populateMockData` et le bouton correspondant dans les paramètres ont été supprimés afin que les nouveaux espaces de travail démarrent proprement vides pour accueillir les vrais clients de l'utilisateur.
+
 ## [3.95.0] — Bilan hebdomadaire quotidien, agent IA plus autonome et refonte mobile — 11 juillet 2026, 17h12
 
 ### Ajouté

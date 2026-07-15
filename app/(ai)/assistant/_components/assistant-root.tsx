@@ -721,13 +721,28 @@ export function AssistantRoot() {
       const docsList = await dbGetCanvasDocs(userId, workspaceId);
       setCanvasDocs(docsList);
 
-      const storedSessId = localStorage.getItem(`minerva_active_sess_${workspaceId}`);
-      // Prefer stored session, fall back to most recently updated session so
-      // messages are never "lost" just because localStorage was cleared
+      // Load active session/canvas from Supabase user-prefs
+      let storedSessId: string | null = null;
+      let storedCanvasId: string | null = null;
+      try {
+        const prefsRes = await fetch('/api/settings/user-prefs');
+        if (prefsRes.ok) {
+          const prefs = await prefsRes.json();
+          storedSessId = prefs?.active_ai_sessions?.[workspaceId] ?? null;
+          storedCanvasId = prefs?.active_canvases?.[workspaceId] ?? null;
+        }
+      } catch {}
+
+      // Prefer stored session, fall back to most recently updated session
       const activeSess = sessList.find(s => s.id === storedSessId) ?? sessList[0] ?? null;
       if (activeSess) {
         setCurrentSession(activeSess);
-        localStorage.setItem(`minerva_active_sess_${workspaceId}`, activeSess.id);
+        // Persist active session back to Supabase
+        fetch('/api/settings/user-prefs', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ active_ai_sessions: { [workspaceId]: activeSess.id } }),
+        }).catch(() => {});
         const msgs = await dbGetMessages(activeSess.id);
         setMessages(msgs);
       } else {
@@ -735,7 +750,6 @@ export function AssistantRoot() {
         setMessages([]);
       }
 
-      const storedCanvasId = localStorage.getItem(`minerva_active_canvas_${workspaceId}`);
       const activeDoc = docsList.find(d => d.id === storedCanvasId);
       if (activeDoc) {
         setEditorDocId(activeDoc.id);
@@ -784,15 +798,23 @@ export function AssistantRoot() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Canvas doc active state updates
+  // Canvas doc active state updates — persist to Supabase
   useEffect(() => {
     if (canvasDoc) {
       setEditorTitle(canvasDoc.title);
       setEditorContent(canvasDoc.content);
       setEditorDocId(canvasDoc.id);
-      localStorage.setItem(`minerva_active_canvas_${workspaceId}`, canvasDoc.id);
+      fetch('/api/settings/user-prefs', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ active_canvases: { [workspaceId]: canvasDoc.id } }),
+      }).catch(() => {});
     } else {
-      localStorage.removeItem(`minerva_active_canvas_${workspaceId}`);
+      fetch('/api/settings/user-prefs', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ active_canvases: { [workspaceId]: null } }),
+      }).catch(() => {});
     }
   }, [canvasDoc, workspaceId]);
 
@@ -976,7 +998,12 @@ export function AssistantRoot() {
   const handleClearChat = () => {
     setCurrentSession(null);
     setMessages([]);
-    localStorage.removeItem(`minerva_active_sess_${workspaceId}`);
+    // Clear active session from Supabase
+    fetch('/api/settings/user-prefs', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ active_ai_sessions: { [workspaceId]: null } }),
+    }).catch(() => {});
   };
 
   // Send message handler
@@ -1009,7 +1036,12 @@ export function AssistantRoot() {
         : (fileToAttach ? (locale === 'en' ? 'File: ' : locale === 'de' ? 'Datei: ' : 'Fichier : ') + fileToAttach.name : t('assistant.new_chat'));
       activeSess = await dbCreateSession(userId, workspaceId, sessTitle);
       setCurrentSession(activeSess);
-      localStorage.setItem(`minerva_active_sess_${workspaceId}`, activeSess.id);
+      // Persist new active session to Supabase
+      fetch('/api/settings/user-prefs', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ active_ai_sessions: { [workspaceId]: activeSess.id } }),
+      }).catch(() => {});
       
       const sessList = await dbGetSessions(userId, workspaceId);
       setSessions(sessList);
@@ -1889,7 +1921,12 @@ Important : ne génère un bloc action QUE si l'utilisateur demande explicitemen
                       <button
                         onClick={async () => {
                           setCurrentSession(sess);
-                          localStorage.setItem(`minerva_active_sess_${workspaceId}`, sess.id);
+                          // Persist active session to Supabase
+                          fetch('/api/settings/user-prefs', {
+                            method: 'PATCH',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ active_ai_sessions: { [workspaceId]: sess.id } }),
+                          }).catch(() => {});
                           const msgs = await dbGetMessages(sess.id);
                           setMessages(msgs);
                         }}
@@ -1919,7 +1956,11 @@ Important : ne génère un bloc action QUE si l'utilisateur demande explicitemen
                           if (currentSession?.id === sess.id) {
                             setCurrentSession(null);
                             setMessages([]);
-                            localStorage.removeItem(`minerva_active_sess_${workspaceId}`);
+                            fetch('/api/settings/user-prefs', {
+                              method: 'PATCH',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ active_ai_sessions: { [workspaceId]: null } }),
+                            }).catch(() => {});
                           }
                           window.dispatchEvent(new CustomEvent('minerva_assistant_sync'));
                         }}
@@ -1976,7 +2017,11 @@ Important : ne génère un bloc action QUE si l'utilisateur demande explicitemen
                             setEditorDocId('');
                             setEditorTitle("");
                             setEditorContent("");
-                            localStorage.removeItem(`minerva_active_canvas_${workspaceId}`);
+                            fetch('/api/settings/user-prefs', {
+                              method: 'PATCH',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ active_canvases: { [workspaceId]: null } }),
+                            }).catch(() => {});
                           }
                         }}
                         className="opacity-0 group-hover:opacity-100 text-neutral-400 hover:text-red-600 transition-opacity p-0.5"

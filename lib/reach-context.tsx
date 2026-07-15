@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { getApiUrl } from './api-helper';
 import { User as SupabaseUser, AuthChangeEvent, Session } from '@supabase/supabase-js';
-import { Lead, Task, Note, AiSuggestion, LeadLocation, GooglePlaceData, initialLeads, initialTasks } from './mock-data';
+import { Lead, Task, Note, AiSuggestion, LeadLocation, GooglePlaceData } from './mock-data';
 import { computeLeadScore } from './lead-scoring';
 import { createClient } from './supabase/client';
 import { sendDesktopNotification } from './notification-service';
@@ -199,6 +199,9 @@ interface ReachContextType {
     campaignId?: string;
     customFields?: Record<string, string>;
     address?: string;
+    googlePlaceId?: string;
+    googlePlaceData?: any;
+    googleEnrichedAt?: string;
   }) => Promise<Lead | null>;
   toggleTask: (id: string) => void;
   addTask: (title: string, category: Task['category'], dueDate?: string, leadId?: string, assignedTo?: string, assignedToName?: string) => void;
@@ -211,7 +214,7 @@ interface ReachContextType {
   addNoteToLead: (leadId: string, content: string, type: Note['type']) => void;
   deleteLeads: (ids: string[]) => void;
   updateLeadsStatus: (ids: string[], status: Lead['status']) => void;
-  importDemoData: () => Promise<void>;
+ 
   notifications: AppNotification[];
   unreadCount: number;
   addNotification: (notif: Omit<AppNotification, 'id' | 'isRead' | 'createdAt' | 'updatedAt'>) => Promise<void>;
@@ -324,6 +327,7 @@ interface DbLead {
   locations?: string | LeadLocation[] | null;
   google_place_id?: string | null;
   google_place_data?: string | GooglePlaceData | null; // JSON string in SQLite, jsonb in Supabase
+  google_enriched_at?: string | null;
 }
 
 interface DbNote {
@@ -700,67 +704,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const populateMockData = useCallback(async (userId: string, workspaceId: string) => {
-    const supabase = createClient();
-    try {
-      // Insert default settings if they don't exist
-      await supabase.from('settings').upsert({
-        user_id: userId,
-        full_name: 'Utilisateur Minerva',
-        company_name: 'Uprising Studio',
-        timezone: 'Europe/Paris'
-      });
 
-      // Insert leads with workspace_id
-      for (const lead of initialLeads) {
-        const { data: insertedLead } = await supabase
-          .from('leads')
-          .insert({
-            user_id: userId,
-            workspace_id: workspaceId,
-            business_name: lead.businessName,
-            contact_name: lead.contactName,
-            contact_email: lead.contactEmail,
-            niche: lead.niche,
-            city: lead.city,
-            source: lead.source,
-            status: lead.status,
-            temperature: lead.temperature,
-            next_action: lead.nextAction,
-            next_action_date: lead.nextActionDate || null
-          })
-          .select()
-          .single();
-
-        if (insertedLead && lead.notes && lead.notes.length > 0) {
-          for (const note of lead.notes) {
-            await supabase.from('notes').insert({
-              lead_id: insertedLead.id,
-              user_id: userId,
-              workspace_id: workspaceId,
-              type: note.type,
-              content: note.content
-            });
-          }
-        }
-      }
-
-      // Insert tasks with workspace_id
-      for (const task of initialTasks) {
-        await supabase.from('tasks').insert({
-          user_id: userId,
-          workspace_id: workspaceId,
-          title: task.title,
-          completed: task.completed,
-          category: task.category,
-          due_date: task.dueDate || null
-        });
-      }
-
-    } catch (err) {
-      console.error("Error populating mock data:", err);
-    }
-  }, []);
 
   const loadData = useCallback(async (currUser: SupabaseUser, activeWs: Workspace) => {
     const electronObj = getElectronSqlite();
@@ -1494,6 +1438,9 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
     campaignId?: string;
     customFields?: Record<string, string>;
     address?: string;
+    googlePlaceId?: string;
+    googlePlaceData?: any;
+    googleEnrichedAt?: string;
   }) => {
     if (!user || !activeWorkspace) {
       throw new Error('addLead appelé sans utilisateur ou workspace actif — le lead ne peut pas être enregistré.');
@@ -1523,9 +1470,12 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
           source: leadData.source
         });
 
-        await electronObj.dbRun(`INSERT INTO leads (id, user_id, business_name, contact_name, contact_email, niche, city, source, lead_source_type, status, temperature, next_action, next_action_date, owner, image_url, workspace_id, score, website, rating, reviews_count, maps_url, address, notes, photos, social_links, assigned_to, latitude, longitude, phone, campaign_id, created_at, updated_at, sync_status, custom_fields)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending_insert', ?)`,
-          [leadId, user.id, leadData.businessName, leadData.contactName, leadData.contactEmail || '', leadData.niche, leadData.city, leadData.source, leadSourceType, leadData.status, leadData.temperature, leadData.nextAction, leadData.nextActionDate || null, 'Moi', leadData.imageUrl || null, activeWorkspace.id, leadScore, leadData.website || null, leadData.rating ?? null, leadData.reviewsCount ?? null, leadData.mapsUrl || null, leadData.address || null, leadData.notes || null, leadData.photos ? JSON.stringify(leadData.photos) : null, leadData.socialLinks ? JSON.stringify(leadData.socialLinks) : null, leadData.assignedTo || null, leadData.latitude ?? null, leadData.longitude ?? null, leadData.phone || null, leadData.campaignId || null, nowStr, nowStr, leadData.customFields ? JSON.stringify(leadData.customFields) : '{}']
+        await electronObj.dbRun(`INSERT INTO leads (id, user_id, business_name, contact_name, contact_email, niche, city, source, lead_source_type, status, temperature, next_action, next_action_date, owner, image_url, workspace_id, score, website, rating, reviews_count, maps_url, address, notes, photos, social_links, assigned_to, latitude, longitude, phone, campaign_id, created_at, updated_at, sync_status, custom_fields, google_place_id, google_place_data, google_enriched_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending_insert', ?, ?, ?, ?)`,
+          [
+            leadId, user.id, leadData.businessName, leadData.contactName, leadData.contactEmail || '', leadData.niche, leadData.city, leadData.source, leadSourceType, leadData.status, leadData.temperature, leadData.nextAction, leadData.nextActionDate || null, 'Moi', leadData.imageUrl || null, activeWorkspace.id, leadScore, leadData.website || null, leadData.rating ?? null, leadData.reviewsCount ?? null, leadData.mapsUrl || null, leadData.address || null, leadData.notes || null, leadData.photos ? JSON.stringify(leadData.photos) : null, leadData.socialLinks ? JSON.stringify(leadData.socialLinks) : null, leadData.assignedTo || null, leadData.latitude ?? null, leadData.longitude ?? null, leadData.phone || null, leadData.campaignId || null, nowStr, nowStr, leadData.customFields ? JSON.stringify(leadData.customFields) : '{}',
+            leadData.googlePlaceId || null, leadData.googlePlaceData ? JSON.stringify(leadData.googlePlaceData) : null, leadData.googleEnrichedAt || null
+          ]
         );
 
         const insertedNotes: DbNote[] = [];
@@ -1573,7 +1523,10 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
           longitude: leadData.longitude ?? null,
           phone: leadData.phone || null,
           campaign_id: leadData.campaignId || null,
-          custom_fields: leadData.customFields || null
+          custom_fields: leadData.customFields || null,
+          google_place_id: leadData.googlePlaceId || null,
+          google_place_data: leadData.googlePlaceData || null,
+          google_enriched_at: leadData.googleEnrichedAt || null
         }, insertedNotes);
 
         setLeads(prev => [newUiLead, ...prev]);
@@ -1628,6 +1581,9 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
       longitude: leadData.longitude ?? null,
       phone: leadData.phone || null,
       custom_fields: leadData.customFields || null,
+      google_place_id: leadData.googlePlaceId || null,
+      google_place_data: leadData.googlePlaceData || null,
+      google_enriched_at: leadData.googleEnrichedAt || null,
       ...(leadData.score !== undefined ? { score: leadData.score } : {}),
     };
 
@@ -3310,11 +3266,6 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const importDemoData = async () => {
-    if (!user || !activeWorkspace) return;
-    await populateMockData(user.id, activeWorkspace.id);
-    await loadData(user, activeWorkspace);
-  };
 
   return (
     <ReachContext.Provider
@@ -3346,7 +3297,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
         addNoteToLead,
         deleteLeads,
         updateLeadsStatus,
-        importDemoData,
+
         notifications,
         unreadCount,
         addNotification,

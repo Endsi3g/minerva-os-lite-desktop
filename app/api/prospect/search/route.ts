@@ -208,12 +208,15 @@ export async function POST(req: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
 
-    // Fetch settings for Apify token
+    // Fetch settings for Apify token & Google Places Key
     const { data: settings } = await supabase
       .from('settings')
-      .select('apify_token')
+      .select('apify_token, google_places_api_key')
       .eq('user_id', user.id)
       .maybeSingle();
+
+    const googleApiKey = (settings as any)?.google_places_api_key || process.env.GOOGLE_PLACES_API_KEY || '';
+    const hasGooglePlaces = googleApiKey && googleApiKey.trim().length > 5;
 
     const apifyToken = (settings as any)?.apify_token;
     const hasApify = apifyToken && apifyToken !== 'native' && apifyToken.trim().length > 5;
@@ -249,7 +252,144 @@ export async function POST(req: NextRequest) {
     }
 
     const searchCenter = { lat, lon, label: cities[0] };
+    let googleErrorMsg: string | null = null;
     let apifyErrorMsg: string | null = null;
+
+    if (hasGooglePlaces) {
+      try {
+        const searchTerms: string[] = cities.flatMap(city =>
+          niches.map(niche => body.query || `${niche} ${city}`)
+        ).slice(0, 10);
+
+        const resultsPerTerm = Math.ceil(maxResults / searchTerms.length);
+        const places: any[] = [];
+        const seen = new Set<string>();
+
+        for (const term of searchTerms) {
+          let termResultsCount = 0;
+          let nextPageToken = '';
+          
+          while (termResultsCount < resultsPerTerm) {
+            const reqBody: any = {
+              textQuery: term,
+              languageCode: 'fr',
+              pageSize: Math.min(resultsPerTerm - termResultsCount, 20),
+            };
+            if (nextPageToken) {
+              reqBody.pageToken = nextPageToken;
+            }
+
+            if (lat !== undefined && lon !== undefined) {
+              reqBody.locationBias = {
+                circle: {
+                  center: { latitude: lat, longitude: lon },
+                  radius: radius,
+                }
+              };
+            }
+
+            const googleRes = await fetch('https://places.googleapis.com/v1/places:searchText', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'X-Goog-Api-Key': googleApiKey,
+                'X-Goog-FieldMask': [
+                  'places.id',
+                  'places.displayName',
+                  'places.formattedAddress',
+                  'places.nationalPhoneNumber',
+                  'places.rating',
+                  'places.userRatingCount',
+                  'places.websiteUri',
+                  'places.location',
+                  'places.primaryType',
+                  'places.editorialSummary',
+                  'places.regularOpeningHours',
+                  'places.photos',
+                  'places.allowsDogs',
+                  'places.accessibilityOptions',
+                  'places.evChargeOptions'
+                ].join(','),
+              },
+              body: JSON.stringify(reqBody),
+              signal: AbortSignal.timeout(15000),
+            });
+
+            if (!googleRes.ok) {
+              const errText = await googleRes.text();
+              throw new Error(`Google Places API returned HTTP ${googleRes.status}: ${errText}`);
+            }
+
+            const data = await googleRes.json();
+            const fetched = data.places || [];
+            
+            for (const p of fetched) {
+              if (!seen.has(p.id)) {
+                seen.add(p.id);
+                places.push(p);
+              }
+            }
+
+            termResultsCount += fetched.length;
+            nextPageToken = data.nextPageToken || '';
+            if (!nextPageToken || fetched.length === 0) {
+              break;
+            }
+          }
+        }
+
+        const leads = places
+          .slice(0, maxResults)
+          .map((p) => {
+            const phone = p.nationalPhoneNumber || '';
+            const website = p.websiteUri || '';
+            const completenessScore = Math.round((phone ? 33 : 0) + (website ? 33 : 0) + (p.formattedAddress ? 34 : 0));
+            const qualityScore = Math.round(completenessScore * 0.6 + 40);
+            
+            const originalTags: Record<string, any> = {
+              google_place_id: p.id,
+              allows_dogs: p.allowsDogs ?? null,
+              accessibility_options: p.accessibilityOptions ?? null,
+              ev_charging_options: p.evChargeOptions ?? null,
+            };
+
+            return {
+              id: `google-${p.id}`,
+              businessName: p.displayName?.text ?? 'Inconnu',
+              niche: p.primaryType ?? (niches[0] ?? 'Commerce local'),
+              city: cities[0],
+              phone,
+              email: '',
+              website,
+              address: p.formattedAddress ?? '',
+              rating: p.rating ?? 0,
+              reviewsCount: p.userRatingCount ?? 0,
+              mapsUrl: `https://www.google.com/maps/place/?q=place_id:${p.id}`,
+              source: 'google',
+              latitude: p.location?.latitude,
+              longitude: p.location?.longitude,
+              qualityScore,
+              completenessScore,
+              localFitScore: 85,
+              opportunityScore: completenessScore < 50 ? 90 : 70,
+              distanceKm: 0,
+              originalTags,
+            };
+          });
+
+        if (leads.length > 0) {
+          return NextResponse.json({
+            leads,
+            provider: 'google',
+            searchCenter,
+            message: `${leads.length} établissements trouvés via Google Places API (Officiel)`,
+          });
+        }
+      } catch (err: any) {
+        googleErrorMsg = err?.message || String(err);
+        console.error('[prospect/search] Google Places failed, falling back to Apify/OSM:', googleErrorMsg);
+      }
+    }
 
     if (hasApify) {
       try {
@@ -415,11 +555,13 @@ export async function POST(req: NextRequest) {
         userId: user.id,
         source: 'prospect/search',
         title: 'Prospection : aucun résultat trouvé',
-        message: apifyErrorMsg
-          ? `Apify a échoué (${apifyErrorMsg}) et le secours OpenStreetMap n'a rien trouvé non plus.`
-          : `Aucun résultat via ${hasApify ? 'Apify ni' : ''} OpenStreetMap pour "${niches[0]}" à "${cities[0]}".`,
+        message: googleErrorMsg
+          ? `Google Places a échoué (${googleErrorMsg}) et le secours OpenStreetMap n'a rien trouvé non plus.`
+          : apifyErrorMsg
+            ? `Apify a échoué (${apifyErrorMsg}) et le secours OpenStreetMap n'a rien trouvé non plus.`
+            : `Aucun résultat via ${hasGooglePlaces ? 'Google Places ni ' : ''}${hasApify ? 'Apify ni' : ''} OpenStreetMap pour "${niches[0]}" à "${cities[0]}".`,
         context: {
-          niches, cities, radius, maxResults, hasApify,
+          niches, cities, radius, maxResults, hasGooglePlaces, googleError: googleErrorMsg, hasApify,
           apifyError: apifyErrorMsg,
           osmMirrorErrors,
           searchCenter,
@@ -427,13 +569,15 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    const errorText = googleErrorMsg || apifyErrorMsg || null;
     return NextResponse.json({
       leads,
       provider: 'osm',
       searchCenter,
+      googleError: googleErrorMsg,
       apifyError: apifyErrorMsg,
-      message: apifyErrorMsg
-        ? `Échec Apify (${apifyErrorMsg.slice(0, 50)}). ${leads.length} leads trouvés via OpenStreetMap (secours).`
+      message: errorText
+        ? `Échec Recherche (${errorText.slice(0, 50)}). ${leads.length} leads trouvés via OpenStreetMap (secours).`
         : `${leads.length} établissements trouvés via OpenStreetMap`,
     });
   } catch (err: any) {

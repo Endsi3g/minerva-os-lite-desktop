@@ -189,7 +189,7 @@ export function ClientReportsRoot() {
   const [copiedLink, setCopiedLink] = useState(false);
   const [mobileClientListOpen, setMobileClientListOpen] = useState(false);
 
-  // Livrables stored per lead in localStorage
+  // Livrables stored per lead in Supabase
   const [livrables, setLivrables] = useState<Livrable[]>([]);
   const [livrableForm, setLivrableForm] = useState({ service: "", description: "", prix: "", dateLivraison: "" });
 
@@ -203,15 +203,19 @@ export function ClientReportsRoot() {
       c.contactName?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // Load livrables from localStorage on client change
+  // Load livrables from Supabase on client change
   useEffect(() => {
     if (!selectedClient) return;
-    try {
-      const raw = localStorage.getItem(`minerva_livrables_${selectedClient.id}`);
-      setLivrables(raw ? JSON.parse(raw) : []);
-    } catch {
-      setLivrables([]);
-    }
+    fetch(`/api/leads/${selectedClient.id}/livrables`)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        // lead_livrables is stored as { items: Livrable[] } or a plain array
+        const raw = d?.livrables;
+        if (Array.isArray(raw)) setLivrables(raw);
+        else if (raw?.items && Array.isArray(raw.items)) setLivrables(raw.items);
+        else setLivrables([]);
+      })
+      .catch(() => setLivrables([]));
     setLivrableForm({ service: "", description: "", prix: "", dateLivraison: "" });
     setNewStep({ title: "", dueDate: "" });
   }, [selectedClient?.id]);
@@ -220,7 +224,12 @@ export function ClientReportsRoot() {
     (updated: Livrable[]) => {
       if (!selectedClient) return;
       setLivrables(updated);
-      localStorage.setItem(`minerva_livrables_${selectedClient.id}`, JSON.stringify(updated));
+      // Persist to Supabase
+      fetch(`/api/leads/${selectedClient.id}/livrables`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ livrables: updated }),
+      }).catch(() => {});
     },
     [selectedClient]
   );

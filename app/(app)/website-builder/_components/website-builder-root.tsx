@@ -329,13 +329,13 @@ export default function WebsiteBuilderRoot() {
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
   const selectedLead = useMemo(() => leads.find(l => l.id === selectedLeadId) ?? null, [leads, selectedLeadId]);
 
-  // Gallery
+  // Gallery — stored in Supabase
   const [savedSites, setSavedSites] = useState<SavedSite[]>([]);
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem('minerva_saved_sites');
-      if (raw) setSavedSites(JSON.parse(raw));
-    } catch { /* ignore */ }
+    fetch('/api/websites')
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (Array.isArray(d?.websites)) setSavedSites(d.websites); })
+      .catch(() => {});
   }, []);
 
   // Form state
@@ -436,7 +436,12 @@ export default function WebsiteBuilderRoot() {
     };
     const updated = [newSite, ...savedSites.filter(s => s.leadId !== (selectedLeadId || 'manual') || s.id === newSite.id)];
     setSavedSites(updated);
-    localStorage.setItem('minerva_saved_sites', JSON.stringify(updated));
+    // Persist to Supabase
+    fetch('/api/websites', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ websites: updated }),
+    }).catch(() => {});
     toast.success(`Sauvegardé dans la galerie !`);
   };
 
@@ -457,7 +462,12 @@ export default function WebsiteBuilderRoot() {
   const handleDeleteSite = (id: string) => {
     const updated = savedSites.filter(s => s.id !== id);
     setSavedSites(updated);
-    localStorage.setItem('minerva_saved_sites', JSON.stringify(updated));
+    // Persist to Supabase
+    fetch('/api/websites', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ websites: updated }),
+    }).catch(() => {});
     toast.success('Supprimé.');
   };
 

@@ -58,6 +58,8 @@ import {
   Reply,
   CheckSquare,
   CalendarCheck,
+  Dog,
+  Accessibility,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
@@ -2036,25 +2038,22 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
               <button
                 type="button"
                 onClick={() => setActiveTab('reviews')}
-                className="w-full flex items-center gap-2 px-3 py-2 rounded-xl border border-[#e5e5e0] bg-[#f9fafb] hover:bg-[#f4f4f3] transition-colors text-left"
+                className="w-full flex items-center gap-2.5 px-4 py-2.5 rounded-full border border-[#e2e8f0] bg-white hover:bg-slate-50 transition-all duration-200 shadow-xs hover:shadow-sm text-left"
               >
-                <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 shrink-0" fill="none">
-                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z" fill="#4285F4"/>
-                  <path d="M17.6 12.2c0-.4 0-.7-.1-1H12v1.9h3.1c-.1.7-.6 1.8-1.6 2.5l2.4 1.9c1.4-1.3 2.2-3.2 2.2-5.3z" fill="#4285F4"/>
-                  <path d="M12 18c1.6 0 2.9-.5 3.9-1.4l-2.4-1.9c-.5.4-1.2.6-1.5.6-1.7 0-3.2-1.1-3.7-2.7H5.6l-2.5 1.9C4.5 16.5 8 18 12 18z" fill="#34A853"/>
-                  <path d="M8.3 12.6c-.1-.4-.2-.8-.2-1.2s.1-.8.2-1.2V8.3L5.6 6.5C4.8 8 4.3 9.9 4.3 12s.5 3.9 1.3 5.5l2.7-2.4-.3-2.5z" fill="#FBBC05"/>
-                  <path d="M12 6.6c1.3 0 2.5.4 3.4 1.3L17.6 6c-1.4-1.3-3.2-2-5.6-2-3.9 0-7.3 2.2-9 5.4l2.7 2.1C6.8 9.3 9.2 6.6 12 6.6z" fill="#EA4335"/>
-                </svg>
-                <span className="text-[10px] font-bold text-[#26251e] tracking-tight">Google Insights</span>
-                {enrichingGoogle && <span className="ml-auto text-[9px] text-[#7a7a76]">Enrichissement…</span>}
-                {googlePlaceData && (
-                  <div className="ml-auto flex items-center gap-1.5">
-                    {googlePlaceData.rating && (
-                      <span className="text-[10px] font-bold text-amber-600">⭐ {googlePlaceData.rating}</span>
-                    )}
-                    {googlePlaceData.review_count && (
-                      <span className="text-[9px] text-[#7a7a76]">({googlePlaceData.review_count} avis) — voir tout →</span>
-                    )}
+                <div className="flex h-5 w-5 items-center justify-center rounded-full bg-[#4285F4] shrink-0 text-white shadow-xs">
+                  <svg viewBox="0 0 24 24" className="h-3 w-3 fill-current">
+                    <path d="M12.24 10.285V13.4h6.86c-.277 1.56-1.602 4.585-6.86 4.585-4.54 0-8.24-3.76-8.24-8.385s3.7-8.385 8.24-8.385c2.58 0 4.307 1.095 5.298 2.045l2.465-2.37C18.26 1.05 15.495 0 12.24 0 5.58 0 0 5.58 0 12.24s5.58 12.24 12.24 12.24c6.96 0 11.57-4.89 11.57-11.79 0-.795-.085-1.4-.19-1.905h-11.38z" />
+                  </svg>
+                </div>
+                <span className="text-xs font-bold text-gray-800 tracking-tight">Google Insights</span>
+                {enrichingGoogle && <span className="ml-auto text-[10px] text-[#7a7a76] animate-pulse">Enrichissement…</span>}
+                {googlePlaceData && !enrichingGoogle && (
+                  <div className="ml-auto flex items-center gap-1.5 text-[11px] font-medium">
+                    <Star className="h-3.5 w-3.5 fill-[#f59e0b] text-[#f59e0b] shrink-0" />
+                    <span className="font-extrabold text-[#ea580c]">{googlePlaceData.rating?.toFixed(1) || '0.0'}</span>
+                    <span className="text-[#64748b]">
+                      ({googlePlaceData.review_count || 0} avis) — voir tout →
+                    </span>
                   </div>
                 )}
               </button>
@@ -2857,41 +2856,73 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                     <p className="text-xs text-[#7a7a76] italic py-4 text-center">Aucune donnée Google Maps pour ce lead.</p>
                   ) : (
                     <>
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2">
-                          {googlePlaceData.rating !== undefined && (
-                            <span className="text-sm font-bold text-amber-600">⭐ {googlePlaceData.rating.toFixed(1)}</span>
-                          )}
-                          {googlePlaceData.review_count !== undefined && (
-                            <span className="text-xs text-[#7a7a76]">({googlePlaceData.review_count} avis au total sur Maps)</span>
-                          )}
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2">
+                            {googlePlaceData.rating !== undefined && (
+                              <span className="text-sm font-bold text-amber-600">⭐ {googlePlaceData.rating.toFixed(1)}</span>
+                            )}
+                            {googlePlaceData.review_count !== undefined && (
+                              <span className="text-xs text-[#7a7a76]">({googlePlaceData.review_count} avis au total sur Maps)</span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              onClick={handleScrapeMoreReviews}
+                              disabled={scrapingMoreReviews}
+                              className="h-7 text-[11px] font-semibold gap-1.5"
+                            >
+                              {scrapingMoreReviews
+                                ? <Loader2 className="h-3 w-3 animate-spin" />
+                                : <Sparkles className="h-3 w-3 text-[#059669]" />}
+                              {scrapingMoreReviews ? 'Recherche…' : "Chercher plus d'avis"}
+                            </Button>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              onClick={handleCopyAllReviews}
+                              disabled={!googlePlaceData.reviews?.length}
+                              className="h-7 text-[11px] font-semibold gap-1.5"
+                            >
+                              {reviewsCopied ? <Check className="h-3 w-3 text-[#059669]" /> : <Copy className="h-3 w-3" />}
+                              {reviewsCopied ? 'Copié !' : 'Copier tous les avis'}
+                            </Button>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2 shrink-0">
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="outline"
-                            onClick={handleScrapeMoreReviews}
-                            disabled={scrapingMoreReviews}
-                            className="h-7 text-[11px] font-semibold gap-1.5"
-                          >
-                            {scrapingMoreReviews
-                              ? <Loader2 className="h-3 w-3 animate-spin" />
-                              : <Sparkles className="h-3 w-3 text-[#059669]" />}
-                            {scrapingMoreReviews ? 'Recherche…' : "Chercher plus d'avis"}
-                          </Button>
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="outline"
-                            onClick={handleCopyAllReviews}
-                            disabled={!googlePlaceData.reviews?.length}
-                            className="h-7 text-[11px] font-semibold gap-1.5"
-                          >
-                            {reviewsCopied ? <Check className="h-3 w-3 text-[#059669]" /> : <Copy className="h-3 w-3" />}
-                            {reviewsCopied ? 'Copié !' : 'Copier tous les avis'}
-                          </Button>
-                        </div>
+
+                        {/* Attribute Badges */}
+                        {(googlePlaceData.allows_dogs !== null || googlePlaceData.accessibility_options !== null || googlePlaceData.ev_charging_options !== null) && (
+                          <div className="flex flex-wrap gap-1.5 pt-1 pb-2">
+                            {googlePlaceData.allows_dogs === true && (
+                              <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200/50 text-[10px] font-semibold py-0.5 px-2 flex items-center gap-1">
+                                <Dog className="w-3 h-3 shrink-0 text-emerald-600" />
+                                Chiens autorisés
+                              </Badge>
+                            )}
+                            {googlePlaceData.allows_dogs === false && (
+                              <Badge variant="outline" className="bg-rose-50 text-rose-700 border-rose-200/50 text-[10px] font-semibold py-0.5 px-2 flex items-center gap-1">
+                                <Dog className="w-3 h-3 shrink-0 text-rose-600" />
+                                Chiens non admis
+                              </Badge>
+                            )}
+                            {googlePlaceData.accessibility_options?.wheelchairAccessibleEntrance === true && (
+                              <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200/50 text-[10px] font-semibold py-0.5 px-2 flex items-center gap-1">
+                                <Accessibility className="w-3 h-3 shrink-0 text-blue-600" />
+                                Accès fauteuil roulant
+                              </Badge>
+                            )}
+                            {googlePlaceData.ev_charging_options?.connectorCount !== undefined && googlePlaceData.ev_charging_options.connectorCount > 0 && (
+                              <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200/50 text-[10px] font-semibold py-0.5 px-2 flex items-center gap-1">
+                                <Zap className="w-3 h-3 shrink-0 text-amber-600" />
+                                {googlePlaceData.ev_charging_options.connectorCount} borne{googlePlaceData.ev_charging_options.connectorCount > 1 ? 's' : ''} de recharge VE
+                              </Badge>
+                            )}
+                          </div>
+                        )}
                       </div>
 
                       {scrapeReviewsError && (

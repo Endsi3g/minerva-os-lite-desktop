@@ -710,19 +710,25 @@ function ChannelsTab({ leads }: { leads: Lead[] }) {
 // ─── ROI Tab ──────────────────────────────────────────────────────────────────
 
 function RoiTab({ leads }: { leads: Lead[] }) {
-  const [budgets, setBudgets] = useState<Record<string, number>>(() => {
-    if (typeof window !== 'undefined') {
-      try { return JSON.parse(localStorage.getItem('acquisition_budgets') || '{}'); } catch { return {}; }
-    }
-    return {};
-  });
+  const [budgets, setBudgets] = useState<Record<string, number>>({});
+
+  // Load budgets from Supabase on mount
+  useEffect(() => {
+    fetch('/api/settings/user-prefs')
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d?.acquisition_budgets) setBudgets(d.acquisition_budgets); })
+      .catch(() => {});
+  }, []);
 
   const updateBudget = (ch: string, val: number) => {
     const updated = { ...budgets, [ch]: val };
     setBudgets(updated);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('acquisition_budgets', JSON.stringify(updated));
-    }
+    // Persist to Supabase asynchronously
+    fetch('/api/settings/user-prefs', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ acquisition_budgets: updated }),
+    }).catch(() => {});
   };
 
   const channels = useMemo(() => {
@@ -854,20 +860,31 @@ interface Goals {
 }
 
 function GoalsTab({ leads }: { leads: Lead[] }) {
-  const [goals, setGoals] = useState<Goals>(() => {
-    if (typeof window !== 'undefined') {
-      try { return JSON.parse(localStorage.getItem('acquisition_goals') || '{"leads":100,"clients":10,"revenue":50000}'); } catch { /**/ }
-    }
-    return { leads: 100, clients: 10, revenue: 50000 };
-  });
+  const [goals, setGoals] = useState<Goals>({ leads: 100, clients: 10, revenue: 50000 });
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<Goals>(goals);
 
+  // Load goals from Supabase on mount
+  useEffect(() => {
+    fetch('/api/settings/user-prefs')
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        if (d?.acquisition_goals) {
+          setGoals(d.acquisition_goals);
+          setDraft(d.acquisition_goals);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   const saveGoals = () => {
     setGoals(draft);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('acquisition_goals', JSON.stringify(draft));
-    }
+    // Persist to Supabase
+    fetch('/api/settings/user-prefs', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ acquisition_goals: draft }),
+    }).catch(() => {});
     setEditing(false);
   };
 

@@ -6,7 +6,6 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SettingsSectionWrapper } from './settings-section-wrapper';
-import { useReach } from '@/lib/reach-context';
 import { Button } from '@/components/ui/button';
 import { Camera, Trash2 } from 'lucide-react';
 
@@ -29,24 +28,8 @@ interface SettingsProfileSectionProps {
 }
 
 export function SettingsProfileSection({ data, onChange, onSave, isSaving }: SettingsProfileSectionProps) {
-  const { importDemoData } = useReach();
-  const [isImporting, setIsImporting] = useState(false);
-  const [importSuccess, setImportSuccess] = useState(false);
   const [avatarError, setAvatarError] = useState('');
   const avatarInputRef = useRef<HTMLInputElement>(null);
-
-  const handleImportDemo = async () => {
-    setIsImporting(true);
-    try {
-      await importDemoData();
-      setImportSuccess(true);
-      setTimeout(() => setImportSuccess(false), 3000);
-    } catch (e) {
-      console.error("Demo import failed:", e);
-    } finally {
-      setIsImporting(false);
-    }
-  };
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -229,31 +212,6 @@ export function SettingsProfileSection({ data, onChange, onSave, isSaving }: Set
                 </SelectContent>
               </Select>
             </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Demo Data Management Card */}
-      <Card className="border border-[#e5e5e0] bg-white">
-        <CardContent className="p-5 space-y-4">
-          <h3 className="text-xs font-bold text-rose-600 uppercase tracking-wider">Données & Tests</h3>
-          <p className="text-[11px] text-[#7a7a76] leading-normal">
-            Par défaut, les nouveaux Espaces de travail démarrent vides pour tes vrais clients. Tu peux importer manuellement des données fictives de démonstration (leads et tâches) à des fins de test.
-          </p>
-          <div className="flex items-center gap-3">
-            <Button
-              type="button"
-              disabled={isImporting}
-              onClick={handleImportDemo}
-              className="text-xs font-bold h-8.5 bg-[#059669] text-white hover:bg-[#059669]/95"
-            >
-              {isImporting ? "Importation..." : "Importer les données de démonstration"}
-            </Button>
-            {importSuccess && (
-              <span className="text-[10px] font-semibold text-emerald-600 animate-pulse">
-                Données de démonstration importées avec succès !
-              </span>
-            )}
           </div>
         </CardContent>
       </Card>

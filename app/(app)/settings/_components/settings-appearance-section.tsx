@@ -28,14 +28,27 @@ export function SettingsAppearanceSection({ data, onChange, isSaving }: Settings
   const [radius, setRadius] = useState('10px');
   const [gridOpacity, setGridOpacity] = useState(100);
 
-  // Load custom properties from localStorage on mount
+  // Load UI preferences from Supabase on mount
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const storedRadius = localStorage.getItem('minerva_ui_radius') || '10px';
-      const storedOpacity = localStorage.getItem('minerva_ui_grid_opacity') || '100';
-      setRadius(storedRadius);
-      setGridOpacity(Number(storedOpacity));
-    }
+    fetch('/api/settings/user-prefs')
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        if (d?.ui_preferences) {
+          const prefs = d.ui_preferences;
+          if (prefs.radius) {
+            setRadius(prefs.radius);
+            document.documentElement.style.setProperty('--radius', prefs.radius);
+          }
+          if (prefs.gridOpacity !== undefined) {
+            setGridOpacity(prefs.gridOpacity);
+            document.documentElement.style.setProperty('--grid-opacity', String(prefs.gridOpacity / 100));
+          }
+          if (prefs.density) {
+            document.documentElement.classList.toggle('compact', prefs.density === 'compact');
+          }
+        }
+      })
+      .catch(() => {});
   }, []);
 
   const handleThemeChange = (val: 'system' | 'light' | 'dark') => {
@@ -43,28 +56,30 @@ export function SettingsAppearanceSection({ data, onChange, isSaving }: Settings
     setTheme(val);
   };
 
+  const persistPrefs = (patch: Record<string, unknown>) => {
+    fetch('/api/settings/user-prefs', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ui_preferences: patch }),
+    }).catch(() => {});
+  };
+
   const handleDensityChange = (val: 'comfortable' | 'compact') => {
     onChange({ density: val });
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('minerva_ui_density', val);
-      document.documentElement.classList.toggle('compact', val === 'compact');
-    }
+    document.documentElement.classList.toggle('compact', val === 'compact');
+    persistPrefs({ radius, density: val, gridOpacity });
   };
 
   const handleRadiusChange = (val: string) => {
     setRadius(val);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('minerva_ui_radius', val);
-      document.documentElement.style.setProperty('--radius', val);
-    }
+    document.documentElement.style.setProperty('--radius', val);
+    persistPrefs({ radius: val, density: data.density, gridOpacity });
   };
 
   const handleGridOpacityChange = (val: number) => {
     setGridOpacity(val);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('minerva_ui_grid_opacity', String(val));
-      document.documentElement.style.setProperty('--grid-opacity', String(val / 100));
-    }
+    document.documentElement.style.setProperty('--grid-opacity', String(val / 100));
+    persistPrefs({ radius, density: data.density, gridOpacity: val });
   };
 
   const densities = [

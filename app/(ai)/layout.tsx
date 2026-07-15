@@ -131,8 +131,15 @@ function AILayoutContent({ children }: { children: React.ReactNode }) {
     if (!workspaceId || !userId) return;
     const sessions = await dbGetSessions(userId, workspaceId);
     setAssistantSessions(sessions);
-    const stored = localStorage.getItem(`minerva_active_sess_${workspaceId}`);
-    if (stored) setActiveSessionId(stored);
+    // Load active session from Supabase
+    try {
+      const res = await fetch('/api/settings/user-prefs');
+      if (res.ok) {
+        const prefs = await res.json();
+        const storedSessId = prefs?.active_ai_sessions?.[workspaceId] ?? null;
+        if (storedSessId) setActiveSessionId(storedSessId);
+      }
+    } catch {}
   }, [activeWorkspace?.id, userId]);
 
   useEffect(() => { loadSessions(); }, [loadSessions]);
@@ -248,7 +255,13 @@ function AILayoutContent({ children }: { children: React.ReactNode }) {
                   onClick={() => {
                     setSidebarOpen(false);
                     setActiveSessionId(null);
-                    if (activeWorkspace) localStorage.removeItem(`minerva_active_sess_${activeWorkspace.id}`);
+                    if (activeWorkspace) {
+                      fetch('/api/settings/user-prefs', {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ active_ai_sessions: { [activeWorkspace.id]: null } }),
+                      }).catch(() => {});
+                    }
                   }}
                   className="flex items-center gap-2 px-2.5 py-1.5 text-xs font-semibold text-[#059669] bg-[#059669]/10 border border-[#059669]/20 rounded-md hover:bg-[#059669]/15 transition-all w-full justify-center mb-1"
                 >
@@ -272,7 +285,13 @@ function AILayoutContent({ children }: { children: React.ReactNode }) {
                         onClick={() => {
                           setSidebarOpen(false);
                           setActiveSessionId(sess.id);
-                          if (activeWorkspace) localStorage.setItem(`minerva_active_sess_${activeWorkspace.id}`, sess.id);
+                          if (activeWorkspace) {
+                            fetch('/api/settings/user-prefs', {
+                              method: 'PATCH',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ active_ai_sessions: { [activeWorkspace.id]: sess.id } }),
+                            }).catch(() => {});
+                          }
                           window.dispatchEvent(new CustomEvent('minerva_assistant_sync'));
                         }}
                         className="flex-1 truncate"

@@ -17,7 +17,7 @@ import {
   Database, Plus, X, ChevronDown, WifiOff, CheckCircle2, Settings2, BarChart3,
   ExternalLink, Download, ArrowUpDown, SlidersHorizontal, History, Clock,
   Navigation, Map as MapIcon, Edit3, Target, Trash2, Edit2, GitMerge, Info,
-  AlertTriangle, Inbox, CheckCircle, RefreshCw, ThumbsDown, Upload
+  AlertTriangle, Inbox, CheckCircle, RefreshCw, ThumbsDown, Upload, Dog, Accessibility, Zap
 } from 'lucide-react';
 import { LeadsSubNav } from '../../leads/_components/leads-sub-nav';
 import { triggerAgentLoop } from '@/lib/agent-trigger';
@@ -883,6 +883,19 @@ export function ProspectingRoot() {
             : 'Présenter le pack automatisation Minerva',
         nextActionDate: new Date().toISOString().split('T')[0],
         notes: `Source : ${item.source ?? 'Scraper Minerva'}\nNote : ${item.rating}/5 (${item.reviewsCount} avis)\nSite : ${item.website || 'Aucun'}\nTél : ${item.phone || 'N/A'}\nAdresse : ${item.address || 'N/A'}\nMaps : https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.businessName + ' ' + item.city)}\n\nOpportunités détectées : ${!item.website ? 'Pas de site web' : 'Faible note Google Maps'}`,
+        googlePlaceId: item.originalTags?.google_place_id || undefined,
+        googlePlaceData: item.originalTags?.google_place_id ? {
+          place_id: item.originalTags.google_place_id,
+          allows_dogs: item.originalTags.allows_dogs,
+          accessibility_options: item.originalTags.accessibility_options,
+          ev_charging_options: item.originalTags.ev_charging_options,
+          rating: item.rating,
+          review_count: item.reviewsCount,
+          name: item.businessName,
+          website: item.website,
+          phone: item.phone,
+        } : undefined,
+        googleEnrichedAt: item.originalTags?.google_place_id ? new Date().toISOString() : undefined,
       });
       await updateLeadValidation(item.id, { status: 'imported' });
       setImportCount(1);
@@ -2013,6 +2026,31 @@ export function ProspectingRoot() {
                                       <span className="font-medium text-[#26251e] bg-[#f4f4f3]/60 px-1.5 py-0.5 rounded text-[9px]">{item.niche}</span>
                                       <span>·</span>
                                       <span>{item.city}</span>
+
+                                      {item.originalTags?.allows_dogs === true && (
+                                        <Badge variant="outline" className="text-[8px] bg-emerald-50 text-emerald-700 border-emerald-200/50 py-0 px-1.5 flex items-center gap-0.5">
+                                          <Dog className="w-2.5 h-2.5 text-emerald-600" />
+                                          Chiens OK
+                                        </Badge>
+                                      )}
+                                      {item.originalTags?.allows_dogs === false && (
+                                        <Badge variant="outline" className="text-[8px] bg-rose-50 text-rose-700 border-rose-200/50 py-0 px-1.5 flex items-center gap-0.5">
+                                          <Dog className="w-2.5 h-2.5 text-rose-600" />
+                                          Chiens Interdits
+                                        </Badge>
+                                      )}
+                                      {item.originalTags?.accessibility_options?.wheelchairAccessibleEntrance === true && (
+                                        <Badge variant="outline" className="text-[8px] bg-blue-50 text-blue-700 border-blue-200/50 py-0 px-1.5 flex items-center gap-0.5">
+                                          <Accessibility className="w-2.5 h-2.5 text-blue-600" />
+                                          Accès PMR
+                                        </Badge>
+                                      )}
+                                      {item.originalTags?.ev_charging_options?.connectorCount !== undefined && item.originalTags.ev_charging_options.connectorCount > 0 && (
+                                        <Badge variant="outline" className="text-[8px] bg-amber-50 text-amber-700 border-amber-200/50 py-0 px-1.5 flex items-center gap-0.5">
+                                          <Zap className="w-2.5 h-2.5 text-amber-600" />
+                                          Borne VE ({item.originalTags.ev_charging_options.connectorCount})
+                                        </Badge>
+                                      )}
                                     </div>
                                     <p className="text-[10px] text-slate-500 leading-normal max-w-xl">
                                       {item.website ? `🌐 Site : ${item.website.replace(/https?:\/\/(www\.)?/, '')}` : '❌ Aucun site internet détecté'} · {item.rating > 0 ? `⭐ ${item.rating}★ (${item.reviewsCount} avis)` : '⭐ Aucun avis public'} · {item.phone ? `📞 ${item.phone}` : '📞 Pas de numéro de téléphone'}
