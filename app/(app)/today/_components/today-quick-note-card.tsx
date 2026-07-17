@@ -1,39 +1,59 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import { Button } from '@/components/ui/button';
 import { useReach } from '@/lib/reach-context';
 import { useLanguage } from '@/lib/language-context';
-import { FileText, Save, CheckCircle2 } from 'lucide-react';
+import { FileText, CheckCircle2, Loader2, History } from 'lucide-react';
+import { useAutosaveDraft } from '@/lib/use-autosave-draft';
+import { useUnsavedChangesGuard } from '@/lib/use-unsaved-changes-guard';
+
+const SAVE_DEBOUNCE_MS = 1200;
 
 export function TodayQuickNoteCard() {
   const { quickNote, saveQuickNote } = useReach();
   const { t } = useLanguage();
-  
-  // Initialize state directly from localStorage to avoid hydration/useEffect setState warnings
+
   const [noteContent, setNoteContent] = useState('');
-  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');  // Load initial value on mount deferred
-  
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const lastSavedRef = useRef('');
+  const hasSyncedInitialRef = useRef(false);
+
+  // ReachContext hydrates quickNote asynchronously (SQLite/Supabase fetch) —
+  // apply it once it arrives, but never after the user has started typing.
   useEffect(() => {
-    const timer = setTimeout(() => {
-      const stored = localStorage.getItem('minerva_quick_note') || quickNote || '';
-      setNoteContent(stored);
-    }, 0);
-    return () => clearTimeout(timer);
+    if (hasSyncedInitialRef.current) return;
+    if (quickNote) {
+      hasSyncedInitialRef.current = true;
+      setNoteContent(quickNote);
+      lastSavedRef.current = quickNote;
+    }
   }, [quickNote]);
 
-  const handleSave = () => {
+  const isDirty = noteContent !== lastSavedRef.current;
+  useUnsavedChangesGuard(isDirty);
+
+  const { restoredDraft, dismissRestoredDraft, clearDraft } = useAutosaveDraft({
+    key: 'today-quick-note',
+    value: noteContent,
+  });
+
+  // Debounced autosave: persists to SQLite/Supabase a moment after the user
+  // stops typing, no manual "Save" click required.
+  useEffect(() => {
+    if (!isDirty) return;
     setSaveStatus('saving');
-    saveQuickNote(noteContent);
-    setTimeout(() => {
+    const timer = setTimeout(() => {
+      saveQuickNote(noteContent);
+      lastSavedRef.current = noteContent;
+      clearDraft();
       setSaveStatus('saved');
-      setTimeout(() => {
-        setSaveStatus('idle');
-      }, 2000);
-    }, 600);
-  };
+      setTimeout(() => setSaveStatus('idle'), 1500);
+    }, SAVE_DEBOUNCE_MS);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [noteContent, isDirty]);
 
   return (
     <Card className="border border-[#e5e5e0] bg-white shadow-none">
@@ -49,6 +69,30 @@ export function TodayQuickNoteCard() {
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
+        {restoredDraft && restoredDraft !== noteContent && (
+          <div className="flex items-center justify-between gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
+            <div className="flex items-center gap-2 text-[11px] text-amber-800 min-w-0">
+              <History className="h-3.5 w-3.5 shrink-0" />
+              <span className="truncate">Brouillon non enregistré trouvé.</span>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => { setNoteContent(restoredDraft); dismissRestoredDraft(); }}
+                className="h-6 px-2 rounded-md text-[10px] font-bold bg-amber-800 text-white hover:bg-amber-900 transition-colors"
+              >
+                Restaurer
+              </button>
+              <button
+                type="button"
+                onClick={() => clearDraft()}
+                className="h-6 px-2 rounded-md text-[10px] font-semibold text-amber-800 hover:bg-amber-100 transition-colors"
+              >
+                Ignorer
+              </button>
+            </div>
+          </div>
+        )}
         <Textarea
           value={noteContent}
           onChange={(e) => setNoteContent(e.target.value)}
@@ -59,25 +103,20 @@ export function TodayQuickNoteCard() {
           <span className="text-[10px] text-[#7a7a76] font-mono">
             {noteContent.length} {t('today.quick_note_characters')}
           </span>
-          <Button 
-            size="sm" 
-            onClick={handleSave} 
-            className="h-8 gap-1.5 px-3 bg-[#059669] hover:bg-[#059669]/90 text-xs font-semibold"
-          >
-            {saveStatus === 'saving' ? (
-              <span>{t('today.saving')}</span>
-            ) : saveStatus === 'saved' ? (
+          <span className="flex items-center gap-1.5 text-[10px] font-semibold text-[#7a7a76] h-8">
+            {saveStatus === 'saving' && (
               <>
-                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
-                <span>{t('today.saved')}</span>
-              </>
-            ) : (
-              <>
-                <Save className="h-3.5 w-3.5" />
-                <span>{t('today.save')}</span>
+                <Loader2 className="h-3 w-3 animate-spin" />
+                {t('today.saving')}
               </>
             )}
-          </Button>
+            {saveStatus === 'saved' && (
+              <>
+                <CheckCircle2 className="h-3 w-3 text-emerald-500" />
+                {t('today.saved')}
+              </>
+            )}
+          </span>
         </div>
       </CardContent>
     </Card>

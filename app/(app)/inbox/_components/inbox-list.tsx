@@ -3,6 +3,7 @@
 import { AlertCircle, Filter, Mail, User, Loader2 } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
 import type { InboxThread, ReplyIntent } from '@/lib/inbox-types';
 import type { Campaign } from '@/lib/reach-context';
 
@@ -190,8 +191,20 @@ export function InboxList({
       {/* Thread list */}
       <div className="flex-1 overflow-y-auto">
         {loading ? (
-          <div className="flex items-center justify-center py-12 text-xs text-[#78716c]">
-            Chargement…
+          <div>
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="flex items-start gap-2.5 px-3 py-3 border-b border-[#e5e5e0]">
+                <Skeleton className="h-8 w-8 rounded-full shrink-0" />
+                <div className="flex-1 min-w-0 space-y-1.5">
+                  <div className="flex items-center justify-between gap-1">
+                    <Skeleton className="h-3 w-28" />
+                    <Skeleton className="h-2.5 w-8 shrink-0" />
+                  </div>
+                  <Skeleton className="h-2.5 w-40" />
+                  <Skeleton className="h-2.5 w-full max-w-[220px]" />
+                </div>
+              </div>
+            ))}
           </div>
         ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 gap-3 text-[#78716c]">

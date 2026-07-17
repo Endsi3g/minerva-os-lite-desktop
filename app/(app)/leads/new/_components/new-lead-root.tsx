@@ -11,6 +11,7 @@ import { getApiUrl } from '@/lib/api-helper';
 import { Lead } from '@/lib/mock-data';
 import { ChevronLeft, Upload, X, Building2, Plus } from 'lucide-react';
 import { toast } from 'sonner';
+import { useUnsavedChangesGuard } from '@/lib/use-unsaved-changes-guard';
 
 interface TeamMember {
   id: string;
@@ -51,6 +52,10 @@ export default function NewLeadRoot() {
   const [customFormFields, setCustomFormFields] = useState<Record<string, string>>({});
   const [addingCustomField, setAddingCustomField] = useState(false);
   const [newFieldName, setNewFieldName] = useState('');
+  const [isDirty, setIsDirty] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useUnsavedChangesGuard(isDirty);
 
   const handleCreateCustomField = () => {
     if (!newFieldName.trim() || !activeWorkspace) return;
@@ -102,21 +107,28 @@ export default function NewLeadRoot() {
 
   const handleChange = (field: string, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
+    setIsDirty(true);
   };
 
   const handleLogoUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (ev) => setLogoBase64(ev.target?.result as string);
+    reader.onload = (ev) => { setLogoBase64(ev.target?.result as string); setIsDirty(true); };
     reader.readAsDataURL(file);
     e.target.value = '';
   }, []);
+
+  const handleCustomFieldChange = (colName: string, value: string) => {
+    setCustomFormFields(prev => ({ ...prev, [colName]: value }));
+    setIsDirty(true);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.businessName.trim()) return;
 
+    setIsSubmitting(true);
     const { assignedTo, website, mapsUrl, phone, ...rest } = form;
     try {
       await addLead({
@@ -130,8 +142,10 @@ export default function NewLeadRoot() {
       });
     } catch (err: any) {
       toast.error(`Échec de la création du prospect : ${err?.message || 'erreur inconnue'}`, { duration: 8000 });
+      setIsSubmitting(false);
       return;
     }
+    setIsDirty(false);
     router.push('/leads');
   };
 
@@ -383,7 +397,7 @@ export default function NewLeadRoot() {
                     <Input
                       placeholder={`Valeur pour ${colName}`}
                       value={customFormFields[colName] || ''}
-                      onChange={(e) => setCustomFormFields(prev => ({ ...prev, [colName]: e.target.value }))}
+                      onChange={(e) => handleCustomFieldChange(colName, e.target.value)}
                       className="h-9 text-sm border-[#e5e5e0] focus:ring-[#059669] focus:border-[#059669]"
                     />
                   </div>
@@ -439,12 +453,13 @@ export default function NewLeadRoot() {
             >
               Annuler
             </button>
-            <button
+            <Button
               type="submit"
-              className="px-5 py-2 text-xs font-bold bg-[#059669] hover:bg-[#047857] text-white rounded-lg transition-colors"
+              loading={isSubmitting}
+              className="px-5 py-2 h-auto text-xs font-bold bg-[#059669] hover:bg-[#047857] text-white rounded-lg transition-colors"
             >
               Enregistrer le prospect
-            </button>
+            </Button>
           </div>
         </form>
       </div>

@@ -595,20 +595,22 @@ export function SettingsIntegrationsSection() {
                     size="sm"
                     variant="outline"
                     onClick={handleTestSmtp}
-                    disabled={testingSmtp || !smtpConfig.host || !smtpConfig.user}
+                    loading={testingSmtp}
+                    disabled={!smtpConfig.host || !smtpConfig.user}
                     className="h-8 text-xs font-bold gap-1"
                   >
-                    {testingSmtp ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <Server className="h-3.5 w-3.5" />}
+                    {!testingSmtp && <Server className="h-3.5 w-3.5" />}
                     Tester
                   </Button>
                   <Button
                     type="button"
                     size="sm"
                     onClick={handleSaveSmtp}
-                    disabled={savingSmtp || !smtpConfig.host || !smtpConfig.user}
+                    loading={savingSmtp}
+                    disabled={!smtpConfig.host || !smtpConfig.user}
                     className="h-8 text-xs font-bold gap-1 bg-[#059669] hover:bg-[#059669]/95 text-white"
                   >
-                    {savingSmtp ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+                    {!savingSmtp && <Check className="h-3.5 w-3.5" />}
                     Sauvegarder
                   </Button>
                 </div>
@@ -676,18 +678,12 @@ export function SettingsIntegrationsSection() {
               <div className="pl-14 pt-1">
                 <Button
                   onClick={() => handleSaveScraper()}
-                  disabled={savingApify}
+                  loading={savingApify}
                   size="sm"
                   className="h-8 text-xs font-bold gap-1 px-4 bg-[#059669] hover:bg-[#059669]/95 text-white"
                 >
-                  {savingApify ? (
-                    <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <>
-                      <Check className="h-3.5 w-3.5" />
-                      <span>Activer le moteur natif</span>
-                    </>
-                  )}
+                  {!savingApify && <Check className="h-3.5 w-3.5" />}
+                  <span>Activer le moteur natif</span>
                 </Button>
               </div>
             ) : (
@@ -706,17 +702,11 @@ export function SettingsIntegrationsSection() {
                 <Button
                   type="submit"
                   size="sm"
-                  disabled={savingApify}
+                  loading={savingApify}
                   className="h-8.5 text-xs font-bold gap-1 px-3 bg-[#059669] hover:bg-[#059669]/95 text-white shrink-0"
                 >
-                  {savingApify ? (
-                    <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <>
-                      <Check className="h-3.5 w-3.5" />
-                      <span>Sauvegarder</span>
-                    </>
-                  )}
+                  {!savingApify && <Check className="h-3.5 w-3.5" />}
+                  <span>Sauvegarder</span>
                 </Button>
               </form>
             )}
@@ -762,10 +752,10 @@ export function SettingsIntegrationsSection() {
                     type="button"
                     size="sm"
                     onClick={handleSaveHere}
-                    disabled={savingHere}
+                    loading={savingHere}
                     className="h-8 text-xs font-bold gap-1 px-3 bg-[#059669] hover:bg-[#059669]/95 text-white shrink-0"
                   >
-                    {savingHere ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+                    {!savingHere && <Check className="h-3.5 w-3.5" />}
                     Enregistrer
                   </Button>
                 </div>
@@ -813,10 +803,10 @@ export function SettingsIntegrationsSection() {
                     type="button"
                     size="sm"
                     onClick={handleSaveYelp}
-                    disabled={savingYelp}
+                    loading={savingYelp}
                     className="h-8 text-xs font-bold gap-1 px-3 bg-[#059669] hover:bg-[#059669]/95 text-white shrink-0"
                   >
-                    {savingYelp ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+                    {!savingYelp && <Check className="h-3.5 w-3.5" />}
                     Enregistrer
                   </Button>
                 </div>
@@ -866,7 +856,7 @@ export function SettingsIntegrationsSection() {
                 type="button"
                 size="sm"
                 onClick={handleSaveFirecrawl}
-                disabled={savingFirecrawl}
+                loading={savingFirecrawl}
                 className="h-8 text-xs font-semibold px-4 bg-[#059669] hover:bg-[#059669]/95 text-white shrink-0"
               >
                 {savingFirecrawl ? 'Sauvegarde...' : 'Enregistrer'}
@@ -915,10 +905,10 @@ export function SettingsIntegrationsSection() {
                     type="button"
                     size="sm"
                     onClick={handleSaveGooglePlaces}
-                    disabled={savingGooglePlaces}
+                    loading={savingGooglePlaces}
                     className="h-8 text-xs font-bold gap-1 px-3 bg-[#059669] hover:bg-[#059669]/95 text-white shrink-0"
                   >
-                    {savingGooglePlaces ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+                    {!savingGooglePlaces && <Check className="h-3.5 w-3.5" />}
                     Enregistrer
                   </Button>
                 </div>
@@ -958,12 +948,12 @@ export function SettingsIntegrationsSection() {
                       className="w-full pl-8 pr-3 h-8 text-xs border border-input rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-primary/30"
                     />
                   </div>
-                  <Button type="button" size="sm" variant="outline" onClick={handleTestSlack} disabled={testingSlack} className="h-8 text-xs shrink-0 gap-1">
-                    {testingSlack ? <RefreshCw className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
+                  <Button type="button" size="sm" variant="outline" onClick={handleTestSlack} loading={testingSlack} className="h-8 text-xs shrink-0 gap-1">
+                    {!testingSlack && <Send className="h-3 w-3" />}
                     Tester
                   </Button>
-                  <Button type="button" size="sm" onClick={handleSaveSlack} disabled={savingSlack} className="h-8 text-xs font-bold px-3 bg-[#059669] hover:bg-[#059669]/95 text-white shrink-0 gap-1">
-                    {savingSlack ? <RefreshCw className="h-3 w-3 animate-spin" /> : slackSaved ? <Check className="h-3 w-3" /> : null}
+                  <Button type="button" size="sm" onClick={handleSaveSlack} loading={savingSlack} className="h-8 text-xs font-bold px-3 bg-[#059669] hover:bg-[#059669]/95 text-white shrink-0 gap-1">
+                    {!savingSlack && slackSaved && <Check className="h-3 w-3" />}
                     {slackSaved ? 'Enregistré' : 'Enregistrer'}
                   </Button>
                 </div>
@@ -1009,8 +999,8 @@ export function SettingsIntegrationsSection() {
                         autoComplete="off"
                       />
                     </div>
-                    <Button type="button" size="sm" variant="outline" onClick={handleTestNotion} disabled={testingNotion} className="h-8 text-xs shrink-0 gap-1">
-                      {testingNotion ? <RefreshCw className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
+                    <Button type="button" size="sm" variant="outline" onClick={handleTestNotion} loading={testingNotion} className="h-8 text-xs shrink-0 gap-1">
+                      {!testingNotion && <Check className="h-3 w-3" />}
                       Vérifier
                     </Button>
                   </div>
@@ -1025,8 +1015,8 @@ export function SettingsIntegrationsSection() {
                         className="w-full pl-8 pr-3 h-8 text-xs border border-input rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-primary/30"
                       />
                     </div>
-                    <Button type="button" size="sm" onClick={handleSaveNotion} disabled={savingNotion} className="h-8 text-xs font-bold px-3 bg-[#059669] hover:bg-[#059669]/95 text-white shrink-0 gap-1">
-                      {savingNotion ? <RefreshCw className="h-3 w-3 animate-spin" /> : notionSaved ? <Check className="h-3 w-3" /> : null}
+                    <Button type="button" size="sm" onClick={handleSaveNotion} loading={savingNotion} className="h-8 text-xs font-bold px-3 bg-[#059669] hover:bg-[#059669]/95 text-white shrink-0 gap-1">
+                      {!savingNotion && notionSaved && <Check className="h-3 w-3" />}
                       {notionSaved ? 'Enregistré' : 'Enregistrer'}
                     </Button>
                   </div>
@@ -1063,8 +1053,8 @@ export function SettingsIntegrationsSection() {
                 <label className="text-[10px] font-bold text-[#7a7a76] uppercase tracking-wider">Campaign ID (défaut)</label>
                 <Input value={smartleadCampaignId} onChange={e => setSmartleadCampaignId(e.target.value)} placeholder="123456" className="h-8 text-xs border-[#e5e5e0]" />
               </div>
-              <Button onClick={handleSaveSmartlead} disabled={savingSmartlead} className="h-8 text-xs font-bold bg-[#059669] hover:bg-[#047857] text-white gap-1">
-                {savingSmartlead ? <RefreshCw className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
+              <Button onClick={handleSaveSmartlead} loading={savingSmartlead} className="h-8 text-xs font-bold bg-[#059669] hover:bg-[#047857] text-white gap-1">
+                {!savingSmartlead && <Check className="h-3 w-3" />}
                 Enregistrer
               </Button>
             </div>
@@ -1092,8 +1082,8 @@ export function SettingsIntegrationsSection() {
                 <label className="text-[10px] font-bold text-[#7a7a76] uppercase tracking-wider">Clé API Drop Cowboy</label>
                 <Input value={dropCowboyApiKey} onChange={e => setDropCowboyApiKey(e.target.value)} placeholder="dc_..." type="password" className="h-8 text-xs border-[#e5e5e0]" />
               </div>
-              <Button onClick={handleSaveDropCowboy} disabled={savingDropCowboy} className="h-8 text-xs font-bold bg-[#059669] hover:bg-[#047857] text-white gap-1">
-                {savingDropCowboy ? <RefreshCw className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
+              <Button onClick={handleSaveDropCowboy} loading={savingDropCowboy} className="h-8 text-xs font-bold bg-[#059669] hover:bg-[#047857] text-white gap-1">
+                {!savingDropCowboy && <Check className="h-3 w-3" />}
                 Enregistrer
               </Button>
             </div>
@@ -1140,8 +1130,8 @@ export function SettingsIntegrationsSection() {
                   <span>50% (permissif)</span><span>95% (strict)</span>
                 </div>
               </div>
-              <Button onClick={handleSaveAiInbox} disabled={savingAiInbox} className="h-8 text-xs font-bold bg-[#059669] hover:bg-[#047857] text-white gap-1">
-                {savingAiInbox ? <RefreshCw className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
+              <Button onClick={handleSaveAiInbox} loading={savingAiInbox} className="h-8 text-xs font-bold bg-[#059669] hover:bg-[#047857] text-white gap-1">
+                {!savingAiInbox && <Check className="h-3 w-3" />}
                 Enregistrer
               </Button>
             </div>

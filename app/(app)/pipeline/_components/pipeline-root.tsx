@@ -11,9 +11,27 @@ import { PipelineForecastView } from './pipeline-forecast-view';
 import { Kanban, Table, TrendingUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { LeadsSubNav } from '../../leads/_components/leads-sub-nav';
+import { Skeleton } from '@/components/ui/skeleton';
+
+function PipelineKanbanSkeleton() {
+  return (
+    <div className="w-full h-full overflow-x-auto rounded-lg border border-[#e5e5e0] bg-[#f4f4f3]/10 p-4 min-h-[480px]">
+      <div className="flex gap-4 h-full align-stretch">
+        {Array.from({ length: 7 }).map((_, i) => (
+          <div key={i} className="w-64 shrink-0 space-y-3">
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-20 w-full rounded-lg" />
+            <Skeleton className="h-20 w-full rounded-lg" />
+            {i % 2 === 0 && <Skeleton className="h-20 w-full rounded-lg" />}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export function PipelineRoot() {
-  const { leads } = useReach();
+  const { leads, isDataReady } = useReach();
   const [view, setView] = useState<'board' | 'table' | 'forecast'>('board');
   const [niche, setNiche] = useState('all');
   const [owner, setOwner] = useState('all');
@@ -85,9 +103,15 @@ export function PipelineRoot() {
 
       {/* Renders main viewport */}
       <div className="flex-1 overflow-hidden min-h-0">
-        {view === 'board' && <PipelineKanbanView leads={filteredLeads} />}
-        {view === 'table' && <PipelineTableView leads={filteredLeads} />}
-        {view === 'forecast' && <PipelineForecastView />}
+        {!isDataReady ? (
+          <PipelineKanbanSkeleton />
+        ) : view === 'board' ? (
+          <PipelineKanbanView leads={filteredLeads} />
+        ) : view === 'table' ? (
+          <PipelineTableView leads={filteredLeads} />
+        ) : (
+          <PipelineForecastView />
+        )}
       </div>
       </div>
     </div>

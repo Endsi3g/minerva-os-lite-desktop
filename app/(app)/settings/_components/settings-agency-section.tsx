@@ -5,11 +5,12 @@ import { getApiUrl } from '@/lib/api-helper';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Globe, Zap, Loader2, Check, RefreshCw, Building2, AlertTriangle, X } from 'lucide-react';
+import { Globe, Zap, Check, RefreshCw, Building2, AlertTriangle, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { createClient } from '@/lib/supabase/client';
 import { useReach } from '@/lib/reach-context';
 import { cn } from '@/lib/utils';
+import { useUnsavedChangesGuard } from '@/lib/use-unsaved-changes-guard';
 
 interface AgencyResult {
   agencyName?: string;
@@ -126,6 +127,9 @@ export default function SettingsAgencySection() {
   const [saving, setSaving] = useState(false);
   const [showColorModal, setShowColorModal] = useState(false);
   const [pendingColors, setPendingColors] = useState<string[]>([]);
+  const [isDirty, setIsDirty] = useState(false);
+
+  useUnsavedChangesGuard(isDirty);
 
   // Load existing settings from settings table and workspace
   const loadSettings = useCallback(async () => {
@@ -222,6 +226,7 @@ export default function SettingsAgencySection() {
         }).eq('user_id', user.id);
       }
 
+      setIsDirty(false);
       toast.success('Profil d\'agence sauvegardé.');
     } catch {
       toast.error('Erreur lors de la sauvegarde.');
@@ -263,10 +268,11 @@ export default function SettingsAgencySection() {
             />
             <Button
               onClick={handleScrape}
-              disabled={scraping || !websiteUrl}
+              loading={scraping}
+              disabled={!websiteUrl}
               className="h-9 bg-[#059669] hover:bg-[#047857] text-white font-bold text-xs gap-1.5 px-4 whitespace-nowrap"
             >
-              {scraping ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />}
+              {!scraping && <Zap className="w-3.5 h-3.5" />}
               {scraping ? 'Analyse…' : 'Analyser'}
             </Button>
           </div>
@@ -374,7 +380,7 @@ export default function SettingsAgencySection() {
             {result?.systemPrompt && (
               <button
                 type="button"
-                onClick={() => setSystemPrompt(result.systemPrompt || '')}
+                onClick={() => { setSystemPrompt(result.systemPrompt || ''); setIsDirty(true); }}
                 className="flex items-center gap-1 text-[10px] text-[#059669] font-semibold hover:underline"
               >
                 <RefreshCw className="w-2.5 h-2.5" />Réimporter
@@ -386,7 +392,7 @@ export default function SettingsAgencySection() {
           </p>
           <Textarea
             value={systemPrompt}
-            onChange={e => setSystemPrompt(e.target.value)}
+            onChange={e => { setSystemPrompt(e.target.value); setIsDirty(true); }}
             placeholder="Tu es l'assistant de [Nom de l'agence]…"
             rows={5}
             className="text-xs border-[#e5e5e0] resize-none focus:ring-[#059669]"
@@ -395,10 +401,10 @@ export default function SettingsAgencySection() {
 
         <Button
           onClick={handleSave}
-          disabled={saving}
+          loading={saving}
           className="h-9 bg-[#059669] hover:bg-[#047857] text-white font-bold text-sm gap-2"
         >
-          {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+          {!saving && <Check className="w-3.5 h-3.5" />}
           Sauvegarder
         </Button>
       </div>

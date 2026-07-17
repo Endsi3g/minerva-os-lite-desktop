@@ -34,10 +34,13 @@ import {
   Copy,
   X,
   ImageIcon,
+  History,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
+import { useAutosaveDraft } from '@/lib/use-autosave-draft';
+import { useUnsavedChangesGuard } from '@/lib/use-unsaved-changes-guard';
 
 interface DocumentRow {
   id: string;
@@ -85,6 +88,8 @@ export default function LibraryEditorClient({ id }: { id: string }) {
   const [doc, setDoc] = useState<DocumentRow | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [title, setTitle] = useState('');
+  const [content, setContent] = useState('');
+  const [isDirty, setIsDirty] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [isShared, setIsShared] = useState(false);
@@ -92,6 +97,16 @@ export default function LibraryEditorClient({ id }: { id: string }) {
   const [showShareModal, setShowShareModal] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
   const imageInputRef = useRef<HTMLInputElement>(null);
+
+  const isEditable = doc?.type === 'markdown' || doc?.type === 'blank';
+
+  useUnsavedChangesGuard(isDirty);
+
+  const { restoredDraft, savedAt, dismissRestoredDraft, clearDraft } = useAutosaveDraft({
+    key: `library-${id}`,
+    value: { title, content },
+    enabled: !isLoading && !!doc && isEditable,
+  });
 
   const shareUrl = typeof window !== 'undefined' ? `${window.location.origin}/library/${id}` : `/library/${id}`;
 
@@ -118,6 +133,10 @@ export default function LibraryEditorClient({ id }: { id: string }) {
         class: 'prose prose-sm max-w-none focus:outline-none min-h-[400px] text-[#26251e] leading-relaxed [&_img]:rounded-lg [&_img]:max-w-full [&_img]:my-4',
       },
     },
+    onUpdate: ({ editor }) => {
+      setContent(editor.getHTML());
+      setIsDirty(true);
+    },
   });
 
   useEffect(() => {
@@ -142,7 +161,12 @@ export default function LibraryEditorClient({ id }: { id: string }) {
 
         if ((data.type === 'markdown' || data.type === 'blank') && editor) {
           editor.commands.setContent(data.content || '');
+          setContent(data.content || '');
         }
+        // The programmatic setContent above triggers onUpdate (which marks
+        // the doc dirty) — override it since this is a fresh load, not a
+        // user edit, so the unsaved-changes guard doesn't fire needlessly.
+        setIsDirty(false);
       } catch (err) {
         console.error('Error fetching document:', err);
         setNotFound(true);
@@ -172,6 +196,8 @@ export default function LibraryEditorClient({ id }: { id: string }) {
         .eq('id', doc.id);
 
       if (error) throw error;
+      setIsDirty(false);
+      clearDraft();
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 1500);
     } catch (err) {
@@ -179,7 +205,7 @@ export default function LibraryEditorClient({ id }: { id: string }) {
     } finally {
       setIsSaving(false);
     }
-  }, [doc, title, isShared, editor]);
+  }, [doc, title, isShared, editor, clearDraft]);
 
   const handleExportMd = () => {
     if (!editor) return;
@@ -257,8 +283,6 @@ ${html}
     );
   }
 
-  const isEditable = doc.type === 'markdown' || doc.type === 'blank';
-
   return (
     <div className="h-full bg-white flex flex-col font-sans text-[#26251e]">
       {/* Topbar */}
@@ -274,7 +298,7 @@ ${html}
           <input
             type="text"
             value={title}
-            onChange={(e) => setTitle(e.target.value)}
+            onChange={(e) => { setTitle(e.target.value); setIsDirty(true); }}
             placeholder="Titre du document"
             className="text-sm font-bold bg-transparent border-0 outline-none focus:ring-0 min-w-0 flex-1 text-[#26251e]"
           />
@@ -334,6 +358,42 @@ ${html}
           </Button>
         </div>
       </div>
+
+      {/* Unsaved draft recovery banner */}
+      {restoredDraft && editor && (
+        <div className="h-10 px-4 flex items-center justify-between gap-3 bg-amber-50 border-b border-amber-200 text-amber-800 shrink-0">
+          <div className="flex items-center gap-2 text-xs min-w-0">
+            <History className="w-3.5 h-3.5 shrink-0" />
+            <span className="truncate">
+              {savedAt
+                ? `Brouillon non enregistré du ${new Date(savedAt).toLocaleString('fr-FR')} trouvé.`
+                : 'Brouillon non enregistré trouvé.'}
+            </span>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={() => {
+                setTitle(restoredDraft.title);
+                editor.commands.setContent(restoredDraft.content);
+                setContent(restoredDraft.content);
+                setIsDirty(true);
+                dismissRestoredDraft();
+              }}
+              className="h-6.5 px-2.5 rounded-md text-[10px] font-bold bg-amber-800 text-white hover:bg-amber-900 transition-colors"
+            >
+              Restaurer
+            </button>
+            <button
+              type="button"
+              onClick={() => clearDraft()}
+              className="h-6.5 px-2.5 rounded-md text-[10px] font-semibold text-amber-800 hover:bg-amber-100 transition-colors"
+            >
+              Ignorer
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Body */}
       {isEditable ? (
