@@ -991,6 +991,13 @@ function initDb() {
     // v14.1 — Packs de plateforme : mirrors
     // supabase/migrations/20260708150000_v14_1_workspace_packs.sql
     db.run(`ALTER TABLE workspaces ADD COLUMN enabled_packs TEXT DEFAULT '["acquisition","outreach","field","analytics_growth"]'`, () => {});
+
+    // Heure d'échéance, priorité et récurrence pour les tâches : mirrors
+    // supabase_migration_v5_tasks_time_priority_recurrence.sql
+    db.run(`ALTER TABLE tasks ADD COLUMN due_time TEXT`, () => {});
+    db.run(`ALTER TABLE tasks ADD COLUMN priority TEXT DEFAULT 'medium'`, () => {});
+    db.run(`ALTER TABLE tasks ADD COLUMN recurrence TEXT DEFAULT 'none'`, () => {});
+    db.run(`ALTER TABLE tasks ADD COLUMN recurrence_parent_id TEXT`, () => {});
   });
 }
 

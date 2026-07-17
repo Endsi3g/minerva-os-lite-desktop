@@ -204,9 +204,9 @@ interface ReachContextType {
     googleEnrichedAt?: string;
   }) => Promise<Lead | null>;
   toggleTask: (id: string) => void;
-  addTask: (title: string, category: Task['category'], dueDate?: string, leadId?: string, assignedTo?: string, assignedToName?: string) => void;
+  addTask: (title: string, category: Task['category'], dueDate?: string, leadId?: string, assignedTo?: string, assignedToName?: string, dueTime?: string, priority?: Task['priority'], recurrence?: Task['recurrence']) => void;
   deleteTask: (id: string) => void;
-  updateTask: (id: string, fields: { title?: string; dueDate?: string; category?: Task['category'] }) => void;
+  updateTask: (id: string, fields: { title?: string; dueDate?: string; dueTime?: string; category?: Task['category']; priority?: Task['priority']; recurrence?: Task['recurrence'] }) => void;
   saveQuickNote: (note: string) => void;
   updateFocus: (title: string, items: string[]) => void;
   updateLead: (leadId: string, fields: Partial<Lead>) => void;
@@ -344,6 +344,9 @@ interface DbTask {
   completed: boolean;
   category: Task['category'];
   due_date?: string | null;
+  due_time?: string | null;
+  priority?: string | null;
+  recurrence?: string | null;
   lead_id?: string | null;
 }
 
@@ -495,6 +498,15 @@ function mapDbValidationToUi(db: any): LeadValidation {
   };
 }
 
+// Computes the due date of the next occurrence of a recurring task.
+function computeNextDueDate(dueDate: string, recurrence: 'daily' | 'weekly' | 'monthly'): string {
+  const base = dueDate ? new Date(`${dueDate}T00:00:00`) : new Date();
+  if (recurrence === 'daily') base.setDate(base.getDate() + 1);
+  else if (recurrence === 'weekly') base.setDate(base.getDate() + 7);
+  else if (recurrence === 'monthly') base.setMonth(base.getMonth() + 1);
+  return base.toISOString().split('T')[0];
+}
+
 // Mapping database Task to UI Task
 function mapDbTaskToUi(dbTask: DbTask): Task {
   return {
@@ -503,6 +515,9 @@ function mapDbTaskToUi(dbTask: DbTask): Task {
     completed: dbTask.completed,
     category: dbTask.category,
     dueDate: dbTask.due_date || '',
+    dueTime: dbTask.due_time || undefined,
+    priority: (dbTask.priority as Task['priority']) || undefined,
+    recurrence: (dbTask.recurrence as Task['recurrence']) || undefined,
     leadId: dbTask.lead_id || undefined,
     assignedTo: (dbTask as any).assigned_to || undefined,
     assignedToName: (dbTask as any).assigned_to_name || undefined,
@@ -1672,6 +1687,15 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
         `La tâche "${currentTask.title}" a été marquée comme terminée.`,
         { sound: true, soundType: 'soft' }
       );
+      // Spawn the next occurrence of a recurring task upon completion.
+      if (currentTask.recurrence && currentTask.recurrence !== 'none') {
+        const nextDueDate = computeNextDueDate(currentTask.dueDate, currentTask.recurrence);
+        addTask(
+          currentTask.title, currentTask.category, nextDueDate, currentTask.leadId,
+          currentTask.assignedTo, currentTask.assignedToName, currentTask.dueTime,
+          currentTask.priority, currentTask.recurrence
+        );
+      }
     }
     const electronObj = getElectronSqlite();
 
@@ -1709,7 +1733,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const addTask = async (title: string, category: Task['category'], dueDate?: string, leadId?: string, assignedTo?: string, assignedToName?: string) => {
+  const addTask = async (title: string, category: Task['category'], dueDate?: string, leadId?: string, assignedTo?: string, assignedToName?: string, dueTime?: string, priority?: Task['priority'], recurrence?: Task['recurrence']) => {
     if (!user || !activeWorkspace) return;
     // Note: notification is fired via addNotification if the caller wants one.
     // Removed direct sendDesktopNotification here to prevent double-firing.
@@ -1720,11 +1744,13 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
         const taskId = crypto.randomUUID();
         const nowStr = new Date().toISOString();
         const resolvedDueDate = dueDate ?? nowStr.split('T')[0];
+        const resolvedPriority = priority ?? 'medium';
+        const resolvedRecurrence = recurrence ?? 'none';
 
         await electronObj.dbRun(
-          `INSERT INTO tasks (id, user_id, title, completed, category, due_date, lead_id, workspace_id, created_at, updated_at, sync_status)
-           VALUES (?, ?, ?, 0, ?, ?, ?, ?, ?, ?, 'pending_insert')`,
-          [taskId, user.id, title, category, resolvedDueDate, leadId || null, activeWorkspace.id, nowStr, nowStr]
+          `INSERT INTO tasks (id, user_id, title, completed, category, due_date, due_time, priority, recurrence, lead_id, workspace_id, created_at, updated_at, sync_status)
+           VALUES (?, ?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending_insert')`,
+          [taskId, user.id, title, category, resolvedDueDate, dueTime || null, resolvedPriority, resolvedRecurrence, leadId || null, activeWorkspace.id, nowStr, nowStr]
         );
 
         const newUiTask: Task = {
@@ -1733,6 +1759,9 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
           completed: false,
           category,
           dueDate: resolvedDueDate,
+          dueTime,
+          priority: resolvedPriority,
+          recurrence: resolvedRecurrence,
           leadId,
           assignedTo,
           assignedToName,
@@ -1756,6 +1785,9 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
           title,
           category,
           due_date: dueDate ?? new Date().toISOString().split('T')[0],
+          due_time: dueTime || null,
+          priority: priority ?? 'medium',
+          recurrence: recurrence ?? 'none',
           lead_id: leadId || null,
           assigned_to: assignedTo || null,
           assigned_to_name: assignedToName || null,
@@ -1808,7 +1840,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const updateTask = async (id: string, fields: { title?: string; dueDate?: string; category?: Task['category'] }) => {
+  const updateTask = async (id: string, fields: { title?: string; dueDate?: string; dueTime?: string; category?: Task['category']; priority?: Task['priority']; recurrence?: Task['recurrence'] }) => {
     if (!user) return;
     const electronObj = getElectronSqlite();
 
@@ -1818,7 +1850,10 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
         const params: any[] = [];
         if (fields.title !== undefined) { dbFields.push("title = ?"); params.push(fields.title); }
         if (fields.dueDate !== undefined) { dbFields.push("due_date = ?"); params.push(fields.dueDate); }
+        if (fields.dueTime !== undefined) { dbFields.push("due_time = ?"); params.push(fields.dueTime || null); }
         if (fields.category !== undefined) { dbFields.push("category = ?"); params.push(fields.category); }
+        if (fields.priority !== undefined) { dbFields.push("priority = ?"); params.push(fields.priority); }
+        if (fields.recurrence !== undefined) { dbFields.push("recurrence = ?"); params.push(fields.recurrence); }
         if (dbFields.length > 0) {
           dbFields.push("updated_at = ?"); params.push(new Date().toISOString());
           dbFields.push("sync_status = 'pending_update'"); params.push(id);
@@ -1836,7 +1871,10 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
     const dbFields: Record<string, string> = {};
     if (fields.title !== undefined) dbFields.title = fields.title;
     if (fields.dueDate !== undefined) dbFields.due_date = fields.dueDate;
+    if (fields.dueTime !== undefined) dbFields.due_time = fields.dueTime;
     if (fields.category !== undefined) dbFields.category = fields.category;
+    if (fields.priority !== undefined) dbFields.priority = fields.priority;
+    if (fields.recurrence !== undefined) dbFields.recurrence = fields.recurrence;
     try {
       const { error } = await supabase.from('tasks').update(dbFields).eq('id', id);
       if (error) throw error;

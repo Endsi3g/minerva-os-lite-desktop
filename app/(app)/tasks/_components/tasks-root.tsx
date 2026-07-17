@@ -45,6 +45,8 @@ import {
   User,
   CheckCircle2,
   ChevronRight,
+  Clock,
+  Repeat,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -69,6 +71,26 @@ const CATEGORY_LABELS: Record<Task['category'], string> = {
   'Preparation': 'Prép.',
   'Meeting': 'RDV',
   'General': 'Général',
+};
+
+type Priority = NonNullable<Task['priority']>;
+const PRIORITY_LABELS: Record<Priority, string> = {
+  low: 'Basse',
+  medium: 'Moyenne',
+  high: 'Haute',
+};
+const PRIORITY_DOT_COLORS: Record<Priority, string> = {
+  low: 'bg-slate-400',
+  medium: 'bg-amber-500',
+  high: 'bg-red-500',
+};
+
+type Recurrence = NonNullable<Task['recurrence']>;
+const RECURRENCE_LABELS: Record<Recurrence, string> = {
+  none: 'Ne se répète pas',
+  daily: 'Tous les jours',
+  weekly: 'Toutes les semaines',
+  monthly: 'Tous les mois',
 };
 
 interface TeamMember {
@@ -98,7 +120,7 @@ function TaskItem({ task, onToggle, onDelete, onUpdate, teamMembers }: {
   task: Task;
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
-  onUpdate: (id: string, fields: { title?: string; dueDate?: string; category?: Task['category'] }) => void;
+  onUpdate: (id: string, fields: { title?: string; dueDate?: string; dueTime?: string; category?: Task['category']; priority?: Task['priority']; recurrence?: Task['recurrence'] }) => void;
   teamMembers: TeamMember[];
 }) {
   const handleMoveToTomorrow = () => {
@@ -138,7 +160,12 @@ function TaskItem({ task, onToggle, onDelete, onUpdate, teamMembers }: {
             {task.dueDate && (
               <span className="text-[10px] text-amber-600 font-semibold flex items-center gap-1 mt-0.5">
                 <CalendarIcon className="w-2.5 h-2.5" />
-                {task.dueDate}
+                {task.dueDate}{task.dueTime ? ` · ${task.dueTime}` : ''}
+              </span>
+            )}
+            {task.recurrence && task.recurrence !== 'none' && (
+              <span className="text-[10px] text-muted-foreground flex items-center gap-1" title={RECURRENCE_LABELS[task.recurrence]}>
+                <Repeat className="w-2.5 h-2.5" />
               </span>
             )}
             {task.assignedToName && (
@@ -152,6 +179,12 @@ function TaskItem({ task, onToggle, onDelete, onUpdate, teamMembers }: {
       </div>
 
       <div className="flex items-center gap-2 shrink-0">
+        {task.priority && (
+          <span
+            className={cn('h-1.5 w-1.5 rounded-full shrink-0', PRIORITY_DOT_COLORS[task.priority])}
+            title={`Priorité ${PRIORITY_LABELS[task.priority]}`}
+          />
+        )}
         {assignedMember && <MemberAvatar member={assignedMember} size="sm" />}
         {task.isTodoist && (
           <Badge variant="outline" className="text-[8px] bg-red-50 text-red-700 border-red-200 px-1.5 py-0.5 font-bold hidden sm:flex">
@@ -177,6 +210,13 @@ function TaskItem({ task, onToggle, onDelete, onUpdate, teamMembers }: {
               Marquer urgent
             </DropdownMenuItem>
             <DropdownMenuSeparator />
+            {(['low', 'medium', 'high'] as Priority[]).map(p => (
+              <DropdownMenuItem key={p} onClick={() => onUpdate(task.id, { priority: p })} className="text-xs gap-2">
+                <span className={cn('h-1.5 w-1.5 rounded-full', PRIORITY_DOT_COLORS[p])} />
+                Priorité {PRIORITY_LABELS[p]}
+              </DropdownMenuItem>
+            ))}
+            <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => onDelete(task.id)} className="text-xs gap-2 text-destructive focus:text-destructive">
               <Trash2 className="h-3.5 w-3.5" />
               Supprimer
@@ -194,7 +234,7 @@ function TeamTaskGroup({ member, tasks, onToggle, onDelete, onUpdate, teamMember
   tasks: Task[];
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
-  onUpdate: (id: string, fields: { title?: string; dueDate?: string; category?: Task['category'] }) => void;
+  onUpdate: (id: string, fields: { title?: string; dueDate?: string; dueTime?: string; category?: Task['category']; priority?: Task['priority']; recurrence?: Task['recurrence'] }) => void;
   teamMembers: TeamMember[];
 }) {
   const [expanded, setExpanded] = useState(true);
@@ -249,6 +289,9 @@ export default function TasksRoot() {
   const [newTitle, setNewTitle] = useState('');
   const [newCategory, setNewCategory] = useState<Task['category']>('General');
   const [newDueDate, setNewDueDate] = useState('');
+  const [newDueTime, setNewDueTime] = useState('');
+  const [newPriority, setNewPriority] = useState<Priority>('medium');
+  const [newRecurrence, setNewRecurrence] = useState<Recurrence>('none');
   const [dueDateOpen, setDueDateOpen] = useState(false);
   const [dueDatePicker, setDueDatePicker] = useState<Date | undefined>(undefined);
   const [assignedMemberId, setAssignedMemberId] = useState<string>('none');
@@ -385,10 +428,13 @@ export default function TasksRoot() {
       }
     }
 
-    addTask(title, newCategory, newDueDate || undefined, undefined, assignedTo, assignedToName);
+    addTask(title, newCategory, newDueDate || undefined, undefined, assignedTo, assignedToName, newDueTime || undefined, newPriority, newRecurrence);
     setNewTitle('');
     setNewCategory('General');
     setNewDueDate('');
+    setNewDueTime('');
+    setNewPriority('medium');
+    setNewRecurrence('none');
     setDueDatePicker(undefined);
     setAssignedMemberId('none');
   };
@@ -563,6 +609,45 @@ export default function TasksRoot() {
                 />
               </PopoverContent>
             </Popover>
+
+            {newDueDate && (
+              <div className="relative h-8 w-24 shrink-0">
+                <Clock className="absolute left-2 top-2 h-3 w-3 text-muted-foreground pointer-events-none" />
+                <input
+                  type="time"
+                  value={newDueTime}
+                  onChange={e => setNewDueTime(e.target.value)}
+                  className="h-8 w-full pl-6 pr-1 text-xs rounded-md border border-input bg-transparent outline-none focus:ring-1 focus:ring-ring"
+                />
+              </div>
+            )}
+
+            <Select value={newPriority} onValueChange={v => setNewPriority(v as Priority)}>
+              <SelectTrigger className="h-8 w-28 text-xs shrink-0">
+                <span className={cn('h-1.5 w-1.5 rounded-full shrink-0', PRIORITY_DOT_COLORS[newPriority])} />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {(['low', 'medium', 'high'] as Priority[]).map(p => (
+                  <SelectItem key={p} value={p} className="text-xs">
+                    <span className={cn('h-1.5 w-1.5 rounded-full inline-block mr-1', PRIORITY_DOT_COLORS[p])} />
+                    {PRIORITY_LABELS[p]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={newRecurrence} onValueChange={v => setNewRecurrence(v as Recurrence)}>
+              <SelectTrigger className="h-8 w-32 text-xs shrink-0">
+                <Repeat className="h-3 w-3 text-muted-foreground shrink-0" />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {(['none', 'daily', 'weekly', 'monthly'] as Recurrence[]).map(r => (
+                  <SelectItem key={r} value={r} className="text-xs">{RECURRENCE_LABELS[r]}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
             {/* Assign member */}
             {teamMembers.length > 0 && (

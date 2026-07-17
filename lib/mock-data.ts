@@ -286,12 +286,15 @@ export interface Task {
   completed: boolean;
   category: 'Follow-up' | 'Preparation' | 'General' | 'Meeting';
   dueDate: string;
+  dueTime?: string;
+  priority?: 'low' | 'medium' | 'high';
   description?: string;
   isTodoist?: boolean;
   rawTodoistId?: string;
   leadId?: string;
   assignedTo?: string;
   assignedToName?: string;
+  recurrence?: 'none' | 'daily' | 'weekly' | 'monthly';
 }
 
 export interface AiSuggestion {
