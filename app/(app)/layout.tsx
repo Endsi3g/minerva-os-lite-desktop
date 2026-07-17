@@ -304,6 +304,13 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
   // Spotlight search states
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [spotlightIndex, setSpotlightIndex] = useState(0);
+
+  const closeSearchModal = React.useCallback(() => {
+    setShowSearchModal(false);
+    setSearchQuery('');
+    setSpotlightIndex(0);
+  }, []);
 
   // Sync UX badge — Electron only
   const [syncPending, setSyncPending] = useState(0);
@@ -362,6 +369,13 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Cmd/Ctrl+K opens the palette from anywhere, including while typing
+      // in a field — the universal command-palette convention.
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setShowSearchModal(true);
+        return;
+      }
       if (e.key === '/' && document.activeElement?.tagName !== 'INPUT' && document.activeElement?.tagName !== 'TEXTAREA') {
         e.preventDefault();
         setShowSearchModal(true);
@@ -836,6 +850,21 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
     ...cat,
     items: cat.items.filter(item => canShowNavItem(item.href)),
   })).filter(cat => cat.items.length > 0);
+
+  // Full navigable route list for the Cmd+K palette — pinned items + every
+  // category item the user can actually see, deduped by href. Previously
+  // the palette searched a stale hardcoded 9-route list that didn't match
+  // the real sidebar (~25 routes).
+  const commandNavItems: Array<{ name: string; href: string; icon: React.ElementType }> = (() => {
+    const seen = new Set<string>();
+    const items: Array<{ name: string; href: string; icon: React.ElementType }> = [];
+    for (const item of [...pinnedItems, ...navCategories.flatMap(cat => cat.items)]) {
+      if (seen.has(item.href) || !canShowNavItem(item.href)) continue;
+      seen.add(item.href);
+      items.push(item);
+    }
+    return items;
+  })();
 
   const filteredPinnedItems = pinnedItems.filter(item => canShowNavItem(item.href));
 
@@ -1409,7 +1438,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
               <Mic className="h-3.5 w-3.5" />
             </button>
 
-            {/* Global search — icon-only on mobile (no keyboard for the "/" shortcut), full box on desktop */}
+            {/* Global search (Cmd/Ctrl+K, or "/") — icon-only on mobile, full box on desktop */}
             <button
               onClick={() => setShowSearchModal(true)}
               className="md:hidden flex h-8 w-8 items-center justify-center rounded-md border border-[#e5e5e0] bg-white text-[#7a7a76] hover:text-[#059669] hover:bg-[#fafaf8] hover:border-[#059669]/30 transition-all cursor-pointer shrink-0"
@@ -1427,8 +1456,8 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                 className="flex w-full items-center justify-between rounded border border-[#e5e5e0] bg-white py-1 pl-7 pr-2 text-left text-[10px] text-[#7a7a76] hover:bg-[#f4f4f3] transition-colors cursor-pointer"
               >
                 <span>{t('search.global_placeholder')}</span>
-                <kbd className="pointer-events-none inline-flex select-none items-center rounded border bg-muted px-1 font-mono text-[9px] text-[#7a7a76]">
-                  /
+                <kbd className="pointer-events-none inline-flex select-none items-center gap-0.5 rounded border bg-muted px-1 font-mono text-[9px] text-[#7a7a76]">
+                  ⌘K
                 </kbd>
               </button>
             </div>
@@ -1965,130 +1994,175 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
         </div>
       )}
 
-      {/* Spotlight modal overlay */}
-      {showSearchModal && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/45 backdrop-blur-xs" onClick={() => setShowSearchModal(false)}>
-          <div 
-            className="w-full max-w-xl bg-white border border-[#e6e5e0] rounded-2xl shadow-2xl p-5 flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-150 text-left" 
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Search Input bar */}
-            <div className="relative">
-              <Search className="absolute left-3.5 top-3 h-4 w-4 text-[#7a7a76]" />
-              <input
-                type="text"
-                autoFocus
-                placeholder="Rechercher des prospects, des espaces de travail ou naviguer..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full text-xs font-semibold px-4 py-2.5 pl-10 bg-white border border-[#e6e5e0] focus:border-[#10b981] rounded-xl outline-none transition-colors shadow-none text-[#26251e]"
-              />
-            </div>
+      {/* Cmd+K command palette (also opens on "/") */}
+      {showSearchModal && (() => {
+        const q = searchQuery.trim().toLowerCase();
+        const navResults = commandNavItems
+          .filter(item => item.name.toLowerCase().includes(q))
+          .slice(0, 6);
+        const workspaceResults = (workspacesList || [])
+          .filter(ws => ws.name.toLowerCase().includes(q))
+          .slice(0, 3);
+        const leadResults = (leads || [])
+          .filter(l => l.businessName.toLowerCase().includes(q) || l.city.toLowerCase().includes(q) || l.niche.toLowerCase().includes(q))
+          .slice(0, 5);
 
-            {/* Results categorized list */}
-            <div className="max-h-96 overflow-y-auto space-y-4 pr-1">
-              {/* Section 1: Navigation Tabs */}
-              <div className="space-y-1">
-                <span className="text-[9px] font-bold uppercase tracking-wider text-[#7a7a76] block px-1.5">Navigation</span>
-                <div className="grid grid-cols-2 gap-1.5 text-left">
-                  {[
-                    { name: "Aujourd'hui (Tableau de bord)", path: '/today' },
-                    { name: 'Prospection (Scraper local)', path: '/prospecting' },
-                    { name: 'Prospects ciblés (Recherche)', path: '/leads' },
-                    { name: 'Pipeline commercial (Kanban)', path: '/pipeline' },
-                    { name: 'Bibliothèque de contenu', path: '/library' },
-                    { name: "Espace de configuration IA", path: '/settings' },
-                    { name: "Configuration d'équipe", path: '/team' },
-                    { name: 'Historique des versions (Changelog)', path: '/changelog' },
-                    { name: 'Diagnostics & Téléchargements', path: '/download' },
-                  ]
-                    .filter(t => t.name.toLowerCase().includes(searchQuery.toLowerCase()))
-                    .slice(0, 4)
-                    .map(tab => (
-                      <button
-                        key={tab.path}
-                        onClick={() => {
-                          router.push(tab.path);
-                          setShowSearchModal(false);
-                        }}
-                        className="px-2.5 py-1.5 rounded-lg border border-[#e5e5e0]/60 hover:bg-[#f4f4f3]/45 hover:border-neutral-300 bg-[#fdfdfc] text-left text-xs text-[#555552] hover:text-[#26251e] font-semibold transition-all cursor-pointer"
-                      >
-                        {tab.name}
-                      </button>
-                    ))}
-                </div>
+        const flatResults: Array<{ key: string; onSelect: () => void }> = [
+          ...navResults.map(item => ({ key: `nav-${item.href}`, onSelect: () => { router.push(item.href); closeSearchModal(); } })),
+          ...workspaceResults.map(ws => ({ key: `ws-${ws.id}`, onSelect: () => { switchWorkspace(ws.id); closeSearchModal(); } })),
+          ...leadResults.map(lead => ({ key: `lead-${lead.id}`, onSelect: () => { router.push(`/leads?focus=${lead.id}`); closeSearchModal(); } })),
+        ];
+        const activeIndex = Math.min(spotlightIndex, Math.max(flatResults.length - 1, 0));
+        const noResults = q.length > 0 && flatResults.length === 0;
+
+        const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+          if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            setSpotlightIndex(i => Math.min(i + 1, Math.max(flatResults.length - 1, 0)));
+          } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            setSpotlightIndex(i => Math.max(i - 1, 0));
+          } else if (e.key === 'Enter') {
+            e.preventDefault();
+            flatResults[activeIndex]?.onSelect();
+          } else if (e.key === 'Escape') {
+            e.preventDefault();
+            closeSearchModal();
+          }
+        };
+
+        return (
+          <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/45 backdrop-blur-xs" onClick={closeSearchModal}>
+            <div
+              className="w-full max-w-xl bg-white border border-[#e6e5e0] rounded-2xl shadow-2xl p-5 flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-150 text-left"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Search Input bar */}
+              <div className="relative">
+                <Search className="absolute left-3.5 top-3 h-4 w-4 text-[#7a7a76]" />
+                <input
+                  type="text"
+                  autoFocus
+                  placeholder="Rechercher des prospects, des espaces de travail ou naviguer..."
+                  value={searchQuery}
+                  onChange={(e) => { setSearchQuery(e.target.value); setSpotlightIndex(0); }}
+                  onKeyDown={handleInputKeyDown}
+                  className="w-full text-xs font-semibold px-4 py-2.5 pl-10 bg-white border border-[#e6e5e0] focus:border-[#059669] rounded-xl outline-none transition-colors shadow-none text-[#26251e]"
+                />
               </div>
 
-              {/* Section 2: Projets / Espaces de travail */}
-              {workspacesList && workspacesList.length > 0 && (
-                <div className="space-y-1 text-left">
-                  <span className="text-[9px] font-bold uppercase tracking-wider text-[#7a7a76] block px-1.5">Espaces de travail (Projets)</span>
+              {/* Results categorized list */}
+              <div className="max-h-96 overflow-y-auto space-y-4 pr-1">
+                {noResults && (
+                  <div className="py-8 text-center text-xs text-[#7a7a76] font-semibold">
+                    Aucun résultat pour « {searchQuery.trim()} »
+                  </div>
+                )}
+
+                {/* Section 1: Navigation */}
+                {navResults.length > 0 && (
                   <div className="space-y-1">
-                    {workspacesList
-                      .filter(w => w.name.toLowerCase().includes(searchQuery.toLowerCase()))
-                      .slice(0, 3)
-                      .map(ws => (
-                        <div
-                          key={ws.id}
-                          onClick={() => {
-                            switchWorkspace(ws.id);
-                            setShowSearchModal(false);
-                          }}
-                          className="p-2 border border-[#e5e5e0]/60 rounded-xl hover:bg-[#fdfdfc] cursor-pointer transition-all flex items-center justify-between"
-                        >
-                          <div className="flex items-center gap-2">
-                            <div className="w-6 h-6 rounded-md bg-[#10b981]/10 border border-[#10b981]/20 flex items-center justify-center font-bold text-[10px] text-[#10b981]">
-                              {ws.name.substring(0, 2).toUpperCase()}
-                            </div>
-                            <span className="text-xs font-semibold text-[#26251e]">{ws.name}</span>
-                          </div>
-                          <span className="text-[9px] text-[#7a7a76] font-semibold">Changer d'espace</span>
-                        </div>
-                      ))}
+                    <span className="text-[9px] font-bold uppercase tracking-wider text-[#7a7a76] block px-1.5">Navigation</span>
+                    <div className="grid grid-cols-2 gap-1.5 text-left">
+                      {navResults.map((item, i) => {
+                        const Icon = item.icon;
+                        const selected = i === activeIndex;
+                        return (
+                          <button
+                            key={item.href}
+                            onClick={() => { router.push(item.href); closeSearchModal(); }}
+                            onMouseEnter={() => setSpotlightIndex(i)}
+                            className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg border text-left text-xs font-semibold transition-all cursor-pointer ${
+                              selected
+                                ? 'border-[#059669]/40 bg-[#059669]/8 text-[#26251e]'
+                                : 'border-[#e5e5e0]/60 bg-[#fdfdfc] text-[#555552] hover:bg-[#f4f4f3]/45 hover:border-neutral-300 hover:text-[#26251e]'
+                            }`}
+                          >
+                            <Icon className="h-3.5 w-3.5 shrink-0 text-[#7a7a76]" />
+                            <span className="truncate">{item.name}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              {/* Section 3: Prospects */}
-              {leads && leads.length > 0 && (
-                <div className="space-y-1 text-left">
-                  <span className="text-[9px] font-bold uppercase tracking-wider text-[#7a7a76] block px-1.5">Prospects (Leads)</span>
+                {/* Section 2: Projets / Espaces de travail */}
+                {workspaceResults.length > 0 && (
                   <div className="space-y-1 text-left">
-                    {leads
-                      .filter(l => l.businessName.toLowerCase().includes(searchQuery.toLowerCase()) || l.city.toLowerCase().includes(searchQuery.toLowerCase()) || l.niche.toLowerCase().includes(searchQuery.toLowerCase()))
-                      .slice(0, 4)
-                      .map(lead => (
-                        <div
-                          key={lead.id}
-                          onClick={() => {
-                            router.push(`/leads?focus=${lead.id}`);
-                            setShowSearchModal(false);
-                          }}
-                          className="p-2.5 border border-[#e5e5e0]/60 rounded-xl hover:bg-[#fdfdfc] cursor-pointer transition-all flex items-center justify-between text-left"
-                        >
-                          <div className="flex flex-col gap-0.5 text-left">
-                            <span className="text-xs font-bold text-[#26251e]">{lead.businessName}</span>
-                            <div className="flex items-center gap-1.5 text-[9px] text-[#7a7a76] font-medium text-left">
-                              <span>{lead.niche}</span>
-                              <span>•</span>
-                              <span>{lead.city}</span>
+                    <span className="text-[9px] font-bold uppercase tracking-wider text-[#7a7a76] block px-1.5">Espaces de travail (Projets)</span>
+                    <div className="space-y-1">
+                      {workspaceResults.map((ws, i) => {
+                        const globalIndex = navResults.length + i;
+                        const selected = globalIndex === activeIndex;
+                        return (
+                          <div
+                            key={ws.id}
+                            onClick={() => { switchWorkspace(ws.id); closeSearchModal(); }}
+                            onMouseEnter={() => setSpotlightIndex(globalIndex)}
+                            className={`p-2 border rounded-xl cursor-pointer transition-all flex items-center justify-between ${
+                              selected ? 'border-[#059669]/40 bg-[#059669]/8' : 'border-[#e5e5e0]/60 hover:bg-[#fdfdfc]'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2">
+                              <div className="w-6 h-6 rounded-md bg-[#059669]/10 border border-[#059669]/20 flex items-center justify-center font-bold text-[10px] text-[#059669]">
+                                {ws.name.substring(0, 2).toUpperCase()}
+                              </div>
+                              <span className="text-xs font-semibold text-[#26251e]">{ws.name}</span>
                             </div>
+                            <span className="text-[9px] text-[#7a7a76] font-semibold">Changer d'espace</span>
                           </div>
-                          <span className="text-[9px] px-2 py-0.5 rounded-md bg-neutral-100 text-[#555552] border border-[#e5e5e0] font-bold uppercase">{lead.status}</span>
-                        </div>
-                      ))}
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
-            </div>
-            <div className="flex items-center justify-between text-[9px] text-[#7a7a76] font-semibold pt-2 border-t border-[#e5e5e0]/60">
-              <span>Appuyez sur <kbd className="border bg-neutral-50 px-1 rounded">Échap</kbd> pour fermer</span>
-              <span>Minerva OS Spotlight</span>
+                {/* Section 3: Prospects */}
+                {leadResults.length > 0 && (
+                  <div className="space-y-1 text-left">
+                    <span className="text-[9px] font-bold uppercase tracking-wider text-[#7a7a76] block px-1.5">Prospects (Leads)</span>
+                    <div className="space-y-1 text-left">
+                      {leadResults.map((lead, i) => {
+                        const globalIndex = navResults.length + workspaceResults.length + i;
+                        const selected = globalIndex === activeIndex;
+                        return (
+                          <div
+                            key={lead.id}
+                            onClick={() => { router.push(`/leads?focus=${lead.id}`); closeSearchModal(); }}
+                            onMouseEnter={() => setSpotlightIndex(globalIndex)}
+                            className={`p-2.5 border rounded-xl cursor-pointer transition-all flex items-center justify-between text-left ${
+                              selected ? 'border-[#059669]/40 bg-[#059669]/8' : 'border-[#e5e5e0]/60 hover:bg-[#fdfdfc]'
+                            }`}
+                          >
+                            <div className="flex flex-col gap-0.5 text-left">
+                              <span className="text-xs font-bold text-[#26251e]">{lead.businessName}</span>
+                              <div className="flex items-center gap-1.5 text-[9px] text-[#7a7a76] font-medium text-left">
+                                <span>{lead.niche}</span>
+                                <span>•</span>
+                                <span>{lead.city}</span>
+                              </div>
+                            </div>
+                            <span className="text-[9px] px-2 py-0.5 rounded-md bg-neutral-100 text-[#555552] border border-[#e5e5e0] font-bold uppercase">{lead.status}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div className="flex items-center justify-between text-[9px] text-[#7a7a76] font-semibold pt-2 border-t border-[#e5e5e0]/60">
+                <span className="flex items-center gap-2">
+                  <span><kbd className="border bg-neutral-50 px-1 rounded">↑↓</kbd> naviguer</span>
+                  <span><kbd className="border bg-neutral-50 px-1 rounded">↵</kbd> ouvrir</span>
+                  <span><kbd className="border bg-neutral-50 px-1 rounded">Échap</kbd> fermer</span>
+                </span>
+                <span>Minerva OS Spotlight</span>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Global Voice Tasker — recording indicator + redirect to /assistant */}
       {showVoiceTasker && (
