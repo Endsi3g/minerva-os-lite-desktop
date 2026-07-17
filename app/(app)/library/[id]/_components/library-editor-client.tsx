@@ -10,6 +10,8 @@ import TextAlign from '@tiptap/extension-text-align';
 import Placeholder from '@tiptap/extension-placeholder';
 import CharacterCount from '@tiptap/extension-character-count';
 import Image from '@tiptap/extension-image';
+import TaskList from '@tiptap/extension-task-list';
+import TaskItem from '@tiptap/extension-task-item';
 import {
   ArrowLeft,
   Loader2,
@@ -25,6 +27,7 @@ import {
   Heading3,
   List,
   ListOrdered,
+  ListTodo,
   Link2,
   AlignLeft,
   AlignCenter,
@@ -126,6 +129,8 @@ export default function LibraryEditorClient({ id }: { id: string }) {
       Placeholder.configure({ placeholder: 'Commencez à écrire...' }),
       CharacterCount,
       Image.configure({ inline: false, allowBase64: true }),
+      TaskList.configure({ HTMLAttributes: { class: 'not-prose' } }),
+      TaskItem.configure({ nested: true }),
     ],
     content: '',
     editorProps: {
@@ -426,6 +431,9 @@ ${html}
               </ToolbarButton>
               <ToolbarButton onClick={() => editor.chain().focus().toggleOrderedList().run()} active={editor.isActive('orderedList')} title="Liste numérotée">
                 <ListOrdered className="w-3.5 h-3.5" />
+              </ToolbarButton>
+              <ToolbarButton onClick={() => editor.chain().focus().toggleTaskList().run()} active={editor.isActive('taskList')} title="Liste de cases à cocher">
+                <ListTodo className="w-3.5 h-3.5" />
               </ToolbarButton>
               <ToolbarButton
                 onClick={() => {

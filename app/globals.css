@@ -557,3 +557,34 @@ html {
     user-select: none;
   }
 }
+
+/* Tiptap checklist blocks (Library editor) */
+ul[data-type="taskList"] {
+  list-style: none;
+  padding-left: 0;
+}
+ul[data-type="taskList"] li[data-type="taskItem"] {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin: 0.25rem 0;
+}
+ul[data-type="taskList"] li[data-type="taskItem"] > label {
+  margin-top: 0.2rem;
+  user-select: none;
+}
+ul[data-type="taskList"] li[data-type="taskItem"] > label input[type="checkbox"] {
+  accent-color: #059669;
+  cursor: pointer;
+}
+ul[data-type="taskList"] li[data-type="taskItem"] > div {
+  flex: 1;
+  min-width: 0;
+}
+ul[data-type="taskList"] li[data-type="taskItem"][data-checked="true"] > div {
+  text-decoration: line-through;
+  color: #7a7a76;
+}
+ul[data-type="taskList"] ul[data-type="taskList"] {
+  margin-left: 1.25rem;
+}
