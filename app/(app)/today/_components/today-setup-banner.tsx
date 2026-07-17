@@ -4,84 +4,29 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Layers, ArrowRight, X } from 'lucide-react';
 import { useReach } from '@/lib/reach-context';
-import { createClient } from '@/lib/supabase/client';
+import { useSetupProgress } from '@/lib/use-setup-progress';
 
 const DISMISSED_KEY = 'minerva_setup_banner_dismissed';
 
 export function TodaySetupBanner() {
-  const { user, leads, goals, activeWorkspace } = useReach();
+  const { user } = useReach();
+  const { loading, completedCount, total } = useSetupProgress();
 
-  const [visible, setVisible] = useState(false);
-  const [completedCount, setCompletedCount] = useState(0);
-  const total = 6;
+  const [dismissed, setDismissed] = useState(true);
 
   useEffect(() => {
-    if (!user) return;
-    if (typeof window !== 'undefined' && localStorage.getItem(DISMISSED_KEY) === '1') return;
-
-    const check = async () => {
-      try {
-        const supabase = createClient();
-
-        const [settingsRes, googleAcctRes, sequencesRes, teamRes] = await Promise.all([
-          supabase
-            .from('settings')
-            .select('full_name, company_name, google_refresh_token')
-            .eq('user_id', user.id)
-            .single(),
-          supabase
-            .from('google_accounts')
-            .select('id, status')
-            .eq('user_id', user.id)
-            .eq('status', 'connected')
-            .limit(1)
-            .maybeSingle(),
-          activeWorkspace
-            ? supabase
-                .from('email_sequences')
-                .select('id', { count: 'exact', head: true })
-                .eq('user_id', user.id)
-            : Promise.resolve({ count: 0 }),
-          activeWorkspace
-            ? supabase
-                .from('team_members')
-                .select('id', { count: 'exact', head: true })
-                .eq('workspace_id', activeWorkspace.id)
-                .eq('status', 'active')
-            : Promise.resolve({ count: 0 }),
-        ]);
-
-        const s = settingsRes.data;
-        const g = googleAcctRes?.data;
-        const gmailConnected = !!s?.google_refresh_token || !!g;
-
-        const done = [
-          !!(s?.full_name && s?.company_name),
-          gmailConnected,
-          leads.length > 0,
-          (sequencesRes.count ?? 0) > 0,
-          goals.length > 0,
-          (teamRes.count ?? 0) > 0,
-        ].filter(Boolean).length;
-
-        setCompletedCount(done);
-        setVisible(done < total);
-      } catch {
-        // silently fail
-      }
-    };
-
-    check();
-  }, [user, leads.length, goals.length, activeWorkspace]);
+    if (typeof window === 'undefined') return;
+    setDismissed(localStorage.getItem(DISMISSED_KEY) === '1');
+  }, []);
 
   const handleDismiss = () => {
     if (typeof window !== 'undefined') {
       localStorage.setItem(DISMISSED_KEY, '1');
     }
-    setVisible(false);
+    setDismissed(true);
   };
 
-  if (!visible) return null;
+  if (!user || dismissed || loading || completedCount >= total) return null;
 
   const pct = Math.round((completedCount / total) * 100);
 

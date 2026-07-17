@@ -1,14 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
   CheckCircle2, Circle, ArrowRight, User, Mail,
   Users, Target, Layers, GitBranch, PartyPopper, Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useReach } from '@/lib/reach-context';
-import { createClient } from '@/lib/supabase/client';
+import { useSetupProgress } from '@/lib/use-setup-progress';
 import { cn } from '@/lib/utils';
 
 interface SetupItem {
@@ -22,63 +20,15 @@ interface SetupItem {
 }
 
 export function SetupRoot() {
-  const { user, leads, goals, activeWorkspace } = useReach();
-
-  const [loading, setLoading] = useState(true);
-  const [profileDone, setProfileDone] = useState(false);
-  const [gmailDone, setGmailDone] = useState(false);
-  const [sequenceDone, setSequenceDone] = useState(false);
-  const [teamDone, setTeamDone] = useState(false);
-
-  useEffect(() => {
-    if (!user) return;
-
-    const check = async () => {
-      setLoading(true);
-      try {
-        const supabase = createClient();
-
-        const [settingsRes, googleAccountRes, sequencesRes, teamRes] = await Promise.all([
-          supabase
-            .from('settings')
-            .select('full_name, company_name, google_refresh_token')
-            .eq('user_id', user.id)
-            .single(),
-          supabase
-            .from('google_accounts')
-            .select('id')
-            .eq('user_id', user.id)
-            .eq('status', 'connected')
-            .maybeSingle(),
-          activeWorkspace
-            ? supabase
-                .from('email_sequences')
-                .select('id', { count: 'exact', head: true })
-                .eq('user_id', user.id)
-            : Promise.resolve({ count: 0, error: null }),
-          activeWorkspace
-            ? supabase
-                .from('team_members')
-                .select('id', { count: 'exact', head: true })
-                .eq('workspace_id', activeWorkspace.id)
-                .eq('status', 'active')
-            : Promise.resolve({ count: 0, error: null }),
-        ]);
-
-        const s = settingsRes.data;
-        setProfileDone(!!(s?.full_name && s?.company_name));
-        setGmailDone(!!googleAccountRes.data || !!s?.google_refresh_token);
-        setSequenceDone((sequencesRes.count ?? 0) > 0);
-        setTeamDone((teamRes.count ?? 0) > 0);
-      } catch {
-        // silently fail — checklist stays unchecked
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    check();
-  }, [user, activeWorkspace]);
+  const {
+    loading,
+    profileDone,
+    gmailDone,
+    leadsDone,
+    sequenceDone,
+    goalsDone,
+    teamDone,
+  } = useSetupProgress();
 
   const items: SetupItem[] = [
     {
@@ -103,7 +53,7 @@ export function SetupRoot() {
       description: 'Ajoutez un lead manuellement, importez un CSV ou lancez le prospecteur automatique.',
       href: '/leads/new',
       icon: <Users className="h-5 w-5" />,
-      completed: leads.length > 0,
+      completed: leadsDone,
     },
     {
       id: 'sequence',
@@ -119,7 +69,7 @@ export function SetupRoot() {
       description: 'Configurez vos quotas (leads contactés, RDV, revenus) pour suivre votre progression.',
       href: '/settings',
       icon: <Target className="h-5 w-5" />,
-      completed: goals.length > 0,
+      completed: goalsDone,
     },
     {
       id: 'team',

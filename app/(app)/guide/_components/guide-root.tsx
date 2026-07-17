@@ -6,9 +6,10 @@ import { motion, AnimatePresence } from 'motion/react';
 import Link from 'next/link';
 import { MinervaOwl } from '@/components/minerva-owl';
 import {
-  Users, Mail, MapPin, ChevronRight, ChevronLeft,
-  CheckCircle2, Circle, ArrowRight, Zap, Target, BookOpen
+  Users, Mail, ChevronRight, ChevronLeft,
+  CheckCircle2, Circle, ArrowRight, Zap, Target, User, GitBranch, Layers, Loader2,
 } from 'lucide-react';
+import { useSetupProgress } from '@/lib/use-setup-progress';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -27,6 +28,8 @@ interface CheckItem {
   href: string;
   icon: React.ReactNode;
   time: string;
+  done: boolean;
+  optional?: boolean;
 }
 
 // ── Data ───────────────────────────────────────────────────────────────────────
@@ -92,77 +95,84 @@ const SLIDES: Slide[] = [
   },
 ];
 
-const CHECK_ITEMS: CheckItem[] = [
-  {
-    id: 'add_leads',
-    label: 'Ajoute tes 5 premiers leads',
-    description: 'Depuis la page Leads (bouton +) ou en scrapant depuis la Carte.',
-    href: '/leads',
-    icon: <Users className="h-4 w-4" />,
-    time: '3 min',
-  },
-  {
-    id: 'generate_email',
-    label: 'Génère ton premier email IA',
-    description: 'Ouvre la fiche d\'un lead → onglet Outreach → Générer un brouillon.',
-    href: '/leads',
-    icon: <Mail className="h-4 w-4" />,
-    time: '2 min',
-  },
-  {
-    id: 'configure_ai',
-    label: 'Configure ton assistant IA',
-    description: 'Réponds à 8 questions pour que l\'IA écrive dans ton style.',
-    href: '/settings/ai/setup',
-    icon: <Target className="h-4 w-4" />,
-    time: '5 min',
-  },
-  {
-    id: 'connect_gmail',
-    label: 'Connecte Gmail',
-    description: 'Reçois et réponds aux emails de tes prospects directement dans Minerva.',
-    href: '/inbox',
-    icon: <Mail className="h-4 w-4" />,
-    time: '1 min',
-  },
-  {
-    id: 'open_map',
-    label: 'Explore ta Carte',
-    description: 'Vois tes leads géolocalisés et planifie ta première tournée.',
-    href: '/map',
-    icon: <MapPin className="h-4 w-4" />,
-    time: '2 min',
-  },
-  {
-    id: 'view_pipeline',
-    label: 'Explore ton Pipeline',
-    description: 'Visualise tes deals en Kanban — glisse un lead vers "Proposition envoyée".',
-    href: '/pipeline',
-    icon: <Target className="h-4 w-4" />,
-    time: '1 min',
-  },
-];
+// Mirrors the exact 6 steps tracked by useSetupProgress (also used by
+// /setup and TodaySetupBanner) so this checklist reflects real, verified
+// completion instead of a self-reported list that drifted from what those
+// other surfaces actually check.
+function buildCheckItems(progress: ReturnType<typeof useSetupProgress>): CheckItem[] {
+  return [
+    {
+      id: 'profile',
+      label: 'Complète ton profil',
+      description: 'Ton nom et le nom de ton agence — utilisés pour personnaliser les emails envoyés.',
+      href: '/settings',
+      icon: <User className="h-4 w-4" />,
+      time: '1 min',
+      done: progress.profileDone,
+    },
+    {
+      id: 'gmail',
+      label: 'Connecte Gmail',
+      description: 'Reçois et réponds aux emails de tes prospects directement dans Minerva.',
+      href: '/inbox',
+      icon: <Mail className="h-4 w-4" />,
+      time: '1 min',
+      done: progress.gmailDone,
+    },
+    {
+      id: 'leads',
+      label: 'Ajoute ton premier lead',
+      description: 'Depuis la page Leads (bouton +) ou en scrapant depuis la Carte.',
+      href: '/leads',
+      icon: <Users className="h-4 w-4" />,
+      time: '3 min',
+      done: progress.leadsDone,
+    },
+    {
+      id: 'sequence',
+      label: 'Crée une séquence email',
+      description: 'Automatise tes relances avec une séquence de prospection multi-étapes.',
+      href: '/sequences',
+      icon: <GitBranch className="h-4 w-4" />,
+      time: '5 min',
+      done: progress.sequenceDone,
+    },
+    {
+      id: 'goals',
+      label: 'Définis tes objectifs mensuels',
+      description: 'Configure tes quotas (leads contactés, RDV, revenus) pour suivre ta progression.',
+      href: '/settings',
+      icon: <Target className="h-4 w-4" />,
+      time: '2 min',
+      done: progress.goalsDone,
+    },
+    {
+      id: 'team',
+      label: 'Invite un membre de l\'équipe',
+      description: 'Ajoute un collaborateur à ton workspace pour travailler ensemble sur les leads.',
+      href: '/team',
+      icon: <Layers className="h-4 w-4" />,
+      time: '1 min',
+      done: progress.teamDone,
+      optional: true,
+    },
+  ];
+}
 
 const STORAGE_KEY_SEEN = 'minerva_guide_seen';
-const STORAGE_KEY_CHECKLIST = 'minerva_guide_checklist';
+const SETUP_BANNER_DISMISSED_KEY = 'minerva_setup_banner_dismissed';
 
 // ── Component ──────────────────────────────────────────────────────────────────
 
 export function GuideRoot() {
   const router = useRouter();
+  const progress = useSetupProgress();
   const [phase, setPhase] = useState<'slides' | 'checklist'>('slides');
   const [slideIndex, setSlideIndex] = useState(0);
   const [direction, setDirection] = useState(1);
-  const [checked, setChecked] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY_SEEN, '1');
-    try {
-      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY_CHECKLIST) || '[]') as string[];
-      setChecked(new Set(saved));
-    } catch {
-      // ignore
-    }
   }, []);
 
   function goToSlide(index: number) {
@@ -182,23 +192,21 @@ export function GuideRoot() {
     if (slideIndex > 0) goToSlide(slideIndex - 1);
   }
 
-  function toggleCheck(id: string) {
-    setChecked(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      localStorage.setItem(STORAGE_KEY_CHECKLIST, JSON.stringify([...next]));
-      return next;
-    });
-  }
-
   function finish() {
+    // This checklist already shows the same real setup progress the
+    // TodaySetupBanner nudge would show right after — dismiss it so a
+    // brand-new user doesn't see a second, redundant "finish setting up"
+    // prompt the moment they land on /today.
+    localStorage.setItem(SETUP_BANNER_DISMISSED_KEY, '1');
     router.push('/today');
   }
 
   const slide = SLIDES[slideIndex];
-  const progress = ((slideIndex + 1) / SLIDES.length) * 100;
-  const allDone = CHECK_ITEMS.every(item => checked.has(item.id));
+  const slideProgress = ((slideIndex + 1) / SLIDES.length) * 100;
+  const checkItems = buildCheckItems(progress);
+  const requiredItems = checkItems.filter(item => !item.optional);
+  const allDone = requiredItems.every(item => item.done);
+  const completedCount = checkItems.filter(item => item.done).length;
 
   return (
     <div className="min-h-full bg-[#fbfbfa] flex flex-col relative overflow-y-auto">
@@ -210,7 +218,7 @@ export function GuideRoot() {
         <div className="h-1 bg-[#e6e6e2] w-full z-10 shrink-0">
           <motion.div
             className="h-full bg-[#059669]"
-            animate={{ width: `${progress}%` }}
+            animate={{ width: `${slideProgress}%` }}
             transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
           />
         </div>
@@ -367,76 +375,81 @@ export function GuideRoot() {
               {/* Minimalist Progress track */}
               <div className="mb-6 bg-white/70 backdrop-blur-md rounded-2xl border border-[#e6e6e2] p-4">
                 <div className="flex items-center justify-between text-xs font-bold text-[#26251e] mb-2">
-                  <span>{checked.size} / {CHECK_ITEMS.length} complétées</span>
-                  <span className="text-[#059669]">{Math.round((checked.size / CHECK_ITEMS.length) * 100)}%</span>
+                  <span>{completedCount} / {checkItems.length} complétées</span>
+                  <span className="text-[#059669]">{Math.round((completedCount / checkItems.length) * 100)}%</span>
                 </div>
                 <div className="h-1.5 rounded-full bg-[#f0f0ed] overflow-hidden">
                   <motion.div
                     className="h-full rounded-full bg-[#059669]"
-                    animate={{ width: `${(checked.size / CHECK_ITEMS.length) * 100}%` }}
+                    animate={{ width: `${(completedCount / checkItems.length) * 100}%` }}
                     transition={{ duration: 0.35, ease: [0.4, 0, 0.2, 1] }}
                   />
                 </div>
               </div>
 
-              {/* Interactive Checklist list */}
+              {/* Checklist list — reflects real, verified progress (same
+                  source as /setup and the Today setup banner), not a
+                  self-reported toggle. */}
               <div className="space-y-2.5 mb-6">
-                {CHECK_ITEMS.map((item, i) => {
-                  const done = checked.has(item.id);
-                  return (
-                    <motion.div
-                      key={item.id}
-                      initial={{ opacity: 0, y: 8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: i * 0.04 }}
-                      className={`flex items-center gap-3 p-4 rounded-2xl border transition-all ${
-                        done
-                          ? 'bg-[#f0faf6]/80 border-[#059669]/20 shadow-none'
-                          : 'bg-white/85 border-[#e6e6e2] hover:border-[#059669]/40 shadow-[0_4px_12px_rgba(38,37,30,0.01)] hover:shadow-[0_8px_20px_rgba(38,37,30,0.03)]'
-                      }`}
-                    >
-                      {/* Check box toggle */}
-                      <button
-                        onClick={() => toggleCheck(item.id)}
-                        className="shrink-0 transition-transform active:scale-95"
-                      >
-                        {done ? (
-                          <CheckCircle2 className="h-5 w-5 text-[#059669]" />
-                        ) : (
-                          <Circle className="h-5 w-5 text-[#c5c5c0] hover:text-[#059669] transition-colors" />
-                        )}
-                      </button>
+                {checkItems.map((item, i) => (
+                  <motion.div
+                    key={item.id}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.04 }}
+                    className={`flex items-center gap-3 p-4 rounded-2xl border transition-all ${
+                      item.done
+                        ? 'bg-[#f0faf6]/80 border-[#059669]/20 shadow-none'
+                        : 'bg-white/85 border-[#e6e6e2] hover:border-[#059669]/40 shadow-[0_4px_12px_rgba(38,37,30,0.01)] hover:shadow-[0_8px_20px_rgba(38,37,30,0.03)]'
+                    }`}
+                  >
+                    {/* Status icon */}
+                    <span className="shrink-0">
+                      {progress.loading ? (
+                        <Loader2 className="h-5 w-5 text-[#c5c5c0] animate-spin" />
+                      ) : item.done ? (
+                        <CheckCircle2 className="h-5 w-5 text-[#059669]" />
+                      ) : (
+                        <Circle className="h-5 w-5 text-[#c5c5c0]" />
+                      )}
+                    </span>
 
-                      {/* Content details */}
-                      <div className="flex-1 min-w-0">
+                    {/* Content details */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5">
                         <p
                           className={`text-xs sm:text-sm font-bold transition-all ${
-                            done ? 'line-through text-[#807d72]' : 'text-[#26251e]'
+                            item.done ? 'line-through text-[#807d72]' : 'text-[#26251e]'
                           }`}
                         >
                           {item.label}
                         </p>
-                        <p className="text-[10px] sm:text-xs text-[#7a7a76] font-medium mt-0.5 truncate">
-                          {item.description}
-                        </p>
+                        {item.optional && (
+                          <span className="text-[9px] font-bold uppercase tracking-wider text-[#b0b0aa] border border-[#e6e6e2] rounded-full px-1.5 py-0.5 shrink-0">
+                            Optionnel
+                          </span>
+                        )}
                       </div>
+                      <p className="text-[10px] sm:text-xs text-[#7a7a76] font-medium mt-0.5 truncate">
+                        {item.description}
+                      </p>
+                    </div>
 
-                      {/* Time info */}
-                      <span className="text-[10px] text-[#7a7a76] bg-[#f0f0ed] px-2 py-0.5 rounded-full font-bold shrink-0">
-                        {item.time}
-                      </span>
+                    {/* Time info */}
+                    <span className="text-[10px] text-[#7a7a76] bg-[#f0f0ed] px-2 py-0.5 rounded-full font-bold shrink-0">
+                      {item.time}
+                    </span>
 
-                      {/* Navigate button */}
-                      <Link
-                        href={item.href}
-                        className="shrink-0 h-7 w-7 flex items-center justify-center rounded-lg bg-[#f0f0ed] hover:bg-[#059669] hover:text-white text-[#7a7a76] transition-all active:scale-95"
-                        title={`Accéder à : ${item.label}`}
-                      >
-                        <ArrowRight className="h-3.5 w-3.5" />
-                      </Link>
-                    </motion.div>
-                  );
-                })}
+                    {/* Navigate button */}
+                    <Link
+                      href={item.href}
+                      className="shrink-0 h-7 w-7 flex items-center justify-center rounded-lg bg-[#f0f0ed] hover:bg-[#059669] hover:text-white text-[#7a7a76] transition-all active:scale-95"
+                      title={`Accéder à : ${item.label}`}
+                    >
+                      <ArrowRight className="h-3.5 w-3.5" />
+                    </Link>
+                  </motion.div>
+                ))}
               </div>
 
               {/* Controls Footer */}
