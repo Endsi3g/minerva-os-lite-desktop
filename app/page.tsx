@@ -6,10 +6,24 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { MinervaIcon } from '@/components/icons';
 import { TextureOverlay } from '@/components/ui/texture-overlay';
+import { startGuestSession } from '@/lib/guest-mode';
+import { toast } from 'sonner';
 
 export default function LandingPage() {
   const router = useRouter();
   const [checkingAuth, setCheckingAuth] = useState(true);
+  const [startingGuest, setStartingGuest] = useState(false);
+
+  const handleTryAsGuest = async () => {
+    setStartingGuest(true);
+    const { error } = await startGuestSession();
+    if (error) {
+      toast.error(error);
+      setStartingGuest(false);
+      return;
+    }
+    router.push('/today');
+  };
 
   useEffect(() => {
     const checkUser = async () => {
@@ -51,12 +65,21 @@ export default function LandingPage() {
             <span className="cursor-pointer hover:text-[#26251e] transition-colors">Mission</span>
             <span className="cursor-pointer hover:text-[#26251e] transition-colors">Careers</span>
           </nav>
-          <button
-            onClick={() => router.push('/login')}
-            className="rounded-full bg-[#26251e] hover:bg-[#1a1a19] text-white px-5 py-1.5 text-xs font-bold transition-all cursor-pointer"
-          >
-            Sign in
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleTryAsGuest}
+              disabled={startingGuest}
+              className="text-xs font-bold text-[#10b981] hover:text-[#059669] transition-colors cursor-pointer disabled:opacity-60"
+            >
+              {startingGuest ? 'Préparation…' : 'Essayer sans compte'}
+            </button>
+            <button
+              onClick={() => router.push('/login')}
+              className="rounded-full bg-[#26251e] hover:bg-[#1a1a19] text-white px-5 py-1.5 text-xs font-bold transition-all cursor-pointer"
+            >
+              Sign in
+            </button>
+          </div>
         </header>
 
         <main className="flex-1 flex flex-col items-center justify-center py-16 px-6 max-w-7xl mx-auto w-full">

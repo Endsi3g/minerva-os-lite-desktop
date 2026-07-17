@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useActionState, useRef, useCallback, useEffect, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { login, signup, requestOtp, verifyOtp, requestPasswordReset } from './actions';
 import { MinervaIcon } from '@/components/icons';
 import { Lock, Mail, Loader2, Sparkles, Eye, EyeOff, ArrowLeft, CheckCircle2, User, Building2, Phone } from 'lucide-react';
@@ -10,6 +10,7 @@ import { TextureOverlay } from '@/components/ui/texture-overlay';
 import { useLanguage } from '@/lib/language-context';
 import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
+import { startGuestSession } from '@/lib/guest-mode';
 
 // ─── types ────────────────────────────────────────────────────────────────────
 type MainMode = 'login' | 'signup' | 'otp';
@@ -69,10 +70,23 @@ function LoginPageInner() {
   const searchParams = useSearchParams();
   const nextPath = searchParams.get('next') || '/today';
 
+  const router = useRouter();
   const [mode, setMode] = useState<MainMode>('login');
   const [view, setView] = useState<SubView>('main');
   const [showPwd, setShowPwd] = useState(false);
+  const [startingGuest, setStartingGuest] = useState(false);
   const { locale, setLocale } = useLanguage();
+
+  const handleTryAsGuest = async () => {
+    setStartingGuest(true);
+    const { error } = await startGuestSession();
+    if (error) {
+      toast.error(error);
+      setStartingGuest(false);
+      return;
+    }
+    router.push('/today');
+  };
 
   const handleGoogleSignIn = async () => {
     try {
@@ -326,6 +340,25 @@ function LoginPageInner() {
                 </button>
               ))}
             </div>
+          )}
+
+          {/* ── Try without an account ── */}
+          {view === 'main' && (
+            <button
+              type="button"
+              onClick={handleTryAsGuest}
+              disabled={startingGuest || isPending}
+              className="w-full flex items-center justify-center gap-1.5 text-[11px] font-semibold text-[#10b981] hover:text-[#059669] transition-colors disabled:opacity-60 cursor-pointer"
+            >
+              {startingGuest ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  Préparation de ton espace d&apos;essai…
+                </>
+              ) : (
+                "Essayer sans créer de compte →"
+              )}
+            </button>
           )}
 
           {/* Height morphing container */}
@@ -655,7 +688,7 @@ function LoginPageInner() {
 
                       <div className="space-y-1.5">
                         <label htmlFor="phone-signup" className="text-[10px] font-bold uppercase tracking-wider text-[#807d72]">
-                          Numéro de téléphone
+                          Numéro de téléphone (optionnel)
                         </label>
                         <div className="relative">
                           <span className="absolute inset-y-0 left-3.5 flex items-center text-[#807d72]">
@@ -666,7 +699,6 @@ function LoginPageInner() {
                             name="phone"
                             type="tel"
                             placeholder="+1 (514) 123-4567"
-                            required
                             disabled={isPending}
                             className="w-full rounded-full border border-[#e6e5e0] bg-white px-4 py-2.5 pl-10 text-xs font-semibold text-[#26251e] outline-none transition-colors focus:border-[#10b981] disabled:opacity-60"
                           />

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { TodayHeader } from './today-header';
 import { TodayGoalsCard } from './today-goals-card';
@@ -15,6 +15,7 @@ import { TodayAiSuggestionsCard } from './today-ai-suggestions-card';
 import { TodayProjectsCard } from './today-projects-card';
 import { TodayStatsCard } from './today-stats-card';
 import { TodaySetupBanner } from './today-setup-banner';
+import { TodayGuestUpgradeBanner } from './today-guest-upgrade-banner';
 import { TodayAestheticCanvas } from './today-aesthetic-canvas';
 import { TodayGoogleCalendarCard } from './today-google-calendar-card';
 import { InboxRoot } from '@/app/(app)/inbox/_components/inbox-root';
@@ -165,7 +166,7 @@ function PilotageTab({ leads, tasks }: { leads: any[]; tasks: any[] }) {
 export function TodayRoot() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { leads, tasks, aiSuggestions, activeWorkspace, campaigns, isDataReady, user } = useReach();
+  const { leads, tasks, aiSuggestions, activeWorkspace, campaigns, isDataReady, user, addLead, addTask } = useReach();
   
   const [showAestheticMode, setShowAestheticMode] = useState(false);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'inbox' | 'pilotage'>('dashboard');
@@ -198,6 +199,38 @@ export function TodayRoot() {
       router.replace('/guide');
     }
   }, [router]);
+
+  // One-time demo data seed for anonymous "try without an account" guests —
+  // otherwise a guest lands on a completely empty CRM, which defeats the
+  // point of a frictionless trial.
+  const guestSeededRef = useRef(false);
+  useEffect(() => {
+    if (guestSeededRef.current) return;
+    if (!user?.is_anonymous || !activeWorkspace || !isDataReady) return;
+    if (leads.length > 0) return;
+    if (typeof window !== 'undefined' && localStorage.getItem('minerva_guest_seeded')) return;
+    guestSeededRef.current = true;
+    if (typeof window !== 'undefined') localStorage.setItem('minerva_guest_seeded', '1');
+
+    const today = new Date().toISOString().split('T')[0];
+    (async () => {
+      try {
+        await addLead({
+          businessName: 'Café du Montréal', contactName: 'Marc-Antoine Roy', contactEmail: 'marc@cafemontreal.ca',
+          niche: 'Cafétéria', city: 'Montréal', source: 'Démo', status: 'New', temperature: 'Warm',
+          nextAction: 'Envoyer un premier email', nextActionDate: today,
+        });
+        await addLead({
+          businessName: "Boulangerie L'Épi d'Or", contactName: 'Sophie Tremblay', contactEmail: 'sophie@epidor.ca',
+          niche: 'Boulangerie', city: 'Québec', source: 'Démo', status: 'Contacted', temperature: 'Hot',
+          nextAction: 'Relancer par téléphone', nextActionDate: today,
+        });
+        await addTask('Relancer Café du Montréal', 'Follow-up', today);
+      } catch (e) {
+        console.error('Échec du seed de démo invité:', e);
+      }
+    })();
+  }, [user, activeWorkspace, isDataReady, leads.length, addLead, addTask]);
 
   // Fetch pending outreach approvals (outreach control center)
   const fetchNextActions = useCallback(async () => {
@@ -636,6 +669,7 @@ export function TodayRoot() {
                 ) : (
                   /* Original Desktop Dashboard Layout */
                   <>
+                    <TodayGuestUpgradeBanner />
                     <TodaySetupBanner />
                     <TodayHeader onAestheticToggle={() => setShowAestheticMode(true)} />
                     

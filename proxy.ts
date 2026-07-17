@@ -29,10 +29,12 @@ export async function proxy(request: NextRequest) {
   // Public pages that don't require authentication
   const isPublicPage =
     url.pathname === '/login' ||
+    url.pathname === '/' ||
     url.pathname.startsWith('/invite/') ||
     url.pathname.startsWith('/join/') ||
     url.pathname.startsWith('/lead-preview/') ||
-    url.pathname.startsWith('/book/');
+    url.pathname.startsWith('/book/') ||
+    url.pathname.startsWith('/share/');
 
   const isLoginPage = url.pathname === '/login';
 
