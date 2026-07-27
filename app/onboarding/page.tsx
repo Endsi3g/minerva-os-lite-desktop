@@ -540,7 +540,17 @@ function OnboardingPageContent() {
       }
     }
 
-    router.push('/today')
+    // If the user signed up via a team invite link (app/login/actions.ts stashes it
+    // here since a brand-new signup always lands on /onboarding first), resume that
+    // flow now instead of dropping straight to /today — otherwise the invite is
+    // silently lost and the workspace owner has to add the member back manually.
+    let postOnboardingNext: string | null = null
+    try {
+      postOnboardingNext = sessionStorage.getItem('minerva_post_onboarding_next')
+      if (postOnboardingNext) sessionStorage.removeItem('minerva_post_onboarding_next')
+    } catch {}
+
+    router.push(postOnboardingNext || '/today')
   }
 
   const step2CanProceed = !!role && !!sector

@@ -286,6 +286,7 @@ interface DbLead {
   photos?: string | null;     // JSON string in SQLite, jsonb in Supabase
   social_links?: string | null; // JSON string in SQLite, jsonb in Supabase
   assigned_to?: string | null;
+  assigned_to_team?: boolean | null;
   latitude?: number | null;
   longitude?: number | null;
   phone?: string | null;
@@ -401,7 +402,10 @@ function mapDbLeadToUi(dbLead: DbLead, dbNotes: DbNote[] = []): Lead {
     address: dbLead.address || undefined,
     photos,
     socialLinks,
-    assignedTo: dbLead.assigned_to || undefined,
+    // '__team__' (TEAM_ASSIGN_VALUE in leads-assign-cell.tsx) is a UI-only sentinel — it can't be
+    // written to the uuid `assigned_to` column, so "assigned to the whole team" is tracked in the
+    // separate `assigned_to_team` boolean column instead.
+    assignedTo: dbLead.assigned_to_team ? '__team__' : (dbLead.assigned_to || undefined),
     latitude: dbLead.latitude ?? undefined,
     longitude: dbLead.longitude ?? undefined,
     phone: dbLead.phone || undefined,
@@ -2086,7 +2090,11 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
     if (fields.mapsUrl !== undefined) dbFields.maps_url = fields.mapsUrl || null;
     if (fields.photos !== undefined) dbFields.photos = (fields.photos ?? null) as any;
     if (fields.socialLinks !== undefined) dbFields.social_links = (fields.socialLinks ?? null) as any;
-    if (fields.assignedTo !== undefined) dbFields.assigned_to = fields.assignedTo || null;
+    if (fields.assignedTo !== undefined) {
+      const isTeam = fields.assignedTo === '__team__';
+      dbFields.assigned_to = isTeam ? null : (fields.assignedTo || null);
+      dbFields.assigned_to_team = isTeam;
+    }
     if (fields.score !== undefined) dbFields.score = fields.score ?? null;
     if (fields.fitScore !== undefined) dbFields.fit_score = fields.fitScore ?? null;
     if (fields.intentScore !== undefined) dbFields.intent_score = fields.intentScore ?? null;

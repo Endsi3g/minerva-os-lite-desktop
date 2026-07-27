@@ -612,6 +612,12 @@ export default function TeamPage() {
 
   // Filter & Search Logic
   const filteredMembers = members.filter((member) => {
+    // The current viewer already has a dedicated "(You)" row above the list (rendered
+    // from `currentUser`, not from this array) — skip their own team_members row here
+    // (this also covers the owner: /api/team/members synthesizes an entry for them with
+    // member_user_id === their own id) to avoid showing the same person twice.
+    if (currentUser && member.member_user_id === currentUser.id) return false;
+
     const searchLower = searchQuery.toLowerCase();
     const matchesSearch =
       member.email.toLowerCase().includes(searchLower) ||

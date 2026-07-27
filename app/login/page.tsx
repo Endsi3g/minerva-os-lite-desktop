@@ -466,6 +466,7 @@ function LoginPageInner() {
                   <form action={otpVerAction} className="space-y-4">
                     <input type="hidden" name="email" value={otpEmail} />
                     <input type="hidden" name="token" value={otpToken} />
+                    <input type="hidden" name="next" value={nextPath} />
 
                     <p className="text-xs text-[#807d72] font-semibold leading-relaxed">
                       Code envoyé à{' '}
