@@ -5,6 +5,11 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [3.98.0] — Assignation groupée de leads à l'équipe — 27 juillet 2026, 23h20
+
+### Ajouté
+- **Assignation groupée dans la liste des leads** : la barre d'actions groupées (sélection multi-lignes) propose désormais un menu "Assigner à" — non assigné, toute l'équipe, ou un membre précis — appliqué en un seul appel à tous les leads sélectionnés au lieu de les assigner un par un via le menu de chaque ligne. Nouvelle fonction `updateLeadsAssignedTo()` dans `ReachContext`, sur le même modèle que le changement de statut groupé existant.
+
 ## [3.97.4] — Invitations d'équipe qui ne rejoignaient jamais le workspace — 27 juillet 2026, 22h45
 
 ### Corrigé

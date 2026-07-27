@@ -21,6 +21,14 @@ interface ChangelogVersion {
 
 const versions: ChangelogVersion[] = [
   {
+    version: 'v3.98.0',
+    date: '27 juillet 2026 · 23h20',
+    title: "Assignation groupée de leads à l'équipe",
+    highlights: [
+      { text: "La barre d'actions groupées de la liste des leads propose désormais \"Assigner à\" : sélectionnez plusieurs prospects et assignez-les tous en un clic à un membre de l'équipe, à toute l'équipe, ou retirez l'assignation — plus besoin de le faire un par un." }
+    ]
+  },
+  {
     version: 'v3.97.4',
     date: '27 juillet 2026 · 22h45',
     title: "Invitations d'équipe qui ne rejoignaient jamais le workspace",
