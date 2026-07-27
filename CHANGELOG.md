@@ -5,6 +5,11 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [3.97.3] — Invitations en attente visibles dans l'assignation de leads — 27 juillet 2026, 21h30
+
+### Corrigé
+- **Membres d'équipe invités mais non encore inscrits disparaissaient silencieusement du menu d'assignation de leads** (`app/(app)/leads/_components/leads-assign-cell.tsx`) : le filtre ne gardait que les membres avec un `member_user_id` (invitation acceptée), donnant l'impression qu'il était impossible d'assigner des leads à toute l'équipe. Ces invitations en attente s'affichent désormais dans le menu, grisées avec la mention "En attente d'acceptation", au lieu d'être omises sans explication.
+
 ## [3.97.0] — Zéro localStorage pour données utilisateur & Places API (New) — 14 juillet 2026, 23h59
 
 ### Ajouté
