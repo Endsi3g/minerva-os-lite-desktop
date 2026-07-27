@@ -25,6 +25,7 @@ export function LeadsAssignCell({ lead, workspaceMembers }: LeadsAssignCellProps
   const [open, setOpen] = useState(false);
 
   const active = workspaceMembers.filter(m => m.member_user_id);
+  const pending = workspaceMembers.filter(m => !m.member_user_id);
 
   const displayName = (m: WorkspaceMember) =>
     m.profile?.full_name || m.email.split('@')[0] || '?';
@@ -157,11 +158,33 @@ export function LeadsAssignCell({ lead, workspaceMembers }: LeadsAssignCellProps
               );
             })}
 
-            {active.length === 0 && (
+            {active.length === 0 && pending.length === 0 && (
               <div className="px-3 py-3 text-[11px] text-neutral-400 text-center">
                 Aucun membre actif
               </div>
             )}
+
+            {/* Pending invites — visible but disabled */}
+            {pending.length > 0 && (
+              <div className="border-t border-neutral-100 mt-0.5 pt-0.5" />
+            )}
+            {pending.map(m => (
+              <div
+                key={m.id}
+                title="En attente d'acceptation de l'invitation"
+                className="w-full px-3 py-1.5 text-[11px] text-left flex items-center justify-between gap-2 opacity-50 cursor-not-allowed"
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className="w-5 h-5 rounded-full bg-neutral-300 text-white text-[9px] font-bold flex items-center justify-center shrink-0">
+                    {displayName(m).charAt(0).toUpperCase()}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-semibold text-neutral-500 truncate">{displayName(m)}</p>
+                    <p className="text-[9px] text-neutral-400 truncate">En attente d&apos;acceptation</p>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </>
       )}
