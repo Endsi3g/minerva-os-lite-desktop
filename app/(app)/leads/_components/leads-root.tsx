@@ -196,7 +196,7 @@ export function LeadsRoot() {
           <DataTable columns={columns} table={table} />
         )}
 
-        <LeadsBulkActionsBar table={table} />
+        <LeadsBulkActionsBar table={table} workspaceMembers={workspaceMembers} />
       </div>
       </div>
     </div>

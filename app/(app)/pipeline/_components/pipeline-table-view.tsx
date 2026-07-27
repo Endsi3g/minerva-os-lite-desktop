@@ -60,7 +60,7 @@ export function PipelineTableView({ leads }: PipelineTableViewProps) {
       <DataTable columns={columns} table={table} />
 
       {/* Floating Bulk Actions bar (triggers on multiple lead selections) */}
-      <LeadsBulkActionsBar table={table} />
+      <LeadsBulkActionsBar table={table} workspaceMembers={[]} />
     </div>
   );
 }

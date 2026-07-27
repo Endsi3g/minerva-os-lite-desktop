@@ -7,7 +7,7 @@ import { Lead } from '@/lib/mock-data';
 
 export const TEAM_ASSIGN_VALUE = '__team__';
 
-interface WorkspaceMember {
+export interface WorkspaceMember {
   id: string;
   email: string;
   member_user_id: string | null;

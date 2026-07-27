@@ -15,17 +15,21 @@ import {
   AlertDialogAction,
 } from '@/components/ui/alert-dialog';
 import { useReach } from '@/lib/reach-context';
-import { Trash2, X, Sparkles, Loader2, Wand2 } from 'lucide-react';
+import { Trash2, X, Sparkles, Loader2, Wand2, UserPlus } from 'lucide-react';
 import { Lead } from '@/lib/mock-data';
 import { getApiUrl } from '@/lib/api-helper';
 import { toast } from 'sonner';
+import { TEAM_ASSIGN_VALUE, WorkspaceMember } from './leads-assign-cell';
+
+const UNASSIGN_VALUE = '__unassign__';
 
 interface LeadsBulkActionsBarProps<TData> {
   table: TableType<TData>;
+  workspaceMembers: WorkspaceMember[];
 }
 
-export function LeadsBulkActionsBar<TData>({ table }: LeadsBulkActionsBarProps<TData>) {
-  const { deleteLeads, updateLeadsStatus, activeWorkspace } = useReach();
+export function LeadsBulkActionsBar<TData>({ table, workspaceMembers }: LeadsBulkActionsBarProps<TData>) {
+  const { deleteLeads, updateLeadsStatus, updateLeadsAssignedTo, activeWorkspace } = useReach();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [generatingDrafts, setGeneratingDrafts] = useState(false);
   const [enriching, setEnriching] = useState(false);
@@ -42,6 +46,19 @@ export function LeadsBulkActionsBar<TData>({ table }: LeadsBulkActionsBarProps<T
     updateLeadsStatus(selectedIds, status);
     table.toggleAllPageRowsSelected(false);
   };
+
+  const handleAssignChange = (value: string) => {
+    updateLeadsAssignedTo(selectedIds, value === UNASSIGN_VALUE ? null : value);
+    toast.success(
+      value === UNASSIGN_VALUE
+        ? `${selectedCount} prospect${selectedCount > 1 ? 's' : ''} désassigné${selectedCount > 1 ? 's' : ''}.`
+        : `${selectedCount} prospect${selectedCount > 1 ? 's' : ''} assigné${selectedCount > 1 ? 's' : ''}.`
+    );
+    table.toggleAllPageRowsSelected(false);
+  };
+
+  const memberDisplayName = (m: WorkspaceMember) =>
+    m.profile?.full_name || m.email.split('@')[0] || '?';
 
   const handleConfirmDelete = () => {
     deleteLeads(selectedIds);
@@ -144,6 +161,25 @@ export function LeadsBulkActionsBar<TData>({ table }: LeadsBulkActionsBarProps<T
               <SelectItem value="Lost" className="text-xs">⚪ Perdu</SelectItem>
             </SelectContent>
           </Select>
+
+          {/* Bulk Assign Dropdown — hidden where no workspace members were loaded (e.g. pipeline view) */}
+          {workspaceMembers.length > 0 && (
+            <Select onValueChange={handleAssignChange}>
+              <SelectTrigger className="h-8 w-[150px] text-xs bg-[#fafaf8]">
+                <UserPlus className="h-3.5 w-3.5 text-[#7a7a76] shrink-0" />
+                <SelectValue placeholder="Assigner à" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={UNASSIGN_VALUE} className="text-xs">Non assigné</SelectItem>
+                <SelectItem value={TEAM_ASSIGN_VALUE} className="text-xs">Toute l&apos;équipe</SelectItem>
+                {workspaceMembers.filter(m => m.member_user_id).map(m => (
+                  <SelectItem key={m.id} value={m.member_user_id!} className="text-xs">
+                    {memberDisplayName(m)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
 
           {/* Bulk Enrichment */}
           <Button

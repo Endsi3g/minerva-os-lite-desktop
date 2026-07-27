@@ -214,7 +214,8 @@ interface ReachContextType {
   addNoteToLead: (leadId: string, content: string, type: Note['type']) => void;
   deleteLeads: (ids: string[]) => void;
   updateLeadsStatus: (ids: string[], status: Lead['status']) => void;
- 
+  updateLeadsAssignedTo: (ids: string[], assignedTo: string | null) => void;
+
   notifications: AppNotification[];
   unreadCount: number;
   addNotification: (notif: Omit<AppNotification, 'id' | 'isRead' | 'createdAt' | 'updatedAt'>) => Promise<void>;
@@ -2223,11 +2224,56 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
 
       if (error) throw error;
 
-      setLeads(prev => prev.map(lead => 
+      setLeads(prev => prev.map(lead =>
         ids.includes(lead.id) ? { ...lead, status, updatedAt: new Date().toISOString() } : lead
       ));
     } catch (err) {
       console.error("Error in updateLeadsStatus:", err);
+    }
+  };
+
+  const updateLeadsAssignedTo = async (ids: string[], assignedTo: string | null) => {
+    if (!user || ids.length === 0) return;
+    // '__team__' is a UI-only sentinel (TEAM_ASSIGN_VALUE in leads-assign-cell.tsx) — it can't be
+    // written to the uuid `assigned_to` column, see updateLead() above for the single-lead version.
+    const isTeam = assignedTo === '__team__';
+    const now = new Date().toISOString();
+
+    const electronObj = getElectronSqlite();
+    if (electronObj) {
+      try {
+        for (const id of ids) {
+          await electronObj.dbRun("UPDATE leads SET assigned_to = ?, sync_status = 'pending_update', updated_at = ? WHERE id = ?", [assignedTo, now, id]);
+        }
+        setLeads(prev => prev.map(lead =>
+          ids.includes(lead.id) ? { ...lead, assignedTo: assignedTo ?? undefined, updatedAt: now } : lead
+        ));
+        electronObj.triggerSync();
+      } catch (err) {
+        console.error("Local updateLeadsAssignedTo error:", err);
+      }
+      return;
+    }
+
+    const supabase = createClient();
+
+    try {
+      const { error } = await supabase
+        .from('leads')
+        .update({
+          assigned_to: isTeam ? null : (assignedTo || null),
+          assigned_to_team: isTeam,
+        })
+        .in('id', ids);
+
+      if (error) throw error;
+
+      setLeads(prev => prev.map(lead =>
+        ids.includes(lead.id) ? { ...lead, assignedTo: assignedTo ?? undefined, updatedAt: now } : lead
+      ));
+    } catch (err) {
+      console.error("Error in updateLeadsAssignedTo:", err);
+      toast.error("Impossible d'assigner ces leads. Vérifiez vos droits d'accès à l'espace de travail.");
     }
   };
 
@@ -3343,6 +3389,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
         addNoteToLead,
         deleteLeads,
         updateLeadsStatus,
+        updateLeadsAssignedTo,
 
         notifications,
         unreadCount,
