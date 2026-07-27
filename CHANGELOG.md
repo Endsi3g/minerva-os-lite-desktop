@@ -5,6 +5,13 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [3.97.4] — Invitations d'équipe qui ne rejoignaient jamais le workspace — 27 juillet 2026, 22h45
+
+### Corrigé
+- **Le lien d'invitation d'équipe (`/join/[token]`) perdait son jeton dès qu'un nouvel utilisateur s'inscrivait** : `signup()` (`app/login/actions.ts`) le stockait bien dans `sessionStorage` (`minerva_post_onboarding_next`), mais `handleComplete()` de l'onboarding (`app/onboarding/page.tsx`) ne le relisait jamais et redirigeait systématiquement vers `/today` — le nouveau membre n'intégrait donc jamais réellement le workspace, obligeant le propriétaire à l'ajouter manuellement par SQL. Le même trou existait sur le formulaire de vérification du code OTP, qui ne transmettait pas du tout le paramètre `next`. Les deux sont corrigés.
+- **Assigner un lead à "Toute l'équipe" échouait systématiquement** avec le message trompeur "Impossible d'assigner ce lead. Vérifiez vos droits d'accès à l'espace de travail" : `leads.assigned_to` est une colonne `uuid`, et l'interface écrivait directement le sentinel `'__team__'` dedans, ce que Postgres rejette. Ajout d'une colonne dédiée `assigned_to_team` (booléen).
+- **Le propriétaire du workspace apparaissait deux fois sur la page Équipe** (une fois via la ligne "(Vous)" codée en dur, une fois via l'entrée synthétisée par l'API dans la liste des membres) — la liste filtre désormais toute ligne correspondant à l'utilisateur actuellement connecté, puisqu'il a déjà sa propre ligne au-dessus.
+
 ## [3.97.3] — Invitations en attente visibles dans l'assignation de leads — 27 juillet 2026, 21h30
 
 ### Corrigé

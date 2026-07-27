@@ -21,6 +21,16 @@ interface ChangelogVersion {
 
 const versions: ChangelogVersion[] = [
   {
+    version: 'v3.97.4',
+    date: '27 juillet 2026 · 22h45',
+    title: "Invitations d'équipe qui ne rejoignaient jamais le workspace",
+    highlights: [
+      { text: "Le lien d'invitation d'équipe faisait bien créer un compte au nouveau membre, mais ne l'ajoutait jamais réellement au workspace — le jeton d'invitation était perdu en cours de route lors d'une nouvelle inscription (email/mot de passe ou code OTP). Corrigé : le membre rejoint désormais automatiquement le workspace juste après l'inscription." },
+      { text: "Assigner un lead à \"Toute l'équipe\" échouait systématiquement avec un message trompeur (\"Vérifiez vos droits d'accès à l'espace de travail\") à cause d'une incompatibilité de type en base de données. Corrigé." },
+      { text: "Le propriétaire du workspace apparaissait deux fois dans la liste des membres de la page Équipe. Corrigé." }
+    ]
+  },
+  {
     version: 'v3.96.1',
     date: '14 juillet 2026 · 10h06',
     title: "Statistiques de campagne dynamiques sans données simulées",
