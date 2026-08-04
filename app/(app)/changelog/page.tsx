@@ -21,6 +21,14 @@ interface ChangelogVersion {
 
 const versions: ChangelogVersion[] = [
   {
+    version: 'v9.0.3',
+    date: '4 août 2026 · 17h14',
+    title: 'Repliement des Actions et relances urgentes',
+    highlights: [
+      { text: "La carte Actions et relances urgentes sur la page Aujourd'hui s'affiche désormais repliée avec 5 relances maximum par défaut et un bouton d'expansion/réduction." }
+    ]
+  },
+  {
     version: 'v9.0.2',
     date: '4 août 2026 · 17h03',
     title: 'Typographie Éditoriale Globale — Playfair Display sur tous les titres',
