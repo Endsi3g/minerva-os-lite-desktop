@@ -69,7 +69,7 @@ export function LeadEnrichmentReviewBanner({ lead }: { lead: Lead }) {
         <button
           onClick={() => respond('accept')}
           disabled={busy}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#059669] hover:bg-[#047857] text-white text-xs font-bold transition-colors disabled:opacity-50"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#167f5b] hover:bg-[#0f6b4c] text-white text-xs font-bold transition-colors disabled:opacity-50"
         >
           <Check className="h-3 w-3" />C&apos;est la bonne entreprise
         </button>

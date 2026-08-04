@@ -992,6 +992,11 @@ function initDb() {
     // supabase/migrations/20260708150000_v14_1_workspace_packs.sql
     db.run(`ALTER TABLE workspaces ADD COLUMN enabled_packs TEXT DEFAULT '["acquisition","outreach","field","analytics_growth"]'`, () => {});
 
+    // v14.2 — Canal préféré (SMS/Cold Call/Instagram DM) : mirrors
+    // supabase_migration_preferred_channel.sql — pas de DEFAULT (préférence
+    // réglée par un humain, jamais calculée).
+    db.run(`ALTER TABLE leads ADD COLUMN preferred_channel TEXT DEFAULT NULL`, () => {});
+
     // Heure d'échéance, priorité et récurrence pour les tâches : mirrors
     // supabase_migration_v5_tasks_time_priority_recurrence.sql
     db.run(`ALTER TABLE tasks ADD COLUMN due_time TEXT`, () => {});

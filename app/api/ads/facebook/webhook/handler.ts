@@ -1,7 +1,52 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 const FB_VERIFY_TOKEN = process.env.FACEBOOK_WEBHOOK_VERIFY_TOKEN || 'minerva_fb_webhook';
+
+// Meta calls this webhook server-to-server with no user session, so it can't go through
+// /api/notifications/team (which requires an authenticated caller). Fan out directly here
+// with the service-role client instead, mirroring that route's broadcast logic.
+async function notifyTeamOfNewLead(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: SupabaseClient<any, any, any>,
+  workspaceId: string,
+  lead: { id: string; business_name: string } | null
+) {
+  if (!lead) return;
+  try {
+    const { data: workspace } = await supabase
+      .from('workspaces')
+      .select('owner_id')
+      .eq('id', workspaceId)
+      .maybeSingle();
+    if (!workspace?.owner_id) return;
+
+    const { data: members } = await supabase
+      .from('team_members')
+      .select('member_user_id')
+      .eq('workspace_owner_id', workspace.owner_id)
+      .eq('status', 'active');
+
+    const recipientIds = new Set<string>([workspace.owner_id]);
+    (members || []).forEach((m: { member_user_id: string | null }) => {
+      if (m.member_user_id) recipientIds.add(m.member_user_id);
+    });
+
+    const nowStr = new Date().toISOString();
+    const rows = Array.from(recipientIds).map((uid) => ({
+      user_id: uid,
+      workspace_id: workspaceId,
+      type: 'team',
+      title: 'Nouveau Lead créé',
+      body: `Facebook Lead Ads : ${lead.business_name}.`,
+      link: `/leads/${lead.id}`,
+      is_read: false,
+      created_at: nowStr,
+      updated_at: nowStr,
+    }));
+    await supabase.from('notifications').insert(rows);
+  } catch { /* notification fan-out is best-effort */ }
+}
 
 // Webhook verification (GET)
 export async function GET(req: NextRequest) {
@@ -34,7 +79,7 @@ export async function POST(req: NextRequest) {
       // Find workspace for this form
       const { data: conn } = await supabase
         .from('fb_connections')
-        .select('workspace_id, page_access_token, form_name, page_name')
+        .select('workspace_id, page_access_token, form_name, page_name, leads_count')
         .eq('form_id', form_id)
         .maybeSingle();
 
@@ -58,7 +103,7 @@ export async function POST(req: NextRequest) {
         const phone = fields['phone_number'] || fields['phone'] || '';
         const contactName = fields['full_name'] || '';
 
-        const { error: insertErr } = await supabase.from('leads').insert({
+        const { data: insertedLead, error: insertErr } = await supabase.from('leads').insert({
           workspace_id: conn.workspace_id,
           business_name: businessName,
           contact_email: contactEmail,
@@ -75,14 +120,15 @@ export async function POST(req: NextRequest) {
           sync_status: 'synced',
           created_at: leadData.created_time || new Date().toISOString(),
           updated_at: new Date().toISOString(),
-        });
+        }).select('id, business_name').single();
 
         if (!insertErr) {
-          // Update leads count
           await supabase
             .from('fb_connections')
-            .update({ leads_count: supabase.rpc('increment', { value: 1 }) })
+            .update({ leads_count: (conn.leads_count || 0) + 1 })
             .eq('form_id', form_id);
+
+          await notifyTeamOfNewLead(supabase, conn.workspace_id, insertedLead);
         }
       } catch { /* silent */ }
 

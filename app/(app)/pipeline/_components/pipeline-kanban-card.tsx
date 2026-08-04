@@ -73,13 +73,13 @@ export function PipelineKanbanCard({ lead }: PipelineKanbanCardProps) {
       <CardContent className="p-3.5 space-y-3">
         {/* Title & Detail Link */}
         <div className="flex items-start justify-between gap-2">
-          <Link 
+          <Link
             href={`/leads/${lead.id}`}
-            className="text-xs font-bold text-[#26251e] hover:text-[#059669] transition-colors leading-tight line-clamp-2 pr-1"
+            className="text-xs font-bold text-[#14171A] hover:text-[#167f5b] transition-colors leading-tight line-clamp-2 pr-1"
           >
             {lead.businessName}
           </Link>
-          <Button asChild variant="ghost" size="icon" className="h-5 w-5 text-[#7a7a76] hover:text-[#059669] hover:bg-secondary opacity-0 group-hover/card:opacity-100 transition-opacity">
+          <Button asChild variant="ghost" size="icon" className="h-5 w-5 text-[#8A9098] hover:text-[#167f5b] hover:bg-secondary opacity-0 group-hover/card:opacity-100 transition-opacity">
             <Link href={`/leads/${lead.id}`}>
               <ArrowUpRight className="h-3 w-3" />
             </Link>
@@ -87,7 +87,7 @@ export function PipelineKanbanCard({ lead }: PipelineKanbanCardProps) {
         </div>
 
         {/* Niche & Location */}
-        <div className="flex flex-col gap-1 text-[10px] text-[#7a7a76]">
+        <div className="flex flex-col gap-1 text-[10px] text-[#8A9098]">
           <div className="flex items-center gap-1">
             <span className="truncate">{lead.niche}</span>
           </div>
@@ -128,14 +128,14 @@ export function PipelineKanbanCard({ lead }: PipelineKanbanCardProps) {
             {!!lead.score && (
               <div className={cn(
                 "flex items-center justify-center w-8 h-5 rounded border text-[9px] font-black",
-                lead.score >= 80 ? 'bg-[#10b981]/10 text-[#059669] border-[#10b981]/20'
-                  : lead.score >= 60 ? 'bg-[#26251e]/10 text-[#26251e] border-[#26251e]/20'
-                  : 'bg-[#e5e5e0] text-[#807d72] border-[#e5e5e0]'
+                lead.score >= 80 ? 'bg-[#167f5b]/10 text-[#167f5b] border-[#167f5b]/20'
+                  : lead.score >= 60 ? 'bg-[#14171A]/10 text-[#14171A] border-[#14171A]/20'
+                  : 'bg-[#8A9098]/10 text-[#8A9098] border-[#8A9098]/20'
               )}>
                 {lead.score}
               </div>
             )}
-            <span className="text-[9px] text-[#7a7a76] font-mono">
+            <span className="text-[9px] text-[#8A9098] font-mono">
               {lead.owner}
             </span>
           </div>
@@ -143,13 +143,13 @@ export function PipelineKanbanCard({ lead }: PipelineKanbanCardProps) {
 
         {/* Deal info */}
         {lead.dealAmount !== undefined && (
-          <div className="flex items-center gap-2 px-2 py-1.5 rounded border border-[#059669]/20 bg-[#059669]/5">
-            <DollarSign className="h-3 w-3 text-[#059669] shrink-0" />
-            <span className="text-[10px] font-bold text-[#059669]">
+          <div className="flex items-center gap-2 px-2 py-1.5 rounded border border-[#167f5b]/20 bg-[#167f5b]/5">
+            <DollarSign className="h-3 w-3 text-[#167f5b] shrink-0" />
+            <span className="text-[10px] font-bold text-[#167f5b]">
               {lead.dealAmount.toLocaleString('fr-CA', { style: 'currency', currency: 'CAD', maximumFractionDigits: 0 })}
             </span>
             {lead.dealProbability !== undefined && (
-              <span className="text-[9px] text-[#7a7a76] ml-auto">{lead.dealProbability}%</span>
+              <span className="text-[9px] text-[#8A9098] ml-auto">{lead.dealProbability}%</span>
             )}
           </div>
         )}
@@ -158,9 +158,9 @@ export function PipelineKanbanCard({ lead }: PipelineKanbanCardProps) {
         {lead.nextAction && (
           <div className={cn(
             "p-2 rounded border text-[10px] leading-normal",
-            isOverdue 
-              ? "bg-rose-50/50 border-rose-100 text-rose-800"
-              : "bg-secondary/40 border-[#e5e5e0]/70 text-[#7a7a76]"
+            isOverdue
+              ? "bg-[#D64545]/5 border-[#D64545]/20 text-[#D64545]"
+              : "bg-secondary/40 border-[#e5e5e0]/70 text-[#8A9098]"
           )}>
             <div className="font-medium truncate">{lead.nextAction}</div>
             {lead.nextActionDate && (
@@ -180,7 +180,7 @@ export function PipelineKanbanCard({ lead }: PipelineKanbanCardProps) {
             size="icon"
             onClick={handleMoveLeft}
             disabled={lead.status === 'New'}
-            className="h-6 w-6 text-[#7a7a76] hover:text-[#26251e] disabled:opacity-30"
+            className="h-6 w-6 text-[#8A9098] hover:text-[#14171A] disabled:opacity-30"
           >
             <ChevronLeft className="h-3.5 w-3.5" />
             <span className="sr-only">Reculer d&apos;étape</span>
@@ -194,7 +194,7 @@ export function PipelineKanbanCard({ lead }: PipelineKanbanCardProps) {
                   variant="ghost"
                   size="icon"
                   onClick={handleMarkLost}
-                  className="h-6 w-6 text-rose-600 hover:text-rose-700 hover:bg-rose-50"
+                  className="h-6 w-6 text-[#D64545] hover:text-[#D64545] hover:bg-[#D64545]/10"
                 >
                   <X className="h-3.5 w-3.5" />
                 </Button>
@@ -211,7 +211,7 @@ export function PipelineKanbanCard({ lead }: PipelineKanbanCardProps) {
             size="icon"
             onClick={handleMoveRight}
             disabled={lead.status === 'Won' || lead.status === 'Lost'}
-            className="h-6 w-6 text-[#7a7a76] hover:text-[#26251e] disabled:opacity-30"
+            className="h-6 w-6 text-[#8A9098] hover:text-[#14171A] disabled:opacity-30"
           >
             <ChevronRight className="h-3.5 w-3.5" />
             <span className="sr-only">Avancer d&apos;étape</span>

@@ -30,9 +30,18 @@ function renderReport(text: string): React.ReactNode[] {
   });
 }
 
+function getISOWeekKey(d: Date = new Date()): string {
+  const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const dayNum = date.getUTCDay() || 7;
+  date.setUTCDate(date.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
+  const weekNo = Math.ceil((((date.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+  return `${date.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
+}
+
 export function WeeklyReportCard() {
   const { activeWorkspace } = useReach();
-  const weekKey = new Date().toISOString().slice(0, 7);
+  const weekKey = getISOWeekKey();
   const cacheKey = `minerva_weekly_cache_${weekKey}`;
 
   const [loading, setLoading] = useState(false);

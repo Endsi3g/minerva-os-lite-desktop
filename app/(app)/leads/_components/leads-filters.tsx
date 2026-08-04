@@ -2,30 +2,44 @@
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Table as TableType } from '@tanstack/react-table';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { Search, User, X, Clock, LayoutGrid, List } from 'lucide-react';
+import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { User, X, LayoutGrid, List, Columns3, MapPinned, Loader2 } from 'lucide-react';
 import { useReach } from '@/lib/reach-context';
 import { cn } from '@/lib/utils';
+import { UnifiedFilterBar, type FilterGroup } from '@/components/ui/unified-filter-bar';
 
-const RECENT_SEARCHES_KEY = 'minerva_recent_searches';
-const MAX_RECENT = 5;
-
-function getRecentSearches(): string[] {
-  try {
-    return JSON.parse(localStorage.getItem(RECENT_SEARCHES_KEY) || '[]');
-  } catch {
-    return [];
-  }
+interface WorkspaceMember {
+  id: string;
+  email: string;
+  member_user_id: string | null;
+  profile?: { full_name: string | null; company_name: string | null } | null;
 }
 
-function saveRecentSearch(query: string) {
-  const trimmed = query.trim();
-  if (!trimmed || trimmed.length < 2) return;
-  const prev = getRecentSearches().filter(s => s !== trimmed);
-  localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify([trimmed, ...prev].slice(0, MAX_RECENT)));
-}
+const SORT_OPTIONS: { value: string; label: string }[] = [
+  { value: 'intentScore:desc', label: 'Intent (décroissant)' },
+  { value: 'score:desc', label: 'Score (décroissant)' },
+  { value: 'businessName:asc', label: 'Entreprise (A→Z)' },
+  { value: 'businessName:desc', label: 'Entreprise (Z→A)' },
+  { value: 'lastActivityAt:desc', label: 'Activité récente' },
+];
+
+const COLUMN_LABELS: Record<string, string> = {
+  domain: 'Domaine',
+  niche: 'Industrie',
+  assignedTo: 'Owner',
+  contactName: 'Contact',
+  status: 'Statut prospection',
+  lastActivityAt: 'Dernière activité',
+  visitable: 'Visitable',
+  temperature: 'Température',
+  nextAction: 'Action suivante',
+  enrichmentStatus: 'Enrichissement',
+  score: 'Score',
+  intentScore: 'Intent',
+  opportunityScore: 'Opportunité',
+  tags: 'Tags',
+};
 
 interface LeadsFiltersProps<TData> {
   table: TableType<TData>;
@@ -33,60 +47,55 @@ interface LeadsFiltersProps<TData> {
   onToggleAssignedToMe: () => void;
   viewMode: 'list' | 'gallery';
   onViewModeChange: (mode: 'list' | 'gallery') => void;
+  workspaceMembers?: WorkspaceMember[];
+  userLocation?: { lat: number; lon: number } | null;
+  locating?: boolean;
+  onRequestLocation?: () => void;
 }
 
-export function LeadsFilters<TData>({ 
-  table, 
-  showAssignedToMe, 
+export function LeadsFilters<TData>({
+  table,
+  showAssignedToMe,
   onToggleAssignedToMe,
   viewMode,
   onViewModeChange,
+  workspaceMembers = [],
+  userLocation,
+  locating,
+  onRequestLocation,
 }: LeadsFiltersProps<TData>) {
   const { leads } = useReach();
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [isFocused, setIsFocused] = useState(false);
-  const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const dropdownRef = useRef<HTMLDivElement>(null);
 
+  // Garde le champ de recherche synchronisé si le filtre change en dehors de ce
+  // composant (bouton Réinitialiser, navigation avant/arrière sur un lien partagé).
+  const externalGlobalFilter = (table.getState().globalFilter as string) ?? '';
   useEffect(() => {
-    setRecentSearches(getRecentSearches());
-  }, []);
+    setSearchQuery(externalGlobalFilter);
+  }, [externalGlobalFilter]);
 
   const niches = Array.from(new Set(leads.map((l) => l.niche).filter(Boolean)));
+  const activeMembers = workspaceMembers.filter((m) => m.member_user_id);
 
   const statusFilter = (table.getColumn('status')?.getFilterValue() as string) || 'all';
   const tempFilter = (table.getColumn('temperature')?.getFilterValue() as string) || 'all';
   const nicheFilter = (table.getColumn('niche')?.getFilterValue() as string) || 'all';
+  const ownerFilter = (table.getColumn('assignedTo')?.getFilterValue() as string) || 'all';
+  const enrichFilter = (table.getColumn('enrichmentStatus')?.getFilterValue() as string) || 'all';
+
+  const currentSort = table.getState().sorting[0];
+  const sortValue = currentSort ? `${currentSort.id}:${currentSort.desc ? 'desc' : 'asc'}` : 'intentScore:desc';
 
   const applySearch = useCallback((val: string) => {
     table.setGlobalFilter(val);
-    if (val.trim().length >= 2) {
-      saveRecentSearch(val);
-      setRecentSearches(getRecentSearches());
-    }
   }, [table]);
 
   const handleSearchChange = (val: string) => {
     setSearchQuery(val);
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => applySearch(val), 220);
-  };
-
-  const handleSelectRecent = (term: string) => {
-    setSearchQuery(term);
-    applySearch(term);
-    setIsFocused(false);
-    inputRef.current?.blur();
-  };
-
-  const handleClearRecent = (term: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    const updated = getRecentSearches().filter(s => s !== term);
-    localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(updated));
-    setRecentSearches(updated);
   };
 
   const handleClearSearch = () => {
@@ -100,151 +109,150 @@ export function LeadsFilters<TData>({
     searchQuery !== '' ||
     statusFilter !== 'all' ||
     tempFilter !== 'all' ||
-    nicheFilter !== 'all';
+    nicheFilter !== 'all' ||
+    ownerFilter !== 'all' ||
+    enrichFilter !== 'all';
 
   const handleClearFilters = () => {
     handleClearSearch();
     table.getColumn('status')?.setFilterValue(undefined);
     table.getColumn('temperature')?.setFilterValue(undefined);
     table.getColumn('niche')?.setFilterValue(undefined);
+    table.getColumn('assignedTo')?.setFilterValue(undefined);
+    table.getColumn('enrichmentStatus')?.setFilterValue(undefined);
   };
 
-  const showDropdown = isFocused && !searchQuery && recentSearches.length > 0;
+  const extraFilters: FilterGroup[] = [
+    {
+      key: 'niche',
+      label: 'Industrie',
+      value: nicheFilter,
+      onChange: (val) => table.getColumn('niche')?.setFilterValue(val === 'all' ? undefined : val),
+      options: [
+        { id: 'all', label: 'Toutes industries' },
+        ...niches.map((n) => ({ id: n, label: n })),
+      ],
+    },
+    {
+      key: 'owner',
+      label: 'Owner',
+      value: ownerFilter,
+      onChange: (val) => table.getColumn('assignedTo')?.setFilterValue(val === 'all' ? undefined : val),
+      options: [
+        { id: 'all', label: 'Tous les owners' },
+        ...activeMembers.map((m) => ({ id: m.member_user_id as string, label: m.profile?.full_name || m.email.split('@')[0] })),
+      ],
+    },
+    {
+      key: 'temperature',
+      label: 'Température',
+      value: tempFilter,
+      onChange: (val) => table.getColumn('temperature')?.setFilterValue(val === 'all' ? undefined : val),
+      options: [
+        { id: 'all', label: 'Toutes températures' },
+        { id: 'Hot', label: '🔥 Chaud' },
+        { id: 'Warm', label: '☀️ Tiède' },
+        { id: 'Cold', label: '❄️ Froid' },
+      ],
+    },
+    {
+      key: 'enrichment',
+      label: 'Enrichissement',
+      value: enrichFilter,
+      onChange: (val) => table.getColumn('enrichmentStatus')?.setFilterValue(val === 'all' ? undefined : val),
+      options: [
+        { id: 'all', label: 'Tout statut' },
+        { id: 'enriched', label: 'Enrichi' },
+        { id: 'pending', label: 'À valider' },
+        { id: 'none', label: 'Non enrichi' },
+      ],
+    },
+  ];
 
   return (
-    <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between py-2 bg-[#fafaf8]">
-      {/* Search Input (Left side) */}
-      <div className="relative flex-1 max-w-sm" ref={dropdownRef}>
-        <span className="absolute inset-y-0 left-3 flex items-center text-[#7a7a76] pointer-events-none">
-          <Search className="h-3.5 w-3.5" />
-        </span>
-        <Input
-          ref={inputRef}
-          placeholder="Rechercher par business, contact..."
-          value={searchQuery}
-          onChange={(e) => handleSearchChange(e.target.value)}
-          onFocus={() => setIsFocused(true)}
-          onBlur={() => setTimeout(() => setIsFocused(false), 150)}
-          onKeyDown={(e) => {
-            if (e.key === 'Escape') { handleClearSearch(); inputRef.current?.blur(); }
-          }}
-          className="pl-9 h-8.5 text-xs bg-white"
-        />
-        {searchQuery && (
+    <div className="flex flex-wrap items-center justify-between gap-3 bg-[#fafaf8] py-1 text-left">
+      {/* Unified Filter Bar with integrated Search */}
+      <UnifiedFilterBar
+        className="flex-1 min-w-[280px]"
+        searchQuery={searchQuery}
+        onSearchChange={handleSearchChange}
+        statusFilter={statusFilter}
+        onStatusChange={(val) => table.getColumn('status')?.setFilterValue(val === 'all' ? undefined : val)}
+        statusOptions={[
+          { id: 'all', label: 'Tous les statuts' },
+          { id: 'New', label: 'Nouveau' },
+          { id: 'Contacted', label: 'Contacté' },
+          { id: 'Meeting Booked', label: 'RDV Fixé' },
+          { id: 'Proposal Sent', label: 'Proposition' },
+          { id: 'Negotiation', label: 'Négociation' },
+          { id: 'Won', label: 'Gagné' },
+          { id: 'Lost', label: 'Perdu' },
+        ]}
+        extraFilters={extraFilters}
+        sortBy={sortValue}
+        onSortChange={(val) => {
+          const [id, dir] = val.split(':');
+          table.setSorting([{ id, desc: dir === 'desc' }]);
+        }}
+        sortOptions={SORT_OPTIONS.map(opt => ({ id: opt.value, label: opt.label }))}
+      />
+
+      {/* Control buttons right side */}
+      <div className="flex items-center gap-2 flex-wrap">
+        {/* Columns visibility */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" className="h-9 px-3 gap-1.5 text-xs bg-white border-[#e5e5e0]">
+              <Columns3 className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Colonnes</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-[#8A9098]">Colonnes visibles</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            {table.getAllLeafColumns().filter((c) => c.getCanHide()).map((column) => (
+              <DropdownMenuCheckboxItem
+                key={column.id}
+                checked={column.getIsVisible()}
+                onCheckedChange={(value) => column.toggleVisibility(!!value)}
+                className="text-xs"
+                onSelect={(e) => e.preventDefault()}
+              >
+                {COLUMN_LABELS[column.id] || column.id}
+              </DropdownMenuCheckboxItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        {/* Localisation — active la colonne Visitable */}
+        {onRequestLocation && (
           <button
-            type="button"
-            onClick={handleClearSearch}
-            aria-label="Effacer la recherche"
-            title="Effacer la recherche"
-            className="absolute inset-y-0 right-3 flex items-center text-[#7a7a76] hover:text-[#26251e]"
+            onClick={onRequestLocation}
+            disabled={locating}
+            title={userLocation ? 'Position activée' : 'Activer la position pour voir les prospects visitables'}
+            className={cn(
+              'flex items-center justify-center h-9 w-9 rounded-xl border transition-colors cursor-pointer shrink-0',
+              userLocation
+                ? 'bg-[#167f5b]/10 text-[#167f5b] border-[#167f5b]/20'
+                : 'bg-white border-[#e5e5e0] text-[#8A9098] hover:text-[#14171A]'
+            )}
           >
-            <X className="h-3.5 w-3.5" />
+            {locating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <MapPinned className="h-3.5 w-3.5" />}
           </button>
         )}
-
-        {/* Recent searches dropdown */}
-        {showDropdown && (
-          <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-[#e5e5e0] rounded-lg shadow-md z-30 py-1 animate-in fade-in slide-in-from-top-1 duration-150">
-            <p className="px-3 py-1.5 text-[10px] font-semibold text-[#7a7a76] uppercase tracking-wider">Recherches récentes</p>
-            {recentSearches.map((term) => (
-              <button
-                key={term}
-                type="button"
-                onClick={() => handleSelectRecent(term)}
-                className="w-full flex items-center justify-between gap-2 px-3 py-2 text-xs text-[#26251e] hover:bg-[#f4f4f3] transition-colors group"
-              >
-                <span className="flex items-center gap-2">
-                  <Clock className="h-3 w-3 text-[#7a7a76] shrink-0" />
-                  <span className="truncate">{term}</span>
-                </span>
-                <button
-                  type="button"
-                  onClick={(e) => handleClearRecent(term, e)}
-                  className="opacity-0 group-hover:opacity-100 text-[#7a7a76] hover:text-[#26251e] transition-opacity"
-                  aria-label={`Supprimer "${term}"`}
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Select Filters (Right side) */}
-      <div className="flex flex-wrap items-center gap-3">
-        {/* Status Filter */}
-        <Select
-          value={statusFilter}
-          onValueChange={(val) =>
-            table.getColumn('status')?.setFilterValue(val === 'all' ? undefined : val)
-          }
-        >
-          <SelectTrigger className="h-8 min-w-[148px] text-xs bg-white">
-            <SelectValue placeholder="Tous les statuts" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all" className="text-xs">Tous les statuts</SelectItem>
-            <SelectItem value="New" className="text-xs">🟢 Nouveau</SelectItem>
-            <SelectItem value="Contacted" className="text-xs">🟡 Contacté</SelectItem>
-            <SelectItem value="Meeting Booked" className="text-xs">🟣 RDV Fixé</SelectItem>
-            <SelectItem value="Proposal Sent" className="text-xs">🟪 Proposition envoyée</SelectItem>
-            <SelectItem value="Negotiation" className="text-xs">🟠 Négociation</SelectItem>
-            <SelectItem value="Won" className="text-xs">🔵 Gagné</SelectItem>
-            <SelectItem value="Lost" className="text-xs">🔴 Perdu</SelectItem>
-          </SelectContent>
-        </Select>
-
-        {/* Temperature Filter */}
-        <Select
-          value={tempFilter}
-          onValueChange={(val) =>
-            table.getColumn('temperature')?.setFilterValue(val === 'all' ? undefined : val)
-          }
-        >
-          <SelectTrigger className="h-8 min-w-[160px] text-xs bg-white">
-            <SelectValue placeholder="Toutes températures" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all" className="text-xs">Toutes températures</SelectItem>
-            <SelectItem value="Hot" className="text-xs">🔥 Chaud (Hot)</SelectItem>
-            <SelectItem value="Warm" className="text-xs">☀️ Tiède (Warm)</SelectItem>
-            <SelectItem value="Cold" className="text-xs">❄️ Froid (Cold)</SelectItem>
-          </SelectContent>
-        </Select>
-
-        {/* Niche Filter */}
-        <Select
-          value={nicheFilter}
-          onValueChange={(val) =>
-            table.getColumn('niche')?.setFilterValue(val === 'all' ? undefined : val)
-          }
-        >
-          <SelectTrigger className="h-8 min-w-[152px] text-xs bg-white">
-            <SelectValue placeholder="Tous les secteurs" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all" className="text-xs">Tous les secteurs</SelectItem>
-            {niches.map((niche) => (
-              <SelectItem key={niche} value={niche} className="text-xs">
-                {niche}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
 
         {/* Assigned to me toggle */}
         <button
           onClick={onToggleAssignedToMe}
           className={cn(
-            'flex items-center gap-1.5 h-8 px-3 text-xs font-semibold rounded-md border transition-colors',
+            'flex items-center gap-1.5 h-9 px-3 text-xs font-bold rounded-xl border transition-colors cursor-pointer',
             showAssignedToMe
-              ? 'bg-[#059669] text-white border-[#059669] hover:bg-[#047857]'
-              : 'bg-white border-[#e5e5e0] text-[#7a7a76] hover:text-[#26251e] hover:bg-secondary'
+              ? 'bg-[#167f5b] text-white border-[#167f5b] hover:bg-[#0f6b4c]'
+              : 'bg-white border-[#e5e5e0] text-[#8A9098] hover:text-[#14171A]'
           )}
         >
           <User className="h-3.5 w-3.5" />
-          <span>Mes leads</span>
+          <span className="hidden sm:inline">Mes leads</span>
         </button>
 
         {/* Reset Filters button */}
@@ -255,24 +263,22 @@ export function LeadsFilters<TData>({
               handleClearFilters();
               if (showAssignedToMe) onToggleAssignedToMe();
             }}
-            className="h-8 px-3 text-xs gap-1.5 text-[#7a7a76] hover:text-[#26251e]"
+            className="h-9 px-3 text-xs gap-1.5 text-[#8A9098] hover:text-[#14171A]"
           >
             <X className="h-3.5 w-3.5" />
-            <span>Réinitialiser</span>
+            <span className="hidden sm:inline">Réinitialiser</span>
           </Button>
         )}
 
         {/* View Switcher (Table vs Gallery) */}
-        <div className="flex items-center bg-[#f4f4f3] p-0.5 rounded-lg border border-[#e5e5e0] shrink-0 ml-1">
+        <div className="flex items-center bg-[#f4f4f3] p-0.5 rounded-xl border border-[#e5e5e0] shrink-0">
           <button
             type="button"
             onClick={() => onViewModeChange('list')}
             title="Vue Tableau"
             className={cn(
-              "p-1.5 rounded-md transition-all cursor-pointer",
-              viewMode === 'list'
-                ? "bg-white text-[#26251e] shadow-xs"
-                : "text-[#7a7a76] hover:text-[#26251e]"
+              "p-1.5 rounded-lg transition-all cursor-pointer",
+              viewMode === 'list' ? "bg-white text-[#14171A] shadow-xs" : "text-[#8A9098] hover:text-[#14171A]"
             )}
           >
             <List className="h-3.5 w-3.5" />
@@ -282,10 +288,8 @@ export function LeadsFilters<TData>({
             onClick={() => onViewModeChange('gallery')}
             title="Vue Catalogue (Photos)"
             className={cn(
-              "p-1.5 rounded-md transition-all cursor-pointer",
-              viewMode === 'gallery'
-                ? "bg-white text-[#26251e] shadow-xs"
-                : "text-[#7a7a76] hover:text-[#26251e]"
+              "p-1.5 rounded-lg transition-all cursor-pointer",
+              viewMode === 'gallery' ? "bg-white text-[#14171A] shadow-xs" : "text-[#8A9098] hover:text-[#14171A]"
             )}
           >
             <LayoutGrid className="h-3.5 w-3.5" />

@@ -21,6 +21,20 @@ interface ChangelogVersion {
 
 const versions: ChangelogVersion[] = [
   {
+    version: 'v3.99.0',
+    date: '4 août 2026 · 13h33',
+    title: 'Nouveau look, moins de pages, nouveau centre Outreach et page Publicité',
+    highlights: [
+      { text: "Nouvelle identité visuelle sur Aujourd'hui, Prospects, Contacts, Pipeline et la fiche prospect : titres en serif, palette resserrée, tableaux plus denses et plus lisibles." },
+      { text: "Beaucoup moins de pages à gérer : Terrain a rejoint la Carte (même design, un bouton pour démarrer une tournée), Bilan/Performance/Analyses sont réunis en une seule page à onglets, toute votre bibliothèque de fichiers (modèles, sites, assets) vit maintenant au même endroit, et les pages inutilisées (Playbooks, ancien Guide animé, Acquisition) ont été retirées." },
+      { text: "Nouveau : l'onglet Composer dans Outreach devient l'endroit unique pour rédiger et envoyer un message à un prospect. Séquences se concentre désormais uniquement sur la planification des relances automatiques." },
+      { text: "Nouvelle page Publicité : connectez Facebook Lead Ads (vos leads arrivent automatiquement, en temps réel, avec notification à l'équipe) et Google Ads, générez des variations de pub par IA, et suivez la performance par source d'acquisition." },
+      { text: "Nouveau champ \"Canal préféré\" (SMS, appel, DM Instagram) directement éditable sur chaque contact." },
+      { text: "Les notifications d'équipe se déclenchent maintenant aussi pour les leads reçus via Facebook Ads, pas seulement ceux ajoutés manuellement." },
+      { text: "Correctifs : le bilan hebdomadaire ne se régénère plus à chaque clic sur \"Actualiser\", quelques doublons dans la barre latérale ont été retirés, et le compteur de leads Facebook se met maintenant à jour correctement." },
+    ]
+  },
+  {
     version: 'v3.98.0',
     date: '27 juillet 2026 · 23h20',
     title: "Assignation groupée de leads à l'équipe",

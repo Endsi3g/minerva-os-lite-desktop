@@ -513,7 +513,7 @@ export default function WebsiteBuilderRoot() {
   return (
     <div className="h-full overflow-y-auto bg-[#fafaf8] relative">
       <div className="absolute inset-0 opacity-[0.25] pointer-events-none bg-grid-pattern-20 z-0" />
-      <div className="relative z-10 max-w-3xl mx-auto p-4 md:p-6 space-y-6">
+      <div className="relative z-10 w-full max-w-7xl mx-auto p-4 md:p-6 space-y-6 text-left">
 
         {/* Header */}
         <div className="flex items-start justify-between gap-4 pb-4 border-b border-[#e5e5e0]">

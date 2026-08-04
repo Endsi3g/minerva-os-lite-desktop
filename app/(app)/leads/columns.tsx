@@ -3,9 +3,8 @@
 import React from 'react';
 import { ColumnDef } from '@tanstack/react-table';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Badge } from '@/components/ui/badge';
 import { Lead } from '@/lib/mock-data';
-import { ArrowUpDown, ArrowUpRight, Mail, MapPin, TrendingUp, Zap } from 'lucide-react';
+import { ArrowUpDown, ArrowUpRight, Mail, TrendingUp, Zap, MapPin } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -22,42 +21,76 @@ interface WorkspaceMember {
   profile?: { full_name: string | null; company_name: string | null } | null;
 }
 
-// Helper for status badge styling
-const getStatusStyle = (status: Lead['status']) => {
-  switch (status) {
-    case 'New':
-      return 'bg-blue-50 text-blue-700 border-blue-200';
-    case 'Contacted':
-      return 'bg-amber-50 text-amber-700 border-amber-200';
-    case 'Meeting Booked':
-      return 'bg-purple-50 text-purple-700 border-purple-200';
-    case 'Proposal Sent':
-      return 'bg-violet-50 text-violet-700 border-violet-200';
-    case 'Negotiation':
-      return 'bg-amber-50 text-amber-600 border-amber-200';
-    case 'Won':
-      return 'bg-emerald-50 text-emerald-700 border-emerald-200';
-    case 'Lost':
-      return 'bg-rose-50 text-rose-700 border-rose-200';
-    default:
-      return 'bg-slate-50 text-slate-700 border-slate-200';
-  }
+// Statut prospection — petit carré coloré + label, jamais un badge plein (règle Minerva).
+// Source unique pour tout l'écosystème Leads/Pipeline (kanban, forecast, revenue bar).
+export const STATUS_DOT: Record<Lead['status'], string> = {
+  'New': '#8A9098',
+  'Contacted': '#4B5158',
+  'Meeting Booked': '#E8A33D',
+  'Proposal Sent': '#E8A33D',
+  'Negotiation': '#E8A33D',
+  'Won': '#167f5b',
+  'Lost': '#D64545',
 };
 
-const getStatusLabel = (status: Lead['status']) => {
-  switch (status) {
-    case 'New': return 'Nouveau';
-    case 'Contacted': return 'Contacté';
-    case 'Meeting Booked': return 'RDV Fixé';
-    case 'Proposal Sent': return 'Proposition envoyée';
-    case 'Negotiation': return 'Négociation';
-    case 'Won': return 'Gagné';
-    case 'Lost': return 'Perdu';
-    default: return status;
-  }
+export const STATUS_LABEL: Record<Lead['status'], string> = {
+  'New': 'Nouveau',
+  'Contacted': 'Contacté',
+  'Meeting Booked': 'RDV fixé',
+  'Proposal Sent': 'Proposition envoyée',
+  'Negotiation': 'Négociation',
+  'Won': 'Gagné',
+  'Lost': 'Perdu',
 };
 
-export function buildColumns(workspaceMembers: WorkspaceMember[], lastVisitedLeadId?: string | null): ColumnDef<Lead>[] { return [
+export type EnrichmentStatus = 'enriched' | 'pending' | 'none';
+
+export function getEnrichmentStatus(lead: Lead): EnrichmentStatus {
+  if (lead.enrichmentReview) return 'pending';
+  if (lead.enrichedAt) return 'enriched';
+  return 'none';
+}
+
+const ENRICHMENT_LABEL: Record<EnrichmentStatus, string> = {
+  enriched: 'Enrichi',
+  pending: 'À valider',
+  none: 'Non enrichi',
+};
+
+const ENRICHMENT_DOT: Record<EnrichmentStatus, string> = {
+  enriched: '#167f5b',
+  pending: '#E8A33D',
+  none: '#8A9098',
+};
+
+function domainFromWebsite(website?: string): string | null {
+  if (!website) return null;
+  try {
+    const url = website.startsWith('http') ? website : `https://${website}`;
+    return new URL(url).hostname.replace(/^www\./, '');
+  } catch {
+    return website.replace(/^https?:\/\/(www\.)?/, '').replace(/\/.*$/, '');
+  }
+}
+
+// Distance haversine (km), 1 décimale.
+function distanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+const VISITABLE_RADIUS_KM = 15;
+
+export function buildColumns(
+  workspaceMembers: WorkspaceMember[],
+  lastVisitedLeadId?: string | null,
+  userLocation?: { lat: number; lon: number } | null
+): ColumnDef<Lead>[] { return [
   // Checkbox row select
   {
     id: 'select',
@@ -83,20 +116,18 @@ export function buildColumns(workspaceMembers: WorkspaceMember[], lastVisitedLea
     enableSorting: false,
     enableHiding: false,
   },
-  // Business Cell
+  // Entreprise (avatar initiales)
   {
     accessorKey: 'businessName',
-    header: ({ column }) => {
-      return (
-        <button
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-          className="flex items-center gap-1 hover:text-[#26251e] text-left font-semibold"
-        >
-          Entreprise
-          <ArrowUpDown className="h-3 w-3" />
-        </button>
-      );
-    },
+    header: ({ column }) => (
+      <button
+        onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+        className="flex items-center gap-1 hover:text-[#14171A] text-left font-semibold"
+      >
+        Entreprise
+        <ArrowUpDown className="h-3 w-3" />
+      </button>
+    ),
     cell: ({ row }) => {
       const name = row.getValue('businessName') as string;
       const city = row.original.city;
@@ -104,34 +135,65 @@ export function buildColumns(workspaceMembers: WorkspaceMember[], lastVisitedLea
       const isLastVisited = lastVisitedLeadId && row.original.id === lastVisitedLeadId;
       return (
         <div className="flex items-center gap-3 py-1">
-          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#059669]/10 text-[#059669] text-[10px] font-bold shrink-0">
+          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#8A9098]/15 text-[#14171A] text-[10px] font-bold shrink-0">
             {initial}
           </div>
-          <div className="flex flex-col gap-0.5">
+          <div className="flex flex-col gap-0.5 min-w-0">
             <div className="flex items-center gap-1.5">
-              <span className="text-xs font-semibold text-[#26251e] leading-tight">{name}</span>
+              <span className="text-xs font-semibold text-[#14171A] leading-tight truncate">{name}</span>
               {isLastVisited && (
-                <span className="text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-[#059669]/10 text-[#059669] border border-[#059669]/20 whitespace-nowrap">Récemment visité</span>
+                <span className="text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-[#167f5b]/10 text-[#167f5b] border border-[#167f5b]/20 whitespace-nowrap shrink-0">Récent</span>
               )}
             </div>
-            <span className="text-[10px] text-[#7a7a76] flex items-center gap-1">
-              <MapPin className="h-2.5 w-2.5" />
-              {city}
-            </span>
+            {city && <span className="text-[10px] text-[#8A9098]">{city}</span>}
           </div>
         </div>
       );
     },
+    enableHiding: false,
   },
-  // Niche
+  // Domaine
   {
-    accessorKey: 'niche',
-    header: 'Secteur',
+    id: 'domain',
+    header: 'Domaine',
+    accessorFn: (row) => domainFromWebsite(row.website) ?? '',
     cell: ({ row }) => {
-      return <span className="text-xs text-[#7a7a76]">{row.getValue('niche')}</span>;
+      const domain = domainFromWebsite(row.original.website);
+      if (!domain) return <span className="text-xs text-[#8A9098]">—</span>;
+      return (
+        <a
+          href={row.original.website}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={(e) => e.stopPropagation()}
+          className="text-xs text-[#4B5158] hover:text-[#167f5b] hover:underline"
+        >
+          {domain}
+        </a>
+      );
     },
   },
-  // Contact info
+  // Industrie (secteur / niche)
+  {
+    accessorKey: 'niche',
+    header: 'Industrie',
+    cell: ({ row }) => {
+      const niche = row.getValue('niche') as string;
+      return <span className="text-xs text-[#4B5158]">{niche || <span className="text-[#8A9098]">—</span>}</span>;
+    },
+  },
+  // Owner (assignation d'équipe réelle — Lead.owner n'est pas utilisé ailleurs dans l'app)
+  {
+    id: 'assignedTo',
+    header: 'Owner',
+    accessorFn: (row) => row.assignedTo ?? '',
+    filterFn: 'equalsString',
+    cell: ({ row }) => (
+      <LeadsAssignCell lead={row.original} workspaceMembers={workspaceMembers} />
+    ),
+    enableSorting: false,
+  },
+  // Contact (le modèle de données n'a qu'un contact par lead, pas une liste de contacts liés)
   {
     accessorKey: 'contactName',
     header: 'Contact',
@@ -139,11 +201,11 @@ export function buildColumns(workspaceMembers: WorkspaceMember[], lastVisitedLea
       const name = row.getValue('contactName') as string;
       const email = row.original.contactEmail;
       return (
-        <div className="flex flex-col gap-0.5">
-          <span className="text-xs text-[#26251e] font-medium">{name || 'Non spécifié'}</span>
+        <div className="flex flex-col gap-0.5 min-w-0">
+          <span className="text-xs text-[#14171A] truncate">{name || <span className="text-[#8A9098]">—</span>}</span>
           {email && (
-            <span className="text-[10px] text-[#7a7a76] flex items-center gap-1">
-              <Mail className="h-2.5 w-2.5" />
+            <span className="text-[10px] text-[#8A9098] flex items-center gap-1 truncate">
+              <Mail className="h-2.5 w-2.5 shrink-0" />
               {email}
             </span>
           )}
@@ -151,20 +213,72 @@ export function buildColumns(workspaceMembers: WorkspaceMember[], lastVisitedLea
       );
     },
   },
-  // Status badge
+  // Statut prospection — petit carré coloré + label
   {
     accessorKey: 'status',
-    header: 'Statut',
+    header: 'Statut prospection',
     cell: ({ row }) => {
       const status = row.getValue('status') as Lead['status'];
       return (
-        <Badge variant="outline" className={cn("text-[9px] font-bold uppercase rounded px-2 py-0.5", getStatusStyle(status))}>
-          {getStatusLabel(status)}
-        </Badge>
+        <div className="flex items-center gap-1.5">
+          <span className="h-2 w-2 rounded-sm shrink-0" style={{ backgroundColor: STATUS_DOT[status] }} />
+          <span className="text-xs text-[#4B5158]">{STATUS_LABEL[status] ?? status}</span>
+        </div>
       );
     },
   },
-  // Temperature badge
+  // Dernière activité
+  {
+    id: 'lastActivityAt',
+    header: ({ column }) => (
+      <button
+        onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+        className="flex items-center gap-1 hover:text-[#14171A] font-semibold"
+      >
+        Dernière activité
+        <ArrowUpDown className="h-3 w-3" />
+      </button>
+    ),
+    accessorFn: (row) => row.lastActivityAt ?? '',
+    cell: ({ row }) => {
+      const date = row.original.lastActivityAt;
+      if (!date) return <span className="text-xs text-[#8A9098]">—</span>;
+      return <span className="text-xs text-[#4B5158]">{new Date(date).toLocaleDateString('fr-FR')}</span>;
+    },
+  },
+  // Visitable — distance depuis la position de l'utilisateur, si disponible (ajout Minerva, lien avec la carte de tournées)
+  {
+    id: 'visitable',
+    header: 'Visitable',
+    accessorFn: (row) => {
+      if (!userLocation || row.latitude == null || row.longitude == null) return null;
+      return distanceKm(userLocation.lat, userLocation.lon, row.latitude, row.longitude);
+    },
+    cell: ({ row }) => {
+      const lat = row.original.latitude;
+      const lon = row.original.longitude;
+      if (!userLocation || lat == null || lon == null) {
+        return <span className="text-xs text-[#8A9098]">—</span>;
+      }
+      const km = distanceKm(userLocation.lat, userLocation.lon, lat, lon);
+      if (km <= VISITABLE_RADIUS_KM) {
+        return (
+          <div className="flex items-center gap-1.5">
+            <span className="h-2 w-2 rounded-sm shrink-0 bg-[#167f5b]" />
+            <span className="text-xs text-[#167f5b] font-medium">Visitable · {km.toFixed(1)} km</span>
+          </div>
+        );
+      }
+      return (
+        <span className="text-xs text-[#8A9098] flex items-center gap-1">
+          <MapPin className="h-2.5 w-2.5" />
+          {km.toFixed(0)} km
+        </span>
+      );
+    },
+    enableSorting: true,
+  },
+  // Température
   {
     accessorKey: 'temperature',
     header: 'Température',
@@ -173,9 +287,9 @@ export function buildColumns(workspaceMembers: WorkspaceMember[], lastVisitedLea
       return (
         <Tooltip>
           <TooltipTrigger asChild>
-            <Badge variant="outline" className={cn("text-[9px] font-bold rounded px-2 py-0.5 cursor-help", getTemperatureStyle(temp))}>
+            <span className={cn("inline-flex items-center rounded px-2 py-0.5 text-[9px] font-bold border cursor-help", getTemperatureStyle(temp))}>
               {getTemperatureLabel(temp)}
-            </Badge>
+            </span>
           </TooltipTrigger>
           <TooltipContent>
             <p className="text-xs">
@@ -186,22 +300,57 @@ export function buildColumns(workspaceMembers: WorkspaceMember[], lastVisitedLea
       );
     },
   },
-  // Next action
+  // Canal Préféré
+  {
+    accessorKey: 'preferredChannel',
+    header: 'Canal Préféré',
+    cell: ({ row }) => {
+      const channel = (row.original.preferredChannel || 'cold_call') as string;
+      const label = channel === 'sms' ? 'SMS' : channel === 'instagram_dm' ? 'Instagram DM' : 'Cold Call';
+      const color = channel === 'sms'
+        ? 'text-[#059669] bg-[#059669]/10 border-[#059669]/20'
+        : channel === 'instagram_dm'
+        ? 'text-purple-700 bg-purple-50 border-purple-200'
+        : 'text-blue-700 bg-blue-50 border-blue-200';
+      return (
+        <span className={cn("inline-flex items-center rounded-md px-2 py-0.5 text-[9px] font-bold border", color)}>
+          {label}
+        </span>
+      );
+    },
+  },
+  // Action Suivante
   {
     accessorKey: 'nextAction',
     header: 'Action Suivante',
     cell: ({ row }) => {
       const action = row.getValue('nextAction') as string;
       const date = row.original.nextActionDate;
-      if (!action) return <span className="text-xs text-[#7a7a76]/50 italic">Aucune</span>;
+      if (!action) return <span className="text-xs text-[#8A9098]">—</span>;
       return (
         <div className="flex flex-col gap-0.5 max-w-[180px]">
-          <span className="text-xs text-[#26251e] font-medium truncate">{action}</span>
+          <span className="text-xs text-[#14171A] truncate">{action}</span>
           {date && (
-            <span className="text-[10px] text-[#7a7a76]">
+            <span className="text-[10px] text-[#8A9098]">
               Pour le : {new Date(date).toLocaleDateString('fr-FR')}
             </span>
           )}
+        </div>
+      );
+    },
+  },
+  // Statut d'enrichissement (dérivé — pas de champ dédié en base)
+  {
+    id: 'enrichmentStatus',
+    header: 'Enrichissement',
+    accessorFn: (row) => getEnrichmentStatus(row),
+    filterFn: 'equalsString',
+    cell: ({ row }) => {
+      const status = getEnrichmentStatus(row.original);
+      return (
+        <div className="flex items-center gap-1.5">
+          <span className="h-2 w-2 rounded-sm shrink-0" style={{ backgroundColor: ENRICHMENT_DOT[status] }} />
+          <span className="text-xs text-[#4B5158]">{ENRICHMENT_LABEL[status]}</span>
         </div>
       );
     },
@@ -212,7 +361,7 @@ export function buildColumns(workspaceMembers: WorkspaceMember[], lastVisitedLea
     header: ({ column }) => (
       <button
         onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-        className="flex items-center gap-1 hover:text-[#26251e] font-semibold"
+        className="flex items-center gap-1 hover:text-[#14171A] font-semibold justify-end w-full"
       >
         <TrendingUp className="h-3 w-3" />
         Score
@@ -222,14 +371,16 @@ export function buildColumns(workspaceMembers: WorkspaceMember[], lastVisitedLea
     cell: ({ row }) => {
       const score = (row.getValue('score') as number) ?? 0;
       const colorClass = score >= 80
-        ? 'bg-[#10b981]/10 text-[#059669] border-[#10b981]/20'
+        ? 'bg-[#167f5b]/10 text-[#167f5b] border-[#167f5b]/20'
         : score >= 60
-        ? 'bg-[#26251e]/10 text-[#26251e] border-[#26251e]/20'
-        : 'bg-[#e5e5e0] text-[#807d72] border-[#e5e5e0]';
-      if (!score) return <span className="text-[10px] text-[#7a7a76]/40">—</span>;
+        ? 'bg-[#14171A]/10 text-[#14171A] border-[#14171A]/20'
+        : 'bg-[#8A9098]/10 text-[#8A9098] border-[#8A9098]/20';
+      if (!score) return <div className="text-right pr-2 text-[10px] text-[#8A9098]">—</div>;
       return (
-        <div className={`inline-flex items-center justify-center w-10 h-6 rounded border text-[10px] font-black ${colorClass}`}>
-          {score}
+        <div className="flex justify-end pr-2 tabular-nums">
+          <div className={`inline-flex items-center justify-center w-10 h-6 rounded border text-[10px] font-black ${colorClass}`}>
+            {score}
+          </div>
         </div>
       );
     },
@@ -240,7 +391,7 @@ export function buildColumns(workspaceMembers: WorkspaceMember[], lastVisitedLea
     header: ({ column }) => (
       <button
         onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-        className="flex items-center gap-1 hover:text-[#26251e] font-semibold"
+        className="flex items-center gap-1 hover:text-[#14171A] font-semibold justify-end w-full"
       >
         <TrendingUp className="h-3 w-3" />
         Intent
@@ -250,14 +401,16 @@ export function buildColumns(workspaceMembers: WorkspaceMember[], lastVisitedLea
     cell: ({ row }) => {
       const intent = (row.getValue('intentScore') as number) ?? 0;
       const colorClass = intent >= 80
-        ? 'bg-rose-100 text-rose-700 border-rose-200'
+        ? 'bg-[#D64545]/10 text-[#D64545] border-[#D64545]/20'
         : intent >= 50
-        ? 'bg-emerald-100 text-emerald-700 border-emerald-200'
-        : 'bg-slate-100 text-slate-500 border-slate-200';
-      if (!intent) return <span className="text-[10px] text-[#7a7a76]/40">—</span>;
+        ? 'bg-[#167f5b]/10 text-[#167f5b] border-[#167f5b]/20'
+        : 'bg-[#8A9098]/10 text-[#8A9098] border-[#8A9098]/20';
+      if (!intent) return <div className="text-right pr-2 text-[10px] text-[#8A9098]">—</div>;
       return (
-        <div className={`inline-flex items-center justify-center w-10 h-6 rounded border text-[10px] font-black ${colorClass}`}>
-          {intent}%
+        <div className="flex justify-end pr-2 tabular-nums">
+          <div className={`inline-flex items-center justify-center w-10 h-6 rounded border text-[10px] font-black ${colorClass}`}>
+            {intent}%
+          </div>
         </div>
       );
     },
@@ -268,7 +421,7 @@ export function buildColumns(workspaceMembers: WorkspaceMember[], lastVisitedLea
     header: ({ column }) => (
       <button
         onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-        className="flex items-center gap-1 hover:text-[#26251e] font-semibold"
+        className="flex items-center gap-1 hover:text-[#14171A] font-semibold justify-end w-full"
       >
         <Zap className="h-3 w-3" />
         Opportunité
@@ -278,59 +431,46 @@ export function buildColumns(workspaceMembers: WorkspaceMember[], lastVisitedLea
     accessorFn: (row) => row.score || computeLeadScore(row),
     cell: ({ row }) => {
       const oppScore = row.original.score || computeLeadScore(row.original);
-      const colorStyle =
-        oppScore >= 70
-          ? { bg: '#059669' + '1a', text: '#059669', border: '#059669' + '33' }
-          : oppScore >= 40
-          ? { bg: '#059669' + '1a', text: '#059669', border: '#059669' + '33' }
-          : { bg: '#7a7a76' + '1a', text: '#7a7a76', border: '#7a7a76' + '33' };
-      if (oppScore === 0) return <span className="text-[10px] text-[#7a7a76]/40">—</span>;
+      const colorClass = oppScore >= 40
+        ? 'bg-[#167f5b]/10 text-[#167f5b] border-[#167f5b]/20'
+        : 'bg-[#8A9098]/10 text-[#8A9098] border-[#8A9098]/20';
+      if (oppScore === 0) return <div className="text-right pr-2 text-[10px] text-[#8A9098]">—</div>;
       return (
         <Tooltip>
           <TooltipTrigger asChild>
-            <div
-              className="inline-flex items-center justify-center w-10 h-6 rounded border text-[10px] font-black cursor-help"
-              style={{ backgroundColor: colorStyle.bg, color: colorStyle.text, borderColor: colorStyle.border }}
-            >
-              {oppScore}
+            <div className="flex justify-end pr-2 tabular-nums">
+              <div className={`inline-flex items-center justify-center w-10 h-6 rounded border text-[10px] font-black cursor-help ${colorClass}`}>
+                {oppScore}
+              </div>
             </div>
           </TooltipTrigger>
           <TooltipContent>
-            <p className="text-xs">Score d'opportunité: {oppScore}/100<br />Plus le score est élevé, plus ce lead est une opportunité de service.</p>
+            <p className="text-xs">Score d&apos;opportunité: {oppScore}/100<br />Plus le score est élevé, plus ce lead est une opportunité de service.</p>
           </TooltipContent>
         </Tooltip>
       );
     },
     enableSorting: true,
   },
-  // Tags (potentiel, secteur, etc. — posés manuellement ou par l'agent IA)
+  // Tags
   {
     id: 'tags',
     header: 'Tags',
     accessorFn: (row) => row.tags ?? [],
     cell: ({ row }) => {
       const tags = row.original.tags ?? [];
-      if (tags.length === 0) return <span className="text-[10px] text-[#7a7a76]/40">—</span>;
+      if (tags.length === 0) return <span className="text-[10px] text-[#8A9098]">—</span>;
       return (
         <div className="flex flex-wrap gap-1 max-w-[160px]">
           {tags.slice(0, 3).map((tag) => (
-            <span key={tag} className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[#059669]/10 text-[#059669] border border-[#059669]/20 whitespace-nowrap">
+            <span key={tag} className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[#167f5b]/10 text-[#167f5b] border border-[#167f5b]/20 whitespace-nowrap">
               {tag}
             </span>
           ))}
-          {tags.length > 3 && <span className="text-[9px] text-[#7a7a76]">+{tags.length - 3}</span>}
+          {tags.length > 3 && <span className="text-[9px] text-[#8A9098]">+{tags.length - 3}</span>}
         </div>
       );
     },
-    enableSorting: false,
-  },
-  // Assignment
-  {
-    id: 'assignedTo',
-    header: 'Assigné à',
-    cell: ({ row }) => (
-      <LeadsAssignCell lead={row.original} workspaceMembers={workspaceMembers} />
-    ),
     enableSorting: false,
   },
   // Actions
@@ -341,7 +481,7 @@ export function buildColumns(workspaceMembers: WorkspaceMember[], lastVisitedLea
       const lead = row.original;
       return (
         <div className="text-right pr-2">
-          <Button asChild variant="ghost" size="icon" className="h-7 w-7 text-[#7a7a76] hover:text-[#059669] hover:bg-[#059669]/5">
+          <Button asChild variant="ghost" size="icon" className="h-7 w-7 text-[#8A9098] hover:text-[#167f5b] hover:bg-[#167f5b]/5">
             <Link href={`/leads/${lead.id}`}>
               <ArrowUpRight className="h-4 w-4" />
             </Link>
@@ -353,4 +493,3 @@ export function buildColumns(workspaceMembers: WorkspaceMember[], lastVisitedLea
     enableHiding: false,
   },
 ]; }
-

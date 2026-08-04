@@ -2,16 +2,21 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import {
   BarChart3, RefreshCw, Loader2, ArrowLeft, Mail, ListTodo,
   ArrowRightLeft, UsersRound, BrainCircuit, PauseCircle, PlayCircle, Tag,
-  MessageSquare, Inbox, Lightbulb, Send, Sparkles, ChevronRight, Clock,
+  MessageSquare, Inbox, Lightbulb, Send, Sparkles, ChevronRight, Clock, Trophy, LineChart,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useReach } from '@/lib/reach-context';
 import { getApiUrl } from '@/lib/api-helper';
 import { formatDistanceToNow, format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { PerformanceRoot } from '@/app/(app)/performance/_components/performance-root';
+import { AnalyticsRoot } from '@/app/(app)/analytics/_components/analytics-root';
+
+type MainTab = 'bilan' | 'performance' | 'analytics';
 
 interface WeeklyMetrics {
   nbaAcceptanceRate: number;
@@ -131,6 +136,14 @@ function formatWeekLabel(weekStart: string, weekEnd: string): string {
 export function WeeklyReportRoot() {
   const { activeWorkspace } = useReach();
 
+  // Bilan + Performance + Analytics vivent maintenant sur une seule page
+  // (l'équipe voulait 2 tableaux de bord au total : Today, et celui-ci).
+  const searchParamsUrl = useSearchParams();
+  const [mainTab, setMainTab] = useState<MainTab>(() => {
+    const t = searchParamsUrl?.get('tab');
+    return t === 'performance' || t === 'analytics' ? t : 'bilan';
+  });
+
   const [loadingReport, setLoadingReport] = useState(false);
   const [report, setReport] = useState<string | null>(null);
   const [metrics, setMetrics] = useState<WeeklyMetrics | null>(null);
@@ -154,38 +167,29 @@ export function WeeklyReportRoot() {
     return `${fmt(start)} – ${fmt(end)}`;
   })();
 
+  // Lit le rapport déjà généré (par le cron du lundi) — ne régénère jamais l'IA
+  // à la demande, pour que "Bilan de la semaine" reste un vrai bilan HEBDOMADAIRE
+  // plutôt que quelque chose qui se recalcule à chaque visite.
   const fetchHistory = useCallback(async () => {
-    if (!activeWorkspace) return;
-    try {
-      const res = await fetch(getApiUrl(`/api/insights/weekly/history?workspaceId=${activeWorkspace.id}`));
-      if (!res.ok) return;
-      const data = await res.json();
-      setHistory(data.reports ?? []);
-    } catch { /* non-fatal */ }
-  }, [activeWorkspace]);
-
-  const fetchReport = useCallback(async () => {
     if (!activeWorkspace) return;
     setLoadingReport(true);
     setReportError(false);
-    setSelectedWeek(null);
     try {
-      const res = await fetch(getApiUrl('/api/insights/weekly'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ workspaceId: activeWorkspace.id }),
-      });
+      const res = await fetch(getApiUrl(`/api/insights/weekly/history?workspaceId=${activeWorkspace.id}`));
       if (!res.ok) throw new Error('failed');
       const data = await res.json();
-      setReport(data.report ?? null);
-      setMetrics(data.metrics ?? null);
-      fetchHistory(); // refresh catalogue after generating
+      const reports = data.reports ?? [];
+      setHistory(reports);
+      if (reports.length > 0) {
+        setReport(reports[0].report);
+        setMetrics(reports[0].metrics);
+      }
     } catch {
       setReportError(true);
     } finally {
       setLoadingReport(false);
     }
-  }, [activeWorkspace, fetchHistory]);
+  }, [activeWorkspace]);
 
   const fetchActivity = useCallback(async () => {
     if (!activeWorkspace) return;
@@ -197,19 +201,16 @@ export function WeeklyReportRoot() {
       setActivity(data.activity ?? []);
       setTotals(data.totals ?? null);
     } catch {
-      // Non-fatal — the AI report above still renders
+      // Non-fatal
     } finally {
       setLoadingActivity(false);
     }
   }, [activeWorkspace]);
 
   useEffect(() => {
-    fetchReport();
-    fetchActivity();
     fetchHistory();
-  }, [fetchReport, fetchActivity, fetchHistory]);
-
-  if (!activeWorkspace) return null;
+    fetchActivity();
+  }, [fetchHistory, fetchActivity]);
 
   const grouped = groupByDay(activity);
   const activeReport = selectedWeek ? selectedWeek.report : report;
@@ -252,36 +253,66 @@ export function WeeklyReportRoot() {
               <p className="text-xs text-[#7a7a76] mt-0.5 font-medium">{activeRange}</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            {/* History toggle */}
-            <button
-              onClick={() => setHistoryOpen(v => !v)}
-              className={cn(
-                'flex items-center gap-1.5 rounded-xl border px-3.5 py-2.5 text-xs font-bold transition-all shrink-0 shadow-xs hover:-translate-y-0.5 active:translate-y-0',
-                historyOpen
-                  ? 'border-[#059669] bg-[#059669]/8 text-[#059669]'
-                  : 'border-[#e5e5e0] bg-white hover:bg-[#f4f4f3] text-[#26251e]'
-              )}
-            >
-              <Clock className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Historique</span>
-              {history.length > 0 && (
-                <span className="bg-[#059669] text-white text-[9px] font-black px-2 py-0.5 rounded-full ml-1">
-                  {history.length}
-                </span>
-              )}
-            </button>
-            <button
-              onClick={() => { fetchReport(); fetchActivity(); }}
-              disabled={loadingReport || loadingActivity}
-              className="flex items-center gap-1.5 rounded-xl border border-[#e5e5e0] bg-white hover:bg-[#f4f4f3] disabled:opacity-50 px-3.5 py-2.5 text-xs font-bold text-[#26251e] transition-all shrink-0 shadow-xs hover:-translate-y-0.5 active:translate-y-0"
-            >
-              {loadingReport || loadingActivity ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
-              <span className="hidden sm:inline">Actualiser</span>
-            </button>
-          </div>
+          {mainTab === 'bilan' && (
+            <div className="flex items-center gap-2">
+              {/* History toggle */}
+              <button
+                onClick={() => setHistoryOpen(v => !v)}
+                className={cn(
+                  'flex items-center gap-1.5 rounded-xl border px-3.5 py-2.5 text-xs font-bold transition-all shrink-0 shadow-xs hover:-translate-y-0.5 active:translate-y-0',
+                  historyOpen
+                    ? 'border-[#059669] bg-[#059669]/8 text-[#059669]'
+                    : 'border-[#e5e5e0] bg-white hover:bg-[#f4f4f3] text-[#26251e]'
+                )}
+              >
+                <Clock className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Historique</span>
+                {history.length > 0 && (
+                  <span className="bg-[#059669] text-white text-[9px] font-black px-2 py-0.5 rounded-full ml-1">
+                    {history.length}
+                  </span>
+                )}
+              </button>
+              <button
+                onClick={() => { fetchHistory(); fetchActivity(); }}
+                disabled={loadingReport || loadingActivity}
+                title="Relit le dernier bilan généré — le prochain bilan est généré automatiquement chaque lundi"
+                className="flex items-center gap-1.5 rounded-xl border border-[#e5e5e0] bg-white hover:bg-[#f4f4f3] disabled:opacity-50 px-3.5 py-2.5 text-xs font-bold text-[#26251e] transition-all shrink-0 shadow-xs hover:-translate-y-0.5 active:translate-y-0"
+              >
+                {loadingReport || loadingActivity ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+                <span className="hidden sm:inline">Actualiser</span>
+              </button>
+            </div>
+          )}
         </div>
 
+        {/* === Onglets : Bilan / Performance équipe / Analytics === */}
+        <div className="flex items-center gap-2 mb-8 -mt-4">
+          {([
+            { id: 'bilan' as const, label: 'Bilan IA', icon: BrainCircuit },
+            { id: 'performance' as const, label: 'Performance équipe', icon: Trophy },
+            { id: 'analytics' as const, label: 'Analytics', icon: LineChart },
+          ]).map(({ id, label, icon: Icon }) => (
+            <button
+              key={id}
+              onClick={() => setMainTab(id)}
+              className={cn(
+                'flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all',
+                mainTab === id
+                  ? 'bg-[#059669] text-white shadow-sm'
+                  : 'bg-white border border-[#e5e5e0] text-[#7a7a76] hover:text-[#26251e] hover:bg-[#fafaf8]'
+              )}
+            >
+              <Icon className="h-3.5 w-3.5" />
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {mainTab === 'performance' && <PerformanceRoot />}
+        {mainTab === 'analytics' && <AnalyticsRoot />}
+
+        {mainTab === 'bilan' && (
         <div className="flex flex-col lg:flex-row gap-6">
           {/* === HISTORY SIDEBAR === */}
           {historyOpen && (
@@ -411,7 +442,7 @@ export function WeeklyReportRoot() {
                 </div>
               )}
               {!activeReport && !loadingReport && !reportError && (
-                <p className="text-xs text-[#7a7a76] font-semibold">Cliquez sur &quot;Actualiser&quot; pour générer le bilan de cette semaine.</p>
+                <p className="text-xs text-[#7a7a76] font-semibold">Aucun bilan généré pour l&apos;instant — le prochain est généré automatiquement chaque lundi matin.</p>
               )}
             </div>
 
@@ -481,6 +512,7 @@ export function WeeklyReportRoot() {
             )}
           </div>
         </div>
+        )}
       </div>
     </div>
   );

@@ -1,10 +1,14 @@
-import { GuideRoot } from './_components/guide-root';
+'use client';
 
-export const metadata = {
-  title: 'Guide de démarrage — Minerva',
-  description: 'Apprends à utiliser Minerva en 10 minutes et commence à prospecter.',
-};
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
-export default function GuidePage() {
-  return <GuideRoot />;
+// Le tour animé a été retiré — /setup (checklist) est désormais le seul
+// point d'entrée onboarding, il couvrait les mêmes jalons en double.
+export default function GuideRedirect() {
+  const router = useRouter();
+  useEffect(() => {
+    router.replace('/setup');
+  }, [router]);
+  return null;
 }

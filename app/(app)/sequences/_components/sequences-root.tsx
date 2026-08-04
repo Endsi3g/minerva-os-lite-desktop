@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { OutreachNavBar } from '@/components/outreach-nav-bar';
 import { getApiUrl } from '@/lib/api-helper';
 import { cn } from '@/lib/utils';
 import {
@@ -96,17 +95,16 @@ export function SequencesRoot() {
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      <OutreachNavBar />
       <div className="flex-1 overflow-y-auto bg-[#fafaf8] relative">
       <div className="absolute inset-0 opacity-[0.25] pointer-events-none bg-grid-pattern-20 z-0" />
       <div className="relative z-10 w-full p-3 sm:p-4 md:p-8 space-y-6">
         {/* Header */}
         <div className="flex items-start justify-between flex-wrap gap-3">
           <div>
-            <h1 className="text-xl font-bold text-[#26251e]">Séquences, Composer & Cadences</h1>
+            <h1 className="text-xl font-bold text-[#26251e]">Séquences & Cadences</h1>
             <p className="text-xs text-[#7a7a76] mt-1 max-w-xl">
-              Tout l'outreach par email au même endroit : séquences automatiques par lead, modèles réutilisables,
-              rédaction manuelle, file d'envoi et calendrier de relances — au lieu d'être éparpillé entre plusieurs pages.
+              Planifie et automatise tes relances par lead : séquences automatiques, modèles réutilisables,
+              file d'attente et calendrier de relances. Pour composer et envoyer un message maintenant, direction Outreach.
             </p>
           </div>
           {view === 'by_lead' && (
@@ -140,7 +138,7 @@ export function SequencesRoot() {
             )}
           >
             <Layers className="h-3.5 w-3.5" />
-            Modèles, Composer & Queue
+            Modèles & Queue
           </button>
         </div>
 

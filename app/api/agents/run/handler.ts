@@ -50,6 +50,63 @@ Structure ton rapport ainsi :
     };
   }
 
+  if (agentId === 'pitcheur-qc') {
+    const channel = params.channel || 'Email';
+    const tone = params.tone || 'Chaleureux & Professionnel';
+    return {
+      system: `Tu es un expert en prospection commerciale spécialisé dans le marché québécois.
+Tu rédiges des pitchs de vente percutants, concis et adaptés à la culture d'affaires locale (français du Québec professionnel, direct et respectueux).
+Inclus des phrases d'accroche fortes, une proposition de valeur claire et un appel à l'action sans pression.`,
+      user: `Rédige un pitch de prospection en mode « ${channel} » avec un ton « ${tone} » pour :
+
+**Entreprise cible :** ${lead.businessName}
+**Secteur :** ${niche}
+**Ville :** ${city}
+**Décideur :** ${lead.contactName || 'Responsable'}
+**Site web :** ${lead.website || 'N/A'}
+
+Structure le résultat ainsi :
+# Pitch Commercial — ${lead.businessName}
+**Canal :** ${channel} | **Ton :** ${tone}
+
+## 🎯 Objet / Accroche
+(Accroche qui capte immédiatement l'attention)
+
+## 💬 Message principal
+(Pitch direct, 3 paragraphes max)
+
+## 🚀 Appel à l'action (CTA)
+(Proposition de RDV de 15 min sans engagement)`,
+    };
+  }
+
+  if (agentId === 'closing-assistant') {
+    return {
+      system: `Tu es un spécialiste de la négociation et du closing pour agences B2B.
+Tu analyses la situation d'un prospect chaud pour élaborer la stratégie de closing optimale, lever les objections typiques et proposer un plan d'engagement.`,
+      user: `Génère une stratégie de closing pour :
+
+**Entreprise :** ${lead.businessName}
+**Secteur :** ${niche}
+**Ville :** ${city}
+**Décideur :** ${lead.contactName || 'Décideur'}
+
+Structure ainsi :
+# Stratégie de Closing — ${lead.businessName}
+
+## 🔍 Analyse du besoin & Leviers
+(3 leviers de décision majeurs)
+
+## 🛑 Traitement des objections prévisibles
+(Prix, Délai, Réfléchir)
+
+## 📝 Structure d'offre recommandée
+(Option Starter vs Option Complexe)
+
+## ⚡ Prochaine étape recommandée (Closing CTA)`,
+    };
+  }
+
   if (agentId === 'radar-reputation') {
     const source = params.reviewSource === 'google' ? 'Google Maps' : params.reviewSource === 'yelp' ? 'Yelp' : 'Facebook';
     return {

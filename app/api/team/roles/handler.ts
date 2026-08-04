@@ -5,22 +5,14 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createServerSupabase } from '@/lib/supabase/server';
-import { createClient as createAdminClient } from '@supabase/supabase-js';
-
-function adminClient() {
-  return createAdminClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { persistSession: false } }
-  );
-}
+import { getAdminClient } from '@/lib/supabase/admin';
 
 export async function GET() {
   const supabase = await createServerSupabase();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const admin = adminClient();
+  const admin = getAdminClient();
   const { data, error } = await admin
     .from('workspace_roles')
     .select('*')
@@ -46,7 +38,7 @@ export async function POST(req: NextRequest) {
   const { name, color, permissions } = body;
   if (!name) return NextResponse.json({ error: 'name required' }, { status: 400 });
 
-  const admin = adminClient();
+  const admin = getAdminClient();
   const { data, error } = await admin
     .from('workspace_roles')
     .insert({
@@ -79,7 +71,7 @@ export async function PUT(req: NextRequest) {
   const body = await req.json();
   const { name, color, permissions } = body;
 
-  const admin = adminClient();
+  const admin = getAdminClient();
   const { data, error } = await admin
     .from('workspace_roles')
     .update({ name, color, permissions })
@@ -100,7 +92,7 @@ export async function DELETE(req: NextRequest) {
   const id = req.nextUrl.searchParams.get('id');
   if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 });
 
-  const admin = adminClient();
+  const admin = getAdminClient();
   const { error } = await admin
     .from('workspace_roles')
     .delete()

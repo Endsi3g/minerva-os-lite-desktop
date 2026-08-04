@@ -131,13 +131,13 @@ export function LeadNbaCard({ leadId, workspaceId }: { leadId: string; workspace
     return (
       <div className="rounded-xl border border-[#e5e5e0] bg-white p-4 flex items-center justify-between gap-3">
         <div>
-          <p className="text-xs font-semibold text-[#26251e]">Score NBA non calculé</p>
-          <p className="text-[11px] text-[#7a7a76]">Lancez le calcul pour obtenir une recommandation</p>
+          <p className="text-xs font-semibold text-[#14171A]">Score NBA non calculé</p>
+          <p className="text-[11px] text-[#8A9098]">Lancez le calcul pour obtenir une recommandation</p>
         </div>
         <button
           onClick={handleRescore}
           disabled={rescoring}
-          className="shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#059669] hover:bg-[#047857] text-white text-xs font-bold disabled:opacity-60 transition-colors"
+          className="shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#167f5b] hover:bg-[#0f6b4c] text-white text-xs font-bold disabled:opacity-60 transition-colors"
         >
           {rescoring ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Zap className="h-3.5 w-3.5" />}
           Calculer
@@ -150,16 +150,16 @@ export function LeadNbaCard({ leadId, workspaceId }: { leadId: string; workspace
   const label = ACTION_LABELS[data.nba_action ?? ''] ?? (data.nba_action ?? 'Action recommandée');
 
   return (
-    <div className="rounded-xl border-l-[3px] border-l-[#059669] border border-[#e5e5e0] bg-white p-4 space-y-3">
+    <div className="rounded-xl border-l-[3px] border-l-[#167f5b] border border-[#e5e5e0] bg-white p-4 space-y-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1.5">
-          <Zap className="h-3 w-3 text-[#059669] fill-[#059669]" />
-          <span className="text-[10px] font-bold uppercase tracking-wider text-[#059669]">Prochaine meilleure action</span>
+          <Zap className="h-3 w-3 text-[#167f5b] fill-[#167f5b]" />
+          <span className="text-[10px] font-bold uppercase tracking-wider text-[#167f5b]">Prochaine meilleure action</span>
         </div>
         <button
           onClick={handleRescore}
           disabled={rescoring}
-          className="p-1 hover:bg-[#f4f4f3] rounded text-[#a3a197] hover:text-[#26251e] transition-colors"
+          className="p-1 hover:bg-[#f4f4f3] rounded text-[#a3a197] hover:text-[#14171A] transition-colors"
           title="Recalculer"
         >
           <RefreshCw className={cn('h-3 w-3', rescoring && 'animate-spin')} />
@@ -169,8 +169,8 @@ export function LeadNbaCard({ leadId, workspaceId }: { leadId: string; workspace
       <ScoreBadge score={Math.round(data.nba_score)} />
 
       <div className="flex items-center gap-2">
-        <Icon className="h-3.5 w-3.5 text-[#059669] shrink-0" />
-        <span className="text-sm font-semibold text-[#26251e]">{label}</span>
+        <Icon className="h-3.5 w-3.5 text-[#167f5b] shrink-0" />
+        <span className="text-sm font-semibold text-[#14171A]">{label}</span>
       </div>
 
       {data.nba_reason && (
@@ -181,7 +181,7 @@ export function LeadNbaCard({ leadId, workspaceId }: { leadId: string; workspace
 
       {explanation && (
         <div className="rounded-lg bg-[#f0fdf4] border border-[#bbf7d0] px-3 py-2 space-y-1">
-          <p className="text-[10px] font-bold text-[#059669] uppercase tracking-wider">Analyse IA</p>
+          <p className="text-[10px] font-bold text-[#167f5b] uppercase tracking-wider">Analyse IA</p>
           <p className="text-[11px] text-[#15803d] leading-relaxed italic">{explanation}</p>
         </div>
       )}
@@ -190,7 +190,7 @@ export function LeadNbaCard({ leadId, workspaceId }: { leadId: string; workspace
         <button
           onClick={handleExplain}
           disabled={explaining}
-          className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-[#e5e5e0] hover:bg-[#f4f4f3] text-xs font-semibold text-[#555552] hover:text-[#26251e] transition-colors"
+          className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-[#e5e5e0] hover:bg-[#f4f4f3] text-xs font-semibold text-[#555552] hover:text-[#14171A] transition-colors"
         >
           {explaining ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Brain className="h-3.5 w-3.5" />}
           {explanation ? 'Masquer' : 'Pourquoi ?'}

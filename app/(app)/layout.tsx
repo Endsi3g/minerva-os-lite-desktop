@@ -298,8 +298,20 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
   // New states for Minerva OS Lite interactive features
   const [showNewProjectModal, setShowNewProjectModal] = useState(false);
   const [newProjectName, setNewProjectName] = useState('');
-  const [onboarding, setOnboarding] = useState({ percent: 12, score: 0 });
+  const [onboarding, setOnboarding] = useState({ percent: 0, score: 0 });
   const [completedTasks, setCompletedTasks] = useState<string[]>([]);
+
+  useEffect(() => {
+    const syncOnboarding = () => {
+      const prog = getOnboardingProgress();
+      const state = getOnboardingState();
+      setOnboarding({ percent: prog.percent, score: prog.score });
+      setCompletedTasks(state);
+    };
+    syncOnboarding();
+    window.addEventListener('minerva_store_update', syncOnboarding);
+    return () => window.removeEventListener('minerva_store_update', syncOnboarding);
+  }, []);
 
   // Spotlight search states
   const [showSearchModal, setShowSearchModal] = useState(false);
@@ -768,70 +780,48 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
     return crumbs;
   };
 
-  // Pinned nav items — Navigation v6 : 6 entrées (Templates fusionné dans Outreach)
+  // Pinned nav items — Navigation principale
   const pinnedItems = [
     { name: 'Accueil',  href: '/today',    icon: Home },
     { name: 'Leads',    href: '/leads',    icon: Users },
     { name: 'Outreach', href: '/outreach', icon: Send },
     { name: 'Carte',    href: '/map',      icon: MapPin },
-    { name: 'Agenda',   href: '/agenda',   icon: CalendarDays },
-    { name: 'Équipe',   href: '/team',     icon: UsersRound, badge: 'NEW' },
+    { name: 'Équipe',   href: '/team',     icon: UsersRound, badge: 'NOUVEAU' },
   ];
 
   const navCategories: Array<{ id: string; label: string; items: Array<{ name: string; href: string; icon: React.ElementType; badge?: string }> }> = [
     {
       id: 'sales',
-      label: 'Ventes',
+      label: 'Pilotage & Prospection',
       items: [
-        { name: 'Prospection',   href: '/prospecting', icon: Search },
-        { name: 'Profils cibles',href: '/personas',    icon: UserCog },
         { name: 'Pipeline',      href: '/pipeline',    icon: KanbanSquare },
-        { name: 'Inbox',         href: '/inbox',       icon: Inbox },
-        { name: 'Terrain',       href: '/field',       icon: Navigation },
+        { name: 'Prospection',   href: '/prospecting', icon: Search },
+        { name: 'Boîte de réception', href: '/inbox',   icon: Inbox },
       ],
     },
     {
-      id: 'daily',
-      label: 'Quotidien',
+      id: 'operations',
+      label: 'Opérations & Performance',
       items: [
-        { name: 'Tâches',       href: '/tasks',          icon: ListChecks },
-        { name: 'Bilan semaine',href: '/weekly-report',  icon: BarChart3, badge: 'NEW' },
-        { name: 'Activités',    href: '/activities',     icon: Activity },
-        { name: 'Messages',     href: '/messages',       icon: MessageCircle },
-        { name: 'Contacts',     href: '/contacts',       icon: Users },
-        { name: 'Notifications',href: '/notifications',  icon: Bell },
+        { name: 'Bilan & Performance', href: '/weekly-report', icon: BarChart3 },
+        { name: 'Tâches',       href: '/tasks',         icon: ListChecks },
+        { name: 'Agenda',       href: '/agenda',        icon: CalendarDays },
       ],
     },
     {
-      id: 'ai',
-      label: 'Minerva AI',
+      id: 'outreach_ai',
+      label: 'Outreach & IA',
       items: [
-        { name: 'Assistant IA', href: '/assistant',    icon: Sparkles },
-        { name: 'Agents',       href: '/agents',       icon: Bot },
-        { name: 'Intelligence', href: '/intelligence', icon: Brain },
-        { name: 'Skills',       href: '/skills',       icon: Zap },
+        { name: 'Assistant IA',    href: '/assistant',      icon: Sparkles },
+        { name: 'Agents IA',       href: '/agents',         icon: Bot },
       ],
     },
     {
-      id: 'marketing',
-      label: 'Marketing',
+      id: 'assets_system',
+      label: 'Assets & System',
       items: [
         { name: 'Publicité',       href: '/ads',            icon: Target },
-        { name: 'Acquisition',     href: '/acquisition',    icon: TrendingUp },
-        { name: 'Site Web',        href: '/website-builder',icon: Globe },
-        { name: 'Audit SEO',       href: '/audit',          icon: ShieldCheck },
-        { name: 'Rapports client', href: '/client-reports', icon: FileText },
-        { name: 'Performance',     href: '/performance',    icon: BarChart3 },
-        { name: 'Webhooks',        href: '/webhooks',       icon: Zap },
-      ],
-    },
-    {
-      id: 'tools',
-      label: 'Outils outreach',
-      items: [
-        { name: 'Séquences & Envoi', href: '/sequences',     icon: Mail },
-        { name: 'Campagnes',         href: '/campaigns',     icon: Megaphone },
-        { name: 'Playbooks',         href: '/playbooks',     icon: BookOpen },
+        { name: 'Bibliothèque',    href: '/library',        icon: BookOpen },
       ],
     },
   ];
@@ -1060,7 +1050,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
           {/* Pinned nav items */}
           <nav className={cn("space-y-[2px]", isCollapsed ? "px-2" : "px-3")}>
             {filteredPinnedItems.map((item) => {
-              const isActive = pathname === item.href || (item.href !== '/today' && item.href !== '/welcome' && pathname.startsWith(item.href));
+              const isActive = pathname === item.href || (item.href !== '/today' && pathname.startsWith(item.href));
 
               const navLink = (
                 <Link
@@ -1309,15 +1299,13 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                   >
                     <div className="space-y-[2px] pb-1">
                       {[
-                        { href: '/guide', icon: Zap, label: 'Guide de démarrage' },
+                        { href: '/setup', icon: Zap, label: 'Configuration initiale' },
                         { href: '/today?tab=pilotage', icon: Gauge, label: 'Revenue OS' },
                         { href: '/platform', icon: Layers, label: 'Plateforme & packs' },
-                        { href: '/analytics', icon: BarChart3, label: 'Statistiques' },
                         { href: '/billing', icon: CreditCard, label: 'Facturation' },
                         { href: '/help', icon: HelpCircle, label: 'Aide & Docs' },
                         { href: '/changelog', icon: Megaphone, label: t('nav.changelog') },
                         { href: '/roadmap', icon: Flag, label: 'Roadmap' },
-                        { href: '/leverage-library', icon: BookOpen, label: 'Bibliothèque de preuves' },
                         { href: '/recovery', icon: RefreshCw, label: 'Récupération de données' },
                       ].map(({ href, icon: Icon, label }) => {
                         const isFooterActive = pathname === href;
@@ -1429,15 +1417,6 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
 
           {/* Right actions */}
           <div className="flex items-center gap-2">
-            {/* Global Voice Tasker Mic Button */}
-            <button
-              onClick={startVoiceTasker}
-              className="flex h-8 w-8 items-center justify-center rounded-md border border-[#e5e5e0] bg-white text-[#7a7a76] hover:text-[#059669] hover:bg-[#fafaf8] hover:border-[#059669]/30 transition-all cursor-pointer shrink-0"
-              title="Dicter une tâche globale"
-            >
-              <Mic className="h-3.5 w-3.5" />
-            </button>
-
             {/* Global search (Cmd/Ctrl+K, or "/") — icon-only on mobile, full box on desktop */}
             <button
               onClick={() => setShowSearchModal(true)}
@@ -1763,7 +1742,6 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                       { name: 'Profils cibles', href: '/personas',    icon: UserCog },
                       { name: 'Pipeline',       href: '/pipeline',    icon: Kanban },
                       { name: 'Inbox',          href: '/inbox',       icon: Inbox },
-                      { name: 'Terrain',        href: '/field',       icon: MapPin },
                       { name: 'Équipe',         href: '/team',        icon: UsersRound },
                     ],
                   },
@@ -1771,21 +1749,19 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                     label: 'Outils',
                     items: [
                       { name: 'Tâches',       href: '/tasks',          icon: ListChecks },
-                      { name: 'Bilan semaine',href: '/weekly-report',  icon: BarChart3 },
+                      { name: 'Bilan & Performance', href: '/weekly-report', icon: BarChart3 },
                       { name: 'Activités',    href: '/activities',     icon: Activity },
                       { name: 'Contacts',     href: '/contacts',       icon: Users },
                       { name: 'Notifs',       href: '/notifications',  icon: Bell },
                       { name: 'Messages',     href: '/messages',       icon: MessageCircle },
                       { name: 'Séquences',    href: '/sequences',      icon: Mail },
                       { name: 'Campagnes',    href: '/campaigns',      icon: Megaphone },
-                      { name: 'Playbooks',    href: '/playbooks',      icon: BookOpen },
                     ],
                   },
                   {
                     label: 'Marketing',
                     items: [
                       { name: 'Publicité',       href: '/ads',            icon: Target },
-                      { name: 'Acquisition',     href: '/acquisition',    icon: TrendingUp },
                       { name: 'Site Web',        href: '/website-builder',icon: Globe },
                       { name: 'Audit SEO',       href: '/audit',          icon: ShieldCheck },
                       { name: 'Rapports client', href: '/client-reports', icon: FileText },
@@ -1806,7 +1782,6 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                     items: [
                       { name: 'Paramètres',   href: '/settings',     icon: SettingsIcon },
                       { name: 'Intégrations', href: '/integrations', icon: Plug },
-                      { name: 'Performance',  href: '/performance',  icon: BarChart3 },
                       { name: 'Changelog',    href: '/changelog',    icon: Megaphone },
                       { name: 'Bibliothèque', href: '/library',      icon: Folder },
                       { name: 'Récupération', href: '/recovery',     icon: RefreshCw },

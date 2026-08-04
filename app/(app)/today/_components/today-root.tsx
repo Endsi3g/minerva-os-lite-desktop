@@ -7,6 +7,8 @@ import { TodayGoalsCard } from './today-goals-card';
 import { TodayAgendaCard } from './today-agenda-card';
 import { TodaySequenceStepsCard } from './today-sequence-steps-card';
 import { FollowUpListCard } from './follow-up-list-card';
+import { TodayOverviewCharts } from './today-overview-charts';
+import { TodayHotProspectsCard } from './today-hot-prospects-card';
 import { TodayTasksCard } from './today-tasks-card';
 import { TodayFocusCard } from './today-focus-card';
 import { TodayActivityFeedCard } from './today-activity-feed-card';
@@ -193,10 +195,11 @@ export function TodayRoot() {
     }
   }, [searchParams]);
 
-  // Guidelines guide trigger
+  // Premier passage — envoie vers la checklist de configuration (le tour animé
+  // /guide a été retiré, /setup est désormais le seul point d'entrée onboarding).
   useEffect(() => {
     if (typeof window !== 'undefined' && !localStorage.getItem('minerva_guide_seen')) {
-      router.replace('/guide');
+      router.replace('/setup');
     }
   }, [router]);
 
@@ -339,17 +342,30 @@ export function TodayRoot() {
 
   // KPI Calculations
   const contactedLeads = useMemo(() => leads.filter((l) => l.status !== 'New').length, [leads]);
-  const bookedLeads = useMemo(() => leads.filter((l) => l.status === 'Meeting Booked').length, [leads]);
-  const bookingRate = useMemo(() => contactedLeads > 0 ? ((bookedLeads / contactedLeads) * 100).toFixed(1) : '0.0', [contactedLeads, bookedLeads]);
-  
-  const positiveReplies = useMemo(() => leads.filter((l) => l.replyStatus === 'positive').length, [leads]);
   const totalReplies = useMemo(() => leads.filter((l) => l.replyStatus).length, [leads]);
-  const positiveReplyRate = useMemo(() => totalReplies > 0 ? ((positiveReplies / totalReplies) * 100).toFixed(0) : '0', [positiveReplies, totalReplies]);
-
-  const scoredLeads = useMemo(() => leads.filter((l) => (l as any).nba_score > 0), [leads]);
-  const avgNbaScore = useMemo(() => scoredLeads.length ? Math.round(scoredLeads.reduce((s, l) => s + ((l as any).nba_score ?? 0), 0) / scoredLeads.length) : 0, [scoredLeads]);
-
   const activeLeadsCount = useMemo(() => leads.filter((l) => l.status !== 'Won' && l.status !== 'Lost').length, [leads]);
+
+  // Overview KPIs (Minerva redesign) — computed from real lead data only.
+  const now = new Date();
+  const leadsThisMonth = useMemo(() => leads.filter((l) => {
+    if (!l.createdAt) return false;
+    const d = new Date(l.createdAt);
+    return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+  }).length, [leads]);
+  const leadsLastMonth = useMemo(() => {
+    const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    return leads.filter((l) => {
+      if (!l.createdAt) return false;
+      const d = new Date(l.createdAt);
+      return d.getFullYear() === prev.getFullYear() && d.getMonth() === prev.getMonth();
+    }).length;
+  }, [leads]);
+  const leadsMonthDelta = leadsThisMonth - leadsLastMonth;
+  const contactRate = useMemo(() => leads.length > 0 ? Math.round((contactedLeads / leads.length) * 100) : 0, [leads.length, contactedLeads]);
+  const activePipelineValue = useMemo(() => leads
+    .filter((l) => l.status !== 'Won' && l.status !== 'Lost')
+    .reduce((sum, l) => sum + (l.dealAmount ?? 0), 0), [leads]);
+  const responseRate = useMemo(() => contactedLeads > 0 ? Math.round((totalReplies / contactedLeads) * 100) : 0, [contactedLeads, totalReplies]);
 
   // Canonical 7-Phase Journey lead counts
   const phaseCounts = useMemo(() => {
@@ -659,8 +675,9 @@ export function TodayRoot() {
 
                         {/* IA Optimisation Tip Footer Banner */}
                         <div className="bg-[#fafaf8] border border-dashed border-[#e5e5e0] rounded-2xl px-3 py-2.5 flex items-center justify-center gap-2 mt-1 select-none">
+                          <Zap className="w-3.5 h-3.5 text-[#059669] shrink-0" />
                           <span className="text-[10px] text-[#7a7a76] font-bold text-center">
-                            💡 Optimisez votre prospection automatiquement
+                            Optimisez votre prospection automatiquement avec Minerva AI
                           </span>
                         </div>
                       </div>
@@ -668,32 +685,56 @@ export function TodayRoot() {
                   </div>
                 ) : (
                   /* Original Desktop Dashboard Layout */
-                  <>
+                  <div className="space-y-5 animate-in fade-in duration-300 text-left">
                     <TodayGuestUpgradeBanner />
                     <TodaySetupBanner />
                     <TodayHeader onAestheticToggle={() => setShowAestheticMode(true)} />
                     
-                    {/* Unified KPI Metrics bar */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      <div className="bg-white border border-[#e5e5e0] rounded-xl p-4 flex flex-col gap-1 shadow-sm">
-                        <span className="text-[10px] font-bold text-[#7a7a76] uppercase tracking-wider">Leads Actifs</span>
-                        {isDataReady ? <span className="text-2xl font-black text-[#26251e]">{activeLeadsCount}</span> : <span className="h-7 w-12 rounded bg-[#f4f4f3] animate-pulse" />}
-                      </div>
-                      <div className="bg-white border border-[#e5e5e0] rounded-xl p-4 flex flex-col gap-1 shadow-sm">
-                        <span className="text-[10px] font-bold text-[#7a7a76] uppercase tracking-wider">Taux de Booking</span>
-                        {isDataReady ? <span className="text-2xl font-black text-[#26251e]">{bookingRate}%</span> : <span className="h-7 w-12 rounded bg-[#f4f4f3] animate-pulse" />}
-                      </div>
-                      <div className="bg-white border border-[#e5e5e0] rounded-xl p-4 flex flex-col gap-1 shadow-sm">
-                        <span className="text-[10px] font-bold text-[#7a7a76] uppercase tracking-wider">Réponses Positives</span>
-                        {isDataReady ? <span className="text-2xl font-black text-[#26251e]">{positiveReplyRate}%</span> : <span className="h-7 w-12 rounded bg-[#f4f4f3] animate-pulse" />}
-                      </div>
-                      <div className="bg-white border border-[#e5e5e0] rounded-xl p-4 flex flex-col gap-1 shadow-sm">
-                        <span className="text-[10px] font-bold text-[#7a7a76] uppercase tracking-wider">Score NBA Moyen</span>
-                        {isDataReady ? <span className="text-2xl font-black text-[#26251e]">{avgNbaScore} pts</span> : <span className="h-7 w-12 rounded bg-[#f4f4f3] animate-pulse" />}
+                    {/* Overview KPI bar (Minerva redesign) */}
+                    <div className="kpi-container">
+                      <div className="kpi-grid">
+                        <div className="bg-white border border-[#e5e5e0] rounded-xl p-4 flex flex-col gap-1 shadow-sm">
+                          <span className="text-[10px] font-bold text-[#4B5158] uppercase tracking-wider">Leads générés ce mois-ci</span>
+                          {isDataReady ? (
+                            <div className="flex items-baseline gap-2">
+                              <span className="text-2xl font-black text-[#14171A]">{leadsThisMonth}</span>
+                              {leadsLastMonth > 0 && (
+                                <span className={cn('text-[11px] font-bold', leadsMonthDelta >= 0 ? 'text-[#167f5b]' : 'text-[#D64545]')}>
+                                  {leadsMonthDelta >= 0 ? '+' : ''}{leadsMonthDelta}
+                                </span>
+                              )}
+                            </div>
+                          ) : <span className="h-7 w-12 rounded bg-[#f4f4f3] animate-pulse" />}
+                          <span className="text-[10px] text-[#8A9098]">vs {leadsLastMonth} le mois dernier</span>
+                        </div>
+                        <div className="bg-white border border-[#e5e5e0] rounded-xl p-4 flex flex-col gap-1 shadow-sm">
+                          <span className="text-[10px] font-bold text-[#4B5158] uppercase tracking-wider">Taux de contact</span>
+                          {isDataReady ? <span className="text-2xl font-black text-[#14171A]">{contactRate}%</span> : <span className="h-7 w-12 rounded bg-[#f4f4f3] animate-pulse" />}
+                          <span className="text-[10px] text-[#8A9098]">{contactedLeads} prospects contactés</span>
+                        </div>
+                        <div className="bg-white border border-[#e5e5e0] rounded-xl p-4 flex flex-col gap-1 shadow-sm">
+                          <span className="text-[10px] font-bold text-[#4B5158] uppercase tracking-wider">Valeur pipeline actif</span>
+                          {isDataReady ? <span className="text-2xl font-black text-[#14171A]">{activePipelineValue.toLocaleString('fr-CA')} $</span> : <span className="h-7 w-12 rounded bg-[#f4f4f3] animate-pulse" />}
+                          <span className="text-[10px] text-[#8A9098]">{activeLeadsCount} prospects actifs</span>
+                        </div>
+                        <div className="bg-white border border-[#e5e5e0] rounded-xl p-4 flex flex-col gap-1 shadow-sm">
+                          <span className="text-[10px] font-bold text-[#4B5158] uppercase tracking-wider">Taux de réponse</span>
+                          {isDataReady ? <span className="text-2xl font-black text-[#14171A]">{responseRate}%</span> : <span className="h-7 w-12 rounded bg-[#f4f4f3] animate-pulse" />}
+                          <span className="text-[10px] text-[#8A9098]">{totalReplies} réponses reçues</span>
+                        </div>
                       </div>
                     </div>
-                  </>
-                )}
+
+                    {/* Charts: leads générés vs contactés + pipeline par étape */}
+                    <TodayOverviewCharts />
+
+                    {/* Prospects chauds + Relances en retard */}
+                    <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+                      <TodayHotProspectsCard />
+                      <FollowUpListCard />
+                    </div>
+                    </div>
+                  )}
 
                 {/* Monthly Goals */}
                 <TodayGoalsCard />
@@ -822,7 +863,6 @@ export function TodayRoot() {
                         <TodayAgendaCard />
                         <TodayGoogleCalendarCard />
                         <TodaySequenceStepsCard />
-                        <FollowUpListCard />
                       </div>
 
                       {/* Right Column */}
@@ -855,8 +895,6 @@ export function TodayRoot() {
         {showAestheticMode && (
           <TodayAestheticCanvas onClose={() => setShowAestheticMode(false)} />
         )}
-
-        <V7StrategyModal />
       </div>
     </ErrorBoundary>
   );

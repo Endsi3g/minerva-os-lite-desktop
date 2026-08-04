@@ -323,9 +323,9 @@ export function LeadsHeader() {
     <>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between pb-2 border-b border-[#e5e5e0]">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-[#26251e]">Leads</h1>
-          <p className="text-xs text-[#7a7a76] mt-0.5">
-            Portefeuille des opportunités de prospection locale ({leads.length} prospect{leads.length !== 1 ? 's' : ''} au total).
+          <h1 className="text-2xl font-heading font-medium tracking-tight text-[#14171A]">Prospects</h1>
+          <p className="text-xs text-[#4B5158] mt-0.5">
+            Toutes les entreprises identifiées pour ta prospection ({leads.length} au total).
           </p>
         </div>
         <div className="flex items-center gap-2">

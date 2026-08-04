@@ -1,7 +1,14 @@
-import { PlaybooksRoot } from './_components/playbooks-root';
+'use client';
 
-export const metadata = { title: 'Playbooks' };
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
-export default function PlaybooksPage() {
-  return <PlaybooksRoot />;
+// Playbooks a été retiré (contenu 100% statique/codé en dur, non fonctionnel) —
+// ses cas d'usage sont couverts par Séquences (planification) + Campagnes (objectifs).
+export default function PlaybooksRedirect() {
+  const router = useRouter();
+  useEffect(() => {
+    router.replace('/sequences');
+  }, [router]);
+  return null;
 }

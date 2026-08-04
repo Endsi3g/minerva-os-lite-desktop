@@ -34,13 +34,13 @@ export function LeadProgramsBadge({ leadId }: { leadId: string }) {
 
   return (
     <div className="space-y-1.5">
-      <span className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Programmes</span>
+      <span className="text-[10px] font-bold uppercase tracking-wider text-[#8A9098]">Programmes</span>
       <div className="flex flex-wrap gap-1.5">
         {programs.map((c) => (
           <Link
             key={c.id}
             href={`/campaigns/${c.id}`}
-            className="flex items-center gap-1 text-[10px] font-bold text-[#059669] bg-[#059669]/10 border border-[#059669]/20 rounded-full px-2 py-1 hover:bg-[#059669]/15 transition-colors"
+            className="flex items-center gap-1 text-[10px] font-bold text-[#167f5b] bg-[#167f5b]/10 border border-[#167f5b]/20 rounded-full px-2 py-1 hover:bg-[#167f5b]/15 transition-colors"
           >
             <Rocket className="h-2.5 w-2.5" />
             {c.name} — {GOAL_TYPE_LABELS[c.goalType!]}

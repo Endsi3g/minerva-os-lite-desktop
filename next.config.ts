@@ -20,6 +20,21 @@ const nextConfig: NextConfig = {
           root: path.resolve(process.cwd()),
         },
       }),
+  // NOTE: these only apply to the web (Vercel) deployment — Next.js static export
+  // (EXPORT_MODE=true, used for Electron/Capacitor) ignores `redirects()` entirely.
+  // Routes below whose PAGE ITSELF still exists (acquisition/playbooks/guide/leverage-library)
+  // also need an in-page client-side redirect (like app/chat/page.tsx already does) to behave
+  // consistently on desktop/mobile, not just on web.
+  async redirects() {
+    return [
+      { source: '/chat', destination: '/assistant', permanent: true },
+      { source: '/email-templates', destination: '/settings/email-templates', permanent: true },
+      { source: '/acquisition', destination: '/leads', permanent: true },
+      { source: '/playbooks', destination: '/sequences', permanent: true },
+      { source: '/guide', destination: '/setup', permanent: true },
+      { source: '/leverage-library', destination: '/library', permanent: true },
+    ];
+  },
 };
 
 // Sentry's build-time source map upload assumes a server deployment (Vercel) — skip

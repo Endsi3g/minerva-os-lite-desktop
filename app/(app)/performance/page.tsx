@@ -1,8 +1,14 @@
-import type { Metadata } from 'next';
-import { PerformanceRoot } from './_components/performance-root';
+'use client';
 
-export const metadata: Metadata = { title: 'Classement de performance' };
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
-export default function PerformancePage() {
-  return <PerformanceRoot />;
+// Performance vit maintenant comme un onglet de /weekly-report (mis en avant,
+// avec Analytics) — un seul tableau de bord "comment va mon business" au lieu de trois.
+export default function PerformanceRedirect() {
+  const router = useRouter();
+  useEffect(() => {
+    router.replace('/weekly-report?tab=performance');
+  }, [router]);
+  return null;
 }

@@ -2,10 +2,10 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import {
-  Send, Plus, X, ChevronDown, Mail, Clock, CheckSquare,
+  Plus, X, ChevronDown, Mail, Clock, CheckSquare,
   GitBranch, Loader2, Archive, Users, RefreshCw, Settings,
   ChevronRight, Bold, Italic, Underline as UnderlineIcon,
-  List, AlignLeft, Calendar, CheckCircle2, AlertCircle, Ban,
+  List, AlignLeft, Calendar, CheckCircle2, Ban,
   Phone, MessageSquare, FlaskConical, Pause, Sparkles, ThumbsUp,
   ThumbsDown, Info, CalendarCheck, OctagonX, UserX, Clock3,
 } from 'lucide-react';
@@ -16,36 +16,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Separator } from '@/components/ui/separator';
 import { useLanguage } from '@/lib/language-context';
 import { useReach } from '@/lib/reach-context';
 import { getApiUrl } from '@/lib/api-helper';
 import { createClient } from '@/lib/supabase/client';
-import type { SequenceTemplate, SequenceStep, Lead } from '@/lib/mock-data';
+import type { SequenceTemplate, SequenceStep } from '@/lib/mock-data';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
 import Placeholder from '@tiptap/extension-placeholder';
 import TextAlign from '@tiptap/extension-text-align';
-
-// ── Variable substitution ──────────────────────────────────────────────────────
-function substituteVars(text: string, lead: Lead): string {
-  let result = text
-    .replace(/\{\{prenom\}\}/g, lead.contactName?.split(' ')[0] || lead.businessName)
-    .replace(/\{\{business\}\}/g, lead.businessName || '')
-    .replace(/\{\{ville\}\}/g, lead.city || '')
-    .replace(/\{\{niche\}\}/g, lead.niche || '');
-
-  if (lead.customFields && typeof lead.customFields === 'object') {
-    Object.entries(lead.customFields).forEach(([key, val]) => {
-      const escapedKey = key.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
-      const regex = new RegExp(`\\{\\{${escapedKey}\\}\\}`, 'g');
-      result = result.replace(regex, String(val ?? ''));
-    });
-  }
-
-  return result;
-}
 
 // ── Variable chips ─────────────────────────────────────────────────────────────
 const VARS = [
@@ -444,26 +424,6 @@ export function ComposerQueueCadenceRoot() {
     finally { setClassifying(false); }
   };
 
-  // Composer
-  const [composerLead, setComposerLead] = useState<Lead | null>(null);
-  const [composerLeadSearch, setComposerLeadSearch] = useState('');
-  const [composerTo, setComposerTo] = useState('');
-  const [composerSubject, setComposerSubject] = useState('');
-  const [composerSending, setComposerSending] = useState(false);
-  const [composerQueuing, setComposerQueuing] = useState(false);
-  const [composerSchedule, setComposerSchedule] = useState('');
-  const [composerMsg, setComposerMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-
-  const composerEditor = useEditor({
-    extensions: [
-      StarterKit,
-      Underline,
-      Placeholder.configure({ placeholder: 'Corps de l\'email…' }),
-      TextAlign.configure({ types: ['heading', 'paragraph'] }),
-    ],
-    content: '',
-  });
-
   // Schedules (cadences)
   const [cadenceItems, setCadenceItems] = useState<Array<{
     id: string;
@@ -636,102 +596,6 @@ export function ComposerQueueCadenceRoot() {
     }
   };
 
-  // ── Composer handlers ───────────────────────────────────────────────────────
-  const selectComposerLead = (lead: Lead) => {
-    setComposerLead(lead);
-    setComposerTo(lead.contactEmail || '');
-    setComposerLeadSearch('');
-  };
-
-  const insertVarSubject = (v: string) => {
-    setComposerSubject(prev => prev + v);
-  };
-
-  const handleSendNow = async () => {
-    if (!composerTo || !composerSubject || !composerEditor) return;
-    setComposerSending(true);
-    setComposerMsg(null);
-    try {
-      const bodyHtml = composerLead
-        ? substituteVars(composerEditor.getHTML(), composerLead)
-        : composerEditor.getHTML();
-      const subject = composerLead ? substituteVars(composerSubject, composerLead) : composerSubject;
-
-      const res = await fetch(getApiUrl('/api/send-email'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          to: composerTo,
-          subject,
-          body: bodyHtml,
-          leadId: composerLead?.id,
-          workspaceId: activeWorkspace?.id,
-        }),
-      });
-      if (res.ok) {
-        // Also log to queue as sent
-        await fetch(getApiUrl('/api/outreach/queue'), {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            leadId: composerLead?.id,
-            toEmail: composerTo,
-            toName: composerLead?.contactName || composerLead?.businessName,
-            subject,
-            bodyHtml,
-            bodyText: composerEditor.getText(),
-            scheduledAt: new Date().toISOString(),
-          }),
-        });
-        setComposerMsg({ type: 'success', text: 'Email envoyé avec succès !' });
-        composerEditor.commands.clearContent();
-        setComposerSubject('');
-      } else {
-        const d = await res.json();
-        setComposerMsg({ type: 'error', text: d.error || 'Erreur d\'envoi' });
-      }
-    } catch {
-      setComposerMsg({ type: 'error', text: 'Erreur réseau' });
-    } finally {
-      setComposerSending(false);
-    }
-  };
-
-  const handleAddToQueue = async (scheduledAt?: string) => {
-    if (!composerTo || !composerSubject || !composerEditor) return;
-    setComposerQueuing(true);
-    setComposerMsg(null);
-    try {
-      const bodyHtml = composerLead
-        ? substituteVars(composerEditor.getHTML(), composerLead)
-        : composerEditor.getHTML();
-      const subject = composerLead ? substituteVars(composerSubject, composerLead) : composerSubject;
-      const res = await fetch(getApiUrl('/api/outreach/queue'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          leadId: composerLead?.id,
-          toEmail: composerTo,
-          toName: composerLead?.contactName || composerLead?.businessName,
-          subject,
-          bodyHtml,
-          bodyText: composerEditor.getText(),
-          scheduledAt: scheduledAt || new Date().toISOString(),
-        }),
-      });
-      if (res.ok) {
-        setComposerMsg({ type: 'success', text: scheduledAt ? 'Email planifié !' : 'Ajouté à la queue !' });
-        composerEditor.commands.clearContent();
-        setComposerSubject('');
-        await fetchQueue();
-      } else {
-        setComposerMsg({ type: 'error', text: 'Erreur lors de l\'ajout' });
-      }
-    } finally {
-      setComposerQueuing(false);
-    }
-  };
-
   // ── Queue actions ───────────────────────────────────────────────────────────
   const updateQueueStatus = async (id: string, status: string) => {
     await fetch(getApiUrl('/api/outreach/queue'), {
@@ -759,11 +623,6 @@ export function ComposerQueueCadenceRoot() {
     });
     return Object.fromEntries(Object.entries(days).filter(([, items]) => items.length > 0));
   };
-
-  const filteredLeads = leads.filter(l =>
-    (l.businessName + ' ' + (l.contactName || '') + ' ' + (l.city || '')).toLowerCase()
-      .includes(composerLeadSearch.toLowerCase())
-  ).slice(0, 8);
 
   const enrollFilteredLeads = leads.filter(l =>
     (l.businessName + ' ' + (l.contactName || '') + ' ' + (l.city || '')).toLowerCase()
@@ -825,7 +684,6 @@ export function ComposerQueueCadenceRoot() {
           <TabsList className="h-9 bg-[#f4f4f3] border border-[#e5e5e0] p-1 rounded-lg">
             {[
               { value: 'sequences', label: t('outreach.tab_sequences') },
-              { value: 'compose', label: t('outreach.tab_compose') },
               { value: 'queue', label: t('outreach.tab_queue') },
               { value: 'cadences', label: t('outreach.tab_cadences') },
             ].map(tab => (
@@ -916,141 +774,6 @@ export function ComposerQueueCadenceRoot() {
                 ))}
               </div>
             )}
-          </TabsContent>
-
-          {/* ── Tab 2: Composer ── */}
-          <TabsContent value="compose" className="mt-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {/* Left: lead selector */}
-              <div className="border border-[#e5e5e0] rounded-xl bg-white p-4 space-y-3">
-                <div className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Sélectionner un lead</div>
-                <Input
-                  placeholder="Rechercher un lead…"
-                  value={composerLeadSearch}
-                  onChange={e => setComposerLeadSearch(e.target.value)}
-                  className="h-7 text-xs border-[#e5e5e0]"
-                />
-                <div className="space-y-1 max-h-64 overflow-y-auto">
-                  {filteredLeads.map(lead => (
-                    <button
-                      key={lead.id}
-                      onClick={() => selectComposerLead(lead)}
-                      className={`w-full text-left px-2.5 py-1.5 rounded-md text-xs transition-colors ${
-                        composerLead?.id === lead.id
-                          ? 'bg-[#059669]/10 text-[#059669] font-semibold'
-                          : 'text-[#26251e] hover:bg-[#f4f4f3]'
-                      }`}
-                    >
-                      <p className="font-semibold truncate">{lead.businessName}</p>
-                      <p className="text-[10px] text-[#7a7a76] truncate">{lead.contactEmail || 'Pas d\'email'}</p>
-                    </button>
-                  ))}
-                  {leads.length === 0 && (
-                    <p className="text-xs text-[#7a7a76] text-center py-4">Aucun lead disponible</p>
-                  )}
-                </div>
-                {composerLead && (
-                  <div className="border border-[#059669]/20 bg-[#059669]/5 rounded-lg p-2.5 space-y-1">
-                    <p className="text-xs font-bold text-[#059669]">{composerLead.businessName}</p>
-                    <p className="text-[10px] text-[#7a7a76]">{composerLead.contactName}</p>
-                    <p className="text-[10px] text-[#7a7a76]">{composerLead.contactEmail}</p>
-                  </div>
-                )}
-              </div>
-
-              {/* Right: compose area */}
-              <div className="md:col-span-2 border border-[#e5e5e0] rounded-xl bg-white p-4 space-y-3">
-                {/* To field */}
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-[#7a7a76] w-8 shrink-0">{t('outreach.compose_to')}</span>
-                  <Input
-                    value={composerTo}
-                    onChange={e => setComposerTo(e.target.value)}
-                    placeholder="email@exemple.com"
-                    className="h-7 text-xs border-[#e5e5e0] flex-1"
-                  />
-                </div>
-
-                {/* Subject field */}
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-[#7a7a76] w-8 shrink-0">{t('outreach.compose_subject')}</span>
-                  <Input
-                    value={composerSubject}
-                    onChange={e => setComposerSubject(e.target.value)}
-                    placeholder="Objet de l'email"
-                    className="h-7 text-xs border-[#e5e5e0] flex-1"
-                  />
-                </div>
-
-                {/* Variable chips for subject */}
-                <VarChips onInsert={insertVarSubject} customFields={composerLead?.customFields} />
-
-                <Separator className="bg-[#e5e5e0]" />
-
-                {/* TipTap editor */}
-                <div className="border border-[#e5e5e0] rounded-lg overflow-hidden">
-                  {composerEditor && <EditorToolbar editor={composerEditor} />}
-                  <div className="min-h-[160px] text-xs p-3 prose prose-xs max-w-none">
-                    <EditorContent editor={composerEditor} />
-                  </div>
-                </div>
-
-                {/* Variable chips for body */}
-                <VarChips onInsert={(v) => composerEditor?.chain().focus().insertContent(v).run()} customFields={composerLead?.customFields} />
-
-                {/* Feedback */}
-                {composerMsg && (
-                  <div className={`flex items-center gap-2 text-xs font-semibold px-3 py-2 rounded-lg border ${
-                    composerMsg.type === 'success'
-                      ? 'bg-[#059669]/10 text-[#059669] border-[#059669]/20'
-                      : 'bg-red-50 text-red-700 border-red-200'
-                  }`}>
-                    {composerMsg.type === 'success'
-                      ? <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
-                      : <AlertCircle className="w-3.5 h-3.5 shrink-0" />}
-                    {composerMsg.text}
-                  </div>
-                )}
-
-                {/* Actions */}
-                <div className="flex items-center gap-2 flex-wrap pt-1 border-t border-[#e5e5e0]">
-                  <Button
-                    onClick={handleSendNow}
-                    disabled={composerSending || !composerTo || !composerSubject}
-                    className="h-8 bg-[#059669] hover:bg-[#047857] text-white font-bold text-xs gap-1.5"
-                  >
-                    {composerSending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
-                    {t('outreach.send_now')}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => handleAddToQueue()}
-                    disabled={composerQueuing || !composerTo || !composerSubject}
-                    className="h-8 text-xs font-bold border-[#e5e5e0] gap-1.5"
-                  >
-                    {composerQueuing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
-                    {t('outreach.add_to_queue')}
-                  </Button>
-                  <div className="flex items-center gap-1.5 ml-auto">
-                    <Input
-                      type="datetime-local"
-                      value={composerSchedule}
-                      onChange={e => setComposerSchedule(e.target.value)}
-                      className="h-8 text-xs border-[#e5e5e0] w-44"
-                    />
-                    <Button
-                      variant="outline"
-                      onClick={() => composerSchedule && handleAddToQueue(new Date(composerSchedule).toISOString())}
-                      disabled={!composerSchedule || !composerTo || !composerSubject}
-                      className="h-8 text-xs font-bold border-[#e5e5e0] gap-1.5"
-                    >
-                      <Calendar className="w-3.5 h-3.5" />
-                      {t('outreach.schedule')}
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </div>
           </TabsContent>
 
           {/* ── Tab 3: Queue ── */}

@@ -193,7 +193,7 @@ function InlineTextEdit({ value, onSave, placeholder = 'Non spécifié', classNa
       }}
       className={cn(
         "cursor-pointer hover:bg-[#f4f4f3]/60 px-1 py-0.5 rounded border border-transparent hover:border-[#e5e5e0]/70 transition-all text-xs min-h-6 flex items-center min-w-0 break-all",
-        !value && "text-[#7a7a76] italic",
+        !value && "text-[#8A9098] italic",
         disabled && "cursor-not-allowed hover:bg-transparent hover:border-transparent opacity-85",
         className
       )}
@@ -212,7 +212,7 @@ function ScoreBar({ value, color, label }: { value: number; color: string; label
   return (
     <div className="space-y-1">
       <div className="flex items-center justify-between">
-        <span className="text-[10px] text-[#7a7a76]">{label}</span>
+        <span className="text-[10px] text-[#8A9098]">{label}</span>
         <span className="text-[10px] font-bold" style={{ color }}>{value}/100</span>
       </div>
       <div className="h-1.5 bg-[#f4f4f3] rounded-full overflow-hidden">
@@ -229,11 +229,11 @@ function BantCheckbox({ label, checked, onChange }: { label: string; checked: bo
       className={cn(
         'flex items-center gap-1.5 px-2 py-1 rounded-md text-[10px] font-bold border transition-all',
         checked
-          ? 'bg-[#059669]/10 border-[#059669]/30 text-[#059669]'
-          : 'bg-[#f4f4f3]/60 border-[#e5e5e0] text-[#7a7a76]'
+          ? 'bg-[#167f5b]/10 border-[#167f5b]/30 text-[#167f5b]'
+          : 'bg-[#f4f4f3]/60 border-[#e5e5e0] text-[#8A9098]'
       )}
     >
-      <span className={cn('w-3 h-3 rounded-sm border flex items-center justify-center shrink-0', checked ? 'bg-[#059669] border-[#059669]' : 'border-muted-foreground/40')}>
+      <span className={cn('w-3 h-3 rounded-sm border flex items-center justify-center shrink-0', checked ? 'bg-[#167f5b] border-[#167f5b]' : 'border-muted-foreground/40')}>
         {checked && <Check className="w-2 h-2 text-white" />}
       </span>
       {label}
@@ -290,14 +290,14 @@ function ScriptPanel({ lead }: { lead: Lead }) {
   return (
     <div className="pt-4 border-t border-[#e5e5e0] mt-4 space-y-2">
       <div className="flex items-center justify-between">
-        <h4 className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76] flex items-center gap-1.5">
+        <h4 className="text-[10px] font-bold uppercase tracking-wider text-[#8A9098] flex items-center gap-1.5">
           <FileSignature className="h-3 w-3" />
           Script de Pitch
         </h4>
         <button
           onClick={handleGenerate}
           disabled={loading}
-          className="flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold border border-[#059669]/30 text-[#059669] bg-[#059669]/5 hover:bg-[#059669]/10 transition-colors disabled:opacity-50"
+          className="flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold border border-[#167f5b]/30 text-[#167f5b] bg-[#167f5b]/5 hover:bg-[#167f5b]/10 transition-colors disabled:opacity-50"
         >
           {loading ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : <Zap className="w-2.5 h-2.5" />}
           Générer
@@ -307,22 +307,22 @@ function ScriptPanel({ lead }: { lead: Lead }) {
       {open && (
         <div className="rounded-md border border-[#e5e5e0] bg-[#f4f4f3]/40 p-3 space-y-2">
           {loading ? (
-            <div className="flex items-center gap-2 text-[10px] text-[#7a7a76]">
+            <div className="flex items-center gap-2 text-[10px] text-[#8A9098]">
               <Loader2 className="h-3 w-3 animate-spin" />
               {lead.website ? 'Analyse du site web + génération…' : 'Génération du script…'}
             </div>
           ) : script ? (
             <>
               {scraped && (
-                <p className="text-[9px] text-[#059669] font-medium flex items-center gap-1">
+                <p className="text-[9px] text-[#167f5b] font-medium flex items-center gap-1">
                   <Globe className="h-2.5 w-2.5" />
                   Basé sur le site web
                 </p>
               )}
-              <div className="text-[11px] text-[#26251e] leading-relaxed whitespace-pre-wrap">{cleanMarkdownForPreview(script)}</div>
+              <div className="text-[11px] text-[#14171A] leading-relaxed whitespace-pre-wrap">{cleanMarkdownForPreview(script)}</div>
               <button
                 onClick={handleCopy}
-                className="flex items-center gap-1 text-[9px] text-[#7a7a76] hover:text-[#26251e] transition-colors"
+                className="flex items-center gap-1 text-[9px] text-[#8A9098] hover:text-[#14171A] transition-colors"
               >
                 <Copy className="h-2.5 w-2.5" />
                 Copier le script
@@ -416,7 +416,7 @@ function QualificationPanel({ lead, onSave }: { lead: Lead; onSave: (fields: Par
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <h4 className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Qualification</h4>
+        <h4 className="text-[10px] font-bold uppercase tracking-wider text-[#8A9098]">Qualification</h4>
         <div className="flex items-center gap-1">
           <button
             onClick={handleAdvancedEnrich}
@@ -430,7 +430,7 @@ function QualificationPanel({ lead, onSave }: { lead: Lead; onSave: (fields: Par
           <button
             onClick={handleEnrich}
             disabled={loading}
-            className="flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold border border-[#059669]/30 text-[#059669] bg-[#059669]/5 hover:bg-[#059669]/10 transition-colors disabled:opacity-50"
+            className="flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold border border-[#167f5b]/30 text-[#167f5b] bg-[#167f5b]/5 hover:bg-[#167f5b]/10 transition-colors disabled:opacity-50"
           >
             {loading ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : <Zap className="w-2.5 h-2.5" />}
             Enrichir
@@ -445,13 +445,13 @@ function QualificationPanel({ lead, onSave }: { lead: Lead; onSave: (fields: Par
             // eslint-disable-next-line @next/next/no-img-element
             <div className="flex items-center gap-2">
               <img src={advResult.enrichedLogo} alt="logo" className="w-6 h-6 rounded" />
-              <span className="text-[10px] text-[#7a7a76]">Logo détecté</span>
+              <span className="text-[10px] text-[#8A9098]">Logo détecté</span>
             </div>
           )}
           {advResult.companySizeEstimate && (
             <div className="flex items-center gap-1.5">
               <Building className="w-3 h-3 text-purple-500" />
-              <span className="text-[10px] font-semibold text-[#26251e]">
+              <span className="text-[10px] font-semibold text-[#14171A]">
                 {{ solo: 'Solo', small: 'Petite (2–10)', medium: 'Moyenne (11–50)', large: 'Grande (50+)' }[advResult.companySizeEstimate] || advResult.companySizeEstimate}
               </span>
             </div>
@@ -459,7 +459,7 @@ function QualificationPanel({ lead, onSave }: { lead: Lead; onSave: (fields: Par
           {advResult.webPresenceScore !== undefined && (
             <div className="space-y-0.5">
               <div className="flex items-center justify-between">
-                <span className="text-[9px] text-[#7a7a76]">Présence web</span>
+                <span className="text-[9px] text-[#8A9098]">Présence web</span>
                 <span className="text-[9px] font-bold text-purple-700">{advResult.webPresenceScore}/100</span>
               </div>
               <div className="w-full h-1 bg-purple-100 rounded-full">
@@ -480,14 +480,14 @@ function QualificationPanel({ lead, onSave }: { lead: Lead; onSave: (fields: Par
       {/* Scores */}
       {(lead.fitScore !== undefined || lead.intentScore !== undefined) && (
         <div className="space-y-2">
-          {lead.fitScore !== undefined && <ScoreBar value={lead.fitScore} color="#059669" label="Fit digital" />}
+          {lead.fitScore !== undefined && <ScoreBar value={lead.fitScore} color="#167f5b" label="Fit digital" />}
           {lead.intentScore !== undefined && <ScoreBar value={lead.intentScore} color="#3b82f6" label="Signal d'intérêt" />}
         </div>
       )}
 
       {/* BANT */}
       <div>
-        <p className="text-[9px] font-bold uppercase tracking-wider text-[#7a7a76]/60 mb-1.5">BANT</p>
+        <p className="text-[9px] font-bold uppercase tracking-wider text-[#8A9098]/60 mb-1.5">BANT</p>
         <div className="flex flex-wrap gap-1.5">
           <BantCheckbox label="Budget" checked={!!lead.bantBudget} onChange={(v) => onSave({ bantBudget: v })} />
           <BantCheckbox label="Authority" checked={!!lead.bantAuthority} onChange={(v) => onSave({ bantAuthority: v })} />
@@ -498,21 +498,21 @@ function QualificationPanel({ lead, onSave }: { lead: Lead; onSave: (fields: Par
 
       {/* Decision maker */}
       <div className="space-y-1.5">
-        <p className="text-[9px] font-bold uppercase tracking-wider text-[#7a7a76]/60">Décideur</p>
+        <p className="text-[9px] font-bold uppercase tracking-wider text-[#8A9098]/60">Décideur</p>
         <div className="flex gap-1.5">
           <input
             value={dmName}
             onChange={(e) => setDmName(e.target.value)}
             onBlur={() => { if (dmName !== lead.decisionMakerName) onSave({ decisionMakerName: dmName }); }}
             placeholder="Prénom Nom"
-            className="flex-1 h-6 text-[10px] px-2 border border-[#e5e5e0] rounded bg-[#fafaf8] focus:outline-none focus:ring-1 focus:ring-[#059669]/40"
+            className="flex-1 h-6 text-[10px] px-2 border border-[#e5e5e0] rounded bg-[#fafaf8] focus:outline-none focus:ring-1 focus:ring-[#167f5b]/40"
           />
           <input
             value={dmRole}
             onChange={(e) => setDmRole(e.target.value)}
             onBlur={() => { if (dmRole !== lead.decisionMakerRole) onSave({ decisionMakerRole: dmRole }); }}
             placeholder="Propriétaire"
-            className="w-24 h-6 text-[10px] px-2 border border-[#e5e5e0] rounded bg-[#fafaf8] focus:outline-none focus:ring-1 focus:ring-[#059669]/40"
+            className="w-24 h-6 text-[10px] px-2 border border-[#e5e5e0] rounded bg-[#fafaf8] focus:outline-none focus:ring-1 focus:ring-[#167f5b]/40"
           />
         </div>
       </div>
@@ -520,7 +520,7 @@ function QualificationPanel({ lead, onSave }: { lead: Lead; onSave: (fields: Par
       {/* Suggested emails */}
       {lead.suggestedEmails && lead.suggestedEmails.length > 0 && (
         <div className="space-y-1.5">
-          <p className="text-[9px] font-bold uppercase tracking-wider text-[#7a7a76]/60">Emails suggérés</p>
+          <p className="text-[9px] font-bold uppercase tracking-wider text-[#8A9098]/60">Emails suggérés</p>
           <div className="flex flex-wrap gap-1">
             {lead.suggestedEmails.map((email) => (
               <button
@@ -530,8 +530,8 @@ function QualificationPanel({ lead, onSave }: { lead: Lead; onSave: (fields: Par
                 className={cn(
                   'text-[9px] px-1.5 py-0.5 rounded border font-mono transition-all',
                   lead.contactEmail === email
-                    ? 'bg-[#059669]/10 border-[#059669]/30 text-[#059669]'
-                    : 'bg-[#f4f4f3]/60 border-[#e5e5e0] text-[#7a7a76] hover:border-[#059669]/30 hover:text-[#26251e]'
+                    ? 'bg-[#167f5b]/10 border-[#167f5b]/30 text-[#167f5b]'
+                    : 'bg-[#f4f4f3]/60 border-[#e5e5e0] text-[#8A9098] hover:border-[#167f5b]/30 hover:text-[#14171A]'
                 )}
               >
                 {email}
@@ -542,7 +542,7 @@ function QualificationPanel({ lead, onSave }: { lead: Lead; onSave: (fields: Par
       )}
 
       {!hasData && (
-        <p className="text-[10px] text-[#7a7a76] italic">Cliquez sur "Enrichir" pour calculer les scores et suggérer des emails.</p>
+        <p className="text-[10px] text-[#8A9098] italic">Cliquez sur "Enrichir" pour calculer les scores et suggérer des emails.</p>
       )}
     </div>
   );
@@ -563,7 +563,7 @@ function TagInputInline({ onAdd }: { onAdd: (tag: string) => void }) {
           }
         }}
         placeholder="+ Ajouter un tag…"
-        className="flex-1 h-6 text-[10px] border border-[#e5e5e0] rounded px-2 bg-[#fafaf8] focus:outline-none focus:ring-1 focus:ring-[#059669]/40"
+        className="flex-1 h-6 text-[10px] border border-[#e5e5e0] rounded px-2 bg-[#fafaf8] focus:outline-none focus:ring-1 focus:ring-[#167f5b]/40"
       />
     </div>
   );
@@ -1262,17 +1262,17 @@ export function LeadDetailClient({ id }: { id: string }) {
 <style>
   @page { size: A4; margin: 20mm 15mm; }
   @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } .no-print { display: none !important; } }
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 11px; color: #26251e; line-height: 1.6; }
-  h1 { font-size: 22px; font-weight: 800; color: #26251e; margin: 0 0 4px; }
-  h2 { font-size: 13px; font-weight: 700; color: #059669; text-transform: uppercase; letter-spacing: 0.05em; margin: 24px 0 8px; border-bottom: 1px solid #e5e5e0; padding-bottom: 4px; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 11px; color: #14171A; line-height: 1.6; }
+  h1 { font-size: 22px; font-weight: 800; color: #14171A; margin: 0 0 4px; }
+  h2 { font-size: 13px; font-weight: 700; color: #167f5b; text-transform: uppercase; letter-spacing: 0.05em; margin: 24px 0 8px; border-bottom: 1px solid #e5e5e0; padding-bottom: 4px; }
   p { margin: 0 0 8px; }
-  .header { margin-bottom: 32px; border-bottom: 2px solid #059669; padding-bottom: 16px; }
-  .meta { font-size: 10px; color: #7a7a76; }
+  .header { margin-bottom: 32px; border-bottom: 2px solid #167f5b; padding-bottom: 16px; }
+  .meta { font-size: 10px; color: #8A9098; }
   table { width: 100%; border-collapse: collapse; margin: 8px 0; }
   td, th { padding: 6px 8px; border: 1px solid #e5e5e0; font-size: 10px; }
   th { background: #f7f7f4; font-weight: 700; }
-  .total-row { font-weight: 800; background: #f0fdf4; color: #059669; }
-  .print-btn { position: fixed; top: 12px; right: 12px; padding: 6px 14px; background: #059669; color: #fff; border: none; font-weight: 700; cursor: pointer; border-radius: 6px; font-size: 11px; }
+  .total-row { font-weight: 800; background: #f0fdf4; color: #167f5b; }
+  .print-btn { position: fixed; top: 12px; right: 12px; padding: 6px 14px; background: #167f5b; color: #fff; border: none; font-weight: 700; cursor: pointer; border-radius: 6px; font-size: 11px; }
 </style>
 </head><body>
 <button class="print-btn no-print" onclick="window.print()">Imprimer / PDF</button>
@@ -1502,25 +1502,25 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                 body {
                   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
                   padding: 50px;
-                  color: #26251e;
+                  color: #14171A;
                   line-height: 1.6;
                   background: white;
                 }
                 .header {
-                  border-bottom: 2px solid #059669;
+                  border-bottom: 2px solid #167f5b;
                   padding-bottom: 20px;
                   margin-bottom: 30px;
                 }
                 h1 {
                   font-size: 24px;
                   font-weight: 800;
-                  color: #26251e;
+                  color: #14171A;
                   margin: 0 0 10px 0;
                   letter-spacing: -0.025em;
                 }
                 .meta {
                   font-size: 11px;
-                  color: #7a7a76;
+                  color: #8A9098;
                   font-weight: 600;
                   text-transform: uppercase;
                   letter-spacing: 0.05em;
@@ -1533,7 +1533,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                 .footer {
                   margin-top: 60px;
                   font-size: 10px;
-                  color: #7a7a76;
+                  color: #8A9098;
                   text-align: center;
                   border-t: 1px solid #e5e5e0;
                   padding-top: 20px;
@@ -1716,7 +1716,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
     return (
       <div className="flex flex-col items-center justify-center py-24 px-4 text-center">
         <h2 className="text-lg font-bold">{t('lead.not_found_title')}</h2>
-        <p className="text-xs text-[#7a7a76] mt-1">{t('lead.not_found_desc')}</p>
+        <p className="text-xs text-[#8A9098] mt-1">{t('lead.not_found_desc')}</p>
         <Button asChild size="sm" className="mt-5">
           <Link href="/leads" className="gap-2">
             <ChevronLeft className="h-4 w-4" />
@@ -1796,7 +1796,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
         
         {/* Back Link Header */}
         <div className="flex items-center justify-between">
-          <Button asChild variant="ghost" size="sm" className="gap-1.5 -ml-2 text-[#7a7a76] hover:text-[#26251e]">
+          <Button asChild variant="ghost" size="sm" className="gap-1.5 -ml-2 text-[#8A9098] hover:text-[#14171A]">
             <Link href="/leads">
               <ChevronLeft className="h-4 w-4" />
               <span>{t('lead.back_to_portfolio')}</span>
@@ -1806,7 +1806,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
             {/* Copy lead info button */}
             <button
               onClick={handleCopyLeadInfo}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#e5e5e0] bg-white hover:bg-[#f4f4f3] text-[11px] font-bold text-[#26251e] transition-colors whitespace-nowrap shrink-0"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#e5e5e0] bg-white hover:bg-[#f4f4f3] text-[11px] font-bold text-[#14171A] transition-colors whitespace-nowrap shrink-0"
             >
               <Copy className="h-3 w-3" />
               Copier les infos
@@ -1817,30 +1817,30 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
               <button
                 onClick={handleShareLead}
                 disabled={sharingLead}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#e5e5e0] bg-white hover:bg-[#f4f4f3] text-[11px] font-bold text-[#26251e] transition-colors disabled:opacity-60 whitespace-nowrap shrink-0"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#e5e5e0] bg-white hover:bg-[#f4f4f3] text-[11px] font-bold text-[#14171A] transition-colors disabled:opacity-60 whitespace-nowrap shrink-0"
               >
                 {sharingLead ? <Loader2 className="h-3 w-3 animate-spin" /> : <Share2 className="h-3 w-3" />}
                 Partager
               </button>
             ) : (
               <div className="flex items-center gap-1.5 bg-emerald-50 border border-emerald-200 rounded-lg px-2 py-1.5 shrink-0">
-                <LinkIcon className="h-3 w-3 text-[#059669]" />
-                <span className="text-[10px] text-[#059669] font-semibold max-w-[140px] truncate">{shareLink}</span>
+                <LinkIcon className="h-3 w-3 text-[#167f5b]" />
+                <span className="text-[10px] text-[#167f5b] font-semibold max-w-[140px] truncate">{shareLink}</span>
                 <button
                   onClick={handleCopyShareLink}
                   className="p-0.5 hover:bg-emerald-100 rounded transition-colors"
                 >
-                  {shareLinkCopied ? <Check className="h-3 w-3 text-[#059669]" /> : <Copy className="h-3 w-3 text-[#059669]" />}
+                  {shareLinkCopied ? <Check className="h-3 w-3 text-[#167f5b]" /> : <Copy className="h-3 w-3 text-[#167f5b]" />}
                 </button>
                 <button
                   onClick={() => setShareLink(null)}
                   className="p-0.5 hover:bg-emerald-100 rounded transition-colors"
                 >
-                  <X className="h-3 w-3 text-[#059669]" />
+                  <X className="h-3 w-3 text-[#167f5b]" />
                 </button>
               </div>
             )}
-            <div className="text-[10px] text-[#7a7a76] font-mono hidden sm:block">
+            <div className="text-[10px] text-[#8A9098] font-mono hidden sm:block">
               {t('lead.last_updated')} {new Date(lead.updatedAt).toLocaleString('fr-FR')}
             </div>
           </div>
@@ -1909,7 +1909,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
             {lead.phone ? (
               <a
                 href={`tel:${lead.phone}`}
-                className="flex items-center justify-center gap-1.5 h-9 rounded-lg border border-[#e5e5e0] text-xs font-bold text-[#26251e] active:bg-[#f4f4f3] transition-colors"
+                className="flex items-center justify-center gap-1.5 h-9 rounded-lg border border-[#e5e5e0] text-xs font-bold text-[#14171A] active:bg-[#f4f4f3] transition-colors"
               >
                 <Phone className="h-3.5 w-3.5" />Appeler
               </a>
@@ -1918,7 +1918,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
               <button
                 type="button"
                 onClick={() => setActiveTab('composer')}
-                className="flex items-center justify-center gap-1.5 h-9 rounded-lg bg-[#059669] hover:bg-[#047857] text-white text-xs font-bold transition-colors"
+                className="flex items-center justify-center gap-1.5 h-9 rounded-lg bg-[#167f5b] hover:bg-[#0f6b4c] text-white text-xs font-bold transition-colors"
               >
                 <Mail className="h-3.5 w-3.5" />E-mail
               </button>
@@ -1933,16 +1933,16 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
           <div className="space-y-8 min-w-0">
             {/* Lead Title Heading (Notion style click-to-edit header) */}
             <div className="space-y-1.5">
-              <InlineTextEdit 
-                value={lead.businessName} 
+              <InlineTextEdit
+                value={lead.businessName}
                 onSave={(val) => handleSaveProperty('businessName', val)}
                 placeholder="Nom de l'entreprise"
-                className="text-2xl sm:text-3xl font-bold font-sans tracking-tight hover:bg-[#f4f4f3]/40 rounded px-2 py-0.5 -ml-2 text-[#26251e] focus:outline-none"
-                inputClassName="text-2xl sm:text-3xl font-bold font-sans h-12 -ml-2"
+                className="text-2xl sm:text-3xl font-heading font-medium tracking-tight hover:bg-[#f4f4f3]/40 rounded px-2 py-0.5 -ml-2 text-[#14171A] focus:outline-none"
+                inputClassName="text-2xl sm:text-3xl font-heading font-medium h-12 -ml-2"
                 disabled={isLocked}
                 onEditStateChange={setIsEditing}
               />
-              <p className="text-xs text-[#7a7a76] px-0.5">
+              <p className="text-xs text-[#8A9098] px-0.5">
                 {t('lead.created_at')} {new Date(lead.createdAt).toLocaleDateString('fr-FR')} • {t('lead.owner')} {lead.owner}
               </p>
             </div>
@@ -1957,23 +1957,23 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                     {[1, 2, 3, 4, 5].map((i) => (
                       <Star
                         key={i}
-                        className={cn('h-3 w-3', i <= Math.round(lead.rating!) ? 'fill-amber-400 text-amber-400' : 'text-[#7a7a76]/30')}
+                        className={cn('h-3 w-3', i <= Math.round(lead.rating!) ? 'fill-amber-400 text-amber-400' : 'text-[#8A9098]/30')}
                       />
                     ))}
-                    <span className="font-bold text-[#26251e] ml-0.5">{lead.rating.toFixed(1)}</span>
+                    <span className="font-bold text-[#14171A] ml-0.5">{lead.rating.toFixed(1)}</span>
                     {lead.reviewsCount !== undefined && (
-                      <span className="text-[#7a7a76]">({lead.reviewsCount} avis)</span>
+                      <span className="text-[#8A9098]">({lead.reviewsCount} avis)</span>
                     )}
                   </div>
                 )}
                 {lead.phone && (
-                  <a href={`tel:${lead.phone}`} className="flex items-center gap-1 text-[#7a7a76] hover:text-[#26251e] transition-colors">
+                  <a href={`tel:${lead.phone}`} className="flex items-center gap-1 text-[#8A9098] hover:text-[#14171A] transition-colors">
                     <Phone className="h-3 w-3 shrink-0" />
                     {lead.phone}
                   </a>
                 )}
                 {lead.website && (
-                  <a href={lead.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-[#059669] hover:underline truncate max-w-[200px]">
+                  <a href={lead.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-[#167f5b] hover:underline truncate max-w-[200px]">
                     <Globe className="h-3 w-3 shrink-0" />
                     {lead.website.replace(/^https?:\/\//, '').replace(/\/$/, '')}
                   </a>
@@ -2001,7 +2001,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
             {/* Website scraper — AI business description (fed to the AI script + drafts) */}
             <div className="rounded-lg border border-[#e5e5e0]/70 bg-[#f4f4f3]/40 p-3.5 space-y-2.5">
               <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">
+                <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-[#8A9098]">
                   <FileText className="h-3.5 w-3.5" />
                   Description de l&apos;entreprise
                 </div>
@@ -2016,7 +2016,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                   >
                     {scrapingSite
                       ? <Loader2 className="h-3 w-3 animate-spin" />
-                      : <Sparkles className="h-3 w-3 text-[#059669]" />}
+                      : <Sparkles className="h-3 w-3 text-[#167f5b]" />}
                     {scrapingSite ? 'Analyse…' : lead.websiteDescription ? 'Régénérer' : 'Scraper le site'}
                   </Button>
                 )}
@@ -2046,7 +2046,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                   </svg>
                 </div>
                 <span className="text-xs font-bold text-gray-800 tracking-tight">Google Insights</span>
-                {enrichingGoogle && <span className="ml-auto text-[10px] text-[#7a7a76] animate-pulse">Enrichissement…</span>}
+                {enrichingGoogle && <span className="ml-auto text-[10px] text-[#8A9098] animate-pulse">Enrichissement…</span>}
                 {googlePlaceData && !enrichingGoogle && (
                   <div className="ml-auto flex items-center gap-1.5 text-[11px] font-medium">
                     <Star className="h-3.5 w-3.5 fill-[#f59e0b] text-[#f59e0b] shrink-0" />
@@ -2070,8 +2070,8 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                   className={cn(
                     "pb-3 text-[10px] font-bold uppercase tracking-wider border-b-2 px-1 transition-all cursor-pointer whitespace-nowrap shrink-0",
                     activeTab === 'notes'
-                      ? "border-primary text-[#26251e] font-extrabold"
-                      : "border-transparent text-[#7a7a76] hover:text-[#26251e]"
+                      ? "border-primary text-[#14171A] font-extrabold"
+                      : "border-transparent text-[#8A9098] hover:text-[#14171A]"
                   )}
                 >
                   {t('lead.notes_tab')} ({lead.notes?.length || 0})
@@ -2082,8 +2082,8 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                   className={cn(
                     "pb-3 text-[10px] font-bold uppercase tracking-wider border-b-2 px-1 transition-all cursor-pointer whitespace-nowrap shrink-0",
                     activeTab === 'drafts'
-                      ? "border-primary text-[#26251e] font-extrabold"
-                      : "border-transparent text-[#7a7a76] hover:text-[#26251e]"
+                      ? "border-primary text-[#14171A] font-extrabold"
+                      : "border-transparent text-[#8A9098] hover:text-[#14171A]"
                   )}
                 >
                   {t('lead.ai_writer_tab')} ({drafts.length})
@@ -2094,8 +2094,8 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                   className={cn(
                     "pb-3 text-[10px] font-bold uppercase tracking-wider border-b-2 px-1 transition-all cursor-pointer whitespace-nowrap shrink-0",
                     activeTab === 'composer'
-                      ? "border-[#059669] text-[#059669] font-extrabold"
-                      : "border-transparent text-[#7a7a76] hover:text-[#26251e]"
+                      ? "border-[#167f5b] text-[#167f5b] font-extrabold"
+                      : "border-transparent text-[#8A9098] hover:text-[#14171A]"
                   )}
                 >
                   {t('composer.title')}
@@ -2106,8 +2106,8 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                   className={cn(
                     "pb-3 text-[10px] font-bold uppercase tracking-wider border-b-2 px-1 transition-all cursor-pointer whitespace-nowrap shrink-0",
                     activeTab === 'timeline'
-                      ? "border-primary text-[#26251e] font-extrabold"
-                      : "border-transparent text-[#7a7a76] hover:text-[#26251e]"
+                      ? "border-primary text-[#14171A] font-extrabold"
+                      : "border-transparent text-[#8A9098] hover:text-[#14171A]"
                   )}
                 >
                   {t('lead.timeline')}
@@ -2118,8 +2118,8 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                   className={cn(
                     "pb-3 text-[10px] font-bold uppercase tracking-wider border-b-2 px-1 transition-all cursor-pointer flex items-center gap-1 whitespace-nowrap shrink-0",
                     activeTab === 'gmail'
-                      ? "border-[#059669] text-[#26251e] font-extrabold"
-                      : "border-transparent text-[#7a7a76] hover:text-[#26251e]"
+                      ? "border-[#167f5b] text-[#14171A] font-extrabold"
+                      : "border-transparent text-[#8A9098] hover:text-[#14171A]"
                   )}
                 >
                   <GmailIcon size={12} />
@@ -2131,8 +2131,8 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                   className={cn(
                     "pb-3 text-[10px] font-bold uppercase tracking-wider border-b-2 px-1 transition-all cursor-pointer flex items-center gap-1 whitespace-nowrap shrink-0",
                     activeTab === 'agenda'
-                      ? "border-[#059669] text-[#26251e] font-extrabold"
-                      : "border-transparent text-[#7a7a76] hover:text-[#26251e]"
+                      ? "border-[#167f5b] text-[#14171A] font-extrabold"
+                      : "border-transparent text-[#8A9098] hover:text-[#14171A]"
                   )}
                 >
                   <GoogleCalendarIcon size={12} />
@@ -2144,8 +2144,8 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                   className={cn(
                     "pb-3 text-[10px] font-bold uppercase tracking-wider border-b-2 px-1 transition-all cursor-pointer flex items-center gap-1 whitespace-nowrap shrink-0",
                     activeTab === 'outreach'
-                      ? "border-[#059669] text-[#059669] font-extrabold"
-                      : "border-transparent text-[#7a7a76] hover:text-[#26251e]"
+                      ? "border-[#167f5b] text-[#167f5b] font-extrabold"
+                      : "border-transparent text-[#8A9098] hover:text-[#14171A]"
                   )}
                 >
                   <Zap className="h-3 w-3" />
@@ -2158,8 +2158,8 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                     className={cn(
                       "pb-3 text-[10px] font-bold uppercase tracking-wider border-b-2 px-1 transition-all cursor-pointer flex items-center gap-1 whitespace-nowrap shrink-0",
                       activeTab === 'reviews'
-                        ? "border-[#059669] text-[#059669] font-extrabold"
-                        : "border-transparent text-[#7a7a76] hover:text-[#26251e]"
+                        ? "border-[#167f5b] text-[#167f5b] font-extrabold"
+                        : "border-transparent text-[#8A9098] hover:text-[#14171A]"
                     )}
                   >
                     <Star className="h-3 w-3" />
@@ -2209,7 +2209,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                       onBlur={() => setIsEditing(false)}
                     />
                     <div className="flex justify-end">
-                      <Button type="submit" size="sm" className="h-8 text-xs font-semibold gap-1.5 bg-[#059669] hover:bg-[#059669]/90" disabled={isLocked}>
+                      <Button type="submit" size="sm" className="h-8 text-xs font-semibold gap-1.5 bg-[#167f5b] hover:bg-[#167f5b]/90" disabled={isLocked}>
                         <Plus className="h-3.5 w-3.5" />
                         <span>{t('lead.add_note_btn')}</span>
                       </Button>
@@ -2231,13 +2231,13 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                                   variant="ghost"
                                   size="sm"
                                   onClick={() => handleExportPdf(note.content, note.type)}
-                                  className="h-6 text-[9px] font-bold text-[#059669] hover:bg-[#059669]/10 px-2 rounded flex items-center gap-1 cursor-pointer"
+                                  className="h-6 text-[9px] font-bold text-[#167f5b] hover:bg-[#167f5b]/10 px-2 rounded flex items-center gap-1 cursor-pointer"
                                 >
                                   <FileText className="w-3 h-3" />
                                   <span>PDF</span>
                                 </Button>
                               )}
-                              <span className="text-[10px] text-[#7a7a76] font-mono">
+                              <span className="text-[10px] text-[#8A9098] font-mono">
                                 {new Date(note.createdAt).toLocaleString('fr-FR', {
                                   day: '2-digit',
                                   month: '2-digit',
@@ -2248,15 +2248,15 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                               </span>
                             </div>
                           </div>
-                          <p className="text-xs text-[#26251e]/90 whitespace-pre-wrap leading-relaxed">
+                          <p className="text-xs text-[#14171A]/90 whitespace-pre-wrap leading-relaxed">
                             {note.content}
                           </p>
                         </div>
                       ))
                     ) : (
                       <div className="flex flex-col items-center justify-center py-6 text-center border border-dashed border-[#e5e5e0] rounded-lg">
-                        <ClipboardList className="h-5 w-5 text-[#7a7a76]/45 mb-1.5" />
-                        <span className="text-[11px] text-[#7a7a76]">{t('lead.no_notes')}</span>
+                        <ClipboardList className="h-5 w-5 text-[#8A9098]/45 mb-1.5" />
+                        <span className="text-[11px] text-[#8A9098]">{t('lead.no_notes')}</span>
                       </div>
                     )}
                   </div>
@@ -2268,7 +2268,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                     <div className="grid grid-cols-2 gap-4">
                       {/* Channel Selection */}
                       <div className="space-y-1.5">
-                        <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">{t('lead.prospecting_channel')}</label>
+                        <label className="text-[10px] font-bold uppercase tracking-wider text-[#8A9098]">{t('lead.prospecting_channel')}</label>
                         <Select
                           value={draftChannel}
                           onValueChange={(val: 'Email' | 'DM' | 'Call') => setDraftChannel(val)}
@@ -2287,7 +2287,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
 
                       {/* Tone Selection */}
                       <div className="space-y-1.5">
-                        <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">{t('lead.style_tone')}</label>
+                        <label className="text-[10px] font-bold uppercase tracking-wider text-[#8A9098]">{t('lead.style_tone')}</label>
                         <Select
                           value={draftTone}
                           onValueChange={(val) => setDraftTone(val)}
@@ -2307,7 +2307,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
 
                     {/* Specific instructions */}
                     <div className="space-y-1.5">
-                      <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">{t('lead.custom_instructions')}</label>
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-[#8A9098]">{t('lead.custom_instructions')}</label>
                       <Textarea
                         placeholder={t('lead.custom_instructions_placeholder')}
                         value={draftInstructions}
@@ -2324,23 +2324,23 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                       <button
                         type="button"
                         onClick={() => setShowVars(v => !v)}
-                        className="flex items-center gap-1.5 text-[10px] font-semibold text-[#7a7a76] hover:text-[#26251e] transition-colors"
+                        className="flex items-center gap-1.5 text-[10px] font-semibold text-[#8A9098] hover:text-[#14171A] transition-colors"
                       >
                         <span>{showVars ? '▾' : '▸'}</span>
                         Variables de personnalisation
                         {Object.keys(customVars).filter(k => customVars[k]).length > 0 && (
-                          <span className="bg-[#059669]/10 text-[#059669] px-1.5 py-0.5 rounded text-[9px]">
+                          <span className="bg-[#167f5b]/10 text-[#167f5b] px-1.5 py-0.5 rounded text-[9px]">
                             {Object.keys(customVars).filter(k => customVars[k]).length} active{Object.keys(customVars).filter(k => customVars[k]).length > 1 ? 's' : ''}
                           </span>
                         )}
                       </button>
                       {showVars && (
                         <div className="border border-[#e5e5e0]/70 rounded-md p-3 space-y-2 bg-[#f4f4f3]/40">
-                          <p className="text-[9px] text-[#7a7a76]">Définissez des variables <code className="bg-[#f4f4f3] px-1 rounded text-[9px]">{'{{clé}}'}</code> à injecter dans le message généré.</p>
+                          <p className="text-[9px] text-[#8A9098]">Définissez des variables <code className="bg-[#f4f4f3] px-1 rounded text-[9px]">{'{{clé}}'}</code> à injecter dans le message généré.</p>
                           {/* Existing vars */}
                           {Object.entries(customVars).map(([k, v]) => (
                             <div key={k} className="flex items-center gap-1.5">
-                              <span className="text-[10px] font-mono bg-[#059669]/10 text-[#059669] px-1.5 py-0.5 rounded shrink-0">{`{{${k}}}`}</span>
+                              <span className="text-[10px] font-mono bg-[#167f5b]/10 text-[#167f5b] px-1.5 py-0.5 rounded shrink-0">{`{{${k}}}`}</span>
                               <input
                                 type="text"
                                 value={v}
@@ -2351,7 +2351,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                               <button
                                 type="button"
                                 onClick={() => setCustomVars(prev => { const n = {...prev}; delete n[k]; return n; })}
-                                className="text-[#7a7a76] hover:text-destructive transition-colors text-[10px]"
+                                className="text-[#8A9098] hover:text-destructive transition-colors text-[10px]"
                               >✕</button>
                             </div>
                           ))}
@@ -2378,7 +2378,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                                 setCustomVars(prev => ({ ...prev, [newVarKey]: newVarValue }));
                                 setNewVarKey(''); setNewVarValue('');
                               }}
-                              className="text-[10px] font-bold text-[#059669] hover:text-[#059669]/80 transition-colors px-2 py-1 border border-primary/30 rounded"
+                              className="text-[10px] font-bold text-[#167f5b] hover:text-[#167f5b]/80 transition-colors px-2 py-1 border border-primary/30 rounded"
                             >+ Ajouter</button>
                           </div>
                           {/* Quick presets */}
@@ -2394,7 +2394,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                                   key={k}
                                   type="button"
                                   onClick={() => setCustomVars(prev => ({ ...prev, [k]: '' }))}
-                                  className="text-[9px] px-1.5 py-0.5 rounded border border-[#e5e5e0] text-[#7a7a76] hover:border-primary hover:text-[#059669] transition-colors"
+                                  className="text-[9px] px-1.5 py-0.5 rounded border border-[#e5e5e0] text-[#8A9098] hover:border-primary hover:text-[#167f5b] transition-colors"
                                 >
                                   + {`{{${k}}}`}
                                 </button>
@@ -2408,10 +2408,10 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                     {generating && (
                       <div className="space-y-3 p-4 bg-[#f4f4f3]/70 border border-[#e5e5e0] rounded-lg animate-in fade-in duration-300">
                         <div className="flex items-center justify-between">
-                          <span className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-[#8A9098]">
                             {t('lead.ai_composer_active')}
                           </span>
-                          <span className="text-[9px] font-mono bg-[#059669]/10 text-[#059669] px-1.5 py-0.5 rounded">
+                          <span className="text-[9px] font-mono bg-[#167f5b]/10 text-[#167f5b] px-1.5 py-0.5 rounded">
                             {aiStage === 'thinking' && t('lead.ai_thinking')}
                             {aiStage === 'reading' && t('lead.ai_reading')}
                             {aiStage === 'writing' && t('lead.ai_writing')}
@@ -2425,8 +2425,8 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                             className={cn(
                               "flex flex-col gap-1 p-2.5 rounded border text-center transition-all duration-300",
                               aiStage === 'thinking'
-                                ? "border-[var(--timeline-thinking)] bg-[var(--timeline-thinking)]/15 scale-[1.02] ring-1 ring-[var(--timeline-thinking)]/45 animate-pulse text-[#26251e] font-semibold"
-                                : "border-[#e5e5e0]/70 bg-[#fafaf8]/50 text-[#7a7a76]/60"
+                                ? "border-[var(--timeline-thinking)] bg-[var(--timeline-thinking)]/15 scale-[1.02] ring-1 ring-[var(--timeline-thinking)]/45 animate-pulse text-[#14171A] font-semibold"
+                                : "border-[#e5e5e0]/70 bg-[#fafaf8]/50 text-[#8A9098]/60"
                             )}
                           >
                             <span className="text-xs">📍</span>
@@ -2438,8 +2438,8 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                             className={cn(
                               "flex flex-col gap-1 p-2.5 rounded border text-center transition-all duration-300",
                               aiStage === 'reading'
-                                ? "border-[var(--timeline-read)] bg-[var(--timeline-read)]/15 scale-[1.02] ring-1 ring-[var(--timeline-read)]/45 animate-pulse text-[#26251e] font-semibold"
-                                : "border-[#e5e5e0]/70 bg-[#fafaf8]/50 text-[#7a7a76]/60"
+                                ? "border-[var(--timeline-read)] bg-[var(--timeline-read)]/15 scale-[1.02] ring-1 ring-[var(--timeline-read)]/45 animate-pulse text-[#14171A] font-semibold"
+                                : "border-[#e5e5e0]/70 bg-[#fafaf8]/50 text-[#8A9098]/60"
                             )}
                           >
                             <span className="text-xs">🔎</span>
@@ -2451,8 +2451,8 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                             className={cn(
                               "flex flex-col gap-1 p-2.5 rounded border text-center transition-all duration-300",
                               aiStage === 'writing'
-                                ? "border-[var(--timeline-edit)] bg-[var(--timeline-edit)]/15 scale-[1.02] ring-1 ring-[var(--timeline-edit)]/45 animate-pulse text-[#26251e] font-semibold"
-                                : "border-[#e5e5e0]/70 bg-[#fafaf8]/50 text-[#7a7a76]/60"
+                                ? "border-[var(--timeline-edit)] bg-[var(--timeline-edit)]/15 scale-[1.02] ring-1 ring-[var(--timeline-edit)]/45 animate-pulse text-[#14171A] font-semibold"
+                                : "border-[#e5e5e0]/70 bg-[#fafaf8]/50 text-[#8A9098]/60"
                             )}
                           >
                             <span className="text-xs">✍️</span>
@@ -2464,8 +2464,8 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                             className={cn(
                               "flex flex-col gap-1 p-2.5 rounded border text-center transition-all duration-300",
                               aiStage === 'done'
-                                ? "border-[var(--timeline-done)] bg-[var(--timeline-done)]/15 scale-[1.02] ring-1 ring-[var(--timeline-done)]/45 text-[#26251e] font-semibold"
-                                : "border-[#e5e5e0]/70 bg-[#fafaf8]/50 text-[#7a7a76]/60"
+                                ? "border-[var(--timeline-done)] bg-[var(--timeline-done)]/15 scale-[1.02] ring-1 ring-[var(--timeline-done)]/45 text-[#14171A] font-semibold"
+                                : "border-[#e5e5e0]/70 bg-[#fafaf8]/50 text-[#8A9098]/60"
                             )}
                           >
                             <span className="text-xs">🛡️</span>
@@ -2479,7 +2479,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                       <Button
                         onClick={handleGenerateDraft}
                         disabled={generating || isLocked}
-                        className="h-8.5 text-xs font-semibold gap-1.5 bg-[#059669] hover:bg-[#059669]/95 text-white transition-all"
+                        className="h-8.5 text-xs font-semibold gap-1.5 bg-[#167f5b] hover:bg-[#167f5b]/95 text-white transition-all"
                       >
                         {generating ? (
                           <>
@@ -2500,9 +2500,9 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
 
                   {/* Active Draft Output */}
                   {generatedContent && (
-                    <div className="border border-primary/25 bg-[#059669]/5 p-4.5 rounded-lg flex flex-col gap-3.5 animate-in fade-in duration-300">
+                    <div className="border border-primary/25 bg-[#167f5b]/5 p-4.5 rounded-lg flex flex-col gap-3.5 animate-in fade-in duration-300">
                       <div className="flex items-center justify-between border-b border-[#e5e5e0]/70 pb-2">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-[#059669] flex items-center gap-1.5">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-[#167f5b] flex items-center gap-1.5">
                           <Sparkles className="h-3.5 w-3.5" />
                           {t('lead.ai_draft_generated')}
                         </span>
@@ -2512,15 +2512,15 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                             size="sm"
                             disabled={exportingDrive}
                             onClick={() => handleExportToDrive(generatedContent)}
-                            className="h-7 text-[10px] font-semibold px-2 text-[#7a7a76] hover:text-[#26251e] flex items-center gap-1 cursor-pointer"
+                            className="h-7 text-[10px] font-semibold px-2 text-[#8A9098] hover:text-[#14171A] flex items-center gap-1 cursor-pointer"
                             title={typeof window !== 'undefined' && (window as any).electron ? t('lead.export_local') : t('lead.save_to_drive')}
                           >
                             {exportingDrive ? (
                               <Loader2 className="h-3 w-3 animate-spin" />
                             ) : typeof window !== 'undefined' && (window as any).electron ? (
-                              <HardDrive className="h-3.5 w-3.5 text-[#059669]" />
+                              <HardDrive className="h-3.5 w-3.5 text-[#167f5b]" />
                             ) : (
-                              <Cloud className="h-3.5 w-3.5 text-[#059669]" />
+                              <Cloud className="h-3.5 w-3.5 text-[#167f5b]" />
                             )}
                             <span>{typeof window !== 'undefined' && (window as any).electron ? t('lead.export_local') : t('lead.save_to_drive')}</span>
                           </Button>
@@ -2528,7 +2528,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                             variant="ghost"
                             size="icon"
                             onClick={handleCopyDraft}
-                            className={cn("h-7 w-7 text-[#7a7a76] hover:text-[#26251e]", copied && "text-emerald-500 hover:text-emerald-500")}
+                            className={cn("h-7 w-7 text-[#8A9098] hover:text-[#14171A]", copied && "text-emerald-500 hover:text-emerald-500")}
                             title="Copier"
                           >
                             {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
@@ -2546,7 +2546,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                       
                       {/* Send button panel */}
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1 border-t border-[#e5e5e0]/60">
-                        <div className="text-[10px] text-[#7a7a76]">
+                        <div className="text-[10px] text-[#8A9098]">
                           {checkingGmail ? (
                             <span>{t('lead.checking_gmail')}</span>
                           ) : gmailConnected ? (
@@ -2563,7 +2563,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                           onClick={handleSendEmail}
                           disabled={sendingEmail || !lead.contactEmail || isLocked}
                           size="sm"
-                          className="h-8 text-xs font-bold gap-1.5 bg-[#059669] hover:bg-[#059669]/95 text-white self-end sm:self-auto"
+                          className="h-8 text-xs font-bold gap-1.5 bg-[#167f5b] hover:bg-[#167f5b]/95 text-white self-end sm:self-auto"
                         >
                           {sendingEmail ? (
                             <>
@@ -2579,7 +2579,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                         </Button>
                       </div>
                       
-                      <p className="text-[10px] text-[#7a7a76] italic">
+                      <p className="text-[10px] text-[#8A9098] italic">
                         {t('lead.draft_auto_saved')}
                       </p>
                     </div>
@@ -2587,10 +2587,10 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
 
                   {/* History of drafts */}
                   <div className="space-y-3.5">
-                    <h4 className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">{t('lead.drafts_history')}</h4>
+                    <h4 className="text-[10px] font-bold uppercase tracking-wider text-[#8A9098]">{t('lead.drafts_history')}</h4>
                     {loadingDrafts ? (
                       <div className="flex justify-center py-6">
-                        <Loader2 className="h-5 w-5 text-[#059669] animate-spin" />
+                        <Loader2 className="h-5 w-5 text-[#167f5b] animate-spin" />
                       </div>
                     ) : drafts.length > 0 ? (
                       <div className="space-y-3">
@@ -2601,7 +2601,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                                 <Badge variant="secondary" className="text-[8px] font-extrabold uppercase px-1.5 py-0">
                                   {draft.channel === 'Email' ? `✉️ ${t('lead.channel_email')}` : draft.channel === 'DM' ? `📱 ${t('lead.channel_dm')}` : `📞 ${t('lead.channel_call')}`}
                                 </Badge>
-                                <span className="text-[9px] text-[#7a7a76] font-mono">Ton: {draft.tone}</span>
+                                <span className="text-[9px] text-[#8A9098] font-mono">Ton: {draft.tone}</span>
                               </div>
                               <div className="flex items-center gap-1">
                                 <Button
@@ -2609,7 +2609,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                                   size="icon"
                                   disabled={exportingDrive}
                                   onClick={() => handleExportToDrive(draft.content)}
-                                  className="h-6.5 w-6.5 text-[#7a7a76] hover:text-[#059669]"
+                                  className="h-6.5 w-6.5 text-[#8A9098] hover:text-[#167f5b]"
                                   title={typeof window !== 'undefined' && (window as any).electron ? t('lead.export_local') : t('lead.save_to_drive')}
                                 >
                                   {typeof window !== 'undefined' && (window as any).electron ? (
@@ -2622,7 +2622,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                                   variant="ghost"
                                   size="icon"
                                   onClick={() => setGeneratedContent(draft.content)}
-                                  className="h-6.5 w-6.5 text-[#7a7a76] hover:text-[#26251e]"
+                                  className="h-6.5 w-6.5 text-[#8A9098] hover:text-[#14171A]"
                                   title="Ouvrir dans l'éditeur"
                                   disabled={isLocked}
                                 >
@@ -2632,7 +2632,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                                   variant="ghost"
                                   size="icon"
                                   onClick={() => handleDeleteDraft(draft.id)}
-                                  className="h-6.5 w-6.5 text-[#7a7a76] hover:text-red-500"
+                                  className="h-6.5 w-6.5 text-[#8A9098] hover:text-red-500"
                                   title="Supprimer"
                                   disabled={isLocked}
                                 >
@@ -2640,7 +2640,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                                 </Button>
                               </div>
                             </div>
-                            <p className="text-xs text-[#26251e]/95 whitespace-pre-wrap leading-relaxed">
+                            <p className="text-xs text-[#14171A]/95 whitespace-pre-wrap leading-relaxed">
                               {cleanMarkdownForPreview(draft.content)}
                             </p>
                           </div>
@@ -2648,8 +2648,8 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                       </div>
                     ) : (
                       <div className="flex flex-col items-center justify-center py-6 text-center border border-dashed border-[#e5e5e0] rounded-lg">
-                        <Sparkles className="h-4.5 w-4.5 text-[#7a7a76]/45 mb-1.5" />
-                        <span className="text-[11px] text-[#7a7a76]">{t('lead.no_drafts')}</span>
+                        <Sparkles className="h-4.5 w-4.5 text-[#8A9098]/45 mb-1.5" />
+                        <span className="text-[11px] text-[#8A9098]">{t('lead.no_drafts')}</span>
                       </div>
                     )}
                   </div>
@@ -2666,15 +2666,15 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                 /* Gmail Threads Panel */
                 <div className="space-y-3">
                   {!lead.contactEmail ? (
-                    <p className="text-xs text-[#7a7a76] italic py-4 text-center">
+                    <p className="text-xs text-[#8A9098] italic py-4 text-center">
                       Aucun email de contact renseigné sur ce lead.
                     </p>
                   ) : gmailConnectedForTab === false ? (
                     <div className="flex flex-col items-center gap-3 py-6 text-center">
-                      <p className="text-xs text-[#7a7a76]">Connectez Gmail pour voir les échanges avec ce contact.</p>
+                      <p className="text-xs text-[#8A9098]">Connectez Gmail pour voir les échanges avec ce contact.</p>
                       <button
                         onClick={() => setShowGmailConnectModal(true)}
-                        className="flex items-center gap-1.5 px-3 h-8 rounded-lg bg-[#059669] hover:bg-[#047857] text-white text-xs font-bold transition-colors"
+                        className="flex items-center gap-1.5 px-3 h-8 rounded-lg bg-[#167f5b] hover:bg-[#0f6b4c] text-white text-xs font-bold transition-colors"
                       >
                         <Mail className="h-3.5 w-3.5" />
                         Connecter Gmail
@@ -2695,7 +2695,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                   ) : gmailThreadsError ? (
                     <p className="text-xs text-red-600 py-2">{gmailThreadsError}</p>
                   ) : gmailThreads.length === 0 ? (
-                    <p className="text-xs text-[#7a7a76] italic py-4 text-center">
+                    <p className="text-xs text-[#8A9098] italic py-4 text-center">
                       Aucun échange Gmail avec {lead.contactEmail}.
                     </p>
                   ) : (
@@ -2705,7 +2705,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                         className={cn(
                           "flex flex-col gap-1 p-3 rounded-lg border transition-colors cursor-pointer hover:bg-[#f4f4f3]",
                           thread.unread
-                            ? "border-[#059669]/30 bg-emerald-50/40"
+                            ? "border-[#167f5b]/30 bg-emerald-50/40"
                             : "border-[#e5e5e0] bg-white"
                         )}
                         onClick={() => {
@@ -2715,21 +2715,21 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                         <div className="flex items-center justify-between gap-2">
                           <span className={cn(
                             "text-xs truncate",
-                            thread.unread ? "font-bold text-[#26251e]" : "font-semibold text-[#26251e]"
+                            thread.unread ? "font-bold text-[#14171A]" : "font-semibold text-[#14171A]"
                           )}>
                             {thread.subject}
                           </span>
                           <div className="flex items-center gap-1.5 shrink-0">
                             {thread.unread && (
-                              <span className="w-2 h-2 rounded-full bg-[#059669] shrink-0" />
+                              <span className="w-2 h-2 rounded-full bg-[#167f5b] shrink-0" />
                             )}
-                            <span className="text-[10px] text-[#7a7a76] font-mono">
+                            <span className="text-[10px] text-[#8A9098] font-mono">
                               {new Date(thread.date).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit' })}
                             </span>
-                            <ExternalLink className="h-3 w-3 text-[#7a7a76]" />
+                            <ExternalLink className="h-3 w-3 text-[#8A9098]" />
                           </div>
                         </div>
-                        <p className="text-[11px] text-[#7a7a76] line-clamp-2 leading-relaxed">{thread.snippet}</p>
+                        <p className="text-[11px] text-[#8A9098] line-clamp-2 leading-relaxed">{thread.snippet}</p>
                       </div>
                     ))
                   )}
@@ -2738,15 +2738,15 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                 /* Google Calendar Lead Events Panel (Agenda) */
                 <div className="space-y-3">
                   {!lead.contactEmail ? (
-                    <p className="text-xs text-[#7a7a76] italic py-4 text-center">
+                    <p className="text-xs text-[#8A9098] italic py-4 text-center">
                       Aucun email de contact renseigné sur ce lead.
                     </p>
                   ) : calConnectedForTab === false ? (
                     <div className="flex flex-col items-center gap-3 py-6 text-center">
-                      <p className="text-xs text-[#7a7a76]">Connectez Google Calendar pour voir les événements avec ce contact.</p>
+                      <p className="text-xs text-[#8A9098]">Connectez Google Calendar pour voir les événements avec ce contact.</p>
                       <button
                         onClick={() => setShowCalConnectModal(true)}
-                        className="flex items-center gap-1.5 px-3 h-8 rounded-lg bg-[#059669] hover:bg-[#047857] text-white text-xs font-bold transition-colors"
+                        className="flex items-center gap-1.5 px-3 h-8 rounded-lg bg-[#167f5b] hover:bg-[#0f6b4c] text-white text-xs font-bold transition-colors"
                       >
                         <GoogleCalendarIcon size={14} />
                         Connecter Google Calendar
@@ -2767,7 +2767,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                   ) : leadCalError ? (
                     <p className="text-xs text-red-600 py-2">{leadCalError}</p>
                   ) : leadCalEvents.length === 0 ? (
-                    <p className="text-xs text-[#7a7a76] italic py-4 text-center">
+                    <p className="text-xs text-[#8A9098] italic py-4 text-center">
                       Aucun événement Calendar avec ce contact (±90 jours).
                     </p>
                   ) : (
@@ -2780,14 +2780,14 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                           className={cn(
                             "flex items-start justify-between gap-3 p-3 rounded-lg border transition-colors",
                             isUpcoming
-                              ? "border-[#059669]/30 bg-emerald-50/40"
+                              ? "border-[#167f5b]/30 bg-emerald-50/40"
                               : "border-[#e5e5e0] bg-[#f4f4f3]/30"
                           )}
                         >
                           <div className="min-w-0 flex-1">
-                            <p className="text-xs font-semibold text-[#26251e] truncate">{ev.summary}</p>
+                            <p className="text-xs font-semibold text-[#14171A] truncate">{ev.summary}</p>
                             {startDate && (
-                              <p className="text-[10px] text-[#7a7a76] mt-0.5">
+                              <p className="text-[10px] text-[#8A9098] mt-0.5">
                                 {startDate.toLocaleDateString('fr-FR', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' })}
                                 {ev.start?.includes('T') && ` · ${startDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`}
                               </p>
@@ -2795,7 +2795,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                           </div>
                           <div className="flex flex-col items-end gap-1 shrink-0">
                             {isUpcoming && (
-                              <span className="text-[9px] font-bold text-[#059669] bg-emerald-50 border border-[#059669]/20 px-1.5 py-0.5 rounded">
+                              <span className="text-[9px] font-bold text-[#167f5b] bg-emerald-50 border border-[#167f5b]/20 px-1.5 py-0.5 rounded">
                                 À venir
                               </span>
                             )}
@@ -2804,7 +2804,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                                 href={ev.hangoutLink}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-[9px] font-bold text-[#059669] flex items-center gap-0.5 hover:underline"
+                                className="text-[9px] font-bold text-[#167f5b] flex items-center gap-0.5 hover:underline"
                               >
                                 Meet
                               </a>
@@ -2824,10 +2824,10 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                     <div className="h-20 rounded-lg border border-[#e5e5e0] bg-[#f4f4f3]/50 animate-pulse" />
                   ) : reviewsGoogleConnected === false ? (
                     <div className="flex flex-col items-center gap-3 py-6 text-center">
-                      <p className="text-xs text-[#7a7a76]">Connectez Google pour voir les avis Maps de ce lead.</p>
+                      <p className="text-xs text-[#8A9098]">Connectez Google pour voir les avis Maps de ce lead.</p>
                       <button
                         onClick={() => setShowReviewsConnectModal(true)}
-                        className="flex items-center gap-1.5 px-3 h-8 rounded-lg bg-[#059669] hover:bg-[#047857] text-white text-xs font-bold transition-colors"
+                        className="flex items-center gap-1.5 px-3 h-8 rounded-lg bg-[#167f5b] hover:bg-[#0f6b4c] text-white text-xs font-bold transition-colors"
                       >
                         <Star className="h-3.5 w-3.5" />
                         Connecter Google
@@ -2849,11 +2849,11 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                     <div className="py-6 text-center space-y-1">
                       <p className="text-xs text-red-600 font-medium">{googleEnrichError}</p>
                       {googleEnrichError.includes('GOOGLE_PLACES_API_KEY') && (
-                        <p className="text-[11px] text-[#7a7a76]">Configuration requise côté serveur — voir .env.example.</p>
+                        <p className="text-[11px] text-[#8A9098]">Configuration requise côté serveur — voir .env.example.</p>
                       )}
                     </div>
                   ) : !googlePlaceData ? (
-                    <p className="text-xs text-[#7a7a76] italic py-4 text-center">Aucune donnée Google Maps pour ce lead.</p>
+                    <p className="text-xs text-[#8A9098] italic py-4 text-center">Aucune donnée Google Maps pour ce lead.</p>
                   ) : (
                     <>
                       <div className="space-y-3">
@@ -2863,7 +2863,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                               <span className="text-sm font-bold text-amber-600">⭐ {googlePlaceData.rating.toFixed(1)}</span>
                             )}
                             {googlePlaceData.review_count !== undefined && (
-                              <span className="text-xs text-[#7a7a76]">({googlePlaceData.review_count} avis au total sur Maps)</span>
+                              <span className="text-xs text-[#8A9098]">({googlePlaceData.review_count} avis au total sur Maps)</span>
                             )}
                           </div>
                           <div className="flex items-center gap-2 shrink-0">
@@ -2877,7 +2877,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                             >
                               {scrapingMoreReviews
                                 ? <Loader2 className="h-3 w-3 animate-spin" />
-                                : <Sparkles className="h-3 w-3 text-[#059669]" />}
+                                : <Sparkles className="h-3 w-3 text-[#167f5b]" />}
                               {scrapingMoreReviews ? 'Recherche…' : "Chercher plus d'avis"}
                             </Button>
                             <Button
@@ -2888,7 +2888,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                               disabled={!googlePlaceData.reviews?.length}
                               className="h-7 text-[11px] font-semibold gap-1.5"
                             >
-                              {reviewsCopied ? <Check className="h-3 w-3 text-[#059669]" /> : <Copy className="h-3 w-3" />}
+                              {reviewsCopied ? <Check className="h-3 w-3 text-[#167f5b]" /> : <Copy className="h-3 w-3" />}
                               {reviewsCopied ? 'Copié !' : 'Copier tous les avis'}
                             </Button>
                           </div>
@@ -2930,7 +2930,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                       )}
 
                       {(googlePlaceData.generative_summary || googlePlaceData.editorial_summary) && (
-                        <p className="text-xs text-[#26251e] leading-relaxed bg-[#f4f4f3]/40 border border-[#e5e5e0]/70 rounded-lg p-3">
+                        <p className="text-xs text-[#14171A] leading-relaxed bg-[#f4f4f3]/40 border border-[#e5e5e0]/70 rounded-lg p-3">
                           {googlePlaceData.generative_summary || googlePlaceData.editorial_summary}
                         </p>
                       )}
@@ -2944,7 +2944,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
 
                       <div className="space-y-3">
                         {(googlePlaceData.reviews || []).length === 0 ? (
-                          <p className="text-xs text-[#7a7a76] italic py-2 text-center">Aucun avis disponible pour ce lieu.</p>
+                          <p className="text-xs text-[#8A9098] italic py-2 text-center">Aucun avis disponible pour ce lieu.</p>
                         ) : (
                           googlePlaceData.reviews!.map((r, i) => (
                             <div key={i} className="flex gap-2.5 items-start p-3 rounded-lg border border-[#e5e5e0]/70 bg-white">
@@ -2952,14 +2952,14 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                                 /* eslint-disable-next-line @next/next/no-img-element */
                                 <img src={r.authorPhotoUrl} alt={r.authorName || 'Avis'} className="h-8 w-8 rounded-full shrink-0 object-cover" />
                               ) : (
-                                <div className="h-8 w-8 rounded-full shrink-0 bg-[#f4f4f3] flex items-center justify-center text-[11px] font-bold text-[#7a7a76]">
+                                <div className="h-8 w-8 rounded-full shrink-0 bg-[#f4f4f3] flex items-center justify-center text-[11px] font-bold text-[#8A9098]">
                                   {(r.authorName || '?').charAt(0).toUpperCase()}
                                 </div>
                               )}
                               <div className="min-w-0 flex-1 space-y-1">
                                 <div className="flex items-center gap-2">
-                                  <span className="text-xs font-semibold text-[#26251e] truncate">{r.authorName || 'Client Google'}</span>
-                                  <span className="text-[10px] text-[#7a7a76] shrink-0">{r.time}</span>
+                                  <span className="text-xs font-semibold text-[#14171A] truncate">{r.authorName || 'Client Google'}</span>
+                                  <span className="text-[10px] text-[#8A9098] shrink-0">{r.time}</span>
                                 </div>
                                 <span className="text-[10px] text-amber-500">{'⭐'.repeat(Math.max(1, Math.min(5, Math.round(r.rating))))}</span>
                                 {r.text && <p className="text-xs text-[#555552] leading-relaxed">{r.text}</p>}
@@ -2992,10 +2992,10 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
               const scoreUrg = lead.scoreUrgency ?? computed.urgency;
               const scoreRev = lead.scoreRevenue ?? computed.revenue;
               const total = lead.score ?? computed.total;
-              const totalColor = total >= 70 ? '#059669' : total >= 40 ? '#f59e0b' : '#7a7a76';
+              const totalColor = total >= 70 ? '#167f5b' : total >= 40 ? '#f59e0b' : '#8A9098';
               const totalLabel = total >= 70 ? 'Forte opportunité' : total >= 40 ? 'Opportunité moyenne' : 'À qualifier';
               const dims = [
-                { label: 'ICP', value: scoreIcp, max: 25, color: '#059669', tip: 'Complétude des données' },
+                { label: 'ICP', value: scoreIcp, max: 25, color: '#167f5b', tip: 'Complétude des données' },
                 { label: 'Engagement', value: scoreEng, max: 25, color: '#3b82f6', tip: 'Pipeline + température' },
                 { label: 'Urgence', value: scoreUrg, max: 25, color: '#f59e0b', tip: 'Prochaine action' },
                 { label: 'Revenu', value: scoreRev, max: 25, color: '#8b5cf6', tip: 'Potentiel business' },
@@ -3003,17 +3003,17 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
               return (
                 <div className="rounded-xl border border-[#e5e5e0] bg-[#fafaf8] p-4 space-y-3">
                   <div className="flex items-center justify-between">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Score v2</p>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-[#8A9098]">Score v2</p>
                     <div className="flex items-center gap-2">
                       <span className="text-xl font-black" style={{ color: totalColor }}>{total}</span>
-                      <span className="text-[10px] text-[#7a7a76]">/100</span>
+                      <span className="text-[10px] text-[#8A9098]">/100</span>
                     </div>
                   </div>
                   <div className="space-y-2">
                     {dims.map(({ label, value, max, color, tip }) => (
                       <div key={label} title={tip}>
                         <div className="flex items-center justify-between mb-0.5">
-                          <span className="text-[10px] font-medium text-[#7a7a76]">{label}</span>
+                          <span className="text-[10px] font-medium text-[#8A9098]">{label}</span>
                           <span className="text-[10px] font-bold" style={{ color }}>{value}/{max}</span>
                         </div>
                         <div className="h-1.5 bg-[#e5e5e0] rounded-full overflow-hidden">
@@ -3034,12 +3034,12 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
             <QualificationPanel lead={lead} onSave={(fields) => { updateLead(lead.id, fields); fetchDrafts(); }} />
 
             <div>
-              <h4 className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76] mb-4">{t('lead.properties_title')}</h4>
+              <h4 className="text-[10px] font-bold uppercase tracking-wider text-[#8A9098] mb-4">{t('lead.properties_title')}</h4>
 
               <div className="space-y-4">
                 {/* Status selector */}
                 <div className="grid grid-cols-[100px_1fr] items-center gap-1.5">
-                  <span className="text-[11px] font-medium text-[#7a7a76] flex items-center gap-1.5">
+                  <span className="text-[11px] font-medium text-[#8A9098] flex items-center gap-1.5">
                     <Activity className="h-3 w-3" />
                     {t('lead.prop_status')}
                   </span>
@@ -3065,7 +3065,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
 
                 {/* Temperature selector */}
                 <div className="grid grid-cols-[100px_1fr] items-center gap-1.5">
-                  <span className="text-[11px] font-medium text-[#7a7a76] flex items-center gap-1.5">
+                  <span className="text-[11px] font-medium text-[#8A9098] flex items-center gap-1.5">
                     <Flame className="h-3 w-3" />
                     {t('lead.prop_temperature')}
                   </span>
@@ -3087,7 +3087,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
 
                 {/* Niche */}
                 <div className="grid grid-cols-[100px_1fr] items-start gap-1.5 py-0.5">
-                  <span className="text-[11px] font-medium text-[#7a7a76] flex items-center gap-1.5 h-6">
+                  <span className="text-[11px] font-medium text-[#8A9098] flex items-center gap-1.5 h-6">
                     <Building className="h-3 w-3" />
                     {t('lead.prop_niche')}
                   </span>
@@ -3102,7 +3102,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
 
                 {/* City */}
                 <div className="grid grid-cols-[100px_1fr] items-start gap-1.5 py-0.5">
-                  <span className="text-[11px] font-medium text-[#7a7a76] flex items-center gap-1.5 h-6">
+                  <span className="text-[11px] font-medium text-[#8A9098] flex items-center gap-1.5 h-6">
                     <MapPin className="h-3 w-3" />
                     {t('lead.prop_city')}
                   </span>
@@ -3117,7 +3117,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
 
                 {/* Contact Name */}
                 <div className="grid grid-cols-[100px_1fr] items-start gap-1.5 py-0.5">
-                  <span className="text-[11px] font-medium text-[#7a7a76] flex items-center gap-1.5 h-6">
+                  <span className="text-[11px] font-medium text-[#8A9098] flex items-center gap-1.5 h-6">
                     <User className="h-3 w-3" />
                     {t('lead.prop_contact')}
                   </span>
@@ -3132,7 +3132,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
 
                 {/* Contact Email */}
                 <div className="grid grid-cols-[100px_1fr] items-start gap-1.5 py-0.5">
-                  <span className="text-[11px] font-medium text-[#7a7a76] flex items-center gap-1.5 h-6">
+                  <span className="text-[11px] font-medium text-[#8A9098] flex items-center gap-1.5 h-6">
                     <Mail className="h-3 w-3" />
                     {t('lead.prop_email')}
                   </span>
@@ -3147,7 +3147,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
 
                 {/* Source */}
                 <div className="grid grid-cols-[100px_1fr] items-start gap-1.5 py-0.5">
-                  <span className="text-[11px] font-medium text-[#7a7a76] flex items-center gap-1.5 h-6">
+                  <span className="text-[11px] font-medium text-[#8A9098] flex items-center gap-1.5 h-6">
                     <Sparkles className="h-3 w-3" />
                     {t('lead.prop_source')}
                   </span>
@@ -3162,7 +3162,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
 
                 {/* Next action */}
                 <div className="grid grid-cols-[100px_1fr] items-start gap-1.5 py-0.5">
-                  <span className="text-[11px] font-medium text-[#7a7a76] flex items-center gap-1.5 h-6">
+                  <span className="text-[11px] font-medium text-[#8A9098] flex items-center gap-1.5 h-6">
                     <ArrowRight className="h-3 w-3" />
                     {t('lead.prop_next_action')}
                   </span>
@@ -3177,7 +3177,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
 
                 {/* Phone */}
                 <div className="grid grid-cols-[100px_1fr] items-start gap-1.5 py-0.5">
-                  <span className="text-[11px] font-medium text-[#7a7a76] flex items-center gap-1.5 h-6">
+                  <span className="text-[11px] font-medium text-[#8A9098] flex items-center gap-1.5 h-6">
                     <Phone className="h-3 w-3" />
                     Téléphone
                   </span>
@@ -3192,7 +3192,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
 
                 {/* Address */}
                 <div className="grid grid-cols-[100px_1fr] items-start gap-1.5 py-0.5">
-                  <span className="text-[11px] font-medium text-[#7a7a76] flex items-center gap-1.5 h-6">
+                  <span className="text-[11px] font-medium text-[#8A9098] flex items-center gap-1.5 h-6">
                     <MapPin className="h-3 w-3" />
                     Adresse
                   </span>
@@ -3207,7 +3207,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
 
                 {/* Rating */}
                 <div className="grid grid-cols-[100px_1fr] items-start gap-1.5 py-0.5">
-                  <span className="text-[11px] font-medium text-[#7a7a76] flex items-center gap-1.5 h-6">
+                  <span className="text-[11px] font-medium text-[#8A9098] flex items-center gap-1.5 h-6">
                     <Star className="h-3 w-3 text-amber-500 fill-amber-500 shrink-0" />
                     Note Google
                   </span>
@@ -3225,8 +3225,8 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
 
                 {/* Reviews Count */}
                 <div className="grid grid-cols-[100px_1fr] items-start gap-1.5 py-0.5">
-                  <span className="text-[11px] font-medium text-[#7a7a76] flex items-center gap-1.5 h-6">
-                    <Star className="h-3 w-3 text-[#7a7a76] shrink-0" />
+                  <span className="text-[11px] font-medium text-[#8A9098] flex items-center gap-1.5 h-6">
+                    <Star className="h-3 w-3 text-[#8A9098] shrink-0" />
                     Avis Google
                   </span>
                   <InlineTextEdit 
@@ -3243,7 +3243,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
 
                 {/* Next action date */}
                 <div className="grid grid-cols-[100px_1fr] items-center gap-1.5 py-0.5">
-                  <span className="text-[11px] font-medium text-[#7a7a76] flex items-center gap-1.5">
+                  <span className="text-[11px] font-medium text-[#8A9098] flex items-center gap-1.5">
                     <Calendar className="h-3 w-3" />
                     {t('lead.prop_next_action_date')}
                   </span>
@@ -3259,7 +3259,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                 {/* Champs Personnalisés */}
                 {activeWorkspace?.custom_columns?.map((colName) => (
                   <div key={colName} className="grid grid-cols-[100px_1fr] items-start gap-1.5 py-0.5 animate-in fade-in duration-100">
-                    <span className="text-[11px] font-medium text-[#7a7a76] flex items-center gap-1.5 h-6 truncate" title={colName}>
+                    <span className="text-[11px] font-medium text-[#8A9098] flex items-center gap-1.5 h-6 truncate" title={colName}>
                       <Tag className="h-3 w-3 shrink-0" />
                       {colName}
                     </span>
@@ -3282,13 +3282,13 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                       placeholder="Nom du champ…"
                       value={newFieldName}
                       onChange={(e) => setNewFieldName(e.target.value)}
-                      className="h-6 text-[10px] border-[#e5e5e0] focus:ring-[#059669]"
+                      className="h-6 text-[10px] border-[#e5e5e0] focus:ring-[#167f5b]"
                       autoFocus
                     />
-                    <Button type="button" onClick={handleCreateCustomField} size="sm" className="bg-[#059669] hover:bg-[#047857] text-white text-[10px] h-6 px-2.5">
+                    <Button type="button" onClick={handleCreateCustomField} size="sm" className="bg-[#167f5b] hover:bg-[#0f6b4c] text-white text-[10px] h-6 px-2.5">
                       Créer
                     </Button>
-                    <button type="button" onClick={() => { setAddingCustomField(false); setNewFieldName(''); }} className="text-[#7a7a76] hover:text-[#26251e] p-0.5">
+                    <button type="button" onClick={() => { setAddingCustomField(false); setNewFieldName(''); }} className="text-[#8A9098] hover:text-[#14171A] p-0.5">
                       <X className="w-3.5 h-3.5" />
                     </button>
                   </div>
@@ -3296,7 +3296,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                   <button
                     type="button"
                     onClick={() => setAddingCustomField(true)}
-                    className="inline-flex items-center gap-1 text-[10px] text-[#059669] font-bold hover:underline"
+                    className="inline-flex items-center gap-1 text-[10px] text-[#167f5b] font-bold hover:underline"
                   >
                     <Plus className="w-3 h-3" /> Ajouter un champ
                   </button>
@@ -3305,8 +3305,8 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
 
               {/* Adresses Multiples (Locations) */}
               <div className="pt-4 border-t border-[#e5e5e0] mt-4 space-y-2">
-                <h4 className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76] flex items-center gap-1.5 font-sans">
-                  <MapPin className="h-3.5 w-3.5 text-[#059669]" />
+                <h4 className="text-[10px] font-bold uppercase tracking-wider text-[#8A9098] flex items-center gap-1.5 font-sans">
+                  <MapPin className="h-3.5 w-3.5 text-[#167f5b]" />
                   Autres établissements / succursales ({lead.locations?.length || 0})
                 </h4>
                 
@@ -3318,16 +3318,16 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                         <div
                           key={idx}
                           className={cn(
-                            "flex items-start justify-between gap-2 p-2 bg-[#f4f4f3]/40 border border-[#e5e5e0]/70 rounded-lg text-xs hover:border-[#059669]/30 transition-all duration-300",
+                            "flex items-start justify-between gap-2 p-2 bg-[#f4f4f3]/40 border border-[#e5e5e0]/70 rounded-lg text-xs hover:border-[#167f5b]/30 transition-all duration-300",
                             isDeleting
                               ? "animate-out fade-out slide-out-to-top-2 duration-200 opacity-0 transform -translate-y-1"
                               : "animate-in fade-in slide-in-from-top-2 duration-300"
                           )}
                         >
                           <div className="flex-1 min-w-0">
-                            <p className="font-semibold text-[#26251e] truncate">{loc.address}</p>
+                            <p className="font-semibold text-[#14171A] truncate">{loc.address}</p>
                             {loc.lat && loc.lng && (
-                              <p className="text-[9px] text-[#7a7a76] font-mono mt-0.5">
+                              <p className="text-[9px] text-[#8A9098] font-mono mt-0.5">
                                 Coords: {loc.lat.toFixed(5)}, {loc.lng.toFixed(5)}
                               </p>
                             )}
@@ -3342,7 +3342,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                                 setDeletingLocationIndex(null);
                               }, 200);
                             }}
-                            className="text-[#7a7a76]/60 hover:text-red-600 transition-colors p-0.5 rounded hover:bg-red-50 shrink-0"
+                            className="text-[#8A9098]/60 hover:text-red-600 transition-colors p-0.5 rounded hover:bg-red-50 shrink-0"
                             title="Supprimer cette adresse"
                           >
                             <X className="h-3.5 w-3.5" />
@@ -3352,7 +3352,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                     })}
                   </div>
                 ) : (
-                  <p className="text-[11px] text-[#7a7a76] italic pl-0.5">Aucune succursale enregistrée.</p>
+                  <p className="text-[11px] text-[#8A9098] italic pl-0.5">Aucune succursale enregistrée.</p>
                 )}
 
                 {/* Form to add a location */}
@@ -3361,7 +3361,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                     placeholder="Saisir une nouvelle adresse et appuyer sur Entrée..."
                     value={newLocationAddress}
                     onChange={(e) => setNewLocationAddress(e.target.value)}
-                    className="h-7 text-xs border-[#e5e5e0] focus:ring-[#059669] flex-1 bg-white"
+                    className="h-7 text-xs border-[#e5e5e0] focus:ring-[#167f5b] flex-1 bg-white"
                     disabled={addingLocation || isLocked}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') {
@@ -3386,22 +3386,22 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
               {/* Scripts Contextuels (Phase 3) */}
               {leadPersona && (Object.keys(leadPersona.callScripts || {}).length > 0 || Object.keys(leadPersona.emailTemplates || {}).length > 0) && (
                 <div className="pt-4 border-t border-[#e5e5e0] mt-4 space-y-3">
-                  <h4 className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76] flex items-center gap-1.5">
+                  <h4 className="text-[10px] font-bold uppercase tracking-wider text-[#8A9098] flex items-center gap-1.5">
                     <FileText className="h-3 w-3" />
                     Scripts & Modèles (ICP: {leadPersona.name})
                   </h4>
                   <div className="space-y-2">
                     {Object.entries(leadPersona.callScripts || {}).map(([title, content]) => (
                       <div key={title} className="p-2 border border-[#e5e5e0] rounded-md bg-[#fafaf8]">
-                        <p className="text-[10px] font-bold text-[#26251e] mb-1">📞 {title}</p>
-                        <p className="text-[10px] text-[#7a7a76] line-clamp-2">{content}</p>
+                        <p className="text-[10px] font-bold text-[#14171A] mb-1">📞 {title}</p>
+                        <p className="text-[10px] text-[#8A9098] line-clamp-2">{content}</p>
                         <Button variant="ghost" size="sm" className="h-5 text-[9px] px-2 mt-1" onClick={() => setGeneratedContent(content as string)}>Utiliser</Button>
                       </div>
                     ))}
                     {Object.entries(leadPersona.emailTemplates || {}).map(([title, content]) => (
                       <div key={title} className="p-2 border border-[#e5e5e0] rounded-md bg-[#fafaf8]">
-                        <p className="text-[10px] font-bold text-[#26251e] mb-1">✉️ {title}</p>
-                        <p className="text-[10px] text-[#7a7a76] line-clamp-2">{content}</p>
+                        <p className="text-[10px] font-bold text-[#14171A] mb-1">✉️ {title}</p>
+                        <p className="text-[10px] text-[#8A9098] line-clamp-2">{content}</p>
                         <Button variant="ghost" size="sm" className="h-5 text-[9px] px-2 mt-1" onClick={() => setGeneratedContent(content as string)}>Utiliser</Button>
                       </div>
                     ))}
@@ -3411,7 +3411,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
 
               {/* Assigner à */}
               <div className="pt-4 border-t border-[#e5e5e0] mt-4 space-y-2">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76] flex items-center gap-1.5">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[#8A9098] flex items-center gap-1.5">
                   <User className="h-3 w-3" />
                   Assigner à
                 </span>
@@ -3427,7 +3427,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                     <SelectValue placeholder="Non assigné" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="__none__" className="text-xs text-[#7a7a76]">Non assigné</SelectItem>
+                    <SelectItem value="__none__" className="text-xs text-[#8A9098]">Non assigné</SelectItem>
                     {teamMembers.map((m) => (
                       <SelectItem key={m.id} value={m.id} className="text-xs">
                         {m.full_name || m.email}
@@ -3436,21 +3436,21 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                   </SelectContent>
                 </Select>
                 {lead.assignedTo && (
-                  <p className="text-[10px] text-[#7a7a76]">
-                    Assigné à : <span className="font-semibold text-[#26251e]">{teamMembers.find(m => m.id === lead.assignedTo)?.full_name || teamMembers.find(m => m.id === lead.assignedTo)?.email || 'Membre'}</span>
+                  <p className="text-[10px] text-[#8A9098]">
+                    Assigné à : <span className="font-semibold text-[#14171A]">{teamMembers.find(m => m.id === lead.assignedTo)?.full_name || teamMembers.find(m => m.id === lead.assignedTo)?.email || 'Membre'}</span>
                   </p>
                 )}
               </div>
 
               {/* Deal */}
               <div className="pt-4 border-t border-[#e5e5e0] mt-4 space-y-3">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76] flex items-center gap-1.5">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[#8A9098] flex items-center gap-1.5">
                   <DollarSign className="h-3 w-3" />
                   Deal
                 </span>
                 <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-1">
-                    <label className="text-[9px] uppercase tracking-wider text-[#7a7a76] font-bold">Montant</label>
+                    <label className="text-[9px] uppercase tracking-wider text-[#8A9098] font-bold">Montant</label>
                     <Input
                       type="number"
                       value={lead.dealAmount ?? ''}
@@ -3461,7 +3461,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[9px] uppercase tracking-wider text-[#7a7a76] font-bold">Proba. %</label>
+                    <label className="text-[9px] uppercase tracking-wider text-[#8A9098] font-bold">Proba. %</label>
                     <Input
                       type="number"
                       min={0}
@@ -3475,7 +3475,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                   </div>
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[9px] uppercase tracking-wider text-[#7a7a76] font-bold">Date de closing</label>
+                  <label className="text-[9px] uppercase tracking-wider text-[#8A9098] font-bold">Date de closing</label>
                   <Input
                     type="date"
                     value={lead.dealClosingDate || ''}
@@ -3487,7 +3487,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                 {/* Campagne */}
                 {campaigns.length > 0 && (
                   <div className="space-y-1">
-                    <label className="text-[9px] uppercase tracking-wider text-[#7a7a76] font-bold">Campagne</label>
+                    <label className="text-[9px] uppercase tracking-wider text-[#8A9098] font-bold">Campagne</label>
                     <Select
                       value={lead.campaignId || '__none__'}
                       onValueChange={(v) => updateLead(lead.id, { campaignId: v === '__none__' ? undefined : v })}
@@ -3497,7 +3497,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                         <SelectValue placeholder="Aucune" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="__none__" className="text-xs text-[#7a7a76]">Aucune campagne</SelectItem>
+                        <SelectItem value="__none__" className="text-xs text-[#8A9098]">Aucune campagne</SelectItem>
                         {campaigns.map(c => <SelectItem key={c.id} value={c.id} className="text-xs">{c.name}</SelectItem>)}
                       </SelectContent>
                     </Select>
@@ -3505,7 +3505,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                 )}
                 {/* Projet */}
                 <div className="space-y-1">
-                  <label className="text-[9px] uppercase tracking-wider text-[#7a7a76] font-bold">Projet</label>
+                  <label className="text-[9px] uppercase tracking-wider text-[#8A9098] font-bold">Projet</label>
                   <Select
                     value={lead.projectId || '__none__'}
                     onValueChange={(v) => updateLead(lead.id, { projectId: v === '__none__' ? undefined : v })}
@@ -3515,7 +3515,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                       <SelectValue placeholder="Aucun projet" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="__none__" className="text-xs text-[#7a7a76]">Aucun projet</SelectItem>
+                      <SelectItem value="__none__" className="text-xs text-[#8A9098]">Aucun projet</SelectItem>
                       {projects.map(p => (
                         <SelectItem key={p.id} value={p.id} className="text-xs">{p.name}</SelectItem>
                       ))}
@@ -3524,7 +3524,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                   {lead.projectId && (
                     <a
                       href={`/projects/${lead.projectId}`}
-                      className="text-[10px] text-[#059669] hover:underline flex items-center gap-1 mt-0.5"
+                      className="text-[10px] text-[#167f5b] hover:underline flex items-center gap-1 mt-0.5"
                     >
                       Voir le projet →
                     </a>
@@ -3534,7 +3534,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
 
               {/* Tags */}
               <div className="space-y-2">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76] flex items-center gap-1.5">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-[#8A9098] flex items-center gap-1.5">
                   <Tag className="h-3 w-3" />
                   Tags
                 </p>
@@ -3545,7 +3545,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                       className={cn(
                         "inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full border",
                         tag.startsWith('@')
-                          ? "bg-[#059669]/10 text-[#059669] border-[#059669]/30"
+                          ? "bg-[#167f5b]/10 text-[#167f5b] border-[#167f5b]/30"
                           : ['Intéressé', 'RDV demandé', 'Demande info'].includes(tag)
                             ? "bg-blue-50 text-blue-700 border-blue-200"
                             : ['Pas intéressé'].includes(tag)
@@ -3581,7 +3581,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
 
               {/* Actions terrain */}
               <div className="pt-4 border-t border-[#e5e5e0] mt-4 space-y-2">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Actions terrain</span>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[#8A9098]">Actions terrain</span>
                 <div className="flex flex-col gap-2">
                   <Button
                     variant="outline"
@@ -3600,7 +3600,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                   >
                     <GoogleMapsIcon size={14} />
                     Voir sur Google Maps
-                    <ExternalLink className="h-3 w-3 ml-auto text-[#7a7a76]" />
+                    <ExternalLink className="h-3 w-3 ml-auto text-[#8A9098]" />
                   </Button>
                   <Button
                     variant="outline"
@@ -3610,12 +3610,12 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                   >
                     <Tag className="h-3.5 w-3.5 text-emerald-600" />
                     Présenter une offre
-                    <ExternalLink className="h-3 w-3 ml-auto text-[#7a7a76]" />
+                    <ExternalLink className="h-3 w-3 ml-auto text-[#8A9098]" />
                   </Button>
                   <Button
                     variant="outline"
                     size="sm"
-                    className="h-8 text-xs gap-1.5 justify-start bg-[#f0fdf4] border-[#059669]/30 hover:bg-[#dcfce7]"
+                    className="h-8 text-xs gap-1.5 justify-start bg-[#f0fdf4] border-[#167f5b]/30 hover:bg-[#dcfce7]"
                     disabled={loadingProposalData}
                     onClick={async () => {
                       setLoadingProposalData(true);
@@ -3673,7 +3673,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                     {loadingProposalData ? (
                       <Loader2 className="h-3.5 w-3.5 animate-spin" />
                     ) : (
-                      <FileOutput className="h-3.5 w-3.5 text-[#059669]" />
+                      <FileOutput className="h-3.5 w-3.5 text-[#167f5b]" />
                     )}
                     {loadingProposalData ? 'Chargement…' : 'Générer une proposition PDF'}
                   </Button>
@@ -3688,7 +3688,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                 onDragLeave={handleDrag}
                 onDrop={handleDrop}
               >
-                <span className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76] flex items-center gap-1.5">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[#8A9098] flex items-center gap-1.5">
                   <Camera className="h-3 w-3" />
                   {t('lead.photo_section')}
                 </span>
@@ -3696,7 +3696,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                 {lead.imageUrl ? (
                   <div className={cn(
                     "relative rounded-lg overflow-hidden border group bg-[#f4f4f3] aspect-video flex items-center justify-center transition-all duration-200",
-                    dragActive ? "border-[#059669] bg-[#059669]/5" : "border-[#e5e5e0]"
+                    dragActive ? "border-[#167f5b] bg-[#167f5b]/5" : "border-[#e5e5e0]"
                   )}>
                     <img 
                       src={lead.imageUrl} 
@@ -3736,13 +3736,13 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                     className={cn(
                       "border border-dashed rounded-lg p-6 flex flex-col items-center justify-center gap-1.5 cursor-pointer transition-all duration-200",
                       dragActive 
-                        ? "border-[#059669] bg-[#059669]/5" 
+                        ? "border-[#167f5b] bg-[#167f5b]/5" 
                         : "border-[#e5e5e0] hover:border-primary/50 hover:bg-secondary/10",
                       isLocked && "cursor-not-allowed opacity-50 hover:bg-transparent hover:border-transparent"
                     )}
                   >
-                    <Camera className="h-5 w-5 text-[#7a7a76]" />
-                    <span className="text-[10px] font-medium text-[#7a7a76]">
+                    <Camera className="h-5 w-5 text-[#8A9098]" />
+                    <span className="text-[10px] font-medium text-[#8A9098]">
                       {dragActive ? "Déposer l'image ici !" : t('lead.take_photo_btn')}
                     </span>
                   </div>
@@ -3755,16 +3755,16 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
 
       {showProposalBuilder && (
         <div className="fixed inset-0 bg-[#000000]/40 backdrop-blur-xs z-50 flex items-center justify-center p-4 md:p-6 overflow-hidden">
-          <div className="bg-[#fafaf8] border border-[#e5e5e0] rounded-2xl w-full max-w-6xl h-[90vh] flex flex-col shadow-2xl animate-in fade-in zoom-in-95 duration-200 text-[#26251e]">
+          <div className="bg-[#fafaf8] border border-[#e5e5e0] rounded-2xl w-full max-w-6xl h-[90vh] flex flex-col shadow-2xl animate-in fade-in zoom-in-95 duration-200 text-[#14171A]">
             
             {/* Header */}
             <div className="p-4 border-b border-[#e5e5e0]/80 flex items-center justify-between bg-white shrink-0">
               <div>
-                <h3 className="text-sm font-black uppercase tracking-wider text-[#26251e] flex items-center gap-2">
-                  <FileOutput className="h-4 w-4 text-[#059669]" />
+                <h3 className="text-sm font-black uppercase tracking-wider text-[#14171A] flex items-center gap-2">
+                  <FileOutput className="h-4 w-4 text-[#167f5b]" />
                   Générateur de Proposition Commerciale
                 </h3>
-                <p className="text-[10px] text-[#7a7a76] mt-0.5">Personnalisez votre proposition commerciale avant l'exportation PDF.</p>
+                <p className="text-[10px] text-[#8A9098] mt-0.5">Personnalisez votre proposition commerciale avant l'exportation PDF.</p>
               </div>
               <Button
                 variant="ghost"
@@ -3785,14 +3785,14 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                   {(['intro', 'problem', 'solution', 'terms'] as const).map(section => (
                     <div key={section} className="space-y-1.5">
                       <div className="flex items-center justify-between">
-                        <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">
+                        <label className="text-[10px] font-bold uppercase tracking-wider text-[#8A9098]">
                           {SECTION_LABELS[section]}
                         </label>
                         <button
                           type="button"
                           onClick={() => generateSection(section)}
                           disabled={!!generatingSection}
-                          className="flex items-center gap-1 text-[10px] px-2 py-0.5 rounded bg-[#059669]/10 text-[#059669] hover:bg-[#059669]/20 font-semibold transition-colors disabled:opacity-50"
+                          className="flex items-center gap-1 text-[10px] px-2 py-0.5 rounded bg-[#167f5b]/10 text-[#167f5b] hover:bg-[#167f5b]/20 font-semibold transition-colors disabled:opacity-50"
                         >
                           {generatingSection === section ? (
                             <Loader2 className="h-2.5 w-2.5 animate-spin" />
@@ -3816,7 +3816,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                 {/* Section Prix + Taxes QC */}
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Prix</label>
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-[#8A9098]">Prix</label>
                     <div className="flex items-center gap-2">
                       <input
                         type="number"
@@ -3825,11 +3825,11 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                           ...p,
                           pricing: { ...p.pricing, amount: Number(e.target.value) },
                         }))}
-                        className="w-40 h-8 text-sm font-bold border border-[#e5e5e0] rounded px-2 bg-[#fafaf8] focus:outline-none focus:ring-1 focus:ring-[#059669]/40"
+                        className="w-40 h-8 text-sm font-bold border border-[#e5e5e0] rounded px-2 bg-[#fafaf8] focus:outline-none focus:ring-1 focus:ring-[#167f5b]/40"
                         placeholder="0"
                         min={0}
                       />
-                      <span className="text-xs text-[#7a7a76]">CAD</span>
+                      <span className="text-xs text-[#8A9098]">CAD</span>
                     </div>
                     {proposalSections.pricing.amount > 0 && (
                       <div className="rounded border border-[#e5e5e0] bg-[#f7f7f4] p-3 space-y-1 text-xs">
@@ -3843,7 +3843,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                             <span>{(val as number).toLocaleString('fr-CA', { style: 'currency', currency: 'CAD' })}</span>
                           </div>
                         ))}
-                        <div className="flex justify-between font-bold text-[#26251e] border-t border-[#e5e5e0] pt-1 mt-1">
+                        <div className="flex justify-between font-bold text-[#14171A] border-t border-[#e5e5e0] pt-1 mt-1">
                           <span>Total TTC</span>
                           <span>{(proposalSections.pricing.amount * 1.14975).toLocaleString('fr-CA', { style: 'currency', currency: 'CAD' })}</span>
                         </div>
@@ -3852,12 +3852,12 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                   </div>
 
                   {/* Aperçu identité */}
-                  <div className="rounded-xl border border-[#e5e5e0] bg-[#f7f7f4] p-4 space-y-2 text-xs text-[#26251e]">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Récapitulatif</p>
-                    <div><span className="text-[#7a7a76]">Client : </span><strong>{lead.businessName}</strong> · {lead.city}</div>
-                    {lead.contactName && <div><span className="text-[#7a7a76]">Contact : </span>{lead.contactName}</div>}
-                    <div><span className="text-[#7a7a76]">Validité : </span>30 jours</div>
-                    <div><span className="text-[#7a7a76]">Date : </span>{new Date().toLocaleDateString('fr-CA')}</div>
+                  <div className="rounded-xl border border-[#e5e5e0] bg-[#f7f7f4] p-4 space-y-2 text-xs text-[#14171A]">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-[#8A9098]">Récapitulatif</p>
+                    <div><span className="text-[#8A9098]">Client : </span><strong>{lead.businessName}</strong> · {lead.city}</div>
+                    {lead.contactName && <div><span className="text-[#8A9098]">Contact : </span>{lead.contactName}</div>}
+                    <div><span className="text-[#8A9098]">Validité : </span>30 jours</div>
+                    <div><span className="text-[#8A9098]">Date : </span>{new Date().toLocaleDateString('fr-CA')}</div>
                   </div>
                 </div>
               </div>
@@ -3868,7 +3868,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                   type="button"
                   onClick={saveProposal}
                   disabled={savingProposal}
-                  className="flex items-center gap-1.5 px-3 h-8 rounded-lg border border-[#e5e5e0] bg-white text-xs font-bold text-[#26251e] hover:bg-[#f4f4f3] transition-colors disabled:opacity-50"
+                  className="flex items-center gap-1.5 px-3 h-8 rounded-lg border border-[#e5e5e0] bg-white text-xs font-bold text-[#14171A] hover:bg-[#f4f4f3] transition-colors disabled:opacity-50"
                 >
                   {savingProposal ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}
                   Sauvegarder
@@ -3877,7 +3877,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                   type="button"
                   onClick={handleExportProposalPdf}
                   disabled={exportingProposal}
-                  className="flex items-center gap-1.5 px-3 h-8 rounded-lg border border-[#e5e5e0] bg-white text-xs font-bold text-[#26251e] hover:bg-[#f4f4f3] transition-colors disabled:opacity-50"
+                  className="flex items-center gap-1.5 px-3 h-8 rounded-lg border border-[#e5e5e0] bg-white text-xs font-bold text-[#14171A] hover:bg-[#f4f4f3] transition-colors disabled:opacity-50"
                 >
                   {exportingProposal ? <Loader2 className="h-3 w-3 animate-spin" /> : <FileText className="h-3 w-3" />}
                   Exporter PDF
@@ -3885,7 +3885,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                 <button
                   type="button"
                   onClick={markProposalSent}
-                  className="flex items-center gap-1.5 px-3 h-8 rounded-lg bg-[#059669] hover:bg-[#047857] text-white text-xs font-bold transition-colors"
+                  className="flex items-center gap-1.5 px-3 h-8 rounded-lg bg-[#167f5b] hover:bg-[#0f6b4c] text-white text-xs font-bold transition-colors"
                 >
                   <Send className="h-3 w-3" />
                   Marquer envoyée
@@ -3893,7 +3893,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                 <button
                   type="button"
                   onClick={() => setShowProposalBuilder(false)}
-                  className="ml-auto flex items-center gap-1.5 px-3 h-8 rounded-lg border border-[#e5e5e0] bg-white text-xs font-bold text-[#7a7a76] hover:bg-[#f4f4f3] transition-colors"
+                  className="ml-auto flex items-center gap-1.5 px-3 h-8 rounded-lg border border-[#e5e5e0] bg-white text-xs font-bold text-[#8A9098] hover:bg-[#f4f4f3] transition-colors"
                 >
                   Fermer
                 </button>
@@ -3905,10 +3905,10 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                 
                 {/* Section 1: Informations Générales */}
                 <div className="space-y-3">
-                  <h4 className="text-[10px] font-bold uppercase tracking-wider text-[#059669] border-b border-[#e5e5e0]/70 pb-1">1. Informations Générales</h4>
+                  <h4 className="text-[10px] font-bold uppercase tracking-wider text-[#167f5b] border-b border-[#e5e5e0]/70 pb-1">1. Informations Générales</h4>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1">
-                      <label className="text-[9px] font-bold uppercase text-[#7a7a76]">Titre du document</label>
+                      <label className="text-[9px] font-bold uppercase text-[#8A9098]">Titre du document</label>
                       <Input
                         value={proposalTitle}
                         onChange={(e) => setProposalTitle(e.target.value)}
@@ -3916,7 +3916,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-[9px] font-bold uppercase text-[#7a7a76]">Date d'émission</label>
+                      <label className="text-[9px] font-bold uppercase text-[#8A9098]">Date d'émission</label>
                       <Input
                         type="date"
                         value={proposalDate}
@@ -3925,7 +3925,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-[9px] font-bold uppercase text-[#7a7a76]">Validité (jours)</label>
+                      <label className="text-[9px] font-bold uppercase text-[#8A9098]">Validité (jours)</label>
                       <Input
                         type="number"
                         value={proposalValidDays}
@@ -3934,7 +3934,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-[9px] font-bold uppercase text-[#7a7a76]">Nom du destinataire</label>
+                      <label className="text-[9px] font-bold uppercase text-[#8A9098]">Nom du destinataire</label>
                       <Input
                         value={proposalRecipientName}
                         onChange={(e) => setProposalRecipientName(e.target.value)}
@@ -3942,7 +3942,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-[9px] font-bold uppercase text-[#7a7a76]">Votre entreprise (Expéditeur)</label>
+                      <label className="text-[9px] font-bold uppercase text-[#8A9098]">Votre entreprise (Expéditeur)</label>
                       <Input
                         value={proposalSenderCompany}
                         onChange={(e) => setProposalSenderCompany(e.target.value)}
@@ -3950,7 +3950,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-[9px] font-bold uppercase text-[#7a7a76]">Votre nom</label>
+                      <label className="text-[9px] font-bold uppercase text-[#8A9098]">Votre nom</label>
                       <Input
                         value={proposalSenderName}
                         onChange={(e) => setProposalSenderName(e.target.value)}
@@ -3963,14 +3963,14 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                 {/* Section 2: Résumé Exécutif */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-[#059669]">2. Résumé exécutif</label>
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-[#167f5b]">2. Résumé exécutif</label>
                     <button
                       type="button"
                       onClick={() => {
                         const autoSummary = buildExecutiveSummary(lead);
                         setProposalSummary(autoSummary);
                       }}
-                      className="text-[9px] font-semibold text-[#059669] hover:underline"
+                      className="text-[9px] font-semibold text-[#167f5b] hover:underline"
                     >
                       Réinitialiser le résumé
                     </button>
@@ -3985,7 +3985,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
 
                 {/* Section 3: Services et Tarifs */}
                 <div className="space-y-3">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-[#059669] border-b border-[#e5e5e0]/70 pb-1 block">3. Choix des services & Tarifs</label>
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-[#167f5b] border-b border-[#e5e5e0]/70 pb-1 block">3. Choix des services & Tarifs</label>
                   
                   {/* Database/Preset Services List */}
                   <div className="space-y-2.5">
@@ -3999,7 +3999,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                             copy[idx].selected = e.target.checked;
                             setProposalServices(copy);
                           }}
-                          className="mt-1 shrink-0 rounded border-gray-300 text-[#059669] focus:ring-[#059669]"
+                          className="mt-1 shrink-0 rounded border-gray-300 text-[#167f5b] focus:ring-[#167f5b]"
                         />
                         <div className="flex-1 space-y-1.5 min-w-0">
                           <div className="flex items-center justify-between gap-2">
@@ -4014,7 +4014,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                               className="font-bold text-xs bg-transparent border-b border-transparent hover:border-[#e5e5e0] focus:border-primary focus:outline-none w-full px-1"
                             />
                             <div className="flex items-center gap-1 shrink-0 bg-[#fafaf8] border border-[#e5e5e0] rounded px-1.5 py-0.5">
-                              <span className="text-[10px] text-[#7a7a76]">$</span>
+                              <span className="text-[10px] text-[#8A9098]">$</span>
                               <input
                                 type="number"
                                 value={svc.price}
@@ -4034,7 +4034,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                               copy[idx].description = e.target.value;
                               setProposalServices(copy);
                             }}
-                            className="text-[11px] text-[#7a7a76] bg-transparent border-none resize-none p-1 min-h-[40px] focus:bg-[#fafaf8] focus:ring-0 w-full"
+                            className="text-[11px] text-[#8A9098] bg-transparent border-none resize-none p-1 min-h-[40px] focus:bg-[#fafaf8] focus:ring-0 w-full"
                           />
                         </div>
                       </div>
@@ -4043,7 +4043,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
 
                   {/* Add Custom Service Line */}
                   <div className="border border-dashed border-[#e5e5e0]/80 rounded-lg p-3 space-y-2 bg-[#f4f4f3]/10">
-                    <span className="text-[9px] font-bold uppercase tracking-wider text-[#7a7a76] block">Ajouter un service personnalisé</span>
+                    <span className="text-[9px] font-bold uppercase tracking-wider text-[#8A9098] block">Ajouter un service personnalisé</span>
                     <div className="grid grid-cols-3 gap-2">
                       <Input
                         placeholder="Nom du service..."
@@ -4059,7 +4059,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                           onChange={(e) => setNewSvcPrice(e.target.value)}
                           className="text-xs h-8 pl-4 bg-white"
                         />
-                        <span className="absolute left-1.5 top-2 text-[10px] text-[#7a7a76]">$</span>
+                        <span className="absolute left-1.5 top-2 text-[10px] text-[#8A9098]">$</span>
                       </div>
                     </div>
                     <Textarea
@@ -4097,19 +4097,19 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                   {/* Custom Services Added List */}
                   {customServices.length > 0 && (
                     <div className="space-y-1.5">
-                      <span className="text-[9px] font-bold uppercase text-[#7a7a76] block">Services personnalisés ajoutés</span>
+                      <span className="text-[9px] font-bold uppercase text-[#8A9098] block">Services personnalisés ajoutés</span>
                       {customServices.map((cs, idx) => (
-                        <div key={idx} className="border border-[#e5e5e0]/80 rounded-lg p-2.5 bg-[#fbfbfb] flex items-center justify-between gap-3 text-xs text-[#26251e]">
+                        <div key={idx} className="border border-[#e5e5e0]/80 rounded-lg p-2.5 bg-[#fbfbfb] flex items-center justify-between gap-3 text-xs text-[#14171A]">
                           <div>
                             <span className="font-bold">{cs.name}</span>
-                            <span className="text-[10px] text-[#7a7a76] block truncate max-w-sm">{cs.description}</span>
+                            <span className="text-[10px] text-[#8A9098] block truncate max-w-sm">{cs.description}</span>
                           </div>
                           <div className="flex items-center gap-2">
                             <span className="font-bold">{cs.price} $</span>
                             <button
                               type="button"
                               onClick={() => setCustomServices(prev => prev.filter((_, i) => i !== idx))}
-                              className="text-[#7a7a76] hover:text-destructive text-sm"
+                              className="text-[#8A9098] hover:text-destructive text-sm"
                             >✕</button>
                           </div>
                         </div>
@@ -4120,10 +4120,10 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
 
                 {/* Section 4: Taxes & Conditions */}
                 <div className="space-y-3">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-[#059669] border-b border-[#e5e5e0]/70 pb-1 block">4. Taxes & Conditions</label>
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-[#167f5b] border-b border-[#e5e5e0]/70 pb-1 block">4. Taxes & Conditions</label>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1">
-                      <label className="text-[9px] font-bold uppercase text-[#7a7a76]">Taux de Taxes (%)</label>
+                      <label className="text-[9px] font-bold uppercase text-[#8A9098]">Taux de Taxes (%)</label>
                       <Input
                         type="number"
                         step="0.001"
@@ -4133,7 +4133,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                       />
                     </div>
                     <div className="space-y-1 col-span-2">
-                      <label className="text-[9px] font-bold uppercase text-[#7a7a76]">Conditions de règlement</label>
+                      <label className="text-[9px] font-bold uppercase text-[#8A9098]">Conditions de règlement</label>
                       <Textarea
                         value={proposalPaymentTerms}
                         onChange={(e) => setProposalPaymentTerms(e.target.value)}
@@ -4141,7 +4141,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                       />
                     </div>
                     <div className="space-y-1 col-span-2">
-                      <label className="text-[9px] font-bold uppercase text-[#7a7a76]">Appel à l'action d'acceptation</label>
+                      <label className="text-[9px] font-bold uppercase text-[#8A9098]">Appel à l'action d'acceptation</label>
                       <Textarea
                         value={proposalCallToAction}
                         onChange={(e) => setProposalCallToAction(e.target.value)}
@@ -4156,8 +4156,8 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
               {/* Right Preview Panel (Minimalist Black & White Print Aesthetic) */}
               <div className="overflow-y-auto p-5 bg-[#fafaf9] flex flex-col">
                 <div className="flex items-center justify-between mb-3 shrink-0">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Aperçu en temps réel</span>
-                  <span className="text-[9px] font-bold uppercase tracking-wider text-[#7a7a76] border border-[#e5e5e0] px-1.5 py-0.5 bg-white rounded">Format Papier A4</span>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#8A9098]">Aperçu en temps réel</span>
+                  <span className="text-[9px] font-bold uppercase tracking-wider text-[#8A9098] border border-[#e5e5e0] px-1.5 py-0.5 bg-white rounded">Format Papier A4</span>
                 </div>
                 
                 {/* Paper View */}
@@ -4300,16 +4300,16 @@ function DescriptionEditor({ value, onSave }: { value: string; onSave: (v: strin
     return (
       <div className="group relative">
         {value ? (
-          <p className="text-xs text-[#26251e] leading-relaxed">{value}</p>
+          <p className="text-xs text-[#14171A] leading-relaxed">{value}</p>
         ) : (
-          <p className="text-[11px] text-[#7a7a76] italic">
+          <p className="text-[11px] text-[#8A9098] italic">
             Analysez le site web pour générer une description commerciale, utilisée ensuite par l&apos;IA (script de visite, brouillons d&apos;emails).
           </p>
         )}
         <button
           type="button"
           onClick={() => setEditing(true)}
-          className="mt-1 text-[10px] text-[#059669] font-bold hover:underline"
+          className="mt-1 text-[10px] text-[#167f5b] font-bold hover:underline"
         >
           {value ? 'Modifier la description' : 'Saisir manuellement'}
         </button>
@@ -4324,7 +4324,7 @@ function DescriptionEditor({ value, onSave }: { value: string; onSave: (v: strin
         onChange={e => setDraft(e.target.value)}
         rows={5}
         placeholder="Description commerciale du lead…"
-        className="text-xs border-[#e5e5e0] resize-none focus:ring-[#059669]"
+        className="text-xs border-[#e5e5e0] resize-none focus:ring-[#167f5b]"
         autoFocus
       />
       <div className="flex gap-2">
@@ -4338,7 +4338,7 @@ function DescriptionEditor({ value, onSave }: { value: string; onSave: (v: strin
             setEditing(false);
           }}
           disabled={saving}
-          className="h-7 px-3 rounded-lg bg-[#059669] text-white text-[10px] font-bold hover:bg-[#047857] flex items-center gap-1"
+          className="h-7 px-3 rounded-lg bg-[#167f5b] text-white text-[10px] font-bold hover:bg-[#0f6b4c] flex items-center gap-1"
         >
           {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
           Enregistrer
@@ -4346,7 +4346,7 @@ function DescriptionEditor({ value, onSave }: { value: string; onSave: (v: strin
         <button
           type="button"
           onClick={() => { setDraft(value); setEditing(false); }}
-          className="h-7 px-3 rounded-lg border border-[#e5e5e0] text-[10px] font-bold text-[#7a7a76] hover:text-[#26251e]"
+          className="h-7 px-3 rounded-lg border border-[#e5e5e0] text-[10px] font-bold text-[#8A9098] hover:text-[#14171A]"
         >
           Annuler
         </button>
@@ -4413,7 +4413,7 @@ function SocialLinksSection({ lead, onSave }: { lead: Lead; onSave: (fields: Par
       <button
         type="button"
         onClick={() => setEditing(true)}
-        className="flex items-center gap-2 text-xs text-[#7a7a76] hover:text-[#059669] transition-colors py-1"
+        className="flex items-center gap-2 text-xs text-[#8A9098] hover:text-[#167f5b] transition-colors py-1"
       >
         <span className="text-base">+</span> Ajouter réseaux sociaux
       </button>
@@ -4423,10 +4423,10 @@ function SocialLinksSection({ lead, onSave }: { lead: Lead; onSave: (fields: Par
   return (
     <div className="rounded-lg border border-[#e5e5e0]/70 bg-[#f4f4f3]/40 p-3.5 space-y-3">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">
+        <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-[#8A9098]">
           <Globe className="h-3 w-3" />Présence en ligne
         </div>
-        <button type="button" onClick={() => setEditing(e => !e)} className="text-[10px] text-[#059669] font-bold hover:underline">
+        <button type="button" onClick={() => setEditing(e => !e)} className="text-[10px] text-[#167f5b] font-bold hover:underline">
           {editing ? 'Fermer' : 'Modifier'}
         </button>
       </div>
@@ -4444,17 +4444,17 @@ function SocialLinksSection({ lead, onSave }: { lead: Lead; onSave: (fields: Par
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={field.icon} alt={field.label} className="w-4 h-4 rounded shrink-0" />
               ) : (
-                <Globe className="w-4 h-4 text-[#7a7a76] shrink-0" />
+                <Globe className="w-4 h-4 text-[#8A9098] shrink-0" />
               )}
               <Input
                 value={field.value}
                 onChange={e => field.set(e.target.value)}
                 placeholder={field.placeholder}
-                className="h-7 text-xs border-[#e5e5e0] focus:ring-[#059669]"
+                className="h-7 text-xs border-[#e5e5e0] focus:ring-[#167f5b]"
               />
             </div>
           ))}
-          <Button size="sm" onClick={handleSave} className="h-7 bg-[#059669] hover:bg-[#047857] text-white text-xs gap-1">
+          <Button size="sm" onClick={handleSave} className="h-7 bg-[#167f5b] hover:bg-[#0f6b4c] text-white text-xs gap-1">
             <Check className="w-3 h-3" />Enregistrer
           </Button>
         </div>
@@ -4462,21 +4462,21 @@ function SocialLinksSection({ lead, onSave }: { lead: Lead; onSave: (fields: Par
         <div className="flex flex-wrap gap-2">
           {igUrl && (
             <a href={igUrl.startsWith('http') ? igUrl : `https://${igUrl}`} target="_blank" rel="noopener noreferrer"
-              className="flex items-center gap-1.5 text-xs font-semibold text-[#26251e] hover:text-[#059669] transition-colors">
+              className="flex items-center gap-1.5 text-xs font-semibold text-[#14171A] hover:text-[#167f5b] transition-colors">
               <InstagramIcon size={16} className="rounded" />
               <span className="text-[10px]">{igUrl.replace(/^https?:\/\/(www\.)?instagram\.com\//, '@').replace(/\/$/, '')}</span>
             </a>
           )}
           {fbUrl && (
             <a href={fbUrl.startsWith('http') ? fbUrl : `https://${fbUrl}`} target="_blank" rel="noopener noreferrer"
-              className="flex items-center gap-1.5 text-xs font-semibold text-[#26251e] hover:text-[#059669] transition-colors">
+              className="flex items-center gap-1.5 text-xs font-semibold text-[#14171A] hover:text-[#167f5b] transition-colors">
               <FacebookIcon size={16} className="rounded" />
               <span className="text-[10px]">Facebook</span>
             </a>
           )}
           {liUrl && (
             <a href={liUrl.startsWith('http') ? liUrl : `https://${liUrl}`} target="_blank" rel="noopener noreferrer"
-              className="flex items-center gap-1.5 text-xs font-semibold text-[#26251e] hover:text-[#059669] transition-colors">
+              className="flex items-center gap-1.5 text-xs font-semibold text-[#14171A] hover:text-[#167f5b] transition-colors">
               <Globe className="w-3.5 h-3.5" />
               <span className="text-[10px]">LinkedIn</span>
             </a>
@@ -4492,7 +4492,7 @@ function SocialLinksSection({ lead, onSave }: { lead: Lead; onSave: (fields: Par
               type="button"
               onClick={loadInstagramPosts}
               disabled={igLoading}
-              className="flex items-center gap-1.5 text-[10px] font-bold text-[#7a7a76] hover:text-[#26251e] transition-colors"
+              className="flex items-center gap-1.5 text-[10px] font-bold text-[#8A9098] hover:text-[#14171A] transition-colors"
             >
               {igLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : (
                 <InstagramIcon size={12} className="rounded" />
@@ -4519,7 +4519,7 @@ function SocialLinksSection({ lead, onSave }: { lead: Lead; onSave: (fields: Par
                     <button
                       type="button"
                       onClick={() => setEditing(true)}
-                      className="text-[10px] font-bold text-[#059669] hover:underline"
+                      className="text-[10px] font-bold text-[#167f5b] hover:underline"
                     >
                       + Ajouter d'autres infos
                     </button>
@@ -4529,7 +4529,7 @@ function SocialLinksSection({ lead, onSave }: { lead: Lead; onSave: (fields: Par
             </div>
           ) : igPosts.length > 0 ? (
             <div className="space-y-1.5">
-              <p className="text-[9px] font-bold uppercase tracking-wider text-[#7a7a76]">Derniers posts</p>
+              <p className="text-[9px] font-bold uppercase tracking-wider text-[#8A9098]">Derniers posts</p>
               <div className="grid grid-cols-3 gap-1">
                 {igPosts.map((img, i) => (
                   <a key={i} href={igUrl && (igUrl.startsWith('http') ? igUrl : `https://${igUrl}`)} target="_blank" rel="noopener noreferrer">
@@ -4544,7 +4544,7 @@ function SocialLinksSection({ lead, onSave }: { lead: Lead; onSave: (fields: Par
               </div>
             </div>
           ) : (
-            <p className="text-[10px] text-[#7a7a76] italic">Compte privé ou scraping indisponible. <a href={igUrl && (igUrl.startsWith('http') ? igUrl : `https://${igUrl}`)} target="_blank" rel="noopener noreferrer" className="text-[#059669] underline">Voir le profil →</a></p>
+            <p className="text-[10px] text-[#8A9098] italic">Compte privé ou scraping indisponible. <a href={igUrl && (igUrl.startsWith('http') ? igUrl : `https://${igUrl}`)} target="_blank" rel="noopener noreferrer" className="text-[#167f5b] underline">Voir le profil →</a></p>
           )}
         </div>
       )}
@@ -4751,7 +4751,7 @@ function ComposerPanel({
             onClick={() => setTab(key)}
             className={cn(
               'flex-1 flex items-center justify-center gap-1.5 h-8 rounded-lg text-xs font-bold transition-colors',
-              tab === key ? 'bg-white text-[#059669] shadow-sm' : 'text-[#7a7a76] hover:text-[#26251e]'
+              tab === key ? 'bg-white text-[#167f5b] shadow-sm' : 'text-[#8A9098] hover:text-[#14171A]'
             )}
           >
             {icon}
@@ -4769,32 +4769,32 @@ function ComposerPanel({
             </div>
           )}
           <div className="space-y-1">
-            <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">{t('composer.email_to')}</label>
-            <div className="h-8 px-3 flex items-center rounded-lg border border-[#e5e5e0] bg-[#fafaf8] text-xs text-[#26251e]">
+            <label className="text-[10px] font-bold uppercase tracking-wider text-[#8A9098]">{t('composer.email_to')}</label>
+            <div className="h-8 px-3 flex items-center rounded-lg border border-[#e5e5e0] bg-[#fafaf8] text-xs text-[#14171A]">
               {lead.contactEmail || <span className="text-[#b0afa9]">—</span>}
             </div>
           </div>
           <div className="space-y-1">
-            <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">{t('composer.email_subject')}</label>
+            <label className="text-[10px] font-bold uppercase tracking-wider text-[#8A9098]">{t('composer.email_subject')}</label>
             <Input
               value={emailSubject}
               onChange={e => setEmailSubject(e.target.value)}
               placeholder={`Bonjour ${lead.contactName?.split(' ')[0] || lead.businessName}…`}
-              className="h-8 text-xs border-[#e5e5e0] focus:ring-[#059669]"
+              className="h-8 text-xs border-[#e5e5e0] focus:ring-[#167f5b]"
             />
           </div>
           <div className="space-y-1">
-            <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Corps</label>
+            <label className="text-[10px] font-bold uppercase tracking-wider text-[#8A9098]">Corps</label>
             <Textarea
               value={emailBody}
               onChange={e => setEmailBody(e.target.value)}
               placeholder="Rédigez votre message…"
               rows={6}
-              className="text-xs border-[#e5e5e0] resize-none focus:ring-[#059669]"
+              className="text-xs border-[#e5e5e0] resize-none focus:ring-[#167f5b]"
             />
           </div>
           {emailMsg && (
-            <div className={cn('flex items-center gap-2 px-3 py-2 rounded-lg border text-xs font-semibold', emailMsg.type === 'success' ? 'bg-[#059669]/10 text-[#059669] border-[#059669]/20' : 'bg-red-50 text-red-700 border-red-200')}>
+            <div className={cn('flex items-center gap-2 px-3 py-2 rounded-lg border text-xs font-semibold', emailMsg.type === 'success' ? 'bg-[#167f5b]/10 text-[#167f5b] border-[#167f5b]/20' : 'bg-red-50 text-red-700 border-red-200')}>
               {emailMsg.type === 'success' ? <Check className="w-3.5 h-3.5" /> : <X className="w-3.5 h-3.5" />}
               {emailMsg.text}
             </div>
@@ -4803,7 +4803,7 @@ function ComposerPanel({
             <Button
               onClick={handleSendEmail}
               disabled={emailSending || !emailSubject || !emailBody || !lead.contactEmail}
-              className="h-8 bg-[#059669] hover:bg-[#047857] text-white font-bold text-xs gap-1.5"
+              className="h-8 bg-[#167f5b] hover:bg-[#0f6b4c] text-white font-bold text-xs gap-1.5"
               title={!lead.contactEmail ? "Aucun email de contact" : undefined}
             >
               {emailSending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
@@ -4818,7 +4818,7 @@ function ComposerPanel({
               <FileText className="w-3.5 h-3.5" />
               Brouillon
             </Button>
-            <p className="text-[9px] text-[#7a7a76] w-full">&quot;Envoyer&quot; expédie l&apos;email via Gmail. &quot;Brouillon&quot; le sauvegarde dans l&apos;app et Gmail.</p>
+            <p className="text-[9px] text-[#8A9098] w-full">&quot;Envoyer&quot; expédie l&apos;email via Gmail. &quot;Brouillon&quot; le sauvegarde dans l&apos;app et Gmail.</p>
           </div>
         </div>
       )}
@@ -4828,18 +4828,18 @@ function ComposerPanel({
         <div className="space-y-4">
           {/* Script IA */}
           {lead.websiteDescription && (
-            <div className="p-3 rounded-xl bg-[#059669]/5 border border-[#059669]/20 space-y-1">
-              <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-[#059669]">
+            <div className="p-3 rounded-xl bg-[#167f5b]/5 border border-[#167f5b]/20 space-y-1">
+              <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-[#167f5b]">
                 <Sparkles className="w-3 h-3" />
                 Script IA suggéré
               </div>
-              <p className="text-xs text-[#26251e] leading-relaxed line-clamp-4">
+              <p className="text-xs text-[#14171A] leading-relaxed line-clamp-4">
                 {`Bonjour ${lead.contactName?.split(' ')[0] || 'Monsieur/Madame'}, je vous appelle au sujet de ${lead.businessName}. ${lead.websiteDescription.slice(0, 200)}…`}
               </p>
             </div>
           )}
           <div className="space-y-1">
-            <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">{t('composer.call_outcome')}</label>
+            <label className="text-[10px] font-bold uppercase tracking-wider text-[#8A9098]">{t('composer.call_outcome')}</label>
             <div className="flex gap-2">
               {(['reached', 'voicemail', 'no_answer'] as const).map(outcome => {
                 const labels = { reached: t('composer.call_outcome_reached'), voicemail: t('composer.call_outcome_voicemail'), no_answer: t('composer.call_outcome_no_answer') };
@@ -4851,8 +4851,8 @@ function ComposerPanel({
                     className={cn(
                       'flex-1 h-8 rounded-lg text-xs font-bold transition-colors border',
                       callOutcome === outcome
-                        ? 'bg-[#059669] text-white border-[#059669]'
-                        : 'bg-white text-[#7a7a76] border-[#e5e5e0] hover:border-[#059669]/30'
+                        ? 'bg-[#167f5b] text-white border-[#167f5b]'
+                        : 'bg-white text-[#8A9098] border-[#e5e5e0] hover:border-[#167f5b]/30'
                     )}
                   >
                     {labels[outcome]}
@@ -4862,19 +4862,19 @@ function ComposerPanel({
             </div>
           </div>
           <div className="space-y-1">
-            <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">{t('composer.call_log')}</label>
+            <label className="text-[10px] font-bold uppercase tracking-wider text-[#8A9098]">{t('composer.call_log')}</label>
             <Textarea
               value={callNotes}
               onChange={e => setCallNotes(e.target.value)}
               placeholder="Notes de l'appel…"
               rows={3}
-              className="text-xs border-[#e5e5e0] resize-none focus:ring-[#059669]"
+              className="text-xs border-[#e5e5e0] resize-none focus:ring-[#167f5b]"
             />
           </div>
           <Button
             onClick={handleLogCall}
             disabled={callLogging}
-            className="h-8 bg-[#059669] hover:bg-[#047857] text-white font-bold text-xs gap-1.5"
+            className="h-8 bg-[#167f5b] hover:bg-[#0f6b4c] text-white font-bold text-xs gap-1.5"
           >
             {callLogging ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Phone className="w-3.5 h-3.5" />}
             {t('composer.log')}
@@ -4886,17 +4886,17 @@ function ComposerPanel({
       {tab === 'task' && (
         <div className="space-y-3">
           <div className="space-y-1">
-            <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">{t('composer.task_title')}</label>
+            <label className="text-[10px] font-bold uppercase tracking-wider text-[#8A9098]">{t('composer.task_title')}</label>
             <Input
               value={taskTitle}
               onChange={e => setTaskTitle(e.target.value)}
               placeholder={`Relancer ${lead.contactName?.split(' ')[0] || lead.businessName}`}
-              className="h-8 text-xs border-[#e5e5e0] focus:ring-[#059669]"
+              className="h-8 text-xs border-[#e5e5e0] focus:ring-[#167f5b]"
             />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">{t('composer.task_category')}</label>
+              <label className="text-[10px] font-bold uppercase tracking-wider text-[#8A9098]">{t('composer.task_category')}</label>
               <Select value={taskCategory} onValueChange={v => setTaskCategory(v as typeof taskCategory)}>
                 <SelectTrigger className="h-8 text-xs border-[#e5e5e0]"><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -4908,24 +4908,24 @@ function ComposerPanel({
               </Select>
             </div>
             <div className="space-y-1">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">{t('composer.task_due')}</label>
+              <label className="text-[10px] font-bold uppercase tracking-wider text-[#8A9098]">{t('composer.task_due')}</label>
               <input
                 type="date"
                 value={taskDue}
                 onChange={e => setTaskDue(e.target.value)}
-                className="w-full h-8 text-xs border border-[#e5e5e0] rounded-lg px-2 focus:outline-none focus:ring-1 focus:ring-[#059669]"
+                className="w-full h-8 text-xs border border-[#e5e5e0] rounded-lg px-2 focus:outline-none focus:ring-1 focus:ring-[#167f5b]"
               />
             </div>
           </div>
           {taskMsg && (
-            <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-[#059669]/20 bg-[#059669]/5 text-xs font-semibold text-[#059669]">
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-[#167f5b]/20 bg-[#167f5b]/5 text-xs font-semibold text-[#167f5b]">
               <Check className="w-3.5 h-3.5" />{taskMsg}
             </div>
           )}
           <Button
             onClick={handleAddTask}
             disabled={taskLogging || !taskTitle}
-            className="h-8 bg-[#059669] hover:bg-[#047857] text-white font-bold text-xs gap-1.5"
+            className="h-8 bg-[#167f5b] hover:bg-[#0f6b4c] text-white font-bold text-xs gap-1.5"
           >
             {taskLogging ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckSquare className="w-3.5 h-3.5" />}
             Créer la tâche
@@ -4937,40 +4937,40 @@ function ComposerPanel({
       {tab === 'meeting' && (
         <div className="space-y-3">
           <div className="space-y-1">
-            <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">{t('composer.meeting_title')}</label>
+            <label className="text-[10px] font-bold uppercase tracking-wider text-[#8A9098]">{t('composer.meeting_title')}</label>
             <Input
               value={meetingTitle}
               onChange={e => setMeetingTitle(e.target.value)}
               placeholder={`RDV avec ${lead.businessName}`}
-              className="h-8 text-xs border-[#e5e5e0] focus:ring-[#059669]"
+              className="h-8 text-xs border-[#e5e5e0] focus:ring-[#167f5b]"
             />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">{t('composer.meeting_date')}</label>
+              <label className="text-[10px] font-bold uppercase tracking-wider text-[#8A9098]">{t('composer.meeting_date')}</label>
               <input
                 type="datetime-local"
                 value={meetingDate}
                 onChange={e => setMeetingDate(e.target.value)}
-                className="w-full h-8 text-xs border border-[#e5e5e0] rounded-lg px-2 focus:outline-none focus:ring-1 focus:ring-[#059669]"
+                className="w-full h-8 text-xs border border-[#e5e5e0] rounded-lg px-2 focus:outline-none focus:ring-1 focus:ring-[#167f5b]"
               />
             </div>
             <div className="space-y-1">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">{t('composer.meeting_link')}</label>
+              <label className="text-[10px] font-bold uppercase tracking-wider text-[#8A9098]">{t('composer.meeting_link')}</label>
               <Input
                 value={meetingLink}
                 onChange={e => setMeetingLink(e.target.value)}
                 placeholder="meet.google.com/…"
-                className="h-8 text-xs border-[#e5e5e0] focus:ring-[#059669]"
+                className="h-8 text-xs border-[#e5e5e0] focus:ring-[#167f5b]"
               />
             </div>
           </div>
           {lead.website && (
             <div className="p-3 rounded-xl bg-[#f4f4f3] border border-[#e5e5e0]">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76] mb-1">Lien de booking</p>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-[#8A9098] mb-1">Lien de booking</p>
               <Link
                 href={`/book/${encodeURIComponent(lead.contactEmail || lead.businessName)}`}
-                className="text-xs text-[#059669] font-semibold hover:underline"
+                className="text-xs text-[#167f5b] font-semibold hover:underline"
                 target="_blank"
               >
                 Partager mon lien de réservation →
@@ -4978,14 +4978,14 @@ function ComposerPanel({
             </div>
           )}
           {meetingMsg && (
-            <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-[#059669]/20 bg-[#059669]/5 text-xs font-semibold text-[#059669]">
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-[#167f5b]/20 bg-[#167f5b]/5 text-xs font-semibold text-[#167f5b]">
               <Check className="w-3.5 h-3.5" />{meetingMsg}
             </div>
           )}
           <Button
             onClick={handleLogMeeting}
             disabled={meetingLogging || !meetingTitle}
-            className="h-8 bg-[#059669] hover:bg-[#047857] text-white font-bold text-xs gap-1.5"
+            className="h-8 bg-[#167f5b] hover:bg-[#0f6b4c] text-white font-bold text-xs gap-1.5"
           >
             {meetingLogging ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CalendarCheck className="w-3.5 h-3.5" />}
             {t('composer.log')}
@@ -5006,8 +5006,8 @@ function ComposerPanel({
                 className={cn(
                   'flex-1 h-8 rounded-lg text-xs font-bold transition-colors border flex items-center justify-center gap-1.5',
                   dmPlatform === platform
-                    ? 'bg-[#26251e] text-white border-[#26251e]'
-                    : 'bg-white text-[#7a7a76] border-[#e5e5e0] hover:border-[#26251e]/30'
+                    ? 'bg-[#14171A] text-white border-[#14171A]'
+                    : 'bg-white text-[#8A9098] border-[#e5e5e0] hover:border-[#14171A]/30'
                 )}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -5028,7 +5028,7 @@ function ComposerPanel({
                   : `Bonjour ${firstName},\n\nVotre page m'a interpelé ! Je propose des services qui pourraient vraiment booster votre activité.\n\nDispo pour un rapide échange cette semaine ?`;
                 setDmText(template);
               }}
-              className="text-[10px] text-[#059669] font-bold hover:underline flex items-center gap-1"
+              className="text-[10px] text-[#167f5b] font-bold hover:underline flex items-center gap-1"
             >
               <Sparkles className="w-3 h-3" />Générer un message template
             </button>
@@ -5042,7 +5042,7 @@ function ComposerPanel({
                 href={(lead.socialLinks?.instagram || lead.website || '')}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-[10px] text-[#059669] underline truncate"
+                className="text-[10px] text-[#167f5b] underline truncate"
               >
                 {lead.socialLinks?.instagram || lead.website}
               </a>
@@ -5050,13 +5050,13 @@ function ComposerPanel({
           )}
 
           <div className="space-y-1">
-            <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Message</label>
+            <label className="text-[10px] font-bold uppercase tracking-wider text-[#8A9098]">Message</label>
             <Textarea
               value={dmText}
               onChange={e => setDmText(e.target.value)}
               placeholder={`Rédigez votre message ${dmPlatform === 'instagram' ? 'Instagram' : 'Facebook'}…`}
               rows={6}
-              className="text-xs border-[#e5e5e0] resize-none focus:ring-[#059669]"
+              className="text-xs border-[#e5e5e0] resize-none focus:ring-[#167f5b]"
             />
           </div>
 
@@ -5071,7 +5071,7 @@ function ComposerPanel({
                 setTimeout(() => setDmCopied(false), 2500);
               }}
               disabled={!dmText}
-              className="h-8 bg-[#26251e] hover:bg-[#3a3a32] text-white font-bold text-xs gap-1.5"
+              className="h-8 bg-[#14171A] hover:bg-[#3a3a32] text-white font-bold text-xs gap-1.5"
             >
               {dmCopied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
               {dmCopied ? 'Copié !' : 'Copier le message'}
@@ -5081,7 +5081,7 @@ function ComposerPanel({
                 href={lead.socialLinks?.instagram || lead.website || ''}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="h-8 px-3 flex items-center gap-1.5 rounded-lg border border-[#e5e5e0] text-xs font-bold text-[#7a7a76] hover:text-[#26251e] transition-colors"
+                className="h-8 px-3 flex items-center gap-1.5 rounded-lg border border-[#e5e5e0] text-xs font-bold text-[#8A9098] hover:text-[#14171A] transition-colors"
               >
                 <InstagramIcon size={14} className="rounded" />
                 Ouvrir le profil
@@ -5099,7 +5099,7 @@ function ComposerPanel({
               Sauvegarder brouillon
             </Button>
           </div>
-          <p className="text-[9px] text-[#7a7a76]">Le message est copié dans votre presse-papiers. Collez-le directement dans l'app concernée.</p>
+          <p className="text-[9px] text-[#8A9098]">Le message est copié dans votre presse-papiers. Collez-le directement dans l'app concernée.</p>
         </div>
       )}
     </div>

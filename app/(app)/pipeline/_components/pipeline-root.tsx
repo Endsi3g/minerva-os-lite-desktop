@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
+import { useQueryState, parseAsString, parseAsStringLiteral } from 'nuqs';
 import { useReach } from '@/lib/reach-context';
 import { PipelineHeader } from './pipeline-header';
 import { PipelineRevenueBar } from './pipeline-revenue-bar';
@@ -8,8 +9,6 @@ import { PipelineViewToggle } from './pipeline-view-toggle';
 import { PipelineKanbanView } from './pipeline-kanban-view';
 import { PipelineTableView } from './pipeline-table-view';
 import { PipelineForecastView } from './pipeline-forecast-view';
-import { Kanban, Table, TrendingUp } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import { LeadsSubNav } from '../../leads/_components/leads-sub-nav';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -32,9 +31,12 @@ function PipelineKanbanSkeleton() {
 
 export function PipelineRoot() {
   const { leads, isDataReady } = useReach();
-  const [view, setView] = useState<'board' | 'table' | 'forecast'>('board');
-  const [niche, setNiche] = useState('all');
-  const [owner, setOwner] = useState('all');
+
+  // Vue/filtres dans l'URL — même pattern que /leads et /contacts : une vue devient
+  // un lien partageable/bookmarkable.
+  const [view, setView] = useQueryState('view', parseAsStringLiteral(['board', 'table', 'forecast']).withDefault('board'));
+  const [niche, setNiche] = useQueryState('niche', parseAsString.withDefault('all'));
+  const [owner, setOwner] = useQueryState('owner', parseAsString.withDefault('all'));
 
   // Filter leads by niche and owner
   const filteredLeads = leads.filter((lead) => {
@@ -50,56 +52,16 @@ export function PipelineRoot() {
       {/* Header section with niche/owner selectors */}
       <PipelineHeader
         selectedNiche={niche}
-        onNicheChange={setNiche}
+        onNicheChange={(v) => setNiche(v === 'all' ? null : v)}
         selectedOwner={owner}
-        onOwnerChange={setOwner}
+        onOwnerChange={(v) => setOwner(v === 'all' ? null : v)}
       />
 
       {/* Revenue KPIs (hidden when no deals exist) */}
       <PipelineRevenueBar leads={filteredLeads} />
 
       {/* Switcher segmented control — 3 tabs */}
-      <div className="flex bg-[#f4f4f3]/65 p-1 rounded-lg self-start gap-1 select-none">
-        <button
-          type="button"
-          onClick={() => setView('board')}
-          className={cn(
-            "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold tracking-wide transition-all",
-            view === 'board'
-              ? "bg-white text-[#26251e] shadow-xs border-[#e5e5e0]/10"
-              : "text-[#7a7a76] hover:text-[#26251e]"
-          )}
-        >
-          <Kanban className="h-3.5 w-3.5" />
-          <span>Tableau Kanban</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => setView('table')}
-          className={cn(
-            "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold tracking-wide transition-all",
-            view === 'table'
-              ? "bg-white text-[#26251e] shadow-xs border-[#e5e5e0]/10"
-              : "text-[#7a7a76] hover:text-[#26251e]"
-          )}
-        >
-          <Table className="h-3.5 w-3.5" />
-          <span>Vue en Tableau</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => setView('forecast')}
-          className={cn(
-            "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold tracking-wide transition-all",
-            view === 'forecast'
-              ? "bg-white text-[#26251e] shadow-xs border-[#e5e5e0]/10"
-              : "text-[#7a7a76] hover:text-[#26251e]"
-          )}
-        >
-          <TrendingUp className="h-3.5 w-3.5" />
-          <span>Prévisions</span>
-        </button>
-      </div>
+      <PipelineViewToggle view={view} onChange={(v) => setView(v === 'board' ? null : v)} />
 
       {/* Renders main viewport */}
       <div className="flex-1 overflow-hidden min-h-0">

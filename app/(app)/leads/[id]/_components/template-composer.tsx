@@ -211,10 +211,10 @@ export function TemplateComposer({ lead }: TemplateComposerProps) {
     <div className="border border-[#e5e5e0] rounded-xl overflow-hidden">
       {/* Header */}
       <div className="flex items-center gap-2 px-4 py-3 bg-[#fafaf8] border-b border-[#e5e5e0]">
-        <Mail className="h-3.5 w-3.5 text-[#059669]" />
-        <span className="text-xs font-bold text-[#26251e] flex-1">Composer un email</span>
+        <Mail className="h-3.5 w-3.5 text-[#167f5b]" />
+        <span className="text-xs font-bold text-[#14171A] flex-1">Composer un email</span>
         {lead.contactEmail && (
-          <span className="text-[10px] text-[#7a7a76] truncate max-w-[180px]">→ {lead.contactEmail}</span>
+          <span className="text-[10px] text-[#8A9098] truncate max-w-[180px]">→ {lead.contactEmail}</span>
         )}
       </div>
 
@@ -223,7 +223,7 @@ export function TemplateComposer({ lead }: TemplateComposerProps) {
         <div className="relative">
           <button
             onClick={() => setPickerOpen(p => !p)}
-            className="w-full flex items-center gap-2 h-8 px-3 border border-[#e5e5e0] rounded-lg text-xs text-[#7a7a76] hover:border-[#059669]/40 hover:text-[#26251e] transition-colors bg-white"
+            className="w-full flex items-center gap-2 h-8 px-3 border border-[#e5e5e0] rounded-lg text-xs text-[#8A9098] hover:border-[#167f5b]/40 hover:text-[#14171A] transition-colors bg-white"
           >
             <FileText className="h-3.5 w-3.5 shrink-0" />
             <span className="flex-1 text-left truncate">
@@ -244,12 +244,12 @@ export function TemplateComposer({ lead }: TemplateComposerProps) {
             <div className="absolute top-full left-0 right-0 z-20 mt-1 border border-[#e5e5e0] rounded-xl bg-white shadow-lg max-h-64 overflow-y-auto">
               {loadingTemplates ? (
                 <div className="flex items-center justify-center py-6">
-                  <Loader2 className="h-4 w-4 animate-spin text-[#7a7a76]" />
+                  <Loader2 className="h-4 w-4 animate-spin text-[#8A9098]" />
                 </div>
               ) : templates.length === 0 ? (
                 <div className="py-6 text-center space-y-2">
-                  <p className="text-xs text-[#7a7a76]">Aucun template</p>
-                  <a href="/settings/email-templates" className="text-[11px] text-[#059669] font-bold hover:underline flex items-center gap-1 justify-center">
+                  <p className="text-xs text-[#8A9098]">Aucun template</p>
+                  <a href="/settings/email-templates" className="text-[11px] text-[#167f5b] font-bold hover:underline flex items-center gap-1 justify-center">
                     Créer un template <ExternalLink className="h-3 w-3" />
                   </a>
                 </div>
@@ -261,15 +261,15 @@ export function TemplateComposer({ lead }: TemplateComposerProps) {
                       onClick={() => applyTemplate(tpl)}
                       className={cn(
                         'w-full text-left px-4 py-2.5 hover:bg-[#f4f4f3] transition-colors border-b border-[#f4f4f3] last:border-0',
-                        selectedTemplate?.id === tpl.id && 'bg-[#059669]/5'
+                        selectedTemplate?.id === tpl.id && 'bg-[#167f5b]/5'
                       )}
                     >
-                      <p className="text-xs font-semibold text-[#26251e] truncate">{tpl.name}</p>
-                      <p className="text-[10px] text-[#7a7a76] truncate mt-0.5">Sujet : {tpl.subject}</p>
+                      <p className="text-xs font-semibold text-[#14171A] truncate">{tpl.name}</p>
+                      <p className="text-[10px] text-[#8A9098] truncate mt-0.5">Sujet : {tpl.subject}</p>
                       {tpl.tags?.length > 0 && (
                         <div className="flex gap-1 mt-1">
                           {tpl.tags.slice(0, 3).map(tag => (
-                            <span key={tag} className="text-[9px] font-bold px-1.5 py-0.5 rounded border border-[#e5e5e0] bg-[#f4f4f3] text-[#7a7a76]">{tag}</span>
+                            <span key={tag} className="text-[9px] font-bold px-1.5 py-0.5 rounded border border-[#e5e5e0] bg-[#f4f4f3] text-[#8A9098]">{tag}</span>
                           ))}
                         </div>
                       )}
@@ -277,7 +277,7 @@ export function TemplateComposer({ lead }: TemplateComposerProps) {
                   ))}
                   <a
                     href="/settings/email-templates"
-                    className="flex items-center gap-1.5 px-4 py-2.5 text-[11px] text-[#059669] font-bold hover:bg-[#059669]/5 transition-colors border-t border-[#e5e5e0]"
+                    className="flex items-center gap-1.5 px-4 py-2.5 text-[11px] text-[#167f5b] font-bold hover:bg-[#167f5b]/5 transition-colors border-t border-[#e5e5e0]"
                   >
                     <FileText className="h-3 w-3" />
                     Gérer les templates
@@ -293,7 +293,7 @@ export function TemplateComposer({ lead }: TemplateComposerProps) {
           value={composedSubject}
           onChange={e => setComposedSubject(e.target.value)}
           placeholder="Objet de l'email…"
-          className="h-8 text-xs border-[#e5e5e0] focus:border-[#059669] focus:ring-[#059669]/20"
+          className="h-8 text-xs border-[#e5e5e0] focus:border-[#167f5b] focus:ring-[#167f5b]/20"
         />
 
         {/* Body */}
@@ -306,7 +306,7 @@ export function TemplateComposer({ lead }: TemplateComposerProps) {
               : 'Rédigez votre message ou choisissez un template ci-dessus…'
           }
           rows={6}
-          className="text-xs resize-none border-[#e5e5e0] focus:border-[#059669] focus:ring-[#059669]/20"
+          className="text-xs resize-none border-[#e5e5e0] focus:border-[#167f5b] focus:ring-[#167f5b]/20"
         />
 
         {/* Variable tokens hint */}
@@ -318,11 +318,11 @@ export function TemplateComposer({ lead }: TemplateComposerProps) {
 
         {/* Send status */}
         {sendStatus === 'ok' && (
-          <div className="flex items-center gap-2.5 rounded-lg bg-[#059669]/10 border border-[#059669]/20 px-3 py-2">
-            <Check className="h-4 w-4 text-[#059669] shrink-0" />
+          <div className="flex items-center gap-2.5 rounded-lg bg-[#167f5b]/10 border border-[#167f5b]/20 px-3 py-2">
+            <Check className="h-4 w-4 text-[#167f5b] shrink-0" />
             <div>
-              <p className="text-xs font-bold text-[#059669]">Email envoyé avec succès</p>
-              <p className="text-[10px] text-[#059669]/70">À : {lead.contactEmail} · Sujet : {composedSubject || 'Sans objet'}</p>
+              <p className="text-xs font-bold text-[#167f5b]">Email envoyé avec succès</p>
+              <p className="text-[10px] text-[#167f5b]/70">À : {lead.contactEmail} · Sujet : {composedSubject || 'Sans objet'}</p>
             </div>
           </div>
         )}
@@ -340,7 +340,7 @@ export function TemplateComposer({ lead }: TemplateComposerProps) {
             size="sm"
             onClick={handleAIPersonalize}
             disabled={aiLoading}
-            className="h-7 text-[10px] gap-1 border-[#059669]/30 text-[#059669] hover:bg-[#059669]/5"
+            className="h-7 text-[10px] gap-1 border-[#167f5b]/30 text-[#167f5b] hover:bg-[#167f5b]/5"
           >
             {aiLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
             {selectedTemplate ? 'Personnaliser IA' : 'Générer IA'}
@@ -354,7 +354,7 @@ export function TemplateComposer({ lead }: TemplateComposerProps) {
             disabled={!composedBody.trim()}
             className="h-7 text-[10px] gap-1 border-[#e5e5e0]"
           >
-            {copied ? <Check className="h-3 w-3 text-[#059669]" /> : <Copy className="h-3 w-3" />}
+            {copied ? <Check className="h-3 w-3 text-[#167f5b]" /> : <Copy className="h-3 w-3" />}
             Copier
           </Button>
 
@@ -365,7 +365,7 @@ export function TemplateComposer({ lead }: TemplateComposerProps) {
             size="sm"
             onClick={handleSend}
             disabled={!composedBody.trim() || sending || !hasEmail || sendStatus === 'ok'}
-            className="h-7 text-[10px] gap-1 bg-[#059669] hover:bg-[#047857] text-white"
+            className="h-7 text-[10px] gap-1 bg-[#167f5b] hover:bg-[#0f6b4c] text-white"
             title={!hasEmail ? 'Aucun email de contact' : undefined}
           >
             {sending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}

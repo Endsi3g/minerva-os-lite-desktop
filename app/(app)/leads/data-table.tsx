@@ -73,7 +73,7 @@ export function DataTable<TData>({
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => {
                   return (
-                    <TableHead key={header.id} className="h-10 text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">
+                    <TableHead key={header.id} className="h-10 text-[10px] font-bold uppercase tracking-wider text-[#8A9098]">
                       {header.isPlaceholder
                         ? null
                         : flexRender(
@@ -123,7 +123,7 @@ export function DataTable<TData>({
               <TableRow>
                 <TableCell
                   colSpan={columns.length}
-                  className="h-24 text-center text-xs text-[#7a7a76]"
+                  className="h-24 text-center text-xs text-[#8A9098]"
                 >
                   Aucun prospect correspondant aux filtres.
                 </TableCell>
@@ -136,20 +136,20 @@ export function DataTable<TData>({
       {/* Pagination Footer */}
       <div className="flex items-center justify-between px-2 text-xs">
         {/* Selection count */}
-        <div className="flex-1 text-[11px] text-[#7a7a76]">
+        <div className="flex-1 text-[11px] text-[#8A9098]">
           {table.getFilteredSelectedRowModel().rows.length} sur{' '}
           {table.getFilteredRowModel().rows.length} ligne(s) sélectionnée(s).
         </div>
 
         {/* Navigation buttons */}
         <div className="flex items-center gap-6 lg:gap-8">
-          <div className="flex items-center gap-1.5 text-[11px] font-medium text-[#7a7a76]">
+          <div className="flex items-center gap-1.5 text-[11px] font-medium text-[#8A9098]">
             <span>Page</span>
-            <span className="font-semibold text-[#26251e]">
+            <span className="font-semibold text-[#14171A]">
               {table.getState().pagination.pageIndex + 1}
             </span>
             <span>sur</span>
-            <span className="font-semibold text-[#26251e]">
+            <span className="font-semibold text-[#14171A]">
               {table.getPageCount() || 1}
             </span>
           </div>

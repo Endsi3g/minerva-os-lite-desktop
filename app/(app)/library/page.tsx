@@ -37,6 +37,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { LeverageLibraryRoot } from "@/app/(app)/leverage-library/_components/leverage-library-root";
+import EmailTemplatesPage from "@/app/(app)/settings/email-templates/page";
+import { WebsitePortfolioSection } from "@/app/(app)/website-builder/_components/website-portfolio-section";
 
 interface DocumentRow {
   id: string;
@@ -187,7 +190,8 @@ export default function LibraryPage() {
   const { t } = useLanguage();
   const router = useRouter();
   const { activeWorkspace } = useReach();
-  
+
+  const [mainCategory, setMainCategory] = useState<'documents' | 'proofs' | 'emailTemplates' | 'websites'>('documents');
   const [activeTab, setActiveTab] = useState<"All" | "Shared" | "Private">("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [folders, setFolders] = useState<string[]>([]);
@@ -524,12 +528,88 @@ export default function LibraryPage() {
       <div className="max-w-6xl mx-auto p-8 space-y-8 text-[#26251e] font-sans selection:bg-[#10b981]/10 text-left">
         
         {/* Header Section */}
-        <div className="space-y-1.5 text-left border-b border-[#e5e5e0] pb-4">
-          <h1 className="text-xl font-bold text-[#26251e] font-sans">{t("library.title")}</h1>
-          <p className="text-xs text-[#807d72]">
-            {t("library.subtitle")}
-          </p>
+        <div className="space-y-3 text-left border-b border-[#e5e5e0] pb-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-xl font-bold text-[#26251e] font-sans">{t("library.title")}</h1>
+              <p className="text-xs text-[#807d72]">
+                Source unique de tous vos assets, preuves sociales, modèles et documents.
+              </p>
+            </div>
+          </div>
+          {/* Main Category Tabs */}
+          <div className="flex gap-2 pt-2">
+            <button
+              type="button"
+              onClick={() => setMainCategory('documents')}
+              className={cn(
+                "px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all",
+                mainCategory === 'documents'
+                  ? "bg-[#059669] text-white shadow-sm"
+                  : "bg-white text-[#7a7a76] border border-[#e5e5e0] hover:text-[#26251e] hover:bg-[#fafaf8]"
+              )}
+            >
+              Documents & Fichiers
+            </button>
+            <button
+              type="button"
+              onClick={() => setMainCategory('proofs')}
+              className={cn(
+                "px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all",
+                mainCategory === 'proofs'
+                  ? "bg-[#059669] text-white shadow-sm"
+                  : "bg-white text-[#7a7a76] border border-[#e5e5e0] hover:text-[#26251e] hover:bg-[#fafaf8]"
+              )}
+            >
+              Preuves & Témoignages
+            </button>
+            <button
+              type="button"
+              onClick={() => setMainCategory('emailTemplates')}
+              className={cn(
+                "px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all",
+                mainCategory === 'emailTemplates'
+                  ? "bg-[#059669] text-white shadow-sm"
+                  : "bg-white text-[#7a7a76] border border-[#e5e5e0] hover:text-[#26251e] hover:bg-[#fafaf8]"
+              )}
+            >
+              Modèles d'Emails
+            </button>
+            <button
+              type="button"
+              onClick={() => setMainCategory('websites')}
+              className={cn(
+                "px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all",
+                mainCategory === 'websites'
+                  ? "bg-[#059669] text-white shadow-sm"
+                  : "bg-white text-[#7a7a76] border border-[#e5e5e0] hover:text-[#26251e] hover:bg-[#fafaf8]"
+              )}
+            >
+              Sites de référence
+            </button>
+          </div>
         </div>
+
+        {mainCategory === 'proofs' && (
+          <div className="rounded-2xl border border-[#e5e5e0] bg-white overflow-hidden p-2">
+            <LeverageLibraryRoot />
+          </div>
+        )}
+
+        {mainCategory === 'emailTemplates' && (
+          <div className="rounded-2xl border border-[#e5e5e0] bg-white overflow-hidden p-2">
+            <EmailTemplatesPage />
+          </div>
+        )}
+
+        {mainCategory === 'websites' && (
+          <div className="rounded-2xl border border-[#e5e5e0] bg-white overflow-hidden p-2">
+            <WebsitePortfolioSection />
+          </div>
+        )}
+
+        {mainCategory === 'documents' && (
+          <>
 
         {/* Create new file Row */}
         <div className="space-y-3">
@@ -997,9 +1077,6 @@ export default function LibraryPage() {
           </div>
         )}
 
-      </div>
-
-      {/* New Folder Modal Overlay */}
         {/* ── Images Section (Supabase Storage) ── */}
         <div className="space-y-4">
           <div className="flex justify-between items-center">
@@ -1096,6 +1173,10 @@ export default function LibraryPage() {
             </div>
           )}
         </div>
+        </>
+        )}
+
+      </div>
 
       {showNewFolderModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-xs">

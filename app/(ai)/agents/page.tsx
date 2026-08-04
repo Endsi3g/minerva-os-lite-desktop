@@ -65,6 +65,16 @@ const BUILTIN_AGENTS = [
     categoryKey: 'agents.builtin.category_reputation' as TranslationKey,
     chatsCount: '< 20',
   },
+  {
+    id: 'closing-assistant',
+    name: 'Assistant Closing & Deal',
+    nameKey: 'agents.builtin.closing_assistant.name' as TranslationKey,
+    description: 'Analyse la maturité du lead, prépare la stratégie de closing, le traitement des objections et la proposition commerciale.',
+    descriptionKey: 'agents.builtin.closing_assistant.description' as TranslationKey,
+    category: 'Vente & Closing',
+    categoryKey: 'agents.builtin.category_closing' as TranslationKey,
+    chatsCount: '< 40',
+  },
 ] as const;
 
 const OLD_DEFAULT_IDS = ['tableau-insight', 'health-assistant', 'asmobbin-agent'];
@@ -238,8 +248,14 @@ function AgentsPageInner() {
         `Identification des points critiques...`,
         `Génération des templates de réponse via IA...`,
       ];
+      if (activeAgentId === 'closing-assistant') return [
+        `Analyse du profil financier et maturité de ${lead.businessName}...`,
+        `Identification des objections typiques pour le secteur ${lead.niche || 'B2B'}...`,
+        `Élaboration de la stratégie de closing...`,
+        `Génération du plan d'engagement via IA...`,
+      ];
       return [
-        `Initialisation de l'agent personnalisé...`,
+        `Initialisation de l'agent...`,
         `Analyse du profil de ${lead.businessName}...`,
         `Génération du résultat via IA...`,
       ];
@@ -249,36 +265,21 @@ function AgentsPageInner() {
     const logPromise = (async () => {
       for (let i = 0; i < logSteps.length - 1; i++) {
         setLogs(prev => [...prev, `[${i + 1}/${logSteps.length}] ${logSteps[i]}`]);
-        await new Promise(r => setTimeout(r, 700));
+        await new Promise(r => setTimeout(r, 600));
       }
     })();
 
-    if (activeAgentId === 'pitcheur-qc') {
-      // Pitcheur QC uses the existing generate-draft API (no random data needed)
-      await logPromise;
-      setLogs(prev => [...prev, `[${logSteps.length}/${logSteps.length}] ${logSteps[logSteps.length - 1]}`]);
-      let content = '';
-      if (pitchChannel === 'Email') {
-        content = `Objet : Vos clients de ${lead.city || 'Montréal'} vous cherchent en ligne\n\nAllô ${lead.contactName || 'là'},\n\nJ'ai checké votre fiche Google pour ${lead.businessName} pis j'ai vu qu'y'a quelques affaires qui pourraient vous aider à pogner plus de clients dans le coin.\n\nTsé, les gens de ${lead.city || 'Montréal'} cherchent des ${lead.niche || 'commerces locaux'} en ligne avant de se déplacer. Si votre fiche est pas au boutte, c'est vos compétiteurs qui prennent vos clients.\n\nJ'aimerais ça vous montrer ça en 10 minutes — un petit appel pour vous expliquer concrètement. Êtes-vous disponible jeudi ou vendredi matin ?\n\nBonne journée,\n${userName}\n${companyName}`;
-      } else if (pitchChannel === 'SMS') {
-        content = `Allô ! C'est ${userName} de ${companyName}. J'ai vu la fiche Google de ${lead.businessName} — y'a des petites choses à régler pour attirer plus de monde à ${lead.city || 'Montréal'}. Ça vous tente qu'on jaspe 10 min ? 😊`;
-      } else {
-        content = `[SCRIPT D'APPEL — Ton : ${pitchTone}]\n\n« Allô, c'est-tu ${lead.contactName || 'le gérant'} de ${lead.businessName} ? Parfait !\n\nMoi c'est ${userName} de ${companyName}. Je vous appelle parce que j'ai checké votre présence sur Google à ${lead.city || 'Montréal'} pis j'ai remarqué des affaires qui pourraient vous aider à avoir plus de clients.\n\nÊtes-vous ouvert à ce qu'on jase 5-10 minutes pour que je vous montre ce que j'ai trouvé ? C'est pas un argumentaire de vente plate, promis — juste vous montrer ce que vos compétiteurs font pis ce qu'on pourrait faire pour vous. »`;
-      }
-      setResultData({ content });
-      setIsRunning(false);
+    // Tous les agents (built-in + personnalisés) s'exécutent via l'API IA /api/agents/run
+    const userAgent = userAgents.find(a => a.id === activeAgentId);
+    const params: Record<string, string> = {
+      auditMode,
+      reviewSource,
+      pitchTone,
+      pitchChannel,
+      ...(userAgent ? { agentName: userAgent.name, agentPrompt: userAgent.instructions || '' } : {}),
+    };
 
-    } else {
-      // audit-gmb, radar-reputation, and user-created agents → real AI via /api/agents/run
-      const userAgent = userAgents.find(a => a.id === activeAgentId);
-      const params: Record<string, string> = {
-        auditMode,
-        reviewSource,
-        pitchTone,
-        pitchChannel,
-        ...(userAgent ? { agentName: userAgent.name, agentPrompt: userAgent.instructions || '' } : {}),
-      };
-
+    try {
       const [apiResult] = await Promise.all([
         fetch(getApiUrl('/api/agents/run'), {
           method: 'POST',
@@ -306,6 +307,9 @@ function AgentsPageInner() {
       } else {
         setResultData({ report: apiResult.report, score: apiResult.score ?? null });
       }
+      setIsRunning(false);
+    } catch (err: any) {
+      setLogs(prev => [...prev, `⚠️ Erreur : ${err?.message || 'Échec d\'exécution'}`]);
       setIsRunning(false);
     }
   };

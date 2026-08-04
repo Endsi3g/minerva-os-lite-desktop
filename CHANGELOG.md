@@ -5,6 +5,23 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [3.99.0] — Refonte design Minerva, réduction du nombre de pages, nouveau centre Outreach et page Publicité — 4 août 2026, 13h33
+
+### Ajouté
+- **Refonte visuelle complète** (design system Minerva — tokens `#167f5b`/`#14171A`/`#8A9098`, titres en serif New York via `font-heading`, corps en Plus Jakarta Sans) sur Aujourd'hui, Prospects, Contacts, Pipeline, la fiche lead (`leads/[id]`) et la nouvelle page Publicité. Tableaux denses, filtres synchronisés à l'URL (`nuqs`).
+- **Réduction du nombre de pages "effet cockpit"** : Terrain fusionné dans Carte (`/map?tab=tournee`, design de Carte inchangé) avec un bouton "Démarrer la tournée terrain" et une galerie des visites ; Bilan hebdomadaire, Performance et Analyses fusionnés en une seule page `/weekly-report` à onglets ; toute la bibliothèque d'assets (bibliothèque, leverage-library, templates email, sites du Website Builder) consolidée dans `/library` ; Playbooks (non fonctionnel) et la page Guide animée supprimées ; Acquisition retiré au profit de `/leads/new` et `/prospecting` seuls comme points d'entrée d'ajout de lead.
+- **Restructuration Séquences / Campagnes / Outreach** : Séquences ne fait plus que planifier des cadences (suppression du bouton "Envoyer maintenant" et de l'onglet Compose) ; Outreach devient le vrai centre d'envoi avec un nouvel onglet **Composer** (recherche d'un prospect → rédaction et envoi immédiat, réutilise le composeur de la fiche lead).
+- **Nouvelle page Publicité** (`/ads`) : connexion Facebook Lead Ads en OAuth avec ingestion automatique des leads par webhook temps réel (+ notification d'équipe immédiate), connexion Google Ads avec guide de tracking UTM/GCLID, génération IA de variations publicitaires (3 accroches/titres/CTA), tableau d'attribution par source (taux de RDV, délai de premier contact, pipeline généré). Sections "Configuration (admin)" documentant les variables d'environnement, la Redirect URI OAuth et les exigences d'App Review Meta pour Facebook, ainsi que l'écart entre le tracking UTM actuel et une future intégration complète de l'API Google Ads.
+- **Champ "Canal préféré"** (SMS / Appel à froid / DM Instagram) sur les prospects, éditable en ligne depuis la colonne dédiée de la liste Contacts.
+- **Notifications d'équipe amplifiées** : création de lead, changement de statut, deal gagné/perdu déclenchent désormais un fan-out à l'équipe — y compris pour les leads reçus automatiquement via le webhook Facebook Lead Ads (auparavant silencieux, hors du flux `ReachContext`).
+
+### Corrigé
+- **Cadence du bilan hebdomadaire** : le bouton "Actualiser" régénérait un nouveau rapport IA à la demande au lieu de simplement afficher le dernier bilan généré automatiquement chaque lundi — il ne fait plus que recharger l'historique existant.
+- **UX mobile de la liste des leads** (375px) : cibles tactiles et mise en page corrigées.
+- **Barre latérale** : "Outreach" et "Équipe" apparaissaient deux fois (une fois en item épinglé, une fois dans un groupe repliable) — doublons retirés.
+- **`fb_connections.leads_count`** ne s'incrémentait jamais après la connexion initiale d'un formulaire Facebook (appel RPC `increment` inexistant côté base) — corrigé par un simple incrément lu/écrit.
+- Nettoyage des dernières traces de la fonctionnalité "Composer" côté Séquences (titres de page, sous-onglet, traduction) restées incohérentes après le retrait de l'envoi direct.
+
 ## [3.98.0] — Assignation groupée de leads à l'équipe — 27 juillet 2026, 23h20
 
 ### Ajouté

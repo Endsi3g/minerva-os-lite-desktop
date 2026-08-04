@@ -454,7 +454,6 @@ export function NewSequenceRoot() {
   const [selectedSegmentId, setSelectedSegmentId] = useState('');
   const [selectedCampaignId, setSelectedCampaignId] = useState('');
   const [steps, setSteps] = useState<NewStep[]>(DEFAULT_STEPS);
-  const [sendFirstNow, setSendFirstNow] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [leadSearch, setLeadSearch] = useState('');
@@ -572,7 +571,6 @@ export function NewSequenceRoot() {
               sequenceName: groupLabel ? `Séquence — ${groupLabel} — ${lead.businessName}` : `Séquence — ${lead.businessName}`,
               steps,
               workspaceId: null,
-              sendFirstNow,
             }),
           });
           if (!res.ok) failures++;
@@ -898,20 +896,6 @@ export function NewSequenceRoot() {
                   </div>
                 }
               />
-            </div>
-
-            {/* Send first now toggle */}
-            <div className="flex items-center gap-2.5 p-3 border border-[#059669]/20 bg-[#059669]/5 rounded-lg">
-              <input
-                type="checkbox"
-                id="sendNowWizard"
-                checked={sendFirstNow}
-                onChange={(e) => setSendFirstNow(e.target.checked)}
-                className="rounded"
-              />
-              <label htmlFor="sendNowWizard" className="text-xs text-[#26251e] cursor-pointer">
-                Envoyer le premier email maintenant (nécessite Gmail connecté)
-              </label>
             </div>
 
             {saveError && (

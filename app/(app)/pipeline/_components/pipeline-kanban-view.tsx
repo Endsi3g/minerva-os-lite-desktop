@@ -5,6 +5,9 @@ import { Lead } from '@/lib/mock-data';
 import { useReach } from '@/lib/reach-context';
 import { PipelineKanbanColumn } from './pipeline-kanban-column';
 import { triggerAgentLoop } from '@/lib/agent-trigger';
+import { STATUS_LABEL } from '../../leads/columns';
+
+const STAGE_ORDER: Lead['status'][] = ['New', 'Contacted', 'Meeting Booked', 'Proposal Sent', 'Negotiation', 'Won', 'Lost'];
 
 interface PipelineKanbanViewProps {
   leads: Lead[];
@@ -13,15 +16,7 @@ interface PipelineKanbanViewProps {
 export function PipelineKanbanView({ leads }: PipelineKanbanViewProps) {
   const { updateLeadStatus } = useReach();
 
-  const columns: { id: Lead['status']; title: string }[] = [
-    { id: 'New', title: 'Nouveau' },
-    { id: 'Contacted', title: 'Contacté' },
-    { id: 'Meeting Booked', title: 'RDV Fixé' },
-    { id: 'Proposal Sent', title: 'Proposition envoyée' },
-    { id: 'Negotiation', title: 'Négociation' },
-    { id: 'Won', title: 'Gagné' },
-    { id: 'Lost', title: 'Perdu' },
-  ];
+  const columns: { id: Lead['status']; title: string }[] = STAGE_ORDER.map((id) => ({ id, title: STATUS_LABEL[id] }));
 
   const handleDrop = useCallback((leadId: string, status: Lead['status']) => {
     updateLeadStatus(leadId, status);

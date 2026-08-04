@@ -330,6 +330,7 @@ interface DbLead {
   google_place_id?: string | null;
   google_place_data?: string | GooglePlaceData | null; // JSON string in SQLite, jsonb in Supabase
   google_enriched_at?: string | null;
+  preferred_channel?: 'sms' | 'cold_call' | 'instagram_dm' | null;
 }
 
 interface DbNote {
@@ -410,6 +411,7 @@ function mapDbLeadToUi(dbLead: DbLead, dbNotes: DbNote[] = []): Lead {
     latitude: dbLead.latitude ?? undefined,
     longitude: dbLead.longitude ?? undefined,
     phone: dbLead.phone || undefined,
+    preferredChannel: (dbLead.preferred_channel as Lead['preferredChannel']) || undefined,
     fitScore: dbLead.fit_score ?? undefined,
     intentScore: dbLead.intent_score ?? undefined,
     bantBudget: Boolean(dbLead.bant_budget),
@@ -1553,6 +1555,23 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
         electronObj.triggerSync();
         // Fire-and-forget auto-enrichment
         void autoEnrichLead(leadId, leadData.website, leadData.businessName);
+
+        // Notification d'équipe en temps réel
+        if (activeWorkspace?.id && activeWorkspace?.owner_id) {
+          fetch(getApiUrl('/api/notifications/team'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              workspaceId: activeWorkspace.id,
+              workspaceOwnerId: activeWorkspace.owner_id,
+              title: 'Nouveau Lead créé',
+              body: `Un membre de l'équipe a ajouté ${newUiLead.businessName} (${newUiLead.city || 'Prospection'}).`,
+              type: 'team',
+              link: `/leads/${newUiLead.id}`,
+            }),
+          }).catch(() => {});
+        }
+
         return newUiLead;
       } catch (err: any) {
         console.error("Local addLead error:", err);
@@ -1664,6 +1683,23 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
         setLeads(prev => [newUiLead, ...prev]);
         // Fire-and-forget auto-enrichment
         void autoEnrichLead(newDbLead.id, leadData.website, leadData.businessName);
+
+        // Notification d'équipe en temps réel
+        if (activeWorkspace?.id && activeWorkspace?.owner_id) {
+          fetch(getApiUrl('/api/notifications/team'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              workspaceId: activeWorkspace.id,
+              workspaceOwnerId: activeWorkspace.owner_id,
+              title: 'Nouveau Lead créé',
+              body: `Un membre de l'équipe a ajouté ${newUiLead.businessName} (${newUiLead.city || 'Prospection'}).`,
+              type: 'team',
+              link: `/leads/${newUiLead.id}`,
+            }),
+          }).catch(() => {});
+        }
+
         return newUiLead;
       }
       return null;
@@ -1988,6 +2024,33 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
+    // Notification d'équipe en temps réel sur un changement de statut/étape pipeline
+    // (copie plus riche pour Won/Lost). Fire-and-forget, ne bloque jamais la mutation.
+    const notifyStatusChange = () => {
+      if (fields.status === undefined || !activeWorkspace?.id || !activeWorkspace?.owner_id) return;
+      const leadName = leads.find(l => l.id === leadId)?.businessName || 'Un lead';
+      const isWon = fields.status === 'Won';
+      const isLost = fields.status === 'Lost';
+      const title = isWon ? '🎉 Deal gagné' : isLost ? 'Deal perdu' : 'Changement de statut';
+      const body = isWon
+        ? `${leadName} est passé à Gagné.`
+        : isLost
+          ? `${leadName} est passé à Perdu.`
+          : `${leadName} est passé à "${fields.status}".`;
+      fetch(getApiUrl('/api/notifications/team'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          workspaceId: activeWorkspace.id,
+          workspaceOwnerId: activeWorkspace.owner_id,
+          title,
+          body,
+          type: 'team',
+          link: `/leads/${leadId}`,
+        }),
+      }).catch(() => {});
+    };
+
     const electronObj = getElectronSqlite();
     if (electronObj) {
       try {
@@ -2039,6 +2102,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
         if (fields.latitude !== undefined) { dbFields.push("latitude = ?"); params.push(fields.latitude ?? null); }
         if (fields.longitude !== undefined) { dbFields.push("longitude = ?"); params.push(fields.longitude ?? null); }
         if (fields.phone !== undefined) { dbFields.push("phone = ?"); params.push(fields.phone || null); }
+        if (fields.preferredChannel !== undefined) { dbFields.push("preferred_channel = ?"); params.push(fields.preferredChannel || null); }
         if (fields.tags !== undefined) { dbFields.push("tags = ?"); params.push(JSON.stringify(fields.tags || [])); }
         if (fields.address !== undefined) { dbFields.push("address = ?"); params.push(fields.address || null); }
         if (fields.locations !== undefined) { dbFields.push("locations = ?"); params.push(fields.locations ? JSON.stringify(fields.locations) : null); }
@@ -2060,10 +2124,11 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
           await electronObj.dbRun(`UPDATE leads SET ${dbFields.join(", ")} WHERE id = ?`, params);
         }
 
-        setLeads(prev => prev.map(lead => 
+        setLeads(prev => prev.map(lead =>
           lead.id === leadId ? { ...lead, ...fields, updatedAt: new Date().toISOString() } : lead
         ));
         electronObj.triggerSync();
+        notifyStatusChange();
       } catch (err) {
         console.error("Local updateLead error:", err);
       }
@@ -2122,6 +2187,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
     if (fields.latitude !== undefined) dbFields.latitude = fields.latitude ?? null;
     if (fields.longitude !== undefined) dbFields.longitude = fields.longitude ?? null;
     if (fields.phone !== undefined) dbFields.phone = fields.phone || null;
+    if (fields.preferredChannel !== undefined) dbFields.preferred_channel = fields.preferredChannel || null;
     if (fields.tags !== undefined) dbFields.tags = fields.tags || [];
     if (fields.address !== undefined) dbFields.address = fields.address || null;
     if (fields.locations !== undefined) dbFields.locations = (fields.locations ?? null) as any;
@@ -2144,6 +2210,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
       setLeads(prev => prev.map(lead =>
         lead.id === leadId ? { ...lead, ...fields, updatedAt: new Date().toISOString() } : lead
       ));
+      notifyStatusChange();
     } catch (err) {
       console.error("Error in updateLead:", err);
       toast.error(

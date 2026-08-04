@@ -100,7 +100,7 @@ export function TodayHeader({ onAestheticToggle }: TodayHeaderProps) {
     <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-[#e5e5e0] pb-6">
       {/* Title block */}
       <div>
-        <h1 className="text-3xl font-sans font-bold tracking-tight text-[#26251e]">{t('today.title')}</h1>
+        <h1 className="text-3xl font-heading font-medium tracking-tight text-[#14171A]">{t('today.title')}</h1>
         <p className="text-sm text-[#7a7a76] mt-1">
           {t('today.subtitle')}
         </p>

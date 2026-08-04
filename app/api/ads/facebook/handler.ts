@@ -15,11 +15,18 @@ export async function GET(req: NextRequest) {
   const workspaceId = searchParams.get('workspaceId');
 
   if (action === 'auth_url') {
+    if (!FB_APP_ID || !FB_APP_SECRET) {
+      return NextResponse.json({ error: 'not_configured' }, { status: 501 });
+    }
     const redirectUri = `${APP_URL}/api/ads/facebook/callback`;
     const scope = 'leads_retrieval,pages_read_engagement,pages_manage_ads,pages_show_list';
     const state = Buffer.from(JSON.stringify({ workspaceId, userId: user.id })).toString('base64');
     const url = `https://www.facebook.com/v18.0/dialog/oauth?client_id=${FB_APP_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scope}&state=${state}&response_type=code`;
     return NextResponse.json({ url });
+  }
+
+  if (action === 'config_status') {
+    return NextResponse.json({ configured: !!(FB_APP_ID && FB_APP_SECRET) });
   }
 
   if (action === 'pages' && workspaceId) {

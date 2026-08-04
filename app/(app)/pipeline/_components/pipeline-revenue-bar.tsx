@@ -3,15 +3,7 @@
 import { useMemo } from 'react';
 import { DollarSign, TrendingUp, CheckCircle2, LayoutGrid } from 'lucide-react';
 import type { Lead } from '@/lib/mock-data';
-
-const STATUS_CONFIG: Record<string, { color: string; label: string }> = {
-  'New':            { color: '#a8a29e', label: 'Nouveau' },
-  'Contacted':      { color: '#3b82f6', label: 'Contacté' },
-  'Meeting Booked': { color: '#f59e0b', label: 'RDV fixé' },
-  'Proposal Sent':  { color: '#7c3aed', label: 'Proposition envoyée' },
-  'Negotiation':    { color: '#d97706', label: 'Négociation' },
-  'Won':            { color: '#059669', label: 'Gagné' },
-};
+import { STATUS_DOT, STATUS_LABEL } from '../../leads/columns';
 
 function formatAmount(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M $`;
@@ -50,53 +42,53 @@ export function PipelineRevenueBar({ leads }: PipelineRevenueBarProps) {
       <div className="flex flex-wrap gap-5 mb-3">
         <KpiChip
           icon={<DollarSign className="h-3.5 w-3.5" />}
-          iconBg="bg-[#059669]/10 text-[#059669]"
+          iconBg="bg-[#4B5158]/10 text-[#4B5158]"
           label="Pipeline brut"
           value={formatAmount(stats.pipeline)}
         />
         <KpiChip
           icon={<TrendingUp className="h-3.5 w-3.5" />}
-          iconBg="bg-[#3b82f6]/10 text-[#3b82f6]"
+          iconBg="bg-[#4B5158]/10 text-[#4B5158]"
           label="Forecast pondéré"
           value={formatAmount(stats.forecast)}
         />
         <KpiChip
           icon={<CheckCircle2 className="h-3.5 w-3.5" />}
-          iconBg="bg-[#059669]/10 text-[#059669]"
+          iconBg="bg-[#167f5b]/10 text-[#167f5b]"
           label="Deals gagnés"
           value={formatAmount(stats.wonTotal)}
         />
         <KpiChip
           icon={<LayoutGrid className="h-3.5 w-3.5" />}
-          iconBg="bg-[#f59e0b]/10 text-[#f59e0b]"
+          iconBg="bg-[#4B5158]/10 text-[#4B5158]"
           label="Deals actifs"
           value={String(stats.count)}
         />
       </div>
 
-      {/* Stacked progress bar */}
+      {/* Stacked progress bar — couleurs = statut, source unique STATUS_DOT */}
       <div className="space-y-1.5">
         <div className="flex h-2 w-full overflow-hidden rounded-full bg-[#f4f4f3]">
           {Object.entries(stats.byStatus).map(([status, amount]) => {
-            const cfg = STATUS_CONFIG[status];
-            if (!cfg) return null;
+            const color = STATUS_DOT[status as Lead['status']];
+            if (!color) return null;
             return (
               <div
                 key={status}
-                style={{ width: `${(amount / barTotal) * 100}%`, backgroundColor: cfg.color }}
-                title={`${cfg.label} — ${formatAmount(amount)}`}
+                style={{ width: `${(amount / barTotal) * 100}%`, backgroundColor: color }}
+                title={`${STATUS_LABEL[status as Lead['status']]} — ${formatAmount(amount)}`}
               />
             );
           })}
         </div>
         <div className="flex flex-wrap gap-3">
           {Object.entries(stats.byStatus).map(([status, amount]) => {
-            const cfg = STATUS_CONFIG[status];
-            if (!cfg) return null;
+            const color = STATUS_DOT[status as Lead['status']];
+            if (!color) return null;
             return (
               <div key={status} className="flex items-center gap-1.5">
-                <span className="h-2 w-2 rounded-full inline-block" style={{ backgroundColor: cfg.color }} />
-                <span className="text-[10px] text-[#78716c] font-medium">{cfg.label} — {formatAmount(amount)}</span>
+                <span className="h-2 w-2 rounded-sm inline-block" style={{ backgroundColor: color }} />
+                <span className="text-[10px] text-[#8A9098] font-medium">{STATUS_LABEL[status as Lead['status']]} — {formatAmount(amount)}</span>
               </div>
             );
           })}
@@ -118,8 +110,8 @@ function KpiChip({ icon, iconBg, label, value }: {
         {icon}
       </div>
       <div>
-        <p className="text-[10px] font-semibold text-[#a8a29e] uppercase tracking-wider leading-none mb-0.5">{label}</p>
-        <p className="text-base font-bold text-[#26251e] leading-tight">{value}</p>
+        <p className="text-[10px] font-semibold text-[#8A9098] uppercase tracking-wider leading-none mb-0.5">{label}</p>
+        <p className="text-base font-bold text-[#14171A] leading-tight">{value}</p>
       </div>
     </div>
   );

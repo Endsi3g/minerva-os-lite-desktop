@@ -1,10 +1,12 @@
 'use client';
 
 import React from 'react';
-import { Layers, Lock } from 'lucide-react';
+import { Layers, Lock, Target, Mail, MapPin, BarChart3, type LucideIcon } from 'lucide-react';
 import { useReach } from '@/lib/reach-context';
 import { PACKS, ALL_PACKS, DEFAULT_ENABLED_PACKS, type PackId } from '@/lib/packs';
 import { cn } from '@/lib/utils';
+
+const PACK_ICONS: Record<string, LucideIcon> = { Target, Mail, MapPin, BarChart3 };
 
 // Plateforme & packs (PRD v12, Sprint 1) — active/désactive des capacités par
 // workspace (Acquisition, Outreach, Terrain, Analytics & Growth). Contrôle la
@@ -47,11 +49,12 @@ export function PlatformRoot() {
           {ALL_PACKS.map((packId) => {
             const pack = PACKS[packId];
             const enabled = enabledPacks.includes(packId);
+            const Icon = PACK_ICONS[pack.icon] ?? Layers;
             return (
               <div key={packId} className="rounded-xl border border-[#e5e5e0] bg-white p-4 space-y-3">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-2">
-                    <span className="text-lg leading-none">{pack.icon}</span>
+                    <Icon className="h-4 w-4 text-[#059669] shrink-0" />
                     <span className="text-sm font-bold text-[#26251e]">{pack.label}</span>
                   </div>
                   <button

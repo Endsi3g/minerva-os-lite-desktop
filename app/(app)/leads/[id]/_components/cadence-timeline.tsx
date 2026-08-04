@@ -155,7 +155,7 @@ export function CadenceTimeline({
   if (error || !data) {
     return (
       <div className="rounded-xl border border-[#e5e5e0] bg-white p-4">
-        <p className="text-[11px] text-[#7a7a76] italic">
+        <p className="text-[11px] text-[#8A9098] italic">
           Démarrez le cycle de prospection en envoyant un premier email.
         </p>
       </div>
@@ -176,8 +176,8 @@ export function CadenceTimeline({
   return (
     <div className="rounded-xl border border-[#e5e5e0] bg-white p-4 space-y-4">
       <div className="flex items-center gap-1.5">
-        <CalendarCheck2 className="h-3 w-3 text-[#059669]" />
-        <span className="text-[10px] font-bold uppercase tracking-wider text-[#059669]">
+        <CalendarCheck2 className="h-3 w-3 text-[#167f5b]" />
+        <span className="text-[10px] font-bold uppercase tracking-wider text-[#167f5b]">
           Cadence de prospection
         </span>
       </div>
@@ -198,8 +198,8 @@ export function CadenceTimeline({
                 <div
                   className={cn(
                     'w-7 h-7 rounded-full flex items-center justify-center shrink-0 transition-all',
-                    done && 'bg-[#059669]',
-                    current && 'bg-white ring-2 ring-[#059669] ring-offset-1',
+                    done && 'bg-[#167f5b]',
+                    current && 'bg-white ring-2 ring-[#167f5b] ring-offset-1',
                     future && 'bg-[#f4f4f3] border border-[#e5e5e0]'
                   )}
                 >
@@ -207,7 +207,7 @@ export function CadenceTimeline({
                     className={cn(
                       'h-3 w-3',
                       done && 'text-white',
-                      current && 'text-[#059669]',
+                      current && 'text-[#167f5b]',
                       future && 'text-[#b0b0aa]'
                     )}
                   />
@@ -215,8 +215,8 @@ export function CadenceTimeline({
                 <span
                   className={cn(
                     'text-[8px] font-semibold text-center leading-tight w-10 truncate',
-                    done && 'text-[#059669]',
-                    current && 'text-[#26251e] font-bold',
+                    done && 'text-[#167f5b]',
+                    current && 'text-[#14171A] font-bold',
                     future && 'text-[#b0b0aa]'
                   )}
                 >
@@ -227,7 +227,7 @@ export function CadenceTimeline({
                 <div
                   className={cn(
                     'flex-1 h-px mt-3.5 min-w-[6px]',
-                    done ? 'bg-[#059669]' : 'bg-[#e5e5e0]'
+                    done ? 'bg-[#167f5b]' : 'bg-[#e5e5e0]'
                   )}
                 />
               )}
@@ -238,10 +238,10 @@ export function CadenceTimeline({
 
       {/* Current phase card */}
       {data.currentPhase !== 'closed' && (
-        <div className="rounded-xl border-l-[3px] border-l-[#059669] border border-[#e5e5e0] bg-white p-3 space-y-2.5">
+        <div className="rounded-xl border-l-[3px] border-l-[#167f5b] border border-[#e5e5e0] bg-white p-3 space-y-2.5">
           <div className="flex items-center gap-2">
-            <CurrentIcon className="h-3.5 w-3.5 text-[#059669] shrink-0" />
-            <span className="text-sm font-semibold text-[#26251e]">
+            <CurrentIcon className="h-3.5 w-3.5 text-[#167f5b] shrink-0" />
+            <span className="text-sm font-semibold text-[#14171A]">
               {data.currentPhaseLabel}
             </span>
             <span
@@ -260,18 +260,18 @@ export function CadenceTimeline({
           </p>
 
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-[10px] font-bold text-[#7a7a76]">
+            <span className="text-[10px] font-bold text-[#8A9098]">
               {dateLabel}
             </span>
             <span className="w-1 h-1 rounded-full bg-[#e5e5e0]" />
-            <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#f4f4f3] border border-[#e5e5e0] text-[#26251e] font-semibold">
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#f4f4f3] border border-[#e5e5e0] text-[#14171A] font-semibold">
               {channelLabel}
             </span>
           </div>
 
           <a
             href={actionUrl}
-            className="inline-flex items-center gap-1.5 text-[11px] font-bold text-[#059669] hover:text-[#047857] transition-colors group"
+            className="inline-flex items-center gap-1.5 text-[11px] font-bold text-[#167f5b] hover:text-[#0f6b4c] transition-colors group"
           >
             Exécuter maintenant
             <ArrowRight className="h-3 w-3 group-hover:translate-x-0.5 transition-transform" />
@@ -281,8 +281,8 @@ export function CadenceTimeline({
 
       {data.currentPhase === 'closed' && (
         <div className="rounded-xl border border-[#e5e5e0] bg-[#f4f4f3]/60 p-3 flex items-center gap-2">
-          <CheckCircle2 className="h-4 w-4 text-[#059669] shrink-0" />
-          <p className="text-[11px] font-semibold text-[#26251e]">
+          <CheckCircle2 className="h-4 w-4 text-[#167f5b] shrink-0" />
+          <p className="text-[11px] font-semibold text-[#14171A]">
             Cycle commercial terminé.
           </p>
         </div>

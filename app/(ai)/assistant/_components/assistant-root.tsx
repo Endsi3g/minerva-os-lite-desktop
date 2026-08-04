@@ -2133,7 +2133,7 @@ Important : ne génère un bloc action QUE si l'utilisateur demande explicitemen
                       <img src="/icon-512.png" className="h-full w-full object-cover" alt="Minerva" />
                     </div>
                   </div>
-                  <h2 className="text-2xl font-black text-[#26251e]">{greetingHello} 👋</h2>
+                  <h2 className="text-2xl font-black text-[#26251e]">{greetingHello}</h2>
                   <p className="text-sm text-[#7a7a76] font-medium">{greetingContext}</p>
                 </div>
 

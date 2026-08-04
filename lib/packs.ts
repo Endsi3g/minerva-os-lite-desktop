@@ -18,25 +18,25 @@ export const PACKS: Record<PackId, PackConfig> = {
   acquisition: {
     label: 'Acquisition',
     description: 'Scraping, Google Places, profils cibles, publicité, site web, audit SEO.',
-    icon: '🎯',
-    routes: ['/prospecting', '/personas', '/ads', '/acquisition', '/website-builder', '/audit'],
+    icon: 'Target',
+    routes: ['/prospecting', '/personas', '/ads', '/website-builder', '/audit'],
   },
   outreach: {
     label: 'Outreach',
-    description: 'Email, DM, boîte de réception, séquences, playbooks, campagnes.',
-    icon: '📨',
-    routes: ['/outreach', '/inbox', '/messages', '/sequences', '/playbooks', '/contacts'],
+    description: 'Email, DM, boîte de réception, séquences, campagnes.',
+    icon: 'Mail',
+    routes: ['/outreach', '/inbox', '/messages', '/sequences', '/contacts'],
   },
   field: {
     label: 'Terrain',
     description: 'Mode terrain, tournées, preuves de visite, carte GPS.',
-    icon: '🚗',
+    icon: 'MapPin',
     routes: ['/field', '/map'],
   },
   analytics_growth: {
     label: 'Analytics & Growth',
     description: 'Performance, rapports client, webhooks, activités, campagnes/programmes de croissance.',
-    icon: '📈',
+    icon: 'BarChart3',
     routes: ['/performance', '/client-reports', '/webhooks', '/activities', '/campaigns'],
   },
 };

@@ -10,6 +10,7 @@ import { Lead } from '@/lib/mock-data';
 import { getApiUrl } from '@/lib/api-helper';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Search, SlidersHorizontal, X, MapPin, Mail, Loader2,
   ChevronRight, Users, Zap, PanelLeft, Navigation, Star,
@@ -949,12 +950,49 @@ Retourne UNIQUEMENT un JSON valide (pas de texte autour) avec ces clés optionne
 
   // Tournée (route planning)
   const [tourWaypoints, setTourWaypoints] = useState<Waypoint[]>([]);
+  const [startingTournee, setStartingTournee] = useState(false);
 
   const handleCreateTourneeFromZone = useCallback((zoneLeads: EnrichedLead[]) => {
     const valid = zoneLeads.filter(l => l._lat && l._lng);
     setTourWaypoints(valid.map(l => ({ ...l } as unknown as Waypoint)));
     setActiveTab('tournee' as SidebarTab);
   }, []);
+
+  const router = useRouter();
+  const searchParamsUrl = useSearchParams();
+
+  // Terrain est intégré directement dans Maps (plus de page /field séparée) —
+  // /map?tab=tournee ouvre directement l'onglet Tournée au chargement.
+  useEffect(() => {
+    const tab = searchParamsUrl?.get('tab');
+    if (tab === 'tournee' || tab === 'prospection' || tab === 'leads') {
+      setActiveTab(tab as SidebarTab);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Persiste la tournée courante (route_plans) puis lance le mode terrain guidé
+  // (préparer → visiter → résultat, preuve photo, avancement pipeline auto) —
+  // ce flow existant à /field/[planId]/... n'est pas dupliqué ici, juste rejoint.
+  const handleStartTournee = useCallback(async () => {
+    if (tourWaypoints.length === 0 || startingTournee) return;
+    setStartingTournee(true);
+    try {
+      const res = await fetch(getApiUrl('/api/route-plans'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          workspace_id: activeWorkspace?.id ?? null,
+          lead_ids: tourWaypoints.map(w => w.id),
+        }),
+      });
+      if (!res.ok) throw new Error('Échec de la création de la tournée');
+      const plan = await res.json();
+      router.push(`/field/${plan.id}`);
+    } catch {
+      setStartingTournee(false);
+    }
+  }, [tourWaypoints, startingTournee, activeWorkspace?.id, router]);
 
   // Enrich leads with coordinates
   const enrichedLeads = useMemo<EnrichedLead[]>(() => {
@@ -1314,6 +1352,18 @@ Retourne UNIQUEMENT un JSON valide (pas de texte autour) avec ces clés optionne
                   </div>
                 )}
               </div>
+              {tourWaypoints.length > 0 && (
+                <div className="px-3 pt-2.5 shrink-0">
+                  <button
+                    onClick={handleStartTournee}
+                    disabled={startingTournee}
+                    className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg bg-[#7c3aed] hover:bg-[#6d28d9] disabled:opacity-60 text-white text-xs font-bold transition-colors"
+                  >
+                    {startingTournee ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />}
+                    Démarrer la tournée terrain
+                  </button>
+                </div>
+              )}
               <div className="flex-1 overflow-y-auto">
                 {tourWaypoints.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-12 text-center px-4">
@@ -1340,6 +1390,15 @@ Retourne UNIQUEMENT un JSON valide (pas de texte autour) avec ces clés optionne
                   <p className="text-[10px] text-[#a3a197]">L'itinéraire OSRM calcule la route routière en temps réel sur la carte.</p>
                 </div>
               )}
+              <div className="px-3 py-2.5 border-t border-[#e5e5e0] shrink-0">
+                <Link
+                  href="/field/gallery"
+                  className="flex items-center gap-1.5 text-[10px] font-bold text-[#7a7a76] hover:text-[#26251e] transition-colors"
+                >
+                  <Camera className="h-3 w-3" />
+                  Galerie des visites terrain
+                </Link>
+              </div>
             </>
           )}
         </div>

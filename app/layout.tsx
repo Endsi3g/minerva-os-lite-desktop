@@ -1,4 +1,4 @@
-import { JetBrains_Mono, Inter } from "next/font/google"
+import { JetBrains_Mono, Plus_Jakarta_Sans } from "next/font/google"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { LanguageProvider } from "@/lib/language-context"
@@ -10,9 +10,10 @@ import { cn } from "@/lib/utils"
 import { Analytics } from "@vercel/analytics/next"
 import { SpeedInsights } from "@vercel/speed-insights/next"
 import { Toaster } from "sonner"
+import { NuqsAdapter } from "nuqs/adapters/next/app"
 import type { Metadata, Viewport } from "next"
 
-const inter = Inter({
+const plusJakartaSans = Plus_Jakarta_Sans({
   subsets: ["latin"],
   display: "swap",
   variable: "--font-sans"
@@ -63,7 +64,7 @@ export default function RootLayout({
     <html
       lang="fr"
       suppressHydrationWarning
-      className={cn("antialiased", fontMono.variable, "font-sans", inter.variable)}
+      className={cn("antialiased", fontMono.variable, "font-sans", plusJakartaSans.variable)}
     >
       <head>
         {/* Critical resource hints — establish connections before scripts parse */}
@@ -84,13 +85,15 @@ export default function RootLayout({
         <CapacitorInit />
         <ChunkErrorRecovery />
         <GlobalErrorReporter />
-        <ThemeProvider>
-          <LanguageProvider>
-            <PageTransition>
-              {children}
-            </PageTransition>
-          </LanguageProvider>
-        </ThemeProvider>
+        <NuqsAdapter>
+          <ThemeProvider>
+            <LanguageProvider>
+              <PageTransition>
+                {children}
+              </PageTransition>
+            </LanguageProvider>
+          </ThemeProvider>
+        </NuqsAdapter>
         <Toaster position="bottom-right" richColors closeButton />
         <Analytics />
         <SpeedInsights />

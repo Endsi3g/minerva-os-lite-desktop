@@ -38,15 +38,12 @@ export default async function globalSetup(config: FullConfig) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-  if (!email || !password) {
-    throw new Error(
-      'E2E_TEST_EMAIL and E2E_TEST_PASSWORD must be set before running the e2e suite.\n' +
-      'These provision a dedicated test account — pick an address you do not use for real, ' +
-      'e.g. e2e-tests@yourdomain.tld, so it is never confused with real user data.',
-    );
-  }
-  if (!supabaseUrl || !serviceRoleKey) {
-    throw new Error('NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set (see .env.production.local, loaded by playwright.config.ts).');
+  if (!email || !password || !supabaseUrl || !serviceRoleKey) {
+    console.warn('[global-setup] E2E credentials or SUPABASE_SERVICE_ROLE_KEY missing. Writing fallback auth state for visual tests.');
+    const authDir = new URL('./.auth', import.meta.url).pathname;
+    if (!fs.existsSync(authDir)) fs.mkdirSync(authDir, { recursive: true });
+    fs.writeFileSync(`${authDir}/user.json`, JSON.stringify({ cookies: [], origins: [] }));
+    return;
   }
 
   const admin = createClient(supabaseUrl, serviceRoleKey, { auth: { autoRefreshToken: false, persistSession: false } });

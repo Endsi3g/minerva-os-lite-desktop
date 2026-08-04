@@ -1,13 +1,13 @@
-import { OutreachNavBar } from '@/components/outreach-nav-bar';
-import EmailTemplatesPage from '../settings/email-templates/page';
+'use client';
 
-export default function EmailTemplatesStandalonePage() {
-  return (
-    <div className="flex flex-col h-full overflow-hidden">
-      <OutreachNavBar />
-      <div className="flex-1 overflow-y-auto">
-        <EmailTemplatesPage />
-      </div>
-    </div>
-  );
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+
+// Stub de redirection pure — le vrai écran vit à /settings/email-templates.
+export default function EmailTemplatesRedirect() {
+  const router = useRouter();
+  useEffect(() => {
+    router.replace('/settings/email-templates');
+  }, [router]);
+  return null;
 }

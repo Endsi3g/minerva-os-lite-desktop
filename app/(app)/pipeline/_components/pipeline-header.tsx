@@ -85,22 +85,22 @@ export function PipelineHeader({
     <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between pb-2 border-b border-[#e5e5e0]">
       {/* Title */}
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-[#26251e]">Pipeline</h1>
-        <p className="text-xs text-[#7a7a76] mt-0.5">
+        <h1 className="text-2xl font-heading font-medium tracking-tight text-[#14171A]">Pipeline</h1>
+        <p className="text-xs text-[#4B5158] mt-0.5">
           Suivi visuel et progression de tes opportunités de vente.
         </p>
       </div>
 
       {/* Actions & Filters */}
       <div className="flex flex-wrap items-center gap-2">
-        <div className="flex items-center gap-1.5 text-xs text-[#7a7a76] mr-1">
+        <div className="flex items-center gap-1.5 text-xs text-[#8A9098] mr-1">
           <Filter className="h-3.5 w-3.5" />
           <span>Filtrer :</span>
         </div>
 
         {/* Niche selector */}
         <Select value={selectedNiche} onValueChange={onNicheChange}>
-          <SelectTrigger className="h-8.5 w-[140px] text-xs bg-white">
+          <SelectTrigger className="h-8 w-[140px] text-xs bg-white">
             <SelectValue placeholder="Tous secteurs" />
           </SelectTrigger>
           <SelectContent>
@@ -115,7 +115,7 @@ export function PipelineHeader({
 
         {/* Owner selector */}
         <Select value={selectedOwner} onValueChange={onOwnerChange}>
-          <SelectTrigger className="h-8.5 w-[140px] text-xs bg-white">
+          <SelectTrigger className="h-8 w-[140px] text-xs bg-white">
             <SelectValue placeholder="Tous propriétaires" />
           </SelectTrigger>
           <SelectContent>
@@ -131,7 +131,7 @@ export function PipelineHeader({
         {/* Add Lead Sheet */}
         <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
           <SheetTrigger asChild>
-            <Button size="sm" className="h-8.5 gap-1.5 bg-[#059669] hover:bg-[#059669]/90 text-xs font-semibold">
+            <Button size="sm" className="h-8 gap-1.5 bg-[#167f5b] hover:bg-[#0f6b4c] text-xs font-semibold">
               <Plus className="h-3.5 w-3.5" />
               <span>Nouveau lead</span>
             </Button>

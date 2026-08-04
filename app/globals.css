@@ -108,6 +108,26 @@
     --timeline-edit: #c0a8dd;
     --timeline-done: #c08532;
     --heatmap-zero: rgb(221, 221, 221);
+
+    /* Standardized sans-serif font for all headings across Minerva OS */
+    --font-serif: var(--font-sans);
+
+    /* ─── Minerva Reach redesign tokens (trycompai/crm-inspired restyle) ───
+       New palette for the screen-by-screen redesign (Overview, Prospects,
+       Contacts, Pipeline). Coexists with the tokens above — those still
+       drive the rest of the app (shadcn primitives, existing screens)
+       until each screen is migrated in Phase 4.
+       Rule: --minerva-accent (lime) is never used as a text color — insufficient
+       contrast. Color communicates state only (success/warning/error), never decoration. */
+    --minerva-primary: #167f5b;
+    --minerva-primary-foreground: #FAF7F0;
+    --minerva-surface: #FAF7F0;
+    --minerva-accent: #dfff5f;
+    --minerva-ink-900: #14171A;
+    --minerva-ink-600: #4B5158;
+    --minerva-ink-400: #8A9098;
+    --minerva-state-warning: #E8A33D;
+    --minerva-state-error: #D64545;
 }
 
 /* Dark variant - same warm/emerald identity, inverted onto a warm-charcoal canvas */

@@ -44,6 +44,7 @@ export interface Lead {
   latitude?: number;
   longitude?: number;
   phone?: string;
+  preferredChannel?: 'sms' | 'cold_call' | 'instagram_dm';
   // Qualification & enrichissement (v2.34.0)
   fitScore?: number;
   intentScore?: number;

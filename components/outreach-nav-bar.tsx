@@ -8,7 +8,7 @@ const TABS = [
   { id: 'inbox',     label: 'Inbox',         icon: Inbox,         href: '/inbox' },
   { id: 'sequences', label: 'Séquences',      icon: GitBranch,     href: '/sequences' },
   { id: 'campaigns', label: 'Campagnes',      icon: Megaphone,     href: '/campaigns' },
-  { id: 'templates', label: 'Templates',      icon: FileText,      href: '/email-templates' },
+  { id: 'templates', label: 'Templates',      icon: FileText,      href: '/settings/email-templates' },
   { id: 'approvals', label: 'Approbations',   icon: CheckCircle2,  href: '/outreach' },
 ] as const;
 

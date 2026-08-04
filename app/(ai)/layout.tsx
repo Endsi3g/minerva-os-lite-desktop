@@ -50,9 +50,7 @@ import { getPlatformUrl } from '@/lib/platform-utils';
 // ── Nav items ──────────────────────────────────────────────────────────────
 const AI_NAV = [
   { href: '/assistant', icon: Brain,    label: 'Assistant' },
-  { href: '/intelligence', icon: BarChart2, label: 'Intelligence' },
-  { href: '/agents',     icon: Sparkles, label: 'Agents' },
-  { href: '/skills',     icon: BookOpen, label: 'Skills' },
+  { href: '/agents',     icon: Sparkles, label: 'Agents Store' },
 ] as const;
 
 // ── Relative time helper ───────────────────────────────────────────────────
