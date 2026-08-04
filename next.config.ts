@@ -33,6 +33,8 @@ const nextConfig: NextConfig = {
       { source: '/playbooks', destination: '/sequences', permanent: true },
       { source: '/guide', destination: '/setup', permanent: true },
       { source: '/leverage-library', destination: '/library', permanent: true },
+      { source: '/welcome', destination: '/today', permanent: true },
+      { source: '/download', destination: '/today', permanent: true },
     ];
   },
 };
