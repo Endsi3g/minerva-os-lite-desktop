@@ -64,8 +64,7 @@ export const getOnboardingProgress = () => {
   });
   
   const totalTasks = onboardingTasks.length;
-  // Start with 12% default base (representing previous progress or setup profile) if none completed, to match visual mockups
-  const percent = completed.length === 0 ? 12 : Math.round((completed.length / totalTasks) * 100);
+  const percent = completed.length === 0 ? 0 : Math.round((completed.length / totalTasks) * 100);
   return { percent, score };
 };
 

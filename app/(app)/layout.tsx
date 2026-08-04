@@ -791,6 +791,22 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
 
   const navCategories: Array<{ id: string; label: string; items: Array<{ name: string; href: string; icon: React.ElementType; badge?: string }> }> = [
     {
+      id: 'outreach_ai',
+      label: 'Outreach & IA',
+      items: [
+        { name: 'Assistant IA',    href: '/assistant',      icon: Sparkles },
+        { name: 'Agents IA',       href: '/agents',         icon: Bot },
+      ],
+    },
+    {
+      id: 'assets_system',
+      label: 'Assets & System',
+      items: [
+        { name: 'Publicité',       href: '/ads',            icon: Target },
+        { name: 'Bibliothèque',    href: '/library',        icon: BookOpen },
+      ],
+    },
+    {
       id: 'sales',
       label: 'Pilotage & Prospection',
       items: [
@@ -806,22 +822,6 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
         { name: 'Bilan & Performance', href: '/weekly-report', icon: BarChart3 },
         { name: 'Tâches',       href: '/tasks',         icon: ListChecks },
         { name: 'Agenda',       href: '/agenda',        icon: CalendarDays },
-      ],
-    },
-    {
-      id: 'outreach_ai',
-      label: 'Outreach & IA',
-      items: [
-        { name: 'Assistant IA',    href: '/assistant',      icon: Sparkles },
-        { name: 'Agents IA',       href: '/agents',         icon: Bot },
-      ],
-    },
-    {
-      id: 'assets_system',
-      label: 'Assets & System',
-      items: [
-        { name: 'Publicité',       href: '/ads',            icon: Target },
-        { name: 'Bibliothèque',    href: '/library',        icon: BookOpen },
       ],
     },
   ];
@@ -929,7 +929,8 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -4 }}
                     transition={{ duration: 0.15, ease: [0.4, 0, 0.2, 1] }}
-                    className="font-semibold text-sm text-[#26251e] truncate"
+                    className="font-semibold text-sm truncate"
+                    style={{ fontFamily: 'var(--font-brand, ui-serif, "New York", Georgia, serif)' }}
                   >
                     {activeWorkspace ? activeWorkspace.name : 'Minerva OS Lite'}
                   </motion.span>

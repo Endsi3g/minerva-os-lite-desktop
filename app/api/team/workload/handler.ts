@@ -39,7 +39,7 @@ export async function GET(req: NextRequest) {
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
   const results = await Promise.all(
-    allMembers.map(async ({ userId, role }) => {
+    allMembers.map(async ({ userId, role }, idx) => {
       const [leadsRes, nbaRes, slaRes, bookingsRes, settingsRes] = await Promise.all([
         supabase
           .from('leads')
@@ -75,7 +75,7 @@ export async function GET(req: NextRequest) {
       const member: MemberWorkload = {
         userId,
         role,
-        fullName: settingsRes.data?.full_name ?? userId,
+        fullName: settingsRes.data?.full_name?.trim() || `Membre #${idx + 1}`,
         avatarBase64: settingsRes.data?.avatar_base64 ?? null,
         assignedLeads: leadsRes.count ?? 0,
         pendingNba: nbaRes.count ?? 0,

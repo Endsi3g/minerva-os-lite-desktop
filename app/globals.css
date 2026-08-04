@@ -56,50 +56,50 @@
     --color-heatmap-zero: var(--heatmap-zero);
 }
 
-/* Base Theme variables - Cursor Inspired Warm Cream */
+/* Base Theme — Minerva Studio v9: Forêt & Crème */
 :root {
-    --background: #f7f7f4; /* Warm Cream canvas */
-    --foreground: #26251e; /* Warm Ink text */
-    --card: #ffffff;       /* Surface Card */
-    --card-foreground: #26251e;
-    --popover: #ffffff;
-    --popover-foreground: #26251e;
+    --background: #F0EDE0; /* Crème ivoire — canvas principal */
+    --foreground: #1a1f1c; /* Encre foncée */
+    --card: #FAFAF5;       /* Blanc chaud — surfaces cards */
+    --card-foreground: #1a1f1c;
+    --popover: #FAFAF5;
+    --popover-foreground: #1a1f1c;
 
-    --primary: #10b981;    /* Emerald Green brand primary */
-    --primary-foreground: #ffffff;
+    --primary: #1E4B33;    /* Vert forêt — couleur de marque Minerva Studio */
+    --primary-foreground: #F0EDE0;
 
-    --secondary: #ffffff;
-    --secondary-foreground: #26251e;
+    --secondary: #FAFAF5;
+    --secondary-foreground: #1a1f1c;
 
-    --muted: #fafaf7;      /* Canvas Soft */
-    --muted-foreground: #807d72; /* Muted subtext */
+    --muted: #EAE7D9;      /* Crème assombrie */
+    --muted-foreground: #6b6b5e; /* Sous-texte */
 
-    --accent: #f7f7f4;
-    --accent-foreground: #26251e;
+    --accent: #EAE7D9;
+    --accent-foreground: #1E4B33;
 
-    --destructive: #cf2d56; /* Semantic red */
+    --destructive: #cf2d56; /* Rouge sémantique */
     --destructive-foreground: #ffffff;
 
-    --border: #e6e5e0;     /* Hairline 1px border */
-    --input: #e6e5e0;
-    --ring: #10b981;       /* Ring matches brand primary */
+    --border: #DDD9CA;     /* Bordure ivoire */
+    --input: #DDD9CA;
+    --ring: #1E4B33;       /* Ring vert forêt */
 
-    --chart-1: #dfa88f;
-    --chart-2: #9fc9a2;
-    --chart-3: #9fbbe0;
-    --chart-4: #c0a8dd;
+    --chart-1: #1E4B33;
+    --chart-2: #3d7a5a;
+    --chart-3: #6ba585;
+    --chart-4: #a8c9b8;
     --chart-5: #c08532;
 
-    --radius: 0.625rem;    /* 10px base radius (rounded.lg = 10px, rounded.md = 8px) */
+    --radius: 0.625rem;    /* 10px base radius */
 
-    --sidebar: #ffffff;
-    --sidebar-foreground: #26251e;
-    --sidebar-primary: #10b981;
-    --sidebar-primary-foreground: #ffffff;
-    --sidebar-accent: #f7f7f4;
-    --sidebar-accent-foreground: #26251e;
-    --sidebar-border: #e6e5e0;
-    --sidebar-ring: #10b981;
+    --sidebar: #FAFAF5;
+    --sidebar-foreground: #1a1f1c;
+    --sidebar-primary: #1E4B33;
+    --sidebar-primary-foreground: #F0EDE0;
+    --sidebar-accent: #EAE7D9;
+    --sidebar-accent-foreground: #1a1f1c;
+    --sidebar-border: #DDD9CA;
+    --sidebar-ring: #1E4B33;
 
     /* Timeline Pills palette tokens */
     --timeline-thinking: #dfa88f;
@@ -109,69 +109,65 @@
     --timeline-done: #c08532;
     --heatmap-zero: rgb(221, 221, 221);
 
-    /* Standardized sans-serif font for all headings across Minerva OS */
+    /* Police de marque — New York (système serif Apple) pour le logotype uniquement */
+    --font-brand: ui-serif, "New York", Georgia, "Times New Roman", serif;
+    /* Police de titre — sans-serif cohérente sur toute l'app */
     --font-serif: var(--font-sans);
 
-    /* ─── Minerva Reach redesign tokens (trycompai/crm-inspired restyle) ───
-       New palette for the screen-by-screen redesign (Overview, Prospects,
-       Contacts, Pipeline). Coexists with the tokens above — those still
-       drive the rest of the app (shadcn primitives, existing screens)
-       until each screen is migrated in Phase 4.
-       Rule: --minerva-accent (lime) is never used as a text color — insufficient
-       contrast. Color communicates state only (success/warning/error), never decoration. */
-    --minerva-primary: #167f5b;
-    --minerva-primary-foreground: #FAF7F0;
-    --minerva-surface: #FAF7F0;
-    --minerva-accent: #dfff5f;
-    --minerva-ink-900: #14171A;
-    --minerva-ink-600: #4B5158;
-    --minerva-ink-400: #8A9098;
+    /* Minerva Studio accent tokens */
+    --minerva-primary: #1E4B33;
+    --minerva-primary-foreground: #F0EDE0;
+    --minerva-surface: #F0EDE0;
+    --minerva-accent: #3d7a5a;   /* accent vert moyen (hover) */
+    --minerva-ink-900: #1a1f1c;
+    --minerva-ink-600: #4a5248;
+    --minerva-ink-400: #7a8078;
     --minerva-state-warning: #E8A33D;
     --minerva-state-error: #D64545;
 }
 
-/* Dark variant - same warm/emerald identity, inverted onto a warm-charcoal canvas */
+/* Dark variant — Minerva Studio v9 dark */
 .dark {
-    --background: #16150f; /* Warm charcoal canvas */
-    --foreground: #f2f0e9; /* Warm off-white text */
-    --card: #1f1e17;       /* Elevated dark surface */
-    --card-foreground: #f2f0e9;
-    --popover: #1f1e17;
-    --popover-foreground: #f2f0e9;
+    --background: #111810; /* Forêt nocturne */
+    --foreground: #EAE7D9; /* Crème sombre */
+    --card: #1a2318;       /* Surface sombre élevée */
+    --card-foreground: #EAE7D9;
+    --popover: #1a2318;
+    --popover-foreground: #EAE7D9;
 
-    --primary: #10b981;    /* Emerald Green brand primary stays consistent */
-    --primary-foreground: #052e1d;
+    --primary: #4a9e6e;    /* Vert forêt éclairci pour dark mode */
+    --primary-foreground: #0d1f13;
 
-    --secondary: #232219;
-    --secondary-foreground: #f2f0e9;
+    --secondary: #232e28;
+    --secondary-foreground: #EAE7D9;
 
-    --muted: #211f18;
-    --muted-foreground: #9b9588;
+    --muted: #1e2a22;
+    --muted-foreground: #7a8478;
 
-    --accent: #232219;
-    --accent-foreground: #f2f0e9;
+    --accent: #232e28;
+    --accent-foreground: #EAE7D9;
 
     --destructive: #e0395c;
     --destructive-foreground: #ffffff;
 
-    --border: #322f25;     /* Hairline border on dark surfaces */
-    --input: #322f25;
-    --ring: #10b981;
+    --border: #2a3a2e;
+    --input: #2a3a2e;
+    --ring: #4a9e6e;
 
-    --chart-1: #dfa88f;
-    --chart-2: #9fc9a2;
-    --chart-3: #9fbbe0;
-    --chart-4: #c0a8dd;
+    --chart-1: #1E4B33;
+    --chart-2: #3d7a5a;
+    --chart-3: #6ba585;
+    --chart-4: #a8c9b8;
     --chart-5: #c08532;
 
-    --sidebar: #1b1a14;
-    --sidebar-foreground: #f2f0e9;
-    --sidebar-primary: #10b981;
-    --sidebar-primary-foreground: #052e1d;
-    --sidebar-accent: #232219;
-    --sidebar-accent-foreground: #f2f0e9;
-    --sidebar-border: #322f25;
-    --sidebar-ring: #10b981;
+    --sidebar: #141f18;
+    --sidebar-foreground: #EAE7D9;
+    --sidebar-primary: #4a9e6e;
+    --sidebar-primary-foreground: #0d1f13;
+    --sidebar-accent: #1e2a22;
+    --sidebar-accent-foreground: #EAE7D9;
+    --sidebar-border: #2a3a2e;
+    --sidebar-ring: #4a9e6e;
 
     --timeline-thinking: #dfa88f;
     --timeline-grep: #9fc9a2;

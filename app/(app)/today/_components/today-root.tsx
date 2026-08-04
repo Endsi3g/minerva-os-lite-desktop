@@ -736,9 +736,6 @@ export function TodayRoot() {
                     </div>
                   )}
 
-                {/* Monthly Goals */}
-                <TodayGoalsCard />
-
                 {/* Outreach Control Center - approvals — l'action la plus concrète du jour,
                     toujours visible même sur mobile (pas caché derrière "Voir plus"). */}
                 <div className="bg-white border border-[#e5e5e0] rounded-2xl p-5 shadow-sm">
@@ -863,6 +860,7 @@ export function TodayRoot() {
                         <TodayAgendaCard />
                         <TodayGoogleCalendarCard />
                         <TodaySequenceStepsCard />
+                        <TodayGoalsCard />
                       </div>
 
                       {/* Right Column */}
@@ -877,8 +875,6 @@ export function TodayRoot() {
                         <TodayAiSuggestionsCard />
                         <TodayActivityFeedCard />
                         <TodayTeamActivityCard />
-                        <TodayStatsCard />
-                        <TodayProjectsCard />
                       </div>
                     </div>
                   </>

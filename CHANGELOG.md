@@ -5,6 +5,21 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [9.0.0] — Direction Visuelle Minerva Studio & Restructuration UX — 4 août 2026, 16h45
+
+### Ajouté
+- **Direction Visuelle Minerva Studio** : palette globale d'inspiration éditoriale avec vert forêt (`#1E4B33`), crème ivoire (`#F0EDE0`) et surfaces blanc chaud (`#FAFAF5`). Remplacement de l'émeraude et du lime sur l'intégralité de l'application.
+- **Police de Marque New York** : application de la typographie système serif Apple (*New York*) au logotype et à l'identité visuelle de la marque dans la sidebar.
+- **Réordonnancement des Hubs Sidebar** : nouvel ordre ergonomique (`Outreach & IA` → `Assets & System` → `Pilotage & Prospection` → `Opérations & Performance`).
+- **Nouveaux filtres unifiés (`UnifiedFilterBar`)** : barre unique de filtres et de recherche avec popover d'ajustement, puces d'activation rapide, puces de statut colorées et raccourci clavier `⌘K`.
+- **Possibilité de repliement des Prospects Chauds** : affichage de max 5 prospects par défaut avec bouton d'expansion/réduction sur la carte `/today`.
+
+### Corrigé
+- **Noms des membres d'équipe (Workload Board)** : correction du fallback d'UUID brut `9e4ffef0-...` par un libellé lisible `Membre #N` lorsque le profil n'a pas renseigné son nom complet.
+- **Widget Démarrage (Sidebar)** : connexion directe à l'état réel de la checklist d'onboarding (suppression du 12% fictif hardcodé).
+- **Nettoyage des paramètres** : suppression des onglets non fonctionnels (*Diagnostics IA*, *Monitoring*, *Vue d'ensemble*, *Prospection*, *Instructions*, *Personnalisation*).
+- **Disposition du Tableau de bord `/today`** : suppression des cartes superflues (*Statistiques du jour* & *Projets en cours*) et repositionnement de la carte d'Objectifs dans la colonne principale.
+
 ## [3.99.0] — Refonte design Minerva, réduction du nombre de pages, nouveau centre Outreach et page Publicité — 4 août 2026, 13h33
 
 ### Ajouté
