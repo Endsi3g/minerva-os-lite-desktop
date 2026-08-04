@@ -23,14 +23,14 @@ export function TodayHotProspectsCard() {
   const hiddenCount = allLeads.length - MAX_VISIBLE;
 
   return (
-    <Card className="border border-border bg-card shadow-none flex flex-col min-h-0">
+    <Card className="border border-[#e5e5e0] bg-white shadow-none flex flex-col min-h-0">
       <CardHeader className="flex flex-row items-center justify-between pb-3 shrink-0">
         <div className="flex items-center gap-2.5">
           <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/10 text-primary">
             <Flame className="h-4 w-4" />
           </div>
           <div>
-            <CardTitle className="font-heading text-base font-medium">Prospects chauds</CardTitle>
+            <CardTitle className="font-heading font-serif text-base font-medium">Prospects chauds</CardTitle>
             <CardDescription className="text-xs">Score de priorisation le plus élevé</CardDescription>
           </div>
         </div>

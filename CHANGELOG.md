@@ -5,6 +5,12 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [9.0.4] — Harmonisation visuelle & Épurage du tableau Aujourd'hui — 4 août 2026, 17h22
+
+### Modifié
+- **Harmonisation des cartes Prospects chauds & Actions et relances** : Passage du fond de la carte *Prospects chauds* en blanc pur (`bg-white border border-[#e5e5e0]`) et passage du titre de la carte *Actions et relances urgentes* en Playfair Display (`font-heading font-serif`).
+- **Épurage de la page Aujourd'hui** : Suppression des 5 sections redondantes (*Résumé d'aujourd'hui*, *Objectif principal du jour*, *Intelligence comportementale*, *Activité hebdomadaire*, *Activité de l'équipe*).
+
 ## [9.0.3] — Repliement des Actions et relances urgentes — 4 août 2026, 17h14
 
 ### Ajouté

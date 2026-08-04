@@ -40,7 +40,7 @@ export function FollowUpListCard() {
             <MessageSquareReply className="h-4 w-4" />
           </div>
           <div>
-            <CardTitle className="text-base font-semibold font-sans">{t('today.follow_ups')}</CardTitle>
+            <CardTitle className="font-heading font-serif text-base font-medium">{t('today.follow_ups')}</CardTitle>
             <CardDescription className="text-xs">{t('today.follow_ups_desc')}</CardDescription>
           </div>
         </div>

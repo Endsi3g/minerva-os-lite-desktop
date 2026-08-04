@@ -725,9 +725,6 @@ export function TodayRoot() {
                       </div>
                     </div>
 
-                    {/* Charts: leads générés vs contactés + pipeline par étape */}
-                    <TodayOverviewCharts />
-
                     {/* Prospects chauds + Relances en retard */}
                     <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
                       <TodayHotProspectsCard />
@@ -869,12 +866,8 @@ export function TodayRoot() {
                         <AgentFeed />
 
                         <NextBestActionCard />
-                        <DailyDigestCard />
                         <AgentPrioritiesCard />
-                        <TodayFocusCard />
-                        <TodayAiSuggestionsCard />
                         <TodayActivityFeedCard />
-                        <TodayTeamActivityCard />
                       </div>
                     </div>
                   </>

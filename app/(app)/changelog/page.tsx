@@ -21,6 +21,15 @@ interface ChangelogVersion {
 
 const versions: ChangelogVersion[] = [
   {
+    version: 'v9.0.4',
+    date: '4 août 2026 · 17h22',
+    title: 'Harmonisation visuelle & Épurage du tableau Aujourd\'hui',
+    highlights: [
+      { text: "Passage de la carte Prospects chauds sur fond blanc pur (bg-white) et application de la typographie Playfair Display au titre de la carte Actions et relances urgentes." },
+      { text: "Suppression des 5 sections redondantes de la page Aujourd'hui : Résumé d'aujourd'hui, Objectif principal du jour, Intelligence comportementale, Activité hebdomadaire et Activité de l'équipe." }
+    ]
+  },
+  {
     version: 'v9.0.3',
     date: '4 août 2026 · 17h14',
     title: 'Repliement des Actions et relances urgentes',
