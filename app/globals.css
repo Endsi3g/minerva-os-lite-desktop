@@ -109,8 +109,8 @@
     --timeline-done: #c08532;
     --heatmap-zero: rgb(221, 221, 221);
 
-    /* Police de marque — New York (système serif Apple) pour le logotype uniquement */
-    --font-brand: ui-serif, "New York", Georgia, "Times New Roman", serif;
+    /* Police de marque — Playfair Display pour le nom/logotype de l'application */
+    --font-brand: var(--font-playfair), ui-serif, "New York", Georgia, serif;
     /* Police de titre — sans-serif cohérente sur toute l'app */
     --font-serif: var(--font-sans);
 

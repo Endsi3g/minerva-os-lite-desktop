@@ -1,4 +1,4 @@
-import { JetBrains_Mono, Plus_Jakarta_Sans } from "next/font/google"
+import { JetBrains_Mono, Plus_Jakarta_Sans, Playfair_Display } from "next/font/google"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { LanguageProvider } from "@/lib/language-context"
@@ -23,6 +23,12 @@ const fontMono = JetBrains_Mono({
   subsets: ["latin"],
   display: "swap",
   variable: "--font-mono",
+})
+
+const playfairDisplay = Playfair_Display({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-playfair",
 })
 
 export const metadata: Metadata = {
@@ -64,7 +70,7 @@ export default function RootLayout({
     <html
       lang="fr"
       suppressHydrationWarning
-      className={cn("antialiased", fontMono.variable, "font-sans", plusJakartaSans.variable)}
+      className={cn("antialiased", fontMono.variable, "font-sans", plusJakartaSans.variable, playfairDisplay.variable)}
     >
       <head>
         {/* Critical resource hints — establish connections before scripts parse */}

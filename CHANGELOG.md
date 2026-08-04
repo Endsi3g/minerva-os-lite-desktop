@@ -5,6 +5,11 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [9.0.1] — Intégration de la police Playfair Display pour le nom de l'application — 4 août 2026, 16h53
+
+### Modifié
+- **Police de Marque Playfair Display** : Chargement et intégration de la typographie Google Font `Playfair Display` (`--font-playfair`) appliquée sur le nom et le logotype de l'application Minerva OS dans la barre latérale pour parfaire l'identité visuelle éditoriale.
+
 ## [9.0.0] — Direction Visuelle Minerva Studio & Restructuration UX — 4 août 2026, 16h45
 
 ### Ajouté

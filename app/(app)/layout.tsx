@@ -930,7 +930,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                     exit={{ opacity: 0, y: -4 }}
                     transition={{ duration: 0.15, ease: [0.4, 0, 0.2, 1] }}
                     className="font-semibold text-sm truncate"
-                    style={{ fontFamily: 'var(--font-brand, ui-serif, "New York", Georgia, serif)' }}
+                    style={{ fontFamily: 'var(--font-brand, var(--font-playfair), Georgia, serif)' }}
                   >
                     {activeWorkspace ? activeWorkspace.name : 'Minerva OS Lite'}
                   </motion.span>
