@@ -6,7 +6,7 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-    --font-heading: var(--font-sans);
+    --font-heading: var(--font-playfair);
     --font-sans: var(--font-sans);
     --color-sidebar-ring: var(--sidebar-ring);
     --color-sidebar-border: var(--sidebar-border);
@@ -109,10 +109,9 @@
     --timeline-done: #c08532;
     --heatmap-zero: rgb(221, 221, 221);
 
-    /* Police de marque — Playfair Display pour le nom/logotype de l'application */
+    /* Police de marque & de titres — Playfair Display pour tous les titres et en-têtes */
     --font-brand: var(--font-playfair), ui-serif, "New York", Georgia, serif;
-    /* Police de titre — sans-serif cohérente sur toute l'app */
-    --font-serif: var(--font-sans);
+    --font-serif: var(--font-playfair), ui-serif, Georgia, serif;
 
     /* Minerva Studio accent tokens */
     --minerva-primary: #1E4B33;

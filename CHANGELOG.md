@@ -5,6 +5,11 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [9.0.2] — Application globale de Playfair Display à tous les titres — 4 août 2026, 17h03
+
+### Modifié
+- **Typographie Éditoriale Globale** : Alignement de `--font-heading` et `--font-serif` sur `var(--font-playfair)` dans `app/globals.css`. La police serif *Playfair Display* est désormais appliquée à l'intégralité des titres de pages, cartes, dialogues et en-têtes de l'application.
+
 ## [9.0.1] — Intégration de la police Playfair Display pour le nom de l'application — 4 août 2026, 16h53
 
 ### Modifié
