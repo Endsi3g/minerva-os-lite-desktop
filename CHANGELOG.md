@@ -5,6 +5,11 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [9.0.3] — Repliement des Actions et relances urgentes — 4 août 2026, 17h14
+
+### Ajouté
+- **Repliement de la carte Actions et relances urgentes** : Affichage de 5 relances maximum par défaut avec bouton d'expansion/réduction sur la carte des relances urgentes (`FollowUpListCard`), identique à la carte *Prospects chauds*.
+
 ## [9.0.2] — Application globale de Playfair Display à tous les titres — 4 août 2026, 17h03
 
 ### Modifié
