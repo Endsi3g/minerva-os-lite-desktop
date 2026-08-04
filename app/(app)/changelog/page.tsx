@@ -21,6 +21,36 @@ interface ChangelogVersion {
 
 const versions: ChangelogVersion[] = [
   {
+    version: 'v9.0.2',
+    date: '4 août 2026 · 17h03',
+    title: 'Typographie Éditoriale Globale — Playfair Display sur tous les titres',
+    highlights: [
+      { text: "L'intégralité des titres de pages, en-têtes de cartes, boîtes de dialogue et sections de l'application s'affichent désormais avec la typographie Playfair Display." }
+    ]
+  },
+  {
+    version: 'v9.0.1',
+    date: '4 août 2026 · 16h53',
+    title: 'Police Playfair Display pour la marque',
+    highlights: [
+      { text: "Intégration de la police Google Font Playfair Display pour le nom et logotype de l'application Minerva OS dans la barre latérale." }
+    ]
+  },
+  {
+    version: 'v9.0.0',
+    date: '4 août 2026 · 16h45',
+    title: 'Direction Visuelle Minerva Studio & Restructuration UX',
+    highlights: [
+      { text: "Direction Visuelle Minerva Studio : nouvelle palette globale d'inspiration éditoriale avec vert forêt (#1E4B33), crème ivoire (#F0EDE0) et blanc chaud (#FAFAF5)." },
+      { text: "Réordonnancement des Hubs Sidebar : nouvel ordre ergonomique (Outreach & IA → Assets & System → Pilotage & Prospection → Opérations & Performance)." },
+      { text: "Filtres unifiés (UnifiedFilterBar) : recherche textuelle intégrée, popover de filtres, puces d'activation dynamique et raccourci ⌘K sur la page Prospects." },
+      { text: "Prospects Chauds repliables : affichage de 5 prospects max par défaut sur la page Aujourd'hui avec bouton d'expansion/réduction." },
+      { text: "Noms des membres d'équipe : correction du fallback d'UUID brut par un nom lisible Membre #N sur le tableau de charge de travail." },
+      { text: "Widget Démarrage connecté : le pourcentage de progression dans la sidebar reflète désormais la progression réelle de la checklist d'onboarding." },
+      { text: "Paramètres simplifiés : suppression des onglets non fonctionnels (Diagnostics IA, Monitoring, Vue d'ensemble, Prospection, Instructions, Personnalisation)." }
+    ]
+  },
+  {
     version: 'v3.99.0',
     date: '4 août 2026 · 13h33',
     title: 'Nouveau look, moins de pages, nouveau centre Outreach et page Publicité',
