@@ -9,7 +9,7 @@ import { PipelineViewToggle } from './pipeline-view-toggle';
 import { PipelineKanbanView } from './pipeline-kanban-view';
 import { PipelineTableView } from './pipeline-table-view';
 import { PipelineForecastView } from './pipeline-forecast-view';
-import { LeadsSubNav } from '../../leads/_components/leads-sub-nav';
+import { CloturerSubNav } from '@/app/(app)/_components/hub-nav/cloturer-sub-nav';
 import { Skeleton } from '@/components/ui/skeleton';
 
 function PipelineKanbanSkeleton() {
@@ -47,7 +47,7 @@ export function PipelineRoot() {
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
-      <LeadsSubNav />
+      <CloturerSubNav />
       <div className="flex flex-1 flex-col gap-4 p-3 sm:p-4 md:p-6 overflow-hidden">
       {/* Header section with niche/owner selectors */}
       <PipelineHeader

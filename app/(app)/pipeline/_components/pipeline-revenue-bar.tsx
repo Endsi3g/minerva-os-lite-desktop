@@ -11,28 +11,57 @@ function formatAmount(n: number): string {
   return `${Math.round(n)} $`;
 }
 
+const DEFAULT_PROBABILITIES: Record<Lead['status'], number> = {
+  New: 10,
+  Contacted: 25,
+  'Meeting Booked': 50,
+  'Proposal Sent': 75,
+  Negotiation: 90,
+  Won: 100,
+  Lost: 0,
+};
+
+const DEFAULT_NICHE_MRR: Record<string, number> = {
+  restaurant: 1500,
+  coiffeur: 800,
+  avocat: 3500,
+  comptable: 2800,
+  dentiste: 4500,
+  construction: 5000,
+  garage: 1800,
+  immobilier: 3000,
+};
+
 interface PipelineRevenueBarProps {
   leads: Lead[];
 }
 
 export function PipelineRevenueBar({ leads }: PipelineRevenueBarProps) {
   const stats = useMemo(() => {
-    const active = leads.filter(l => (l.dealAmount ?? 0) > 0 && l.status !== 'Lost');
-    const won    = leads.filter(l => (l.dealAmount ?? 0) > 0 && l.status === 'Won');
+    const getLeadAmount = (l: Lead) => {
+      if (l.dealAmount != null && l.dealAmount > 0) return l.dealAmount;
+      return DEFAULT_NICHE_MRR[(l.niche || '').toLowerCase()] || 1800;
+    };
 
-    const pipeline = active.reduce((s, l) => s + (l.dealAmount ?? 0), 0);
-    const forecast  = active.reduce((s, l) => s + (l.dealAmount ?? 0) * ((l.dealProbability ?? 50) / 100), 0);
-    const wonTotal  = won.reduce((s, l) => s + (l.dealAmount ?? 0), 0);
+    const active = leads.filter(l => l.status !== 'Lost');
+    const won    = leads.filter(l => l.status === 'Won');
+
+    const pipeline = active.reduce((s, l) => s + getLeadAmount(l), 0);
+    const forecast  = active.reduce((s, l) => {
+      const prob = l.dealProbability ?? DEFAULT_PROBABILITIES[l.status] ?? 50;
+      return s + (getLeadAmount(l) * (prob / 100));
+    }, 0);
+    const wonTotal  = won.reduce((s, l) => s + getLeadAmount(l), 0);
 
     const byStatus: Record<string, number> = {};
     for (const l of active) {
-      byStatus[l.status] = (byStatus[l.status] ?? 0) + (l.dealAmount ?? 0);
+      byStatus[l.status] = (byStatus[l.status] ?? 0) + getLeadAmount(l);
     }
 
     return { pipeline, forecast, wonTotal, count: active.length, byStatus };
   }, [leads]);
 
-  if (stats.count === 0) return null;
+  if (leads.length === 0) return null;
 
   const barTotal = stats.pipeline || 1;
 
@@ -42,26 +71,26 @@ export function PipelineRevenueBar({ leads }: PipelineRevenueBarProps) {
       <div className="flex flex-wrap gap-5 mb-3">
         <KpiChip
           icon={<DollarSign className="h-3.5 w-3.5" />}
-          iconBg="bg-[#4B5158]/10 text-[#4B5158]"
-          label="Pipeline brut"
+          iconBg="bg-emerald-50 text-[#059669]"
+          label="Pipeline global (MRR)"
           value={formatAmount(stats.pipeline)}
         />
         <KpiChip
           icon={<TrendingUp className="h-3.5 w-3.5" />}
-          iconBg="bg-[#4B5158]/10 text-[#4B5158]"
+          iconBg="bg-blue-50 text-blue-600"
           label="Forecast pondéré"
           value={formatAmount(stats.forecast)}
         />
         <KpiChip
           icon={<CheckCircle2 className="h-3.5 w-3.5" />}
-          iconBg="bg-[#167f5b]/10 text-[#167f5b]"
-          label="Deals gagnés"
+          iconBg="bg-emerald-100 text-emerald-800"
+          label="Revenu gagné"
           value={formatAmount(stats.wonTotal)}
         />
         <KpiChip
           icon={<LayoutGrid className="h-3.5 w-3.5" />}
           iconBg="bg-[#4B5158]/10 text-[#4B5158]"
-          label="Deals actifs"
+          label="Opportunités actives"
           value={String(stats.count)}
         />
       </div>
@@ -88,7 +117,7 @@ export function PipelineRevenueBar({ leads }: PipelineRevenueBarProps) {
             return (
               <div key={status} className="flex items-center gap-1.5">
                 <span className="h-2 w-2 rounded-sm inline-block" style={{ backgroundColor: color }} />
-                <span className="text-[10px] text-[#8A9098] font-medium">{STATUS_LABEL[status as Lead['status']]} — {formatAmount(amount)}</span>
+                <span className="text-[10px] text-[#8A9098] font-medium">{STATUS_LABEL[status as Lead['status']]} — ${formatAmount(amount)}</span>
               </div>
             );
           })}
@@ -106,13 +135,15 @@ function KpiChip({ icon, iconBg, label, value }: {
 }) {
   return (
     <div className="flex items-center gap-2.5">
-      <div className={`flex h-7 w-7 items-center justify-center rounded-md ${iconBg}`}>
+      <div className={`flex h-7 w-7 items-center justify-center rounded-lg ${iconBg}`}>
         {icon}
       </div>
       <div>
         <p className="text-[10px] font-semibold text-[#8A9098] uppercase tracking-wider leading-none mb-0.5">{label}</p>
-        <p className="text-base font-bold text-[#14171A] leading-tight">{value}</p>
+        <p className="text-base font-bold font-heading font-sans text-[#14171A] leading-tight">{value}</p>
       </div>
     </div>
   );
 }
+
+export default PipelineRevenueBar;
