@@ -1030,12 +1030,12 @@ export function ProspectingRoot() {
 
         {/* Header */}
         <div className="space-y-1">
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[#26251e] flex items-center gap-2">
+          <h1 className="text-2xl font-heading font-sans font-black tracking-tight text-[#14171A] flex items-center gap-2">
             <Search className="h-5 w-5 text-[#059669]" />
             Prospection locale
           </h1>
-          <p className="text-xs text-[#7a7a76]">
-            Recherche locale propulsée par Apify. Les données d'OpenStreetMap (OSM) servent de fallback automatique en cas de besoin.
+          <p className="text-xs text-[#4B5158] font-medium">
+            Recherche locale multi-sources (Google Maps, OpenStreetMap OSM, Apify) avec enrichissement et géolocalisation.
           </p>
         </div>
 
@@ -1074,9 +1074,9 @@ export function ProspectingRoot() {
 
         <div className="grid grid-cols-1 xl:grid-cols-[1fr_300px] gap-6 min-w-0">
           {/* Config card */}
-          <Card className="min-w-0 border border-[#e5e5e0] bg-white">
+          <Card className="min-w-0 border border-[#e5e5e0] bg-white shadow-xs">
             <CardHeader className="pb-3 border-b border-[#e5e5e0]/70">
-              <CardTitle className="text-xs font-bold uppercase tracking-wider text-[#7a7a76] flex items-center gap-1.5">
+              <CardTitle className="text-xs font-bold uppercase tracking-wider text-[#14171A] flex items-center gap-1.5 font-heading font-sans">
                 <Building className="h-4 w-4 text-[#059669]" />Paramètres de recherche
               </CardTitle>
             </CardHeader>
@@ -1722,9 +1722,9 @@ export function ProspectingRoot() {
           </Card>
 
           {/* Legend card */}
-          <Card className="min-w-0 border border-[#e5e5e0] bg-white">
+          <Card className="min-w-0 border border-[#e5e5e0] bg-white shadow-xs">
             <CardHeader className="pb-3 border-b border-[#e5e5e0]/70">
-              <CardTitle className="text-xs font-bold uppercase tracking-wider text-[#7a7a76] flex items-center gap-1.5">
+              <CardTitle className="text-xs font-bold uppercase tracking-wider text-[#14171A] flex items-center gap-1.5 font-heading font-sans">
                 <Settings2 className="h-4 w-4 text-[#059669]" />Validation & Scoring
               </CardTitle>
             </CardHeader>
@@ -1820,11 +1820,11 @@ export function ProspectingRoot() {
 
         {/* Validation Inbox UI Layer */}
         <div className="w-full">
-          <Card className="border border-[#e5e5e0] bg-white w-full">
+          <Card className="border border-[#e5e5e0] bg-white w-full shadow-xs">
           <CardHeader className="pb-3 border-b border-[#e5e5e0]/70 p-5">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <CardTitle className="text-xs font-bold uppercase tracking-wider text-[#7a7a76] flex items-center gap-1.5">
+                <CardTitle className="text-xs font-bold uppercase tracking-wider text-[#14171A] flex items-center gap-1.5 font-heading font-sans">
                   <Inbox className="h-4 w-4 text-[#059669]" />
                   Boîte de Validation de Prospects
                 </CardTitle>
@@ -2539,10 +2539,10 @@ export function ProspectingRoot() {
 
         {/* Scrape History */}
         {jobHistory.length > 0 && (
-          <Card className="border border-[#e5e5e0] bg-white">
+          <Card className="border border-[#e5e5e0] bg-white shadow-xs">
             <CardHeader className="p-4 pb-2 border-b border-[#e5e5e0]/70">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-xs font-bold uppercase tracking-wider text-[#7a7a76] flex items-center gap-1.5">
+                <CardTitle className="text-xs font-bold uppercase tracking-wider text-[#14171A] flex items-center gap-1.5 font-heading font-sans">
                   <History className="h-3.5 w-3.5 text-[#059669]" />
                   Historique de prospection ({jobHistory.length})
                 </CardTitle>
