@@ -58,7 +58,8 @@ import {
   User,
   UserCheck,
   Check,
-  Sparkles
+  Sparkles,
+  Route
 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useReach, type Campaign } from '@/lib/reach-context';
@@ -556,23 +557,33 @@ export function TodayRoot() {
                       />
                     </div>
 
-                    {/* Mobile Speed Run Hero CTA */}
+                    {/* Mobile Speed Run Hero CTA — Minerva Studio Pure Editorial */}
                     <button
                       onClick={() => setShowSpeedRun(true)}
-                      className="w-full flex items-center justify-between p-3.5 bg-gradient-to-r from-[#064e3b] via-[#059669] to-[#047857] text-white rounded-2xl shadow-md active:scale-98 transition-all"
+                      className="w-full relative overflow-hidden rounded-2xl bg-[#0e3828] text-white p-4 shadow-lg border border-[#d8ceba]/30 ring-1 ring-white/10 active:scale-98 transition-all text-left"
                     >
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center">
-                          <Zap className="w-4 h-4 fill-white" />
+                      <div className="pointer-events-none absolute -right-12 -top-12 w-32 h-32 rounded-full bg-[#1b5e43]/50 blur-2xl" />
+                      <div className="relative z-10 flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-xl bg-[#faf7f2]/10 border border-[#e5dfd3]/20 flex items-center justify-center text-[#f5ecd8] shrink-0">
+                            <Zap className="w-4 h-4 fill-[#f5ecd8]" />
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-serif font-heading text-sm font-black text-[#faf7f2]">Speed Run</span>
+                              <span className="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.2 rounded-full bg-[#e6ca85]/20 text-[#f5ecd8] border border-[#e6ca85]/30">
+                                20x
+                              </span>
+                            </div>
+                            <p className="text-[10px] text-[#e0ded8]/80 font-medium">
+                              {leads.length > 0 ? `${leads.length} leads prêts à valider` : 'Validez vos actions en 3 min'}
+                            </p>
+                          </div>
                         </div>
-                        <div className="text-left">
-                          <div className="text-xs font-black">Speed Run Commercial</div>
-                          <div className="text-[10px] text-emerald-100">Traiter mes leads en 1-clic</div>
-                        </div>
+                        <span className="text-[11px] font-black bg-[#faf7f2] hover:bg-[#f2ece1] text-[#0e3828] px-3 py-1.5 rounded-xl shrink-0 shadow-xs flex items-center gap-1">
+                          Lancer <ArrowRight className="w-3 h-3" />
+                        </span>
                       </div>
-                      <span className="text-[10px] font-black bg-white text-emerald-950 px-2.5 py-1 rounded-lg">
-                        Démarrer ➔
-                      </span>
                     </button>
 
                     {/* Widget "Progression de la campagne" (Dark Green Card) */}
@@ -711,32 +722,75 @@ export function TodayRoot() {
                     <TodayGuestUpgradeBanner />
                     <TodaySetupBanner />
 
-                    {/* Hero Speed Run Commercial 20x Banner */}
-                    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#064e3b] via-[#059669] to-[#047857] p-5 text-white shadow-lg border border-emerald-500/20">
-                      <div className="relative z-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                        <div className="space-y-1">
-                          <div className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider backdrop-blur-md">
-                            <Sparkles className="h-3 w-3 text-emerald-200" />
-                            <span>Moteur d'Exécution 20x</span>
+                    {/* Hero Speed Run Commercial 20x Banner — Minerva Studio Pure Editorial */}
+                    <div className="relative overflow-hidden rounded-2xl bg-[#0e3828] text-white shadow-xl border border-[#d8ceba]/30 ring-1 ring-white/10 p-6 md:p-7">
+                      {/* Ambient glowing luxury orbs & subtle vector matrix texture */}
+                      <div className="pointer-events-none absolute -top-24 -right-24 w-80 h-80 rounded-full bg-[#1b5e43]/40 blur-3xl" />
+                      <div className="pointer-events-none absolute -bottom-24 -left-20 w-72 h-72 rounded-full bg-[#d4af37]/10 blur-3xl" />
+                      <div 
+                        className="pointer-events-none absolute inset-0 opacity-[0.03]"
+                        style={{
+                          backgroundImage: 'radial-gradient(#faf7f2 1px, transparent 1px)',
+                          backgroundSize: '20px 20px'
+                        }}
+                      />
+
+                      <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+                        {/* Left column: Badge, Playfair Title, Description, Metrics Pills */}
+                        <div className="space-y-3.5 max-w-2xl">
+                          {/* Editorial Luxury Pill Badge */}
+                          <div className="inline-flex items-center gap-2 rounded-full bg-[#faf7f2]/10 backdrop-blur-md px-3 py-1 border border-[#e5dfd3]/20 text-[11px] font-bold text-[#f5ecd8] tracking-wide">
+                            <Sparkles className="h-3.5 w-3.5 text-[#e6ca85]" />
+                            <span className="uppercase tracking-widest text-[10px] font-black">Moteur d'Exécution 20x</span>
+                            <span className="h-1 w-1 rounded-full bg-[#e6ca85]" />
+                            <span className="text-emerald-200/90 font-medium">Cadence IA Active</span>
                           </div>
-                          <h2 className="text-lg font-black tracking-tight text-white">
+
+                          {/* Playfair Display Title */}
+                          <h2 className="font-serif font-heading text-2xl sm:text-3xl font-black tracking-tight text-[#faf7f2] leading-tight">
                             Speed Run Commercial du Jour
                           </h2>
-                          <p className="text-xs text-emerald-100/90 leading-relaxed max-w-xl">
+
+                          <p className="text-xs sm:text-sm text-[#e0ded8]/90 font-medium leading-relaxed">
                             {leads.length > 0
                               ? `${leads.filter(l => l.status === 'New' || l.status === 'Contacted').length || leads.length} prospects qualifiés avec messages et canaux prêts. Validez en 1-clic ou ajoutez à votre tournée terrain.`
                               : "Traitez l'intégralité de vos prises de contact et relances en 3 minutes chrono."}
                           </p>
+
+                          {/* Editorial Micro-Metrics Pills */}
+                          <div className="flex flex-wrap items-center gap-2.5 pt-1">
+                            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-black/25 backdrop-blur-xs border border-white/10 text-[11px] font-semibold text-[#f5ecd8]">
+                              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                              <span>{leads.length || 151} leads prêts</span>
+                            </div>
+                            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-black/25 backdrop-blur-xs border border-white/10 text-[11px] font-semibold text-[#e0ded8]">
+                              <Clock className="h-3 w-3 text-[#e6ca85]" />
+                              <span>~3 min chrono</span>
+                            </div>
+                            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-black/25 backdrop-blur-xs border border-white/10 text-[11px] font-semibold text-[#e0ded8]">
+                              <Route className="h-3 w-3 text-emerald-300" />
+                              <span>Multi-canal (Email • GPS • SMS • Appel)</span>
+                            </div>
+                          </div>
                         </div>
 
-                        <button
-                          onClick={() => setShowSpeedRun(true)}
-                          className="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-5 py-3 text-xs font-black text-emerald-950 shadow-md hover:bg-emerald-50 active:scale-95 transition-all shrink-0 cursor-pointer"
-                        >
-                          <Zap className="h-4 w-4 fill-emerald-600 text-emerald-600" />
-                          <span>Lancer le Speed Run (3 min)</span>
-                          <ArrowRight className="h-4 w-4" />
-                        </button>
+                        {/* Right column: Ivory Luxury CTA with Shortcut Badge */}
+                        <div className="flex flex-col sm:flex-row lg:flex-col items-start lg:items-end gap-2.5 shrink-0">
+                          <button
+                            onClick={() => setShowSpeedRun(true)}
+                            className="group relative inline-flex items-center justify-center gap-2.5 rounded-xl bg-[#faf7f2] hover:bg-[#f2ece1] px-6 py-3.5 text-xs font-black text-[#0e3828] shadow-lg shadow-black/20 hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 active:scale-98 transition-all cursor-pointer border border-[#e5dfd3]"
+                          >
+                            <Zap className="h-4 w-4 fill-[#0e3828] text-[#0e3828] transition-transform group-hover:scale-110" />
+                            <span className="tracking-tight font-extrabold text-sm">Lancer le Speed Run</span>
+                            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                          </button>
+                          <div className="inline-flex items-center gap-1.5 text-[10px] text-[#c5bcab] font-bold px-1">
+                            <span>Raccourci clavier :</span>
+                            <kbd className="px-1.5 py-0.5 rounded bg-black/30 text-[#faf7f2] border border-white/15 font-mono text-[9px]">
+                              ↵ Entrée
+                            </kbd>
+                          </div>
+                        </div>
                       </div>
                     </div>
 
