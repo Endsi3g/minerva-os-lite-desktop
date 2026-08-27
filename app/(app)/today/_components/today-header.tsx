@@ -100,32 +100,35 @@ export function TodayHeader({ onAestheticToggle }: TodayHeaderProps) {
     <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-[#e5e5e0] pb-6">
       {/* Title block */}
       <div>
-        <h1 className="text-3xl font-heading font-medium tracking-tight text-[#14171A]">{t('today.title')}</h1>
+        <h1 className="text-2xl sm:text-3xl font-heading font-sans font-bold tracking-tight text-[#14171A]">{t('today.title')}</h1>
         <p className="text-sm text-[#7a7a76] mt-1">
           {t('today.subtitle')}
         </p>
       </div>
 
-      {/* Action buttons */}
-      <div className="flex flex-wrap items-center gap-2">
+      {/* Action buttons (Header Controls - Pixel Perfect) */}
+      <div className="flex items-center gap-2 flex-wrap">
         {onAestheticToggle && (
-          <Button
-            variant="outline"
-            size="sm"
+          <button
+            type="button"
             onClick={onAestheticToggle}
-            className="gap-2 border-[#10b981]/30 hover:bg-[#10b981]/5 hover:text-[#047857] text-[#047857] shrink-0"
+            className="inline-flex items-center gap-2 h-9 px-3.5 rounded-xl text-xs sm:text-sm font-medium bg-[#E8EFE6] border border-[#72D2B2] text-[#064E3B] hover:bg-[#DCE7DA] transition-colors cursor-pointer shrink-0"
           >
-            <Sparkles className="h-4 w-4 text-[#10b981]" />
+            <Sparkles className="w-4 h-4 text-[#059669]" />
             <span>Mode Esthétique</span>
-          </Button>
+          </button>
         )}
+
         {/* New Task Dialog */}
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
-            <Button variant="outline" size="sm" className="gap-2">
-              <CheckSquare className="h-4 w-4 text-[#7a7a76]" />
+            <button
+              type="button"
+              className="inline-flex items-center gap-2 h-9 px-3.5 rounded-xl text-xs sm:text-sm font-medium bg-[#ECECE2] border border-[#DCD9CE] text-[#1F2937] hover:bg-[#E2E2D5] transition-colors cursor-pointer shrink-0"
+            >
+              <CheckSquare className="w-4 h-4 text-[#525252]" />
               <span>{t('today.new_task')}</span>
-            </Button>
+            </button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-[425px]">
             <form onSubmit={handleTaskSubmit}>
@@ -174,10 +177,13 @@ export function TodayHeader({ onAestheticToggle }: TodayHeaderProps) {
         {/* Add Lead Sheet */}
         <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
           <SheetTrigger asChild>
-            <Button size="sm" className="gap-2 bg-[#059669] hover:bg-[#059669]/90">
-              <Plus className="h-4 w-4" />
+            <button
+              type="button"
+              className="inline-flex items-center gap-1.5 h-9 px-4 rounded-xl text-xs sm:text-sm font-medium bg-[#058A5E] text-white hover:bg-[#047857] shadow-sm active:scale-[0.98] transition-all cursor-pointer shrink-0"
+            >
+              <Plus className="w-4 h-4 text-white stroke-[2.5]" />
               <span>{t('today.add_lead')}</span>
-            </Button>
+            </button>
           </SheetTrigger>
           <SheetContent className="w-[400px] sm:w-[540px] overflow-y-auto">
             <form onSubmit={handleLeadSubmit} className="space-y-6">
