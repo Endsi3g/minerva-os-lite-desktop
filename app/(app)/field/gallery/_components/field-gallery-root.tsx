@@ -6,6 +6,7 @@ import { useReach } from '@/lib/reach-context';
 import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
 import { ArrowLeft, Camera, Loader2, X, MapPin, Flame } from 'lucide-react';
+import { RencontrerSubNav } from '@/app/(app)/_components/hub-nav/rencontrer-sub-nav';
 
 type VisitOutcome = 'visited' | 'absent' | 'meeting_booked' | 'not_interested';
 
@@ -69,24 +70,24 @@ export function FieldGalleryRoot() {
   }, [rows]);
 
   return (
-    <div className="h-full overflow-y-auto bg-background">
-      <div className="w-full px-3 py-4 sm:px-4 sm:py-6 md:px-6 md:py-8 space-y-6">
+    <div className="flex flex-col h-full overflow-hidden bg-[#fafaf8]">
+      <RencontrerSubNav />
+      <div className="flex-1 overflow-y-auto relative min-h-0">
+        <div className="absolute inset-0 opacity-[0.25] pointer-events-none bg-grid-pattern-20 z-0" />
+        <div className="relative z-10 w-full px-3 py-4 sm:px-4 sm:py-6 md:px-6 md:py-8 space-y-6">
 
-        {/* Header */}
-        <div className="flex items-center gap-3">
-          <button onClick={() => router.push('/map')} className="p-2 rounded-lg border border-border bg-card hover:bg-muted transition-colors">
-            <ArrowLeft className="h-4 w-4 text-foreground" />
-          </button>
-          <div className="flex items-center gap-2.5">
-            <div className="h-9 w-9 rounded-xl bg-[#059669]/10 flex items-center justify-center">
-              <Camera className="h-4.5 w-4.5 text-[#059669]" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold text-foreground tracking-tight">Preuves de visite</h1>
-              <p className="text-xs text-muted-foreground">Photos des passages terrain de l&apos;équipe.</p>
+          {/* Header */}
+          <div className="flex items-center gap-3 border-b border-[#e5e5e0] pb-4">
+            <div className="flex items-center gap-2.5">
+              <div className="h-10 w-10 rounded-xl bg-[#059669]/10 flex items-center justify-center">
+                <Camera className="h-5 w-5 text-[#059669]" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-heading font-serif font-black tracking-tight text-[#14171A]">Preuves de visite</h1>
+                <p className="text-xs text-[#4B5158] font-medium">Photos et comptes-rendus des passages terrain de votre équipe ({rows.length} photos).</p>
+              </div>
             </div>
           </div>
-        </div>
 
         {loading ? (
           <div className="flex items-center justify-center py-20"><Loader2 className="h-6 w-6 animate-spin text-[#059669]" /></div>
@@ -146,6 +147,7 @@ export function FieldGalleryRoot() {
           <img src={lightbox} alt="preuve" onClick={e => e.stopPropagation()} className="max-w-full max-h-full rounded-xl object-contain shadow-2xl" />
         </div>
       )}
+      </div>
     </div>
   );
 }

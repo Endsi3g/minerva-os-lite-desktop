@@ -6,6 +6,7 @@ import { useReach } from '@/lib/reach-context';
 import { Activity, Mail, Phone, FileText, CheckSquare, Plus, User, Clock, Filter } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Lead, Note } from '@/lib/mock-data';
+import { AnalyserSubNav } from '@/app/(app)/_components/hub-nav/analyser-sub-nav';
 
 type ActivityEntry = {
   id: string;
@@ -125,18 +126,21 @@ export function ActivitiesRoot() {
   }, [filtered]);
 
   return (
-    <div className="h-full overflow-y-auto">
-      <div className="w-full p-3 sm:p-4 md:p-6 space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between gap-4 flex-wrap">
-          <div>
-            <div className="flex items-center gap-2">
-              <Activity className="h-4 w-4 text-[#059669]" />
-              <h1 className="text-base font-bold text-[#26251e]">Activités</h1>
+    <div className="flex flex-col h-full overflow-hidden bg-[#fafaf8]">
+      <AnalyserSubNav />
+      <div className="flex-1 overflow-y-auto relative min-h-0">
+        <div className="absolute inset-0 opacity-[0.25] pointer-events-none bg-grid-pattern-20 z-0" />
+        <div className="relative z-10 w-full p-3 sm:p-4 md:p-6 space-y-6">
+          {/* Header */}
+          <div className="flex items-center justify-between gap-4 flex-wrap border-b border-[#e5e5e0] pb-4">
+            <div>
+              <div className="flex items-center gap-2">
+                <Activity className="h-5 w-5 text-[#059669]" />
+                <h1 className="text-2xl font-heading font-serif font-black tracking-tight text-[#14171A]">Journal des Activités</h1>
+              </div>
+              <p className="text-xs text-[#7a7a76] mt-0.5">{activities.length} entrée{activities.length !== 1 ? 's' : ''} enregistrée{activities.length !== 1 ? 's' : ''}</p>
             </div>
-            <p className="text-xs text-[#7a7a76] mt-0.5">{activities.length} entrée{activities.length !== 1 ? 's' : ''} au total</p>
           </div>
-        </div>
 
         {/* Filters */}
         <div className="flex flex-wrap gap-2 items-center">
@@ -196,6 +200,7 @@ export function ActivitiesRoot() {
             ))}
           </div>
         )}
+      </div>
       </div>
     </div>
   );

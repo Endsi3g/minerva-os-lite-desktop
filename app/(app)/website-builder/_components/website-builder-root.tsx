@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { WebsitePortfolioSection } from './website-portfolio-section';
+import { TrouverSubNav } from '@/app/(app)/_components/hub-nav/trouver-sub-nav';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -511,22 +512,24 @@ export default function WebsiteBuilderRoot() {
   const collapseAll = () => setOpenSections(new Set());
 
   return (
-    <div className="h-full overflow-y-auto bg-[#fafaf8] relative">
-      <div className="absolute inset-0 opacity-[0.25] pointer-events-none bg-grid-pattern-20 z-0" />
-      <div className="relative z-10 w-full max-w-7xl mx-auto p-4 md:p-6 space-y-6 text-left">
+    <div className="flex flex-col h-full overflow-hidden bg-[#fafaf8]">
+      <TrouverSubNav />
+      <div className="flex-1 overflow-y-auto relative min-h-0">
+        <div className="absolute inset-0 opacity-[0.25] pointer-events-none bg-grid-pattern-20 z-0" />
+        <div className="relative z-10 w-full max-w-7xl mx-auto p-4 md:p-6 space-y-6 text-left">
 
-        {/* Header */}
-        <div className="flex items-start justify-between gap-4 pb-4 border-b border-[#e5e5e0]">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-[#059669] flex items-center justify-center shrink-0">
-              <Globe className="w-4 h-4 text-white" />
-            </div>
-            <div>
-              <h1 className="text-xl font-black text-[#26251e] tracking-tight">Générateur de site web IA</h1>
-              <p className="text-xs text-[#7a7a76] mt-0.5">Structure Framer-ready copywritée en quelques secondes</p>
+          {/* Header */}
+          <div className="flex items-start justify-between gap-4 pb-4 border-b border-[#e5e5e0]">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-brand-accent-emerald flex items-center justify-center shrink-0">
+                <Globe className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-heading font-serif font-black tracking-tight text-[#14171A]">Générateur de site web IA</h1>
+                <p className="text-xs text-[#4B5158] mt-0.5 font-medium">Structure Framer-ready et argumentaires copywrités pour closer vos prospects.</p>
+              </div>
             </div>
           </div>
-        </div>
 
         {/* Mode tabs */}
         <div className="flex items-center gap-1 bg-[#f4f4f3] rounded-xl p-1 self-start w-fit">
@@ -852,6 +855,7 @@ export default function WebsiteBuilderRoot() {
             )}
           </>
         )}
+      </div>
       </div>
     </div>
   );

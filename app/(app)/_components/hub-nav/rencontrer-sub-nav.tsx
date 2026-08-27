@@ -9,8 +9,7 @@ import { cn } from '@/lib/utils';
 const TABS = [
   { label: 'Tournées Terrain (GPS)', href: '/field', icon: Navigation, exact: true },
   { label: 'Agenda & RDV', href: '/agenda', icon: CalendarDays },
-  { label: 'Preuves & Galerie', href: '/field/proofs', icon: Camera },
-  { label: 'Scripts de Visite', href: '/field/scripts', icon: FileText },
+  { label: 'Galerie & Preuves', href: '/field/gallery', icon: Camera },
 ];
 
 export function RencontrerSubNav() {

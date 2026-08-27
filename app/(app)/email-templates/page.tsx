@@ -1,13 +1,7 @@
 'use client';
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { EmailTemplatesRoot } from './_components/email-templates-root';
 
-// Stub de redirection pure — le vrai écran vit à /settings/email-templates.
-export default function EmailTemplatesRedirect() {
-  const router = useRouter();
-  useEffect(() => {
-    router.replace('/settings/email-templates');
-  }, [router]);
-  return null;
+export default function EmailTemplatesPage() {
+  return <EmailTemplatesRoot showSubNav={true} />;
 }

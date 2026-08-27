@@ -30,6 +30,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import type { Lead, Task } from "@/lib/mock-data";
+import { AnalyserSubNav } from "@/app/(app)/_components/hub-nav/analyser-sub-nav";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -319,12 +320,14 @@ export function ClientReportsRoot() {
   const totalLivrables = livrables.reduce((sum, l) => sum + l.prix, 0);
 
   return (
-    <div className="h-full flex overflow-hidden bg-[#fafaf8] text-[#26251e] relative">
-      {/* Grid background */}
-      <div className="absolute inset-0 opacity-[0.25] pointer-events-none bg-grid-pattern-20 z-0" />
+    <div className="flex flex-col h-full overflow-hidden bg-[#fafaf8]">
+      <AnalyserSubNav />
+      <div className="flex-1 flex overflow-hidden text-[#26251e] relative min-h-0">
+        {/* Grid background */}
+        <div className="absolute inset-0 opacity-[0.25] pointer-events-none bg-grid-pattern-20 z-0" />
 
-      {/* ── Left panel: Client list ── */}
-      <aside className="relative z-10 hidden md:flex flex-col w-72 shrink-0 border-r border-[#e5e5e0] bg-[#f4f4f3] overflow-hidden print:hidden">
+        {/* ── Left panel: Client list ── */}
+        <aside className="relative z-10 hidden md:flex flex-col w-72 shrink-0 border-r border-[#e5e5e0] bg-[#f4f4f3] overflow-hidden print:hidden">
         <ClientListPanel
           clients={clients}
           filteredClients={filteredClients}
@@ -857,6 +860,7 @@ export function ClientReportsRoot() {
           main { overflow: visible !important; }
         }
       `}</style>
+      </div>
     </div>
   );
 }

@@ -12,7 +12,6 @@ const TABS = [
   { label: 'Campagnes', href: '/campaigns', icon: Megaphone },
   { label: 'Séquences', href: '/sequences', icon: Mail },
   { label: 'Templates', href: '/email-templates', icon: FileText },
-  { label: 'Playbooks', href: '/playbooks', icon: BookOpen },
 ];
 
 export function ContacterSubNav() {

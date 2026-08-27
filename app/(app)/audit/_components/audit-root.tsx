@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import type { SeoAuditResult, SeoAuditError } from '@/lib/audit-types';
+import { AnalyserSubNav } from '@/app/(app)/_components/hub-nav/analyser-sub-nav';
 
 type AuditResponse = SeoAuditResult | SeoAuditError;
 
@@ -378,16 +379,18 @@ export function AuditRoot() {
   const leadsWithWebsite = leads.filter((l) => l.website);
 
   return (
-    <div className="flex h-full flex-col gap-5 p-6 overflow-y-auto bg-white relative">
-      <div className="absolute inset-0 opacity-[0.25] pointer-events-none bg-grid-pattern-20" />
-      <div className="relative z-10 flex flex-col gap-6 max-w-4xl mx-auto w-full">
-        {/* Header */}
-        <div>
-          <h1 className="text-2xl font-black text-[#26251e]">Audit SEO</h1>
-          <p className="text-sm text-[#7a7a76] mt-1">
-            Analysez le référencement de n'importe quel site web et obtenez un score détaillé.
-          </p>
-        </div>
+    <div className="flex flex-col h-full overflow-hidden bg-[#fafaf8]">
+      <AnalyserSubNav />
+      <div className="flex-1 overflow-y-auto relative min-h-0">
+        <div className="absolute inset-0 opacity-[0.25] pointer-events-none bg-grid-pattern-20 z-0" />
+        <div className="relative z-10 flex flex-col gap-6 max-w-4xl mx-auto w-full p-4 md:p-8">
+          {/* Header */}
+          <div className="border-b border-[#e5e5e0] pb-4">
+            <h1 className="text-2xl font-heading font-serif font-black tracking-tight text-[#14171A]">Audit SEO & Technique</h1>
+            <p className="text-xs text-[#4B5158] mt-1 font-medium">
+              Analysez le référencement, la vitesse et la réputation de n'importe quel prospect pour générer un argumentaire commercial.
+            </p>
+          </div>
 
         {/* Single URL mode */}
         <Card className="border border-[#e5e5e0]">
@@ -643,6 +646,7 @@ export function AuditRoot() {
             )}
           </CardContent>
         </Card>
+      </div>
       </div>
     </div>
   );

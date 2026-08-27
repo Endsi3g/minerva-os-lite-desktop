@@ -10,6 +10,7 @@ import {
   Calendar, MailCheck, Phone, Link2, MessageSquare, Layers, ListTodo,
 } from 'lucide-react';
 import { ComposerQueueCadenceRoot } from './composer-queue-cadence-root';
+import { ContacterSubNav } from '@/app/(app)/_components/hub-nav/contacter-sub-nav';
 
 type SequencesView = 'by_lead' | 'composer';
 
@@ -94,10 +95,11 @@ export function SequencesRoot() {
   const totalCount = (seq: Sequence) => seq.email_sequence_steps.length;
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
-      <div className="flex-1 overflow-y-auto bg-[#fafaf8] relative">
-      <div className="absolute inset-0 opacity-[0.25] pointer-events-none bg-grid-pattern-20 z-0" />
-      <div className="relative z-10 w-full p-3 sm:p-4 md:p-8 space-y-6">
+    <div className="flex flex-col h-full overflow-hidden bg-[#fafaf8]">
+      <ContacterSubNav />
+      <div className="flex-1 overflow-y-auto relative min-h-0">
+        <div className="absolute inset-0 opacity-[0.25] pointer-events-none bg-grid-pattern-20 z-0" />
+        <div className="relative z-10 w-full p-3 sm:p-4 md:p-8 space-y-6">
         {/* Header */}
         <div className="flex items-start justify-between flex-wrap gap-3">
           <div>

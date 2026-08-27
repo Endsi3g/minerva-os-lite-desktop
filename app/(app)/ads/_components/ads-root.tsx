@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import Image from 'next/image';
 import { toast } from 'sonner';
+import { TrouverSubNav } from '@/app/(app)/_components/hub-nav/trouver-sub-nav';
 
 type AdsTab = 'overview' | 'facebook' | 'google' | 'create' | 'history';
 
@@ -1273,14 +1274,16 @@ export default function AdsRoot() {
   const workspaceId = activeWorkspace?.id || '';
 
   return (
-    <div className="h-full overflow-y-auto bg-[#fafaf8] relative">
-      <div className="absolute inset-0 opacity-[0.25] pointer-events-none bg-grid-pattern-20 z-0" />
-      <div className="relative z-10 p-6 md:p-8">
-        {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-2xl font-heading font-medium tracking-tight text-[#14171A]">Publicité & Attribution</h1>
-          <p className="text-sm text-[#8A9098] mt-0.5">Connectez vos sources d'acquisition et analysez la performance de vos campagnes</p>
-        </div>
+    <div className="flex flex-col h-full overflow-hidden bg-[#fafaf8]">
+      <TrouverSubNav />
+      <div className="flex-1 overflow-y-auto relative min-h-0">
+        <div className="absolute inset-0 opacity-[0.25] pointer-events-none bg-grid-pattern-20 z-0" />
+        <div className="relative z-10 p-4 md:p-8">
+          {/* Header */}
+          <div className="mb-6 border-b border-[#e5e5e0] pb-4">
+            <h1 className="text-2xl font-heading font-serif font-black tracking-tight text-[#14171A]">Publicité & Attribution</h1>
+            <p className="text-xs text-[#4B5158] mt-1 font-medium">Connectez vos sources d'acquisition (Facebook Ads, Google Ads) et analysez le ROI de votre pipeline.</p>
+          </div>
 
         {/* Tab bar */}
         <div className="flex items-center gap-1 bg-[#f4f4f3] rounded-2xl p-1 border border-[#e5e5e0] mb-6 overflow-x-auto">
@@ -1308,6 +1311,7 @@ export default function AdsRoot() {
           {activeTab === 'create' && <CreateTab />}
           {activeTab === 'history' && <HistoryTab workspaceId={workspaceId} />}
         </div>
+      </div>
       </div>
     </div>
   );
