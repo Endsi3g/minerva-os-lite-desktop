@@ -46,6 +46,19 @@
     --color-timeline-edit: var(--timeline-edit);
     --color-timeline-done: var(--timeline-done);
 
+    --color-brand-canvas: #F8FAF9;
+    --color-brand-card: #FFFFFF;
+    --color-brand-border: #E5E7EB;
+    --color-brand-text-primary: #111827;
+    --color-brand-text-secondary: #6B7280;
+    --color-brand-text-muted: #9CA3AF;
+    --color-brand-accent-forest: #0F2E22;
+    --color-brand-accent-emerald: #10B981;
+    --color-brand-accent-emeraldHover: #059669;
+    --color-brand-accent-emeraldLight: #ECFDF5;
+    --color-brand-accent-emeraldBorder: #A7F3D0;
+    --color-brand-accent-textDark: #065F46;
+
     --radius-sm: calc(var(--radius) * 0.6);
     --radius-md: calc(var(--radius) * 0.8);
     --radius-lg: var(--radius);

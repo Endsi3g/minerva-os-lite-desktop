@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
-import { LeadsSubNav } from '../../_components/leads-sub-nav';
+import { CloturerSubNav } from '@/app/(app)/_components/hub-nav/cloturer-sub-nav';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -415,28 +415,28 @@ export function TimelineRoot({ leadId: filterLeadId, hideSubNav }: TimelineRootP
 
   return (
     <div className="flex flex-col h-full w-full bg-[#fafaf8]">
-      {!hideSubNav && <LeadsSubNav />}
+      {!hideSubNav && <CloturerSubNav />}
 
-      <div className="flex-1 overflow-auto">
-        <div className="max-w-2xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+      <div className="flex-1 overflow-auto relative">
+        <div className="absolute inset-0 opacity-[0.25] pointer-events-none bg-grid-pattern-20 z-0" />
+        <div className="relative z-10 max-w-3xl mx-auto px-4 sm:px-6 py-6 space-y-6">
           {/* Header */}
-          <div className="flex items-center justify-between">
+          <div className="flex items-start justify-between gap-4 border-b border-[#e5e5e0] pb-5">
             <div>
-              <h1 className="text-lg font-bold text-[#26251e] flex items-center gap-2">
-                <Clock className="h-5 w-5 text-[#059669]" />
-                Timeline
-                {filterLeadId && <span className="text-sm font-normal text-[#7a7a76]">— ce lead</span>}
+              <h1 className="text-2xl font-heading font-serif font-black tracking-tight text-[#14171A]">
+                Historique & Timeline d'Activité
+                {filterLeadId && <span className="text-sm font-normal text-[#4B5158] ml-2">— pour ce prospect</span>}
               </h1>
-              <p className="text-xs text-[#7a7a76] mt-0.5">
-                Historique chronologique — emails, terrain, agent, séquences, RDV
+              <p className="text-xs text-[#4B5158] mt-1 font-medium">
+                Journal chronologique unifié des emails, tournées terrain, actions IA et rendez-vous.
               </p>
             </div>
             <button
               onClick={load}
-              className="flex items-center gap-1.5 px-3 h-7 rounded-lg border border-[#e5e5e0] bg-white text-[10px] font-bold text-[#555552] hover:bg-[#f4f4f3] transition-colors"
+              className="flex items-center gap-1.5 px-3.5 h-8 rounded-xl border border-[#e5e5e0] bg-white text-xs font-bold text-[#14171A] hover:bg-[#f4f4f3] transition-colors shadow-2xs shrink-0 cursor-pointer"
             >
-              <RefreshCw className={cn('h-3 w-3', loading && 'animate-spin')} />
-              Actualiser
+              <RefreshCw className={cn('h-3.5 w-3.5', loading && 'animate-spin')} />
+              <span>Actualiser</span>
             </button>
           </div>
 

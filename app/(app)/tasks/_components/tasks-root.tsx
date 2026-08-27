@@ -53,6 +53,7 @@ import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { createClient } from '@/lib/supabase/client';
 import { getApiUrl } from '@/lib/api-helper';
+import { CloturerSubNav } from '@/app/(app)/_components/hub-nav/cloturer-sub-nav';
 
 type FilterType = 'all' | 'today' | 'pending' | 'done';
 type ViewType = 'list' | 'calendar';
@@ -453,41 +454,39 @@ export default function TasksRoot() {
     : null;
 
   return (
-    <div className="h-full overflow-y-auto bg-background">
-      <div className="max-w-4xl mx-auto px-3 py-5 md:px-6 md:py-8 space-y-5">
+    <div className="flex h-full flex-col overflow-hidden bg-[#fafaf8]">
+      <CloturerSubNav />
+      <div className="flex-1 overflow-y-auto min-h-0 relative">
+        <div className="absolute inset-0 opacity-[0.25] pointer-events-none bg-grid-pattern-20 z-0" />
+        <div className="relative z-10 max-w-4xl mx-auto px-4 py-6 md:px-8 md:py-8 space-y-6">
 
-        {/* Header */}
-        <div className="flex items-start justify-between gap-3 flex-wrap">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-[#059669]/10 flex items-center justify-center shrink-0">
-              <ClipboardList className="h-5 w-5 text-[#059669]" />
-            </div>
+          {/* Header */}
+          <div className="flex items-start justify-between gap-4 flex-wrap border-b border-[#e5e5e0] pb-5">
             <div>
-              <h1 className="text-xl font-bold text-foreground">{t('tasks.title')}</h1>
-              <p className="text-sm text-muted-foreground hidden sm:block">{t('tasks.subtitle')}</p>
+              <h1 className="text-2xl font-heading font-serif font-black tracking-tight text-[#14171A]">
+                {t('tasks.title') || 'Gestion des Tâches & Actions'}
+              </h1>
+              <p className="text-xs text-[#4B5158] mt-1 font-medium">
+                {t('tasks.subtitle') || 'Suivez et assignez vos tâches de prospection, rappels et closings.'}
+              </p>
+            </div>
+            <div className="flex items-center gap-1.5 bg-white border border-[#e5e5e0] rounded-xl p-1 shadow-2xs">
+              <button
+                onClick={() => setView('list')}
+                className={cn('h-8 px-3 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5', view === 'list' ? 'bg-[#059669] text-white shadow-xs' : 'text-[#7a7a76] hover:text-[#26251e]')}
+              >
+                <List className="h-3.5 w-3.5" />
+                <span>{t('tasks.view_list') || 'Liste'}</span>
+              </button>
+              <button
+                onClick={() => setView('calendar')}
+                className={cn('h-8 px-3 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5', view === 'calendar' ? 'bg-[#059669] text-white shadow-xs' : 'text-[#7a7a76] hover:text-[#26251e]')}
+              >
+                <CalendarDays className="h-3.5 w-3.5" />
+                <span>{t('tasks.view_calendar') || 'Calendrier'}</span>
+              </button>
             </div>
           </div>
-          <div className="flex items-center gap-1 bg-muted/60 rounded-lg p-1">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setView('list')}
-              className={cn('h-7 px-2 gap-1.5 text-xs', view === 'list' && 'bg-background shadow-sm text-foreground')}
-            >
-              <List className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">{t('tasks.view_list')}</span>
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setView('calendar')}
-              className={cn('h-7 px-2 gap-1.5 text-xs', view === 'calendar' && 'bg-background shadow-sm text-foreground')}
-            >
-              <CalendarDays className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">{t('tasks.view_calendar')}</span>
-            </Button>
-          </div>
-        </div>
 
         {/* Tabs: Mine / Team */}
         <div className="flex items-center gap-0 bg-muted/40 rounded-xl p-1">
@@ -826,6 +825,7 @@ export default function TasksRoot() {
             </div>
           </>
         )}
+      </div>
       </div>
     </div>
   );

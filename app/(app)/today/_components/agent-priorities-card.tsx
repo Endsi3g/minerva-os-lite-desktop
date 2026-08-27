@@ -155,16 +155,16 @@ export function AgentPrioritiesCard() {
         <button
           onClick={handleRelance}
           disabled={running}
-          className="w-full flex items-center justify-center gap-2 rounded-lg border border-[#059669] bg-[#059669] px-4 py-2 text-xs font-bold text-white hover:bg-[#047857] disabled:opacity-60 transition-colors"
+          className="w-full bg-brand-accent-emerald hover:bg-brand-accent-emeraldHover text-white font-medium py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 transition-all shadow-sm disabled:opacity-60 cursor-pointer text-xs"
         >
           {running ? (
             <>
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              <Loader2 className="h-4 w-4 animate-spin" />
               Génération en cours…
             </>
           ) : (
             <>
-              <Sparkles className="h-3.5 w-3.5" />
+              <Sparkles className="h-4 w-4" />
               Générer les relances ({Math.min(coldLeads.length, 3)})
             </>
           )}

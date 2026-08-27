@@ -21,6 +21,19 @@ interface ChangelogVersion {
 
 const versions: ChangelogVersion[] = [
   {
+    version: 'v9.2.0',
+    date: '27 août 2026 · 11h15',
+    title: 'Refonte UI/UX Main Content, Système d\'Accent Vert & Harmonisation Dashboard',
+    highlights: [
+      { text: "Nouveau système de tokens de marque vert émeraude (#10B981) et vert forêt (#0F2E22) pour les états actifs, barres de score, bagues de nœuds et boutons interactifs." },
+      { text: "Refonte du HeroSpeedRunBanner : fond vert forêt profond (#0F2E22), point pulsé vert émeraude, micro-pills multi-canaux et bouton CTA blanc solide haute conversion." },
+      { text: "Refonte de la grille KpiGrid : 4 cartes métriques avec micro-histogrammes sparklines vert émeraude et tags d'évolution positive doux." },
+      { text: "Intégration du PipelineStepper 7 étapes horizontal avec nœuds actifs cerclés émeraude et progression visuelle connectée." },
+      { text: "Amélioration de ProspectScoringList avec jauges animées et FollowUpListCard avec boutons d'actions unitaires 'Envoyer aujourd'hui'." },
+      { text: "Correction de la navigation et élimination de l'auto-collapse de la barre latérale sur la carte et toutes les pages." }
+    ]
+  },
+  {
     version: 'v9.1.0',
     date: '27 août 2026 · 10h30',
     title: 'Architecture des 5 Hubs du Cycle de Vente & Moteur Speed Run 20x',

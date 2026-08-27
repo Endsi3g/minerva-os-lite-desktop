@@ -105,49 +105,10 @@ import { Pin, KanbanSquare, Navigation } from 'lucide-react';
 import { CalendarDays, UsersRound } from 'lucide-react';
 import { Layers } from 'lucide-react';
 
-const CURRENT_VERSION = '9.1.0';
+const CURRENT_VERSION = '9.2.0';
 
 function UpdateBanner() {
-  const [visible, setVisible] = useState(false);
-  const router = useRouter();
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const dismissedVersion = localStorage.getItem('minerva_dismissed_version');
-      if (dismissedVersion !== CURRENT_VERSION) {
-        setVisible(true);
-      }
-    }
-  }, []);
-
-  const handleDismiss = () => {
-    localStorage.setItem('minerva_dismissed_version', CURRENT_VERSION);
-    setVisible(false);
-  };
-
-  if (!visible) return null;
-
-  return (
-    <div className="bg-[#10b981] text-white text-xs font-semibold py-2 px-4 flex items-center justify-between gap-4 animate-in slide-in-from-top duration-300 relative z-50 shrink-0 select-none">
-      <div className="flex items-center gap-2">
-        <Sparkles className="h-4 w-4 animate-pulse shrink-0" />
-        <span>
-          Une nouvelle mise à jour (v{CURRENT_VERSION}) est disponible ! Veuillez recharger la page et consulter le{' '}
-          <Link href="/changelog" onClick={handleDismiss} className="underline font-bold hover:text-emerald-100">
-            Changelog
-          </Link>{' '}
-          pour en savoir plus.
-        </span>
-      </div>
-      <button 
-        onClick={handleDismiss}
-        className="text-white/80 hover:text-white p-1 hover:bg-emerald-600 rounded-full transition-colors cursor-pointer border-0 bg-transparent shrink-0"
-        title="Fermer"
-      >
-        <X className="h-3.5 w-3.5" />
-      </button>
-    </div>
-  );
+  return null;
 }
 
 // Relative time helper for notification timestamps (declared outside render to remain pure)
@@ -535,20 +496,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
         setIsCollapsed(true);
       }, 0);
     }
-    // Auto-collapse on /map for full-screen experience
-    if (typeof window !== 'undefined' && window.location.pathname === '/map') {
-      setIsCollapsed(true);
-      document.body.classList.add('sidebar-collapsed');
-    }
   }, []);
-
-  useEffect(() => {
-    if (pathname === '/map') {
-      setIsCollapsed(true);
-      localStorage.setItem('minerva_sidebar_collapsed', 'true');
-      document.body.classList.add('sidebar-collapsed');
-    }
-  }, [pathname]);
 
   const toggleCollapse = () => {
     const nextState = !isCollapsed;

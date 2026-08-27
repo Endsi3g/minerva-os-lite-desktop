@@ -5,6 +5,17 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [9.2.0] — Refonte UI/UX Main Content, Système d'Accent Vert & Harmonisation Dashboard — 27 août 2026, 11h15
+
+### Ajouté
+- **Système de tokens de marque vert émeraude & vert forêt** : Définition des variables Tailwind `@theme inline` (`brand.canvas` #F8FAF9, `brand.card` #FFFFFF, `brand.accent.forest` #0F2E22, `brand.accent.emerald` #10B981, `brand.accent.emeraldLight` #ECFDF5, `brand.accent.emeraldBorder` #A7F3D0, `brand.accent.textDark` #065F46).
+- **HeroSpeedRunBanner** : Nouveau conteneur vert forêt #0F2E22, badge à point clignotant émeraude, micro-pills multi-canaux et bouton CTA blanc solide haute conversion.
+- **Grille KpiGrid 4 colonnes** : Cartes métriques épurées avec micro-histogrammes sparklines vert émeraude et badges de progression positive.
+- **PipelineStepper horizontal 7 étapes** : Chronologie interactive avec ligne continue et nœuds d'étapes cerclés en vert émeraude.
+- **ProspectScoringList dynamique** : Jauges de scores animées en vert émeraude avec badges de score arrondis.
+- **UrgentActionsTable** : Badges de canal épurés et boutons d'actions unitaires *Envoyer aujourd'hui* avec micro-interactions.
+- **Stabilité de la Navigation** : Élimination du repli forcé de la barre latérale sur `/map` et fiabilisation de la vue `/contacts`.
+
 ## [9.1.0] — Architecture des 5 Hubs du Cycle de Vente & Moteur Speed Run 20x — 27 août 2026, 10h30
 
 ### Ajouté

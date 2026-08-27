@@ -103,53 +103,36 @@ export function FollowUpRow({ lead }: FollowUpRowProps) {
 
         {/* Channel */}
         <TableCell className="py-3.5">
-          <Badge
-            variant="secondary"
-            className={cn(
-              'text-[9px] font-semibold tracking-wider uppercase px-2 py-0.5',
-              channel.variant === 'indigo' && 'bg-indigo-50 text-indigo-700 border border-indigo-200',
-              channel.variant === 'purple' && 'bg-purple-50 text-purple-700 border border-purple-200',
-              channel.variant === 'sky' && 'bg-sky-50 text-sky-700 border border-sky-200',
-              channel.variant === 'neutral' && 'bg-neutral-50 text-neutral-700 border border-neutral-200',
-            )}
-          >
+          <span className="px-2 py-0.5 rounded text-[11px] font-semibold uppercase bg-gray-100 text-gray-700 inline-block">
             {channel.label}
-          </Badge>
+          </span>
         </TableCell>
 
         {/* Last contact */}
-        <TableCell className="py-3.5 text-xs text-[#7a7a76] max-w-[150px] truncate">
+        <TableCell className="py-3.5 text-xs text-gray-500 max-w-[150px] truncate">
           {lead.notes && lead.notes.length > 0
             ? lead.notes[lead.notes.length - 1].content
-            : 'Aucun contact historique'}
+            : 'Aucun contact'}
         </TableCell>
 
         {/* Next action */}
         <TableCell className="py-3.5 text-xs">
           <div className="flex flex-col gap-0.5 max-w-[200px]">
-            <span className="font-medium text-[#26251e] truncate">{lead.nextAction}</span>
-            <span className="text-[10px] text-destructive font-medium">Aujourd&apos;hui</span>
+            <span className="font-medium text-gray-900 truncate">{lead.nextAction}</span>
+            <span className="text-[10px] text-red-600 font-medium">Aujourd'hui</span>
           </div>
         </TableCell>
 
         {/* Actions */}
         <TableCell className="py-3.5 text-right">
-          <div className="flex items-center justify-end gap-1">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7 text-[#059669] hover:text-[#059669] hover:bg-[#059669]/10"
-                  onClick={handleQuickDraft}
-                >
-                  <Mail className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p className="text-xs">Générer un brouillon de relance</p>
-              </TooltipContent>
-            </Tooltip>
+          <div className="flex items-center justify-end gap-1.5">
+            <button
+              onClick={handleQuickDraft}
+              className="px-3 py-1 rounded-lg text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition-colors inline-flex items-center gap-1 cursor-pointer"
+            >
+              <Mail className="h-3.5 w-3.5" />
+              <span>Envoyer aujourd'hui</span>
+            </button>
 
             <Tooltip>
               <TooltipTrigger asChild>
@@ -163,7 +146,7 @@ export function FollowUpRow({ lead }: FollowUpRowProps) {
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
-                <p className="text-xs">Fait (Relance effectuée)</p>
+                <p className="text-xs">Marquer comme fait</p>
               </TooltipContent>
             </Tooltip>
 
@@ -179,7 +162,7 @@ export function FollowUpRow({ lead }: FollowUpRowProps) {
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
-                <p className="text-xs">Reporter de 3 jours (Snooze)</p>
+                <p className="text-xs">Reporter de 3 jours</p>
               </TooltipContent>
             </Tooltip>
           </div>

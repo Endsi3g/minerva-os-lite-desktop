@@ -14,6 +14,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { LeadsAssignCell } from '../../leads/_components/leads-assign-cell';
+import { CloturerSubNav } from '@/app/(app)/_components/hub-nav/cloturer-sub-nav';
 
 interface WorkspaceMember {
   id: string;
@@ -126,12 +127,12 @@ export function ContactsRoot() {
 
   const contacts: Contact[] = useMemo(() =>
     leads
-      .filter(l => l.contactName)
+      .filter(l => l.contactName || l.businessName || l.contactEmail || l.phone)
       .map(l => ({
         id: `${l.id}-contact`,
-        name: l.contactName,
-        title: l.decisionMakerRole,
-        email: l.contactEmail,
+        name: l.contactName || l.businessName || 'Contact Principal',
+        title: l.decisionMakerRole || (l.contactName ? undefined : 'Établissement'),
+        email: l.contactEmail || (l as any).email,
         phone: l.phone,
         company: l.businessName,
         city: l.city,
@@ -181,19 +182,21 @@ export function ContactsRoot() {
   const withPhone = contacts.filter(c => c.phone).length;
 
   return (
-    <div className="h-full overflow-y-auto bg-[#fafaf8] relative">
-      <div className="absolute inset-0 opacity-[0.25] pointer-events-none bg-grid-pattern-20 z-0" />
-      <div className="relative z-10 w-full p-3 sm:p-4 md:p-6 space-y-5">
+    <div className="flex h-full flex-col overflow-hidden bg-[#fafaf8]">
+      <CloturerSubNav />
+      <div className="flex-1 overflow-y-auto relative min-h-0">
+        <div className="absolute inset-0 opacity-[0.25] pointer-events-none bg-grid-pattern-20 z-0" />
+        <div className="relative z-10 w-full p-3 sm:p-4 md:p-6 space-y-5">
 
-        {/* Header */}
-        <div className="flex items-start justify-between gap-4 pb-4 border-b border-[#e5e5e0]">
-          <div>
-            <h1 className="text-2xl font-heading font-medium tracking-tight text-[#14171A]">Contacts</h1>
-            <p className="text-xs text-[#4B5158] mt-0.5">
-              Toutes les personnes-contacts de tes prospects ({contacts.length} au total).
-            </p>
+          {/* Header */}
+          <div className="flex items-start justify-between gap-4 pb-4 border-b border-[#e5e5e0]">
+            <div>
+              <h1 className="text-2xl font-heading font-serif font-black tracking-tight text-[#14171A]">Contacts</h1>
+              <p className="text-xs text-[#4B5158] mt-0.5 font-medium">
+                Toutes les personnes-contacts de vos prospects ({contacts.length} au total).
+              </p>
+            </div>
           </div>
-        </div>
 
         {/* Stats chips */}
         <div className="flex flex-wrap gap-2">
@@ -349,6 +352,7 @@ export function ContactsRoot() {
             </Table>
           </div>
         )}
+      </div>
       </div>
     </div>
   );

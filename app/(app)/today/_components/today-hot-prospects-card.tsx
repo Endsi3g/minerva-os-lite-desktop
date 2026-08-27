@@ -23,82 +23,86 @@ export function TodayHotProspectsCard() {
   const hiddenCount = allLeads.length - MAX_VISIBLE;
 
   return (
-    <Card className="border border-[#e5e5e0] bg-white shadow-none flex flex-col min-h-0">
-      <CardHeader className="flex flex-row items-center justify-between pb-3 shrink-0">
-        <div className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/10 text-primary">
-            <Flame className="h-4 w-4" />
+    <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-2xs flex flex-col justify-between">
+      <div>
+        <div className="flex items-center justify-between pb-3 shrink-0 border-b border-gray-100">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 text-[#10B981]">
+              <Flame className="h-4 w-4" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-gray-900">Prospects chauds</h3>
+              <p className="text-xs text-gray-500">Score d'engagement et de conversion le plus élevé</p>
+            </div>
           </div>
-          <div>
-            <CardTitle className="font-heading font-serif text-base font-medium">Prospects chauds</CardTitle>
-            <CardDescription className="text-xs">Score de priorisation le plus élevé</CardDescription>
-          </div>
+          {allLeads.length > 0 && (
+            <span className="text-xs font-semibold text-emerald-800 bg-emerald-50 px-2.5 py-0.5 rounded-full">
+              {allLeads.length} prospects
+            </span>
+          )}
         </div>
-        {allLeads.length > 0 && (
-          <span className="text-[10px] font-bold text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
-            {allLeads.length} leads
-          </span>
-        )}
-      </CardHeader>
-      <CardContent className="flex-1 min-h-0">
-        {allLeads.length === 0 ? (
-          <p className="text-xs text-muted-foreground py-6 text-center">
-            Aucun prospect scoré pour l&apos;instant.
-          </p>
-        ) : (
-          <>
-            <div className="flex flex-col gap-3">
+
+        <div className="pt-3">
+          {allLeads.length === 0 ? (
+            <p className="text-xs text-gray-400 py-6 text-center">
+              Aucun prospect scoré pour l'instant.
+            </p>
+          ) : (
+            <div className="flex flex-col gap-3.5">
               {visibleLeads.map((lead) => {
                 const score = Math.min(100, Math.max(0, lead.score ?? 0));
                 return (
                   <Link
                     key={lead.id}
                     href={`/leads/${lead.id}`}
-                    className="flex items-center gap-3 group"
+                    className="flex flex-col gap-1 group hover:opacity-90 transition-opacity"
                   >
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center justify-between gap-2 mb-1">
-                        <span className="text-xs font-semibold text-foreground truncate group-hover:text-primary transition-colors">
-                          {lead.businessName}
-                        </span>
-                        <span className="text-[10px] font-bold text-muted-foreground tabular-nums shrink-0">{score} pts</span>
-                      </div>
-                      <div className="h-1 rounded-full bg-border overflow-hidden">
-                        <div className="h-full bg-primary rounded-full transition-all duration-300" style={{ width: `${score}%` }} />
-                      </div>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs font-semibold text-gray-900 truncate group-hover:text-[#10B981] transition-colors">
+                        {lead.businessName}
+                      </span>
+                      <span className="text-xs font-semibold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-full shrink-0 tabular-nums">
+                        {score} pts
+                      </span>
+                    </div>
+                    {/* Dynamic Score Bar */}
+                    <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden mt-1">
+                      <div
+                        className="bg-brand-accent-emerald h-full rounded-full transition-all duration-500 ease-out"
+                        style={{ width: `${score}%` }}
+                      />
                     </div>
                   </Link>
                 );
               })}
             </div>
+          )}
+        </div>
+      </div>
 
-            {/* Expand / Collapse button */}
-            {allLeads.length > MAX_VISIBLE && (
-              <button
-                type="button"
-                onClick={() => setExpanded(!expanded)}
-                className={cn(
-                  "mt-3 w-full flex items-center justify-center gap-1.5 text-[11px] font-bold py-1.5 rounded-lg transition-colors cursor-pointer",
-                  "text-primary hover:bg-primary/5"
-                )}
-              >
-                {expanded ? (
-                  <>
-                    <ChevronUp className="h-3 w-3" />
-                    Réduire
-                  </>
-                ) : (
-                  <>
-                    <ChevronDown className="h-3 w-3" />
-                    Voir les {hiddenCount} autres
-                  </>
-                )}
-              </button>
-            )}
-          </>
-        )}
-      </CardContent>
-    </Card>
+      {allLeads.length > MAX_VISIBLE && (
+        <button
+          type="button"
+          onClick={() => setExpanded(!expanded)}
+          className={cn(
+            "mt-4 w-full flex items-center justify-center gap-1.5 text-xs font-semibold py-1.5 rounded-lg transition-colors cursor-pointer",
+            "text-emerald-700 hover:bg-emerald-50"
+          )}
+        >
+          {expanded ? (
+            <>
+              <ChevronUp className="h-3.5 w-3.5" />
+              Réduire
+            </>
+          ) : (
+            <>
+              <ChevronDown className="h-3.5 w-3.5" />
+              Voir les {hiddenCount} autres
+            </>
+          )}
+        </button>
+      )}
+    </div>
   );
 }
 

@@ -85,10 +85,10 @@ function AgentActionCard({ item, onApprove, onReject }: {
   const Icon = conf.icon;
 
   const statusBadge = item.executed
-    ? <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[#f0fdf4] text-[#059669] border border-[#bbf7d0]">Exécuté</span>
+    ? <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200"><span className="w-1.5 h-1.5 rounded-full bg-[#10B981]" />Exécuté</span>
     : item.approved === false
-    ? <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[#fef2f2] text-[#dc2626] border border-[#fecaca]">Rejeté</span>
-    : <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[#fefce8] text-[#92400e] border border-[#fde68a]">Suggéré</span>;
+    ? <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-50 text-red-700 border border-red-200"><span className="w-1.5 h-1.5 rounded-full bg-red-500" />Rejeté</span>
+    : <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200"><span className="w-1.5 h-1.5 rounded-full bg-amber-500" />Suggéré</span>;
 
   const leadLabel = item.lead_name
     ? `${item.lead_name}${item.lead_company ? ` · ${item.lead_company}` : ''}`
@@ -407,6 +407,27 @@ export function AgentFeed() {
           })}
         </div>
       )}
+
+      {/* Bottom CTA to trigger agent */}
+      <div className="p-3 border-t border-[#e5e5e0] bg-white">
+        <button
+          onClick={handleRunLoop}
+          disabled={runningLoop}
+          className="w-full bg-brand-accent-emerald hover:bg-brand-accent-emeraldHover text-white font-medium py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 transition-all shadow-sm disabled:opacity-60 cursor-pointer text-xs"
+        >
+          {runningLoop ? (
+            <>
+              <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+              <span>Analyse de l'agent en cours…</span>
+            </>
+          ) : (
+            <>
+              <Bot className="h-3.5 w-3.5" />
+              <span>Lancer une analyse de l'agent</span>
+            </>
+          )}
+        </button>
+      </div>
     </div>
   );
 }

@@ -26,6 +26,7 @@ import { AgentPrioritiesCard } from './agent-priorities-card';
 import { NextBestActionCard } from './next-best-action-card';
 import { DailyDigestCard } from './daily-digest-card';
 import { SpeedRunOverlay } from '@/components/speed-run-overlay';
+import { PipelineStepper } from './pipeline-stepper';
 
 // Cockpit / Pilotage cards (moved to today component workspace)
 import { StrategyMemoryCard } from './strategy-memory-card';
@@ -419,6 +420,7 @@ export function TodayRoot() {
       return {
         name: activeProgram.campaign.name,
         pct: activeProgram.pct ?? 0,
+        progressPct: activeProgram.pct ?? 0,
         prospectes: prospectes || 14,
         days: daysDiff || 3,
         emailsEnvoyes: contacted * 2 || 24
@@ -436,6 +438,7 @@ export function TodayRoot() {
     return {
       name: 'Prospection globale',
       pct: pctGlobal || 35,
+      progressPct: pctGlobal || 35,
       prospectes: prospectesGlobal || 28,
       days: 5,
       emailsEnvoyes: contactedGlobal * 2 || 86
@@ -444,22 +447,22 @@ export function TodayRoot() {
 
   return (
     <ErrorBoundary>
-      <div className="h-full overflow-hidden flex flex-col">
-        {/* Unified Tab Bar */}
-        <div className="flex items-center justify-between border-b border-[#e5e5e0] px-4 pt-3 pb-0 bg-[#fafaf8] shrink-0">
+      <div className="h-full overflow-hidden flex flex-col bg-brand-canvas">
+        {/* Unified Tab Bar (TopNavigationTabs) */}
+        <div className="flex items-center justify-between border-b border-brand-border px-4 pt-2 pb-0 bg-white shrink-0">
           <div className="flex items-center gap-1">
             <button
               onClick={() => {
                 setActiveTab('dashboard');
                 router.push('/today');
               }}
-              className={`flex items-center gap-1.5 px-3 py-2 text-xs font-bold border-b-2 transition-all mr-1 ${
+              className={`flex items-center gap-2 px-4 py-2.5 text-sm transition-all ${
                 activeTab === 'dashboard'
-                  ? 'border-[#059669] text-[#059669]'
-                  : 'border-transparent text-[#7a7a76] hover:text-[#26251e]'
+                  ? 'text-brand-accent-textDark border-b-2 border-brand-accent-emerald bg-brand-accent-emeraldLight/40 font-semibold'
+                  : 'text-gray-500 hover:text-gray-900 border-b-2 border-transparent font-medium'
               }`}
             >
-              <LayoutDashboard className="h-3.5 w-3.5" />
+              <LayoutDashboard className="h-4 w-4" />
               Opérations & Cockpit
             </button>
             <button
@@ -467,13 +470,13 @@ export function TodayRoot() {
                 setActiveTab('inbox');
                 router.push('/today?tab=inbox');
               }}
-              className={`flex items-center gap-1.5 px-3 py-2 text-xs font-bold border-b-2 transition-all mr-1 ${
+              className={`flex items-center gap-2 px-4 py-2.5 text-sm transition-all ${
                 activeTab === 'inbox'
-                  ? 'border-[#059669] text-[#059669]'
-                  : 'border-transparent text-[#7a7a76] hover:text-[#26251e]'
+                  ? 'text-brand-accent-textDark border-b-2 border-brand-accent-emerald bg-brand-accent-emeraldLight/40 font-semibold'
+                  : 'text-gray-500 hover:text-gray-900 border-b-2 border-transparent font-medium'
               }`}
             >
-              <Mail className="h-3.5 w-3.5" />
+              <Mail className="h-4 w-4" />
               Boîte de réception
             </button>
             <button
@@ -481,31 +484,31 @@ export function TodayRoot() {
                 setActiveTab('pilotage');
                 router.push('/today?tab=pilotage');
               }}
-              className={`flex items-center gap-1.5 px-3 py-2 text-xs font-bold border-b-2 transition-all ${
+              className={`flex items-center gap-2 px-4 py-2.5 text-sm transition-all ${
                 activeTab === 'pilotage'
-                  ? 'border-[#059669] text-[#059669]'
-                  : 'border-transparent text-[#7a7a76] hover:text-[#26251e]'
+                  ? 'text-brand-accent-textDark border-b-2 border-brand-accent-emerald bg-brand-accent-emeraldLight/40 font-semibold'
+                  : 'text-gray-500 hover:text-gray-900 border-b-2 border-transparent font-medium'
               }`}
             >
-              <Gauge className="h-3.5 w-3.5" />
+              <Gauge className="h-4 w-4" />
               Pilotage stratégique
             </button>
           </div>
 
-          <div className="flex items-center gap-2 pb-2">
+          <div className="flex items-center gap-2 pb-1.5">
             <button
               onClick={handleRefreshScoring}
               disabled={refreshing}
-              className="flex items-center gap-1.5 rounded-lg border border-[#e5e5e0] hover:bg-[#e5e5e2] disabled:opacity-60 px-2.5 py-1 text-xs font-bold text-[#26251e] bg-white transition-all shadow-sm"
+              className="flex items-center gap-1.5 rounded-lg border border-brand-border hover:bg-gray-50 disabled:opacity-60 px-3 py-1.5 text-xs font-semibold text-gray-700 bg-white transition-all shadow-xs"
             >
-              {refreshing ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+              {refreshing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
               <span>Mettre à jour</span>
             </button>
           </div>
         </div>
 
         {/* Unified Screens View routing */}
-        <div className="flex-1 overflow-y-auto relative bg-[#fafaf8]">
+        <div className="flex-1 overflow-y-auto relative bg-brand-canvas">
           <div className="absolute inset-0 opacity-[0.25] pointer-events-none bg-grid-pattern-20 z-0" />
 
           <div className="relative z-10 w-full h-full flex flex-col">
@@ -557,30 +560,27 @@ export function TodayRoot() {
                       />
                     </div>
 
-                    {/* Mobile Speed Run Hero CTA — Minerva Studio Pure Editorial */}
+                    {/* Mobile Speed Run Hero CTA */}
                     <button
                       onClick={() => setShowSpeedRun(true)}
-                      className="w-full relative overflow-hidden rounded-2xl bg-[#0e3828] text-white p-4 shadow-lg border border-[#d8ceba]/30 ring-1 ring-white/10 active:scale-98 transition-all text-left"
+                      className="w-full relative overflow-hidden rounded-2xl bg-[#0F2E22] text-white p-4 shadow-lg border border-emerald-500/20 active:scale-98 transition-all text-left"
                     >
-                      <div className="pointer-events-none absolute -right-12 -top-12 w-32 h-32 rounded-full bg-[#1b5e43]/50 blur-2xl" />
                       <div className="relative z-10 flex items-center justify-between gap-3">
                         <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-xl bg-[#faf7f2]/10 border border-[#e5dfd3]/20 flex items-center justify-center text-[#f5ecd8] shrink-0">
-                            <Zap className="w-4 h-4 fill-[#f5ecd8]" />
+                          <div className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center text-emerald-300 shrink-0">
+                            <Zap className="w-4 h-4 fill-white" />
                           </div>
                           <div>
                             <div className="flex items-center gap-1.5">
-                              <span className="font-serif font-heading text-sm font-black text-[#faf7f2]">Speed Run</span>
-                              <span className="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.2 rounded-full bg-[#e6ca85]/20 text-[#f5ecd8] border border-[#e6ca85]/30">
-                                20x
-                              </span>
+                              <span className="text-sm font-bold text-white">Speed Run Commercial</span>
+                              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
                             </div>
-                            <p className="text-[10px] text-[#e0ded8]/80 font-medium">
+                            <p className="text-[10px] text-gray-300 font-medium">
                               {leads.length > 0 ? `${leads.length} leads prêts à valider` : 'Validez vos actions en 3 min'}
                             </p>
                           </div>
                         </div>
-                        <span className="text-[11px] font-black bg-[#faf7f2] hover:bg-[#f2ece1] text-[#0e3828] px-3 py-1.5 rounded-xl shrink-0 shadow-xs flex items-center gap-1">
+                        <span className="text-xs font-semibold bg-white hover:bg-gray-100 text-[#0F2E22] px-3 py-1.5 rounded-xl shrink-0 shadow-sm flex items-center gap-1">
                           Lancer <ArrowRight className="w-3 h-3" />
                         </span>
                       </div>
@@ -609,85 +609,39 @@ export function TodayRoot() {
                       {/* Lower part: Semi-Circular Gauge & CTA button */}
                       <div className="flex items-center justify-between gap-4 mt-1 z-10">
                         {/* Gauge container */}
-                        <div className="flex items-center gap-2">
-                          <div className="relative w-20 h-10 flex items-end justify-center overflow-hidden shrink-0">
-                            <svg className="w-20 h-20 absolute -bottom-10 left-0">
-                              {/* Background gray arc */}
-                              <circle
-                                cx="40"
-                                cy="40"
-                                r="32"
-                                stroke="#022c21"
-                                strokeWidth="5.5"
-                                strokeDasharray="100.5"
-                                strokeLinecap="round"
-                                fill="none"
-                              />
-                              {/* Progress green arc */}
-                              <circle
-                                cx="40"
-                                cy="40"
-                                r="32"
-                                stroke="#10b981"
-                                strokeWidth="5.5"
-                                strokeDasharray="100.5"
-                                strokeDashoffset={100.5 * (1 - (campaignStats.pct / 100))}
-                                strokeLinecap="round"
-                                fill="none"
-                              />
-                            </svg>
-                            <span className="text-base font-black font-sans text-white mb-0.5 z-10">{campaignStats.pct}%</span>
+                        <div className="flex flex-col items-center justify-center relative w-24 h-14 shrink-0 overflow-hidden pt-1">
+                          <svg className="w-24 h-24 transform -rotate-90 origin-center" viewBox="0 0 100 100">
+                            <circle cx="50" cy="50" r="38" stroke="rgba(255,255,255,0.15)" strokeWidth="8" fill="none" strokeDasharray="238.76" strokeDashoffset="119.38" strokeLinecap="round" />
+                            <circle cx="50" cy="50" r="38" stroke="#10b981" strokeWidth="8" fill="none" strokeDasharray="238.76" strokeDashoffset={238.76 - (119.38 * (campaignStats.progressPct / 100))} strokeLinecap="round" className="transition-all duration-1000 ease-out" />
+                          </svg>
+                          <div className="absolute top-4 flex flex-col items-center justify-center">
+                            <span className="text-base font-black leading-none">{campaignStats.progressPct}%</span>
+                            <span className="text-[7px] uppercase font-bold text-emerald-100/70 mt-0.5">Atteint</span>
                           </div>
                         </div>
 
-                        <button 
+                        {/* CTA button */}
+                        <button
                           onClick={() => router.push('/campaigns')}
-                          className="bg-[#10b981] hover:bg-[#0ea571] text-[#022c21] font-black text-[9px] px-4 py-2.5 rounded-full uppercase tracking-wider transition-colors active:scale-95 shadow-sm"
+                          className="flex items-center gap-1 px-3 py-2 bg-white/10 hover:bg-white/20 border border-white/10 text-white rounded-xl text-[10px] font-bold tracking-tight shadow-xs transition-all active:scale-95 shrink-0"
                         >
-                          Continuer la campagne
+                          <span>Voir la campagne</span>
+                          <ArrowRight className="w-3 h-3 text-[#10b981]" />
                         </button>
                       </div>
                     </div>
 
-                    {/* Section Catégories */}
-                    <div className="space-y-2.5">
-                      <div className="flex items-center justify-between">
-                        <h3 className="text-xs font-black uppercase tracking-wider text-[#26251e]">Catégories</h3>
-                        <button onClick={() => router.push('/personas')} className="text-[10px] font-bold text-[#059669] hover:text-[#047857] flex items-center gap-0.5">
-                          See More <ChevronRight className="w-3 h-3" />
-                        </button>
-                      </div>
-                      
-                      {/* Horizontal Niche Badges Scrollable Row */}
-                      <div className="flex items-center gap-2 overflow-x-auto pb-1.5 scrollbar-hide shrink-0">
-                        {[
-                          { icon: Briefcase, label: 'PME Québécoises' },
-                          { icon: Users, label: 'Grandes Entreprises' },
-                          { icon: Target, label: 'Startups Tech' },
-                        ].map((cat, idx) => (
-                          <div key={idx} className="flex items-center gap-2 bg-white border border-[#e5e5e0] rounded-full pl-2 pr-3.5 py-1 shrink-0 shadow-3xs hover:border-[#7a7a76] transition-colors cursor-pointer">
-                            <div className="w-6 h-6 rounded-full bg-[#059669]/8 text-[#059669] flex items-center justify-center shrink-0">
-                              <cat.icon className="w-3.5 h-3.5" />
-                            </div>
-                            <span className="text-[10px] font-extrabold text-[#26251e]">{cat.label}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Section Tâches quotidiennes */}
-                    <div className="space-y-2.5">
-                      <div className="flex items-center justify-between">
-                        <h3 className="text-xs font-black uppercase tracking-wider text-[#26251e]">Tâches quotidiennes</h3>
-                        <button onClick={() => router.push('/tasks')} className="text-[10px] font-bold text-[#059669] hover:text-[#047857] flex items-center gap-0.5">
-                          See More <ChevronRight className="w-3 h-3" />
-                        </button>
+                    {/* Quick Action Cards List */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between px-1">
+                        <span className="text-xs font-extrabold text-[#26251e] tracking-tight">Actions recommandées</span>
+                        <span className="text-[10px] font-bold text-[#7a7a76]">3 urgentes</span>
                       </div>
 
-                      {/* Daily Task List Cards */}
                       <div className="space-y-2">
                         {[
-                          { title: 'Suivi de prospects chauds', time: '25 mins', action: '18 emails envoyés' },
+                          { title: 'Relance 5 prospects suite démo', time: '5 mins', action: 'Générer brouillons' },
+                          { title: 'Confirmer tournée terrain Laval', time: '15 mins', action: 'Ouvrir carte' },
                           { title: 'Appel de relance planifié', time: '10 mins', action: '3 relances requises' },
                         ].map((task, idx) => (
                           <div key={idx} className="bg-white border border-[#e5e5e0] rounded-2xl p-3.5 flex items-center justify-between gap-3 shadow-xs hover:border-[#7a7a76] transition-all cursor-pointer">
@@ -717,119 +671,171 @@ export function TodayRoot() {
                     </div>
                   </div>
                 ) : (
-                  /* Original Desktop Dashboard Layout */
+                  /* Desktop Dashboard Layout */
                   <div className="space-y-5 animate-in fade-in duration-300 text-left">
                     <TodayGuestUpgradeBanner />
                     <TodaySetupBanner />
 
-                    {/* Hero Speed Run Commercial 20x Banner — Minerva Studio Pure Editorial */}
-                    <div className="relative overflow-hidden rounded-2xl bg-[#0e3828] text-white shadow-xl border border-[#d8ceba]/30 ring-1 ring-white/10 p-6 md:p-7">
-                      {/* Ambient glowing luxury orbs & subtle vector matrix texture */}
-                      <div className="pointer-events-none absolute -top-24 -right-24 w-80 h-80 rounded-full bg-[#1b5e43]/40 blur-3xl" />
-                      <div className="pointer-events-none absolute -bottom-24 -left-20 w-72 h-72 rounded-full bg-[#d4af37]/10 blur-3xl" />
-                      <div 
-                        className="pointer-events-none absolute inset-0 opacity-[0.03]"
-                        style={{
-                          backgroundImage: 'radial-gradient(#faf7f2 1px, transparent 1px)',
-                          backgroundSize: '20px 20px'
-                        }}
-                      />
-
-                      <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-                        {/* Left column: Badge, Playfair Title, Description, Metrics Pills */}
-                        <div className="space-y-3.5 max-w-2xl">
-                          {/* Editorial Luxury Pill Badge */}
-                          <div className="inline-flex items-center gap-2 rounded-full bg-[#faf7f2]/10 backdrop-blur-md px-3 py-1 border border-[#e5dfd3]/20 text-[11px] font-bold text-[#f5ecd8] tracking-wide">
-                            <Sparkles className="h-3.5 w-3.5 text-[#e6ca85]" />
-                            <span className="uppercase tracking-widest text-[10px] font-black">Moteur d'Exécution 20x</span>
-                            <span className="h-1 w-1 rounded-full bg-[#e6ca85]" />
-                            <span className="text-emerald-200/90 font-medium">Cadence IA Active</span>
-                          </div>
-
-                          {/* Playfair Display Title */}
-                          <h2 className="font-serif font-heading text-2xl sm:text-3xl font-black tracking-tight text-[#faf7f2] leading-tight">
-                            Speed Run Commercial du Jour
-                          </h2>
-
-                          <p className="text-xs sm:text-sm text-[#e0ded8]/90 font-medium leading-relaxed">
-                            {leads.length > 0
-                              ? `${leads.filter(l => l.status === 'New' || l.status === 'Contacted').length || leads.length} prospects qualifiés avec messages et canaux prêts. Validez en 1-clic ou ajoutez à votre tournée terrain.`
-                              : "Traitez l'intégralité de vos prises de contact et relances en 3 minutes chrono."}
-                          </p>
-
-                          {/* Editorial Micro-Metrics Pills */}
-                          <div className="flex flex-wrap items-center gap-2.5 pt-1">
-                            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-black/25 backdrop-blur-xs border border-white/10 text-[11px] font-semibold text-[#f5ecd8]">
-                              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                              <span>{leads.length || 151} leads prêts</span>
-                            </div>
-                            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-black/25 backdrop-blur-xs border border-white/10 text-[11px] font-semibold text-[#e0ded8]">
-                              <Clock className="h-3 w-3 text-[#e6ca85]" />
-                              <span>~3 min chrono</span>
-                            </div>
-                            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-black/25 backdrop-blur-xs border border-white/10 text-[11px] font-semibold text-[#e0ded8]">
-                              <Route className="h-3 w-3 text-emerald-300" />
-                              <span>Multi-canal (Email • GPS • SMS • Appel)</span>
-                            </div>
-                          </div>
+                    {/* HeroSpeedRunBanner (Cahier des charges Exact) */}
+                    <div className="bg-[#0F2E22] rounded-2xl p-6 text-white relative overflow-hidden flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 shadow-xl">
+                      {/* Left Column */}
+                      <div className="space-y-3 max-w-2xl z-10">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-emerald-300 text-xs font-medium backdrop-blur-sm border border-emerald-500/20">
+                          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                          <Sparkles className="h-3 w-3 text-emerald-300" />
+                          <span className="uppercase tracking-wider font-semibold text-[10px]">Moteur d'Exécution 20x</span>
                         </div>
 
-                        {/* Right column: Ivory Luxury CTA with Shortcut Badge */}
-                        <div className="flex flex-col sm:flex-row lg:flex-col items-start lg:items-end gap-2.5 shrink-0">
-                          <button
-                            onClick={() => setShowSpeedRun(true)}
-                            className="group relative inline-flex items-center justify-center gap-2.5 rounded-xl bg-[#faf7f2] hover:bg-[#f2ece1] px-6 py-3.5 text-xs font-black text-[#0e3828] shadow-lg shadow-black/20 hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 active:scale-98 transition-all cursor-pointer border border-[#e5dfd3]"
-                          >
-                            <Zap className="h-4 w-4 fill-[#0e3828] text-[#0e3828] transition-transform group-hover:scale-110" />
-                            <span className="tracking-tight font-extrabold text-sm">Lancer le Speed Run</span>
-                            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-                          </button>
-                          <div className="inline-flex items-center gap-1.5 text-[10px] text-[#c5bcab] font-bold px-1">
-                            <span>Raccourci clavier :</span>
-                            <kbd className="px-1.5 py-0.5 rounded bg-black/30 text-[#faf7f2] border border-white/15 font-mono text-[9px]">
-                              ↵ Entrée
-                            </kbd>
+                        <h2 className="text-2xl font-bold tracking-tight text-white">
+                          Speed Run Commercial du Jour
+                        </h2>
+
+                        <p className="text-xs sm:text-sm text-gray-200 leading-relaxed">
+                          {leads.length > 0
+                            ? `${leads.filter(l => l.status === 'New' || l.status === 'Contacted').length || leads.length} prospects qualifiés avec messages et canaux prêts. Validez en 1-clic ou ajoutez à votre tournée terrain.`
+                            : "Traitez l'intégralité de vos prises de contact et relances en 3 minutes chrono."}
+                        </p>
+
+                        {/* Pills de Fonctionnalités */}
+                        <div className="flex flex-wrap items-center gap-2 pt-1">
+                          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/5 border border-white/10 text-xs text-gray-200">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                            <span>{leads.length || 151} leads prêts</span>
                           </div>
+                          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/5 border border-white/10 text-xs text-gray-200">
+                            <Clock className="h-3 w-3 text-emerald-300" />
+                            <span>~3 min chrono</span>
+                          </div>
+                          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/5 border border-white/10 text-xs text-gray-200">
+                            <Route className="h-3 w-3 text-emerald-300" />
+                            <span>Multi-canal (Email • GPS • SMS • Appel)</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Right CTA */}
+                      <div className="flex flex-col sm:flex-row lg:flex-col items-start lg:items-end gap-2 shrink-0 z-10">
+                        <button
+                          onClick={() => setShowSpeedRun(true)}
+                          className="bg-white hover:bg-gray-100 text-[#0F2E22] font-semibold px-5 py-2.5 rounded-xl transition-all shadow-sm hover:scale-[1.02] inline-flex items-center gap-2 cursor-pointer text-sm"
+                        >
+                          <Zap className="h-4 w-4 fill-[#0F2E22] text-[#0F2E22]" />
+                          <span>Lancer le Speed Run</span>
+                          <ArrowRight className="h-4 w-4" />
+                        </button>
+                        <div className="inline-flex items-center gap-1.5 text-[10px] text-gray-300 px-1 font-medium">
+                          <span>Raccourci :</span>
+                          <kbd className="px-1.5 py-0.5 rounded bg-black/30 text-white border border-white/15 font-mono text-[9px]">
+                            ↵ Entrée
+                          </kbd>
                         </div>
                       </div>
                     </div>
 
                     <TodayHeader onAestheticToggle={() => setShowAestheticMode(true)} />
                     
-                    {/* Overview KPI bar (Minerva redesign) */}
-                    <div className="kpi-container">
-                      <div className="kpi-grid">
-                        <div className="bg-white border border-[#e5e5e0] rounded-xl p-4 flex flex-col gap-1 shadow-sm">
-                          <span className="text-[10px] font-bold text-[#4B5158] uppercase tracking-wider">Leads générés ce mois-ci</span>
-                          {isDataReady ? (
-                            <div className="flex items-baseline gap-2">
-                              <span className="text-2xl font-black text-[#14171A]">{leadsThisMonth}</span>
-                              {leadsLastMonth > 0 && (
-                                <span className={cn('text-[11px] font-bold', leadsMonthDelta >= 0 ? 'text-[#167f5b]' : 'text-[#D64545]')}>
-                                  {leadsMonthDelta >= 0 ? '+' : ''}{leadsMonthDelta}
-                                </span>
-                              )}
+                    {/* KpiGrid (4 Colonnes — Spécification Exacte) */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                      {/* Card 1 */}
+                      <div className="bg-white border border-gray-200 rounded-xl p-4 flex flex-col justify-between shadow-2xs">
+                        <div>
+                          <span className="text-xs font-semibold text-gray-500 tracking-wider uppercase">Leads générés ce mois-ci</span>
+                          <div className="flex items-baseline justify-between mt-1">
+                            <span className="text-2xl font-bold text-gray-900">
+                              {isDataReady ? leadsThisMonth : '—'}
+                            </span>
+                            {/* Sparkline micro-bars */}
+                            <div className="flex items-end gap-1 h-6">
+                              <div className="w-[3px] h-3 rounded-full bg-brand-accent-emeraldLight" />
+                              <div className="w-[3px] h-4 rounded-full bg-brand-accent-emeraldLight" />
+                              <div className="w-[3px] h-3 rounded-full bg-brand-accent-emeraldLight" />
+                              <div className="w-[3px] h-5 rounded-full bg-brand-accent-emerald" />
+                              <div className="w-[3px] h-6 rounded-full bg-brand-accent-emerald" />
                             </div>
-                          ) : <span className="h-7 w-12 rounded bg-[#f4f4f3] animate-pulse" />}
-                          <span className="text-[10px] text-[#8A9098]">vs {leadsLastMonth} le mois dernier</span>
+                          </div>
                         </div>
-                        <div className="bg-white border border-[#e5e5e0] rounded-xl p-4 flex flex-col gap-1 shadow-sm">
-                          <span className="text-[10px] font-bold text-[#4B5158] uppercase tracking-wider">Taux de contact</span>
-                          {isDataReady ? <span className="text-2xl font-black text-[#14171A]">{contactRate}%</span> : <span className="h-7 w-12 rounded bg-[#f4f4f3] animate-pulse" />}
-                          <span className="text-[10px] text-[#8A9098]">{contactedLeads} prospects contactés</span>
+                        <div className="mt-2">
+                          <span className="inline-flex items-center text-xs font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">
+                            {leadsMonthDelta >= 0 ? `+${leadsMonthDelta}` : leadsMonthDelta} vs mois dernier
+                          </span>
                         </div>
-                        <div className="bg-white border border-[#e5e5e0] rounded-xl p-4 flex flex-col gap-1 shadow-sm">
-                          <span className="text-[10px] font-bold text-[#4B5158] uppercase tracking-wider">Valeur pipeline actif</span>
-                          {isDataReady ? <span className="text-2xl font-black text-[#14171A]">{activePipelineValue.toLocaleString('fr-CA')} $</span> : <span className="h-7 w-12 rounded bg-[#f4f4f3] animate-pulse" />}
-                          <span className="text-[10px] text-[#8A9098]">{activeLeadsCount} prospects actifs</span>
+                      </div>
+
+                      {/* Card 2 */}
+                      <div className="bg-white border border-gray-200 rounded-xl p-4 flex flex-col justify-between shadow-2xs">
+                        <div>
+                          <span className="text-xs font-semibold text-gray-500 tracking-wider uppercase">Taux de contact</span>
+                          <div className="flex items-baseline justify-between mt-1">
+                            <span className="text-2xl font-bold text-gray-900">
+                              {isDataReady ? `${contactRate}%` : '—'}
+                            </span>
+                            <div className="flex items-end gap-1 h-6">
+                              <div className="w-[3px] h-2 rounded-full bg-brand-accent-emeraldLight" />
+                              <div className="w-[3px] h-4 rounded-full bg-brand-accent-emerald" />
+                              <div className="w-[3px] h-5 rounded-full bg-brand-accent-emerald" />
+                              <div className="w-[3px] h-3 rounded-full bg-brand-accent-emeraldLight" />
+                              <div className="w-[3px] h-6 rounded-full bg-brand-accent-emerald" />
+                            </div>
+                          </div>
                         </div>
-                        <div className="bg-white border border-[#e5e5e0] rounded-xl p-4 flex flex-col gap-1 shadow-sm">
-                          <span className="text-[10px] font-bold text-[#4B5158] uppercase tracking-wider">Taux de réponse</span>
-                          {isDataReady ? <span className="text-2xl font-black text-[#14171A]">{responseRate}%</span> : <span className="h-7 w-12 rounded bg-[#f4f4f3] animate-pulse" />}
-                          <span className="text-[10px] text-[#8A9098]">{totalReplies} réponses reçues</span>
+                        <div className="mt-2">
+                          <span className="inline-flex items-center text-xs font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">
+                            {contactedLeads} prospects contactés
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Card 3 */}
+                      <div className="bg-white border border-gray-200 rounded-xl p-4 flex flex-col justify-between shadow-2xs">
+                        <div>
+                          <span className="text-xs font-semibold text-gray-500 tracking-wider uppercase">Valeur pipeline actif</span>
+                          <div className="flex items-baseline justify-between mt-1">
+                            <span className="text-2xl font-bold text-gray-900">
+                              {isDataReady ? `${activePipelineValue.toLocaleString('fr-CA')} $` : '—'}
+                            </span>
+                            <div className="flex items-end gap-1 h-6">
+                              <div className="w-[3px] h-3 rounded-full bg-brand-accent-emeraldLight" />
+                              <div className="w-[3px] h-4 rounded-full bg-brand-accent-emeraldLight" />
+                              <div className="w-[3px] h-6 rounded-full bg-brand-accent-emerald" />
+                              <div className="w-[3px] h-5 rounded-full bg-brand-accent-emerald" />
+                              <div className="w-[3px] h-6 rounded-full bg-brand-accent-emerald" />
+                            </div>
+                          </div>
+                        </div>
+                        <div className="mt-2">
+                          <span className="inline-flex items-center text-xs font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">
+                            {activeLeadsCount} opportunités actives
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Card 4 */}
+                      <div className="bg-white border border-gray-200 rounded-xl p-4 flex flex-col justify-between shadow-2xs">
+                        <div>
+                          <span className="text-xs font-semibold text-gray-500 tracking-wider uppercase">Taux de réponse</span>
+                          <div className="flex items-baseline justify-between mt-1">
+                            <span className="text-2xl font-bold text-gray-900">
+                              {isDataReady ? `${responseRate}%` : '—'}
+                            </span>
+                            <div className="flex items-end gap-1 h-6">
+                              <div className="w-[3px] h-2 rounded-full bg-brand-accent-emeraldLight" />
+                              <div className="w-[3px] h-3 rounded-full bg-brand-accent-emeraldLight" />
+                              <div className="w-[3px] h-4 rounded-full bg-brand-accent-emerald" />
+                              <div className="w-[3px] h-6 rounded-full bg-brand-accent-emerald" />
+                              <div className="w-[3px] h-5 rounded-full bg-brand-accent-emerald" />
+                            </div>
+                          </div>
+                        </div>
+                        <div className="mt-2">
+                          <span className="inline-flex items-center text-xs font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">
+                            {totalReplies} réponses enregistrées
+                          </span>
                         </div>
                       </div>
                     </div>
+
+                    {/* Pipeline Stepper (7 Étapes) */}
+                    <PipelineStepper />
 
                     {/* Prospects chauds + Relances en retard */}
                     <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
