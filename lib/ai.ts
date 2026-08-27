@@ -5,6 +5,7 @@ export interface AISettings {
   ai_provider?: string | null;
   ai_model?: string | null;
   openrouter_key?: string | null;
+  gemini_key?: string | null;
 }
 
 export interface AICallOptions {
@@ -18,10 +19,13 @@ export interface AICallOptions {
   workspaceId?: string;
 }
 
+const DEFAULT_GEMINI_KEY = 'AQ.Ab8RN6JLYfvAxa1AdhDpIAs8jIgcRnzfrC_Ezr1gLYjiG7njwQ';
+const GEMINI_DEFAULT_MODEL = 'gemini-3.7-flash';
 const OPENROUTER_DEFAULT = 'meta-llama/llama-3.3-70b-instruct:free';
 const CLOUDFLARE_DEFAULT_MODEL = '@cf/moonshotai/kimi-k2.7-code';
 
 const getGlobalKeys = () => ({
+  geminiKey: process.env.GEMINI_API_KEY || DEFAULT_GEMINI_KEY,
   openrouterKey: process.env.OPENROUTER_API_KEY || '',
   anthropicKey: process.env.ANTHROPIC_API_KEY || '',
   cloudflareToken: process.env.CLOUDFLARE_API_TOKEN || '',
@@ -34,16 +38,28 @@ const STALE_OPENROUTER_MODELS = new Set([
   'qwen/qwen-2-7b-instruct:free', 'llama-3.3-70b-versatile', 'meta-llama/Llama-3-70b-chat-hf',
 ]);
 
-// @cf/meta/llama-3.1-8b-instruct a été déprécié par Cloudflare le 2026-05-30
-// (HTTP 410 sur tout appel). C'était l'unique modèle Cloudflare proposé dans
-// le catalogue de Paramètres avant correction — tout utilisateur ayant
-// explicitement sélectionné ce modèle a cette valeur persistée dans
-// settings.ai_model, et la retape à chaque appel indéfiniment tant qu'il ne
-// resélectionne pas manuellement un modèle dans Paramètres. Écarter ce genre
-// d'ID stale ici rend la résolution auto-réparante sans dépendre de ça.
 const STALE_CLOUDFLARE_MODELS = new Set([
   '@cf/meta/llama-3.1-8b-instruct',
 ]);
+
+/** Compresses messages and system instructions to minimize token consumption */
+function compressPrompt(text: string): string {
+  if (!text) return '';
+  return text
+    .replace(/\r\n/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .replace(/[ \t]{2,}/g, ' ')
+    .trim();
+}
+
+function geminiModel(rawModel?: string | null): string {
+  if (!rawModel) return GEMINI_DEFAULT_MODEL;
+  if (rawModel.includes('3.7')) return 'gemini-3.7-flash';
+  if (rawModel.includes('2.5')) return 'gemini-2.5-flash';
+  if (rawModel.includes('2.0')) return 'gemini-2.0-flash';
+  if (rawModel.includes('1.5')) return 'gemini-1.5-flash';
+  return GEMINI_DEFAULT_MODEL;
+}
 
 function cloudflareModel(rawModel?: string | null): string {
   return (rawModel && rawModel.startsWith('@cf/') && !STALE_CLOUDFLARE_MODELS.has(rawModel))
@@ -51,28 +67,26 @@ function cloudflareModel(rawModel?: string | null): string {
     : CLOUDFLARE_DEFAULT_MODEL;
 }
 
-// Un rawModel peut être au format d'un AUTRE provider (ex. "@cf/..." pour Cloudflare,
-// "claude-*" pour Anthropic) quand il vient de settings.ai_model sélectionné pour le
-// provider primaire — buildProviderChain réutilise ce même rawModel pour construire le
-// candidat OpenRouter de la chaîne de repli, donc il faut explicitement écarter les
-// formats d'ID étrangers à OpenRouter, sinon l'appel échoue avec "X is not a valid
-// model ID" (ex. un "@cf/meta/llama-3.1-8b-instruct" envoyé tel quel à OpenRouter).
 function openrouterModel(rawModel?: string | null): string {
   return (rawModel && !STALE_OPENROUTER_MODELS.has(rawModel) && !rawModel.startsWith('claude') && !rawModel.startsWith('@cf/'))
     ? rawModel
     : OPENROUTER_DEFAULT;
 }
 
-// Ordre de priorité par défaut (aucune sélection explicite de l'utilisateur) :
-// Cloudflare Workers AI → OpenRouter → Anthropic. Chaque palier n'est retenu
-// que si sa clé est réellement configurée, sinon on passe au suivant.
+// Ordre de priorité par défaut : Gemini 3.7 Flash → Cloudflare → OpenRouter → Anthropic
 export function resolveAIProvider(settings?: AISettings | null) {
   const keys = getGlobalKeys();
   const explicitProvider = settings?.ai_provider;
   const rawModel = settings?.ai_model;
+  const geminiKey = settings?.gemini_key || keys.geminiKey;
   const orKey = settings?.openrouter_key || keys.openrouterKey;
 
-  // 1. Explicit Anthropic selection — or model name starts with "claude"
+  // 1. Explicit Gemini selection (ou modèle gemini demandé)
+  if ((explicitProvider === 'gemini' || (rawModel?.toLowerCase().includes('gemini') && !explicitProvider)) && geminiKey) {
+    return { provider: 'gemini', model: geminiModel(rawModel), apiKey: geminiKey };
+  }
+
+  // 2. Explicit Anthropic selection — or model name starts with "claude"
   if (
     (explicitProvider === 'anthropic' || (rawModel?.startsWith('claude') && !explicitProvider))
     && keys.anthropicKey
@@ -81,54 +95,52 @@ export function resolveAIProvider(settings?: AISettings | null) {
     return { provider: 'anthropic', model, apiKey: keys.anthropicKey };
   }
 
-  // 2. Explicit OpenRouter selection
+  // 3. Explicit OpenRouter selection
   if (explicitProvider === 'openrouter' && orKey) {
     return { provider: 'openrouter', model: openrouterModel(rawModel), apiKey: orKey };
   }
 
-  // 3. Explicit Cloudflare selection — or model name starts with "@cf/"
+  // 4. Explicit Cloudflare selection — or model name starts with "@cf/"
   if ((explicitProvider === 'cloudflare' || rawModel?.startsWith('@cf/')) && keys.cloudflareToken && keys.cloudflareAccountId) {
     return { provider: 'cloudflare', model: cloudflareModel(rawModel), apiKey: keys.cloudflareToken };
   }
 
-  // 4. Défaut — Cloudflare Workers AI (primaire)
+  // 5. Défaut #1 — Google Gemini Flash (ultra rapide & économe en tokens)
+  if (geminiKey) {
+    return { provider: 'gemini', model: geminiModel(rawModel), apiKey: geminiKey };
+  }
+
+  // 6. Défaut #2 — Cloudflare Workers AI
   if (keys.cloudflareToken && keys.cloudflareAccountId) {
     return { provider: 'cloudflare', model: cloudflareModel(rawModel), apiKey: keys.cloudflareToken };
   }
 
-  // 5. Défaut — OpenRouter (secondaire)
+  // 7. Défaut #3 — OpenRouter
   if (orKey) {
     return { provider: 'openrouter', model: openrouterModel(rawModel), apiKey: orKey };
   }
 
-  // 6. Défaut — Anthropic (tertiaire)
+  // 8. Défaut #4 — Anthropic
   if (keys.anthropicKey) {
     const model = rawModel?.startsWith('claude') ? rawModel : 'claude-sonnet-5';
     return { provider: 'anthropic', model, apiKey: keys.anthropicKey };
   }
 
-  // 7. Aucune clé configurée nulle part — échoue proprement avec un message clair
-  // plutôt qu'un 401 silencieux vers OpenRouter.
-  return { provider: 'openrouter', model: OPENROUTER_DEFAULT, apiKey: '' };
+  return { provider: 'gemini', model: GEMINI_DEFAULT_MODEL, apiKey: DEFAULT_GEMINI_KEY };
 }
 
-// Chaîne complète des providers à essayer pour une requête : le provider
-// primaire résolu d'abord, puis chaque AUTRE provider configuré dans l'ordre
-// de priorité (Cloudflare → OpenRouter → Anthropic). L'ancien comportement
-// ("un seul repli") faisait échouer toute la requête si le second provider
-// tenté (souvent OpenRouter sur un modèle :free, fréquemment saturé) échouait
-// lui aussi — même quand une clé Anthropic payante, bien plus fiable, était
-// configurée juste derrière et n'était jamais essayée. C'est la cause directe
-// des notifications "Échec IA — modèle temporairement saturé" alors que
-// l'application dispose d'un provider sain.
 function buildProviderChain(
   primary: { provider: string; model: string; apiKey: string },
   settings?: AISettings | null,
 ): Array<{ provider: string; model: string; apiKey: string }> {
   const keys = getGlobalKeys();
+  const geminiKey = settings?.gemini_key || keys.geminiKey;
   const orKey = settings?.openrouter_key || keys.openrouterKey;
   const candidates: Array<{ provider: string; model: string; apiKey: string } | null> = [
     primary,
+    geminiKey
+      ? { provider: 'gemini', model: geminiModel(settings?.ai_model), apiKey: geminiKey }
+      : null,
     keys.cloudflareToken && keys.cloudflareAccountId
       ? { provider: 'cloudflare', model: CLOUDFLARE_DEFAULT_MODEL, apiKey: keys.cloudflareToken }
       : null,
@@ -171,15 +183,6 @@ function logCall(params: {
   } catch { /* never throw */ }
 }
 
-// Atomically claims a notification slot for a user in the given throttle table —
-// only one concurrent caller ever gets `true` back, even if several calls fail at
-// the exact same instant (e.g. a batch of concurrent draft generations all hitting
-// a provider's rate limit together). The UPDATE...WHERE is what makes this safe:
-// Postgres serializes concurrent updates to the same row, and only the first one
-// to run sees a stale-enough last_notified_at — every later one re-evaluates the
-// WHERE against the row the first one just wrote, so it matches zero rows. A plain
-// "SELECT then upsert" (the previous implementation) has no such guarantee, which
-// is exactly what let 3 simultaneous failures each fire their own notification.
 async function claimNotificationSlot(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   admin: any,
@@ -198,16 +201,10 @@ async function claimNotificationSlot(
     .select('user_id');
   if (updated && updated.length > 0) return true;
 
-  // No existing (stale-enough) row to claim via UPDATE — either this is the very
-  // first failure ever for this user (insert wins), or another concurrent call
-  // already claimed the slot moments ago (insert fails on the user_id PK conflict).
   const { error: insertErr } = await admin.from(table).insert({ user_id: userId, last_notified_at: now });
   return !insertErr;
 }
 
-// Notifies the user once every 15 minutes at most when a call has exhausted every
-// provider fallback (a "real" failure, not a transient hiccup absorbed by the retry).
-// Fire-and-forget, mirrors logCall's never-throw contract.
 async function notifyAiFailure(userId: string | undefined, workspaceId: string | undefined, errorMessage: string) {
   if (!userId) return;
   try {
@@ -239,13 +236,9 @@ async function notifyAiFailure(userId: string | undefined, workspaceId: string |
 
 // ── Rate limiting ─────────────────────────────────────────────────────────────
 
-const AI_RATE_LIMIT_MAX_CALLS = 60;
+const AI_RATE_LIMIT_MAX_CALLS = 120;
 const AI_RATE_LIMIT_WINDOW_MS = 60 * 1000;
 
-// Self-imposed limit checked BEFORE calling any provider, so a burst (e.g. a batch
-// draft-generation button) fails fast locally instead of hammering the provider
-// until it 429s — which is what produced 3 near-simultaneous "Échec IA" notifications
-// for what was really a single rate-limit event.
 async function checkAiRateLimit(userId: string | undefined): Promise<{ allowed: boolean; retryAfterSeconds?: number }> {
   if (!userId) return { allowed: true };
   try {
@@ -261,7 +254,7 @@ async function checkAiRateLimit(userId: string | undefined): Promise<{ allowed: 
     }
     return { allowed: true };
   } catch {
-    return { allowed: true }; // fail open — never block a real call because the check itself errored
+    return { allowed: true };
   }
 }
 
@@ -294,7 +287,113 @@ async function notifyRateLimited(userId: string | undefined, workspaceId: string
   } catch { /* never throw */ }
 }
 
-// ── Provider helpers ──────────────────────────────────────────────────────────
+// ── Google Gemini Provider (Ultra Token-Friendly) ─────────────────────────────
+
+async function callGemini(
+  apiKey: string,
+  model: string,
+  messages: Array<{ role: string; content: string }>,
+  system: string | undefined,
+  opts: Pick<AICallOptions, 'jsonMode' | 'maxTokens' | 'temperature'>,
+): Promise<string> {
+  const cleanSystem = compressPrompt(system || '');
+  const cleanMessages = messages.map((m) => ({
+    role: m.role === 'assistant' ? 'assistant' : m.role === 'system' ? 'system' : 'user',
+    content: compressPrompt(m.content),
+  }));
+
+  // Direct OpenAI-compatible Gemini endpoint
+  const targetModel = model.includes('gemini') ? model : 'gemini-3.7-flash';
+  const url = `https://generativelanguage.googleapis.com/v1beta/openai/chat/completions`;
+
+  const body = {
+    model: targetModel,
+    messages: [
+      ...(cleanSystem ? [{ role: 'system', content: cleanSystem }] : []),
+      ...cleanMessages,
+    ],
+    response_format: opts.jsonMode ? { type: 'json_object' } : undefined,
+    max_tokens: opts.maxTokens || 800,
+    temperature: opts.temperature ?? 0.3,
+  };
+
+  try {
+    const resp = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey.trim()}`,
+      },
+      body: JSON.stringify(body),
+    });
+
+    if (resp.status === 429) {
+      throw new Error('Google Gemini est temporairement saturé (429).');
+    }
+
+    if (!resp.ok) {
+      // Fallback to native generateContent endpoint
+      return await callGeminiNative(apiKey, targetModel, cleanMessages, cleanSystem, opts);
+    }
+
+    const data = await resp.json();
+    let content = data.choices?.[0]?.message?.content?.trim() || '';
+    if (opts.jsonMode) {
+      content = content.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
+    }
+    return content;
+  } catch {
+    return await callGeminiNative(apiKey, targetModel, cleanMessages, cleanSystem, opts);
+  }
+}
+
+async function callGeminiNative(
+  apiKey: string,
+  model: string,
+  messages: Array<{ role: string; content: string }>,
+  system: string,
+  opts: Pick<AICallOptions, 'jsonMode' | 'maxTokens' | 'temperature'>,
+): Promise<string> {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey.trim()}`;
+
+  const contents = messages.map((m) => ({
+    role: m.role === 'assistant' ? 'model' : 'user',
+    parts: [{ text: m.content }],
+  }));
+
+  const payload: any = {
+    contents,
+    generationConfig: {
+      maxOutputTokens: opts.maxTokens || 800,
+      temperature: opts.temperature ?? 0.3,
+      ...(opts.jsonMode ? { responseMimeType: 'application/json' } : {}),
+    },
+  };
+
+  if (system) {
+    payload.systemInstruction = { parts: [{ text: system }] };
+  }
+
+  const resp = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+
+  if (!resp.ok) {
+    const text = await resp.text();
+    throw new Error(`Google Gemini error ${resp.status}: ${text}`);
+  }
+
+  const data = await resp.json();
+  let text = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
+  if (opts.jsonMode) {
+    text = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
+  }
+  return text;
+}
+
+// ── OpenRouter ────────────────────────────────────────────────────────────────
 
 async function callOpenRouter(
   apiKey: string,
@@ -313,22 +412,18 @@ async function callOpenRouter(
   const body = {
     model,
     messages: [
-      ...(system ? [{ role: 'system', content: system }] : []),
-      ...messages,
+      ...(system ? [{ role: 'system', content: compressPrompt(system) }] : []),
+      ...messages.map(m => ({ ...m, content: compressPrompt(m.content) })),
     ],
     response_format: opts.jsonMode ? { type: 'json_object' } : undefined,
-    max_tokens: opts.maxTokens || 1500,
-    temperature: opts.temperature ?? 0.7,
+    max_tokens: opts.maxTokens || 800,
+    temperature: opts.temperature ?? 0.3,
   };
 
   const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
     method: 'POST', headers, body: JSON.stringify(body),
   });
 
-  // Fail fast on 429 instead of blocking 60s on a synchronous retry against the
-  // same saturated model — the caller's provider chain (buildProviderChain) can
-  // fall through to another configured provider immediately, which is both
-  // faster and more likely to succeed than hammering the same rate limit twice.
   if (resp.status === 429) {
     throw new Error('Le modèle IA (OpenRouter) est temporairement saturé.');
   }
@@ -340,6 +435,8 @@ async function callOpenRouter(
   const data = await resp.json();
   return data.choices?.[0]?.message?.content?.trim() || '';
 }
+
+// ── Anthropic ─────────────────────────────────────────────────────────────────
 
 async function callAnthropic(
   apiKey: string,
@@ -354,14 +451,16 @@ async function callAnthropic(
 
   const msg = await client.messages.create({
     model: anthropicModel,
-    max_tokens: opts.maxTokens || 1500,
-    system,
-    messages: userMessages as any,
-    temperature: opts.temperature ?? 0.7,
+    max_tokens: opts.maxTokens || 800,
+    system: system ? compressPrompt(system) : undefined,
+    messages: userMessages.map(m => ({ ...m, content: compressPrompt(m.content) })) as any,
+    temperature: opts.temperature ?? 0.3,
   });
 
   return msg.content[0].type === 'text' ? msg.content[0].text.trim() : '';
 }
+
+// ── Cloudflare ────────────────────────────────────────────────────────────────
 
 async function callCloudflare(
   apiKey: string,
@@ -380,11 +479,11 @@ async function callCloudflare(
   const body = {
     model: cfModel,
     messages: [
-      ...(system ? [{ role: 'system', content: system }] : []),
-      ...messages,
+      ...(system ? [{ role: 'system', content: compressPrompt(system) }] : []),
+      ...messages.map(m => ({ ...m, content: compressPrompt(m.content) })),
     ],
-    max_tokens: opts.maxTokens || 1500,
-    temperature: opts.temperature ?? 0.7,
+    max_tokens: opts.maxTokens || 800,
+    temperature: opts.temperature ?? 0.3,
   };
 
   const url = `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/v1/chat/completions`;
@@ -395,7 +494,7 @@ async function callCloudflare(
   });
 
   if (resp.status === 429) {
-    throw new Error('Cloudflare Workers AI est temporairement limité (429) — trop de requêtes envoyées récemment.');
+    throw new Error('Cloudflare Workers AI est temporairement limité (429).');
   }
   if (!resp.ok) {
     const text = await resp.text();
@@ -403,20 +502,13 @@ async function callCloudflare(
   }
   const data = await resp.json();
   let content: string = data.choices?.[0]?.message?.content?.trim() || '';
-  // Strip markdown code fences that reasoning models (Kimi K2) wrap JSON in
   content = content.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
 
-  // Kimi K2 (and other reasoning models) can spend the entire max_tokens budget
-  // on `reasoning_content` and never emit anything in `content` — the HTTP call
-  // still succeeds (200 OK), so without this check the caller would treat an
-  // empty string as a valid answer (e.g. JSON.parse('') blowing up downstream
-  // with an opaque error) instead of falling through to the next configured
-  // provider in the chain. Throwing here lets buildProviderChain retry.
   if (!content) {
     const reasoningPreview = (data.choices?.[0]?.message?.reasoning_content || '').slice(0, 120);
     throw new Error(
       reasoningPreview
-        ? `Cloudflare Workers AI n'a produit aucune réponse exploitable (a épuisé son budget de tokens en raisonnement : "${reasoningPreview}...")`
+        ? `Cloudflare Workers AI réponse vide (${reasoningPreview}...)`
         : 'Cloudflare Workers AI a renvoyé une réponse vide'
     );
   }
@@ -432,6 +524,7 @@ function doCall(
   system: string | undefined,
   opts: Pick<AICallOptions, 'jsonMode' | 'maxTokens' | 'temperature'>,
 ): Promise<string> {
+  if (provider === 'gemini') return callGemini(apiKey, model, messages, system, opts);
   if (provider === 'anthropic') return callAnthropic(apiKey, model, messages, system, opts);
   if (provider === 'cloudflare') {
     const keys = getGlobalKeys();
@@ -462,35 +555,47 @@ export async function generateCompletion(options: AICallOptions): Promise<string
     throw new Error(message);
   }
 
-  // Trace l'échec de CHAQUE provider de la chaîne, pas seulement le dernier —
-  // sinon un échec Cloudflare (provider primaire) passe totalement inaperçu
-  // dès qu'OpenRouter échoue ensuite à son tour : l'utilisateur ne voit que
-  // "OpenRouter saturé" et pense à tort que Cloudflare n'a jamais été essayé.
   const failures: string[] = [];
   for (const step of chain) {
     const startTime = Date.now();
     const requestId = crypto.randomUUID();
     try {
-      const result = await doCall(step.provider, step.model, step.apiKey, messages, options.system, options);
-      logCall({ id: requestId, userId: options.userId, provider: step.provider, model: step.model, latencyMs: Date.now() - startTime, success: true });
+      const result = await doCall(step.provider, step.model, step.apiKey, messages, options.system, {
+        jsonMode: options.jsonMode,
+        maxTokens: options.maxTokens,
+        temperature: options.temperature,
+      });
+      logCall({
+        id: requestId,
+        userId: options.userId,
+        provider: step.provider,
+        model: step.model,
+        latencyMs: Date.now() - startTime,
+        success: true,
+      });
       return result;
     } catch (err: any) {
-      logCall({ id: requestId, userId: options.userId, provider: step.provider, model: step.model, latencyMs: Date.now() - startTime, success: false });
-      failures.push(`${step.provider}: ${err?.message || 'erreur inconnue'}`);
+      logCall({
+        id: requestId,
+        userId: options.userId,
+        provider: step.provider,
+        model: step.model,
+        latencyMs: Date.now() - startTime,
+        success: false,
+      });
+      failures.push(`${step.provider} (${step.model}): ${err?.message || 'erreur inconnue'}`);
     }
   }
 
   const message = failures.length > 0
     ? `Tous les providers IA configurés ont échoué — ${failures.join(' · ')}`
-    : 'Le modèle IA est temporairement indisponible, même après repli sur tous les providers configurés.';
+    : 'Le modèle IA est temporairement indisponible.';
   await notifyAiFailure(options.userId, options.workspaceId, message);
   throw new Error(message);
 }
 
-// Fait le fetch amont pour un provider donné et renvoie la Response brute (pas
-// encore transformée en ReadableStream) — permet d'essayer un provider de repli
-// avant d'avoir envoyé le moindre octet au client, exactement comme
-// generateCompletion/callWithFallback le fait déjà pour les appels non-streaming.
+// ── Streaming Implementation ──────────────────────────────────────────────────
+
 async function fetchStreamUpstream(
   provider: string,
   model: string,
@@ -498,6 +603,29 @@ async function fetchStreamUpstream(
   messages: Array<{ role: string; content: string }>,
   options: AICallOptions,
 ): Promise<{ resp: Response; model: string }> {
+  if (provider === 'gemini') {
+    const targetModel = model.includes('gemini') ? model : 'gemini-3.7-flash';
+    const url = `https://generativelanguage.googleapis.com/v1beta/openai/chat/completions`;
+    const headers = {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey.trim()}`,
+    };
+    const body = {
+      model: targetModel,
+      messages: [
+        ...(options.system ? [{ role: 'system', content: compressPrompt(options.system) }] : []),
+        ...messages.map(m => ({ ...m, content: compressPrompt(m.content) })),
+      ],
+      stream: true,
+      max_tokens: options.maxTokens || 800,
+      temperature: options.temperature ?? 0.3,
+    };
+    const resp = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body) });
+    if (resp.status === 429) throw new Error('Google Gemini est temporairement saturé (429).');
+    if (!resp.ok) throw new Error(`Google Gemini streaming error ${resp.status}`);
+    return { resp, model: targetModel };
+  }
+
   if (provider === 'openrouter') {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
@@ -508,15 +636,13 @@ async function fetchStreamUpstream(
     const body = {
       model,
       messages: [
-        ...(options.system ? [{ role: 'system', content: options.system }] : []),
-        ...messages,
+        ...(options.system ? [{ role: 'system', content: compressPrompt(options.system) }] : []),
+        ...messages.map(m => ({ ...m, content: compressPrompt(m.content) })),
       ],
       stream: true,
-      max_tokens: options.maxTokens || 1500,
-      temperature: options.temperature ?? 0.7,
+      max_tokens: options.maxTokens || 800,
+      temperature: options.temperature ?? 0.3,
     };
-    // Same fail-fast rationale as callOpenRouter — let the provider chain fall
-    // through to the next configured provider instead of blocking 60s here.
     const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', { method: 'POST', headers, body: JSON.stringify(body) });
     if (resp.status === 429) throw new Error('Le modèle IA (OpenRouter) est temporairement saturé.');
     if (!resp.ok) throw new Error(`OpenRouter streaming error ${resp.status}`);
@@ -530,23 +656,21 @@ async function fetchStreamUpstream(
     const body = {
       model: cfModel,
       messages: [
-        ...(options.system ? [{ role: 'system', content: options.system }] : []),
-        ...messages,
+        ...(options.system ? [{ role: 'system', content: compressPrompt(options.system) }] : []),
+        ...messages.map(m => ({ ...m, content: compressPrompt(m.content) })),
       ],
       stream: true,
-      max_tokens: options.maxTokens || 1500,
-      temperature: options.temperature ?? 0.7,
+      max_tokens: options.maxTokens || 800,
+      temperature: options.temperature ?? 0.3,
     };
     const url = `https://api.cloudflare.com/client/v4/accounts/${keys.cloudflareAccountId}/ai/v1/chat/completions`;
     const resp = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body) });
-    // Message clair et cohérent avec le cas OpenRouter (ligne ~518) — sans ça,
-    // l'utilisateur voit juste "Cloudflare streaming error 429" sans contexte.
-    if (resp.status === 429) throw new Error('Cloudflare Workers AI est temporairement limité (429) — trop de requêtes envoyées récemment.');
+    if (resp.status === 429) throw new Error('Cloudflare Workers AI est temporairement limité (429).');
     if (!resp.ok) throw new Error(`Cloudflare streaming error ${resp.status}`);
     return { resp, model: cfModel };
   }
 
-  // ── Anthropic ──────────────────────────────────────────────────────────────
+  // Anthropic
   const anthropicModel = model.startsWith('claude') ? model : 'claude-sonnet-5';
   const userMessages = messages.filter(m => m.role !== 'system');
   const resp = await fetch('https://api.anthropic.com/v1/messages', {
@@ -554,20 +678,17 @@ async function fetchStreamUpstream(
     headers: { 'x-api-key': apiKey.trim(), 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' },
     body: JSON.stringify({
       model: anthropicModel,
-      ...(options.system ? { system: options.system } : {}),
-      messages: userMessages,
+      ...(options.system ? { system: compressPrompt(options.system) } : {}),
+      messages: userMessages.map(m => ({ ...m, content: compressPrompt(m.content) })),
       stream: true,
-      max_tokens: options.maxTokens || 1500,
-      temperature: options.temperature ?? 0.7,
+      max_tokens: options.maxTokens || 800,
+      temperature: options.temperature ?? 0.3,
     }),
   });
   if (!resp.ok) throw new Error(`Anthropic streaming error ${resp.status}`);
   return { resp, model: anthropicModel };
 }
 
-// Transforme la Response amont réussie en ReadableStream au format SSE attendu
-// par le front (delta OpenAI-style) — passthrough brut pour OpenRouter/Cloudflare
-// (déjà au bon format), reformatage pour Anthropic (format d'event différent).
 function wrapStreamResponse(provider: string, resp: Response): ReadableStream {
   const encoder = new TextEncoder();
 
@@ -605,7 +726,7 @@ function wrapStreamResponse(provider: string, resp: Response): ReadableStream {
                   `data: ${JSON.stringify({ choices: [{ delta: { content: parsed.delta.text } }] })}\n\n`
                 ));
               }
-            } catch { /* ignore parse errors */ }
+            } catch { /* ignore */ }
           }
         }
         controller.enqueue(encoder.encode('data: [DONE]\n\n'));
@@ -635,8 +756,6 @@ export async function generateStreamCompletion(options: AICallOptions): Promise<
     throw new Error(message);
   }
 
-  // Voir le commentaire équivalent dans generateCompletion : on trace l'échec
-  // de chaque provider, pas seulement le dernier.
   const failures: string[] = [];
   for (const step of chain) {
     const startTime = Date.now();
@@ -653,7 +772,7 @@ export async function generateStreamCompletion(options: AICallOptions): Promise<
 
   const message = failures.length > 0
     ? `Tous les providers IA configurés ont échoué — ${failures.join(' · ')}`
-    : 'Le modèle IA est temporairement indisponible, même après repli sur tous les providers configurés.';
+    : 'Le modèle IA est temporairement indisponible.';
   await notifyAiFailure(options.userId, options.workspaceId, message);
   throw new Error(message);
 }
