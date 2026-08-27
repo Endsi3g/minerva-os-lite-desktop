@@ -16,6 +16,7 @@ const pagesToCapture = [
   { name: '03_map_terrain_mode', path: '/map' },
   { name: '04_ads_hub', path: '/ads' },
   { name: '05_weekly_report_analytics', path: '/weekly-report' },
+  { name: '05b_analytics_dashboard', path: '/analytics' },
   { name: '06_unified_library', path: '/library' },
   { name: '07_ai_agents', path: '/agents' },
   { name: '08_outreach', path: '/outreach' },
@@ -40,6 +41,7 @@ const pagesToCapture = [
   { name: '27_settings', path: '/settings' },
   { name: '28_setup', path: '/setup' },
   { name: '29_platform', path: '/platform' },
+  { name: '30_in_app_changelog', path: '/changelog' },
 ];
 
 for (const { name, path: pagePath } of pagesToCapture) {

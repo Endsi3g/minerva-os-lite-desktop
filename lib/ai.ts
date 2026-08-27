@@ -55,9 +55,9 @@ function compressPrompt(text: string): string {
 function geminiModel(rawModel?: string | null): string {
   if (!rawModel) return GEMINI_DEFAULT_MODEL;
   if (rawModel.includes('3.7')) return 'gemini-3.7-flash';
-  if (rawModel.includes('2.5')) return 'gemini-2.5-flash';
-  if (rawModel.includes('2.0')) return 'gemini-2.0-flash';
-  if (rawModel.includes('1.5')) return 'gemini-1.5-flash';
+  if (rawModel.includes('3.6')) return 'gemini-3.6-flash';
+  if (rawModel.includes('3.5')) return 'gemini-3.5-flash';
+  if (rawModel.includes('latest')) return 'gemini-flash-latest';
   return GEMINI_DEFAULT_MODEL;
 }
 
@@ -354,7 +354,7 @@ async function callGeminiNative(
   system: string,
   opts: Pick<AICallOptions, 'jsonMode' | 'maxTokens' | 'temperature'>,
 ): Promise<string> {
-  const candidateModels = [model, 'gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-2.0-flash'].filter(
+  const candidateModels = [model, 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-flash-latest'].filter(
     (m, idx, arr) => arr.indexOf(m) === idx
   );
 
@@ -617,26 +617,44 @@ async function fetchStreamUpstream(
   options: AICallOptions,
 ): Promise<{ resp: Response; model: string }> {
   if (provider === 'gemini') {
-    const targetModel = model.includes('gemini') ? model : 'gemini-3.7-flash';
+    const candidateModels = [
+      model.includes('gemini') ? model : 'gemini-3.7-flash',
+      'gemini-3.6-flash',
+      'gemini-3.5-flash',
+      'gemini-flash-latest',
+    ].filter((m, idx, arr) => arr.indexOf(m) === idx);
+
     const url = `https://generativelanguage.googleapis.com/v1beta/openai/chat/completions`;
     const headers = {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${apiKey.trim()}`,
     };
-    const body = {
-      model: targetModel,
-      messages: [
-        ...(options.system ? [{ role: 'system', content: compressPrompt(options.system) }] : []),
-        ...messages.map(m => ({ ...m, content: compressPrompt(m.content) })),
-      ],
-      stream: true,
-      max_tokens: options.maxTokens || 800,
-      temperature: options.temperature ?? 0.3,
-    };
-    const resp = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body) });
-    if (resp.status === 429) throw new Error('Google Gemini est temporairement saturé (429).');
-    if (!resp.ok) throw new Error(`Google Gemini streaming error ${resp.status}`);
-    return { resp, model: targetModel };
+
+    let lastErrorStatus = 500;
+    for (const targetModel of candidateModels) {
+      try {
+        const body = {
+          model: targetModel,
+          messages: [
+            ...(options.system ? [{ role: 'system', content: compressPrompt(options.system) }] : []),
+            ...messages.map(m => ({ ...m, content: compressPrompt(m.content) })),
+          ],
+          stream: true,
+          max_tokens: options.maxTokens || 800,
+          temperature: options.temperature ?? 0.3,
+        };
+        const resp = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body) });
+        if (resp.ok) {
+          return { resp, model: targetModel };
+        }
+        lastErrorStatus = resp.status;
+      } catch (err: any) {
+        lastErrorStatus = 500;
+      }
+    }
+
+    if (lastErrorStatus === 429) throw new Error('Google Gemini est temporairement saturé (429).');
+    throw new Error(`Google Gemini streaming error ${lastErrorStatus}`);
   }
 
   if (provider === 'openrouter') {

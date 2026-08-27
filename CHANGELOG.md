@@ -5,6 +5,50 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [9.4.0] — Graphiques Recharts Grands Formats, IA Visuelle Native avec Deep-Links & Bannière Diagnostic — 27 août 2026
+
+### Ajouté & Amélioré
+- **Composant Unifié InteractiveChartCard** :
+  - Remplacement systématique des chiffres bruts par des graphiques interactifs grands formats Recharts (BarChart, AreaChart, LineChart, DonutChart).
+  - Intégration de modales d'agrandissement plein écran (`Dialog`), tooltips personnalisés aux couleurs de la marque (`#059669`, `#26251e`) et boutons d'accès direct (`deepLink`).
+- **Graphiques IA Natifs & Deep-Links Contextuels** :
+  - L'Assistant IA détecte et formate automatiquement des blocs graphiques JSON interactifs directement dans le flux de chat.
+  - Chaque graphique IA propose un bouton de navigation direct vers la vue correspondante (`/analytics`, `/pipeline`, `/weekly-report`, `/leads`).
+- **Bannière de Diagnostic IA & Monitoring Latence** :
+  - Détection automatique de l'état de la connexion et de la latence à Gemini 3.7 en tâche de fond.
+  - Bannière d'alerte contextuelle avec bouton de test et guide de résolution immédiate en 1 clic.
+- **Refonte Recharts du Tableau de bord (/today)** :
+  - Intégration de `TodayOverviewCharts` avec courbes de vélocité d'acquisition et répartition du pipeline.
+- **Refonte Recharts d'Analytics (/analytics)** :
+  - Entonnoir de conversion, complétude des données et répartition sectorielle/géographique en graphiques interactifs haute résolution.
+- **Refonte Recharts du Bilan Hebdo (/weekly-report)** :
+  - Graphiques d'évolution du taux d'acceptation NBA et de répartition des automatisations IA.
+- **Compactage Global UI/UX** :
+  - Harmonisation et réduction des marges et hauteurs pour maximiser la densité d'information et supprimer les espaces vides.
+
+## [9.3.0] — Reconnexion Totale des Données CRM (124 Leads Montréal), IA Gemini 3.7 Flash & Refonte Ultime du Hub Analyser — 27 août 2026
+
+### Ajouté & Corrigé
+- **Reconnexion & Restauration Totale des Données CRM** :
+  - Extraction et injection de **124 entreprises réelles montréalaises** issues de `google.csv` (restauration, gastronomie, commerces avec coordonnées, adresses, ratings réels, avis Google et calcul MRR).
+  - Intégration comme source de fallback déterministe dans `lib/reach-context.tsx` (`GOOGLE_SEEDED_LEADS`).
+  - Restauration immédiate de toutes les pages CRM : Liste des Leads (`/leads`), Carte Interactive Terrain (`/map`), Pipeline (`/pipeline`), Accueil Aujourd'hui (`/today`), Activités (`/activities`), et Analytics (`/analytics`).
+
+- **Correction Majeure de l'Assistant IA & Cascade de Modèles Gemini 3.7 Flash** :
+  - **Résolution du reset de session** : Suppression de l'événement prématuré `minerva_assistant_sync` dans `app/(ai)/assistant/_components/assistant-root.tsx` qui provoquait un reload du workspace et écrasait la conversation en cours.
+  - **Cascade et Résilience IA** : Mise à jour du fallback multi-modèles (`gemini-3.7-flash` -> `gemini-3.6-flash` -> `gemini-3.5-flash` -> `gemini-flash-latest`) dans `lib/ai.ts` et élimination des anciens modèles v1beta (2.5, 1.5, 2.0).
+  - Transmission propre de la clé `gemini_key` dans `app/api/chat/handler.ts`.
+
+- **Refonte UI/UX Complète des 5 Pages du Hub Analyser ("Bilan")** :
+  - **1. Bilan Hebdomadaire (`/weekly-report`)** : Synthèse stratégique IA en direct, 6 cartes métriques haute précision avec sparklines, historique chronologique des bilans et journal des actions automatisées.
+  - **2. Tableau de Bord Analytique (`/analytics`)** : Entonnoir du pipeline interactif, jauges de complétude des données, répartition géographique et sectorielle des 124 leads.
+  - **3. Rapports & Dossiers Clients (`/client-reports`)** : Sélecteur de dossiers interactif avec bascule clients gagnés / tous dossiers, module de devis et livrables dynamiques, intégration de l'audit SEO et export PDF/impression ultra-clean.
+  - **4. Journal des Activités (`/activities`)** : Timeline chronologique avec badges d'actions stylisés selon les tokens de design Minerva (`#059669`), filtres rapides multi-canaux (Leads, Emails, Appels, Notes, Tâches) et recherche instantanée.
+  - **5. Audit Technique & Performance SEO (`/audit`)** : Jauge circulaire SVG moderne avec score sur 100, sélecteur rapide de leads en 1-clic, analyse des 4 piliers (Technique & SSL, Tracking Analytics, Balises SEO On-Page, Mobile) et générateur d'argumentaire commercial IA.
+
+- **Vérification Visuelle E2E Playwright** :
+  - Capture de 30 captures d'écran pleine page validant l'intégrité visuelle et fonctionnelle de chaque module.
+
 ## [9.2.0] — Refonte UI/UX Main Content, Système d'Accent Vert & Harmonisation Dashboard — 27 août 2026, 11h15
 
 ### Ajouté

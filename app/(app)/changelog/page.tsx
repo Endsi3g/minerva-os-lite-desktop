@@ -21,6 +21,34 @@ interface ChangelogVersion {
 
 const versions: ChangelogVersion[] = [
   {
+    version: 'v9.4.0',
+    date: '27 août 2026 · 15h35',
+    title: 'Graphiques Recharts Grands Formats, IA Visuelle Native avec Deep-Links & Bannière Diagnostic',
+    highlights: [
+      { text: "Composant unifié InteractiveChartCard : Remplacement des chiffres bruts par des graphiques complets Recharts (BarChart, AreaChart, LineChart, DonutChart) avec axes, légendes interactives, tooltips enrichis et modale d'agrandissement plein écran." },
+      { text: "Graphiques IA Natifs & Deep-Links : L'Assistant IA détecte et génère automatiquement des blocs graphiques interactifs directement dans le flux de discussion avec des boutons de redirection contextuelle en 1-clic ([Voir dans Analytics →], [Consulter le Pipeline →])." },
+      { text: "Bannière de Diagnostic IA Intelligente : Monitoring automatique de la connexion et de la latence de Gemini 3.7 en tâche de fond avec affichage contextuel d'une bannière d'alerte et bouton de test/résolution immédiate." },
+      { text: "Refonte Recharts du Tableau de bord (/today) : Intégration de courbes de vélocité mensuelle et de répartition du pipeline par étape avec le composant InteractiveChartCard." },
+      { text: "Refonte Recharts d'Analytics (/analytics) : Entonnoir de conversion, complétude des données et répartition sectorielle/géographique en graphiques interactifs avec modales plein écran." },
+      { text: "Refonte Recharts du Bilan Hebdomadaire (/weekly-report) : Graphiques d'évolution du taux d'acceptation NBA et de répartition des automatisations IA exécutées." },
+      { text: "Compactage Global UI/UX : Harmonisation des marges, hauteurs et densités d'information sur l'ensemble des 5 Hubs pour éliminer les espaces vides." },
+    ]
+  },
+  {
+    version: 'v9.3.0',
+    date: '27 août 2026 · 15h15',
+    title: 'Reconnexion Totale Données CRM (124 Leads Montréal), IA Gemini 3.7 & Refonte Hub Analyser',
+    highlights: [
+      { text: "Restauration et reconnexion totale des données CRM : injection de 124 entreprises réelles montréalaises (restauration, commerces, coordonnées, avis Google et calcul MRR) synchronisées sur l'ensemble de l'UI (Leads, Carte terrain, Pipeline, Aujourd'hui, Activités, Analytics)." },
+      { text: "Correction majeure de l'Assistant IA : élimination du reset de session lors de l'envoi de messages et mise en place d'une cascade multi-modèles robuste (Gemini 3.7 Flash -> 3.6 Flash -> 3.5 Flash -> Flash Latest) pour une résilience totale." },
+      { text: "Refonte du Bilan Hebdomadaire (/weekly-report) : synthèse stratégique IA en direct, 6 cartes KPIs haute précision, historique chronologique des bilans et journal complet des actions automatisées." },
+      { text: "Refonte de la page Analytics (/analytics) : entonnoir de conversion interactif, complétude des données, répartition géographique et sectorielle des 124 leads." },
+      { text: "Refonte des Rapports & Dossiers Clients (/client-reports) : sélecteur de dossiers avec bascule clients gagnés / tous dossiers, devis et livrables dynamiques, export PDF et impression ultra-clean." },
+      { text: "Refonte du Journal des Activités (/activities) : timeline chronologique avec badges d'actions émeraude (#059669), filtres multi-canaux (Leads, Emails, Appels, Notes, Tâches) et recherche instantanée." },
+      { text: "Refonte de l'Audit Technique & SEO (/audit) : jauge circulaire SVG moderne avec score sur 100, sélecteur rapide de leads en 1-clic, analyse des 4 piliers et générateur d'argumentaire commercial IA." },
+    ]
+  },
+  {
     version: 'v9.2.0',
     date: '27 août 2026 · 11h15',
     title: 'Refonte UI/UX Main Content, Système d\'Accent Vert & Harmonisation Dashboard',

@@ -40,22 +40,34 @@ export async function POST(req: NextRequest) {
     // Get user settings to look for API Keys
     const { data: dbSettings } = await supabase
       .from('settings')
-      .select('openrouter_key, ai_provider, ai_model')
+      .select('openrouter_key, gemini_key, ai_provider, ai_model')
       .eq('user_id', user.id)
       .maybeSingle();
 
-    const selectedModel = model || dbSettings?.ai_model || 'openrouter/free';
-    const lastMessage = messages[messages.length - 1]?.content || '';
-    const lastMessageLower = lastMessage.toLowerCase();
+    const enhancedSystem = [
+      system || '',
+      `## Instructions Graphiques & Visualisations Recharts
+Pour toute question sur les métriques, statistiques, répartition de leads, comparaison de niches, taux de closing ou pipeline commercial, fournis systématiquement un bloc \`\`\`chart\`\`\` au format JSON :
+\`\`\`chart
+{
+  "title": "Titre du Graphique",
+  "subtitle": "Sous-titre descriptif",
+  "type": "bar", // ou "area", "line", "pie", "donut"
+  "data": [{"name": "Catégorie A", "value": 45}, {"name": "Catégorie B", "value": 30}],
+  "deepLink": {"label": "Ouvrir dans Analytics", "href": "/analytics"}
+}
+\`\`\``,
+    ].filter(Boolean).join('\n\n');
 
     try {
       const stream = await generateStreamCompletion({
-        system,
+        system: enhancedSystem,
         messages,
         settings: {
           ai_provider: requestProvider || dbSettings?.ai_provider,
           ai_model: model || dbSettings?.ai_model,
           openrouter_key: dbSettings?.openrouter_key,
+          gemini_key: dbSettings?.gemini_key,
         },
       });
 

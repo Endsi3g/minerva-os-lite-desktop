@@ -14,6 +14,7 @@ import { useReach } from '@/lib/reach-context';
 import { useSkills } from '@/lib/use-skills';
 import { getApiUrl } from '@/lib/api-helper';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 import { 
   X,
   Sparkles,
@@ -45,6 +46,7 @@ import {
   Mail,
   Zap,
 } from 'lucide-react';
+import { InteractiveChartCard } from '@/components/charts/interactive-chart-card';
 import { MinervaIcon } from '@/components/icons';
 import { useLanguage } from '@/lib/language-context';
 import {
@@ -430,6 +432,50 @@ function ActionCard({
   );
 }
 
+interface ChartPayload {
+  title: string;
+  subtitle?: string;
+  type?: 'bar' | 'area' | 'line' | 'pie' | 'donut';
+  data: Array<{ name: string; value: number; [key: string]: any }>;
+  dataKeys?: Array<{ key: string; name: string; color: string }>;
+  deepLink?: { label: string; href: string };
+  valuePrefix?: string;
+  valueSuffix?: string;
+}
+
+function parseChartBlock(content: string): { chart: ChartPayload; before: string; after: string } | null {
+  const match = content.match(/(?:```(?:chart|minerva-chart|json-chart)\s*([\s\S]*?)```|<chart>([\s\S]*?)<\/chart>)/i);
+  if (!match) return null;
+
+  const rawJson = (match[1] || match[2] || '').trim();
+  try {
+    const parsed = JSON.parse(rawJson);
+    if (parsed.data && Array.isArray(parsed.data) && (parsed.title || parsed.name)) {
+      const matchIndex = match.index ?? 0;
+      const matchLength = match[0].length;
+      return {
+        chart: {
+          title: parsed.title || parsed.name || 'Graphique Analytique',
+          subtitle: parsed.subtitle,
+          type: (parsed.type === 'area' || parsed.type === 'line' || parsed.type === 'pie' || parsed.type === 'donut') ? parsed.type : 'bar',
+          data: parsed.data.map((d: any, idx: number) => ({
+            name: d.name || d.label || d.category || d.stage || `Item ${idx + 1}`,
+            value: typeof d.value === 'number' ? d.value : Number(d.value) || (typeof d.count === 'number' ? d.count : 0),
+            ...d,
+          })),
+          dataKeys: parsed.dataKeys,
+          deepLink: parsed.deepLink || { label: 'Voir le rapport dans Analytics', href: '/analytics' },
+          valuePrefix: parsed.valuePrefix,
+          valueSuffix: parsed.valueSuffix,
+        },
+        before: content.slice(0, matchIndex),
+        after: content.slice(matchIndex + matchLength),
+      };
+    }
+  } catch {}
+  return null;
+}
+
 // ── Rich message content ─────────────────────────────────────────────────────
 
 function RichMessageContent({
@@ -441,6 +487,29 @@ function RichMessageContent({
   t: any;
   onAction?: (action: MinervaActionPayload) => Promise<{ success: boolean; message: string }>;
 }) {
+  // Check for interactive chart blocks
+  const chartResult = parseChartBlock(content);
+  if (chartResult) {
+    const { chart, before, after } = chartResult;
+    return (
+      <div className="space-y-3">
+        {before.trim() && <MarkdownRenderer content={before.trim()} t={t} />}
+        <InteractiveChartCard
+          title={chart.title}
+          subtitle={chart.subtitle}
+          type={chart.type || 'bar'}
+          data={chart.data}
+          dataKeys={chart.dataKeys}
+          deepLink={chart.deepLink}
+          valuePrefix={chart.valuePrefix}
+          valueSuffix={chart.valueSuffix}
+          className="my-2"
+        />
+        {after.trim() && <MarkdownRenderer content={after.trim()} t={t} />}
+      </div>
+    );
+  }
+
   // Check for CRM action blocks first
   const actionResult = parseActionBlock(content);
   if (actionResult && onAction) {
@@ -541,6 +610,42 @@ export function AssistantRoot() {
   const [selectedModel, setSelectedModel] = useState(AI_MODELS[0]);
   const [showModelDropdown, setShowModelDropdown] = useState(false);
 
+  // AI Diagnostic State
+  const [aiDiagnostic, setAiDiagnostic] = useState<{ status: 'healthy' | 'latency_warning' | 'error'; latencyMs?: number; errorMsg?: string } | null>(null);
+
+  const runAiDiagnosticProbe = useCallback(async () => {
+    const t0 = Date.now();
+    try {
+      const res = await fetch(getApiUrl('/api/chat'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: [{ role: 'user', content: 'ping' }],
+          model: selectedModel.id,
+          provider: selectedModel.provider,
+        }),
+      });
+      const t1 = Date.now();
+      const latency = t1 - t0;
+      if (!res.ok) {
+        setAiDiagnostic({ status: 'error', errorMsg: `Erreur de connexion IA (${res.status}) — Vérifiez votre clé API dans Paramètres.` });
+      } else if (latency > 4500) {
+        setAiDiagnostic({ status: 'latency_warning', latencyMs: latency });
+      } else {
+        setAiDiagnostic({ status: 'healthy', latencyMs: latency });
+      }
+    } catch (err: any) {
+      setAiDiagnostic({ status: 'error', errorMsg: err?.message || 'Connexion réseau impossible vers Gemini' });
+    }
+  }, [selectedModel]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      runAiDiagnosticProbe();
+    }, 1200);
+    return () => clearTimeout(timer);
+  }, [runAiDiagnosticProbe]);
+
   // File Attachment
   const [attachedFile, setAttachedFile] = useState<{ name: string; type: string; content?: string; dataUrl?: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -602,6 +707,7 @@ export function AssistantRoot() {
   const [libraryFolderName, setLibraryFolderName] = useState('');
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const isStreamingRef = useRef(false);
 
   const userId = user?.id || 'anonymous';
   const workspaceId = activeWorkspace?.id || 'default_ws';
@@ -830,6 +936,7 @@ export function AssistantRoot() {
     loadWorkspaceData();
 
     const handleSync = () => {
+      if (isStreamingRef.current) return;
       loadWorkspaceData();
     };
     window.addEventListener('minerva_assistant_sync', handleSync);
@@ -1103,7 +1210,6 @@ export function AssistantRoot() {
       
       const sessList = await dbGetSessions(userId, workspaceId);
       setSessions(sessList);
-      window.dispatchEvent(new CustomEvent('minerva_assistant_sync'));
     }
 
     const userMsg: Message = {
@@ -1118,6 +1224,7 @@ export function AssistantRoot() {
     const history = [...messages, userMsg];
     setMessages(history);
     setIsLoading(true);
+    isStreamingRef.current = true;
 
     // Last user message: send multimodal content (text + image) when an image is
     // attached, so vision-capable models actually receive the image.
@@ -1197,12 +1304,12 @@ Tu disposes d'outils interactifs basés sur Shadcn pour afficher des interfaces 
 {"title": "Proposition Commerciale", "recipientEmail": "prospect@email.com", "variants": [{"subject": "Objet percutant", "body": "Corps du message..."}]}
 \`\`\`
 
-5. Actions CRM exécutables :
-\`\`\`minerva-action
-{"action": "create_lead"|"send_email"|"create_task"|"update_lead_status"|"trigger_enrichment"|"navigate", "params": {...}, "summary": "Description en une phrase"}
+6. Graphique Visuel Recharts Interactif (Recommandé pour toutes les demandes analytiques, bilans, métriques et comparaisons) :
+\`\`\`chart
+{"title": "Pipeline Commercial par Étape", "subtitle": "Montréal 2026", "type": "bar"|"area"|"line"|"pie"|"donut", "data": [{"name": "Nouveaux", "value": 45}, {"name": "Contactés", "value": 32}, {"name": "RDV Fixés", "value": 18}, {"name": "Gagnés", "value": 12}], "deepLink": {"label": "Ouvrir dans Analytics", "href": "/analytics"}, "valueSuffix": " leads"}
 \`\`\`
 
-Important : Utilise ces blocs JSON interactifs chaque fois que cela améliore l'expérience utilisateur et la lisibilité visuelle.`;
+Important : Utilise ces blocs JSON interactifs chaque fois que cela améliore l'expérience utilisateur et la lisibilité visuelle. Pour toute question sur les métriques, la performance, les leads ou les revenus, utilise systématiquement un bloc \`\`\`chart ... \`\`\` avec un deepLink vers /analytics, /weekly-report ou /pipeline.`;
 
     const systemWithSkills = [
       canvasSystemPrompt,
@@ -1428,6 +1535,7 @@ Important : Utilise ces blocs JSON interactifs chaque fois que cela améliore l'
       }]);
     } finally {
       setIsLoading(false);
+      isStreamingRef.current = false;
     }
   };
 
@@ -2158,6 +2266,39 @@ Important : Utilise ces blocs JSON interactifs chaque fois que cela améliore l'
               </Button>
             </div>
           </header>
+
+          {/* AI Diagnostic Banner (Contextual) */}
+          {aiDiagnostic && aiDiagnostic.status !== 'healthy' && (
+            <div className={cn(
+              "px-4 py-2 text-xs flex items-center justify-between gap-3 border-b transition-all animate-in fade-in duration-200 shrink-0",
+              aiDiagnostic.status === 'latency_warning' ? "bg-amber-50/90 text-amber-900 border-amber-200" : "bg-red-50/90 text-red-900 border-red-200"
+            )}>
+              <div className="flex items-center gap-2">
+                <Zap className={cn("h-3.5 w-3.5 shrink-0", aiDiagnostic.status === 'latency_warning' ? "text-amber-600 animate-pulse" : "text-red-600")} />
+                <span className="font-medium">
+                  {aiDiagnostic.status === 'latency_warning'
+                    ? `Latence de connexion IA élevée (${aiDiagnostic.latencyMs} ms) — Cascade automatique Gemini 3.6 active.`
+                    : (aiDiagnostic.errorMsg || 'Connexion IA indisponible — vérifiez vos clés API.')}
+                </span>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={runAiDiagnosticProbe}
+                  className="text-[10px] font-black uppercase tracking-wider underline hover:no-underline text-[#059669]"
+                >
+                  Tester à nouveau
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAiDiagnostic(null)}
+                  className="p-1 hover:bg-black/5 rounded-md text-[#7a7a76]"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Message Feed / Chat Window */}
           <div className="flex-1 overflow-y-auto min-h-0 bg-white">

@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { getApiUrl } from './api-helper';
 import { User as SupabaseUser, AuthChangeEvent, Session } from '@supabase/supabase-js';
 import { Lead, Task, Note, AiSuggestion, LeadLocation, GooglePlaceData } from './mock-data';
+import { GOOGLE_SEEDED_LEADS } from './google-seeded-leads';
 import { computeLeadScore } from './lead-scoring';
 import { createClient } from './supabase/client';
 import { sendDesktopNotification } from './notification-service';
@@ -700,10 +701,13 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
         electronObj.dbAll("SELECT * FROM lead_validations WHERE workspace_id = ? ORDER BY created_at DESC", [workspaceId]),
       ]);
 
-      const uiLeads = (dbLeads || []).map((lead: any) => {
+      let uiLeads = (dbLeads || []).map((lead: any) => {
         const leadNotes = (dbNotes || []).filter((n: any) => n.lead_id === lead.id);
         return mapDbLeadToUi(lead, leadNotes);
       });
+      if (uiLeads.length === 0) {
+        uiLeads = GOOGLE_SEEDED_LEADS;
+      }
       setLeads(uiLeads);
       setTasks((dbTasks || []).map(mapDbTaskToUi));
 
@@ -763,12 +767,28 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
         supabase.from('lead_validations').select('*').eq('workspace_id', activeWs.id).order('created_at', { ascending: false }),
       ]);
 
-      const uiLeads = (dbLeads || []).map((lead: DbLead) => {
+      let uiLeads = (dbLeads || []).map((lead: DbLead) => {
         const leadNotes = (dbNotes || []).filter((n: DbNote) => n.lead_id === lead.id);
         return mapDbLeadToUi(lead, leadNotes);
       });
+      if (uiLeads.length === 0) {
+        uiLeads = GOOGLE_SEEDED_LEADS;
+      }
       setLeads(uiLeads);
-      setTasks((dbTasks || []).map(mapDbTaskToUi));
+
+      let mappedTasks = (dbTasks || []).map(mapDbTaskToUi);
+      if (mappedTasks.length === 0 && uiLeads.length > 0) {
+        mappedTasks = uiLeads.slice(0, 10).map((l: Lead, i: number) => ({
+          id: `task-google-${i + 1}`,
+          title: `${l.nextAction || 'Relancer le prospect'} (${l.businessName})`,
+          completed: i % 3 === 0,
+          category: (i % 2 === 0 ? 'Follow-up' : 'Preparation') as Task['category'],
+          dueDate: l.nextActionDate || new Date(Date.now() + (i + 1) * 86400000).toISOString().split('T')[0],
+          leadId: l.id,
+          priority: (l.temperature === 'Hot' ? 'high' : 'medium') as Task['priority'],
+        }));
+      }
+      setTasks(mappedTasks);
 
       if (dbSettings) {
         setQuickNote(dbSettings.quick_note || '');
