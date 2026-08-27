@@ -70,6 +70,9 @@ import { AiEmailTool } from '@/components/ui/ai-email-tool';
 import { AiImageSearch } from '@/components/ui/ai-image-search';
 import { AiImageLoader } from '@/components/ui/ai-image-loader';
 import { CursorQuestions } from '@/components/ui/cursor-questions';
+import { AIQuestionnaire } from '@/components/ui/ai-questionnaire';
+import { AILeadCard } from '@/components/ui/ai-lead-card';
+import { AIDataTable } from '@/components/ui/ai-data-table';
 import { LinkPreview } from '@/components/ui/link-preview';
 
 function MarkdownRenderer({ content, t }: { content: string; t: any }) {
@@ -268,10 +271,21 @@ type ToolBlock =
   | { type: 'image-search'; data: { results: any[]; query?: string } }
   | { type: 'image-loader'; data: { src?: string; alt?: string; width?: number; height?: number } }
   | { type: 'questions'; data: { questions: any[] } }
+  | { type: 'questionnaire'; data: any }
+  | { type: 'lead-card'; data: any }
+  | { type: 'data-table'; data: any }
   | null;
 
 function parseToolBlock(content: string): { block: ToolBlock; before: string; after: string } | null {
-  const toolTypes = ['email-tool', 'image-search', 'image-loader', 'questions'] as const;
+  const toolTypes = [
+    'email-tool',
+    'image-search',
+    'image-loader',
+    'questions',
+    'questionnaire',
+    'lead-card',
+    'data-table',
+  ] as const;
   for (const toolType of toolTypes) {
     const regex = new RegExp('```' + toolType + '\\n([\\s\\S]*?)```');
     const match = content.match(regex);
@@ -472,6 +486,24 @@ function RichMessageContent({
           <CursorQuestions
             questions={block.data.questions}
             onComplete={() => {}}
+          />
+        )}
+        {block?.type === 'questionnaire' && (
+          <AIQuestionnaire
+            data={block.data}
+            onSubmit={() => {
+              toast.success('Réponses au questionnaire enregistrées !');
+            }}
+          />
+        )}
+        {block?.type === 'lead-card' && (
+          <AILeadCard
+            data={block.data}
+          />
+        )}
+        {block?.type === 'data-table' && (
+          <AIDataTable
+            data={block.data}
           />
         )}
         {after.trim() && <MarkdownRenderer content={after.trim()} t={t} />}
@@ -1142,23 +1174,35 @@ export function AssistantRoot() {
     };
     const contextText = activeContextIds.map(buildContext).filter(Boolean).join('\n\n');
 
-    const actionsPrompt = `## Actions Minerva — exécutables en temps réel
-Quand l'utilisateur demande une action CRM concrète (créer un lead, envoyer un email, créer une tâche, mettre à jour un statut...), génère un bloc d'action JSON dans ta réponse, en PLUS d'une courte explication :
-\`\`\`minerva-action
-{"action": "nom_action", "params": {...}, "summary": "Résumé de l'action en une phrase"}
-\`\`\`
-Actions disponibles :
-- create_lead : params { business_name, city, phone, niche, email, website, notes, status ("New"|"Contacted"|"Interested"), temperature ("Cold"|"Warm"|"Hot") }
-- send_email : params { to, subject, body, lead_id? }
-- create_task : params { title, category ("call"|"email"|"follow_up"|"meeting"), due_date? }
-- update_lead_status : params { lead_id, status }
-- search_gmail_sent : params {} — liste les emails envoyés récents
-- search_gmail_replies : params {} — liste les réponses reçues
-- create_note : params { lead_id, content, type ("general"|"call"|"meeting") } — ajoute une note à un lead
-- trigger_enrichment : params { lead_ids: [...] } — lance un vrai enrichissement (Google Places, site web) sur les leads donnés
-- navigate : params { path } — amène l'utilisateur vers une page précise de l'app (ex: "/leads/abc123", "/prospecting")
+    const actionsPrompt = `## Outils UI & Actions Interactives Minerva
+Tu disposes d'outils interactifs basés sur Shadcn pour afficher des interfaces riches directement dans le chat :
 
-Important : ne génère un bloc action QUE si l'utilisateur demande explicitement une action. Pour les questions ou analyses, réponds normalement sans bloc action.`;
+1. Questionnaire interactif (quand l'utilisateur veut poser des questions de qualification guidées) :
+\`\`\`questionnaire
+{"title": "Titre du questionnaire", "category": "Catégorie", "description": "Explication brève", "questions": [{"id": "q1", "title": "Question", "subtitle": "Sous-titre optionnel", "type": "single_choice"|"multi_choice"|"freeform", "options": [{"id": "opt1", "label": "Option 1", "hint": "Précision"}]}]}
+\`\`\`
+
+2. Fiche Lead interactive (quand l'utilisateur demande des détails sur un prospect ou une recommandation) :
+\`\`\`lead-card
+{"id": "id_optionnel", "businessName": "Nom", "niche": "Niche", "city": "Ville", "phone": "Téléphone", "website": "site.com", "rating": 4.8, "reviewsCount": 32, "dealAmount": 2200, "dealProbability": 75, "temperature": "Hot"|"Warm"|"Cold", "score": 88, "summary": "Points clés du lead"}
+\`\`\`
+
+3. Tableau interactif de données (pour présenter des listes comparatives, pipelines ou classements) :
+\`\`\`data-table
+{"title": "Titre du tableau", "columns": [{"key": "businessName", "label": "Entreprise"}, {"key": "niche", "label": "Secteur"}, {"key": "city", "label": "Ville"}, {"key": "temperature", "label": "Température"}, {"key": "dealAmount", "label": "MRR Estimé"}], "rows": [{"businessName": "Exemple", "niche": "Restaurant", "city": "Montréal", "temperature": "Hot", "dealAmount": 1800}]}
+\`\`\`
+
+4. Brouillon d'email interactif :
+\`\`\`email-tool
+{"title": "Proposition Commerciale", "recipientEmail": "prospect@email.com", "variants": [{"subject": "Objet percutant", "body": "Corps du message..."}]}
+\`\`\`
+
+5. Actions CRM exécutables :
+\`\`\`minerva-action
+{"action": "create_lead"|"send_email"|"create_task"|"update_lead_status"|"trigger_enrichment"|"navigate", "params": {...}, "summary": "Description en une phrase"}
+\`\`\`
+
+Important : Utilise ces blocs JSON interactifs chaque fois que cela améliore l'expérience utilisateur et la lisibilité visuelle.`;
 
     const systemWithSkills = [
       canvasSystemPrompt,

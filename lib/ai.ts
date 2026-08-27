@@ -354,7 +354,9 @@ async function callGeminiNative(
   system: string,
   opts: Pick<AICallOptions, 'jsonMode' | 'maxTokens' | 'temperature'>,
 ): Promise<string> {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey.trim()}`;
+  const candidateModels = [model, 'gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-2.0-flash'].filter(
+    (m, idx, arr) => arr.indexOf(m) === idx
+  );
 
   const contents = messages.map((m) => ({
     role: m.role === 'assistant' ? 'model' : 'user',
@@ -374,23 +376,34 @@ async function callGeminiNative(
     payload.systemInstruction = { parts: [{ text: system }] };
   }
 
-  const resp = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  });
+  let lastErr = '';
+  for (const m of candidateModels) {
+    try {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${apiKey.trim()}`;
+      const resp = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
 
-  if (!resp.ok) {
-    const text = await resp.text();
-    throw new Error(`Google Gemini error ${resp.status}: ${text}`);
+      if (!resp.ok) {
+        const text = await resp.text();
+        lastErr = `Google Gemini (${m}) error ${resp.status}: ${text}`;
+        continue;
+      }
+
+      const data = await resp.json();
+      let text = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
+      if (opts.jsonMode) {
+        text = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
+      }
+      if (text) return text;
+    } catch (e: any) {
+      lastErr = e?.message || 'Network error';
+    }
   }
 
-  const data = await resp.json();
-  let text = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
-  if (opts.jsonMode) {
-    text = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
-  }
-  return text;
+  throw new Error(lastErr || 'Google Gemini indisponible');
 }
 
 // ── OpenRouter ────────────────────────────────────────────────────────────────
