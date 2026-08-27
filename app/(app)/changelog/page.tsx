@@ -21,6 +21,18 @@ interface ChangelogVersion {
 
 const versions: ChangelogVersion[] = [
   {
+    version: 'v9.1.0',
+    date: '27 août 2026 · 10h30',
+    title: 'Architecture des 5 Hubs du Cycle de Vente & Moteur Speed Run 20x',
+    highlights: [
+      { text: "Restructuration complète de la navigation en 5 Hubs stratégiques calqués sur le cycle de vente : Trouver (Recherche, Carte live, Personas, Ads), Contacter (Cockpit, Inbox, Campagnes, Séquences, Templates), Rencontrer (Tournées GPS, Agenda, Preuves), Clôturer (Pipeline, Leads, Comptes 360, Tâches, Rescue) et Analyser (Bilan, Performance, Rapports, Audit)." },
+      { text: "Nouveau Moteur Speed Run Commercial 20x : interface plein écran immersive avec génération de pitchs IA contextualisés, sélection de canal (Email, SMS, Tournée terrain GPS, Appel téléphonique) et dispatch ultra-rapide en 1-clic." },
+      { text: "Raccourcis clavier haute vélocité : appuyez sur [Entrée] pour valider et envoyer, [T] pour insérer le prospect dans votre tournée terrain du jour, [M] pour modifier le message en direct, ou [Espace] pour passer." },
+      { text: "Sous-navigations unifiées : intégration de barres d'onglets transversales et fluides sur l'ensemble des 5 Hubs pour éliminer toute friction et dispersion de clics." },
+      { text: "Déclenchement contextuel universel : lancez le Speed Run directement depuis le Hero Banner de l'Accueil (/today) ou depuis n'importe quelle sélection de prospects dans la table des leads." }
+    ]
+  },
+  {
     version: 'v9.0.4',
     date: '4 août 2026 · 17h22',
     title: 'Harmonisation visuelle & Épurage du tableau Aujourd\'hui',

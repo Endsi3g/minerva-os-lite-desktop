@@ -11,6 +11,7 @@ import {
   Loader2, ArrowLeft, Navigation, RefreshCw, Star, Calendar,
   AlertCircle, MessageSquare, Route, Users, PartyPopper, Camera,
 } from 'lucide-react';
+import { RencontrerSubNav } from '@/app/(app)/_components/hub-nav/rencontrer-sub-nav';
 
 // Build a turn-by-turn directions deep link (opens native maps app on mobile)
 function directionsUrl(lead: { latitude?: number; longitude?: number; businessName: string; city?: string; _lat?: number; _lng?: number }): string {
@@ -506,9 +507,11 @@ export function FieldRoot({ planId, refreshToken = '' }: { planId: string; refre
   }
 
   return (
-    <div className="h-full overflow-y-auto bg-[#fafaf8]">
-      {/* Header */}
-      <div className="sticky top-0 z-10 bg-white border-b border-[#e5e5e0] px-4 py-3 shadow-xs">
+    <div className="flex h-full flex-col overflow-hidden bg-[#fafaf8]">
+      <RencontrerSubNav />
+      <div className="flex-1 overflow-y-auto min-h-0">
+        {/* Header */}
+        <div className="sticky top-0 z-10 bg-white border-b border-[#e5e5e0] px-4 py-3 shadow-xs">
         <div className="flex items-center gap-3">
           <button
             onClick={() => router.push('/map')}
@@ -647,6 +650,7 @@ export function FieldRoot({ planId, refreshToken = '' }: { planId: string; refre
             )}
           </>
         )}
+      </div>
       </div>
     </div>
   );

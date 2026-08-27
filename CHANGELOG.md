@@ -5,6 +5,22 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [9.1.0] — Architecture des 5 Hubs du Cycle de Vente & Moteur Speed Run 20x — 27 août 2026, 10h30
+
+### Ajouté
+- **Architecture en 5 Hubs du Cycle de Vente** : Restructuration complète de la navigation latérale et mobile autour des 5 phases d'acquisition et closing :
+  - **1. Trouver** (`/prospecting`) : Recherche locale, carte interactive live, profils cibles (personas), publicités & acquisition et générateur web.
+  - **2. Contacter** (`/outreach`) : Cockpit d'envoi multi-canal, boîte de réception unifiée, campagnes outbound, séquences automatiques, templates d'emails et playbooks.
+  - **3. Rencontrer** (`/field`) : Tournées terrain GPS optimisées, calendrier & agenda des RDV, galerie de preuves et scripts de visite terrain.
+  - **4. Clôturer** (`/pipeline`) : Pipeline Kanban, fichier leads CRM 360, comptes entreprises, gestion des contacts, tâches de closing et relances de sauvetage (rescue).
+  - **5. Analyser** (`/weekly-report`) : Bilan hebdomadaire automatisé, performance commerciale, rapports clients, journal d'activités et audit technique.
+- **Moteur Speed Run Commercial 20x (`SpeedRunOverlay`)** : Interface plein écran haute performance permettant de traiter des files de leads qualifiés en quelques minutes grâce à :
+  - Génération dynamique de pitchs IA contextualisés selon le canal sélectionné (*Email*, *SMS*, *Tournée terrain GPS*, *Appel*).
+  - Raccourcis clavier instantanés : `[Entrée]` (Valider & Envoyer), `[T]` (Ajouter à la tournée terrain), `[M]` (Modifier le pitch en direct), `[Espace]` (Passer / Snooze).
+  - Barre d'action groupée : déclenchement du Speed Run depuis la sélection multiple dans le tableau des leads (`/leads`).
+  - Hero Banner sur le tableau de bord de l'Accueil (`/today`).
+- **Sous-navigations unifiées** : Création de 5 composants de sous-onglets partagés (`TrouverSubNav`, `ContacterSubNav`, `RencontrerSubNav`, `CloturerSubNav`, `AnalyserSubNav`) assurant une navigation fluide sans rechargement lourd.
+
 ## [9.0.4] — Harmonisation visuelle & Épurage du tableau Aujourd'hui — 4 août 2026, 17h22
 
 ### Modifié

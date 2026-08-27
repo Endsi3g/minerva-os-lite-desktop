@@ -1,6 +1,9 @@
 'use client';
+
+import React from 'react';
 import dynamic from 'next/dynamic';
 import { MapPin, Loader2 } from 'lucide-react';
+import { TrouverSubNav } from '@/app/(app)/_components/hub-nav/trouver-sub-nav';
 
 const MapRoot = dynamic(() => import('./map-root'), {
   ssr: false,
@@ -24,5 +27,12 @@ const MapRoot = dynamic(() => import('./map-root'), {
 });
 
 export function MapLoader() {
-  return <MapRoot />;
+  return (
+    <div className="flex h-full flex-col overflow-hidden bg-[#fafaf8]">
+      <TrouverSubNav />
+      <div className="flex-1 relative overflow-hidden min-h-0">
+        <MapRoot />
+      </div>
+    </div>
+  );
 }

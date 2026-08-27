@@ -9,6 +9,7 @@ import { usePersonas, type Persona } from "@/lib/use-personas";
 import { scoreLeadByPersona, type ScoringCriteria } from "@/lib/lead-scoring";
 import { SCORING_LABELS } from "@/lib/lead-scoring";
 import { useRouter } from "next/navigation";
+import { TrouverSubNav } from "@/app/(app)/_components/hub-nav/trouver-sub-nav";
 
 export function PersonasRoot() {
   const router = useRouter();
@@ -60,7 +61,7 @@ export function PersonasRoot() {
         (l.city && persona.targetCities.some((c) => l.city!.toLowerCase().includes(c.toLowerCase())));
       return nicheOk || cityOk;
     });
-    if (!matching.length) return 0;
+    if (matching.length === 0) return 0;
     const total = matching.reduce(
       (s, l) => s + scoreLeadByPersona(l, persona.scoringCriteria, persona.targetNiches, persona.targetCities),
       0
@@ -69,9 +70,11 @@ export function PersonasRoot() {
   }
 
   return (
-    <div className="h-full overflow-y-auto bg-[#fafaf8] relative">
-      <div className="absolute inset-0 opacity-[0.25] pointer-events-none bg-grid-pattern-20 z-0" />
-      <div className="relative z-10 w-full p-3 sm:p-4 md:p-6 space-y-6 animate-in fade-in duration-200">
+    <div className="flex h-full flex-col overflow-hidden bg-[#fafaf8]">
+      <TrouverSubNav />
+      <div className="flex-1 overflow-y-auto relative">
+        <div className="absolute inset-0 opacity-[0.25] pointer-events-none bg-grid-pattern-20 z-0" />
+        <div className="relative z-10 w-full p-3 sm:p-4 md:p-6 space-y-6 animate-in fade-in duration-200">
         
         {/* Page header */}
         <div className="flex items-start justify-between gap-4 pb-4 border-b border-[#e5e5e0]">
@@ -141,6 +144,7 @@ export function PersonasRoot() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      </div>
     </div>
   );
 }

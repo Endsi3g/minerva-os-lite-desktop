@@ -25,6 +25,7 @@ import { AgentFeed } from './agent-feed';
 import { AgentPrioritiesCard } from './agent-priorities-card';
 import { NextBestActionCard } from './next-best-action-card';
 import { DailyDigestCard } from './daily-digest-card';
+import { SpeedRunOverlay } from '@/components/speed-run-overlay';
 
 // Cockpit / Pilotage cards (moved to today component workspace)
 import { StrategyMemoryCard } from './strategy-memory-card';
@@ -56,7 +57,8 @@ import {
   Bell,
   User,
   UserCheck,
-  Check
+  Check,
+  Sparkles
 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useReach, type Campaign } from '@/lib/reach-context';
@@ -171,6 +173,7 @@ export function TodayRoot() {
   const { leads, tasks, aiSuggestions, activeWorkspace, campaigns, isDataReady, user, addLead, addTask } = useReach();
   
   const [showAestheticMode, setShowAestheticMode] = useState(false);
+  const [showSpeedRun, setShowSpeedRun] = useState(false);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'inbox' | 'pilotage'>('dashboard');
   const isMobile = useIsMobile();
   const [mobileExpanded, setMobileExpanded] = useState(false);
@@ -553,6 +556,25 @@ export function TodayRoot() {
                       />
                     </div>
 
+                    {/* Mobile Speed Run Hero CTA */}
+                    <button
+                      onClick={() => setShowSpeedRun(true)}
+                      className="w-full flex items-center justify-between p-3.5 bg-gradient-to-r from-[#064e3b] via-[#059669] to-[#047857] text-white rounded-2xl shadow-md active:scale-98 transition-all"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center">
+                          <Zap className="w-4 h-4 fill-white" />
+                        </div>
+                        <div className="text-left">
+                          <div className="text-xs font-black">Speed Run Commercial</div>
+                          <div className="text-[10px] text-emerald-100">Traiter mes leads en 1-clic</div>
+                        </div>
+                      </div>
+                      <span className="text-[10px] font-black bg-white text-emerald-950 px-2.5 py-1 rounded-lg">
+                        Démarrer ➔
+                      </span>
+                    </button>
+
                     {/* Widget "Progression de la campagne" (Dark Green Card) */}
                     <div className="bg-[#054f3b] text-white rounded-3xl p-5 shadow-lg relative overflow-hidden flex flex-col gap-4">
                       {/* Internal glowing decoration */}
@@ -688,6 +710,36 @@ export function TodayRoot() {
                   <div className="space-y-5 animate-in fade-in duration-300 text-left">
                     <TodayGuestUpgradeBanner />
                     <TodaySetupBanner />
+
+                    {/* Hero Speed Run Commercial 20x Banner */}
+                    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#064e3b] via-[#059669] to-[#047857] p-5 text-white shadow-lg border border-emerald-500/20">
+                      <div className="relative z-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        <div className="space-y-1">
+                          <div className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider backdrop-blur-md">
+                            <Sparkles className="h-3 w-3 text-emerald-200" />
+                            <span>Moteur d'Exécution 20x</span>
+                          </div>
+                          <h2 className="text-lg font-black tracking-tight text-white">
+                            Speed Run Commercial du Jour
+                          </h2>
+                          <p className="text-xs text-emerald-100/90 leading-relaxed max-w-xl">
+                            {leads.length > 0
+                              ? `${leads.filter(l => l.status === 'New' || l.status === 'Contacted').length || leads.length} prospects qualifiés avec messages et canaux prêts. Validez en 1-clic ou ajoutez à votre tournée terrain.`
+                              : "Traitez l'intégralité de vos prises de contact et relances en 3 minutes chrono."}
+                          </p>
+                        </div>
+
+                        <button
+                          onClick={() => setShowSpeedRun(true)}
+                          className="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-5 py-3 text-xs font-black text-emerald-950 shadow-md hover:bg-emerald-50 active:scale-95 transition-all shrink-0 cursor-pointer"
+                        >
+                          <Zap className="h-4 w-4 fill-emerald-600 text-emerald-600" />
+                          <span>Lancer le Speed Run (3 min)</span>
+                          <ArrowRight className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+
                     <TodayHeader onAestheticToggle={() => setShowAestheticMode(true)} />
                     
                     {/* Overview KPI bar (Minerva redesign) */}
@@ -880,6 +932,8 @@ export function TodayRoot() {
             )}
           </div>
         </div>
+
+        <SpeedRunOverlay isOpen={showSpeedRun} onClose={() => setShowSpeedRun(false)} />
 
         {showAestheticMode && (
           <TodayAestheticCanvas onClose={() => setShowAestheticMode(false)} />

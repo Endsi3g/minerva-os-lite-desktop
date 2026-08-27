@@ -15,11 +15,12 @@ import {
   AlertDialogAction,
 } from '@/components/ui/alert-dialog';
 import { useReach } from '@/lib/reach-context';
-import { Trash2, X, Sparkles, Loader2, Wand2, UserPlus } from 'lucide-react';
+import { Trash2, X, Sparkles, Loader2, Wand2, UserPlus, Zap } from 'lucide-react';
 import { Lead } from '@/lib/mock-data';
 import { getApiUrl } from '@/lib/api-helper';
 import { toast } from 'sonner';
 import { TEAM_ASSIGN_VALUE, WorkspaceMember } from './leads-assign-cell';
+import { SpeedRunOverlay } from '@/components/speed-run-overlay';
 
 const UNASSIGN_VALUE = '__unassign__';
 
@@ -33,6 +34,7 @@ export function LeadsBulkActionsBar<TData>({ table, workspaceMembers }: LeadsBul
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [generatingDrafts, setGeneratingDrafts] = useState(false);
   const [enriching, setEnriching] = useState(false);
+  const [showSpeedRun, setShowSpeedRun] = useState(false);
 
   const selectedRows = table.getFilteredSelectedRowModel().rows;
   const selectedCount = selectedRows.length;
@@ -181,6 +183,17 @@ export function LeadsBulkActionsBar<TData>({ table, workspaceMembers }: LeadsBul
             </Select>
           )}
 
+          {/* Bulk Speed Run Button */}
+          <Button
+            variant="default"
+            size="sm"
+            onClick={() => setShowSpeedRun(true)}
+            className="h-8 px-3 text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-bold gap-1.5 shadow-xs"
+          >
+            <Zap className="h-3.5 w-3.5 fill-white" />
+            <span>Speed Run ({selectedCount})</span>
+          </Button>
+
           {/* Bulk Enrichment */}
           <Button
             variant="ghost"
@@ -228,6 +241,12 @@ export function LeadsBulkActionsBar<TData>({ table, workspaceMembers }: LeadsBul
           </Button>
         </div>
       </div>
+
+      <SpeedRunOverlay
+        isOpen={showSpeedRun}
+        onClose={() => setShowSpeedRun(false)}
+        customLeads={selectedRows.map((row) => row.original as Lead)}
+      />
     </>
   );
 }

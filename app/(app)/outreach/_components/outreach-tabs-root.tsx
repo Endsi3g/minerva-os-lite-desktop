@@ -9,6 +9,7 @@ import { OutreachApprovals } from './outreach-approvals';
 import { OutreachCampaigns } from './outreach-campaigns';
 import { OutreachComposer } from './outreach-composer';
 import EmailTemplatesPage from '@/app/(app)/settings/email-templates/page';
+import { ContacterSubNav } from '@/app/(app)/_components/hub-nav/contacter-sub-nav';
 
 type OutreachTab = 'composer' | 'campaigns' | 'templates' | 'approvals';
 
@@ -34,7 +35,8 @@ export function OutreachTabsRoot() {
 
   return (
     <div className="flex h-full flex-col overflow-hidden bg-[#fafaf8]">
-      {/* Tab bar with Action CTA */}
+      <ContacterSubNav />
+      {/* Inner Tab bar with Action CTA */}
       <div className="flex items-center justify-between border-b border-[#e5e5e0] bg-white px-4 sm:px-6 overflow-x-auto shrink-0">
         <div className="flex items-center gap-0">
           {TABS.map((tab) => {

@@ -105,7 +105,7 @@ import { Pin, KanbanSquare, Navigation } from 'lucide-react';
 import { CalendarDays, UsersRound } from 'lucide-react';
 import { Layers } from 'lucide-react';
 
-const CURRENT_VERSION = '8.9.1';
+const CURRENT_VERSION = '9.1.0';
 
 function UpdateBanner() {
   const [visible, setVisible] = useState(false);
@@ -780,48 +780,68 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
     return crumbs;
   };
 
-  // Pinned nav items — Navigation principale
+  // Helper to determine if a Sales Funnel Hub is active
+  const isHubActive = (itemHref: string) => {
+    if (itemHref === '/today') {
+      return pathname === '/today' || pathname === '/';
+    }
+    if (itemHref === '/prospecting') {
+      return ['/prospecting', '/map', '/personas', '/ads', '/website-builder'].some(
+        p => pathname === p || pathname.startsWith(p + '/')
+      );
+    }
+    if (itemHref === '/outreach') {
+      return ['/outreach', '/inbox', '/campaigns', '/sequences', '/email-templates', '/playbooks', '/library', '/chat', '/messages'].some(
+        p => pathname === p || pathname.startsWith(p + '/')
+      );
+    }
+    if (itemHref === '/field') {
+      return ['/field', '/agenda'].some(
+        p => pathname === p || pathname.startsWith(p + '/')
+      );
+    }
+    if (itemHref === '/pipeline') {
+      return ['/pipeline', '/leads', '/accounts', '/contacts', '/tasks', '/leads/rescue', '/leads/timeline', '/projects'].some(
+        p => pathname === p || pathname.startsWith(p + '/')
+      );
+    }
+    if (itemHref === '/weekly-report') {
+      return ['/weekly-report', '/analytics', '/performance', '/client-reports', '/activities', '/audit', '/acquisition'].some(
+        p => pathname === p || pathname.startsWith(p + '/')
+      );
+    }
+    return pathname === itemHref || pathname.startsWith(itemHref + '/');
+  };
+
+  // Pinned nav items — 5 Hubs du Cycle de Vente + Accueil (V5 Architecture)
   const pinnedItems = [
-    { name: 'Accueil',  href: '/today',    icon: Home },
-    { name: 'Leads',    href: '/leads',    icon: Users },
-    { name: 'Outreach', href: '/outreach', icon: Send },
-    { name: 'Carte',    href: '/map',      icon: MapPin },
-    { name: 'Équipe',   href: '/team',     icon: UsersRound, badge: 'NOUVEAU' },
+    { name: 'Accueil',     href: '/today',       icon: Home },
+    { name: 'Trouver',     href: '/prospecting', icon: Search, badge: 'PROSPECTS' },
+    { name: 'Contacter',   href: '/outreach',    icon: Send },
+    { name: 'Rencontrer',  href: '/field',       icon: Navigation },
+    { name: 'Clôturer',    href: '/pipeline',    icon: KanbanSquare },
+    { name: 'Analyser',    href: '/weekly-report', icon: BarChart3 },
   ];
 
   const navCategories: Array<{ id: string; label: string; items: Array<{ name: string; href: string; icon: React.ElementType; badge?: string }> }> = [
     {
-      id: 'outreach_ai',
-      label: 'Outreach & IA',
+      id: 'crm_quick',
+      label: 'Accès Rapides CRM',
       items: [
-        { name: 'Assistant IA',    href: '/assistant',      icon: Sparkles },
-        { name: 'Agents IA',       href: '/agents',         icon: Bot },
-      ],
-    },
-    {
-      id: 'assets_system',
-      label: 'Assets & System',
-      items: [
-        { name: 'Publicité',       href: '/ads',            icon: Target },
-        { name: 'Bibliothèque',    href: '/library',        icon: BookOpen },
-      ],
-    },
-    {
-      id: 'sales',
-      label: 'Pilotage & Prospection',
-      items: [
-        { name: 'Pipeline',      href: '/pipeline',    icon: KanbanSquare },
-        { name: 'Prospection',   href: '/prospecting', icon: Search },
+        { name: 'Fichier Leads',   href: '/leads',       icon: Users },
+        { name: 'Comptes 360',     href: '/accounts',    icon: Building2 },
         { name: 'Boîte de réception', href: '/inbox',   icon: Inbox },
+        { name: 'Agenda des RDV',  href: '/agenda',      icon: CalendarDays },
+        { name: 'Tâches de Closing', href: '/tasks',     icon: ListChecks },
       ],
     },
     {
-      id: 'operations',
-      label: 'Opérations & Performance',
+      id: 'team_ai',
+      label: 'Équipe & Intelligence',
       items: [
-        { name: 'Bilan & Performance', href: '/weekly-report', icon: BarChart3 },
-        { name: 'Tâches',       href: '/tasks',         icon: ListChecks },
-        { name: 'Agenda',       href: '/agenda',        icon: CalendarDays },
+        { name: 'Équipe',          href: '/team',        icon: UsersRound },
+        { name: 'Assistant IA',    href: '/assistant',   icon: Sparkles },
+        { name: 'Agents IA',       href: '/agents',      icon: Bot },
       ],
     },
   ];
@@ -842,9 +862,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
   })).filter(cat => cat.items.length > 0);
 
   // Full navigable route list for the Cmd+K palette — pinned items + every
-  // category item the user can actually see, deduped by href. Previously
-  // the palette searched a stale hardcoded 9-route list that didn't match
-  // the real sidebar (~25 routes).
+  // category item the user can actually see, deduped by href.
   const commandNavItems: Array<{ name: string; href: string; icon: React.ElementType }> = (() => {
     const seen = new Set<string>();
     const items: Array<{ name: string; href: string; icon: React.ElementType }> = [];
@@ -1051,7 +1069,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
           {/* Pinned nav items */}
           <nav className={cn("space-y-[2px]", isCollapsed ? "px-2" : "px-3")}>
             {filteredPinnedItems.map((item) => {
-              const isActive = pathname === item.href || (item.href !== '/today' && pathname.startsWith(item.href));
+              const isActive = isHubActive(item.href);
 
               const navLink = (
                 <Link
@@ -1653,13 +1671,13 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
       <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-white/95 backdrop-blur-md border-t border-[#e5e5e0] bottom-nav-safe">
         <div className="flex items-center justify-around h-16 px-2">
           {([
-            { name: 'Accueil',  href: '/today',    icon: Home },
-            { name: 'Leads',    href: '/leads',    icon: Users },
-            { name: 'Outreach', href: '/outreach', icon: Send },
-            { name: 'Carte',    href: '/map',      icon: MapPin },
-            { name: 'Agenda',   href: '/agenda',   icon: CalendarDays },
+            { name: 'Accueil',     href: '/today',       icon: Home },
+            { name: 'Trouver',     href: '/prospecting', icon: Search },
+            { name: 'Contacter',   href: '/outreach',    icon: Send },
+            { name: 'Rencontrer',  href: '/field',       icon: Navigation },
+            { name: 'Clôturer',    href: '/pipeline',    icon: KanbanSquare },
           ] as { name: string; href: string; icon: React.ElementType }[]).map((item) => {
-            const isActive = pathname === item.href || (item.href !== '/today' && pathname.startsWith(item.href));
+            const isActive = isHubActive(item.href);
             return (
               <motion.div key={item.href} whileTap={{ scale: 0.85 }} transition={{ type: 'spring', stiffness: 400, damping: 30 }}>
                 <Link

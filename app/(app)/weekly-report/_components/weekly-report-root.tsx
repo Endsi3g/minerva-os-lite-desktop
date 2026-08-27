@@ -15,6 +15,7 @@ import { formatDistanceToNow, format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { PerformanceRoot } from '@/app/(app)/performance/_components/performance-root';
 import { AnalyticsRoot } from '@/app/(app)/analytics/_components/analytics-root';
+import { AnalyserSubNav } from '@/app/(app)/_components/hub-nav/analyser-sub-nav';
 
 type MainTab = 'bilan' | 'performance' | 'analytics';
 
@@ -220,9 +221,11 @@ export function WeeklyReportRoot() {
     : dateRange;
 
   return (
-    <div className="relative min-h-full overflow-x-hidden bg-[#fafaf8] selection:bg-[#059669]/10 text-[#26251e] font-sans">
-      {/* === Background visual matching Home/Team pages === */}
-      <div className="pointer-events-none fixed inset-0 overflow-hidden" aria-hidden>
+    <div className="flex h-full flex-col overflow-hidden bg-[#fafaf8] selection:bg-[#059669]/10 text-[#26251e] font-sans">
+      <AnalyserSubNav />
+      <div className="flex-1 overflow-y-auto relative min-h-0">
+        {/* === Background visual matching Home/Team pages === */}
+        <div className="pointer-events-none fixed inset-0 overflow-hidden" aria-hidden>
         {/* Radial orbs */}
         <div className="absolute -top-40 -right-40 w-[500px] h-[500px] rounded-full bg-[#059669]/6 blur-[120px]" />
         <div className="absolute top-1/3 -left-32 w-[400px] h-[400px] rounded-full bg-[#059669]/4 blur-[100px]" />
@@ -513,6 +516,7 @@ export function WeeklyReportRoot() {
           </div>
         </div>
         )}
+      </div>
       </div>
     </div>
   );

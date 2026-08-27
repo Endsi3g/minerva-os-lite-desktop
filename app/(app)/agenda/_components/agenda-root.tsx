@@ -11,6 +11,7 @@ import {
   ChevronLeft, ChevronRight, Plus, X, Loader2, CalendarDays,
   Clock, Users, CheckSquare, CalendarPlus, Check,
 } from 'lucide-react';
+import { RencontrerSubNav } from '@/app/(app)/_components/hub-nav/rencontrer-sub-nav';
 
 function ymd(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -185,10 +186,12 @@ export function AgendaRoot() {
   };
 
   return (
-    <div className="h-full overflow-y-auto bg-white text-[#26251e] font-sans selection:bg-[#059669]/10 relative animate-page-enter">
-      <div className="absolute inset-0 opacity-[0.25] pointer-events-none bg-grid-pattern-20 z-0" />
-      
-      <div className="w-full px-3 sm:px-4 md:px-8 py-6 md:py-10 space-y-6 relative z-10">
+    <div className="flex h-full flex-col overflow-hidden bg-white">
+      <RencontrerSubNav />
+      <div className="flex-1 overflow-y-auto bg-white text-[#26251e] font-sans selection:bg-[#059669]/10 relative animate-page-enter">
+        <div className="absolute inset-0 opacity-[0.25] pointer-events-none bg-grid-pattern-20 z-0" />
+        
+        <div className="w-full px-3 sm:px-4 md:px-8 py-6 md:py-10 space-y-6 relative z-10">
 
         {/* Header */}
         <div className="flex items-start justify-between gap-4">
@@ -475,6 +478,7 @@ export function AgendaRoot() {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }

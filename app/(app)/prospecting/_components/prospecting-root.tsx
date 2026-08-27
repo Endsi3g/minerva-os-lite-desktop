@@ -19,7 +19,7 @@ import {
   Navigation, Map as MapIcon, Edit3, Target, Trash2, Edit2, GitMerge, Info,
   AlertTriangle, Inbox, CheckCircle, RefreshCw, ThumbsDown, Upload, Dog, Accessibility, Zap
 } from 'lucide-react';
-import { LeadsSubNav } from '../../leads/_components/leads-sub-nav';
+import { TrouverSubNav } from '@/app/(app)/_components/hub-nav/trouver-sub-nav';
 import { triggerAgentLoop } from '@/lib/agent-trigger';
 
 interface ScrapeJobRecord {
@@ -1022,7 +1022,7 @@ export function ProspectingRoot() {
 
   return (
     <div className="flex h-full flex-col overflow-hidden bg-[#fafaf8]">
-      <LeadsSubNav />
+      <TrouverSubNav />
       <div className={`flex-1 overflow-y-auto relative pb-6 md:pb-12 ${selectedValidationIds.length > 0 ? 'pb-52 md:pb-12' : ''}`}>
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-0 opacity-30"
         style={{ backgroundImage: 'radial-gradient(circle, #a1a1aa 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
