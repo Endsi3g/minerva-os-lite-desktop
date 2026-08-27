@@ -348,7 +348,7 @@ function QualificationPanel({ lead, onSave }: { lead: Lead; onSave: (fields: Par
   const handleEnrich = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/enrich-contact', {
+      const res = await fetch(getApiUrl('/api/enrich-contact'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -370,13 +370,17 @@ function QualificationPanel({ lead, onSave }: { lead: Lead; onSave: (fields: Par
           fitScore: data.fitScore,
           intentScore: data.intentScore,
         };
+        if (data.foundEmail && !lead.contactEmail) {
+          fields.contactEmail = data.foundEmail;
+        }
         if (data.suggestedEmails?.length) fields.suggestedEmails = data.suggestedEmails;
         if (data.decisionMakerName) { fields.decisionMakerName = data.decisionMakerName; setDmName(data.decisionMakerName); }
         if (data.decisionMakerRole) { fields.decisionMakerRole = data.decisionMakerRole; setDmRole(data.decisionMakerRole); }
         if (data.websiteDescription) fields.websiteDescription = data.websiteDescription;
+        if (data.companyVibe) fields.companyVibe = data.companyVibe;
         if (data.opportunityScore !== undefined) fields.score = data.opportunityScore;
         onSave(fields);
-        toast.success("Enrichissement réussi ! Pitch d'appel disponible.");
+        toast.success("Enrichissement réussi ! Contacts et pitch d'appel mis à jour.");
       } else {
         toast.error("Échec de l'enrichissement.");
       }

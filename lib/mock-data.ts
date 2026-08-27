@@ -55,6 +55,7 @@ export interface Lead {
   suggestedEmails?: string[];
   decisionMakerName?: string;
   decisionMakerRole?: string;
+  companyVibe?: string;
   // Suggestion de recherche web approfondie en attente de validation (v14.2)
   enrichmentReview?: {
     confidence: number;
