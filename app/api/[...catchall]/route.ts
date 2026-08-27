@@ -376,10 +376,15 @@ const routes: Record<string, any> = {
 };
 
 function matchPath(requestPath: string, patterns: string[]): { module: any; params: Record<string, string> } | null {
-  const reqSegments = requestPath.split('/');
+  const cleanPath = requestPath.replace(/^\/+|\/+$/g, '');
+  if (routes[cleanPath]) {
+    return { module: routes[cleanPath], params: {} };
+  }
+
+  const reqSegments = cleanPath.split('/').filter(Boolean);
   
   for (const pattern of patterns) {
-    const patternSegments = pattern.split('/');
+    const patternSegments = pattern.split('/').filter(Boolean);
     if (reqSegments.length !== patternSegments.length) continue;
     
     const params: Record<string, string> = {};
@@ -406,49 +411,55 @@ function matchPath(requestPath: string, patterns: string[]): { module: any; para
   return null;
 }
 
-async function handleRequest(method: string, req: NextRequest, pathSegments: string[]) {
-  const requestPath = pathSegments.join('/');
+async function handleRequest(method: string, req: NextRequest, rawSegments?: string[] | null) {
+  let segments = rawSegments;
+  if (!Array.isArray(segments) || segments.length === 0) {
+    const pathname = req.nextUrl?.pathname || '';
+    segments = pathname.replace(/^\/?api\/?/, '').split('/').filter(Boolean);
+  }
+
+  const requestPath = segments.join('/');
   const patterns = Object.keys(routes);
   
   const match = matchPath(requestPath, patterns);
   if (!match) {
-    return NextResponse.json({ error: 'Not Found' }, { status: 404 });
+    return NextResponse.json({ error: `Route /api/${requestPath} Not Found` }, { status: 404 });
   }
   
   const handler = match.module[method];
   if (!handler) {
-    return NextResponse.json({ error: `Method ${method} not allowed` }, { status: 405 });
+    return NextResponse.json({ error: `Method ${method} not allowed for /api/${requestPath}` }, { status: 405 });
   }
   
   try {
     return await handler(req, { params: match.params });
   } catch (err: any) {
     console.error(`Error handling ${method} /api/${requestPath}:`, err);
-    return NextResponse.json({ error: err.message || 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json({ error: err?.message || 'Internal Server Error' }, { status: 500 });
   }
 }
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ catchall: string[] }> }) {
-  const p = await params;
-  return handleRequest('GET', req, p.catchall);
+  const p = await params.catch(() => ({ catchall: [] }));
+  return handleRequest('GET', req, p?.catchall);
 }
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ catchall: string[] }> }) {
-  const p = await params;
-  return handleRequest('POST', req, p.catchall);
+  const p = await params.catch(() => ({ catchall: [] }));
+  return handleRequest('POST', req, p?.catchall);
 }
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ catchall: string[] }> }) {
-  const p = await params;
-  return handleRequest('PUT', req, p.catchall);
+  const p = await params.catch(() => ({ catchall: [] }));
+  return handleRequest('PUT', req, p?.catchall);
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ catchall: string[] }> }) {
-  const p = await params;
-  return handleRequest('PATCH', req, p.catchall);
+  const p = await params.catch(() => ({ catchall: [] }));
+  return handleRequest('PATCH', req, p?.catchall);
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ catchall: string[] }> }) {
-  const p = await params;
-  return handleRequest('DELETE', req, p.catchall);
+  const p = await params.catch(() => ({ catchall: [] }));
+  return handleRequest('DELETE', req, p?.catchall);
 }

@@ -62,18 +62,34 @@ const AI_TOOLS = [
 
 const MINERVA_MODELS = [
   {
+    id: 'gemini-3.7-flash',
+    name: 'Gemini 3.7 Flash',
+    provider: 'Google Gemini',
+    badge: 'Par défaut',
+    description: 'Modèle Google ultra-rapide, direct et optimisé pour une consommation minimale de tokens.',
+    color: '#059669',
+  },
+  {
+    id: 'gemini-2.5-flash',
+    name: 'Gemini 2.5 Flash',
+    provider: 'Google Gemini',
+    badge: 'Ultra Rapide',
+    description: 'Inférence instantanée à haute efficacité énergétique et faible coût.',
+    color: '#10b981',
+  },
+  {
     id: 'claude-sonnet-5',
     name: 'Claude Sonnet 4.6',
     provider: 'Anthropic',
-    badge: 'Recommandé',
-    description: 'Modèle principal — équilibre vitesse/qualité optimal.',
+    badge: 'Avancé',
+    description: 'Modèle équilibré vitesse/qualité pour tâches complexes.',
     color: '#059669',
   },
   {
     id: 'claude-opus-4-8',
     name: 'Claude Opus 4.8',
     provider: 'Anthropic',
-    badge: 'Avancé',
+    badge: 'Expert',
     description: 'Le plus puissant — raisonnement complexe et tâches longues.',
     color: '#059669',
   },
@@ -86,16 +102,11 @@ const MINERVA_MODELS = [
     color: '#7a7a76',
   },
   {
-    // @cf/meta/llama-3.1-8b-instruct (l'ancienne entrée ici) a été déprécié par
-    // Cloudflare le 2026-05-30 — tout appel avec cet ID échoue en HTTP 410.
-    // Kimi K2 est le modèle Cloudflare réellement utilisé par défaut par le
-    // backend (CLOUDFLARE_DEFAULT_MODEL dans lib/ai.ts) quand aucun provider
-    // n'est explicitement sélectionné.
     id: '@cf/moonshotai/kimi-k2.7-code',
     name: 'Kimi K2.7 Code',
     provider: 'Cloudflare',
-    badge: 'Par défaut',
-    description: 'Inférence edge via Cloudflare Workers AI — faible latence, provider primaire.',
+    badge: 'Edge Code',
+    description: 'Inférence edge via Cloudflare Workers AI.',
     color: '#f6821f',
   },
   {

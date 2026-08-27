@@ -231,10 +231,12 @@ interface CanvasDocument {
 }
 
 const AI_MODELS = [
-  { id: '@cf/moonshotai/kimi-k2.7-code', name: 'Kimi K2 — Principal', provider: 'cloudflare' },
-  { id: 'claude-sonnet-5', name: 'Claude Sonnet', provider: 'anthropic' },
+  { id: 'gemini-3.7-flash', name: 'Gemini 3.7 Flash — Principal', provider: 'gemini' },
+  { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash — Rapide', provider: 'gemini' },
+  { id: 'claude-sonnet-5', name: 'Claude Sonnet — Raisonnement', provider: 'anthropic' },
   { id: 'claude-opus-4-8', name: 'Claude Opus — Avancé', provider: 'anthropic' },
-  { id: 'claude-haiku-4-5-20251001', name: 'Claude Haiku — Rapide', provider: 'anthropic' },
+  { id: 'claude-haiku-4-5-20251001', name: 'Claude Haiku — Éco', provider: 'anthropic' },
+  { id: '@cf/moonshotai/kimi-k2.7-code', name: 'Kimi K2 — Code', provider: 'cloudflare' },
 ];
 
 const generateUniqueId = () => {
@@ -1295,8 +1297,19 @@ Important : ne génère un bloc action QUE si l'utilisateur demande explicitemen
         }
       }
 
+      if (!assistantContent.trim()) {
+        assistantContent = "Je suis disponible pour vous aider avec vos leads, vos campagnes ou vos emails. Que souhaitez-vous faire ?";
+        setMessages(prev => {
+          const updated = [...prev];
+          if (updated.length > 0) {
+            updated[updated.length - 1] = { role: 'assistant', content: assistantContent };
+          }
+          return updated;
+        });
+      }
+
       // Save assistant response
-      if (activeSess) {
+      if (activeSess && assistantContent.trim()) {
         await dbSaveMessage(activeSess.id, userId, 'assistant', assistantContent);
         const sessList = await dbGetSessions(userId, workspaceId);
         setSessions(sessList);
