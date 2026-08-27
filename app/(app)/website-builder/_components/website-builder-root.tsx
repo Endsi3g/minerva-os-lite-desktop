@@ -525,7 +525,7 @@ export default function WebsiteBuilderRoot() {
                 <Globe className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h1 className="text-2xl font-heading font-serif font-black tracking-tight text-[#14171A]">Générateur de site web IA</h1>
+                <h1 className="text-2xl font-heading font-sans font-black tracking-tight text-[#14171A]">Générateur de site web IA</h1>
                 <p className="text-xs text-[#4B5158] mt-0.5 font-medium">Structure Framer-ready et argumentaires copywrités pour closer vos prospects.</p>
               </div>
             </div>

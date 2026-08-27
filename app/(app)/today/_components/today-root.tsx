@@ -673,64 +673,6 @@ export function TodayRoot() {
                 ) : (
                   /* Desktop Dashboard Layout */
                   <div className="space-y-5 animate-in fade-in duration-300 text-left">
-                    <TodayGuestUpgradeBanner />
-                    <TodaySetupBanner />
-
-                    {/* HeroSpeedRunBanner (Cahier des charges Exact) */}
-                    <div className="bg-[#0F2E22] rounded-2xl p-6 text-white relative overflow-hidden flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 shadow-xl">
-                      {/* Left Column */}
-                      <div className="space-y-3 max-w-2xl z-10">
-                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-emerald-300 text-xs font-medium backdrop-blur-sm border border-emerald-500/20">
-                          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                          <Sparkles className="h-3 w-3 text-emerald-300" />
-                          <span className="uppercase tracking-wider font-semibold text-[10px]">Moteur d'Exécution 20x</span>
-                        </div>
-
-                        <h2 className="text-2xl font-bold tracking-tight text-white">
-                          Speed Run Commercial du Jour
-                        </h2>
-
-                        <p className="text-xs sm:text-sm text-gray-200 leading-relaxed">
-                          {leads.length > 0
-                            ? `${leads.filter(l => l.status === 'New' || l.status === 'Contacted').length || leads.length} prospects qualifiés avec messages et canaux prêts. Validez en 1-clic ou ajoutez à votre tournée terrain.`
-                            : "Traitez l'intégralité de vos prises de contact et relances en 3 minutes chrono."}
-                        </p>
-
-                        {/* Pills de Fonctionnalités */}
-                        <div className="flex flex-wrap items-center gap-2 pt-1">
-                          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/5 border border-white/10 text-xs text-gray-200">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                            <span>{leads.length || 151} leads prêts</span>
-                          </div>
-                          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/5 border border-white/10 text-xs text-gray-200">
-                            <Clock className="h-3 w-3 text-emerald-300" />
-                            <span>~3 min chrono</span>
-                          </div>
-                          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/5 border border-white/10 text-xs text-gray-200">
-                            <Route className="h-3 w-3 text-emerald-300" />
-                            <span>Multi-canal (Email • GPS • SMS • Appel)</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Right CTA */}
-                      <div className="flex flex-col sm:flex-row lg:flex-col items-start lg:items-end gap-2 shrink-0 z-10">
-                        <button
-                          onClick={() => setShowSpeedRun(true)}
-                          className="bg-white hover:bg-gray-100 text-[#0F2E22] font-semibold px-5 py-2.5 rounded-xl transition-all shadow-sm hover:scale-[1.02] inline-flex items-center gap-2 cursor-pointer text-sm"
-                        >
-                          <Zap className="h-4 w-4 fill-[#0F2E22] text-[#0F2E22]" />
-                          <span>Lancer le Speed Run</span>
-                          <ArrowRight className="h-4 w-4" />
-                        </button>
-                        <div className="inline-flex items-center gap-1.5 text-[10px] text-gray-300 px-1 font-medium">
-                          <span>Raccourci :</span>
-                          <kbd className="px-1.5 py-0.5 rounded bg-black/30 text-white border border-white/15 font-mono text-[9px]">
-                            ↵ Entrée
-                          </kbd>
-                        </div>
-                      </div>
-                    </div>
 
                     <TodayHeader onAestheticToggle={() => setShowAestheticMode(true)} />
                     

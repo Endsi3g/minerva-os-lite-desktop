@@ -83,7 +83,7 @@ export function FieldGalleryRoot() {
                 <Camera className="h-5 w-5 text-[#059669]" />
               </div>
               <div>
-                <h1 className="text-2xl font-heading font-serif font-black tracking-tight text-[#14171A]">Preuves de visite</h1>
+                <h1 className="text-2xl font-heading font-sans font-black tracking-tight text-[#14171A]">Preuves de visite</h1>
                 <p className="text-xs text-[#4B5158] font-medium">Photos et comptes-rendus des passages terrain de votre équipe ({rows.length} photos).</p>
               </div>
             </div>

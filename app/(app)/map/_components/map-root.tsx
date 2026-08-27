@@ -1616,17 +1616,55 @@ Retourne UNIQUEMENT un JSON valide (pas de texte autour) avec ces clés optionne
           <div className="absolute right-4 top-4 bottom-4 w-80 bg-white/85 backdrop-blur-lg border border-white/45 shadow-2xl z-30 flex flex-col rounded-2xl overflow-hidden transition-all duration-300">
             <div className="p-4 border-b border-[#f0f0ec]">
               <div className="flex items-start justify-between">
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-sm font-bold text-[#26251e] leading-tight truncate">{selectedLead.businessName}</h3>
-                  <div className="flex items-center gap-1.5 mt-1">
-                    <MapPin className="h-3 w-3 text-[#7a7a76] shrink-0" />
-                    <span className="text-[10px] text-[#7a7a76] truncate">{selectedLead.city}{selectedLead.niche && ` · ${selectedLead.niche}`}</span>
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  {/* Circular button to open dedicated lead page */}
+                  <Link
+                    href={`/leads/${selectedLead.id}`}
+                    className="w-10 h-10 rounded-full bg-[#059669] hover:bg-[#047857] text-white flex items-center justify-center shrink-0 shadow-md transition-all hover:scale-105"
+                    title="Ouvrir la fiche complète"
+                  >
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                  <div className="min-w-0">
+                    <h3 className="text-sm font-bold text-[#26251e] leading-tight truncate">{selectedLead.businessName}</h3>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <MapPin className="h-3 w-3 text-[#7a7a76] shrink-0" />
+                      <span className="text-[10px] text-[#7a7a76] truncate">{selectedLead.city}{selectedLead.niche && ` · ${selectedLead.niche}`}</span>
+                    </div>
                   </div>
                 </div>
                 <button onClick={() => { setSelectedLead(null); setShowDetailPanel(false); }} className="w-7 h-7 rounded-full hover:bg-[#f4f4f3] flex items-center justify-center ml-2 shrink-0">
                   <X className="h-3.5 w-3.5 text-[#7a7a76]" />
                 </button>
               </div>
+
+              {/* Description de l'entreprise */}
+              {(selectedLead.websiteDescription || selectedLead.niche) && (
+                <p className="text-[11px] text-[#555552] mt-2 leading-relaxed line-clamp-3">
+                  {selectedLead.websiteDescription || `Entreprise dans le secteur : ${selectedLead.niche}`}
+                </p>
+              )}
+
+              {/* Adresse complète */}
+              {selectedLead.address && (
+                <div className="flex items-center gap-1.5 mt-2 text-[10px] text-[#7a7a76]">
+                  <Building2 className="h-3 w-3 shrink-0" />
+                  <span className="truncate">{selectedLead.address}</span>
+                </div>
+              )}
+
+              {/* Distance en KM */}
+              {distanceToSelected != null && (
+                <div className="inline-flex items-center gap-1.5 mt-2 px-2.5 py-1 rounded-lg bg-[#059669]/10 text-[#059669]">
+                  <Navigation className="h-3 w-3" />
+                  <span className="text-[11px] font-bold">
+                    {distanceToSelected < 1
+                      ? `${Math.round(distanceToSelected * 1000)} m`
+                      : `${distanceToSelected.toFixed(1)} km`}
+                  </span>
+                </div>
+              )}
+
               {selectedLead.score != null && (
                 <div className="flex items-center gap-1.5 mt-2">
                   <div className="flex-1 h-1.5 bg-[#f0f0ec] rounded-full overflow-hidden">

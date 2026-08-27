@@ -136,7 +136,7 @@ export function ActivitiesRoot() {
             <div>
               <div className="flex items-center gap-2">
                 <Activity className="h-5 w-5 text-[#059669]" />
-                <h1 className="text-2xl font-heading font-serif font-black tracking-tight text-[#14171A]">Journal des Activités</h1>
+                <h1 className="text-2xl font-heading font-sans font-black tracking-tight text-[#14171A]">Journal des Activités</h1>
               </div>
               <p className="text-xs text-[#7a7a76] mt-0.5">{activities.length} entrée{activities.length !== 1 ? 's' : ''} enregistrée{activities.length !== 1 ? 's' : ''}</p>
             </div>

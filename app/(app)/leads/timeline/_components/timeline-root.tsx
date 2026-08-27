@@ -423,7 +423,7 @@ export function TimelineRoot({ leadId: filterLeadId, hideSubNav }: TimelineRootP
           {/* Header */}
           <div className="flex items-start justify-between gap-4 border-b border-[#e5e5e0] pb-5">
             <div>
-              <h1 className="text-2xl font-heading font-serif font-black tracking-tight text-[#14171A]">
+              <h1 className="text-2xl font-heading font-sans font-black tracking-tight text-[#14171A]">
                 Historique & Timeline d'Activité
                 {filterLeadId && <span className="text-sm font-normal text-[#4B5158] ml-2">— pour ce prospect</span>}
               </h1>

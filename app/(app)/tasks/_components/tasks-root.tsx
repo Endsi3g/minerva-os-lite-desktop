@@ -463,7 +463,7 @@ export default function TasksRoot() {
           {/* Header */}
           <div className="flex items-start justify-between gap-4 flex-wrap border-b border-[#e5e5e0] pb-5">
             <div>
-              <h1 className="text-2xl font-heading font-serif font-black tracking-tight text-[#14171A]">
+              <h1 className="text-2xl font-heading font-sans font-black tracking-tight text-[#14171A]">
                 {t('tasks.title') || 'Gestion des Tâches & Actions'}
               </h1>
               <p className="text-xs text-[#4B5158] mt-1 font-medium">

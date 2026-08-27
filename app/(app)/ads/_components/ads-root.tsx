@@ -1281,7 +1281,7 @@ export default function AdsRoot() {
         <div className="relative z-10 p-4 md:p-8">
           {/* Header */}
           <div className="mb-6 border-b border-[#e5e5e0] pb-4">
-            <h1 className="text-2xl font-heading font-serif font-black tracking-tight text-[#14171A]">Publicité & Attribution</h1>
+            <h1 className="text-2xl font-heading font-sans font-black tracking-tight text-[#14171A]">Publicité & Attribution</h1>
             <p className="text-xs text-[#4B5158] mt-1 font-medium">Connectez vos sources d'acquisition (Facebook Ads, Google Ads) et analysez le ROI de votre pipeline.</p>
           </div>
 

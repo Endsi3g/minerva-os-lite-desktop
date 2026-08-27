@@ -177,7 +177,7 @@ export function EmailTemplatesRoot({ showSubNav = true }: { showSubNav?: boolean
           {/* Header */}
           <div className="flex items-start justify-between flex-wrap gap-4 border-b border-[#e5e5e0] pb-5">
             <div>
-              <h1 className="text-2xl font-heading font-serif font-black tracking-tight text-[#14171A]">Templates d'Emails</h1>
+              <h1 className="text-2xl font-heading font-sans font-black tracking-tight text-[#14171A]">Templates d'Emails</h1>
               <p className="text-xs text-[#4B5158] mt-1 font-medium">Modèles réutilisables, variables dynamiques et tests A/B pour vos campagnes et relances.</p>
             </div>
             <button

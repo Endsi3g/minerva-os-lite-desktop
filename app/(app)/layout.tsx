@@ -101,7 +101,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator
 } from '@/components/ui/breadcrumb';
-import { Pin, KanbanSquare, Navigation } from 'lucide-react';
+import { Pin, KanbanSquare, MapPin as MapPinIcon } from 'lucide-react';
 import { CalendarDays, UsersRound } from 'lucide-react';
 import { Layers } from 'lucide-react';
 
@@ -766,7 +766,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
     { name: 'Accueil',     href: '/today',       icon: Home },
     { name: 'Trouver',     href: '/prospecting', icon: Search, badge: 'PROSPECTS' },
     { name: 'Contacter',   href: '/outreach',    icon: Send },
-    { name: 'Rencontrer',  href: '/field',       icon: Navigation },
+    { name: 'Rencontrer',  href: '/field',       icon: MapPinIcon },
     { name: 'Clôturer',    href: '/pipeline',    icon: KanbanSquare },
     { name: 'Analyser',    href: '/weekly-report', icon: BarChart3 },
   ];
@@ -1622,7 +1622,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
             { name: 'Accueil',     href: '/today',       icon: Home },
             { name: 'Trouver',     href: '/prospecting', icon: Search },
             { name: 'Contacter',   href: '/outreach',    icon: Send },
-            { name: 'Rencontrer',  href: '/field',       icon: Navigation },
+            { name: 'Rencontrer',  href: '/field',       icon: MapPinIcon },
             { name: 'Clôturer',    href: '/pipeline',    icon: KanbanSquare },
           ] as { name: string; href: string; icon: React.ElementType }[]).map((item) => {
             const isActive = isHubActive(item.href);

@@ -109,6 +109,8 @@ export function ContactsRoot() {
   // Recherche + tri dans l'URL — même pattern que /leads : une vue devient un lien partageable.
   const [search, setSearch] = useQueryState('q', parseAsString.withDefault(''));
   const [sortBy, setSortBy] = useQueryState('sort', parseAsString.withDefault('name'));
+  const [nicheFilter, setNicheFilter] = useQueryState('niche', parseAsString.withDefault('all'));
+  const [statusFilter, setStatusFilter] = useQueryState('status', parseAsString.withDefault('all'));
 
   const [workspaceMembers, setWorkspaceMembers] = useState<WorkspaceMember[]>([]);
   const fetchMembers = useCallback(async () => {
@@ -124,6 +126,8 @@ export function ContactsRoot() {
     } catch {}
   }, [activeWorkspace?.id]);
   useEffect(() => { fetchMembers(); }, [fetchMembers]);
+
+  const niches = useMemo(() => Array.from(new Set(leads.map(l => l.niche).filter(Boolean))), [leads]);
 
   const contacts: Contact[] = useMemo(() =>
     leads
@@ -149,20 +153,24 @@ export function ContactsRoot() {
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
     return contacts
-      .filter(c =>
-        !q ||
-        c.name.toLowerCase().includes(q) ||
-        c.company.toLowerCase().includes(q) ||
-        c.email?.toLowerCase().includes(q) ||
-        c.niche.toLowerCase().includes(q) ||
-        c.city.toLowerCase().includes(q)
-      )
+      .filter(c => {
+        if (nicheFilter !== 'all' && c.niche !== nicheFilter) return false;
+        if (statusFilter !== 'all' && c.status !== statusFilter) return false;
+        if (!q) return true;
+        return (
+          c.name.toLowerCase().includes(q) ||
+          c.company.toLowerCase().includes(q) ||
+          c.email?.toLowerCase().includes(q) ||
+          c.niche.toLowerCase().includes(q) ||
+          c.city.toLowerCase().includes(q)
+        );
+      })
       .sort((a, b) => {
         if (sortBy === 'company') return a.company.localeCompare(b.company, 'fr');
         if (sortBy === 'score') return (b.score ?? 0) - (a.score ?? 0);
         return a.name.localeCompare(b.name, 'fr');
       });
-  }, [contacts, search, sortBy]);
+  }, [contacts, search, sortBy, nicheFilter, statusFilter]);
 
   // Regroupement alphabétique — uniquement pertinent quand trié par nom.
   const grouped = useMemo(() => {
@@ -191,7 +199,7 @@ export function ContactsRoot() {
           {/* Header */}
           <div className="flex items-start justify-between gap-4 pb-4 border-b border-[#e5e5e0]">
             <div>
-              <h1 className="text-2xl font-heading font-serif font-black tracking-tight text-[#14171A]">Contacts</h1>
+              <h1 className="text-2xl font-heading font-sans font-black tracking-tight text-[#14171A]">Contacts</h1>
               <p className="text-xs text-[#4B5158] mt-0.5 font-medium">
                 Toutes les personnes-contacts de vos prospects ({contacts.length} au total).
               </p>
@@ -213,10 +221,49 @@ export function ContactsRoot() {
           ))}
         </div>
 
-        {/* Sort (aligné à droite) */}
-        <div className="flex items-center justify-end">
+        {/* Contrôles de filtrage & tri */}
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Recherche */}
+          <div className="relative flex-1 min-w-[200px]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#8A9098]" />
+            <input
+              type="text"
+              value={search}
+              onChange={e => setSearch(e.target.value || null)}
+              placeholder="Rechercher un contact, email, entreprise, niche…"
+              className="w-full h-8 pl-9 pr-3 rounded-lg border border-[#e5e5e0] bg-white text-xs text-[#14171A] placeholder:text-[#8A9098] focus:outline-none focus:border-[#167f5b]/50 transition-colors"
+            />
+          </div>
+
+          {/* Filtre Industrie / Niche */}
+          <Select value={nicheFilter} onValueChange={(v) => setNicheFilter(v === 'all' ? null : v)}>
+            <SelectTrigger className="h-8 min-w-[140px] text-xs bg-white">
+              <SelectValue placeholder="Toutes industries" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all" className="text-xs">Toutes industries</SelectItem>
+              {niches.map(n => (
+                <SelectItem key={n} value={n!} className="text-xs">{n}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {/* Filtre Statut */}
+          <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v === 'all' ? null : v)}>
+            <SelectTrigger className="h-8 min-w-[130px] text-xs bg-white">
+              <SelectValue placeholder="Tous statuts" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all" className="text-xs">Tous statuts</SelectItem>
+              {Object.entries(STATUS_LABEL).map(([s, label]) => (
+                <SelectItem key={s} value={s} className="text-xs">{label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {/* Tri */}
           <Select value={sortBy} onValueChange={(v) => setSortBy(v === 'name' ? null : v)}>
-            <SelectTrigger className="h-8 min-w-[160px] text-xs bg-white">
+            <SelectTrigger className="h-8 min-w-[140px] text-xs bg-white">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -225,18 +272,6 @@ export function ContactsRoot() {
               ))}
             </SelectContent>
           </Select>
-        </div>
-
-        {/* Recherche — un seul champ pleine largeur */}
-        <div className="relative w-full">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#8A9098]" />
-          <input
-            type="text"
-            value={search}
-            onChange={e => setSearch(e.target.value || null)}
-            placeholder="Rechercher un contact, email, entreprise…"
-            className="w-full h-9 pl-9 pr-3 rounded-lg border border-[#e5e5e0] bg-white text-xs text-[#14171A] placeholder:text-[#8A9098] focus:outline-none focus:border-[#167f5b]/50 transition-colors"
-          />
         </div>
 
         {/* Table de contacts */}

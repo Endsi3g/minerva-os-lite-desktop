@@ -386,7 +386,7 @@ export function AuditRoot() {
         <div className="relative z-10 flex flex-col gap-6 max-w-4xl mx-auto w-full p-4 md:p-8">
           {/* Header */}
           <div className="border-b border-[#e5e5e0] pb-4">
-            <h1 className="text-2xl font-heading font-serif font-black tracking-tight text-[#14171A]">Audit SEO & Technique</h1>
+            <h1 className="text-2xl font-heading font-sans font-black tracking-tight text-[#14171A]">Audit SEO & Technique</h1>
             <p className="text-xs text-[#4B5158] mt-1 font-medium">
               Analysez le référencement, la vitesse et la réputation de n'importe quel prospect pour générer un argumentaire commercial.
             </p>

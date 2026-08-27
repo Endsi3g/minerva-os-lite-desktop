@@ -8,8 +8,10 @@ import { cn } from '@/lib/utils';
 import {
   TrendingUp, Users, Mail, AlertCircle,
   ClipboardList, BarChart3, Calendar, Trophy,
-  ArrowUp, Zap, MapPin, CheckCircle2,
+  ArrowUp, Zap, MapPin, CheckCircle2, Clock,
+  Target, Activity, Flame, Phone, DollarSign,
 } from 'lucide-react';
+import { AnalyserSubNav } from '@/app/(app)/_components/hub-nav/analyser-sub-nav';
 
 type Tab = 'overview' | 'prospection' | 'equipe';
 
@@ -20,7 +22,7 @@ function StatCard({
   icon: React.ElementType; trend?: 'up' | 'down' | 'flat'; color?: string;
 }) {
   return (
-    <div className="bg-white border border-[#e5e5e0] rounded-xl p-4 flex flex-col gap-3 relative overflow-hidden">
+    <div className="bg-white border border-[#e5e5e0] rounded-xl p-4 flex flex-col gap-3 relative overflow-hidden shadow-xs">
       <div
         className="absolute bottom-0 left-0 right-0 h-[2px] opacity-40 rounded-b-xl"
         style={{ background: color }}
@@ -54,7 +56,7 @@ function MiniBar({
   return (
     <div className="flex items-center gap-3 group">
       <span className="text-xs text-[#26251e] font-semibold w-28 truncate shrink-0">{label}</span>
-      <div className="flex-1 h-1.5 bg-[#f0efea] rounded-full overflow-hidden">
+      <div className="flex-1 h-2 bg-[#f0efea] rounded-full overflow-hidden">
         <div
           className="h-full rounded-full transition-all duration-500"
           style={{ width: `${pct}%`, background: color }}
@@ -114,6 +116,25 @@ function OverviewTab() {
     const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
     const recentLeads = leads.filter(l => new Date(l.createdAt || 0).getTime() > sevenDaysAgo).length;
 
+    // Engagement metrics
+    const withEmail = leads.filter(l => l.contactEmail).length;
+    const withPhone = leads.filter(l => l.phone).length;
+    const withWebsite = leads.filter(l => l.website).length;
+    const enriched = leads.filter(l => l.fitScore != null || l.suggestedEmails?.length).length;
+    const hasScore = leads.filter(l => l.score != null && l.score > 0);
+    const avgScore = hasScore.length > 0 ? Math.round(hasScore.reduce((s, l) => s + (l.score || 0), 0) / hasScore.length) : 0;
+
+    // Revenue pipeline
+    const totalDealValue = leads.reduce((s, l) => s + (l.dealAmount || 0), 0);
+    const avgDealValue = won > 0 ? Math.round(totalDealValue / leads.length) : 0;
+
+    // Source breakdown
+    const sourceCounts = leads.reduce<Record<string, number>>((acc, l) => {
+      const src = l.leadSourceType || 'manual';
+      acc[src] = (acc[src] || 0) + 1;
+      return acc;
+    }, {});
+
     const nicheCounts = leads.reduce<Record<string, number>>((acc, l) => {
       if (l.niche) acc[l.niche] = (acc[l.niche] || 0) + 1;
       return acc;
@@ -140,6 +161,8 @@ function OverviewTab() {
       total, contacted, meeting, won, lost, convRate, contactRate,
       overdueTasks, openTasks, recentLeads, topNiches, topCities,
       statusCounts, unreadNotifs, completedTasks,
+      withEmail, withPhone, withWebsite, enriched, avgScore,
+      totalDealValue, avgDealValue, sourceCounts,
     };
   }, [leads, tasks, projects, notifications]);
 
@@ -151,16 +174,21 @@ function OverviewTab() {
     New: '#7a7a76', Contacted: '#3b82f6',
     'Meeting Booked': '#f59e0b', Won: '#059669', Lost: '#dc2626',
   };
+  const SOURCE_LABELS: Record<string, string> = {
+    osm: 'OpenStreetMap', csv: 'Import CSV', manual: 'Manuel',
+    form: 'Formulaire', facebook: 'Facebook', google: 'Google', import: 'Import',
+  };
 
   const maxStatus = Math.max(...Object.values(stats.statusCounts), 1);
   const maxNiche = stats.topNiches[0]?.[1] ?? 1;
   const maxCity = stats.topCities[0]?.[1] ?? 1;
+  const maxSource = Math.max(...Object.values(stats.sourceCounts), 1);
 
   if (!isDataReady) {
     return (
       <div className="kpi-container">
         <div className="kpi-grid">
-          {[0, 1, 2, 3].map((i) => (
+          {[0, 1, 2, 3, 4, 5].map((i) => (
             <div key={i} className="bg-white border border-[#e5e5e0] rounded-xl p-4 h-24 animate-pulse" />
           ))}
         </div>
@@ -185,22 +213,26 @@ function OverviewTab() {
           {stats.completedTasks > 0 && (
             <InsightChip icon={CheckCircle2} text={`${stats.completedTasks} tâches complétées`} />
           )}
+          {stats.avgScore > 0 && (
+            <InsightChip icon={Target} text={`Score moyen ${stats.avgScore}/100`} />
+          )}
         </div>
       )}
 
-      {/* KPI grid */}
-      <div className="kpi-container">
-        <div className="kpi-grid">
-          <StatCard label="Leads totaux" value={stats.total} icon={Users} sub={`+${stats.recentLeads} cette semaine`} trend={stats.recentLeads > 0 ? 'up' : 'flat'} />
-          <StatCard label="Taux de contact" value={`${stats.contactRate}%`} icon={Mail} sub={`${stats.contacted} contactés`} color="#3b82f6" />
-          <StatCard label="Clients gagnés" value={stats.won} icon={Trophy} sub={`Conv. ${stats.convRate}%`} color="#059669" trend={stats.won > 0 ? 'up' : 'flat'} />
-          <StatCard label="Tâches en retard" value={stats.overdueTasks} icon={AlertCircle} sub={`${stats.openTasks} ouvertes au total`} color={stats.overdueTasks > 0 ? '#dc2626' : '#059669'} />
-        </div>
+      {/* KPI grid — 6 colonnes denses */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+        <StatCard label="Leads totaux" value={stats.total} icon={Users} sub={`+${stats.recentLeads} cette semaine`} trend={stats.recentLeads > 0 ? 'up' : 'flat'} />
+        <StatCard label="Taux de contact" value={`${stats.contactRate}%`} icon={Mail} sub={`${stats.contacted} contactés`} color="#3b82f6" />
+        <StatCard label="Clients gagnés" value={stats.won} icon={Trophy} sub={`Conv. ${stats.convRate}%`} color="#059669" trend={stats.won > 0 ? 'up' : 'flat'} />
+        <StatCard label="Tâches en retard" value={stats.overdueTasks} icon={AlertCircle} sub={`${stats.openTasks} ouvertes`} color={stats.overdueTasks > 0 ? '#dc2626' : '#059669'} />
+        <StatCard label="Score moyen" value={stats.avgScore} icon={Target} sub="Sur 100 points" color="#7c3aed" />
+        <StatCard label="Pipeline total" value={stats.totalDealValue > 0 ? `${(stats.totalDealValue / 1000).toFixed(0)}k $` : '—'} icon={DollarSign} sub={`${leads.length} opportunités`} color="#d97706" />
       </div>
 
-      {/* Funnel + mini metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        <div className="md:col-span-2 bg-white border border-[#e5e5e0] rounded-xl p-5 space-y-4">
+      {/* Row 2: Funnel + Data Completeness + Activity */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Funnel de conversion */}
+        <div className="bg-white border border-[#e5e5e0] rounded-xl p-5 space-y-4 shadow-xs">
           <div className="flex items-center gap-2">
             <TrendingUp className="h-3.5 w-3.5 text-[#059669]" />
             <p className="text-xs font-bold uppercase tracking-wider text-[#26251e]">Funnel de conversion</p>
@@ -219,51 +251,83 @@ function OverviewTab() {
           </div>
         </div>
 
-        <div className="bg-white border border-[#e5e5e0] rounded-xl p-5 space-y-3">
+        {/* Data Completeness */}
+        <div className="bg-white border border-[#e5e5e0] rounded-xl p-5 space-y-4 shadow-xs">
           <div className="flex items-center gap-2">
-            <Zap className="h-3.5 w-3.5 text-[#7a7a76]" />
+            <Activity className="h-3.5 w-3.5 text-[#7c3aed]" />
+            <p className="text-xs font-bold uppercase tracking-wider text-[#26251e]">Complétude des données</p>
+          </div>
+          <div className="space-y-3">
+            <MiniBar label="Avec email" value={stats.withEmail} max={stats.total || 1} color="#3b82f6" total={stats.total} />
+            <MiniBar label="Avec téléphone" value={stats.withPhone} max={stats.total || 1} color="#059669" total={stats.total} />
+            <MiniBar label="Avec site web" value={stats.withWebsite} max={stats.total || 1} color="#d97706" total={stats.total} />
+            <MiniBar label="Enrichis (IA)" value={stats.enriched} max={stats.total || 1} color="#7c3aed" total={stats.total} />
+          </div>
+        </div>
+
+        {/* Activité & tâches */}
+        <div className="bg-white border border-[#e5e5e0] rounded-xl p-5 space-y-3 shadow-xs">
+          <div className="flex items-center gap-2">
+            <Zap className="h-3.5 w-3.5 text-[#f59e0b]" />
             <p className="text-xs font-bold uppercase tracking-wider text-[#26251e]">Activité</p>
           </div>
           <div className="grid grid-cols-2 gap-2">
             <MiniMetricCard label="Projets actifs" value={projects.length} icon={ClipboardList} color="#6366f1" />
-            <MiniMetricCard label="Tâches ouvertes" value={stats.openTasks} icon={AlertCircle} color="#f59e0b" />
-            <MiniMetricCard label="Notifs non lues" value={stats.unreadNotifs} icon={BarChart3} color="#3b82f6" />
+            <MiniMetricCard label="Tâches ouvertes" value={stats.openTasks} icon={Clock} color="#f59e0b" />
+            <MiniMetricCard label="Notifs non lues" value={stats.unreadNotifs} icon={Flame} color="#ef4444" />
             <MiniMetricCard label="En réunion" value={stats.meeting} icon={Calendar} color="#059669" />
           </div>
         </div>
       </div>
 
-      {/* Niches + Villes */}
-      {(stats.topNiches.length > 0 || stats.topCities.length > 0) && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {stats.topNiches.length > 0 && (
-            <div className="bg-white border border-[#e5e5e0] rounded-xl p-5 space-y-4">
-              <div className="flex items-center gap-2">
-                <BarChart3 className="h-3.5 w-3.5 text-[#059669]" />
-                <p className="text-xs font-bold uppercase tracking-wider text-[#26251e]">Top niches</p>
-              </div>
-              <div className="space-y-2.5">
-                {stats.topNiches.map(([niche, count]) => (
-                  <MiniBar key={niche} label={niche} value={count} max={maxNiche} color="#059669" total={stats.total} />
-                ))}
-              </div>
+      {/* Row 3: Sources + Niches + Villes */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Sources d'acquisition */}
+        {Object.keys(stats.sourceCounts).length > 0 && (
+          <div className="bg-white border border-[#e5e5e0] rounded-xl p-5 space-y-4 shadow-xs">
+            <div className="flex items-center gap-2">
+              <Target className="h-3.5 w-3.5 text-[#d97706]" />
+              <p className="text-xs font-bold uppercase tracking-wider text-[#26251e]">Sources d'acquisition</p>
             </div>
-          )}
-          {stats.topCities.length > 0 && (
-            <div className="bg-white border border-[#e5e5e0] rounded-xl p-5 space-y-4">
-              <div className="flex items-center gap-2">
-                <MapPin className="h-3.5 w-3.5 text-[#3b82f6]" />
-                <p className="text-xs font-bold uppercase tracking-wider text-[#26251e]">Top villes</p>
-              </div>
-              <div className="space-y-2.5">
-                {stats.topCities.map(([city, count]) => (
-                  <MiniBar key={city} label={city} value={count} max={maxCity} color="#3b82f6" total={stats.total} />
+            <div className="space-y-2.5">
+              {Object.entries(stats.sourceCounts)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 6)
+                .map(([src, count]) => (
+                  <MiniBar key={src} label={SOURCE_LABELS[src] || src} value={count} max={maxSource} color="#d97706" total={stats.total} />
                 ))}
-              </div>
             </div>
-          )}
-        </div>
-      )}
+          </div>
+        )}
+
+        {stats.topNiches.length > 0 && (
+          <div className="bg-white border border-[#e5e5e0] rounded-xl p-5 space-y-4 shadow-xs">
+            <div className="flex items-center gap-2">
+              <BarChart3 className="h-3.5 w-3.5 text-[#059669]" />
+              <p className="text-xs font-bold uppercase tracking-wider text-[#26251e]">Top niches</p>
+            </div>
+            <div className="space-y-2.5">
+              {stats.topNiches.map(([niche, count]) => (
+                <MiniBar key={niche} label={niche} value={count} max={maxNiche} color="#059669" total={stats.total} />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {stats.topCities.length > 0 && (
+          <div className="bg-white border border-[#e5e5e0] rounded-xl p-5 space-y-4 shadow-xs">
+            <div className="flex items-center gap-2">
+              <MapPin className="h-3.5 w-3.5 text-[#3b82f6]" />
+              <p className="text-xs font-bold uppercase tracking-wider text-[#26251e]">Top villes</p>
+            </div>
+            <div className="space-y-2.5">
+              {stats.topCities.map(([city, count]) => (
+                <MiniBar key={city} label={city} value={count} max={maxCity} color="#3b82f6" total={stats.total} />
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Empty state */}
       {stats.total === 0 && (
@@ -289,31 +353,46 @@ export function AnalyticsRoot() {
   ];
 
   return (
-    <div className="min-h-0 bg-[#fafaf8]">
-      <div className="flex flex-col gap-5 py-4 w-full">
+    <div className="flex flex-col h-full w-full bg-[#fafaf8]">
+      <AnalyserSubNav />
 
-        {/* Tabs */}
-        <div className="flex gap-1 p-1 rounded-lg bg-[#f4f4f3] border border-[#e5e5e0] w-fit">
-          {tabs.map(({ id, label, icon: Icon }) => (
-            <button
-              key={id}
-              onClick={() => setTab(id)}
-              className={cn(
-                'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all',
-                tab === id
-                  ? 'bg-white text-[#26251e] shadow-xs border border-[#e5e5e0]'
-                  : 'text-[#7a7a76] hover:text-[#26251e]'
-              )}
-            >
-              <Icon className="h-3.5 w-3.5" />
-              {label}
-            </button>
-          ))}
+      <div className="flex-1 overflow-auto">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-5">
+          {/* Header */}
+          <div className="flex items-start justify-between gap-4 border-b border-[#e5e5e0] pb-5">
+            <div>
+              <h1 className="text-2xl font-heading font-sans font-black tracking-tight text-[#14171A]">
+                Analyse approfondie
+              </h1>
+              <p className="text-xs text-[#4B5158] mt-1 font-medium">
+                Tableau de bord analytique complet — KPIs, funnel, sources et tendances.
+              </p>
+            </div>
+          </div>
+
+          {/* Tabs */}
+          <div className="flex gap-1 p-1 rounded-lg bg-[#f4f4f3] border border-[#e5e5e0] w-fit">
+            {tabs.map(({ id, label, icon: Icon }) => (
+              <button
+                key={id}
+                onClick={() => setTab(id)}
+                className={cn(
+                  'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all',
+                  tab === id
+                    ? 'bg-white text-[#26251e] shadow-xs border border-[#e5e5e0]'
+                    : 'text-[#7a7a76] hover:text-[#26251e]'
+                )}
+              >
+                <Icon className="h-3.5 w-3.5" />
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {tab === 'overview' && <OverviewTab />}
+          {tab === 'prospection' && <ProspectionDashboard />}
+          {tab === 'equipe' && <AnalyticsDashboard />}
         </div>
-
-        {tab === 'overview' && <OverviewTab />}
-        {tab === 'prospection' && <ProspectionDashboard />}
-        {tab === 'equipe' && <AnalyticsDashboard />}
       </div>
     </div>
   );
