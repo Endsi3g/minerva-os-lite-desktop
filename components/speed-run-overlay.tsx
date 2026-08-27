@@ -22,13 +22,20 @@ import {
   MessageSquare,
   Globe,
   Star,
-  Check
+  Check,
+  Filter,
+  SlidersHorizontal,
+  ExternalLink,
+  PhoneCall,
+  User,
+  ShieldCheck,
 } from 'lucide-react';
 import { useReach } from '@/lib/reach-context';
 import type { Lead } from '@/lib/mock-data';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { getApiUrl } from '@/lib/api-helper';
+import Link from 'next/link';
 
 const getLeadEmail = (l: Lead) => l.contactEmail || (l as any).email || '';
 
@@ -41,18 +48,37 @@ interface SpeedRunOverlayProps {
 export function SpeedRunOverlay({ isOpen, onClose, customLeads }: SpeedRunOverlayProps) {
   const { leads, updateLead, activeWorkspace } = useReach();
 
+  // Filters inside Speed Run
+  const [filterNiche, setFilterNiche] = useState<string>('all');
+  const [filterTemp, setFilterTemp] = useState<string>('all');
+  const [channel, setChannel] = useState<'email' | 'sms' | 'field' | 'call'>('email');
+  const [tone, setTone] = useState<'direct' | 'consultatif' | 'offre'>('direct');
+
   // Filter actionable leads for the session
   const sessionLeads = useMemo(() => {
-    if (customLeads && customLeads.length > 0) return customLeads;
-    // Default queue: Warm/Hot leads or leads not yet converted/contacted
-    const active = leads.filter(
-      (l) => l.status === 'New' || l.status === 'Contacted' || l.temperature === 'Hot' || l.temperature === 'Warm'
-    );
-    return active.length > 0 ? active.slice(0, 15) : leads.slice(0, 10);
-  }, [leads, customLeads]);
+    let list = customLeads && customLeads.length > 0 ? customLeads : leads;
+    
+    if (filterNiche !== 'all') {
+      list = list.filter((l) => l.niche === filterNiche);
+    }
+    if (filterTemp !== 'all') {
+      list = list.filter((l) => l.temperature === filterTemp);
+    } else if (!customLeads || customLeads.length === 0) {
+      // Prioritize actionable/warm leads
+      const active = list.filter(
+        (l) => l.status === 'New' || l.status === 'Contacted' || l.temperature === 'Hot' || l.temperature === 'Warm'
+      );
+      if (active.length > 0) list = active;
+    }
+
+    return list.slice(0, 25);
+  }, [leads, customLeads, filterNiche, filterTemp]);
+
+  const uniqueNiches = useMemo(() => {
+    return Array.from(new Set(leads.map((l) => l.niche).filter(Boolean)));
+  }, [leads]);
 
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [channel, setChannel] = useState<'email' | 'sms' | 'field' | 'call'>('email');
   const [isEditing, setIsEditing] = useState(false);
   const [customMessage, setCustomMessage] = useState('');
   const [stats, setStats] = useState({ sent: 0, fieldAdded: 0, skipped: 0 });
@@ -62,6 +88,11 @@ export function SpeedRunOverlay({ isOpen, onClose, customLeads }: SpeedRunOverla
   const [isSending, setIsSending] = useState(false);
 
   const currentLead: Lead | undefined = sessionLeads[currentIndex];
+
+  // Reset index if filter changes
+  useEffect(() => {
+    setCurrentIndex(0);
+  }, [filterNiche, filterTemp]);
 
   // Timer
   useEffect(() => {
@@ -76,23 +107,39 @@ export function SpeedRunOverlay({ isOpen, onClose, customLeads }: SpeedRunOverla
   const generatedPitch = useMemo(() => {
     if (!currentLead) return '';
     const name = currentLead.contactName || currentLead.businessName || 'Bonjour';
-    const company = currentLead.businessName || 'votre établissement';
-    const city = currentLead.city || 'votre région';
-    const niche = currentLead.niche || 'votre secteur';
+    const company = currentLead.businessName || 'votre entreprise';
+    const city = currentLead.city || 'votre secteur';
+    const niche = currentLead.niche || 'votre domaine';
 
     if (channel === 'field') {
-      return `Bonjour ${name}, je suis de passage aujourd'hui sur ${city} pour rencontrer des acteurs clés en ${niche}. Avez-vous 5 minutes pour échanger sur la modernisation de votre acquisition ?`;
+      if (tone === 'offre') {
+        return `Bonjour ${name}, de passage aujourd'hui à ${city}, nous offrons aux établissements de ${niche} un audit d'impact immédiat. Auriez-vous 5 minutes ?`;
+      }
+      return `Bonjour ${name}, je suis sur ${city} pour échanger avec les acteurs clés en ${niche}. Avez-vous 5 minutes pour discuter de l'optimisation de votre acquisition locale ?`;
     }
-    if (channel === 'sms') {
-      return `Bonjour ${name}, avez-vous 3 min cette semaine pour voir comment booster les prises de RDV de ${company} ? - Minerva OS`;
-    }
-    if (channel === 'call') {
-      return `Pitch Téléphonique : Accroche immédiate sur la visibilité locale de ${company} à ${city} et proposition d'un diagnostic d'impact de 10 min.`;
-    }
-    return `Bonjour ${name},\n\nJ'ai analysé la présence locale de ${company} sur ${city} et j'ai identifié 2 leviers immédiats pour doubler vos demandes entrantes en ${niche}.\n\nSeriez-vous ouvert à un rapide échange de 10 minutes ce jeudi ?\n\nBien cordialement,\nL'équipe`;
-  }, [currentLead, channel]);
 
-  // Sync custom message when lead or channel changes
+    if (channel === 'sms') {
+      if (tone === 'direct') {
+        return `Bonjour ${name}, 2 opportunités concrètes repérées pour doubler les demandes entrantes de ${company} à ${city}. Dispo 5 min jeudi ? - Minerva`;
+      }
+      return `Bonjour ${name}, avez-vous 3 min cette semaine pour voir comment accélérer les réservations de ${company} ? - Minerva OS`;
+    }
+
+    if (channel === 'call') {
+      return `Pitch Téléphonique (${tone.toUpperCase()}) : Accroche immédiate sur la visibilité locale de ${company} à ${city}. Question d'ouverture : "Comment traitez-vous actuellement vos demandes en ligne pour ${niche} ?"`;
+    }
+
+    // Default Email
+    if (tone === 'direct') {
+      return `Bonjour ${name},\n\nJ'ai analysé la présence en ligne de ${company} sur ${city} et j'ai repéré 2 leviers immédiats pour capter davantage de clients en ${niche}.\n\nSeriez-vous disponible pour un échange rapide de 10 minutes ce jeudi ?\n\nBien cordialement,\nL'équipe`;
+    }
+    if (tone === 'consultatif') {
+      return `Bonjour ${name},\n\nNous accompagnons les entreprises en ${niche} à ${city} dans la modernisation de leur cycle de vente.\n\nSeriez-vous ouvert à comparer vos méthodes actuelles lors d'un rapide diagnostic sans engagement ?\n\nBien à vous,`;
+    }
+    return `Bonjour ${name},\n\nNous lançons une offre pilote dédiée aux spécialistes de ${niche} à ${city} pour maximiser votre chiffre d'affaires.\n\nSouhaitez-vous recevoir la synthèse complète ?\n\nCordialement,`;
+  }, [currentLead, channel, tone]);
+
+  // Sync custom message when lead, channel, or tone changes
   useEffect(() => {
     setCustomMessage(generatedPitch);
     setIsEditing(false);
@@ -120,7 +167,6 @@ export function SpeedRunOverlay({ isOpen, onClose, customLeads }: SpeedRunOverla
     setIsSending(true);
 
     try {
-      // If email channel, try calling outreach composer API
       const emailToUse = getLeadEmail(currentLead);
       if (channel === 'email' && emailToUse) {
         const workspaceId = activeWorkspace?.id || localStorage.getItem('minerva_active_workspace_id');
@@ -131,16 +177,15 @@ export function SpeedRunOverlay({ isOpen, onClose, customLeads }: SpeedRunOverla
             workspace_id: workspaceId,
             lead_id: currentLead.id,
             to: emailToUse,
-            subject: `Opportunité de croissance pour ${currentLead.businessName}`,
+            subject: `Opportunité d'accélération pour ${currentLead.businessName}`,
             body: customMessage,
           }),
         }).catch(() => {});
       }
 
-      // Update lead in state
       await updateLead(currentLead.id, {
         status: 'Contacted',
-        nextAction: `Message ${channel.toUpperCase()} envoyé en Speed Run`,
+        nextAction: `Speed Run ${channel.toUpperCase()} (${tone}) validé`,
         nextActionDate: new Date(Date.now() + 3 * 86400000).toISOString().split('T')[0],
       });
 
@@ -179,7 +224,7 @@ export function SpeedRunOverlay({ isOpen, onClose, customLeads }: SpeedRunOverla
       setStreak((s) => s + 1);
       toast.success(`${currentLead.businessName} ajouté à la tournée terrain ! 🚗`, { duration: 1500 });
       nextLead();
-    } catch (err: any) {
+    } catch {
       toast.error('Erreur lors de l’ajout en tournée');
     } finally {
       setIsSending(false);
@@ -199,9 +244,8 @@ export function SpeedRunOverlay({ isOpen, onClose, customLeads }: SpeedRunOverla
     if (!isOpen || isCompleted) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      // If typing inside an input or textarea, don't capture global single keys
       const target = e.target as HTMLElement;
-      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) {
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT')) {
         if (e.key === 'Escape') {
           setIsEditing(false);
         }
@@ -220,6 +264,14 @@ export function SpeedRunOverlay({ isOpen, onClose, customLeads }: SpeedRunOverla
       } else if (e.key === ' ' || e.key === 'ArrowDown') {
         e.preventDefault();
         handleSkip();
+      } else if (e.key === '1') {
+        setChannel('email');
+      } else if (e.key === '2') {
+        setChannel('field');
+      } else if (e.key === '3') {
+        setChannel('sms');
+      } else if (e.key === '4') {
+        setChannel('call');
       } else if (e.key === 'Escape') {
         e.preventDefault();
         onClose();
@@ -228,20 +280,20 @@ export function SpeedRunOverlay({ isOpen, onClose, customLeads }: SpeedRunOverla
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, isCompleted, currentLead, customMessage, channel, isSending]);
+  }, [isOpen, isCompleted, currentLead, customMessage, channel, isSending, tone]);
 
   if (!isOpen) return null;
 
   const progressPercent = sessionLeads.length > 0 ? Math.round(((currentIndex) / sessionLeads.length) * 100) : 0;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#0d0f11]/85 backdrop-blur-xl animate-in fade-in duration-200 p-4 select-none">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#0d0f11]/85 backdrop-blur-xl animate-in fade-in duration-200 p-3 sm:p-6 select-none">
       {/* Background radial glow */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-emerald-500/10 rounded-full blur-3xl" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-emerald-500/10 rounded-full blur-3xl" />
       </div>
 
-      <div className="relative w-full max-w-2xl bg-white rounded-3xl shadow-2xl border border-[#e5e5e0] overflow-hidden flex flex-col max-h-[92vh]">
+      <div className="relative w-full max-w-3xl bg-white rounded-3xl shadow-2xl border border-[#e5e5e0] overflow-hidden flex flex-col max-h-[94vh]">
         {/* Top Header HUD */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-[#e5e5e0] bg-[#fafaf8] shrink-0">
           <div className="flex items-center gap-3">
@@ -250,18 +302,18 @@ export function SpeedRunOverlay({ isOpen, onClose, customLeads }: SpeedRunOverla
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-sm font-black text-[#26251e] tracking-tight">Speed Run Commercial</h2>
+                <h2 className="text-sm font-bold font-heading font-sans text-[#26251e] tracking-tight">Speed Run Commercial</h2>
                 <span className="text-[10px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full border border-emerald-300">
                   Mode 20x
                 </span>
               </div>
               <p className="text-[11px] text-[#7a7a76] font-medium">
-                Validation & Dispatch instantané en 1-clic
+                {sessionLeads.length} prospects dans la file d'exécution
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5">
             {streak > 1 && (
               <motion.div
                 initial={{ scale: 0.8 }}
@@ -280,10 +332,45 @@ export function SpeedRunOverlay({ isOpen, onClose, customLeads }: SpeedRunOverla
 
             <button
               onClick={onClose}
-              className="h-8 w-8 flex items-center justify-center rounded-full bg-[#f0f0ed] hover:bg-[#e5e5e2] text-[#7a7a76] hover:text-[#26251e] transition-colors"
+              className="h-8 w-8 flex items-center justify-center rounded-full bg-[#f0f0ed] hover:bg-[#e5e5e2] text-[#7a7a76] hover:text-[#26251e] transition-colors cursor-pointer"
             >
               <X className="h-4 w-4" />
             </button>
+          </div>
+        </div>
+
+        {/* Filters bar inside speed run */}
+        <div className="flex items-center justify-between px-6 py-2 border-b border-[#e5e5e0] bg-[#f7f7f5] text-xs">
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-bold uppercase text-[#7a7a76] flex items-center gap-1">
+              <SlidersHorizontal className="h-3 w-3" /> Filtre :
+            </span>
+            <select
+              value={filterNiche}
+              onChange={(e) => setFilterNiche(e.target.value)}
+              className="h-7 text-[11px] font-semibold bg-white border border-[#e5e5e0] rounded-lg px-2 text-[#26251e] outline-none"
+            >
+              <option value="all">Toutes niches</option>
+              {uniqueNiches.map((n) => (
+                <option key={n} value={n!}>{n}</option>
+              ))}
+            </select>
+
+            <select
+              value={filterTemp}
+              onChange={(e) => setFilterTemp(e.target.value)}
+              className="h-7 text-[11px] font-semibold bg-white border border-[#e5e5e0] rounded-lg px-2 text-[#26251e] outline-none"
+            >
+              <option value="all">Toutes températures</option>
+              <option value="Hot">Chaud 🔥</option>
+              <option value="Warm">Tiède ⚡</option>
+              <option value="Cold">Froid ❄️</option>
+            </select>
+          </div>
+
+          {/* Quick Shortcuts Hint */}
+          <div className="hidden sm:flex items-center gap-2 text-[10px] text-[#7a7a76] font-mono">
+            <span>Canaux: [1] Email [2] Terrain [3] SMS [4] Appel</span>
           </div>
         </div>
 
@@ -315,14 +402,30 @@ export function SpeedRunOverlay({ isOpen, onClose, customLeads }: SpeedRunOverla
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
-                        <h3 className="text-base font-black text-[#26251e]">
+                        <h3 className="text-base font-bold font-heading font-sans text-[#26251e]">
                           {currentLead.businessName}
                         </h3>
-                        <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200">
-                          {currentLead.niche || 'B2B Local'}
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200">
+                          {currentLead.niche || 'B2B'}
                         </span>
+                        <Link
+                          href={`/leads/${currentLead.id}`}
+                          target="_blank"
+                          className="text-[#7a7a76] hover:text-[#059669] transition-colors ml-1"
+                          title="Ouvrir la fiche Lead 360"
+                        >
+                          <ExternalLink className="h-3.5 w-3.5" />
+                        </Link>
                       </div>
+
+                      {/* Details row */}
                       <div className="flex flex-wrap items-center gap-3 text-xs text-[#7a7a76] mt-1">
+                        {currentLead.contactName && (
+                          <span className="flex items-center gap-1 font-semibold text-[#26251e]">
+                            <User className="h-3 w-3 text-[#059669]" />
+                            {currentLead.contactName}
+                          </span>
+                        )}
                         {currentLead.city && (
                           <span className="flex items-center gap-1">
                             <MapPin className="h-3 w-3 text-[#059669]" />
@@ -345,78 +448,71 @@ export function SpeedRunOverlay({ isOpen, onClose, customLeads }: SpeedRunOverla
                     </div>
                   </div>
 
-                  <div className="text-right">
+                  <div className="text-right shrink-0">
                     <span className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">
-                      Action {currentIndex + 1} / {sessionLeads.length}
+                      {currentIndex + 1} / {sessionLeads.length}
                     </span>
                     <div className="text-xs font-black text-emerald-700 mt-0.5">
-                      Score : {currentLead.score ? `${currentLead.score}%` : 'Chaud'}
+                      Score : {currentLead.score ? `${currentLead.score}/100` : 'Prêt'}
                     </div>
                   </div>
                 </div>
 
-                {/* Channel Selector */}
-                <div className="flex items-center gap-2 bg-[#f0f0ed] p-1 rounded-xl">
-                  <button
-                    onClick={() => setChannel('email')}
-                    className={cn(
-                      'flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-bold rounded-lg transition-all',
-                      channel === 'email'
-                        ? 'bg-white text-emerald-700 shadow-xs'
-                        : 'text-[#7a7a76] hover:text-[#26251e]'
-                    )}
-                  >
-                    <Mail className="h-3.5 w-3.5" />
-                    Email
-                  </button>
-                  <button
-                    onClick={() => setChannel('field')}
-                    className={cn(
-                      'flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-bold rounded-lg transition-all',
-                      channel === 'field'
-                        ? 'bg-white text-emerald-700 shadow-xs'
-                        : 'text-[#7a7a76] hover:text-[#26251e]'
-                    )}
-                  >
-                    <Navigation className="h-3.5 w-3.5" />
-                    Tournée Terrain
-                  </button>
-                  <button
-                    onClick={() => setChannel('sms')}
-                    className={cn(
-                      'flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-bold rounded-lg transition-all',
-                      channel === 'sms'
-                        ? 'bg-white text-emerald-700 shadow-xs'
-                        : 'text-[#7a7a76] hover:text-[#26251e]'
-                    )}
-                  >
-                    <MessageSquare className="h-3.5 w-3.5" />
-                    SMS
-                  </button>
-                  <button
-                    onClick={() => setChannel('call')}
-                    className={cn(
-                      'flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-bold rounded-lg transition-all',
-                      channel === 'call'
-                        ? 'bg-white text-emerald-700 shadow-xs'
-                        : 'text-[#7a7a76] hover:text-[#26251e]'
-                    )}
-                  >
-                    <Phone className="h-3.5 w-3.5" />
-                    Appel
-                  </button>
+                {/* Channel & Tone Selectors */}
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  {/* Channel Switcher */}
+                  <div className="flex items-center gap-1 bg-[#f0f0ed] p-1 rounded-xl flex-1 min-w-[280px]">
+                    {[
+                      { id: 'email', label: 'Email [1]', icon: Mail },
+                      { id: 'field', label: 'Terrain [2]', icon: Navigation },
+                      { id: 'sms', label: 'SMS [3]', icon: MessageSquare },
+                      { id: 'call', label: 'Appel [4]', icon: PhoneCall },
+                    ].map((ch) => (
+                      <button
+                        key={ch.id}
+                        onClick={() => setChannel(ch.id as any)}
+                        className={cn(
+                          'flex-1 flex items-center justify-center gap-1 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer',
+                          channel === ch.id
+                            ? 'bg-white text-emerald-700 shadow-xs'
+                            : 'text-[#7a7a76] hover:text-[#26251e]'
+                        )}
+                      >
+                        <ch.icon className="h-3.5 w-3.5" />
+                        <span>{ch.label}</span>
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Tone Switcher */}
+                  <div className="flex items-center gap-1 bg-[#f0f0ed] p-1 rounded-xl">
+                    {(['direct', 'consultatif', 'offre'] as const).map((t) => (
+                      <button
+                        key={t}
+                        onClick={() => setTone(t)}
+                        className={cn(
+                          'px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all capitalize cursor-pointer',
+                          tone === t
+                            ? 'bg-emerald-600 text-white shadow-xs'
+                            : 'text-[#7a7a76] hover:text-[#26251e]'
+                        )}
+                      >
+                        {t}
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
                 {/* AI Prepared Message Box */}
                 <div className="relative rounded-2xl border border-emerald-500/30 bg-emerald-50/20 p-4 shadow-xs">
                   <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-1.5 text-xs font-extrabold text-emerald-900">
+                    <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-900">
                       <Sparkles className="h-3.5 w-3.5 text-emerald-600" />
-                      <span>Approche Pré-Générée par Minerva AI</span>
+                      <span>Message Pré-Généré par Minerva AI</span>
                     </div>
                     <button
                       onClick={() => setIsEditing((v) => !v)}
-                      className="flex items-center gap-1 text-[11px] font-bold text-emerald-700 hover:text-emerald-900 bg-white px-2 py-0.5 rounded-md border border-emerald-200 transition-colors"
+                      className="flex items-center gap-1 text-[11px] font-bold text-emerald-700 hover:text-emerald-900 bg-white px-2 py-0.5 rounded-md border border-emerald-200 transition-colors cursor-pointer"
                     >
                       <Edit3 className="h-3 w-3" />
                       {isEditing ? 'Verrouiller [M]' : 'Modifier le pitch [M]'}
@@ -427,11 +523,11 @@ export function SpeedRunOverlay({ isOpen, onClose, customLeads }: SpeedRunOverla
                     <textarea
                       value={customMessage}
                       onChange={(e) => setCustomMessage(e.target.value)}
-                      rows={4}
+                      rows={5}
                       className="w-full text-xs font-medium bg-white border border-emerald-300 rounded-xl p-3 text-[#26251e] focus:outline-none focus:ring-2 focus:ring-emerald-500"
                     />
                   ) : (
-                    <div className="text-xs text-[#26251e] font-normal leading-relaxed whitespace-pre-line bg-white/70 p-3 rounded-xl border border-emerald-200/60 min-h-[90px]">
+                    <div className="text-xs text-[#26251e] font-normal leading-relaxed whitespace-pre-line bg-white/80 p-3.5 rounded-xl border border-emerald-200/60 min-h-[90px]">
                       {customMessage}
                     </div>
                   )}
@@ -444,7 +540,7 @@ export function SpeedRunOverlay({ isOpen, onClose, customLeads }: SpeedRunOverla
               <div className="h-16 w-16 rounded-full bg-emerald-100 border border-emerald-200 flex items-center justify-center text-emerald-600 mb-4 shadow-lg shadow-emerald-500/10">
                 <CheckCircle2 className="h-9 w-9" />
               </div>
-              <h3 className="text-xl font-black text-[#26251e]">Session Speed Run Terminée ! 🎉</h3>
+              <h3 className="text-xl font-bold font-heading font-sans text-[#26251e]">Session Speed Run Terminée ! 🎉</h3>
               <p className="text-xs text-[#7a7a76] max-w-md mt-1">
                 Vous avez traité l'intégralité de vos prospects chauds en un temps record.
               </p>
@@ -474,14 +570,14 @@ export function SpeedRunOverlay({ isOpen, onClose, customLeads }: SpeedRunOverla
                     setStreak(0);
                     setSecondsElapsed(0);
                   }}
-                  className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-[#555552] bg-[#f0f0ed] hover:bg-[#e5e5e2] rounded-xl transition-all"
+                  className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-[#555552] bg-[#f0f0ed] hover:bg-[#e5e5e2] rounded-xl transition-all cursor-pointer"
                 >
                   <RotateCcw className="h-3.5 w-3.5" />
                   Relancer une session
                 </button>
                 <button
                   onClick={onClose}
-                  className="flex items-center gap-1.5 px-5 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl transition-all shadow-md shadow-emerald-600/20"
+                  className="flex items-center gap-1.5 px-5 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl transition-all shadow-md shadow-emerald-600/20 cursor-pointer"
                 >
                   Retour au Cockpit
                 </button>
@@ -495,7 +591,7 @@ export function SpeedRunOverlay({ isOpen, onClose, customLeads }: SpeedRunOverla
           <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-4 border-t border-[#e5e5e0] bg-[#fafaf8] shrink-0">
             <button
               onClick={handleSkip}
-              className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-[#7a7a76] hover:text-[#26251e] bg-white border border-[#e5e5e0] rounded-xl hover:bg-[#f0f0ed] transition-all"
+              className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-[#7a7a76] hover:text-[#26251e] bg-white border border-[#e5e5e0] rounded-xl hover:bg-[#f0f0ed] transition-all cursor-pointer"
             >
               <SkipForward className="h-3.5 w-3.5" />
               <span>Passer</span>
@@ -508,7 +604,7 @@ export function SpeedRunOverlay({ isOpen, onClose, customLeads }: SpeedRunOverla
               <button
                 onClick={handleAddToFieldTour}
                 disabled={isSending}
-                className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-[#059669] bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-xl transition-all"
+                className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-[#059669] bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-xl transition-all cursor-pointer disabled:opacity-50"
               >
                 <Navigation className="h-3.5 w-3.5" />
                 <span>Ajouter à la tournée</span>
@@ -520,7 +616,7 @@ export function SpeedRunOverlay({ isOpen, onClose, customLeads }: SpeedRunOverla
               <button
                 onClick={handleValidateAndSend}
                 disabled={isSending}
-                className="flex items-center gap-1.5 px-5 py-2 text-xs font-black text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl transition-all shadow-md shadow-emerald-600/20 active:scale-95"
+                className="flex items-center gap-1.5 px-5 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl transition-all shadow-md shadow-emerald-600/20 active:scale-95 cursor-pointer disabled:opacity-50"
               >
                 <Send className="h-3.5 w-3.5" />
                 <span>Valider & Envoyer</span>
@@ -535,3 +631,5 @@ export function SpeedRunOverlay({ isOpen, onClose, customLeads }: SpeedRunOverla
     </div>
   );
 }
+
+export default SpeedRunOverlay;
