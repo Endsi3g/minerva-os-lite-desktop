@@ -100,6 +100,8 @@ export function WeeklyReportCard() {
 
   if (!activeWorkspace) return null;
 
+  const [collapsed, setCollapsed] = useState(false);
+
   const reportLines = report ? report.split('\n').filter(Boolean) : [];
   const previewLines = reportLines.slice(0, 2);
   const hasMore = reportLines.length > 2;
@@ -115,27 +117,42 @@ export function WeeklyReportCard() {
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-        <Link
-          href="/weekly-report"
-          className="flex items-center gap-1 rounded-lg border border-[#e5e5e0] bg-[#fafaf8] hover:bg-[#f0f0ef] px-2.5 py-1.5 text-[10px] font-bold text-[#059669] transition-colors"
-        >
-          Bilan complet
-          <ArrowRight className="h-3 w-3" />
-        </Link>
-        <button
-          onClick={() => fetchReport(true)}
-          disabled={loading}
-          className="flex items-center gap-1.5 rounded-lg border border-[#e5e5e0] bg-[#fafaf8] hover:bg-[#f0f0ef] disabled:opacity-50 px-2.5 py-1.5 text-[10px] font-bold text-[#26251e] transition-colors shrink-0"
-        >
-          {loading ? (
-            <Loader2 className="h-3 w-3 animate-spin" />
-          ) : (
-            <RefreshCw className="h-3 w-3" />
+          <button
+            onClick={() => setCollapsed(!collapsed)}
+            className="flex items-center gap-1 rounded-lg border border-[#e5e5e0] bg-[#fafaf8] hover:bg-[#f0f0ef] px-2 py-1.5 text-[10px] font-bold text-[#7a7a76] hover:text-[#26251e] transition-colors"
+            title={collapsed ? 'Déplier' : 'Masquer'}
+          >
+            {collapsed ? <ChevronDown className="h-3 w-3" /> : <ChevronUp className="h-3 w-3" />}
+            <span>{collapsed ? 'Afficher' : 'Masquer'}</span>
+          </button>
+          {!collapsed && (
+            <>
+              <Link
+                href="/weekly-report"
+                className="flex items-center gap-1 rounded-lg border border-[#e5e5e0] bg-[#fafaf8] hover:bg-[#f0f0ef] px-2.5 py-1.5 text-[10px] font-bold text-[#059669] transition-colors"
+              >
+                Bilan complet
+                <ArrowRight className="h-3 w-3" />
+              </Link>
+              <button
+                onClick={() => fetchReport(true)}
+                disabled={loading}
+                className="flex items-center gap-1.5 rounded-lg border border-[#e5e5e0] bg-[#fafaf8] hover:bg-[#f0f0ef] disabled:opacity-50 px-2.5 py-1.5 text-[10px] font-bold text-[#26251e] transition-colors shrink-0"
+              >
+                {loading ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-3 w-3" />
+                )}
+                {report ? 'Actualiser' : 'Générer'}
+              </button>
+            </>
           )}
-          {report ? 'Actualiser' : 'Générer'}
-        </button>
         </div>
       </div>
+
+      {!collapsed && (
+        <>
 
       {metrics && (
         <div className="grid grid-cols-2 gap-2">
@@ -216,6 +233,8 @@ export function WeeklyReportCard() {
             </button>
           )}
         </div>
+      )}
+        </>
       )}
     </div>
   );

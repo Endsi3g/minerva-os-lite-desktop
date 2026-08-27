@@ -95,6 +95,7 @@ function MiniMetricCard({ label, value, icon: Icon, color }: { label: string; va
 
 function OverviewTab() {
   const { leads, tasks, projects, notifications, isDataReady } = useReach();
+  const [showSystemActivity, setShowSystemActivity] = useState(false);
 
   const stats = useMemo(() => {
     const total = leads.length;
@@ -265,18 +266,32 @@ function OverviewTab() {
           </div>
         </div>
 
-        {/* Activité & tâches */}
+        {/* Activité & tâches système (Masquable) */}
         <div className="bg-white border border-[#e5e5e0] rounded-xl p-5 space-y-3 shadow-xs">
-          <div className="flex items-center gap-2">
-            <Zap className="h-3.5 w-3.5 text-[#f59e0b]" />
-            <p className="text-xs font-bold uppercase tracking-wider text-[#26251e]">Activité</p>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Zap className="h-3.5 w-3.5 text-[#f59e0b]" />
+              <p className="text-xs font-bold uppercase tracking-wider text-[#26251e]">Activité système</p>
+            </div>
+            <button
+              onClick={() => setShowSystemActivity(!showSystemActivity)}
+              className="text-[10px] font-bold text-[#7a7a76] hover:text-[#26251e] bg-[#fafaf8] hover:bg-[#f0f0ef] border border-[#e5e5e0] px-2 py-0.5 rounded-md transition-colors"
+            >
+              {showSystemActivity ? 'Masquer' : 'Afficher'}
+            </button>
           </div>
-          <div className="grid grid-cols-2 gap-2">
-            <MiniMetricCard label="Projets actifs" value={projects.length} icon={ClipboardList} color="#6366f1" />
-            <MiniMetricCard label="Tâches ouvertes" value={stats.openTasks} icon={Clock} color="#f59e0b" />
-            <MiniMetricCard label="Notifs non lues" value={stats.unreadNotifs} icon={Flame} color="#ef4444" />
-            <MiniMetricCard label="En réunion" value={stats.meeting} icon={Calendar} color="#059669" />
-          </div>
+          {showSystemActivity ? (
+            <div className="grid grid-cols-2 gap-2 pt-1 animate-in fade-in duration-200">
+              <MiniMetricCard label="Projets actifs" value={projects.length} icon={ClipboardList} color="#6366f1" />
+              <MiniMetricCard label="Tâches ouvertes" value={stats.openTasks} icon={Clock} color="#f59e0b" />
+              <MiniMetricCard label="Notifs non lues" value={stats.unreadNotifs} icon={Flame} color="#ef4444" />
+              <MiniMetricCard label="En réunion" value={stats.meeting} icon={Calendar} color="#059669" />
+            </div>
+          ) : (
+            <p className="text-[11px] text-[#8A9098] italic py-2">
+              Activité et télémétrie masquées. Cliquez sur « Afficher » pour voir le détail.
+            </p>
+          )}
         </div>
       </div>
 
