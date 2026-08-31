@@ -387,7 +387,7 @@ async function callGemini(
       ...cleanMessages,
     ],
     response_format: opts.jsonMode ? { type: 'json_object' } : undefined,
-    max_tokens: opts.maxTokens || 800,
+    max_tokens: opts.maxTokens || 3500,
     temperature: opts.temperature ?? 0.3,
   };
 
@@ -428,9 +428,16 @@ async function callGeminiNative(
   system: string,
   opts: Pick<AICallOptions, 'jsonMode' | 'maxTokens' | 'temperature'>,
 ): Promise<string> {
-  const candidateModels = [model, 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-flash-latest'].filter(
-    (m, idx, arr) => arr.indexOf(m) === idx
-  );
+  const candidateModels = [
+    model,
+    'gemini-3.7-flash',
+    'gemini-2.5-flash',
+    'gemini-2.0-flash',
+    'gemini-1.5-flash',
+    'gemini-3.6-flash',
+    'gemini-3.5-flash',
+    'gemini-flash-latest'
+  ].filter((m, idx, arr) => arr.indexOf(m) === idx);
 
   const contents = messages.map((m) => ({
     role: m.role === 'assistant' ? 'model' : 'user',
@@ -440,7 +447,7 @@ async function callGeminiNative(
   const payload: any = {
     contents,
     generationConfig: {
-      maxOutputTokens: opts.maxTokens || 800,
+      maxOutputTokens: opts.maxTokens || 3500,
       temperature: opts.temperature ?? 0.3,
       ...(opts.jsonMode ? { responseMimeType: 'application/json' } : {}),
     },
@@ -705,6 +712,9 @@ async function fetchStreamUpstream(
   if (provider === 'gemini') {
     const candidateModels = [
       model.includes('gemini') ? model : 'gemini-3.7-flash',
+      'gemini-2.5-flash',
+      'gemini-2.0-flash',
+      'gemini-1.5-flash',
       'gemini-3.6-flash',
       'gemini-3.5-flash',
       'gemini-flash-latest',
@@ -726,7 +736,7 @@ async function fetchStreamUpstream(
             ...messages.map(m => ({ ...m, content: compressContent(m.content) })),
           ],
           stream: true,
-          max_tokens: options.maxTokens || 800,
+          max_tokens: options.maxTokens || 3500,
           temperature: options.temperature ?? 0.3,
         };
         const resp = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body) });
@@ -757,7 +767,7 @@ async function fetchStreamUpstream(
         ...messages.map(m => ({ ...m, content: compressContent(m.content) })),
       ],
       stream: true,
-      max_tokens: options.maxTokens || 800,
+      max_tokens: options.maxTokens || 3500,
       temperature: options.temperature ?? 0.3,
     };
     const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', { method: 'POST', headers, body: JSON.stringify(body) });
@@ -777,7 +787,7 @@ async function fetchStreamUpstream(
         ...messages.map(m => ({ ...m, content: compressContent(m.content) })),
       ],
       stream: true,
-      max_tokens: options.maxTokens || 800,
+      max_tokens: options.maxTokens || 3500,
       temperature: options.temperature ?? 0.3,
     };
     const url = `https://api.cloudflare.com/client/v4/accounts/${keys.cloudflareAccountId}/ai/v1/chat/completions`;
@@ -798,7 +808,7 @@ async function fetchStreamUpstream(
       ...(options.system ? { system: compressPrompt(options.system) } : {}),
       messages: userMessages.map(m => ({ ...m, content: toAnthropicContent(m.content) })),
       stream: true,
-      max_tokens: options.maxTokens || 800,
+      max_tokens: options.maxTokens || 3500,
       temperature: options.temperature ?? 0.3,
     }),
   });

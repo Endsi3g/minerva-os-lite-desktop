@@ -296,3 +296,146 @@ export async function dbUpdateSessionProject(sessionId: string, projectId: strin
     console.error('Supabase updateSessionProject failed:', error);
   }
 }
+
+// ── PROJECT FOLDERS & ATTACHED DOCUMENTS ──
+
+export interface AssistantProject {
+  id: string;
+  workspaceId: string;
+  name: string;
+  description?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AssistantProjectDoc {
+  id: string;
+  workspaceId: string;
+  userId: string;
+  projectId?: string | null;
+  title: string;
+  type: string; // 'markdown' | 'pdf' | 'text' | 'sop' | 'brief'
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export async function dbGetProjectFolders(workspaceId: string): Promise<AssistantProject[]> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from('projects')
+    .select('*')
+    .eq('workspace_id', workspaceId)
+    .order('created_at', { ascending: false });
+
+  if (error || !data) {
+    // Return empty array gracefully if table is empty
+    return [];
+  }
+
+  return data.map((r: any) => ({
+    id: r.id,
+    workspaceId: r.workspace_id,
+    name: r.name,
+    description: r.description || '',
+    createdAt: r.created_at,
+    updatedAt: r.updated_at || r.created_at,
+  }));
+}
+
+export async function dbCreateProjectFolder(
+  workspaceId: string,
+  userId: string,
+  name: string,
+  description?: string
+): Promise<AssistantProject> {
+  const id = getUUID();
+  const now = new Date().toISOString();
+  const newProj: AssistantProject = {
+    id,
+    workspaceId,
+    name,
+    description,
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  const supabase = createClient();
+  await supabase.from('projects').insert({
+    id,
+    workspace_id: workspaceId,
+    owner_id: userId,
+    name,
+    description: description || null,
+    created_at: now,
+    updated_at: now,
+  });
+
+  return newProj;
+}
+
+export async function dbGetProjectDocs(workspaceId: string, projectId?: string | null): Promise<AssistantProjectDoc[]> {
+  const supabase = createClient();
+  let query = supabase
+    .from('documents')
+    .select('*')
+    .eq('workspace_id', workspaceId);
+
+  if (projectId) {
+    query = query.eq('folder_id', projectId);
+  }
+
+  const { data, error } = await query.order('updated_at', { ascending: false });
+  if (error || !data) return [];
+
+  return data.map((r: any) => ({
+    id: r.id,
+    workspaceId: r.workspace_id,
+    userId: r.user_id,
+    projectId: r.folder_id || null,
+    title: r.title,
+    type: r.type || 'markdown',
+    content: r.content || '',
+    createdAt: r.created_at,
+    updatedAt: r.updated_at,
+  }));
+}
+
+export async function dbSaveProjectDoc(
+  workspaceId: string,
+  userId: string,
+  projectId: string | null,
+  title: string,
+  content: string,
+  type = 'markdown'
+): Promise<AssistantProjectDoc> {
+  const id = getUUID();
+  const now = new Date().toISOString();
+  const doc: AssistantProjectDoc = {
+    id,
+    workspaceId,
+    userId,
+    projectId,
+    title,
+    type,
+    content,
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  const supabase = createClient();
+  await supabase.from('documents').insert({
+    id,
+    workspace_id: workspaceId,
+    user_id: userId,
+    folder_id: projectId,
+    title,
+    content,
+    type,
+    created_at: now,
+    updated_at: now,
+  });
+
+  return doc;
+}
+

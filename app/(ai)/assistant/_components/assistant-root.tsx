@@ -25,6 +25,7 @@ import {
   Copy,
   Check,
   ChevronDown,
+  ChevronRight,
   Undo2,
   Redo2,
   Bold,
@@ -45,6 +46,22 @@ import {
   BarChart3,
   Mail,
   Zap,
+  Folder,
+  FolderPlus,
+  FolderOpen,
+  ListTodo,
+  Wand2,
+  RefreshCw,
+  CheckCheck,
+  FileCode,
+  Layers,
+  Upload,
+  CalendarCheck,
+  UserCheck,
+  ShieldCheck,
+  HelpCircle,
+  Pin,
+  PinOff
 } from 'lucide-react';
 import { InteractiveChartCard } from '@/components/charts/interactive-chart-card';
 import { MinervaIcon } from '@/components/icons';
@@ -60,11 +77,17 @@ import {
   dbSaveCanvasDoc,
   dbDeleteCanvasDoc,
   dbToggleSessionPin,
+  dbUpdateSessionProject,
+  dbGetProjectFolders,
+  dbCreateProjectFolder,
+  dbGetProjectDocs,
+  dbSaveProjectDoc,
   AssistantSession,
   DBMessage,
-  AssistantCanvasDoc
+  AssistantCanvasDoc,
+  AssistantProject,
+  AssistantProjectDoc,
 } from './assistant-db';
-import { Pin, PinOff } from 'lucide-react';
 import { Marker, MarkerIcon, MarkerContent } from '@/components/ui/marker';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Spinner } from '@/components/ui/spinner';
@@ -363,6 +386,11 @@ function ActionCard({
     update_lead_status: 'Mettre à jour le statut',
     create_campaign: 'Créer une campagne',
     create_sequence: 'Créer une séquence',
+    create_project: 'Créer un projet',
+    create_canvas_doc: 'Créer un document / SOP',
+    qualify_lead: 'Qualifier le prospect (BANT)',
+    book_meeting: 'Planifier un rendez-vous',
+    escalate_to_human: 'Escalade vers l\'équipe',
     search_gmail_sent: 'Voir les emails envoyés',
     search_gmail_replies: 'Voir les réponses Gmail',
     create_note: 'Ajouter une note',
@@ -597,6 +625,8 @@ export function AssistantRoot() {
     { id: 'pipeline', label: 'Pipeline (par statut)' },
     { id: 'hot', label: 'Leads chauds' },
     { id: 'tasks', label: 'Tâches en cours' },
+    { id: 'docs', label: 'Documents & Artefacts' },
+    { id: 'projects', label: 'Dossiers de projet' },
   ];
 
   // State Management
@@ -609,6 +639,29 @@ export function AssistantRoot() {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedModel, setSelectedModel] = useState(AI_MODELS[0]);
   const [showModelDropdown, setShowModelDropdown] = useState(false);
+
+  // Project Folders & Document Deposit state
+  const [projectFolders, setProjectFolders] = useState<AssistantProject[]>([]);
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const [projectDocs, setProjectDocs] = useState<AssistantProjectDoc[]>([]);
+  const [showNewProjectModal, setShowNewProjectModal] = useState(false);
+  const [newProjectName, setNewProjectName] = useState('');
+  const [newProjectDesc, setNewProjectDesc] = useState('');
+  const [showAddDocModal, setShowAddDocModal] = useState(false);
+  const [newDocTitle, setNewDocTitle] = useState('');
+  const [newDocContent, setNewDocContent] = useState('');
+  const [newDocType, setNewDocType] = useState('sop');
+  const [isFolderExpanded, setIsFolderExpanded] = useState<Record<string, boolean>>({});
+
+  // Notion-like Floating Toolbar & AI Selection state
+  const [selectedText, setSelectedText] = useState('');
+  const [selectionCoords, setSelectionCoords] = useState<{ top: number; left: number } | null>(null);
+  const [showFloatingAiMenu, setShowFloatingAiMenu] = useState(false);
+  const [aiProposedText, setAiProposedText] = useState<string | null>(null);
+  const [isFloatingAiLoading, setIsFloatingAiLoading] = useState(false);
+  const [floatingAiAction, setFloatingAiAction] = useState<string>('');
+  const [showInlineAiPrompt, setShowInlineAiPrompt] = useState(false);
+  const [inlineAiPrompt, setInlineAiPrompt] = useState('');
 
   // AI Diagnostic State
   const [aiDiagnostic, setAiDiagnostic] = useState<{ status: 'healthy' | 'latency_warning' | 'error'; latencyMs?: number; errorMsg?: string } | null>(null);
@@ -806,6 +859,68 @@ export function AssistantRoot() {
           const data = await res.json();
           return { success: true, message: `${data.enriched ?? leadIds.length} lead(s) enrichi(s)` };
         }
+        case 'create_campaign': {
+          const p = actionData.params;
+          const { createClient } = await import('@/lib/supabase/client');
+          const supabase = createClient();
+          const { data, error } = await supabase.from('campaigns').insert({
+            workspace_id: workspaceId,
+            user_id: userId,
+            name: p.name || 'Nouvelle campagne',
+            description: p.description || null,
+            niches: p.niches || [],
+            cities: p.cities || [],
+            status: 'active',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          }).select().single();
+          if (error) return { success: false, message: error.message };
+          return { success: true, message: `Campagne "${p.name || 'Nouvelle campagne'}" créée avec succès` };
+        }
+        case 'create_project': {
+          const p = actionData.params;
+          const newProj = await dbCreateProjectFolder(workspaceId, userId, p.name || 'Nouveau projet', p.description);
+          setProjectFolders(prev => [newProj, ...prev]);
+          return { success: true, message: `Dossier de projet "${newProj.name}" créé avec succès` };
+        }
+        case 'create_canvas_doc': {
+          const p = actionData.params;
+          const newDoc = await dbSaveCanvasDoc(
+            p.id || generateUniqueId(),
+            userId,
+            workspaceId,
+            p.title || 'Nouveau Document',
+            p.content || ''
+          );
+          setCanvasDocs(prev => [newDoc, ...prev.filter(d => d.id !== newDoc.id)]);
+          return { success: true, message: `Document "${newDoc.title}" enregistré dans Canvas` };
+        }
+        case 'qualify_lead': {
+          const p = actionData.params;
+          if (!p.lead_id) return { success: false, message: 'ID lead manquant' };
+          const noteText = `🎯 Qualification BANT / SDR :\n- Budget: ${p.budget || 'Non évalué'}\n- Autorité: ${p.authority || 'Contact direct'}\n- Besoin: ${p.need || 'Identifié'}\n- Timing: ${p.timing || 'Court terme'}\n- Score: ${p.score || 85}/100`;
+          await addNoteToLead(p.lead_id, noteText, 'qualification' as any);
+          if (p.status) await updateLeadStatus(p.lead_id, p.status);
+          return { success: true, message: `Lead qualifié avec succès (${p.score || 85}/100)` };
+        }
+        case 'book_meeting': {
+          const p = actionData.params;
+          await addTask(
+            `RDV Commercial : ${p.title || p.lead_name || 'Prospect'}`,
+            'meeting' as any,
+            p.date || new Date(Date.now() + 86_400_000 * 2).toISOString().split('T')[0]
+          );
+          return { success: true, message: `Rendez-vous planifié pour le ${p.date || 'créneau proposé'}` };
+        }
+        case 'escalate_to_human': {
+          const p = actionData.params;
+          await addTask(
+            `🚨 Escalade SDR / Urgent : ${p.reason || 'Lead chaud à traiter'}`,
+            'urgent' as any,
+            new Date().toISOString().split('T')[0]
+          );
+          return { success: true, message: 'Alerte et tâche d\'escalade transmises à l\'équipe' };
+        }
         case 'navigate': {
           const p = actionData.params;
           const path = p.path || p.url;
@@ -819,7 +934,7 @@ export function AssistantRoot() {
     } catch (e) {
       return { success: false, message: (e as Error).message };
     }
-  }, [addLead, addTask, updateLeadStatus, addNoteToLead, activeWorkspace, router]);
+  }, [addLead, addTask, updateLeadStatus, addNoteToLead, activeWorkspace, router, userId, workspaceId]);
 
   // TipTap WYSIWYG editor
   const editor = useEditor({
@@ -852,14 +967,59 @@ export function AssistantRoot() {
     }
   }, [editorContent, editor]);
 
-  // Load database sessions and documents on mount or workspace change
+  // Listen for text selection changes in editor for Notion-like floating toolbar
+  useEffect(() => {
+    if (!editor) return;
+
+    const updateSelection = () => {
+      const { from, to, empty } = editor.state.selection;
+      if (empty) {
+        setShowFloatingAiMenu(false);
+        setSelectedText('');
+        setSelectionCoords(null);
+        setAiProposedText(null);
+        return;
+      }
+      const text = editor.state.doc.textBetween(from, to, ' ');
+      if (text.trim().length > 2) {
+        setSelectedText(text);
+        try {
+          const domSelection = window.getSelection();
+          if (domSelection && domSelection.rangeCount > 0) {
+            const range = domSelection.getRangeAt(0);
+            const rect = range.getBoundingClientRect();
+            setSelectionCoords({
+              top: Math.max(10, rect.top - 12),
+              left: Math.max(20, rect.left + rect.width / 2),
+            });
+            setShowFloatingAiMenu(true);
+          }
+        } catch {}
+      } else {
+        setShowFloatingAiMenu(false);
+        setAiProposedText(null);
+      }
+    };
+
+    editor.on('selectionUpdate', updateSelection);
+    return () => {
+      editor.off('selectionUpdate', updateSelection);
+    };
+  }, [editor]);
+
+  // Load database sessions, documents and project folders on mount or workspace change
   useEffect(() => {
     async function loadWorkspaceData() {
-      const sessList = await dbGetSessions(userId, workspaceId);
+      const [sessList, docsList, projectsList, projDocsList] = await Promise.all([
+        dbGetSessions(userId, workspaceId),
+        dbGetCanvasDocs(userId, workspaceId),
+        dbGetProjectFolders(workspaceId),
+        dbGetProjectDocs(workspaceId),
+      ]);
       setSessions(sessList);
-
-      const docsList = await dbGetCanvasDocs(userId, workspaceId);
       setCanvasDocs(docsList);
+      setProjectFolders(projectsList);
+      setProjectDocs(projDocsList);
 
       // Load active session/canvas from Supabase user-prefs with localStorage fallback/migration
       let storedSessId: string | null = null;
@@ -899,6 +1059,9 @@ export function AssistantRoot() {
       const activeSess = sessList.find(s => s.id === storedSessId) ?? sessList[0] ?? null;
       if (activeSess) {
         setCurrentSession(activeSess);
+        if (activeSess.projectId) {
+          setSelectedProjectId(activeSess.projectId);
+        }
         // Persist active session back to Supabase if it was successful
         if (fetchSuccess) {
           fetch('/api/settings/user-prefs', {
@@ -1281,125 +1444,56 @@ export function AssistantRoot() {
     };
     const contextText = activeContextIds.map(buildContext).filter(Boolean).join('\n\n');
 
-    const actionsPrompt = `## Outils UI & Actions Interactives Minerva
-Tu disposes d'outils interactifs basés sur Shadcn pour afficher des interfaces riches directement dans le chat :
+    // Inject documents from project / folder into context
+    let projectDocsContext = '';
+    if (selectedProjectId) {
+      const activeProj = projectFolders.find(p => p.id === selectedProjectId);
+      const docsInProj = projectDocs.filter(d => d.projectId === selectedProjectId);
+      if (docsInProj.length > 0 || activeProj) {
+        projectDocsContext = `## Dossier de Projet Actif : ${activeProj?.name || 'Projet'}\n${
+          docsInProj.map(d => `### Document : ${d.title} (${d.type})\n${d.content}`).join('\n\n')
+        }`;
+      }
+    }
 
-1. Questionnaire interactif (quand l'utilisateur veut poser des questions de qualification guidées) :
-\`\`\`questionnaire
-{"title": "Titre du questionnaire", "category": "Catégorie", "description": "Explication brève", "questions": [{"id": "q1", "title": "Question", "subtitle": "Sous-titre optionnel", "type": "single_choice"|"multi_choice"|"freeform", "options": [{"id": "opt1", "label": "Option 1", "hint": "Précision"}]}]}
+    const actionsPrompt = `## Rôle & Capacités Autonomes Minerva OS
+Tu es l'assistant IA et SDR autonome principal de Minerva OS (propulsé par Gemini 3.7 Flash).
+Tu réponds aux questions avec clarté, expertise commerciale B2B, franchise et structure (en Markdown soigné).
+
+Tu disposes également de blocs d'actions interactifs que tu peux proposer à l'utilisateur :
+
+1. Action CRM ou Projet exécutable en 1 clic :
+\`\`\`minerva-action
+{"action": "create_lead"|"create_task"|"update_lead_status"|"create_campaign"|"create_project"|"create_canvas_doc"|"qualify_lead"|"book_meeting"|"escalate_to_human"|"send_email"|"trigger_enrichment"|"navigate", "params": {...}, "summary": "Description claire de l'action"}
 \`\`\`
 
-2. Fiche Lead interactive (quand l'utilisateur demande des détails sur un prospect ou une recommandation) :
-\`\`\`lead-card
-{"id": "id_optionnel", "businessName": "Nom", "niche": "Niche", "city": "Ville", "phone": "Téléphone", "website": "site.com", "rating": 4.8, "reviewsCount": 32, "dealAmount": 2200, "dealProbability": 75, "temperature": "Hot"|"Warm"|"Cold", "score": 88, "summary": "Points clés du lead"}
-\`\`\`
-
-3. Tableau interactif de données (pour présenter des listes comparatives, pipelines ou classements) :
-\`\`\`data-table
-{"title": "Titre du tableau", "columns": [{"key": "businessName", "label": "Entreprise"}, {"key": "niche", "label": "Secteur"}, {"key": "city", "label": "Ville"}, {"key": "temperature", "label": "Température"}, {"key": "dealAmount", "label": "MRR Estimé"}], "rows": [{"businessName": "Exemple", "niche": "Restaurant", "city": "Montréal", "temperature": "Hot", "dealAmount": 1800}]}
-\`\`\`
-
-4. Brouillon d'email interactif :
-\`\`\`email-tool
-{"title": "Proposition Commerciale", "recipientEmail": "prospect@email.com", "variants": [{"subject": "Objet percutant", "body": "Corps du message..."}]}
-\`\`\`
-
-6. Graphique Visuel Recharts Interactif (Recommandé pour toutes les demandes analytiques, bilans, métriques et comparaisons) :
+2. Graphique Analytique Recharts (SEULEMENT si pertinent pour illustrer des métriques réelles ou demandées) :
 \`\`\`chart
-{"title": "Pipeline Commercial par Étape", "subtitle": "Montréal 2026", "type": "bar"|"area"|"line"|"pie"|"donut", "data": [{"name": "Nouveaux", "value": 45}, {"name": "Contactés", "value": 32}, {"name": "RDV Fixés", "value": 18}, {"name": "Gagnés", "value": 12}], "deepLink": {"label": "Ouvrir dans Analytics", "href": "/analytics"}, "valueSuffix": " leads"}
+{"title": "Titre", "type": "bar", "data": [{"name": "A", "value": 10}, {"name": "B", "value": 20}], "deepLink": {"label": "Voir Analytics", "href": "/analytics"}}
 \`\`\`
 
-Important : Utilise ces blocs JSON interactifs chaque fois que cela améliore l'expérience utilisateur et la lisibilité visuelle. Pour toute question sur les métriques, la performance, les leads ou les revenus, utilise systématiquement un bloc \`\`\`chart ... \`\`\` avec un deepLink vers /analytics, /weekly-report ou /pipeline.`;
+3. Tableau interactif de données :
+\`\`\`data-table
+{"title": "Titre", "columns": [{"key": "businessName", "label": "Entreprise"}, {"key": "status", "label": "Statut"}], "rows": [{"businessName": "Exemple", "status": "Qualifié"}]}
+\`\`\`
+
+4. Questionnaire interactif :
+\`\`\`questionnaire
+{"title": "Titre", "category": "Qualification", "description": "Description", "questions": [{"id": "q1", "title": "Question", "type": "single_choice", "options": [{"id": "opt1", "label": "Option 1"}]}]}
+\`\`\`
+
+Règles :
+- Réponds d'abord par une explication textuelle limpide et complète.
+- N'inclus des blocs visuels (graphiques, fiches, tableaux) que quand c'est réellement utile ou explicitement demandé.
+- Assure-toi que tout bloc JSON généré soit rigoureusement valide, sans commentaires JS.`;
 
     const systemWithSkills = [
       canvasSystemPrompt,
       actionsPrompt,
+      projectDocsContext,
       skillInstructions ? `## Compétences activées\n${skillInstructions}` : '',
       contextText ? `## Contexte CRM (données réelles du workspace)\n${contextText}` : '',
     ].filter(Boolean).join('\n\n');
-
-    // Hermès detection: complex CRM tasks that need the orchestrator agent
-    const hermesKeywords = [
-      'campagne', 'campaign', 'séquence', 'sequence', 'envoyer à tous', 'send to all',
-      'envoyer des emails', 'send emails', 'enrolle', 'enroll', 'place une campagne',
-      'créer une campagne', 'create campaign', 'leads avec site', 'leads with website',
-      'tous mes leads', 'all my leads', 'automatise', 'automate',
-    ];
-    const isHermesTask = !fileToAttach && hermesKeywords.some(kw => trimmed.toLowerCase().includes(kw));
-
-    if (isHermesTask) {
-      // Route to Hermès orchestrator and stream steps into chat
-      const hermesMsg: Message = { role: 'assistant', content: '' };
-      const hermesIdx = history.length;
-      setMessages([...history, hermesMsg]);
-      setHermesRunning(true);
-      setHermesSteps([]);
-
-      try {
-        const hRes = await fetch(getApiUrl('/api/agent/hermes'), {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ task: trimmed, workspace_id: workspaceId }),
-        });
-        if (!hRes.ok) throw new Error(`Hermès ${hRes.status}`);
-
-        const reader2 = hRes.body?.getReader();
-        const dec2 = new TextDecoder();
-        let hermesOutput = '';
-        let steps: typeof hermesSteps = [];
-
-        while (reader2) {
-          const { done, value } = await reader2.read();
-          if (done) break;
-          const chunk = dec2.decode(value);
-          for (const line of chunk.split('\n').filter(Boolean)) {
-            try {
-              const ev = JSON.parse(line) as { type: string; content?: string; tool?: string; params?: any; actions_executed?: number };
-              steps = [...steps, ev];
-              setHermesSteps([...steps]);
-
-              if (ev.type === 'final') {
-                hermesOutput = ev.content || '';
-              } else if (ev.type === 'thought') {
-                hermesOutput += `*${ev.content}*\n`;
-              } else if (ev.type === 'action') {
-                hermesOutput += `→ **${ev.tool}**${ev.params ? ': ' + JSON.stringify(ev.params).slice(0, 80) : ''}\n`;
-              } else if (ev.type === 'observation') {
-                hermesOutput += `✓ ${ev.content}\n`;
-              } else if (ev.type === 'error') {
-                hermesOutput += `⚠️ Erreur: ${(ev as any).message || 'Erreur inconnue'}\n`;
-              }
-
-              setMessages(prev => {
-                const updated = [...prev];
-                if (updated[hermesIdx]) updated[hermesIdx] = { ...updated[hermesIdx], content: hermesOutput };
-                return updated;
-              });
-            } catch { /* skip malformed lines */ }
-          }
-        }
-
-        const finalMsg = steps.find(s => s.type === 'final');
-        const savedContent = finalMsg?.content || hermesOutput || 'Tâche terminée.';
-        await dbSaveMessage(activeSess.id, userId, 'assistant', savedContent);
-        setMessages(prev => {
-          const updated = [...prev];
-          if (updated[hermesIdx]) updated[hermesIdx] = { ...updated[hermesIdx], content: savedContent };
-          return updated;
-        });
-      } catch (err) {
-        const errMsg = `Erreur Hermès: ${err instanceof Error ? err.message : String(err)}`;
-        setMessages(prev => {
-          const updated = [...prev];
-          if (updated[hermesIdx]) updated[hermesIdx] = { ...updated[hermesIdx], content: errMsg };
-          return updated;
-        });
-      } finally {
-        setHermesRunning(false);
-        setIsLoading(false);
-      }
-      return;
-    }
 
     try {
       const hasImage = !!(fileToAttach && fileToAttach.dataUrl);
@@ -1652,6 +1746,136 @@ Important : Utilise ces blocs JSON interactifs chaque fois que cela améliore l'
     } finally {
       setIsAiWorking(false);
       setIsSavedIndicator("assistant.saved");
+    }
+  };
+
+  // Notion-like Floating Selection AI Action Handler
+  const handleFloatingAiAction = async (actionType: string, toneOrLang?: string) => {
+    if (!selectedText.trim()) return;
+    setIsFloatingAiLoading(true);
+    setFloatingAiAction(actionType);
+    try {
+      if (actionType === 'summarize') {
+        const res = await fetch(getApiUrl('/api/ai/summarize'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: selectedText, options: { language: locale } }),
+        });
+        const data = await res.json();
+        setAiProposedText(data.fullMarkdown || data.summary || 'Résumé indisponible');
+      } else if (actionType === 'translate') {
+        const targetLang = toneOrLang || (locale === 'fr' ? 'en' : 'fr');
+        const res = await fetch(getApiUrl('/api/ai/translate'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: selectedText, targetLanguage: targetLang }),
+        });
+        const data = await res.json();
+        setAiProposedText(data.translatedText || 'Traduction indisponible');
+      } else {
+        const res = await fetch(getApiUrl('/api/ai/rewrite'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            text: selectedText,
+            options: {
+              action: actionType,
+              tone: toneOrLang || 'professional',
+              language: locale,
+            },
+          }),
+        });
+        const data = await res.json();
+        setAiProposedText(data.text || 'Texte indisponible');
+      }
+    } catch (err: any) {
+      toast.error('Erreur IA : ' + (err.message || 'Service momentanément indisponible'));
+    } finally {
+      setIsFloatingAiLoading(false);
+    }
+  };
+
+  const handleAcceptAiProposedText = () => {
+    if (!editor || !aiProposedText) return;
+    const { from, to } = editor.state.selection;
+    const html = aiProposedText.trim().startsWith('<') ? aiProposedText : mdToHtml(aiProposedText);
+    editor.chain().focus().deleteRange({ from, to }).insertContent(html).run();
+    handleContentChange(editor.getHTML());
+    setAiProposedText(null);
+    setShowFloatingAiMenu(false);
+    toast.success('Texte inséré avec succès !');
+  };
+
+  const handleRejectAiProposedText = () => {
+    setAiProposedText(null);
+    setShowFloatingAiMenu(false);
+  };
+
+  // Inline AI generation (/ai)
+  const handleExecuteInlineAi = async () => {
+    if (!inlineAiPrompt.trim() || !editor) return;
+    setIsAiWorking(true);
+    setShowInlineAiPrompt(false);
+    try {
+      const res = await fetch(getApiUrl('/api/ai/generate'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt: inlineAiPrompt,
+          context: editor.getText(),
+          options: { language: locale, tone: 'professional' },
+        }),
+      });
+      const data = await res.json();
+      if (data.text) {
+        const html = mdToHtml(data.text);
+        editor.chain().focus().insertContent(html).run();
+        handleContentChange(editor.getHTML());
+        toast.success('Contenu Notion IA généré !');
+      }
+    } catch (err: any) {
+      toast.error('Erreur de génération : ' + err.message);
+    } finally {
+      setIsAiWorking(false);
+      setInlineAiPrompt('');
+    }
+  };
+
+  // Create Project Folder
+  const handleCreateProjectFolder = async () => {
+    if (!newProjectName.trim()) return;
+    try {
+      const newProj = await dbCreateProjectFolder(workspaceId, userId, newProjectName.trim(), newProjectDesc.trim() || undefined);
+      setProjectFolders(prev => [newProj, ...prev]);
+      setSelectedProjectId(newProj.id);
+      setShowNewProjectModal(false);
+      setNewProjectName('');
+      setNewProjectDesc('');
+      toast.success(`Dossier "${newProj.name}" créé avec succès !`);
+    } catch (err: any) {
+      toast.error('Erreur lors de la création du projet : ' + err.message);
+    }
+  };
+
+  // Deposit Document in Project
+  const handleDepositDoc = async () => {
+    if (!newDocTitle.trim() || !newDocContent.trim()) return;
+    try {
+      const doc = await dbSaveProjectDoc(
+        workspaceId,
+        userId,
+        selectedProjectId,
+        newDocTitle.trim(),
+        newDocContent.trim(),
+        newDocType
+      );
+      setProjectDocs(prev => [doc, ...prev.filter(d => d.id !== doc.id)]);
+      setShowAddDocModal(false);
+      setNewDocTitle('');
+      setNewDocContent('');
+      toast.success(`Document "${doc.title}" déposé avec succès ! L'IA peut désormais y faire référence.`);
+    } catch (err: any) {
+      toast.error('Erreur lors du dépôt du document : ' + err.message);
     }
   };
 
@@ -2074,30 +2298,141 @@ Important : Utilise ces blocs JSON interactifs chaque fois que cela améliore l'
         
         {/* collapsible sidebar for thread/canvas doc history — auto-collapse when canvas opens */}
         {isHistoryOpen && !isCanvasOpen && (
-          <div className="w-56 bg-[#fafaf9] border-r border-[#e6e5e0]/60 flex flex-col h-full shrink-0 select-none animate-fade-in">
+          <div className="w-64 bg-[#fafaf9] border-r border-[#e6e5e0]/60 flex flex-col h-full shrink-0 select-none animate-fade-in">
             {/* Sidebar header */}
             <div className="h-14 border-b border-[#e6e5e0]/60 px-4 flex items-center justify-between shrink-0 bg-[#fafaf9]">
-              <span className="text-[10px] font-extrabold text-[#26251e] tracking-wider uppercase">{t('assistant.history')}</span>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleClearChat}
-                className="h-7 w-7 rounded-full p-0 text-[#7a7a76] hover:text-[#10b981] transition-colors border border-transparent hover:border-neutral-200"
-                title={t('assistant.new_chat')}
-              >
-                <Plus className="h-3.5 w-3.5" />
-              </Button>
+              <div className="flex items-center gap-1.5">
+                <Folder className="h-3.5 w-3.5 text-[#059669]" />
+                <span className="text-[10px] font-extrabold text-[#26251e] tracking-wider uppercase">Workspace & Projets</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowNewProjectModal(true)}
+                  className="h-7 w-7 rounded-full p-0 text-[#7a7a76] hover:text-[#059669] hover:bg-emerald-50 transition-colors"
+                  title="Nouveau Dossier / Projet"
+                >
+                  <FolderPlus className="h-3.5 w-3.5" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleClearChat}
+                  className="h-7 w-7 rounded-full p-0 text-[#7a7a76] hover:text-[#10b981] hover:bg-emerald-50 transition-colors"
+                  title={t('assistant.new_chat')}
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                </Button>
+              </div>
             </div>
 
             {/* Scrollable list of items */}
             <div className="flex-1 overflow-y-auto p-2 space-y-4">
-              {/* Discussions list */}
+              
+              {/* ── PROJECT FOLDERS LIST ── */}
               <div className="space-y-1">
-                <div className="px-2 text-[8px] font-bold text-[#7a7a76] uppercase tracking-wider">{t('assistant.discussions')}</div>
-                {sessions.length === 0 ? (
-                  <div className="px-2 py-1.5 text-[9px] text-[#807d72] italic font-semibold">{t('assistant.no_discussions')}</div>
-                ) : (
-                  sessions.map((sess) => (
+                <div className="px-2 flex items-center justify-between">
+                  <span className="text-[8px] font-bold text-[#7a7a76] uppercase tracking-wider">Dossiers & Projets</span>
+                  {selectedProjectId && (
+                    <button 
+                      onClick={() => setSelectedProjectId(null)}
+                      className="text-[8px] text-[#059669] hover:underline font-bold"
+                    >
+                      Voir tout
+                    </button>
+                  )}
+                </div>
+
+                <div
+                  onClick={() => setSelectedProjectId(null)}
+                  className={`flex items-center gap-2 rounded-lg px-2 py-1.5 cursor-pointer text-[10px] font-bold transition-all ${
+                    selectedProjectId === null
+                      ? 'bg-emerald-50/80 text-emerald-900 border border-emerald-200/50'
+                      : 'text-[#555552] hover:bg-neutral-100 hover:text-[#26251e]'
+                  }`}
+                >
+                  <Layers className="h-3 w-3 text-neutral-400 shrink-0" />
+                  <span className="flex-1 truncate">Tous les projets</span>
+                  <span className="text-[9px] text-[#7a7a76] font-mono">{sessions.length}</span>
+                </div>
+
+                {projectFolders.map(folder => {
+                  const isSelected = selectedProjectId === folder.id;
+                  const folderSessions = sessions.filter(s => s.projectId === folder.id);
+                  const folderDocs = projectDocs.filter(d => d.projectId === folder.id);
+                  const isExpanded = !!isFolderExpanded[folder.id];
+
+                  return (
+                    <div key={folder.id} className="space-y-0.5">
+                      <div
+                        onClick={() => setSelectedProjectId(isSelected ? null : folder.id)}
+                        className={`group flex items-center gap-1.5 rounded-lg px-2 py-1.5 cursor-pointer text-[10px] font-bold transition-all relative ${
+                          isSelected
+                            ? 'bg-emerald-50 text-emerald-900 border border-emerald-200'
+                            : 'text-[#555552] hover:bg-neutral-100 hover:text-[#26251e]'
+                        }`}
+                      >
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setIsFolderExpanded(prev => ({ ...prev, [folder.id]: !prev[folder.id] }));
+                          }}
+                          className="text-neutral-400 hover:text-neutral-600 p-0.5"
+                        >
+                          <ChevronRight className={`h-3 w-3 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
+                        </button>
+                        <Folder className={`h-3 w-3 shrink-0 ${isSelected ? 'text-[#059669]' : 'text-neutral-400'}`} />
+                        <span className="flex-1 truncate">{folder.name}</span>
+                        <span className="text-[9px] text-[#7a7a76] font-mono bg-neutral-100 px-1.5 py-0.5 rounded-full">
+                          {folderSessions.length + folderDocs.length}
+                        </span>
+                      </div>
+
+                      {/* Expanded quick folder contents & add doc button */}
+                      {isExpanded && (
+                        <div className="pl-6 pr-1 py-1 space-y-1 bg-neutral-50/50 rounded-lg border border-neutral-100">
+                          <button
+                            onClick={() => {
+                              setSelectedProjectId(folder.id);
+                              setShowAddDocModal(true);
+                            }}
+                            className="w-full text-left py-1 px-2 text-[9px] font-bold text-[#059669] hover:bg-emerald-50 rounded flex items-center gap-1.5 transition-colors"
+                          >
+                            <Upload className="h-2.5 w-2.5" />
+                            <span>Déposer document / SOP</span>
+                          </button>
+                          {folderDocs.map(doc => (
+                            <div key={doc.id} className="text-[9px] text-[#555552] px-2 py-0.5 truncate flex items-center gap-1">
+                              <FileText className="h-2.5 w-2.5 text-neutral-400 shrink-0" />
+                              <span className="truncate">{doc.title}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* ── DISCUSSIONS LIST ── */}
+              <div className="space-y-1">
+                <div className="px-2 flex items-center justify-between">
+                  <span className="text-[8px] font-bold text-[#7a7a76] uppercase tracking-wider">{t('assistant.discussions')}</span>
+                  {selectedProjectId && (
+                    <span className="text-[8px] text-emerald-700 bg-emerald-50 px-1 rounded font-mono">Filtré</span>
+                  )}
+                </div>
+                {(() => {
+                  const filteredSessions = selectedProjectId 
+                    ? sessions.filter(s => s.projectId === selectedProjectId)
+                    : sessions;
+
+                  if (filteredSessions.length === 0) {
+                    return <div className="px-2 py-1.5 text-[9px] text-[#807d72] italic font-semibold">{t('assistant.no_discussions')}</div>;
+                  }
+
+                  return filteredSessions.map((sess) => (
                     <div
                       key={sess.id}
                       className={`group flex items-center gap-1 rounded-lg px-2 py-1.5 cursor-pointer text-[10px] font-bold transition-all relative ${
@@ -2110,7 +2445,6 @@ Important : Utilise ces blocs JSON interactifs chaque fois que cela améliore l'
                       <button
                         onClick={async () => {
                           setCurrentSession(sess);
-                          // Persist active session to Supabase
                           fetch('/api/settings/user-prefs', {
                             method: 'PATCH',
                             headers: { 'Content-Type': 'application/json' },
@@ -2158,13 +2492,22 @@ Important : Utilise ces blocs JSON interactifs chaque fois que cela améliore l'
                         <Trash2 className="h-2.5 w-2.5" />
                       </button>
                     </div>
-                  ))
-                )}
+                  ));
+                })()}
               </div>
 
-              {/* Documents list */}
+              {/* ── DOCUMENTS & ARTEFACTS LIST ── */}
               <div className="space-y-1">
-                <div className="px-2 text-[8px] font-bold text-[#7a7a76] uppercase tracking-wider">{t('assistant.canvas_docs')}</div>
+                <div className="px-2 flex items-center justify-between">
+                  <span className="text-[8px] font-bold text-[#7a7a76] uppercase tracking-wider">{t('assistant.canvas_docs')}</span>
+                  <button
+                    onClick={() => setShowAddDocModal(true)}
+                    className="text-[8px] font-bold text-[#059669] hover:underline"
+                    title="Ajouter un document"
+                  >
+                    + Ajouter
+                  </button>
+                </div>
                 {canvasDocs.length === 0 ? (
                   <div className="px-2 py-1.5 text-[9px] text-[#807d72] italic font-semibold">{t('assistant.no_docs')}</div>
                 ) : (
@@ -3111,6 +3454,233 @@ Important : Utilise ces blocs JSON interactifs chaque fois que cela améliore l'
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* ── NOTION-LIKE FLOATING SELECTION AI MENU ── */}
+      {showFloatingAiMenu && selectionCoords && (
+        <div 
+          className="fixed z-[100] bg-[#1e1e1e] text-white rounded-xl shadow-2xl border border-neutral-700/80 p-1.5 flex flex-col gap-1.5 animate-scale-up backdrop-blur-md select-none"
+          style={{
+            top: `${selectionCoords.top}px`,
+            left: `${selectionCoords.left}px`,
+            transform: 'translate(-50%, -100%)',
+          }}
+        >
+          {aiProposedText ? (
+            <div className="p-3 w-80 space-y-2 text-xs bg-neutral-900 rounded-lg border border-neutral-800">
+              <div className="flex items-center justify-between text-[10px] text-emerald-400 font-bold">
+                <span className="flex items-center gap-1"><Sparkles className="h-3 w-3" /> Notion AI Transformation</span>
+                <span className="text-neutral-400 font-mono text-[9px]">{floatingAiAction}</span>
+              </div>
+              <div className="max-h-48 overflow-y-auto p-2 bg-black/50 rounded text-neutral-200 text-xs whitespace-pre-wrap leading-relaxed border border-neutral-800 font-sans select-text">
+                {aiProposedText}
+              </div>
+              <div className="flex items-center gap-1.5 pt-1">
+                <button
+                  onClick={handleAcceptAiProposedText}
+                  className="flex-1 py-1.5 px-2 bg-[#059669] hover:bg-[#047857] text-white font-bold rounded text-[11px] transition-colors flex items-center justify-center gap-1"
+                >
+                  <Check className="h-3 w-3" /> Remplacer la sélection
+                </button>
+                <button
+                  onClick={() => handleFloatingAiAction(floatingAiAction)}
+                  className="py-1.5 px-2 bg-neutral-800 hover:bg-neutral-700 text-neutral-200 font-medium rounded text-[11px] transition-colors flex items-center gap-1"
+                  title="Régénérer"
+                >
+                  <RefreshCw className="h-3 w-3" />
+                </button>
+                <button
+                  onClick={handleRejectAiProposedText}
+                  className="py-1.5 px-2 bg-neutral-800 hover:bg-neutral-700 text-neutral-400 hover:text-white font-medium rounded text-[11px] transition-colors"
+                >
+                  Rejeter
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => handleFloatingAiAction('rephrase')}
+                disabled={isFloatingAiLoading}
+                className="px-2.5 py-1 text-[11px] font-semibold hover:bg-neutral-800 rounded-lg flex items-center gap-1.5 transition-colors text-emerald-400 cursor-pointer"
+              >
+                <Sparkles className="h-3.5 w-3.5 text-emerald-400" />
+                <span>Améliorer</span>
+              </button>
+              <button
+                onClick={() => handleFloatingAiAction('shorter')}
+                disabled={isFloatingAiLoading}
+                className="px-2 py-1 text-[11px] font-medium hover:bg-neutral-800 rounded-lg transition-colors text-neutral-300 cursor-pointer"
+              >
+                Raccourcir
+              </button>
+              <button
+                onClick={() => handleFloatingAiAction('longer')}
+                disabled={isFloatingAiLoading}
+                className="px-2 py-1 text-[11px] font-medium hover:bg-neutral-800 rounded-lg transition-colors text-neutral-300 cursor-pointer"
+              >
+                Développer
+              </button>
+              <button
+                onClick={() => handleFloatingAiAction('fix_grammar')}
+                disabled={isFloatingAiLoading}
+                className="px-2 py-1 text-[11px] font-medium hover:bg-neutral-800 rounded-lg transition-colors text-neutral-300 cursor-pointer"
+              >
+                Corriger
+              </button>
+              <button
+                onClick={() => handleFloatingAiAction('tone', 'persuasive')}
+                disabled={isFloatingAiLoading}
+                className="px-2 py-1 text-[11px] font-medium hover:bg-neutral-800 rounded-lg transition-colors text-neutral-300 cursor-pointer"
+              >
+                Ton Commercial
+              </button>
+              <button
+                onClick={() => handleFloatingAiAction('translate', locale === 'fr' ? 'en' : 'fr')}
+                disabled={isFloatingAiLoading}
+                className="px-2 py-1 text-[11px] font-medium hover:bg-neutral-800 rounded-lg transition-colors text-neutral-300 cursor-pointer"
+              >
+                {locale === 'fr' ? 'En Anglais' : 'En Français'}
+              </button>
+              <button
+                onClick={() => handleFloatingAiAction('summarize')}
+                disabled={isFloatingAiLoading}
+                className="px-2 py-1 text-[11px] font-medium hover:bg-neutral-800 rounded-lg transition-colors text-neutral-300 cursor-pointer"
+              >
+                Résumer & TODOs
+              </button>
+              {isFloatingAiLoading && <Spinner className="h-3.5 w-3.5 text-emerald-400 animate-spin mx-1" />}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── MODAL: NOUVEAU DOSSIER / PROJET ── */}
+      {showNewProjectModal && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl border border-[#e6e5e0] shadow-2xl p-6 w-full max-w-md space-y-4 animate-scale-up">
+            <div className="flex items-center justify-between border-b border-neutral-100 pb-3">
+              <div className="flex items-center gap-2">
+                <FolderPlus className="h-5 w-5 text-[#059669]" />
+                <h3 className="text-sm font-bold text-[#26251e]">Créer un Dossier de Projet</h3>
+              </div>
+              <button onClick={() => setShowNewProjectModal(false)} className="text-neutral-400 hover:text-neutral-600">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="space-y-3 text-xs">
+              <div>
+                <label className="block font-bold text-neutral-700 mb-1">Nom du dossier / projet</label>
+                <input
+                  type="text"
+                  value={newProjectName}
+                  onChange={e => setNewProjectName(e.target.value)}
+                  placeholder="ex: Prospection SaaS Q3, SOPs Agence, Client Acme..."
+                  className="w-full border border-neutral-200 rounded-lg p-2 text-xs focus:outline-none focus:border-[#059669]"
+                  autoFocus
+                />
+              </div>
+              <div>
+                <label className="block font-bold text-neutral-700 mb-1">Description (optionnel)</label>
+                <textarea
+                  value={newProjectDesc}
+                  onChange={e => setNewProjectDesc(e.target.value)}
+                  placeholder="Objectifs, contexte, persona ciblé..."
+                  rows={2}
+                  className="w-full border border-neutral-200 rounded-lg p-2 text-xs focus:outline-none focus:border-[#059669]"
+                />
+              </div>
+            </div>
+            <div className="flex gap-2 justify-end pt-2">
+              <button
+                onClick={() => setShowNewProjectModal(false)}
+                className="px-3 py-1.5 text-xs font-semibold text-neutral-600 hover:bg-neutral-100 rounded-lg transition-colors"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={handleCreateProjectFolder}
+                disabled={!newProjectName.trim()}
+                className="px-4 py-1.5 text-xs font-bold bg-[#059669] hover:bg-[#047857] text-white rounded-lg transition-colors disabled:opacity-50"
+              >
+                Créer le dossier
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL: DÉPOSER UN DOCUMENT / SOP ── */}
+      {showAddDocModal && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl border border-[#e6e5e0] shadow-2xl p-6 w-full max-w-lg space-y-4 animate-scale-up">
+            <div className="flex items-center justify-between border-b border-neutral-100 pb-3">
+              <div className="flex items-center gap-2">
+                <Upload className="h-5 w-5 text-[#059669]" />
+                <h3 className="text-sm font-bold text-[#26251e]">Déposer un Document de Référence (SOP / Note)</h3>
+              </div>
+              <button onClick={() => setShowAddDocModal(false)} className="text-neutral-400 hover:text-neutral-600">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <p className="text-[11px] text-[#7a7a76]">
+              L'IA aura accès à ce document dans son contexte et s'y référera pour répondre à vos questions et exécuter des tâches.
+            </p>
+            <div className="space-y-3 text-xs">
+              <div className="grid grid-cols-3 gap-2">
+                <div className="col-span-2">
+                  <label className="block font-bold text-neutral-700 mb-1">Titre du document</label>
+                  <input
+                    type="text"
+                    value={newDocTitle}
+                    onChange={e => setNewDocTitle(e.target.value)}
+                    placeholder="ex: Guide des Objections B2B, Pitch Agence..."
+                    className="w-full border border-neutral-200 rounded-lg p-2 text-xs focus:outline-none focus:border-[#059669]"
+                    autoFocus
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-neutral-700 mb-1">Type</label>
+                  <select
+                    value={newDocType}
+                    onChange={e => setNewDocType(e.target.value)}
+                    className="w-full border border-neutral-200 rounded-lg p-2 text-xs focus:outline-none focus:border-[#059669]"
+                  >
+                    <option value="sop">SOP / Process</option>
+                    <option value="brief">Brief Client</option>
+                    <option value="template">Template Email</option>
+                    <option value="note">Note / Mémo</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="block font-bold text-neutral-700 mb-1">Contenu (Markdown ou texte brut)</label>
+                <textarea
+                  value={newDocContent}
+                  onChange={e => setNewDocContent(e.target.value)}
+                  placeholder="Collez ou rédigez ici les directives, étapes, exemples..."
+                  rows={6}
+                  className="w-full border border-neutral-200 rounded-lg p-2 text-xs font-mono focus:outline-none focus:border-[#059669]"
+                />
+              </div>
+            </div>
+            <div className="flex gap-2 justify-end pt-2">
+              <button
+                onClick={() => setShowAddDocModal(false)}
+                className="px-3 py-1.5 text-xs font-semibold text-neutral-600 hover:bg-neutral-100 rounded-lg transition-colors"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={handleDepositDoc}
+                disabled={!newDocTitle.trim() || !newDocContent.trim()}
+                className="px-4 py-1.5 text-xs font-bold bg-[#059669] hover:bg-[#047857] text-white rounded-lg transition-colors disabled:opacity-50"
+              >
+                Enregistrer dans le dossier
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

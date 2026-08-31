@@ -44,25 +44,13 @@ export async function POST(req: NextRequest) {
       .eq('user_id', user.id)
       .maybeSingle();
 
-    const enhancedSystem = [
-      system || '',
-      `## Instructions Graphiques & Visualisations Recharts
-Pour toute question sur les métriques, statistiques, répartition de leads, comparaison de niches, taux de closing ou pipeline commercial, fournis systématiquement un bloc \`\`\`chart\`\`\` au format JSON :
-\`\`\`chart
-{
-  "title": "Titre du Graphique",
-  "subtitle": "Sous-titre descriptif",
-  "type": "bar", // ou "area", "line", "pie", "donut"
-  "data": [{"name": "Catégorie A", "value": 45}, {"name": "Catégorie B", "value": 30}],
-  "deepLink": {"label": "Ouvrir dans Analytics", "href": "/analytics"}
-}
-\`\`\``,
-    ].filter(Boolean).join('\n\n');
+    const enhancedSystem = system || '';
 
     try {
       const stream = await generateStreamCompletion({
         system: enhancedSystem,
         messages,
+        maxTokens: 3500,
         settings: {
           ai_provider: requestProvider || dbSettings?.ai_provider,
           ai_model: model || dbSettings?.ai_model,
