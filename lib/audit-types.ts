@@ -14,6 +14,13 @@ export interface SeoAuditResult {
   h1Count: number;
   score: number;
   issues: { label: string; severity: 'error' | 'warning' | 'info' }[];
+  aiAnalysis?: {
+    executiveSummary: string;
+    strengths: string[];
+    weaknesses: string[];
+    actionPlan: string[];
+    outreachPitch: string;
+  } | string;
 }
 
 export interface SeoAuditError {

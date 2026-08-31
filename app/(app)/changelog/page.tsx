@@ -21,6 +21,19 @@ interface ChangelogVersion {
 
 const versions: ChangelogVersion[] = [
   {
+    version: 'v9.7.0',
+    date: '31 août 2026 · 14h45',
+    title: 'Audit IA Gemini 3.7 Flash, Table Appels Compacte, Quick-Engage Lead & Cockpit Analytics',
+    highlights: [
+      { text: "Table Appels Redesignée (/calls) : Format compact style Leads avec entreprise, description/niche, lien direct vers la fiche, téléphone, ville, statut, température et fiabilisation du lancement de session d'appels." },
+      { text: "Sous-menu Sidebar Contacter : Intégration en sous-pages dans la barre latérale pour basculer instantanément entre Séquences (/outreach), Appels (/calls) et Boîte de réception (/inbox)." },
+      { text: "Bouton rapide 'Marquer Contacté' : Action 1-clic directement dans le header de la fiche lead pour engager le prospect et l'avancer dans le pipeline commercial." },
+      { text: "Audit SEO & Commercial avec Google Gemini 3.7 Flash (/audit) : Diagnostic stratégique complet avec résumé exécutif, plan d'action et message d'accroche SDR personnalisé prêt à copier." },
+      { text: "Cockpit Analytics Réactivé (/analytics) : Rétablissement du tableau de bord d'analyse indépendant avec graphiques de conversion et métriques de prospection sans redirection." },
+      { text: "Nettoyage UI/UX des Effets Glowing : Remplacement des halos vert fluo par un design neutre, sobre et haut de gamme." },
+    ]
+  },
+  {
     version: 'v9.6.0',
     date: '31 août 2026',
     title: 'Tableau de stats de performance sur la page Appels',

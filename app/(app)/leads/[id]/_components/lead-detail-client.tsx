@@ -1807,6 +1807,22 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
             </Link>
           </Button>
           <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+            {/* Quick Mark Contacted / Engage button */}
+            {lead.status !== 'Contacted' && lead.status !== 'Won' && (
+              <button
+                onClick={() => {
+                  handleSaveProperty('status', 'Contacted');
+                  addNoteToLead(lead.id, 'Prospect marqué comme Contacté / Engagé.', 'general');
+                  toast.success('Prospect marqué comme Contacté (Engagé) et déplacé dans le Pipeline !');
+                }}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#059669] hover:bg-[#047857] text-white text-[11px] font-bold shadow-xs transition-all active:scale-95 shrink-0"
+                title="Déplacer le lead à l'étape Contacté"
+              >
+                <Check className="h-3.5 w-3.5" />
+                <span>Marquer Contacté</span>
+              </button>
+            )}
+
             {/* Copy lead info button */}
             <button
               onClick={handleCopyLeadInfo}

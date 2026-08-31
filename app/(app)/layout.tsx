@@ -766,7 +766,11 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
   const pinnedItems = [
     { name: 'Accueil',     href: '/today',       icon: Home },
     { name: 'Trouver',     href: '/prospecting', icon: Search, badge: 'PROSPECTS' },
-    { name: 'Contacter',   href: '/outreach',    icon: Send },
+    { name: 'Contacter',   href: '/outreach',    icon: Send, subItems: [
+      { name: 'Séquences',  href: '/outreach',   icon: Send },
+      { name: 'Appels',     href: '/calls',      icon: Phone },
+      { name: 'Inbox',      href: '/inbox',      icon: Inbox },
+    ]},
     { name: 'Rencontrer',  href: '/field',       icon: MapPinIcon },
     { name: 'Clôturer',    href: '/pipeline',    icon: KanbanSquare },
     { name: 'Analyser',    href: '/weekly-report', icon: BarChart3 },
@@ -1020,6 +1024,8 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
           <nav className={cn("space-y-[2px]", isCollapsed ? "px-2" : "px-3")}>
             {filteredPinnedItems.map((item) => {
               const isActive = isHubActive(item.href);
+              const hasSubItems = Boolean((item as any).subItems && (item as any).subItems.length > 0);
+              const isSubActive = hasSubItems && (item as any).subItems.some((sub: any) => pathname.startsWith(sub.href));
 
               const navLink = (
                 <Link
@@ -1028,14 +1034,14 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                   className={cn(
                     "flex items-center rounded-md text-xs font-medium transition-all duration-150",
                     isCollapsed ? "justify-center p-2" : "gap-2.5 px-2.5 py-1.5",
-                    isActive
+                    isActive || isSubActive
                       ? "bg-[#e5e5e2] text-[#26251e] font-semibold"
                       : "text-[#555552] hover:bg-[#e5e5e2]/60 hover:text-[#26251e]"
                   )}
                 >
                   <item.icon
-                    className={cn("h-4 w-4 shrink-0 transition-all duration-150", isActive ? "text-[#26251e]" : "text-[#555552] opacity-60")}
-                    strokeWidth={isActive ? 2 : 1.5}
+                    className={cn("h-4 w-4 shrink-0 transition-all duration-150", (isActive || isSubActive) ? "text-[#26251e]" : "text-[#555552] opacity-60")}
+                    strokeWidth={(isActive || isSubActive) ? 2 : 1.5}
                     aria-hidden="true"
                   />
                   {!isCollapsed && <span className="truncate">{item.name}</span>}
@@ -1055,7 +1061,34 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                   </Tooltip>
                 );
               }
-              return navLink;
+
+              return (
+                <div key={item.name} className="space-y-[1px]">
+                  {navLink}
+                  {hasSubItems && (isActive || isSubActive) && (
+                    <div className="pl-5 space-y-[2px] pt-0.5 border-l border-neutral-300 ml-4 my-1">
+                      {(item as any).subItems.map((sub: any) => {
+                        const isThisSubActive = pathname === sub.href || (sub.href !== '/outreach' && pathname.startsWith(sub.href));
+                        return (
+                          <Link
+                            key={sub.name}
+                            href={sub.href}
+                            className={cn(
+                              "flex items-center gap-2 px-2 py-1 rounded text-[11px] font-medium transition-colors",
+                              isThisSubActive
+                                ? "text-[#059669] font-bold bg-[#059669]/10"
+                                : "text-[#7a7a76] hover:text-[#26251e] hover:bg-[#e5e5e2]/40"
+                            )}
+                          >
+                            <sub.icon className="h-3 w-3 shrink-0 opacity-75" />
+                            <span className="truncate">{sub.name}</span>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
             })}
           </nav>
 

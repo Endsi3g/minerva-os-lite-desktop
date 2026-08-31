@@ -207,6 +207,44 @@ export async function POST(req: NextRequest) {
     const score = computeScore(params);
     const issues = buildIssues(params);
 
+    // Generate AI Diagnostic & Outreach Pitch with Gemini 3.7 Flash
+    let aiAnalysis: any = undefined;
+    try {
+      const { generateCompletion } = await import('@/lib/ai');
+      const prompt = `Tu es un expert en audit SEO et acquisition digitale pour agence B2B.
+Analyse les métriques suivantes pour le site web ${url} :
+- Score SEO technique : ${score}/100
+- Temps de chargement : ${loadTime}ms
+- HTTPS : ${isHttps ? 'Oui' : 'Non'}
+- Mobile Friendly (Viewport) : ${viewportPresent ? 'Oui' : 'Non'}
+- Balise Title : "${title || 'Absente'}" (${title ? title.length : 0} caractères)
+- Meta Description : "${description || 'Absente'}" (${description ? description.length : 0} caractères)
+- Balises H1 : ${h1Count}
+- Google Analytics : ${gaPresent ? 'Oui' : 'Non'}
+- Pixel Facebook : ${fbPresent ? 'Oui' : 'Non'}
+- Problèmes identifiés : ${issues.map(i => i.label).join(', ') || 'Aucun'}
+
+Génère un objet JSON strict (sans bloc markdown) avec exactement ces clés :
+{
+  "executiveSummary": "2-3 phrases résumant la santé du site et son impact sur la conversion",
+  "strengths": ["point fort 1", "point fort 2"],
+  "weaknesses": ["point faible 1", "point faible 2"],
+  "actionPlan": ["action 1", "action 2", "action 3"],
+  "outreachPitch": "Un pitch d'accroche personnalisé de 3 phrases que le SDR peut envoyer pour décrocher un RDV"
+}`;
+
+      const aiRes = await generateCompletion({
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.3,
+        maxTokens: 1200,
+      });
+
+      const cleanJson = aiRes.replace(/```json/g, '').replace(/```/g, '').trim();
+      aiAnalysis = JSON.parse(cleanJson);
+    } catch (aiErr) {
+      console.warn('[audit-seo AI analysis fallback]', aiErr);
+    }
+
     const result: SeoAuditResult = {
       url: response.url || url,
       loadTime,
@@ -223,6 +261,7 @@ export async function POST(req: NextRequest) {
       h1Count,
       score,
       issues,
+      aiAnalysis,
     };
 
     return NextResponse.json(result);

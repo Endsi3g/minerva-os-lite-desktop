@@ -201,44 +201,91 @@ function AuditResultCard({
         </div>
       </div>
 
-      {/* Issues & Recommendations */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <p className="text-xs font-bold uppercase tracking-wider text-[#26251e]">
-            Recommandations & Points d&apos;amélioration ({result.issues.length})
-          </p>
-          <button
-            onClick={() => setPitchGenerated(true)}
-            className="inline-flex items-center gap-1.5 text-xs font-bold text-[#059669] hover:underline"
-          >
-            <Sparkles className="h-3.5 w-3.5" /> Générer un pitch commercial IA
-          </button>
-        </div>
-
-        <div className="space-y-2">
-          {result.issues.map((issue, i) => (
-            <div key={i} className="p-3 rounded-xl bg-white border border-[#e5e5e0] flex items-start gap-3">
-              <SeverityIcon severity={issue.severity} />
-              <div className="min-w-0 flex-1">
-                <p className="text-xs font-bold text-[#26251e]">{issue.label}</p>
-                <p className="text-[11px] text-[#7a7a76] mt-0.5">Impact sur le référencement et la conversion mobile.</p>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {pitchGenerated && (
-          <div className="p-4 rounded-xl bg-[#059669]/8 border border-[#059669]/20 space-y-2 animate-in fade-in duration-300">
-            <div className="flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-[#059669]" />
-              <p className="text-xs font-bold text-[#059669]">Argumentaire commercial prêt pour relance</p>
-            </div>
-            <p className="text-xs text-[#26251e] leading-relaxed">
-              « Bonjour {leadName || "l'équipe"}, nous avons audité la visibilité en ligne de votre établissement. Votre score technique actuel de {result.score}/100 révèle des axes d&apos;amélioration immédiats, notamment sur {result.issues[0]?.label.toLowerCase() || "la conversion mobile"}. Notre solution permet d&apos;augmenter vos réservations directes de 25% sans changer vos outils. Êtes-vous disponible pour un point rapide de 10 min cette semaine ? »
+        {/* Issues & Recommendations */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-bold uppercase tracking-wider text-[#26251e]">
+              Recommandations & Points d&apos;amélioration ({result.issues.length})
             </p>
+            <button
+              onClick={() => setPitchGenerated(prev => !prev)}
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-[#059669] hover:underline cursor-pointer"
+            >
+              <Sparkles className="h-3.5 w-3.5" /> {pitchGenerated ? "Masquer le pitch IA" : "Afficher l'analyse & pitch Gemini"}
+            </button>
           </div>
-        )}
-      </div>
+
+          <div className="space-y-2">
+            {result.issues.map((issue, i) => (
+              <div key={i} className="p-3 rounded-xl bg-white border border-[#e5e5e0] flex items-start gap-3">
+                <SeverityIcon severity={issue.severity} />
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-bold text-[#26251e]">{issue.label}</p>
+                  <p className="text-[11px] text-[#7a7a76] mt-0.5">Impact sur le référencement et la conversion mobile.</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Gemini AI Strategic Analysis & Outreach Pitch */}
+          {(pitchGenerated || result.aiAnalysis) && (
+            <div className="p-4 rounded-xl bg-emerald-50/70 border border-emerald-200/80 space-y-3 animate-in fade-in duration-300">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-[#059669]" />
+                  <p className="text-xs font-bold text-[#059669]">Diagnostic Stratégique & Pitch SDR (Google Gemini 3.7 Flash)</p>
+                </div>
+                <span className="text-[10px] font-bold text-[#059669] bg-[#059669]/10 px-2 py-0.5 rounded">Généré par IA</span>
+              </div>
+
+              {typeof result.aiAnalysis === 'object' && result.aiAnalysis !== null ? (
+                <div className="space-y-2.5 text-xs text-[#26251e]">
+                  {result.aiAnalysis.executiveSummary && (
+                    <p className="leading-relaxed font-medium bg-white/80 p-2.5 rounded-lg border border-emerald-100">
+                      {result.aiAnalysis.executiveSummary}
+                    </p>
+                  )}
+
+                  {result.aiAnalysis.actionPlan && result.aiAnalysis.actionPlan.length > 0 && (
+                    <div className="space-y-1">
+                      <span className="font-bold text-[11px] uppercase tracking-wider text-[#059669]">Plan d&apos;action recommandé :</span>
+                      <ul className="list-disc pl-4 space-y-0.5 text-[11px] text-[#4a4a45]">
+                        {result.aiAnalysis.actionPlan.map((action: string, idx: number) => (
+                          <li key={idx}>{action}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {result.aiAnalysis.outreachPitch && (
+                    <div className="p-3 bg-white rounded-lg border border-emerald-200 space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-[10px] uppercase text-[#059669]">Message d&apos;accroche SDR prêt à l&apos;envoi :</span>
+                        <button
+                          onClick={() => {
+                            if (typeof result.aiAnalysis === 'object' && result.aiAnalysis?.outreachPitch) {
+                              navigator.clipboard.writeText(result.aiAnalysis.outreachPitch);
+                            }
+                          }}
+                          className="text-[10px] font-bold text-[#059669] hover:underline"
+                        >
+                          Copier le pitch
+                        </button>
+                      </div>
+                      <p className="text-[11px] text-[#26251e] leading-relaxed italic">
+                        « {result.aiAnalysis.outreachPitch} »
+                      </p>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <p className="text-xs text-[#26251e] leading-relaxed bg-white/80 p-3 rounded-lg border border-emerald-100">
+                  « Bonjour {leadName || "l'équipe"}, nous avons audité la visibilité en ligne de votre établissement. Votre score technique actuel de {result.score}/100 révèle des axes d&apos;amélioration immédiats, notamment sur {result.issues[0]?.label.toLowerCase() || "la conversion mobile"}. Notre solution permet d&apos;augmenter vos réservations directes de 25% sans changer vos outils. Êtes-vous disponible pour un point rapide de 10 min cette semaine ? »
+                </p>
+              )}
+            </div>
+          )}
+        </div>
     </div>
   );
 }

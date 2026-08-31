@@ -588,11 +588,8 @@ export function TodayRoot() {
                       </div>
                     </button>
 
-                    {/* Widget "Progression de la campagne" (Dark Green Card) */}
-                    <div className="bg-[#054f3b] text-white rounded-3xl p-5 shadow-lg relative overflow-hidden flex flex-col gap-4">
-                      {/* Internal glowing decoration */}
-                      <div className="absolute -right-16 -top-16 w-36 h-36 rounded-full bg-[#10b981]/10 blur-2xl pointer-events-none" />
-                      
+                    {/* Widget "Progression de la campagne" (Clean Dark Card) */}
+                    <div className="bg-[#182a22] text-white rounded-3xl p-5 shadow-sm border border-emerald-900/30 relative overflow-hidden flex flex-col gap-4">
                       <div className="flex justify-between items-start z-10">
                         <span className="text-xs font-black tracking-tight uppercase tracking-wider text-emerald-100/90">
                           {campaignStats.name}

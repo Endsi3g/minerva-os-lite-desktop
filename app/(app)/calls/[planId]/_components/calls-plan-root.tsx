@@ -38,12 +38,32 @@ export function CallsPlanRoot({ planId }: { planId: string }) {
       .then((r) => r.json())
       .then((data) => {
         const plan: RoutePlan = Array.isArray(data) ? data[0] : data;
-        if (plan) {
-          const ids: string[] = JSON.parse(plan.lead_ids || '[]');
-          setOrderedLeads(ids.map((id) => leads.find((l) => l.id === id)).filter(Boolean) as typeof leads);
+        if (plan && plan.lead_ids) {
+          const ids: string[] = typeof plan.lead_ids === 'string' ? JSON.parse(plan.lead_ids || '[]') : (plan.lead_ids || []);
+          const found = ids.map((id) => leads.find((l) => l.id === id)).filter(Boolean) as typeof leads;
+          if (found.length > 0) {
+            setOrderedLeads(found);
+            return;
+          }
+        }
+        // Fallback to local storage
+        if (typeof window !== 'undefined') {
+          const localIds = sessionStorage.getItem(`calls_session_${planId}`);
+          if (localIds) {
+            const ids: string[] = JSON.parse(localIds);
+            setOrderedLeads(ids.map((id) => leads.find((l) => l.id === id)).filter(Boolean) as typeof leads);
+          }
         }
       })
-      .catch(console.error)
+      .catch(() => {
+        if (typeof window !== 'undefined') {
+          const localIds = sessionStorage.getItem(`calls_session_${planId}`);
+          if (localIds) {
+            const ids: string[] = JSON.parse(localIds);
+            setOrderedLeads(ids.map((id) => leads.find((l) => l.id === id)).filter(Boolean) as typeof leads);
+          }
+        }
+      })
       .finally(() => setLoading(false));
   }, [planId, leads]);
 
