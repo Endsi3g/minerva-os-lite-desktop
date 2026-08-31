@@ -42,6 +42,7 @@ import * as route_automations_trigger_37 from '../automations/trigger/handler';
 import * as route_booking_appointments_38 from '../booking/appointments/handler';
 import * as route_booking_settings_39 from '../booking/settings/handler';
 import * as route_booking_slots_40 from '../booking/slots/handler';
+import * as route_calls_stats_190 from '../calls/stats/handler';
 import * as route_campaigns__id__autopilot_41 from '../campaigns/[id]/autopilot/handler';
 import * as route_chat_42 from '../chat/handler';
 import * as route_create_draft_43 from '../create-draft/handler';
@@ -233,6 +234,7 @@ const routes: Record<string, any> = {
   "booking/appointments": route_booking_appointments_38,
   "booking/settings": route_booking_settings_39,
   "booking/slots": route_booking_slots_40,
+  "calls/stats": route_calls_stats_190,
   "campaigns/[id]/autopilot": route_campaigns__id__autopilot_41,
   "chat": route_chat_42,
   "create-draft": route_create_draft_43,

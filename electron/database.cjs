@@ -472,6 +472,11 @@ function initDb() {
     db.run(`ALTER TABLE route_plans ADD COLUMN channel TEXT DEFAULT 'field'`, () => {});
     db.run(`ALTER TABLE field_visits ADD COLUMN channel TEXT DEFAULT 'field'`, () => {});
 
+    // v14.8.0 — call performance stats : qui a fait l'appel + sa durée mesurée
+    // côté client, pour le dashboard de stats de la page Appels.
+    db.run(`ALTER TABLE field_visits ADD COLUMN user_id TEXT DEFAULT NULL`, () => {});
+    db.run(`ALTER TABLE field_visits ADD COLUMN call_duration_seconds INTEGER DEFAULT NULL`, () => {});
+
     // v9.5.0 — script_templates (private-by-default, optionally shared to the
     // workspace) : bibliothèque de scripts d'appel/visite réutilisables.
     db.run(`CREATE TABLE IF NOT EXISTS script_templates (

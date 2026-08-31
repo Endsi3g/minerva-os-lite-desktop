@@ -415,7 +415,7 @@ async function syncPush() {
   const pendingVisits = await db.all("SELECT * FROM field_visits WHERE sync_status != 'synced'");
   for (const visit of pendingVisits) {
     if (visit.sync_status === 'pending_insert' || visit.sync_status === 'pending_update') {
-      const { id, route_plan_id, lead_id, workspace_id, outcome, notes, visited_at, meeting_datetime, follow_up_added, deal_created, channel, created_at } = visit;
+      const { id, route_plan_id, lead_id, workspace_id, outcome, notes, contact_met, interest_level, proof_image, visited_at, meeting_datetime, follow_up_added, deal_created, channel, user_id, call_duration_seconds, created_at } = visit;
 
       const { error } = await supabase.from('field_visits').upsert({
         id,
@@ -424,11 +424,16 @@ async function syncPush() {
         workspace_id: workspace_id || null,
         outcome,
         notes: notes || null,
+        contact_met: contact_met || null,
+        interest_level: interest_level || null,
+        proof_image: proof_image || null,
         visited_at: visited_at || new Date().toISOString(),
         meeting_datetime: meeting_datetime || null,
         follow_up_added: follow_up_added === 1,
         deal_created: deal_created === 1,
         channel: channel || 'field',
+        user_id: user_id || null,
+        call_duration_seconds: call_duration_seconds ?? null,
         created_at
       });
 
@@ -981,25 +986,25 @@ async function syncPull() {
     const localVisitsMap = new Map(localVisitsRows.map(v => [v.id, v]));
 
     for (const visit of remoteFieldVisits) {
-      const { id, route_plan_id, lead_id, workspace_id, outcome, notes, visited_at, meeting_datetime, follow_up_added, deal_created, channel, created_at, updated_at } = visit;
+      const { id, route_plan_id, lead_id, workspace_id, outcome, notes, contact_met, interest_level, proof_image, visited_at, meeting_datetime, follow_up_added, deal_created, channel, user_id, call_duration_seconds, created_at, updated_at } = visit;
       const localVisit = localVisitsMap.get(id);
 
       const followUpAddedInt = follow_up_added ? 1 : 0;
       const dealCreatedInt = deal_created ? 1 : 0;
 
       if (!localVisit) {
-        await db.run(`INSERT INTO field_visits (id, route_plan_id, lead_id, workspace_id, outcome, notes, visited_at, meeting_datetime, follow_up_added, deal_created, channel, created_at, updated_at, sync_status)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced')`,
-          [id, route_plan_id, lead_id, workspace_id, outcome, notes, visited_at, meeting_datetime, followUpAddedInt, dealCreatedInt, channel || 'field', created_at, updated_at]
+        await db.run(`INSERT INTO field_visits (id, route_plan_id, lead_id, workspace_id, outcome, notes, contact_met, interest_level, proof_image, visited_at, meeting_datetime, follow_up_added, deal_created, channel, user_id, call_duration_seconds, created_at, updated_at, sync_status)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced')`,
+          [id, route_plan_id, lead_id, workspace_id, outcome, notes, contact_met || null, interest_level || null, proof_image || null, visited_at, meeting_datetime, followUpAddedInt, dealCreatedInt, channel || 'field', user_id || null, call_duration_seconds ?? null, created_at, updated_at]
         );
       } else {
         const isRemoteNewer = new Date(updated_at) > new Date(localVisit.updated_at || 0);
         const canOverwrite = localVisit.sync_status === 'synced' || isRemoteNewer;
         if (canOverwrite) {
           await db.run(`UPDATE field_visits SET
-            route_plan_id = ?, lead_id = ?, workspace_id = ?, outcome = ?, notes = ?, visited_at = ?, meeting_datetime = ?, follow_up_added = ?, deal_created = ?, channel = ?, updated_at = ?, sync_status = 'synced'
+            route_plan_id = ?, lead_id = ?, workspace_id = ?, outcome = ?, notes = ?, contact_met = ?, interest_level = ?, proof_image = ?, visited_at = ?, meeting_datetime = ?, follow_up_added = ?, deal_created = ?, channel = ?, user_id = ?, call_duration_seconds = ?, updated_at = ?, sync_status = 'synced'
             WHERE id = ?`,
-            [route_plan_id, lead_id, workspace_id, outcome, notes, visited_at, meeting_datetime, followUpAddedInt, dealCreatedInt, channel || 'field', updated_at, id]
+            [route_plan_id, lead_id, workspace_id, outcome, notes, contact_met || null, interest_level || null, proof_image || null, visited_at, meeting_datetime, followUpAddedInt, dealCreatedInt, channel || 'field', user_id || null, call_duration_seconds ?? null, updated_at, id]
           );
         }
       }

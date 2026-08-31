@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useReach } from '@/lib/reach-context';
 import { getApiUrl } from '@/lib/api-helper';
@@ -8,8 +8,14 @@ import { cn } from '@/lib/utils';
 import {
   ArrowLeft, CheckCircle2, Clock, Calendar, X,
   MessageSquare, Loader2, MapPin, Phone, Globe, Star,
-  User, Flame, Image as ImageIcon, Trash2, Users, TrendingUp,
+  User, Flame, Image as ImageIcon, Trash2, Users, TrendingUp, Timer,
 } from 'lucide-react';
+
+function formatDuration(totalSeconds: number): string {
+  const m = Math.floor(totalSeconds / 60);
+  const s = totalSeconds % 60;
+  return `${m}:${String(s).padStart(2, '0')}`;
+}
 
 type CallOutcome = 'visited' | 'absent' | 'meeting_booked' | 'not_interested';
 type InterestLevel = 'Hot' | 'Warm' | 'Cold';
@@ -61,7 +67,7 @@ const INTEREST_CONFIG: Record<InterestLevel, { label: string; color: string }> =
 export default function CallOutcomeClient() {
   const router = useRouter();
   const params = useParams<{ planId: string; leadId: string }>();
-  const { leads, activeWorkspace } = useReach();
+  const { leads, activeWorkspace, user } = useReach();
 
   const lead = leads.find((l) => l.id === params.leadId);
   const [selectedOutcome, setSelectedOutcome] = useState<CallOutcome | null>(null);
@@ -73,6 +79,19 @@ export default function CallOutcomeClient() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [pipelineUpdate, setPipelineUpdate] = useState<string | null>(null);
+
+  // Chrono de l'appel : démarre à l'ouverture de cette page (déclenchée par
+  // "Démarrer l'appel" sur l'écran de préparation) jusqu'à la confirmation du
+  // résultat — sert de proxy à la durée réelle de l'appel pour les stats.
+  const callStartedAtRef = useRef<number>(Date.now());
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setElapsedSeconds(Math.floor((Date.now() - callStartedAtRef.current) / 1000));
+    }, 1000);
+    return () => clearInterval(id);
+  }, []);
 
   useEffect(() => {
     if (leads.length > 0 && !lead) {
@@ -115,6 +134,7 @@ export default function CallOutcomeClient() {
     setSaving(true);
 
     const visitedAt = new Date().toISOString();
+    const callDurationSeconds = Math.max(0, Math.round((Date.now() - callStartedAtRef.current) / 1000));
 
     try {
       const isElectron = typeof window !== 'undefined' && !!(window as unknown as Record<string, unknown>).electron;
@@ -126,8 +146,8 @@ export default function CallOutcomeClient() {
         };
         const id = crypto.randomUUID();
         await electron.dbRun(
-          `INSERT INTO field_visits (id, route_plan_id, lead_id, workspace_id, outcome, notes, contact_met, interest_level, proof_image, visited_at, meeting_datetime, channel, created_at, updated_at, sync_status)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'call', ?, ?, 'pending_insert')`,
+          `INSERT INTO field_visits (id, route_plan_id, lead_id, workspace_id, outcome, notes, contact_met, interest_level, proof_image, visited_at, meeting_datetime, channel, user_id, call_duration_seconds, created_at, updated_at, sync_status)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'call', ?, ?, ?, ?, 'pending_insert')`,
           [
             id,
             params.planId,
@@ -140,6 +160,8 @@ export default function CallOutcomeClient() {
             attachedImage || null,
             visitedAt,
             selectedOutcome === 'meeting_booked' ? (meetingDatetime || null) : null,
+            user?.id ?? null,
+            callDurationSeconds,
             visitedAt,
             visitedAt,
           ]
@@ -161,6 +183,7 @@ export default function CallOutcomeClient() {
             visited_at: visitedAt,
             meeting_datetime: selectedOutcome === 'meeting_booked' ? (meetingDatetime || null) : null,
             channel: 'call',
+            call_duration_seconds: callDurationSeconds,
           }),
         });
         if (!res.ok) {
@@ -177,6 +200,7 @@ export default function CallOutcomeClient() {
           `${cfg.label} — ${lead.businessName}`,
           contactMet ? `Contact : ${contactMet}` : '',
           interestLevel ? `Intérêt : ${INTEREST_CONFIG[interestLevel].label}` : '',
+          callDurationSeconds > 0 ? `Durée : ${formatDuration(callDurationSeconds)}` : '',
           notes ? `Note : ${notes}` : '',
         ].filter(Boolean);
         fetch(getApiUrl('/api/notifications/team'), {
@@ -237,10 +261,16 @@ export default function CallOutcomeClient() {
         >
           <ArrowLeft className="h-4 w-4" />
         </button>
-        <div>
+        <div className="flex-1 min-w-0">
           <p className="text-xs font-bold text-[#26251e]">Enregistrer l&apos;appel</p>
           <p className="text-[10px] text-[#7a7a76] truncate max-w-[240px]">{lead.businessName}</p>
         </div>
+        {!saved && (
+          <div className="flex items-center gap-1.5 shrink-0 rounded-lg border border-[#059669]/20 bg-[#059669]/10 px-2.5 py-1.5 text-[#059669] tabular-nums">
+            <Timer className="h-3.5 w-3.5" />
+            <span className="text-xs font-bold">{formatDuration(elapsedSeconds)}</span>
+          </div>
+        )}
       </div>
 
       <div className="max-w-lg mx-auto p-4 space-y-5 pb-32">
