@@ -7,6 +7,7 @@ import { useReach } from '@/lib/reach-context';
 import { getApiUrl } from '@/lib/api-helper';
 import { cn } from '@/lib/utils';
 import { LeadHeatBadge } from '@/components/lead-heat-badge';
+import { CallsStatsPanel } from './calls-stats-panel';
 import type { Lead } from '@/lib/mock-data';
 
 const TEMP_ORDER: Record<Lead['temperature'], number> = { Hot: 0, Warm: 1, Cold: 2 };
@@ -67,6 +68,8 @@ export function CallsRoot() {
             Sélectionne les prospects à appeler — script IA, captures et notes en direct pendant l&apos;appel, même moteur que le terrain.
           </p>
         </div>
+
+        {activeWorkspace && <CallsStatsPanel workspaceId={activeWorkspace.id} />}
 
         <div className="border border-[#e5e5e0] rounded-xl bg-white divide-y divide-[#e5e5e0]">
           {callableLeads.length === 0 ? (

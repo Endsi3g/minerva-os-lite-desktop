@@ -20,6 +20,7 @@ export async function POST(request: NextRequest) {
       visited_at,
       meeting_datetime,
       channel, // 'field' (default) | 'call'
+      call_duration_seconds,
     } = body;
 
     if (!route_plan_id || !lead_id || !outcome) {
@@ -46,6 +47,8 @@ export async function POST(request: NextRequest) {
         interest_level: interest_level || null,
         proof_image: proof_image || null,
         channel: channel === 'call' ? 'call' : 'field',
+        user_id: user.id,
+        call_duration_seconds: typeof call_duration_seconds === 'number' ? call_duration_seconds : null,
       })
       .select()
       .single();
