@@ -40,6 +40,13 @@ export async function GET(req: NextRequest) {
   const period = req.nextUrl.searchParams.get('period') || 'all';
   if (!workspaceId) return NextResponse.json({ error: 'workspace_id required' }, { status: 400 });
 
+  const [{ data: workspace }, { data: membership }] = await Promise.all([
+    supabase.from('workspaces').select('owner_id').eq('id', workspaceId).maybeSingle(),
+    supabase.from('team_members').select('id').eq('workspace_id', workspaceId).eq('member_user_id', user.id).maybeSingle(),
+  ]);
+  const isMember = workspace?.owner_id === user.id || !!membership;
+  if (!isMember) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+
   let query = supabase
     .from('field_visits')
     .select('outcome, interest_level, call_duration_seconds, visited_at, user_id')
