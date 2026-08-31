@@ -21,6 +21,18 @@ interface ChangelogVersion {
 
 const versions: ChangelogVersion[] = [
   {
+    version: 'v9.6.0',
+    date: '31 août 2026',
+    title: 'Tableau de stats de performance sur la page Appels',
+    highlights: [
+      { text: "Nouveau panneau de stats denses sur /calls : sélecteur de période (Aujourd'hui/7j/30j/Tout), taux de contact, RDV pris, taux de closing, durée moyenne d'appel, leads chauds, pas de réponse et non intéressés." },
+      { text: "Mini-graphique de volume d'appels par jour et classement d'équipe (par membre) triés par nombre d'appels, avec taux de contact et durée moyenne de chacun." },
+      { text: "Récap compact de session ajouté sur l'écran de session d'appels (/calls/[id]) : taux de contact, RDV pris et durée moyenne pour la session en cours." },
+      { text: "Chrono d'appel en direct sur l'écran \"Enregistrer l'appel\", démarré dès le clic sur \"Démarrer l'appel\" — la durée mesurée alimente désormais les stats." },
+      { text: "Fix synchro Electron : contact joint, intérêt perçu et capture jointe ne se synchronisaient plus vers Supabase pour les utilisateurs du bureau — corrigé pour que les stats d'équipe reflètent aussi les appels passés depuis l'app desktop." },
+    ]
+  },
+  {
     version: 'v9.5.0',
     date: '30 août 2026',
     title: 'Assistant de scripting d\'appel IA, section Appels & bibliothèque de templates',
