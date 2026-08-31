@@ -1,11 +1,29 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { FileText, ChevronDown, ChevronUp, Check, X, Bot, User, ChevronRight, Star, ArrowLeft, Clock, MapPin, Globe } from 'lucide-react';
+import { 
+  FileText, 
+  ChevronDown, 
+  ChevronUp, 
+  Check, 
+  X, 
+  Bot, 
+  User, 
+  Star, 
+  ArrowLeft, 
+  Clock, 
+  MapPin, 
+  Globe, 
+  Sparkles, 
+  Save, 
+  Send, 
+  Loader2,
+  Edit3
+} from 'lucide-react';
 import { getApiUrl } from '@/lib/api-helper';
 import { toast } from 'sonner';
 
-interface InboxDraft {
+export interface InboxDraft {
   id: string;
   lead_id: string | null;
   subject: string | null;
@@ -45,90 +63,192 @@ function timeAgo(iso: string) {
 }
 
 function DraftCard({
-  draft, onApprove, onReject, onPlan, busy,
+  draft, 
+  onApprove, 
+  onReject, 
+  onPlan, 
+  onUpdateDraft,
+  busy,
 }: {
   draft: InboxDraft;
-  onApprove: (id: string) => void;
+  onApprove: (id: string, customPayload?: { subject: string; body: string }) => void;
   onReject: (id: string) => void;
   onPlan: (id: string) => void;
+  onUpdateDraft: (id: string, updated: { subject: string; body: string }) => void;
   busy: boolean;
 }) {
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(true);
+  const [subject, setSubject] = useState(draft.subject || '');
+  const [body, setBody] = useState(draft.body || '');
+  const [polishing, setPolishing] = useState(false);
+  const [isSaved, setIsSaved] = useState(true);
+
   const isAgent = draft.source === 'agent';
 
+  useEffect(() => {
+    setSubject(draft.subject || '');
+    setBody(draft.body || '');
+  }, [draft.subject, draft.body]);
+
+  const handleSave = () => {
+    onUpdateDraft(draft.id, { subject, body });
+    setIsSaved(true);
+    toast.success('Brouillon mis à jour avec succès');
+  };
+
+  const handleAiPolish = async () => {
+    setPolishing(true);
+    try {
+      const res = await fetch(getApiUrl('/api/ai/generate'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt: `Améliore cet email commercial pour ${draft.leads?.business_name || 'un prospect'}. Rends-le plus percutant, poli, concis et axé sur la prise de rendez-vous en 3 phrases maximum.
+
+Sujet actuel : ${subject}
+Corps actuel : ${body}`,
+          systemPrompt: 'Tu es un expert en copywriting B2B cold email. Réponds uniquement par le texte de l\'email amélioré.',
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.text) {
+        setBody(data.text.trim());
+        setIsSaved(false);
+        toast.success('Texte optimisé par Gemini 3.7 Flash !');
+      } else {
+        toast.error('Impossible de reformuler le texte');
+      }
+    } catch {
+      toast.error('Erreur de connexion à l\'IA');
+    } finally {
+      setPolishing(false);
+    }
+  };
+
   return (
-    <div className="bg-white border border-[#e5e5e0] rounded-xl overflow-hidden shadow-xs">
-      <div className="flex items-start gap-3 p-4">
+    <div className="bg-white border border-[#e5e5e0] rounded-xl overflow-hidden shadow-2xs space-y-2">
+      {/* Top Bar */}
+      <div className="flex items-start gap-3 p-4 pb-2">
         <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full mt-0.5 ${isAgent ? 'bg-[#7c3aed]/10' : 'bg-[#059669]/10'}`}>
           {isAgent ? <Bot className="h-4 w-4 text-[#7c3aed]" /> : <User className="h-4 w-4 text-[#059669]" />}
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-[#f4f4f3] text-[#7a7a76] border border-[#e5e5e0]">
-              Brouillon
+              Brouillon éditable
             </span>
             {isAgent && draft.intent_type && (
               <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-[#f5f3ff] text-[#7c3aed] border border-[#e9d5ff]">
                 {INTENT_LABELS[draft.intent_type] ?? draft.intent_type}
               </span>
             )}
+            {!isSaved && (
+              <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
+                Modifications non enregistrées
+              </span>
+            )}
           </div>
           <p className="text-[10px] font-semibold text-[#059669] mt-0.5 truncate">
             {draft.leads?.business_name ?? 'Lead inconnu'}
           </p>
-          <p className="text-xs font-semibold text-[#26251e] mt-1 truncate">{draft.subject || '(Sans objet)'}</p>
         </div>
         <span className="text-[9px] text-[#7a7a76] shrink-0">{timeAgo(draft.created_at)}</span>
       </div>
 
+      {/* Accordion Toggle */}
       <button
         onClick={() => setExpanded(e => !e)}
-        className="w-full flex items-center justify-between px-4 pb-2 text-[9px] font-bold text-[#7a7a76] hover:text-[#26251e] transition-colors"
+        className="w-full flex items-center justify-between px-4 pb-1 text-[9px] font-bold text-[#7a7a76] hover:text-[#26251e] transition-colors"
       >
-        <span>{expanded ? "Masquer le brouillon" : "Voir le brouillon"}</span>
+        <span>{expanded ? "Masquer l'éditeur" : "Ouvrir l'éditeur de message"}</span>
         {expanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
       </button>
 
-      <div className={`grid transition-all duration-300 ease-in-out ${
-        expanded ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
-      }`}>
-        <div className="overflow-hidden">
-          <div className="mx-4 mb-3 rounded-lg bg-[#fafaf8] border border-[#e5e5e0] p-3">
-            <p className="text-[10px] leading-relaxed text-[#26251e] whitespace-pre-wrap font-sans">
-              {draft.body || '(aucun contenu)'}
-            </p>
+      {/* Editor Content Area */}
+      {expanded && (
+        <div className="px-4 pb-2 space-y-3">
+          {/* Subject Field */}
+          <div className="space-y-1">
+            <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Sujet de l&apos;email</label>
+            <input
+              type="text"
+              value={subject}
+              onChange={(e) => {
+                setSubject(e.target.value);
+                setIsSaved(false);
+              }}
+              placeholder="Objet du message..."
+              className="w-full text-xs font-semibold px-3 py-2 bg-[#fafaf8] border border-[#e5e5e0] rounded-lg focus:outline-hidden focus:border-[#059669] focus:bg-white text-[#26251e]"
+            />
+          </div>
+
+          {/* Body Field */}
+          <div className="space-y-1">
+            <div className="flex items-center justify-between">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Corps du message</label>
+              <button
+                onClick={handleAiPolish}
+                disabled={polishing || busy}
+                className="inline-flex items-center gap-1 text-[10px] font-bold text-[#7c3aed] hover:underline cursor-pointer disabled:opacity-50"
+              >
+                {polishing ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                <span>Améliorer avec l&apos;IA</span>
+              </button>
+            </div>
+            <textarea
+              value={body}
+              onChange={(e) => {
+                setBody(e.target.value);
+                setIsSaved(false);
+              }}
+              rows={6}
+              placeholder="Rédigez votre email..."
+              className="w-full text-xs leading-relaxed p-3 bg-[#fafaf8] border border-[#e5e5e0] rounded-lg focus:outline-hidden focus:border-[#059669] focus:bg-white text-[#26251e] resize-y font-sans"
+            />
           </div>
         </div>
-      </div>
+      )}
 
-      <div className="flex items-center gap-2 px-4 pb-4">
-        <button
-          onClick={() => onApprove(draft.id)}
-          disabled={busy}
-          className="flex items-center gap-1.5 h-7 px-3 rounded-lg bg-[#059669] text-white text-[10px] font-bold hover:bg-[#047857] transition-colors disabled:opacity-50 border-0 cursor-pointer"
-        >
-          <Check className="h-3 w-3" /> Envoyer
-        </button>
-        <button
-          onClick={() => onPlan(draft.id)}
-          disabled={busy}
-          className="flex items-center gap-1.5 h-7 px-3 rounded-lg bg-white border border-[#e5e5e0] text-[#26251e] text-[10px] font-bold hover:bg-[#fafaf8] transition-colors disabled:opacity-50 cursor-pointer"
-        >
-          <Clock className="h-3 w-3 text-[#7a7a76]" /> Planifier
-        </button>
+      {/* Action Footer */}
+      <div className="flex items-center justify-between px-4 pb-4 pt-1 border-t border-[#f4f4f3]">
+        <div className="flex items-center gap-2">
+          {!isSaved && (
+            <button
+              onClick={handleSave}
+              className="flex items-center gap-1 h-7 px-3 rounded-lg bg-white border border-[#e5e5e0] text-[#26251e] text-[10px] font-bold hover:bg-[#fafaf8] transition-colors cursor-pointer"
+            >
+              <Save className="h-3 w-3 text-[#7a7a76]" /> Enregistrer
+            </button>
+          )}
+          <button
+            onClick={() => onApprove(draft.id, { subject, body })}
+            disabled={busy}
+            className="flex items-center gap-1.5 h-7 px-3.5 rounded-lg bg-[#059669] text-white text-[10px] font-bold hover:bg-[#047857] transition-all active:scale-95 disabled:opacity-50 shadow-2xs cursor-pointer"
+          >
+            <Send className="h-3 w-3" /> Envoyer maintenant
+          </button>
+          <button
+            onClick={() => onPlan(draft.id)}
+            disabled={busy}
+            className="flex items-center gap-1.5 h-7 px-2.5 rounded-lg bg-white border border-[#e5e5e0] text-[#7a7a76] text-[10px] font-bold hover:bg-[#fafaf8] transition-colors disabled:opacity-50 cursor-pointer"
+          >
+            <Clock className="h-3 w-3" /> Planifier
+          </button>
+        </div>
+
         <button
           onClick={() => onReject(draft.id)}
           disabled={busy}
-          className="flex items-center gap-1.5 h-7 px-3 rounded-lg border border-[#e5e5e0] text-[#7a7a76] text-[10px] font-bold hover:border-[#dc2626] hover:text-[#dc2626] transition-colors disabled:opacity-50 bg-white cursor-pointer"
+          className="flex items-center gap-1 h-7 px-2.5 rounded-lg border border-transparent text-[#7a7a76] text-[10px] font-bold hover:border-red-200 hover:bg-red-50 hover:text-red-600 transition-colors disabled:opacity-50 cursor-pointer"
         >
-          <X className="h-3 w-3" /> Rejeter
+          <X className="h-3 w-3" /> Supprimer
         </button>
       </div>
     </div>
   );
 }
 
-// Grouped Lead Card widget (resembles the lead list layout styling)
+// Grouped Lead Card widget
 function LeadGroupCard({
   lead,
   draftCount,
@@ -178,14 +298,8 @@ function LeadGroupCard({
         {/* Draft Count tag */}
         <div className="flex items-center gap-1.5 pt-1">
           <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-[#059669]/10 text-[#059669] border border-[#059669]/25">
-            {draftCount} brouillon{draftCount > 1 ? 's' : ''} en attente
+            {draftCount} message{draftCount > 1 ? 's' : ''} prêt{draftCount > 1 ? 's' : ''}
           </span>
-        </div>
-      </div>
-
-      <div className="flex items-center shrink-0 pl-2">
-        <div className="h-8 w-8 rounded-full border border-[#e5e5e0] hover:bg-[#f4f4f3] flex items-center justify-center text-[#7a7a76] transition-colors">
-          <ChevronRight className="h-4 w-4" />
         </div>
       </div>
     </div>
@@ -214,19 +328,29 @@ export function DraftsPanel({ workspaceId }: { workspaceId: string | undefined }
 
   useEffect(() => { load(); }, [load]);
 
-  const decide = async (id: string, decision: 'approve' | 'reject') => {
+  const handleUpdateDraft = (id: string, updated: { subject: string; body: string }) => {
+    setDrafts(prev => prev.map(d => d.id === id ? { ...d, subject: updated.subject, body: updated.body } : d));
+  };
+
+  const decide = async (id: string, decision: 'approve' | 'reject', customPayload?: { subject: string; body: string }) => {
     setBusy(true);
     try {
       const res = await fetch(getApiUrl('/api/outreach/approvals'), {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, type: 'draft', decision }),
+        body: JSON.stringify({ 
+          id, 
+          type: 'draft', 
+          decision,
+          subject: customPayload?.subject,
+          body: customPayload?.body,
+        }),
       });
       const data = await res.json().catch(() => ({}));
       if (data.queueError) {
         toast.error(data.queueError);
       } else if (decision === 'approve') {
-        toast.success("Brouillon approuvé — mis en file d'envoi.");
+        toast.success("Email envoyé avec succès au prospect !");
       }
       setDrafts(prev => prev.filter(d => d.id !== id));
     } finally {
@@ -235,15 +359,18 @@ export function DraftsPanel({ workspaceId }: { workspaceId: string | undefined }
   };
 
   const handlePlan = (id: string) => {
-    toast.success("Brouillon planifié pour envoi.");
+    toast.success("Brouillon planifié pour envoi automatique.");
   };
 
   // Filter drafts by channel
   const filteredDrafts = useMemo(() => {
-    return drafts.filter(d => d.channel === activeChannel);
+    return drafts.filter(d => {
+      if (activeChannel === 'Email') return d.channel === 'email' || !d.channel;
+      return d.channel === 'dm' || d.channel === 'facebook' || d.channel === 'instagram';
+    });
   }, [drafts, activeChannel]);
 
-  // Group by lead ID for active view
+  // Group drafts by lead
   const groupedLeads = useMemo(() => {
     const leadsMap = new Map<string, { lead: NonNullable<InboxDraft['leads']>; count: number }>();
     const unknownLeadsCount = { count: 0 };
@@ -280,9 +407,9 @@ export function DraftsPanel({ workspaceId }: { workspaceId: string | undefined }
       {/* Header with Sub-tabs */}
       <div className="border-b border-[#e5e5e0] bg-[#fafaf8] shrink-0">
         <div className="px-4 py-3 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-[#26251e]">Brouillons en attente</h2>
+          <h2 className="text-sm font-semibold text-[#26251e]">Brouillons & Messages Prêts</h2>
           <span className="text-[10px] text-[#7a7a76]">
-            {filteredDrafts.length} brouillon{filteredDrafts.length !== 1 ? 's' : ''} {activeChannel === 'Email' ? 'Google' : 'Facebook'}
+            {filteredDrafts.length} message{filteredDrafts.length !== 1 ? 's' : ''} {activeChannel === 'Email' ? 'Google' : 'Facebook'}
           </span>
         </div>
 
@@ -328,9 +455,9 @@ export function DraftsPanel({ workspaceId }: { workspaceId: string | undefined }
         ) : filteredDrafts.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full gap-3 text-[#78716c]">
             <FileText className="h-8 w-8 opacity-30" />
-            <p className="text-xs text-center">Aucun brouillon en attente</p>
+            <p className="text-xs text-center font-bold">Aucun brouillon en attente</p>
             <p className="text-[11px] text-[#a8a29e] text-center max-w-[240px]">
-              Les brouillons de type {activeChannel === 'Email' ? 'Email (Google)' : 'DM (Facebook/Instagram)'} apparaîtront ici.
+              Générez des messages depuis la fiche d&apos;un lead ou via l&apos;Assistant SDR pour les retrouver ici.
             </p>
           </div>
         ) : (
@@ -357,9 +484,9 @@ export function DraftsPanel({ workspaceId }: { workspaceId: string | undefined }
                 <>
                   <button
                     onClick={() => setSelectedLeadId(null)}
-                    className="flex items-center gap-1.5 text-xs text-[#7a7a76] hover:text-[#26251e] transition-colors cursor-pointer border-0 bg-transparent p-0"
+                    className="flex items-center gap-1.5 text-xs font-bold text-[#7a7a76] hover:text-[#26251e] transition-colors cursor-pointer border-0 bg-transparent p-0"
                   >
-                    <ArrowLeft className="h-3.5 w-3.5" /> Retour
+                    <ArrowLeft className="h-3.5 w-3.5" /> Retour à la liste des leads
                   </button>
                   <div className="pb-2 border-b border-[#e5e5e0]">
                     <h3 className="text-sm font-bold text-[#26251e]">{selectedLeadInfo.business_name}</h3>
@@ -371,7 +498,8 @@ export function DraftsPanel({ workspaceId }: { workspaceId: string | undefined }
                         key={draft.id}
                         draft={draft}
                         busy={busy}
-                        onApprove={(id) => decide(id, 'approve')}
+                        onUpdateDraft={handleUpdateDraft}
+                        onApprove={(id, customPayload) => decide(id, 'approve', customPayload)}
                         onReject={(id) => decide(id, 'reject')}
                         onPlan={handlePlan}
                       />

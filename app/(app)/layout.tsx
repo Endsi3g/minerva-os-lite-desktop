@@ -253,6 +253,32 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
     crm: true, ai: true, data: true, platform: true, sales: true
   });
 
+  const [openSubPages, setOpenSubPages] = useState<Record<string, boolean>>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('minerva_nav_subpages');
+        if (saved) return JSON.parse(saved);
+      } catch {}
+    }
+    return { '/outreach': true };
+  });
+
+  const toggleSubPages = (href: string, e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    setOpenSubPages(prev => {
+      const next = { ...prev, [href]: !prev[href] };
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem('minerva_nav_subpages', JSON.stringify(next));
+        } catch {}
+      }
+      return next;
+    });
+  };
+
   const toggleCategory = (id: string) => {
     setCollapsedCategories(prev => ({ ...prev, [id]: !prev[id] }));
   };
@@ -1026,31 +1052,50 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
               const isActive = isHubActive(item.href);
               const hasSubItems = Boolean((item as any).subItems && (item as any).subItems.length > 0);
               const isSubActive = hasSubItems && (item as any).subItems.some((sub: any) => pathname.startsWith(sub.href));
+              const isExpanded = openSubPages[item.href] ?? (isActive || isSubActive);
 
               const navLink = (
-                <Link
+                <div
                   key={item.name}
-                  href={item.href}
                   className={cn(
-                    "flex items-center rounded-md text-xs font-medium transition-all duration-150",
-                    isCollapsed ? "justify-center p-2" : "gap-2.5 px-2.5 py-1.5",
+                    "flex items-center rounded-md text-xs font-medium transition-all duration-150 group",
+                    isCollapsed ? "justify-center p-2" : "px-2 py-1",
                     isActive || isSubActive
                       ? "bg-[#e5e5e2] text-[#26251e] font-semibold"
                       : "text-[#555552] hover:bg-[#e5e5e2]/60 hover:text-[#26251e]"
                   )}
                 >
-                  <item.icon
-                    className={cn("h-4 w-4 shrink-0 transition-all duration-150", (isActive || isSubActive) ? "text-[#26251e]" : "text-[#555552] opacity-60")}
-                    strokeWidth={(isActive || isSubActive) ? 2 : 1.5}
-                    aria-hidden="true"
-                  />
-                  {!isCollapsed && <span className="truncate">{item.name}</span>}
+                  <Link
+                    href={item.href}
+                    className={cn(
+                      "flex items-center flex-1 min-w-0 py-0.5",
+                      isCollapsed ? "justify-center" : "gap-2.5"
+                    )}
+                  >
+                    <item.icon
+                      className={cn("h-4 w-4 shrink-0 transition-all duration-150", (isActive || isSubActive) ? "text-[#26251e]" : "text-[#555552] opacity-60")}
+                      strokeWidth={(isActive || isSubActive) ? 2 : 1.5}
+                      aria-hidden="true"
+                    />
+                    {!isCollapsed && <span className="truncate">{item.name}</span>}
+                  </Link>
+
                   {!isCollapsed && (item as any).badge && (
-                    <span className="ml-auto text-[8px] font-black uppercase tracking-wider bg-[#059669]/10 text-[#059669] px-1.5 py-0.5 rounded border border-[#059669]/15">
+                    <span className="mr-1 text-[8px] font-black uppercase tracking-wider bg-[#059669]/10 text-[#059669] px-1.5 py-0.5 rounded border border-[#059669]/15">
                       {(item as any).badge}
                     </span>
                   )}
-                </Link>
+
+                  {!isCollapsed && hasSubItems && (
+                    <button
+                      onClick={(e) => toggleSubPages(item.href, e)}
+                      className="p-1 hover:bg-[#d8d8d4] rounded text-[#7a7a76] hover:text-[#26251e] transition-colors ml-auto"
+                      title={isExpanded ? "Masquer les sous-pages" : "Afficher les sous-pages"}
+                    >
+                      <ChevronDown className={cn("h-3 w-3 transition-transform duration-200", !isExpanded && "-rotate-90")} />
+                    </button>
+                  )}
+                </div>
               );
 
               if (isCollapsed) {
@@ -1065,7 +1110,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
               return (
                 <div key={item.name} className="space-y-[1px]">
                   {navLink}
-                  {hasSubItems && (isActive || isSubActive) && (
+                  {hasSubItems && isExpanded && (
                     <div className="pl-5 space-y-[2px] pt-0.5 border-l border-neutral-300 ml-4 my-1">
                       {(item as any).subItems.map((sub: any) => {
                         const isThisSubActive = pathname === sub.href || (sub.href !== '/outreach' && pathname.startsWith(sub.href));

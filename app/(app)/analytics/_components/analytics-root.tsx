@@ -183,14 +183,28 @@ function OverviewTab() {
 
   return (
     <div className="space-y-4">
-      {/* Key insights strip */}
+      {/* Key insights strip — condensed & clean */}
       {stats.total > 0 && (
-        <div className="flex flex-wrap gap-2">
-          <InsightChip icon={ArrowUp} text={`${stats.total} opportunités qualifiées à Montréal`} />
-          <InsightChip icon={Trophy} text={`Valeur pipeline : ${(stats.totalDealValue / 1000).toFixed(0)}k $ MRR`} />
-          <InsightChip icon={Calendar} text={`${stats.meeting} RDV & Clôtures actives`} />
-          <InsightChip icon={CheckCircle2} text={`${stats.completedTasks} actions exécutées`} />
-          <InsightChip icon={Target} text={`Score santé moyen : ${stats.avgScore}/100`} />
+        <div className="flex items-center justify-between bg-white border border-[#e5e5e0] px-4 py-2.5 rounded-xl text-xs shadow-2xs">
+          <div className="flex items-center gap-4 flex-wrap">
+            <span className="flex items-center gap-1.5 font-bold text-[#26251e]">
+              <Target className="h-3.5 w-3.5 text-[#059669]" />
+              {stats.total} opportunités qualifiées
+            </span>
+            <span className="text-[#d4d4cb]">•</span>
+            <span className="flex items-center gap-1.5 font-medium text-[#7a7a76]">
+              <Trophy className="h-3.5 w-3.5 text-[#d97706]" />
+              {(stats.totalDealValue / 1000).toFixed(0)}k $ MRR Pipeline
+            </span>
+            <span className="text-[#d4d4cb]">•</span>
+            <span className="flex items-center gap-1.5 font-medium text-[#7a7a76]">
+              <Calendar className="h-3.5 w-3.5 text-[#3b82f6]" />
+              {stats.meeting} RDV & Clôtures actives
+            </span>
+          </div>
+          <span className="text-[11px] font-bold text-[#059669] bg-[#059669]/10 px-2.5 py-0.5 rounded-md border border-[#059669]/20 hidden sm:inline-block">
+            Score santé : {stats.avgScore}/100
+          </span>
         </div>
       )}
 
@@ -204,37 +218,37 @@ function OverviewTab() {
         <StatCard label="Pipeline total" value={`${(stats.totalDealValue / 1000).toFixed(0)}k $`} icon={DollarSign} sub={`${stats.avgDealValue} $ / lead moyen`} color="#d97706" />
       </div>
 
-      {/* Row 2: Full Recharts Interactive Cards */}
+      {/* Row 2: Conversion & Data Quality */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <InteractiveChartCard
           title="Entonnoir de Conversion & Étapes du Pipeline"
-          subtitle="Répartition des 124 leads selon leur progression de qualification à closing"
+          subtitle="Progression des prospects de la qualification au closing"
           type="bar"
           data={funnelChartData}
           deepLink={{ label: 'Voir dans le Pipeline', href: '/pipeline' }}
-          height={220}
+          height={200}
           valueSuffix=" prospects"
         />
 
         <InteractiveChartCard
-          title="Complétude & Qualité des Données"
-          subtitle="Disponibilité des coordonnées et de l'enrichissement Google"
+          title="Complétude & Qualité des Coordonnées"
+          subtitle="Disponibilité des emails, téléphones et sites web"
           type="bar"
           data={completenessData}
-          deepLink={{ label: 'Ouvrir la liste des Leads', href: '/leads' }}
-          height={220}
+          deepLink={{ label: 'Ouvrir les Leads', href: '/leads' }}
+          height={200}
           valueSuffix=" leads"
         />
       </div>
 
-      {/* Row 3: Secteurs & Géographie Recharts */}
+      {/* Row 3: Secteurs, Géographie & Canaux */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <InteractiveChartCard
           title="Top Secteurs d'Activité"
           subtitle="Volume par niche d'entreprises"
           type="bar"
           data={nicheChartData}
-          height={200}
+          height={180}
           valueSuffix=" leads"
           compact={true}
         />
@@ -244,7 +258,7 @@ function OverviewTab() {
           subtitle="Grand Montréal & Arrondissements"
           type="bar"
           data={cityChartData}
-          height={200}
+          height={180}
           valueSuffix=" leads"
           compact={true}
         />
@@ -254,7 +268,7 @@ function OverviewTab() {
           subtitle="Sources d'importation et prospection"
           type="donut"
           data={sourcesChartData}
-          height={200}
+          height={180}
           valueSuffix=" leads"
           compact={true}
           showLegend={true}

@@ -21,8 +21,21 @@ interface ChangelogVersion {
 
 const versions: ChangelogVersion[] = [
   {
+    version: 'v9.8.0',
+    date: '31 août 2026 · 15h30',
+    title: 'Brouillons Éditables, Sidebar Toggle Chevron, Greeting IA & Fixes Endpoints',
+    highlights: [
+      { text: "Brouillons Inbox 100% éditables (/inbox > Brouillons) : chaque brouillon s'ouvre dans un éditeur inline Sujet + Corps avec sauvegarde, reformulation IA via Gemini 3.7 Flash et envoi direct avec payload personnalisé." },
+      { text: "Sidebar Contacter avec chevron toggle : un bouton ▼/▶ à droite du menu Contacter permet d'ouvrir/fermer les sous-pages (Séquences, Appels, Inbox) indépendamment de la navigation active. L'état est mémorisé dans un context local." },
+      { text: "Assistant IA — Message proactif au démarrage : à chaque nouvelle session, Minerva envoie automatiquement un message de bienvenue (health check) dans l'Assistant ET dans le Chat d'équipe (groupe) via Supabase team_messages." },
+      { text: "Suppression de l'emoji 🌅 dans le chip 'Daily Standup SDR & Conseils' de la page Assistant IA." },
+      { text: "Fix endpoints API assistant : tous les appels fetch('/api/settings/user-prefs') sans getApiUrl() ont été corrigés — élimine les 404 en déploiement Vercel avec basePath." },
+    ]
+  },
+  {
     version: 'v9.7.0',
     date: '31 août 2026 · 14h45',
+
     title: 'Audit IA Gemini 3.7 Flash, Table Appels Compacte, Quick-Engage Lead & Cockpit Analytics',
     highlights: [
       { text: "Table Appels Redesignée (/calls) : Format compact style Leads avec entreprise, description/niche, lien direct vers la fiche, téléphone, ville, statut, température et fiabilisation du lancement de session d'appels." },

@@ -1026,7 +1026,7 @@ export function AssistantRoot() {
       let storedCanvasId: string | null = null;
       let fetchSuccess = false;
       try {
-        const prefsRes = await fetch('/api/settings/user-prefs');
+        const prefsRes = await fetch(getApiUrl('/api/settings/user-prefs'));
         if (prefsRes.ok) {
           const prefs = await prefsRes.json();
           storedSessId = prefs?.active_ai_sessions?.[workspaceId] ?? null;
@@ -1047,7 +1047,7 @@ export function AssistantRoot() {
           const patch: Record<string, any> = {};
           if (localSess) patch.active_ai_sessions = { [workspaceId]: localSess };
           if (localCanvas) patch.active_canvases = { [workspaceId]: localCanvas };
-          fetch('/api/settings/user-prefs', {
+          fetch(getApiUrl('/api/settings/user-prefs'), {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(patch),
@@ -1064,11 +1064,55 @@ export function AssistantRoot() {
         }
         // Persist active session back to Supabase if it was successful
         if (fetchSuccess) {
-          fetch('/api/settings/user-prefs', {
+          fetch(getApiUrl('/api/settings/user-prefs'), {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ active_ai_sessions: { [workspaceId]: activeSess.id } }),
           }).catch(() => {});
+
+          // ── Proactive AI greeting on first open (health check) ──────────────
+          const greetingKey = `minerva_ai_greeted_${workspaceId}_${activeSess.id}`;
+          if (!sessionStorage.getItem(greetingKey)) {
+            sessionStorage.setItem(greetingKey, '1');
+            try {
+              const greetRes = await fetch(getApiUrl('/api/ai/generate'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  prompt: `Tu es Minerva, l\'assistant SDR IA du workspace "${activeWorkspace?.name || 'Reach'}". Génère un message de bienvenue ultra-court (2 phrases max) qui confirme que tu es opérationnel et prêt à aider l\'équipe commerciale aujourd\'hui. Sois direct et motivant.`,
+                  systemPrompt: 'Tu es Minerva, assistant IA commercial autonome. Réponds uniquement avec le message de bienvenue, sans autre texte.',
+                }),
+              });
+              if (greetRes.ok) {
+                const greetData = await greetRes.json();
+                const greetText = greetData.text?.trim();
+                if (greetText) {
+                  const greetMsg = {
+                    id: `system_greeting_${Date.now()}`,
+                    role: 'assistant' as const,
+                    content: greetText,
+                    timestamp: new Date().toISOString(),
+                    sessionId: activeSess.id,
+                  };
+                  setMessages(prev => prev.length === 0 ? [greetMsg] : prev);
+
+                  // Also post to team group chat (team_messages table)
+                  try {
+                    const { createClient } = await import('@/lib/supabase/client');
+                    const supaClient = createClient();
+                    await supaClient.from('team_messages').insert({
+                      workspace_id: workspaceId,
+                      sender_id: 'minerva-ai',
+                      sender_name: 'Minerva IA',
+                      content: `🤖 Minerva en ligne — ${greetText}`,
+                      recipient_id: null,
+                      created_at: new Date().toISOString(),
+                    });
+                  } catch { /* silent — team chat is non-critical */ }
+                }
+              }
+            } catch { /* silent fallback */ }
+          }
         }
         const msgs = await dbGetMessages(activeSess.id);
         setMessages(msgs);
@@ -1132,13 +1176,13 @@ export function AssistantRoot() {
       setEditorTitle(canvasDoc.title);
       setEditorContent(canvasDoc.content);
       setEditorDocId(canvasDoc.id);
-      fetch('/api/settings/user-prefs', {
+      fetch(getApiUrl('/api/settings/user-prefs'), {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ active_canvases: { [workspaceId]: canvasDoc.id } }),
       }).catch(() => {});
     } else {
-      fetch('/api/settings/user-prefs', {
+      fetch(getApiUrl('/api/settings/user-prefs'), {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ active_canvases: { [workspaceId]: null } }),
@@ -1327,7 +1371,7 @@ export function AssistantRoot() {
     setCurrentSession(null);
     setMessages([]);
     // Clear active session from Supabase
-    fetch('/api/settings/user-prefs', {
+    fetch(getApiUrl('/api/settings/user-prefs'), {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ active_ai_sessions: { [workspaceId]: null } }),
@@ -1365,7 +1409,7 @@ export function AssistantRoot() {
       activeSess = await dbCreateSession(userId, workspaceId, sessTitle);
       setCurrentSession(activeSess);
       // Persist new active session to Supabase
-      fetch('/api/settings/user-prefs', {
+      fetch(getApiUrl('/api/settings/user-prefs'), {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ active_ai_sessions: { [workspaceId]: activeSess.id } }),
@@ -1881,7 +1925,7 @@ Règles :
 
   // Simulated Quick Actions
   const QUICK_PROMPTS = [
-    { label: '🌅 Daily Standup SDR & Conseils', key: 'daily_checkin' },
+    { label: 'Daily Standup SDR & Conseils', key: 'daily_checkin' },
     { label: t('assistant.chip.pipeline'), key: 'pipeline' },
     { label: t('assistant.chip.email'), key: 'email' },
     { label: t('assistant.chip.priority'), key: 'priority' },
@@ -2455,7 +2499,7 @@ Structure ta réponse avec :
                       <button
                         onClick={async () => {
                           setCurrentSession(sess);
-                          fetch('/api/settings/user-prefs', {
+                          fetch(getApiUrl('/api/settings/user-prefs'), {
                             method: 'PATCH',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ active_ai_sessions: { [workspaceId]: sess.id } }),
@@ -2489,7 +2533,7 @@ Structure ta réponse avec :
                           if (currentSession?.id === sess.id) {
                             setCurrentSession(null);
                             setMessages([]);
-                            fetch('/api/settings/user-prefs', {
+                            fetch(getApiUrl('/api/settings/user-prefs'), {
                               method: 'PATCH',
                               headers: { 'Content-Type': 'application/json' },
                               body: JSON.stringify({ active_ai_sessions: { [workspaceId]: null } }),
@@ -2559,7 +2603,7 @@ Structure ta réponse avec :
                             setEditorDocId('');
                             setEditorTitle("");
                             setEditorContent("");
-                            fetch('/api/settings/user-prefs', {
+                            fetch(getApiUrl('/api/settings/user-prefs'), {
                               method: 'PATCH',
                               headers: { 'Content-Type': 'application/json' },
                               body: JSON.stringify({ active_canvases: { [workspaceId]: null } }),
