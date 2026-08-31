@@ -1881,6 +1881,7 @@ Règles :
 
   // Simulated Quick Actions
   const QUICK_PROMPTS = [
+    { label: '🌅 Daily Standup SDR & Conseils', key: 'daily_checkin' },
     { label: t('assistant.chip.pipeline'), key: 'pipeline' },
     { label: t('assistant.chip.email'), key: 'email' },
     { label: t('assistant.chip.priority'), key: 'priority' },
@@ -1917,7 +1918,16 @@ Règles :
     const dateStr = new Date().toLocaleDateString(dateLoc, dateOptions);
 
     let finalPrompt = '';
-    if (locale === 'en') {
+    if (chip.key === 'daily_checkin') {
+      finalPrompt = `Génère le Daily Standup SDR & Bilan d'Équipe du jour (${dateStr}) pour le workspace "${wsName}".
+Données actuelles : ${totalLeads} prospects au total (${breakdownStr}), ${hotLeads.length} leads chauds, ${overdueLeads.length} relances en retard.
+
+Structure ta réponse avec :
+1. 📊 Bilan & Métriques de l'Équipe
+2. ⚠️ Alertes & Goulots d'étranglement
+3. 🎯 3 à 5 Conseils Tactiques & Coaching de Vente (recommandations concrètes sur l'approche et le closing)
+4. ⚡ Plan d'Action Immédiat en 1 clic avec des cartes \`\`\`minerva-action pour exécuter les priorités.`;
+    } else if (locale === 'en') {
       switch (chip.key) {
         case 'pipeline':
           finalPrompt = `Analyze my sales pipeline for the workspace "${wsName}". I have ${totalLeads} total prospects (${breakdownStr}). ${hotLeads.length} leads are "Hot". Give me a 5-point diagnosis and 3 priority actions to improve my conversion rate.`;
