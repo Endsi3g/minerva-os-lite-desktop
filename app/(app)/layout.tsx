@@ -793,7 +793,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
     { name: 'Accueil',     href: '/today',       icon: Home },
     { name: 'Trouver',     href: '/prospecting', icon: Search, badge: 'PROSPECTS' },
     { name: 'Contacter',   href: '/outreach',    icon: Send, subItems: [
-      { name: 'Séquences',  href: '/outreach',   icon: Send },
+      { name: 'Séquences',  href: '/outreach',   icon: Mail },
       { name: 'Appels',     href: '/calls',      icon: Phone },
       { name: 'Inbox',      href: '/inbox',      icon: Inbox },
     ]},
@@ -1110,26 +1110,42 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
               return (
                 <div key={item.name} className="space-y-[1px]">
                   {navLink}
-                  {hasSubItems && isExpanded && (
-                    <div className="pl-5 space-y-[2px] pt-0.5 border-l border-neutral-300 ml-4 my-1">
-                      {(item as any).subItems.map((sub: any) => {
-                        const isThisSubActive = pathname === sub.href || (sub.href !== '/outreach' && pathname.startsWith(sub.href));
-                        return (
-                          <Link
-                            key={sub.name}
-                            href={sub.href}
-                            className={cn(
-                              "flex items-center gap-2 px-2 py-1 rounded text-[11px] font-medium transition-colors",
-                              isThisSubActive
-                                ? "text-[#059669] font-bold bg-[#059669]/10"
-                                : "text-[#7a7a76] hover:text-[#26251e] hover:bg-[#e5e5e2]/40"
-                            )}
-                          >
-                            <sub.icon className="h-3 w-3 shrink-0 opacity-75" />
-                            <span className="truncate">{sub.name}</span>
-                          </Link>
-                        );
-                      })}
+                  {/* Animated sub-pages — always mounted, driven by CSS grid + opacity + translate */}
+                  {hasSubItems && (
+                    <div
+                      className={cn(
+                        'grid transition-all duration-200 ease-in-out',
+                        isExpanded ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
+                      )}
+                    >
+                      <div className="overflow-hidden">
+                        <div
+                          className={cn(
+                            'pl-5 space-y-[2px] pt-0.5 border-l border-neutral-300 ml-4 my-1 transition-transform duration-200 ease-in-out',
+                            isExpanded ? 'translate-y-0' : '-translate-y-1'
+                          )}
+                        >
+                          {(item as any).subItems.map((sub: any, subIdx: number) => {
+                            const isThisSubActive = pathname === sub.href || (sub.href !== '/outreach' && pathname.startsWith(sub.href));
+                            return (
+                              <Link
+                                key={sub.name}
+                                href={sub.href}
+                                style={{ transitionDelay: isExpanded ? `${subIdx * 35}ms` : '0ms' }}
+                                className={cn(
+                                  "flex items-center gap-2 px-2 py-1 rounded text-[11px] font-medium transition-all duration-150",
+                                  isThisSubActive
+                                    ? "text-[#059669] font-bold bg-[#059669]/10"
+                                    : "text-[#7a7a76] hover:text-[#26251e] hover:bg-[#e5e5e2]/40"
+                                )}
+                              >
+                                <sub.icon className="h-3 w-3 shrink-0 opacity-75" />
+                                <span className="truncate">{sub.name}</span>
+                              </Link>
+                            );
+                          })}
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>

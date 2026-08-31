@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useReach } from '@/lib/reach-context';
 import { getApiUrl } from '@/lib/api-helper';
@@ -9,12 +9,21 @@ import { toast } from 'sonner';
 import { useLanguage } from '@/lib/language-context';
 import {
   ChevronLeft, ChevronRight, Plus, X, Loader2, CalendarDays,
-  Clock, Users, CheckSquare, CalendarPlus, Check,
+  Clock, Users, CheckSquare, CalendarPlus, Check, Video, RefreshCw, ExternalLink
 } from 'lucide-react';
 import { RencontrerSubNav } from '@/app/(app)/_components/hub-nav/rencontrer-sub-nav';
 
 function ymd(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+interface GoogleCalendarEvent {
+  id: string;
+  summary: string;
+  start: string | null;
+  end: string | null;
+  hangoutLink: string | null;
+  location: string | null;
 }
 
 export function AgendaRoot() {
@@ -40,6 +49,11 @@ export function AgendaRoot() {
   const [selectedDate, setSelectedDate] = useState<string>(ymd(today));
   const [view, setView] = useState<'month' | 'week' | 'day'>('month');
 
+  // Google Calendar Integration State
+  const [googleEvents, setGoogleEvents] = useState<GoogleCalendarEvent[]>([]);
+  const [googleConnected, setGoogleConnected] = useState<boolean | null>(null);
+  const [syncingGoogle, setSyncingGoogle] = useState(false);
+
   // Booking modal
   const [showBook, setShowBook] = useState(false);
   const [title, setTitle] = useState('');
@@ -51,6 +65,42 @@ export function AgendaRoot() {
   const [addTodoist, setAddTodoist] = useState(false);
   const [booking, setBooking] = useState(false);
 
+  // Load Google Calendar events
+  const loadGoogleEvents = useCallback(async () => {
+    try {
+      const res = await fetch(getApiUrl('/api/google/calendar/today'));
+      if (res.ok) {
+        const data = await res.json();
+        setGoogleConnected(Boolean(data.connected));
+        setGoogleEvents(data.events || []);
+      }
+    } catch {
+      setGoogleConnected(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadGoogleEvents();
+  }, [loadGoogleEvents]);
+
+  const handleSyncGoogle = async () => {
+    setSyncingGoogle(true);
+    try {
+      const res = await fetch(getApiUrl('/api/google/calendar/sync'), { method: 'POST' });
+      const data = await res.json();
+      if (res.ok) {
+        toast.success(`Google Calendar synchronisé (${data.syncedCount || 0} rendez-vous mis à jour)`);
+        loadGoogleEvents();
+      } else {
+        toast.error(data.error || 'Erreur lors de la synchronisation Google Calendar');
+      }
+    } catch {
+      toast.error('Impossible de contacter le service Google Calendar');
+    } finally {
+      setSyncingGoogle(false);
+    }
+  };
+
   // Tasks grouped by day
   const tasksByDay = useMemo(() => {
     const map: Record<string, typeof tasks> = {};
@@ -61,6 +111,17 @@ export function AgendaRoot() {
     }
     return map;
   }, [tasks]);
+
+  // Google events grouped by day
+  const googleEventsByDay = useMemo(() => {
+    const map: Record<string, GoogleCalendarEvent[]> = {};
+    for (const ev of googleEvents) {
+      if (!ev.start) continue;
+      const key = ev.start.slice(0, 10);
+      (map[key] ||= []).push(ev);
+    }
+    return map;
+  }, [googleEvents]);
 
   // Build the month grid (Mon-first)
   const grid = useMemo(() => {
@@ -84,13 +145,7 @@ export function AgendaRoot() {
   };
 
   const selectedTasks = tasksByDay[selectedDate] || [];
-
-  // Meeting time is embedded in the task title as "HH:MM — ...". Parse it for placement.
-  const parseHour = (title: string): number | null => {
-    const m = title.match(/^(\d{1,2}):(\d{2})/);
-    return m ? parseInt(m[1], 10) : null;
-  };
-  const DAY_HOURS = Array.from({ length: 14 }, (_, i) => i + 7); // 7h → 20h
+  const selectedGoogleEvents = googleEventsByDay[selectedDate] || [];
 
   // Days of the week containing selectedDate (Mon-first)
   const weekDays = useMemo(() => {
@@ -136,7 +191,7 @@ export function AgendaRoot() {
       // 1. In-app task (Meeting) — instant, persisted
       addTask(`${time} — ${fullTitle}`, 'Meeting', selectedDate, lead?.id);
 
-      // 2. Google Calendar + Todoist (server-side side-effects)
+      // 2. Google Calendar + Todoist
       let sideRes: { google?: boolean; todoist?: boolean } = {};
       if (addGoogle || addTodoist) {
         const res = await fetch(getApiUrl('/api/agenda/book'), {
@@ -144,7 +199,7 @@ export function AgendaRoot() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             title: fullTitle,
-            description: lead ? `Rendez-vous lié au lead ${lead.businessName}${lead.city ? ` (${lead.city})` : ''}.` : '',
+            description: lead ? `Rendez-vous lié au prospect ${lead.businessName}${lead.city ? ` (${lead.city})` : ''}.` : '',
             startISO,
             endISO,
             addToGoogle: addGoogle,
@@ -173,11 +228,12 @@ export function AgendaRoot() {
       }
 
       const bits = [t('agenda.toast_success')];
-      if (sideRes.google) bits.push('Google Agenda');
+      if (sideRes.google) bits.push('Google Agenda synchronisé');
       if (sideRes.todoist) bits.push('Todoist');
       if (notifyTeam) bits.push('équipe notifiée');
       toast.success(bits.join(' · '));
       setShowBook(false);
+      loadGoogleEvents();
     } catch {
       toast.error(t('agenda.toast_error'));
     } finally {
@@ -194,7 +250,7 @@ export function AgendaRoot() {
         <div className="w-full px-3 sm:px-4 md:px-8 py-6 md:py-10 space-y-6 relative z-10">
 
         {/* Header */}
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex items-start justify-between gap-4 flex-wrap">
           <div className="space-y-1">
             <h1 className="text-2xl font-bold text-[#26251e] tracking-tight">
               {t('agenda.title')}
@@ -203,17 +259,33 @@ export function AgendaRoot() {
               {t('agenda.subtitle')}
             </p>
           </div>
-          <button
-            onClick={() => router.push(`/agenda/new?date=${selectedDate}`)}
-            className="flex items-center gap-1.5 px-4 h-9 rounded-lg bg-[#059669] hover:bg-[#047857] text-white text-xs font-bold transition-colors border-0 cursor-pointer"
-          >
-            <Plus className="h-3.5 w-3.5" />
-            {t('agenda.new_meeting')}
-          </button>
+          
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleSyncGoogle}
+              disabled={syncingGoogle}
+              className="flex items-center gap-1.5 px-3 h-9 rounded-lg border border-[#e5e5e0] bg-white hover:bg-[#f4f4f3] text-[#26251e] text-xs font-semibold transition-colors cursor-pointer disabled:opacity-50"
+              title="Synchroniser avec Google Calendar"
+            >
+              <RefreshCw className={cn("h-3.5 w-3.5 text-blue-600", syncingGoogle && "animate-spin")} />
+              <span>{syncingGoogle ? 'Synchronisation…' : 'Sync Google Calendar'}</span>
+              {googleConnected && (
+                <span className="w-2 h-2 rounded-full bg-emerald-500 ml-0.5" title="Google Calendar Connecté" />
+              )}
+            </button>
+
+            <button
+              onClick={() => router.push(`/agenda/new?date=${selectedDate}`)}
+              className="flex items-center gap-1.5 px-4 h-9 rounded-lg bg-[#059669] hover:bg-[#047857] text-white text-xs font-bold transition-colors border-0 cursor-pointer shadow-2xs"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              {t('agenda.new_meeting')}
+            </button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Calendar */}
+          {/* Calendar Grid */}
           <div className="lg:col-span-2 rounded-xl border border-[#e5e5e0] bg-white p-4">
             {/* Nav + view switcher */}
             <div className="flex items-center justify-between mb-4 gap-2">
@@ -238,7 +310,7 @@ export function AgendaRoot() {
                     key={v}
                     onClick={() => setView(v)}
                     className={cn('px-2.5 h-7 rounded-md text-[11px] font-bold transition-colors border-0 cursor-pointer',
-                      view === v ? 'bg-white text-[#26251e]' : 'text-[#807d72] hover:text-[#26251e] bg-transparent')}
+                      view === v ? 'bg-white text-[#26251e] shadow-2xs' : 'text-[#807d72] hover:text-[#26251e] bg-transparent')}
                   >
                     {v === 'month' ? t('analytics.month') : v === 'week' ? t('analytics.week') : t('analytics.day')}
                   </button>
@@ -247,96 +319,79 @@ export function AgendaRoot() {
             </div>
 
             {/* ── Month view ── */}
-            {view === 'month' && (<>
-            <div className="grid grid-cols-7 gap-1 mb-1">
-              {WEEKDAYS.map(d => (
-                <div key={d} className="text-[10px] font-bold uppercase tracking-wider text-[#807d72] text-center py-1">{d}</div>
-              ))}
-            </div>
-            <div className="grid grid-cols-7 gap-1">
-              {grid.map((date, i) => {
-                if (!date) return <div key={i} className="aspect-square" />;
-                const key = ymd(date);
-                const dayTasks = tasksByDay[key] || [];
-                const isToday = key === ymd(today);
-                const isSelected = key === selectedDate;
-                return (
-                  <button
-                    key={i}
-                    onClick={() => setSelectedDate(key)}
-                    onDoubleClick={() => openBooking(key)}
-                    className={cn(
-                      'aspect-square rounded-lg border p-1 flex flex-col items-center gap-0.5 transition-all text-left bg-transparent cursor-pointer',
-                      isSelected ? 'border-[#059669] bg-[#059669]/5' : 'border-transparent hover:border-[#e5e5e0] hover:bg-[#f4f4f3]',
-                    )}
-                  >
-                    <span className={cn(
-                      'text-xs font-semibold h-5 w-5 flex items-center justify-center rounded-full',
-                      isToday ? 'bg-[#059669] text-white' : 'text-[#26251e]',
-                    )}>
-                      {date.getDate()}
-                    </span>
-                    {dayTasks.length > 0 && (
-                      <div className="flex gap-0.5 flex-wrap justify-center mt-auto">
-                        {dayTasks.slice(0, 3).map((t, j) => (
-                          <span key={j} className="h-1.5 w-1.5 rounded-full bg-[#059669]" />
-                        ))}
-                      </div>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-            </>)}
-
-            {/* ── Week view ── */}
-            {view === 'week' && (
-              <div className="overflow-x-auto">
-                <div className="grid grid-cols-[40px_repeat(7,minmax(0,1fr))] gap-px min-w-[560px]">
-                  <div />
-                  {weekDays.map((d, i) => {
-                    const key = ymd(d);
+            {view === 'month' && (
+              <>
+                <div className="grid grid-cols-7 gap-1 mb-1">
+                  {WEEKDAYS.map(d => (
+                    <div key={d} className="text-[10px] font-bold uppercase tracking-wider text-[#807d72] text-center py-1">{d}</div>
+                  ))}
+                </div>
+                <div className="grid grid-cols-7 gap-1">
+                  {grid.map((date, i) => {
+                    if (!date) return <div key={i} className="aspect-square" />;
+                    const key = ymd(date);
+                    const dayTasks = tasksByDay[key] || [];
+                    const dayGcal = googleEventsByDay[key] || [];
+                    const isSelected = key === selectedDate;
                     const isToday = key === ymd(today);
                     return (
-                      <button key={i} onClick={() => { setSelectedDate(key); setView('day'); }}
-                        className={cn('text-center py-1.5 rounded-md border-0 bg-transparent cursor-pointer', isToday ? 'bg-[#059669]/10' : 'hover:bg-[#f4f4f3]')}>
-                        <div className="text-[10px] font-bold uppercase tracking-wider text-[#807d72]">{WEEKDAYS[i]}</div>
-                        <div className={cn('text-xs font-bold', isToday ? 'text-[#059669]' : 'text-[#26251e]')}>{d.getDate()}</div>
+                      <button
+                        key={key}
+                        onClick={() => setSelectedDate(key)}
+                        className={cn(
+                          'aspect-square rounded-lg p-1.5 flex flex-col justify-between text-left transition-all border cursor-pointer',
+                          isSelected ? 'border-[#059669] bg-[#059669]/10' : isToday ? 'border-[#059669]/40 bg-[#fafaf8]' : 'border-[#e5e5e0] hover:bg-[#f4f4f3] bg-white'
+                        )}
+                      >
+                        <span className={cn('text-[11px] font-bold', isToday ? 'text-[#059669]' : 'text-[#26251e]')}>
+                          {date.getDate()}
+                        </span>
+                        <div className="flex gap-1 flex-wrap">
+                          {dayTasks.length > 0 && (
+                            <span className="h-1.5 w-1.5 rounded-full bg-[#059669]" title={`${dayTasks.length} RDV Minerva`} />
+                          )}
+                          {dayGcal.length > 0 && (
+                            <span className="h-1.5 w-1.5 rounded-full bg-blue-500" title={`${dayGcal.length} événement Google Calendar`} />
+                          )}
+                        </div>
                       </button>
                     );
                   })}
-                  {DAY_HOURS.map(hour => (
-                    <React.Fragment key={hour}>
-                      <div className="text-[9px] text-[#807d72] text-right pr-1 py-1 border-t border-[#e5e5e0]">{hour}h</div>
-                      {weekDays.map((d, di) => {
-                        const key = ymd(d);
-                        const slotTasks = (tasksByDay[key] || []).filter(t => parseHour(t.title) === hour);
-                        return (
-                          <div key={di} onClick={() => openBooking(key)}
-                            className="min-h-[34px] border-t border-l border-[#e5e5e0] p-0.5 space-y-0.5 cursor-pointer hover:bg-[#f4f4f3]/60">
-                            {slotTasks.map(t => (
-                              <div key={t.id} className="text-[9px] font-semibold text-white bg-[#059669] rounded px-1 py-0.5 truncate">{t.title}</div>
-                            ))}
-                          </div>
-                        );
-                      })}
-                    </React.Fragment>
-                  ))}
                 </div>
-              </div>
+              </>
             )}
 
-            {/* ── Day view ── */}
-            {view === 'day' && (
-              <div className="space-y-px">
-                {DAY_HOURS.map(hour => {
-                  const slotTasks = (tasksByDay[selectedDate] || []).filter(t => parseHour(t.title) === hour);
+            {/* ── Week view ── */}
+            {view === 'week' && (
+              <div className="grid grid-cols-7 gap-2">
+                {weekDays.map(d => {
+                  const key = ymd(d);
+                  const dayTasks = tasksByDay[key] || [];
+                  const dayGcal = googleEventsByDay[key] || [];
+                  const isSelected = key === selectedDate;
                   return (
-                    <div key={hour} className="grid grid-cols-[48px_minmax(0,1fr)] gap-2 border-t border-[#e5e5e0]">
-                      <div className="text-[10px] text-[#807d72] text-right pr-1 py-2">{hour}h</div>
-                      <div onClick={() => openBooking(selectedDate)} className="min-h-[40px] py-1 space-y-1 cursor-pointer hover:bg-[#f4f4f3]/60 rounded">
-                        {slotTasks.map(t => (
-                          <div key={t.id} className="text-[11px] font-semibold text-white bg-[#059669] rounded-md px-2 py-1">{t.title}</div>
+                    <div
+                      key={key}
+                      onClick={() => setSelectedDate(key)}
+                      className={cn(
+                        'min-h-[220px] rounded-lg p-2 border flex flex-col gap-1.5 cursor-pointer transition-colors',
+                        isSelected ? 'border-[#059669] bg-[#059669]/5' : 'border-[#e5e5e0] hover:bg-[#f4f4f3] bg-white'
+                      )}
+                    >
+                      <div className="text-center pb-1 border-b border-[#e5e5e0]">
+                        <p className="text-[10px] font-bold uppercase text-[#807d72]">{WEEKDAYS[(d.getDay() + 6) % 7]}</p>
+                        <p className="text-xs font-bold text-[#26251e]">{d.getDate()}</p>
+                      </div>
+                      <div className="space-y-1 overflow-y-auto flex-1 text-[10px]">
+                        {dayGcal.map(ev => (
+                          <div key={ev.id} className="p-1 rounded bg-blue-50 border border-blue-200 text-blue-800 truncate font-medium">
+                            {ev.summary}
+                          </div>
+                        ))}
+                        {dayTasks.map(t => (
+                          <div key={t.id} className="p-1 rounded bg-[#059669]/10 border border-[#059669]/20 text-[#059669] truncate font-medium">
+                            {t.title}
+                          </div>
                         ))}
                       </div>
                     </div>
@@ -344,9 +399,58 @@ export function AgendaRoot() {
                 })}
               </div>
             )}
+
+            {/* ── Day view ── */}
+            {view === 'day' && (
+              <div className="space-y-3 py-2">
+                <div className="flex items-center justify-between pb-2 border-b border-[#e5e5e0]">
+                  <p className="text-xs font-bold text-[#26251e]">
+                    {new Date(`${selectedDate}T00:00`).toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                  </p>
+                </div>
+                {selectedTasks.length === 0 && selectedGoogleEvents.length === 0 ? (
+                  <p className="text-xs text-neutral-500 py-6 text-center">Aucun rendez-vous sur cette journée.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {selectedGoogleEvents.map(ev => (
+                      <div key={ev.id} className="flex items-center justify-between p-3 rounded-lg bg-blue-50/70 border border-blue-200">
+                        <div className="flex items-center gap-2.5">
+                          <CalendarDays className="h-4 w-4 text-blue-600 shrink-0" />
+                          <div>
+                            <p className="text-xs font-bold text-blue-950">{ev.summary}</p>
+                            <p className="text-[10px] text-blue-700">Google Calendar</p>
+                          </div>
+                        </div>
+                        {ev.hangoutLink && (
+                          <a
+                            href={ev.hangoutLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-[11px] font-bold text-blue-700 hover:underline"
+                          >
+                            <Video className="h-3 w-3" /> Meet <ExternalLink className="h-2.5 w-2.5" />
+                          </a>
+                        )}
+                      </div>
+                    ))}
+                    {selectedTasks.map(t => (
+                      <div key={t.id} className="flex items-center justify-between p-3 rounded-lg bg-[#fafaf8] border border-[#e5e5e0]">
+                        <div className="flex items-center gap-2.5">
+                          <Clock className="h-4 w-4 text-[#059669] shrink-0" />
+                          <div>
+                            <p className="text-xs font-bold text-[#26251e]">{t.title}</p>
+                            <p className="text-[10px] text-neutral-500">{t.category}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
-          {/* Selected day detail */}
+          {/* Selected Day Sidebar */}
           <div className="rounded-xl border border-[#e5e5e0] bg-white p-4 space-y-3">
             <div className="flex items-center justify-between">
               <p className="text-xs font-bold text-[#26251e]">
@@ -355,16 +459,45 @@ export function AgendaRoot() {
               <button
                 onClick={() => openBooking(selectedDate)}
                 className="h-7 w-7 flex items-center justify-center rounded-lg bg-[#059669]/10 text-[#059669] hover:bg-[#059669]/20 transition-colors border-0 cursor-pointer"
+                title="Ajouter un RDV"
               >
                 <Plus className="h-4 w-4" />
               </button>
             </div>
-            {selectedTasks.length === 0 ? (
+
+            {selectedTasks.length === 0 && selectedGoogleEvents.length === 0 ? (
               <div className="py-10 text-center text-xs text-[#807d72]">
                 {t('agenda.no_meetings')}
               </div>
             ) : (
               <div className="space-y-2">
+                {/* Google events first */}
+                {selectedGoogleEvents.map(ev => (
+                  <div key={ev.id} className="flex items-start justify-between gap-2 p-2.5 rounded-lg border border-blue-200 bg-blue-50/50">
+                    <div className="flex items-start gap-2 min-w-0">
+                      <div className="h-6 w-6 rounded flex items-center justify-center shrink-0 bg-blue-100 text-blue-700 mt-0.5">
+                        <CalendarDays className="h-3.5 w-3.5" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs font-semibold leading-snug text-blue-950 truncate">{ev.summary}</p>
+                        <p className="text-[10px] text-blue-700 mt-0.5">Google Agenda</p>
+                      </div>
+                    </div>
+                    {ev.hangoutLink && (
+                      <a
+                        href={ev.hangoutLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-1 text-blue-700 hover:bg-blue-100 rounded"
+                        title="Rejoindre l'appel Google Meet"
+                      >
+                        <Video className="h-3.5 w-3.5" />
+                      </a>
+                    )}
+                  </div>
+                ))}
+
+                {/* CRM Tasks */}
                 {selectedTasks.map(taskItem => (
                   <div key={taskItem.id} className="flex items-start gap-2.5 p-2.5 rounded-lg border border-[#e5e5e0] bg-white">
                     <div className="h-7 w-7 rounded-lg flex items-center justify-center shrink-0 bg-[#059669]/10 text-[#059669]">
@@ -384,7 +517,7 @@ export function AgendaRoot() {
 
       {/* Booking modal */}
       {showBook && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={() => setShowBook(false)}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4" onClick={() => setShowBook(false)}>
           <div
             className="bg-white rounded-2xl shadow-xl w-[460px] max-w-[95vw] p-6 space-y-4 animate-in zoom-in-95 duration-150 border border-[#e5e5e0]"
             onClick={e => e.stopPropagation()}
@@ -404,22 +537,22 @@ export function AgendaRoot() {
                   onChange={e => setTitle(e.target.value)}
                   placeholder={t('agenda.meeting_title_placeholder')}
                   autoFocus
-                  className="w-full h-9 text-xs border border-[#e5e5e0] rounded-lg px-3 focus:outline-none focus:ring-1 focus:ring-[#059669] bg-white text-[#26251e]"
+                  className="w-full h-9 text-xs border border-[#e5e5e0] rounded-lg px-3 focus:outline-hidden focus:ring-1 focus:ring-[#059669] bg-white text-[#26251e]"
                 />
               </div>
 
               <div className="grid grid-cols-3 gap-2">
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-bold uppercase tracking-wider text-[#807d72]">{t('agenda.meeting_date')}</label>
-                  <input type="date" value={selectedDate} onChange={e => setSelectedDate(e.target.value)} className="w-full h-9 text-xs border border-[#e5e5e0] rounded-lg px-2 focus:outline-none focus:ring-1 focus:ring-[#059669] bg-white text-[#26251e]" />
+                  <input type="date" value={selectedDate} onChange={e => setSelectedDate(e.target.value)} className="w-full h-9 text-xs border border-[#e5e5e0] rounded-lg px-2 focus:outline-hidden focus:ring-1 focus:ring-[#059669] bg-white text-[#26251e]" />
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-bold uppercase tracking-wider text-[#807d72]">{t('agenda.meeting_time')}</label>
-                  <input type="time" value={time} onChange={e => setTime(e.target.value)} className="w-full h-9 text-xs border border-[#e5e5e0] rounded-lg px-2 focus:outline-none focus:ring-1 focus:ring-[#059669] bg-white text-[#26251e]" />
+                  <input type="time" value={time} onChange={e => setTime(e.target.value)} className="w-full h-9 text-xs border border-[#e5e5e0] rounded-lg px-2 focus:outline-hidden focus:ring-1 focus:ring-[#059669] bg-white text-[#26251e]" />
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-bold uppercase tracking-wider text-[#807d72]">{t('agenda.meeting_duration')}</label>
-                  <select value={duration} onChange={e => setDuration(Number(e.target.value))} className="w-full h-9 text-xs border border-[#e5e5e0] rounded-lg px-2 focus:outline-none focus:ring-1 focus:ring-[#059669] bg-white text-[#26251e]">
+                  <select value={duration} onChange={e => setDuration(Number(e.target.value))} className="w-full h-9 text-xs border border-[#e5e5e0] rounded-lg px-2 focus:outline-hidden focus:ring-1 focus:ring-[#059669] bg-white text-[#26251e]">
                     <option value={30}>30 min</option>
                     <option value={60}>1 h</option>
                     <option value={90}>1 h 30</option>
@@ -430,7 +563,7 @@ export function AgendaRoot() {
 
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold uppercase tracking-wider text-[#807d72]">{t('agenda.meeting_lead')}</label>
-                <select value={leadId} onChange={e => setLeadId(e.target.value)} className="w-full h-9 text-xs border border-[#e5e5e0] rounded-lg px-2 focus:outline-none focus:ring-1 focus:ring-[#059669] bg-white text-[#26251e]">
+                <select value={leadId} onChange={e => setLeadId(e.target.value)} className="w-full h-9 text-xs border border-[#e5e5e0] rounded-lg px-2 focus:outline-hidden focus:ring-1 focus:ring-[#059669] bg-white text-[#26251e]">
                   <option value="">{t('agenda.meeting_no_lead')}</option>
                   {leads.slice(0, 100).map(l => (
                     <option key={l.id} value={l.id}>{l.businessName}</option>

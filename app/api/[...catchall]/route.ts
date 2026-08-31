@@ -421,13 +421,19 @@ function matchPath(requestPath: string, patterns: string[]): { module: any; para
   return null;
 }
 
-async function handleRequest(method: string, req: NextRequest, rawSegments?: string[] | null) {
-  let segments = rawSegments;
-  if (!Array.isArray(segments) || segments.length === 0) {
-    const pathname = req.nextUrl?.pathname || '';
-    segments = pathname.replace(/^\/?api\/?/, '').split('/').filter(Boolean);
-  }
+async function getSegments(req: NextRequest, paramsArg?: any): Promise<string[]> {
+  try {
+    const resolved = paramsArg && typeof paramsArg.then === 'function' ? await paramsArg : paramsArg;
+    if (resolved?.catchall && Array.isArray(resolved.catchall) && resolved.catchall.length > 0) {
+      return resolved.catchall;
+    }
+  } catch {}
+  const pathname = req.nextUrl?.pathname || new URL(req.url, 'http://localhost').pathname;
+  return pathname.replace(/^\/?api\/?/, '').split('?')[0].split('/').filter(Boolean);
+}
 
+async function handleRequest(method: string, req: NextRequest, paramsArg?: any) {
+  const segments = await getSegments(req, paramsArg);
   const requestPath = segments.join('/');
   const patterns = Object.keys(routes);
   
@@ -449,27 +455,22 @@ async function handleRequest(method: string, req: NextRequest, rawSegments?: str
   }
 }
 
-export async function GET(req: NextRequest, { params }: { params: Promise<{ catchall: string[] }> }) {
-  const p = await params.catch(() => ({ catchall: [] }));
-  return handleRequest('GET', req, p?.catchall);
+export async function GET(req: NextRequest, { params }: { params?: any }) {
+  return handleRequest('GET', req, params);
 }
 
-export async function POST(req: NextRequest, { params }: { params: Promise<{ catchall: string[] }> }) {
-  const p = await params.catch(() => ({ catchall: [] }));
-  return handleRequest('POST', req, p?.catchall);
+export async function POST(req: NextRequest, { params }: { params?: any }) {
+  return handleRequest('POST', req, params);
 }
 
-export async function PUT(req: NextRequest, { params }: { params: Promise<{ catchall: string[] }> }) {
-  const p = await params.catch(() => ({ catchall: [] }));
-  return handleRequest('PUT', req, p?.catchall);
+export async function PUT(req: NextRequest, { params }: { params?: any }) {
+  return handleRequest('PUT', req, params);
 }
 
-export async function PATCH(req: NextRequest, { params }: { params: Promise<{ catchall: string[] }> }) {
-  const p = await params.catch(() => ({ catchall: [] }));
-  return handleRequest('PATCH', req, p?.catchall);
+export async function PATCH(req: NextRequest, { params }: { params?: any }) {
+  return handleRequest('PATCH', req, params);
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: Promise<{ catchall: string[] }> }) {
-  const p = await params.catch(() => ({ catchall: [] }));
-  return handleRequest('DELETE', req, p?.catchall);
+export async function DELETE(req: NextRequest, { params }: { params?: any }) {
+  return handleRequest('DELETE', req, params);
 }

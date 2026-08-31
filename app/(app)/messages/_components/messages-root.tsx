@@ -49,7 +49,7 @@ import {
 } from '@/components/ui/attachment';
 import {
   Send, Search, Users, MessageCircle, Smile, ImageIcon, X, FileText, Mic, Square, Paperclip, Loader2,
-  MoreHorizontal, Pencil, Trash2, Check, Menu,
+  MoreHorizontal, Pencil, Trash2, Check, Menu, Bot,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
@@ -123,17 +123,28 @@ async function compressImage(dataUrl: string, maxWidth = 800, quality = 0.7): Pr
   });
 }
 
-// Avatar (maison — génère des initiales sur fond coloré à partir du nom, ou affiche une image)
+// Avatar (maison — génère des initiales sur fond coloré à partir du nom, ou affiche une image / icône IA)
 function UserAvatar({ name, src, size = 'md' }: { name: string; src?: string | null; size?: 'sm' | 'md' }) {
   const sz = size === 'sm' ? 'w-7 h-7 text-[10px]' : 'w-9 h-9 text-xs';
-  const hash = name.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
-  const colors = ['bg-indigo-500','bg-emerald-500','bg-sky-500','bg-rose-500','bg-amber-500','bg-violet-500'];
-  const color = colors[hash % colors.length];
+  const isAi = name.toLowerCase().includes('minerva') || name.toLowerCase().includes('copilote') || name.toLowerCase().includes('ia');
+
+  if (isAi) {
+    return (
+      <div className={cn(sz, 'rounded-full bg-[#f4f4f3] border border-[#e5e5e0] flex items-center justify-center text-[#26251e] shrink-0')}>
+        <Bot className={size === 'sm' ? 'w-3.5 h-3.5 text-[#059669]' : 'w-4 h-4 text-[#059669]'} />
+      </div>
+    );
+  }
 
   if (src) {
     // eslint-disable-next-line @next/next/no-img-element
     return <img src={src} alt={name} className={cn(sz, 'rounded-full object-cover shrink-0')} />;
   }
+
+  const hash = name.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
+  const colors = ['bg-indigo-500','bg-emerald-500','bg-sky-500','bg-rose-500','bg-amber-500','bg-violet-500'];
+  const color = colors[hash % colors.length];
+
   return (
     <div className={cn(sz, color, 'rounded-full flex items-center justify-center text-white font-bold shrink-0')}>
       {initials(name)}
@@ -348,16 +359,23 @@ export default function MessagesRoot() {
         status: string;
         profile?: { full_name: string | null; avatar_base64?: string | null } | null;
       }>;
-      setMembers(
-        raw
-          .filter((m) => m.member_user_id && m.status === 'active')
-          .map((m) => ({
-            id: m.member_user_id!,
-            email: m.email,
-            name: m.profile?.full_name || m.email.split('@')[0],
-            avatarBase64: m.profile?.avatar_base64 ?? null,
-          }))
-      );
+      const humanMembers = raw
+        .filter((m) => m.member_user_id && m.status === 'active')
+        .map((m) => ({
+          id: m.member_user_id!,
+          email: m.email,
+          name: m.profile?.full_name || m.email.split('@')[0],
+          avatarBase64: m.profile?.avatar_base64 ?? null,
+        }));
+
+      const minervaMember: Member = {
+        id: 'minerva-ai',
+        email: 'copilote@minerva.ai',
+        name: 'Minerva (Copilote IA)',
+        avatarBase64: null,
+      };
+
+      setMembers([minervaMember, ...humanMembers]);
     } catch (err) {
       console.error('Failed to load team members:', err);
     }
@@ -512,6 +530,71 @@ export default function MessagesRoot() {
         toast.error(`Échec de l'envoi : ${error.message}`);
       } else {
         setMessages((prev) => prev.filter((m) => m.id !== optimisticId));
+      }
+
+      // AI automatic reply when DMing Minerva or @mentioning in group
+      if (selectedConversation === 'minerva-ai') {
+        (async () => {
+          try {
+            const aiRes = await fetch(getApiUrl('/api/ai/generate'), {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                prompt: content,
+                systemPrompt: `Tu es Minerva, le copilote commercial et assistant SDR IA de l'équipe pour le workspace "${activeWorkspace.name}". Tu réponds directement en messagerie instantanée à ${currentUserName}. Réponds de façon concise, précise, proactive et directe en français.`,
+              }),
+            });
+            if (aiRes.ok) {
+              const aiData = await aiRes.json();
+              const replyText = aiData.text?.trim();
+              if (replyText) {
+                const replyIso = new Date().toISOString();
+                const supa = createClient();
+                await supa.from('team_messages').insert({
+                  workspace_id: activeWorkspace.id,
+                  sender_id: 'minerva-ai',
+                  sender_name: 'Minerva (Copilote IA)',
+                  content: replyText,
+                  recipient_id: currentUserId,
+                  created_at: replyIso,
+                });
+              }
+            }
+          } catch (aiErr) {
+            console.error('Minerva AI reply failed:', aiErr);
+          }
+        })();
+      } else if (selectedConversation === 'group' && (content.toLowerCase().includes('@minerva') || content.toLowerCase().includes('@ia'))) {
+        (async () => {
+          try {
+            const aiRes = await fetch(getApiUrl('/api/ai/generate'), {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                prompt: content,
+                systemPrompt: `Tu es Minerva, le copilote commercial IA intervenant dans le chat d'équipe du workspace "${activeWorkspace.name}". ${currentUserName} t'a mentionné. Réponds brièvement et clairement à l'équipe en français.`,
+              }),
+            });
+            if (aiRes.ok) {
+              const aiData = await aiRes.json();
+              const replyText = aiData.text?.trim();
+              if (replyText) {
+                const replyIso = new Date().toISOString();
+                const supa = createClient();
+                await supa.from('team_messages').insert({
+                  workspace_id: activeWorkspace.id,
+                  sender_id: 'minerva-ai',
+                  sender_name: 'Minerva (Copilote IA)',
+                  content: replyText,
+                  recipient_id: null,
+                  created_at: replyIso,
+                });
+              }
+            }
+          } catch (aiErr) {
+            console.error('Minerva AI group reply failed:', aiErr);
+          }
+        })();
       }
     } catch (err: any) {
       console.error(err);

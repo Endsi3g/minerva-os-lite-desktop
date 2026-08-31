@@ -8,10 +8,13 @@ export async function proxy(request: NextRequest) {
   if (
     url.pathname.startsWith('/_next') ||
     url.pathname === '/favicon.ico' ||
+    url.pathname === '/manifest.json' ||
+    url.pathname.endsWith('.json') ||
     url.pathname.endsWith('.png') ||
     url.pathname.endsWith('.jpg') ||
     url.pathname.endsWith('.svg') ||
-    url.pathname.startsWith('/api/') // Let API routes handle their own authentication/redirect logic
+    url.pathname.endsWith('.ico') ||
+    url.pathname.startsWith('/api') // Let API routes handle their own authentication/redirect logic
   ) {
     return NextResponse.next();
   }

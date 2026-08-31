@@ -21,6 +21,17 @@ interface ChangelogVersion {
 
 const versions: ChangelogVersion[] = [
   {
+    version: 'v9.9.0',
+    date: '31 août 2026 · 15h45',
+    title: 'Minerva IA Membre de Chat DM, Agenda Google Calendar & Animation Sidebar',
+    highlights: [
+      { text: "Minerva IA dans le Chat d'Équipe (/messages) : Minerva apparaît comme membre d'équipe par défaut. Envoi de messages en DM avec réponses Gemini instantanées, et réponses intelligentes aux @mentions dans le chat de groupe." },
+      { text: "Agenda connecté à Google Calendar (/agenda) : Synchronisation 1-clic avec Google Calendar, affichage des événements de rendez-vous en direct, vue jour détaillée et liens directs Google Meet." },
+      { text: "Sous-pages Sidebar Animées & Icône Séquences : Animation fluide CSS (hauteur, opacité, translation verticale) lors du déploiement des sous-pages et nouvelle icône Mail pour différencier Séquences de Contacter." },
+      { text: "Résolution 404 & Middleware Assets : Biais de résolution segment automatique dans le routeur catch-all, contournement middleware pour /manifest.json et suppression des erreurs de syntaxe manifest." },
+    ]
+  },
+  {
     version: 'v9.8.0',
     date: '31 août 2026 · 15h30',
     title: 'Brouillons Éditables, Sidebar Toggle Chevron, Greeting IA & Fixes Endpoints',
