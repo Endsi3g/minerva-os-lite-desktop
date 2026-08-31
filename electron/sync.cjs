@@ -371,7 +371,7 @@ async function syncPush() {
   const pendingRoutePlans = await db.all("SELECT * FROM route_plans WHERE sync_status != 'synced'");
   for (const plan of pendingRoutePlans) {
     if (plan.sync_status === 'pending_insert') {
-      const { id, workspace_id, user_id, campaign_id, lead_ids, distance_km, duration_min, status, created_at } = plan;
+      const { id, workspace_id, user_id, campaign_id, lead_ids, distance_km, duration_min, status, channel, created_at } = plan;
       const { error } = await supabase.from('route_plans').upsert({
         id,
         workspace_id: workspace_id || null,
@@ -381,6 +381,7 @@ async function syncPush() {
         distance_km,
         duration_min,
         status,
+        channel: channel || 'field',
         created_at
       });
       if (!error) {
@@ -414,8 +415,8 @@ async function syncPush() {
   const pendingVisits = await db.all("SELECT * FROM field_visits WHERE sync_status != 'synced'");
   for (const visit of pendingVisits) {
     if (visit.sync_status === 'pending_insert' || visit.sync_status === 'pending_update') {
-      const { id, route_plan_id, lead_id, workspace_id, outcome, notes, visited_at, meeting_datetime, follow_up_added, deal_created, created_at } = visit;
-      
+      const { id, route_plan_id, lead_id, workspace_id, outcome, notes, visited_at, meeting_datetime, follow_up_added, deal_created, channel, created_at } = visit;
+
       const { error } = await supabase.from('field_visits').upsert({
         id,
         route_plan_id,
@@ -427,6 +428,7 @@ async function syncPush() {
         meeting_datetime: meeting_datetime || null,
         follow_up_added: follow_up_added === 1,
         deal_created: deal_created === 1,
+        channel: channel || 'field',
         created_at
       });
 
@@ -563,6 +565,38 @@ async function syncPush() {
         await db.run("DELETE FROM field_visits WHERE id = ?", [visit.id]);
       } else {
         console.error("Error pushing delete for field_visit", visit.id, error);
+      }
+    }
+  }
+
+  // 7b. Script Templates Push
+  const pendingTemplates = await db.all("SELECT * FROM script_templates WHERE sync_status != 'synced'");
+  for (const tpl of pendingTemplates) {
+    if (tpl.sync_status === 'pending_insert' || tpl.sync_status === 'pending_update') {
+      const { id, workspace_id, owner_user_id, title, content, format, source, is_shared, file_url, created_at } = tpl;
+      const { error } = await supabase.from('script_templates').upsert({
+        id,
+        workspace_id,
+        owner_user_id: owner_user_id || currentUserId,
+        title,
+        content,
+        format: format || 'text',
+        source: source || 'manual',
+        is_shared: is_shared === 1,
+        file_url: file_url || null,
+        created_at
+      });
+      if (!error) {
+        await db.run("UPDATE script_templates SET sync_status = 'synced' WHERE id = ?", [id]);
+      } else {
+        console.error("Error pushing script_template", id, error);
+      }
+    } else if (tpl.sync_status === 'pending_delete') {
+      const { error } = await supabase.from('script_templates').delete().eq('id', tpl.id);
+      if (!error) {
+        await db.run("DELETE FROM script_templates WHERE id = ?", [tpl.id]);
+      } else {
+        console.error("Error pushing delete for script_template", tpl.id, error);
       }
     }
   }
@@ -914,22 +948,22 @@ async function syncPull() {
     const localPlansMap = new Map(localPlansRows.map(p => [p.id, p]));
 
     for (const plan of remoteRoutePlans) {
-      const { id, workspace_id, user_id, campaign_id, lead_ids, distance_km, duration_min, status, created_at, updated_at } = plan;
+      const { id, workspace_id, user_id, campaign_id, lead_ids, distance_km, duration_min, status, channel, created_at, updated_at } = plan;
       const localPlan = localPlansMap.get(id);
 
       if (!localPlan) {
-        await db.run(`INSERT INTO route_plans (id, workspace_id, user_id, campaign_id, lead_ids, distance_km, duration_min, status, created_at, updated_at, sync_status)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced')`,
-          [id, workspace_id, user_id, campaign_id, JSON.stringify(lead_ids || []), distance_km, duration_min, status, created_at, updated_at]
+        await db.run(`INSERT INTO route_plans (id, workspace_id, user_id, campaign_id, lead_ids, distance_km, duration_min, status, channel, created_at, updated_at, sync_status)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced')`,
+          [id, workspace_id, user_id, campaign_id, JSON.stringify(lead_ids || []), distance_km, duration_min, status, channel || 'field', created_at, updated_at]
         );
       } else {
         const isRemoteNewer = new Date(updated_at) > new Date(localPlan.updated_at || 0);
         const canOverwrite = localPlan.sync_status === 'synced' || isRemoteNewer;
         if (canOverwrite) {
           await db.run(`UPDATE route_plans SET
-            workspace_id = ?, campaign_id = ?, lead_ids = ?, distance_km = ?, duration_min = ?, status = ?, updated_at = ?, sync_status = 'synced'
+            workspace_id = ?, campaign_id = ?, lead_ids = ?, distance_km = ?, duration_min = ?, status = ?, channel = ?, updated_at = ?, sync_status = 'synced'
             WHERE id = ?`,
-            [workspace_id, campaign_id, JSON.stringify(lead_ids || []), distance_km, duration_min, status, updated_at, id]
+            [workspace_id, campaign_id, JSON.stringify(lead_ids || []), distance_km, duration_min, status, channel || 'field', updated_at, id]
           );
         }
       }
@@ -947,25 +981,59 @@ async function syncPull() {
     const localVisitsMap = new Map(localVisitsRows.map(v => [v.id, v]));
 
     for (const visit of remoteFieldVisits) {
-      const { id, route_plan_id, lead_id, workspace_id, outcome, notes, visited_at, meeting_datetime, follow_up_added, deal_created, created_at, updated_at } = visit;
+      const { id, route_plan_id, lead_id, workspace_id, outcome, notes, visited_at, meeting_datetime, follow_up_added, deal_created, channel, created_at, updated_at } = visit;
       const localVisit = localVisitsMap.get(id);
 
       const followUpAddedInt = follow_up_added ? 1 : 0;
       const dealCreatedInt = deal_created ? 1 : 0;
 
       if (!localVisit) {
-        await db.run(`INSERT INTO field_visits (id, route_plan_id, lead_id, workspace_id, outcome, notes, visited_at, meeting_datetime, follow_up_added, deal_created, created_at, updated_at, sync_status)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced')`,
-          [id, route_plan_id, lead_id, workspace_id, outcome, notes, visited_at, meeting_datetime, followUpAddedInt, dealCreatedInt, created_at, updated_at]
+        await db.run(`INSERT INTO field_visits (id, route_plan_id, lead_id, workspace_id, outcome, notes, visited_at, meeting_datetime, follow_up_added, deal_created, channel, created_at, updated_at, sync_status)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced')`,
+          [id, route_plan_id, lead_id, workspace_id, outcome, notes, visited_at, meeting_datetime, followUpAddedInt, dealCreatedInt, channel || 'field', created_at, updated_at]
         );
       } else {
         const isRemoteNewer = new Date(updated_at) > new Date(localVisit.updated_at || 0);
         const canOverwrite = localVisit.sync_status === 'synced' || isRemoteNewer;
         if (canOverwrite) {
           await db.run(`UPDATE field_visits SET
-            route_plan_id = ?, lead_id = ?, workspace_id = ?, outcome = ?, notes = ?, visited_at = ?, meeting_datetime = ?, follow_up_added = ?, deal_created = ?, updated_at = ?, sync_status = 'synced'
+            route_plan_id = ?, lead_id = ?, workspace_id = ?, outcome = ?, notes = ?, visited_at = ?, meeting_datetime = ?, follow_up_added = ?, deal_created = ?, channel = ?, updated_at = ?, sync_status = 'synced'
             WHERE id = ?`,
-            [route_plan_id, lead_id, workspace_id, outcome, notes, visited_at, meeting_datetime, followUpAddedInt, dealCreatedInt, updated_at, id]
+            [route_plan_id, lead_id, workspace_id, outcome, notes, visited_at, meeting_datetime, followUpAddedInt, dealCreatedInt, channel || 'field', updated_at, id]
+          );
+        }
+      }
+    }
+  }
+
+  // 8b. Script Templates Pull — owner's own + shared-in-workspace rows
+  const { data: remoteTemplates, error: templatesError } = await supabase
+    .from('script_templates')
+    .select('*')
+    .or(`owner_user_id.eq.${currentUserId},is_shared.eq.true`);
+
+  if (!templatesError && remoteTemplates) {
+    const localTemplateRows = await db.all("SELECT id, sync_status, updated_at FROM script_templates");
+    const localTemplateMap = new Map(localTemplateRows.map(t => [t.id, t]));
+
+    for (const tpl of remoteTemplates) {
+      const { id, workspace_id, owner_user_id, title, content, format, source, is_shared, file_url, created_at, updated_at } = tpl;
+      const localTpl = localTemplateMap.get(id);
+      const isSharedInt = is_shared ? 1 : 0;
+
+      if (!localTpl) {
+        await db.run(`INSERT INTO script_templates (id, workspace_id, owner_user_id, title, content, format, source, is_shared, file_url, created_at, updated_at, sync_status)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced')`,
+          [id, workspace_id, owner_user_id, title, content, format, source, isSharedInt, file_url, created_at, updated_at]
+        );
+      } else {
+        const isRemoteNewer = new Date(updated_at) > new Date(localTpl.updated_at || 0);
+        const canOverwrite = localTpl.sync_status === 'synced' || isRemoteNewer;
+        if (canOverwrite) {
+          await db.run(`UPDATE script_templates SET
+            workspace_id = ?, title = ?, content = ?, format = ?, source = ?, is_shared = ?, file_url = ?, updated_at = ?, sync_status = 'synced'
+            WHERE id = ?`,
+            [workspace_id, title, content, format, source, isSharedInt, file_url, updated_at, id]
           );
         }
       }

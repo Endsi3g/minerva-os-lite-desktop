@@ -19,6 +19,7 @@ export async function POST(request: NextRequest) {
       proof_image,
       visited_at,
       meeting_datetime,
+      channel, // 'field' (default) | 'call'
     } = body;
 
     if (!route_plan_id || !lead_id || !outcome) {
@@ -39,7 +40,13 @@ export async function POST(request: NextRequest) {
     };
     let { data: visit, error: visitErr } = await supabase
       .from('field_visits')
-      .insert({ ...baseRow, contact_met: contact_met || null, interest_level: interest_level || null, proof_image: proof_image || null })
+      .insert({
+        ...baseRow,
+        contact_met: contact_met || null,
+        interest_level: interest_level || null,
+        proof_image: proof_image || null,
+        channel: channel === 'call' ? 'call' : 'field',
+      })
       .select()
       .single();
     if (visitErr) {

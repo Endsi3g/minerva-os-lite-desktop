@@ -466,6 +466,31 @@ function initDb() {
     db.run(`ALTER TABLE field_visits ADD COLUMN interest_level TEXT DEFAULT NULL`, () => {});
     db.run(`ALTER TABLE field_visits ADD COLUMN proof_image TEXT DEFAULT NULL`, () => {});
 
+    // v9.5.0 — call scripting: route_plans/field_visits gain a channel
+    // ('field' | 'call') so the same plan/outcome model serves both terrain
+    // visits and phone-call companion sessions.
+    db.run(`ALTER TABLE route_plans ADD COLUMN channel TEXT DEFAULT 'field'`, () => {});
+    db.run(`ALTER TABLE field_visits ADD COLUMN channel TEXT DEFAULT 'field'`, () => {});
+
+    // v9.5.0 — script_templates (private-by-default, optionally shared to the
+    // workspace) : bibliothèque de scripts d'appel/visite réutilisables.
+    db.run(`CREATE TABLE IF NOT EXISTS script_templates (
+      id TEXT PRIMARY KEY,
+      workspace_id TEXT,
+      owner_user_id TEXT,
+      title TEXT,
+      content TEXT,
+      format TEXT DEFAULT 'text',
+      source TEXT DEFAULT 'manual',
+      is_shared INTEGER DEFAULT 0,
+      file_url TEXT,
+      created_at TEXT,
+      updated_at TEXT,
+      sync_status TEXT DEFAULT 'pending_insert'
+    )`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_script_templates_workspace_id ON script_templates(workspace_id)`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_script_templates_owner_user_id ON script_templates(owner_user_id)`);
+
     // v3.0.0 — campaigns enrichment (persona, sequence_config, goals, playbook_run_id)
     db.run(`ALTER TABLE campaigns ADD COLUMN persona_id TEXT DEFAULT NULL`, () => {});
     db.run(`ALTER TABLE campaigns ADD COLUMN sequence_config TEXT DEFAULT NULL`, () => {});

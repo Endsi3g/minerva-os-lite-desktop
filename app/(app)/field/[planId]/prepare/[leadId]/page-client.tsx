@@ -1,16 +1,16 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
-  ArrowLeft, Loader2, Sparkles, MapPin, Phone, Globe, Star,
-  MessageSquare, CheckCircle2, Users, ClipboardList, Send, Check,
-  AlertCircle, RefreshCw,
+  ArrowLeft, MapPin, Phone, Globe, Star,
+  ClipboardList, CheckCircle2, Users, Send,
+  AlertCircle, Loader2,
 } from 'lucide-react';
 import { useReach } from '@/lib/reach-context';
 import { getApiUrl } from '@/lib/api-helper';
 import { cn } from '@/lib/utils';
-import { createClient } from '@/lib/supabase/client';
+import { CallPrepPanel } from '@/components/call-prep-panel';
 
 export default function FieldPreparePage() {
   const params = useParams();
@@ -21,80 +21,8 @@ export default function FieldPreparePage() {
   const { leads, activeWorkspace } = useReach();
   const lead = leads.find((l) => l.id === leadId);
 
-  const [script, setScript] = useState('');
-  const [loadingScript, setLoadingScript] = useState(false);
-  const [preNotes, setPreNotes] = useState('');
-  const [savedNotes, setSavedNotes] = useState(false);
   const [notified, setNotified] = useState(false);
   const [notifying, setNotifying] = useState(false);
-
-  const generateScript = useCallback(async () => {
-    if (!lead) return;
-    setLoadingScript(true);
-    setScript('');
-    try {
-      const res = await fetch(getApiUrl('/api/chat'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          messages: [{
-            role: 'user',
-            content: `Tu es un assistant de vente expert. Génère un script de visite terrain court (5-7 points) pour rendre visite à ce prospect :\n\nEntreprise : ${lead.businessName}\nSecteur : ${lead.niche || 'non précisé'}\nSite web : ${lead.website || 'aucun'}\nDescription de l'entreprise : ${lead.websiteDescription || 'non disponible'}\nNote Google : ${lead.rating || 'inconnue'}\nStatut actuel : ${lead.status || 'Nouveau'}\nNotes précédentes : ${lead.notes?.map(n => n.content).join(' | ') || 'aucune'}\n\nFormat : liste numérotée avec accroche, valeur proposée, objections probables et call-to-action. Sois direct, professionnel et adapté au terrain. Réponds en français.`,
-          }],
-          model: 'claude-haiku-4-5-20251001',
-          // Sans provider explicite, resolveAIProvider() n'honore un modèle
-          // "claude-*" que si settings.ai_provider n'est pas déjà défini sur
-          // autre chose — sans ce champ, la requête est silencieusement
-          // redirigée vers le provider par défaut (Cloudflare) au lieu du
-          // Claude Haiku demandé ici.
-          provider: 'anthropic',
-        }),
-      });
-
-      if (!res.body) throw new Error('No stream');
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let fullText = '';
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split('\n');
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            try {
-              const json = JSON.parse(line.slice(6));
-              if (json.type === 'content_block_delta' && json.delta?.type === 'text_delta') {
-                fullText += json.delta.text;
-                setScript(fullText);
-              }
-            } catch { /* skip */ }
-          }
-        }
-      }
-    } catch (e) {
-      setScript('Impossible de générer le script. Vérifiez votre connexion et réessayez.');
-    } finally {
-      setLoadingScript(false);
-    }
-  }, [lead]);
-
-  useEffect(() => {
-    if (lead) generateScript();
-  }, [lead, generateScript]);
-
-  const handleSaveNotes = async () => {
-    if (!lead) return;
-    setSavedNotes(false);
-    try {
-      const supabase = createClient();
-      await supabase.from('leads').update({
-        ai_notes: `[Pré-visite ${new Date().toLocaleDateString('fr-CA')}] ${preNotes}`,
-      }).eq('id', lead.id);
-      setSavedNotes(true);
-      setTimeout(() => setSavedNotes(false), 2000);
-    } catch { /* ignore */ }
-  };
 
   const handleNotifyTeam = async () => {
     if (!lead || !activeWorkspace) return;
@@ -109,7 +37,7 @@ export default function FieldPreparePage() {
           workspaceId: activeWorkspace.id,
           workspaceOwnerId: ownerId,
           title: `Visite terrain — ${lead.businessName}`,
-          body: `Départ en visite chez ${lead.businessName}${lead.city ? ` (${lead.city})` : ''}. Notes : ${preNotes || 'aucune'}`,
+          body: `Départ en visite chez ${lead.businessName}${lead.city ? ` (${lead.city})` : ''}.`,
           type: 'field_visit',
           link: `/leads/${lead.id}`,
         }),
@@ -188,63 +116,10 @@ export default function FieldPreparePage() {
           </div>
         )}
 
-        {/* AI Script */}
-        <div className="border border-[#e5e5e0] rounded-xl p-5 bg-white space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">
-              <Sparkles className="h-3.5 w-3.5" />
-              Script IA de visite
-            </div>
-            <button
-              onClick={generateScript}
-              disabled={loadingScript}
-              className="flex items-center gap-1 text-xs font-bold text-[#059669] hover:underline disabled:opacity-50"
-            >
-              <RefreshCw className={cn('h-3 w-3', loadingScript && 'animate-spin')} />
-              Regénérer
-            </button>
-          </div>
+        {/* Script IA, screenshots, notes en direct */}
+        <CallPrepPanel lead={lead} channel="field" />
 
-          {loadingScript && !script && (
-            <div className="flex items-center gap-2 text-xs text-[#7a7a76] py-4">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Génération du script en cours…
-            </div>
-          )}
-
-          {script && (
-            <div className="text-xs text-[#26251e] leading-relaxed whitespace-pre-line bg-[#fafaf8] border border-[#e5e5e0] rounded-xl p-4">
-              {script}
-              {loadingScript && <span className="inline-block w-1 h-3 bg-[#059669] animate-pulse ml-0.5" />}
-            </div>
-          )}
-        </div>
-
-        {/* Pre-visit notes */}
-        <div className="border border-[#e5e5e0] rounded-xl p-5 bg-white space-y-4">
-          <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">
-            <MessageSquare className="h-3.5 w-3.5" />
-            Notes avant visite
-          </div>
-          <textarea
-            value={preNotes}
-            onChange={(e) => setPreNotes(e.target.value)}
-            placeholder="Objectif de la visite, produit à présenter, point de contact…"
-            rows={4}
-            className="w-full border border-[#e5e5e0] rounded-xl px-4 py-3 text-xs font-semibold text-[#26251e] outline-none focus:ring-1 focus:ring-[#059669] resize-none bg-[#fafaf8]"
-          />
-          <button
-            onClick={handleSaveNotes}
-            disabled={!preNotes.trim()}
-            className="flex items-center gap-1.5 text-xs font-bold text-white px-4 py-2 rounded-xl disabled:opacity-50 transition-all"
-            style={{ background: '#059669' }}
-          >
-            {savedNotes ? <Check className="h-3.5 w-3.5" /> : null}
-            {savedNotes ? 'Sauvegardées !' : 'Sauvegarder les notes'}
-          </button>
-        </div>
-
-        {/* Team notification */}
+        {/* Team notification (departure alert) */}
         <div className="border border-[#e5e5e0] rounded-xl p-5 bg-white space-y-4">
           <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">
             <Users className="h-3.5 w-3.5" />

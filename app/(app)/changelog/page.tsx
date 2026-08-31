@@ -21,6 +21,20 @@ interface ChangelogVersion {
 
 const versions: ChangelogVersion[] = [
   {
+    version: 'v9.5.0',
+    date: '30 août 2026',
+    title: 'Assistant de scripting d\'appel IA, section Appels & bibliothèque de templates',
+    highlights: [
+      { text: "Nouvelle section Appels (/calls) : sessions d'appels téléphoniques (écran compagnon) réutilisant le moteur du mode Terrain — mêmes tables, mêmes automatisations, via une nouvelle colonne channel." },
+      { text: "Script IA consolidé : génération texte ou en arbre de décision graphique, adaptation d'un script collé au prospect, guide de style depuis un fichier importé (PDF/Word/txt) ou un template." },
+      { text: "Bibliothèque de scripts privée par membre avec partage optionnel à l'équipe, import de fichier avec extraction serveur." },
+      { text: "Analyse de captures d'écran (site/réseaux/échanges précédents) par IA vision — injectée dans le script généré et sauvegardée comme note sur la fiche." },
+      { text: "Notes en direct pendant l'appel ou la visite, envoyées immédiatement à l'équipe en plus de l'historique de la fiche." },
+      { text: "Indicateur de lead chaud (score Hot/Warm/Cold existant) affiché en évidence sur les écrans de préparation d'appel/visite." },
+      { text: "Fix critique : correction d'un crash qui empêchait tout envoi d'image aux providers IA, affectait aussi le modèle Vision de l'Assistant." },
+    ]
+  },
+  {
     version: 'v9.4.0',
     date: '27 août 2026 · 15h35',
     title: 'Graphiques Recharts Grands Formats, IA Visuelle Native avec Deep-Links & Bannière Diagnostic',

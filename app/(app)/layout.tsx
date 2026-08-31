@@ -103,6 +103,7 @@ import {
 } from '@/components/ui/breadcrumb';
 import { Pin, KanbanSquare, MapPin as MapPinIcon } from 'lucide-react';
 import { CalendarDays, UsersRound } from 'lucide-react';
+import { Phone } from 'lucide-react';
 import { Layers } from 'lucide-react';
 
 const CURRENT_VERSION = '9.2.0';
@@ -780,6 +781,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
         { name: 'Comptes 360',     href: '/accounts',    icon: Building2 },
         { name: 'Boîte de réception', href: '/inbox',   icon: Inbox },
         { name: 'Agenda des RDV',  href: '/agenda',      icon: CalendarDays },
+        { name: 'Appels',         href: '/calls',       icon: Phone },
         { name: 'Tâches de Closing', href: '/tasks',     icon: ListChecks },
       ],
     },

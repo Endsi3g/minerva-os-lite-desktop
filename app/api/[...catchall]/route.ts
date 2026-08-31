@@ -34,6 +34,7 @@ import * as route_ai_gateway_status_30 from '../ai/gateway/status/handler';
 import * as route_ai_gateway_wake_31 from '../ai/gateway/wake/handler';
 import * as route_ai_health_check_32 from '../ai/health-check/handler';
 import * as route_ai_setup_33 from '../ai/setup/handler';
+import * as route_analyze_screenshot_186 from '../analyze-screenshot/handler';
 import * as route_audit_seo_export_pdf_34 from '../audit-seo/export-pdf/handler';
 import * as route_audit_seo_35 from '../audit-seo/handler';
 import * as route_auth_confirm_reset_36 from '../auth/confirm-reset/handler';
@@ -153,6 +154,9 @@ import * as route_routing_149 from '../routing/handler';
 import * as route_scrape_apify_150 from '../scrape-apify/handler';
 import * as route_scrape_maps_151 from '../scrape-maps/handler';
 import * as route_scrape_website_152 from '../scrape-website/handler';
+import * as route_script_templates_187 from '../script-templates/handler';
+import * as route_script_templates__id__188 from '../script-templates/[id]/handler';
+import * as route_script_templates_extract_189 from '../script-templates/extract/handler';
 import * as route_send_email_153 from '../send-email/handler';
 import * as route_settings_ai_keys_154 from '../settings/ai-keys/handler';
 import * as route_settings_monitoring_155 from '../settings/monitoring/handler';
@@ -221,6 +225,7 @@ const routes: Record<string, any> = {
   "ai/gateway/wake": route_ai_gateway_wake_31,
   "ai/health-check": route_ai_health_check_32,
   "ai/setup": route_ai_setup_33,
+  "analyze-screenshot": route_analyze_screenshot_186,
   "audit-seo/export-pdf": route_audit_seo_export_pdf_34,
   "audit-seo": route_audit_seo_35,
   "auth/confirm-reset": route_auth_confirm_reset_36,
@@ -340,6 +345,9 @@ const routes: Record<string, any> = {
   "scrape-apify": route_scrape_apify_150,
   "scrape-maps": route_scrape_maps_151,
   "scrape-website": route_scrape_website_152,
+  "script-templates": route_script_templates_187,
+  "script-templates/[id]": route_script_templates__id__188,
+  "script-templates/extract": route_script_templates_extract_189,
   "send-email": route_send_email_153,
   "settings/ai-keys": route_settings_ai_keys_154,
   "settings/monitoring": route_settings_monitoring_155,

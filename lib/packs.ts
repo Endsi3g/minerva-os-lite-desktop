@@ -29,9 +29,9 @@ export const PACKS: Record<PackId, PackConfig> = {
   },
   field: {
     label: 'Terrain',
-    description: 'Mode terrain, tournées, preuves de visite, carte GPS.',
+    description: 'Mode terrain, tournées, preuves de visite, carte GPS, appels.',
     icon: 'MapPin',
-    routes: ['/field', '/map'],
+    routes: ['/field', '/map', '/calls'],
   },
   analytics_growth: {
     label: 'Analytics & Growth',

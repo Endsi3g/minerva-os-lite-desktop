@@ -5,6 +5,17 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet suit le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [9.5.0] — Assistant de scripting d'appel IA, section Appels & bibliothèque de templates — 30 août 2026
+
+### Ajouté & Amélioré
+- **Nouvelle section Appels (`/calls`)** : sessions d'appels téléphoniques (écran compagnon, sans VoIP) réutilisant le moteur du mode Terrain — mêmes tables `route_plans`/`field_visits` via une nouvelle colonne `channel`, mêmes automatisations post-résultat.
+- **Script IA consolidé** : `/api/generate-script` unifié (texte ou mode graphique en arbre de décision), adaptation d'un script collé au prospect, guide de style depuis un fichier importé (PDF/Word/txt) ou un template.
+- **Bibliothèque de scripts (`script_templates`)** : templates privés par membre avec partage optionnel à l'équipe, import de fichier avec extraction serveur (`pdf-parse`, `mammoth`).
+- **Analyse de captures d'écran** : captures du site/réseaux/échanges précédents analysées par IA vision, injectées dans le script généré et sauvegardées comme note sur la fiche.
+- **Notes en direct** : notes prises pendant l'appel ou la visite envoyées immédiatement à l'équipe (notification) en plus de l'historique de la fiche prospect.
+- **Indicateur de lead chaud** : score Hot/Warm/Cold existant désormais affiché en évidence sur les écrans de préparation d'appel/visite.
+- **Fix critique Vision multimodale** : correction d'un crash dans `lib/ai.ts` qui empêchait tout envoi d'image aux providers IA (Gemini, Anthropic, Cloudflare, OpenRouter) — affectait aussi le modèle Vision déjà existant de l'Assistant.
+
 ## [9.4.0] — Graphiques Recharts Grands Formats, IA Visuelle Native avec Deep-Links & Bannière Diagnostic — 27 août 2026
 
 ### Ajouté & Amélioré

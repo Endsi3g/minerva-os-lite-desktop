@@ -8,9 +8,14 @@ export interface AISettings {
   gemini_key?: string | null;
 }
 
+// `content` is a plain string for normal messages, or an OpenAI-style array of
+// `{type:'text',text}` / `{type:'image_url',image_url:{url}}` parts when an
+// image is attached (Assistant vision upload, screenshot analysis, ...).
+export type ChatMessage = { role: string; content: unknown };
+
 export interface AICallOptions {
   system?: string;
-  messages: Array<{ role: string; content: string }>;
+  messages: ChatMessage[];
   settings?: AISettings;
   jsonMode?: boolean;
   maxTokens?: number;
@@ -50,6 +55,75 @@ function compressPrompt(text: string): string {
     .replace(/\n{3,}/g, '\n\n')
     .replace(/[ \t]{2,}/g, ' ')
     .trim();
+}
+
+// ── Multimodal content helpers ──────────────────────────────────────────────
+// A message's `content` can be a plain string OR (when an image is attached,
+// e.g. the Assistant's vision upload, or a screenshot fed to script generation)
+// an OpenAI-style array of `{type:'text',text}` / `{type:'image_url',image_url:{url}}`
+// parts. compressPrompt() assumes a string and throws on an array — every
+// provider function must go through compressContent() instead of calling
+// compressPrompt() directly on `m.content`.
+
+function hasImageContent(messages: Array<{ role: string; content: unknown }>): boolean {
+  return messages.some(
+    (m) => Array.isArray(m.content) && m.content.some((p: any) => p?.type === 'image_url')
+  );
+}
+
+/** Compresses text parts, leaves image_url parts untouched. Safe for string or array content. */
+function compressContent(content: unknown): unknown {
+  if (typeof content === 'string') return compressPrompt(content);
+  if (Array.isArray(content)) {
+    return content.map((part: any) => {
+      if (part?.type === 'text') return { ...part, text: compressPrompt(part.text || '') };
+      return part;
+    });
+  }
+  return content;
+}
+
+function parseDataUrl(url: string): { mimeType: string; data: string } | null {
+  const match = /^data:([^;]+);base64,(.+)$/.exec(url || '');
+  if (!match) return null;
+  return { mimeType: match[1], data: match[2] };
+}
+
+/** Converts OpenAI-style content into Gemini's native `parts[]` shape. */
+function toGeminiParts(content: unknown): Array<{ text: string } | { inline_data: { mime_type: string; data: string } }> {
+  if (typeof content === 'string') return [{ text: content }];
+  if (Array.isArray(content)) {
+    const parts = content.map((part: any) => {
+      if (part?.type === 'image_url') {
+        const parsed = parseDataUrl(part.image_url?.url || '');
+        if (parsed) return { inline_data: { mime_type: parsed.mimeType, data: parsed.data } };
+        return null;
+      }
+      return { text: part?.text || '' };
+    });
+    return parts.filter((p): p is { text: string } | { inline_data: { mime_type: string; data: string } } =>
+      !!p && (('inline_data' in p) || ('text' in p && !!p.text))
+    );
+  }
+  return [{ text: '' }];
+}
+
+/** Converts OpenAI-style content into Anthropic's content-block shape. */
+function toAnthropicContent(content: unknown): string | Array<Record<string, unknown>> {
+  if (typeof content === 'string') return compressPrompt(content);
+  if (Array.isArray(content)) {
+    return content.map((part: any) => {
+      if (part?.type === 'image_url') {
+        const parsed = parseDataUrl(part.image_url?.url || '');
+        if (parsed) {
+          return { type: 'image', source: { type: 'base64', media_type: parsed.mimeType, data: parsed.data } };
+        }
+        return { type: 'text', text: '' };
+      }
+      return { type: 'text', text: compressPrompt(part?.text || '') };
+    });
+  }
+  return content as string;
 }
 
 function geminiModel(rawModel?: string | null): string {
@@ -292,14 +366,14 @@ async function notifyRateLimited(userId: string | undefined, workspaceId: string
 async function callGemini(
   apiKey: string,
   model: string,
-  messages: Array<{ role: string; content: string }>,
+  messages: ChatMessage[],
   system: string | undefined,
   opts: Pick<AICallOptions, 'jsonMode' | 'maxTokens' | 'temperature'>,
 ): Promise<string> {
   const cleanSystem = compressPrompt(system || '');
   const cleanMessages = messages.map((m) => ({
     role: m.role === 'assistant' ? 'assistant' : m.role === 'system' ? 'system' : 'user',
-    content: compressPrompt(m.content),
+    content: compressContent(m.content),
   }));
 
   // Direct OpenAI-compatible Gemini endpoint
@@ -350,7 +424,7 @@ async function callGemini(
 async function callGeminiNative(
   apiKey: string,
   model: string,
-  messages: Array<{ role: string; content: string }>,
+  messages: ChatMessage[],
   system: string,
   opts: Pick<AICallOptions, 'jsonMode' | 'maxTokens' | 'temperature'>,
 ): Promise<string> {
@@ -360,7 +434,7 @@ async function callGeminiNative(
 
   const contents = messages.map((m) => ({
     role: m.role === 'assistant' ? 'model' : 'user',
-    parts: [{ text: m.content }],
+    parts: toGeminiParts(m.content),
   }));
 
   const payload: any = {
@@ -411,7 +485,7 @@ async function callGeminiNative(
 async function callOpenRouter(
   apiKey: string,
   model: string,
-  messages: Array<{ role: string; content: string }>,
+  messages: ChatMessage[],
   system: string | undefined,
   opts: Pick<AICallOptions, 'jsonMode' | 'maxTokens' | 'temperature'>,
 ): Promise<string> {
@@ -426,7 +500,7 @@ async function callOpenRouter(
     model,
     messages: [
       ...(system ? [{ role: 'system', content: compressPrompt(system) }] : []),
-      ...messages.map(m => ({ ...m, content: compressPrompt(m.content) })),
+      ...messages.map(m => ({ ...m, content: compressContent(m.content) })),
     ],
     response_format: opts.jsonMode ? { type: 'json_object' } : undefined,
     max_tokens: opts.maxTokens || 800,
@@ -454,7 +528,7 @@ async function callOpenRouter(
 async function callAnthropic(
   apiKey: string,
   model: string,
-  messages: Array<{ role: string; content: string }>,
+  messages: ChatMessage[],
   system: string | undefined,
   opts: Pick<AICallOptions, 'maxTokens' | 'temperature'>,
 ): Promise<string> {
@@ -466,7 +540,7 @@ async function callAnthropic(
     model: anthropicModel,
     max_tokens: opts.maxTokens || 800,
     system: system ? compressPrompt(system) : undefined,
-    messages: userMessages.map(m => ({ ...m, content: compressPrompt(m.content) })) as any,
+    messages: userMessages.map(m => ({ ...m, content: toAnthropicContent(m.content) })) as any,
     temperature: opts.temperature ?? 0.3,
   });
 
@@ -479,7 +553,7 @@ async function callCloudflare(
   apiKey: string,
   accountId: string,
   model: string,
-  messages: Array<{ role: string; content: string }>,
+  messages: ChatMessage[],
   system: string | undefined,
   opts: Pick<AICallOptions, 'jsonMode' | 'maxTokens' | 'temperature'>,
 ): Promise<string> {
@@ -493,7 +567,7 @@ async function callCloudflare(
     model: cfModel,
     messages: [
       ...(system ? [{ role: 'system', content: compressPrompt(system) }] : []),
-      ...messages.map(m => ({ ...m, content: compressPrompt(m.content) })),
+      ...messages.map(m => ({ ...m, content: compressContent(m.content) })),
     ],
     max_tokens: opts.maxTokens || 800,
     temperature: opts.temperature ?? 0.3,
@@ -529,11 +603,21 @@ async function callCloudflare(
   return content;
 }
 
+/**
+ * Cloudflare's default free model and OpenRouter's free-tier fallback aren't
+ * vision-capable — rather than silently sending them an image they can't read,
+ * drop them from the fallback chain whenever the conversation includes one.
+ */
+function filterChainForContent<T extends { provider: string }>(chain: T[], messages: ChatMessage[]): T[] {
+  if (!hasImageContent(messages)) return chain;
+  return chain.filter((c) => c.provider === 'gemini' || c.provider === 'anthropic');
+}
+
 function doCall(
   provider: string,
   model: string,
   apiKey: string,
-  messages: Array<{ role: string; content: string }>,
+  messages: ChatMessage[],
   system: string | undefined,
   opts: Pick<AICallOptions, 'jsonMode' | 'maxTokens' | 'temperature'>,
 ): Promise<string> {
@@ -561,9 +645,11 @@ export async function generateCompletion(options: AICallOptions): Promise<string
   }));
 
   const primary = resolveAIProvider(options.settings);
-  const chain = buildProviderChain(primary, options.settings);
+  const chain = filterChainForContent(buildProviderChain(primary, options.settings), messages);
   if (chain.length === 0) {
-    const message = `Clé API manquante pour le provider : ${primary.provider}`;
+    const message = hasImageContent(messages)
+      ? 'Aucun provider IA compatible avec les images n\'est configuré (Gemini ou Anthropic requis).'
+      : `Clé API manquante pour le provider : ${primary.provider}`;
     await notifyAiFailure(options.userId, options.workspaceId, message);
     throw new Error(message);
   }
@@ -613,7 +699,7 @@ async function fetchStreamUpstream(
   provider: string,
   model: string,
   apiKey: string,
-  messages: Array<{ role: string; content: string }>,
+  messages: ChatMessage[],
   options: AICallOptions,
 ): Promise<{ resp: Response; model: string }> {
   if (provider === 'gemini') {
@@ -637,7 +723,7 @@ async function fetchStreamUpstream(
           model: targetModel,
           messages: [
             ...(options.system ? [{ role: 'system', content: compressPrompt(options.system) }] : []),
-            ...messages.map(m => ({ ...m, content: compressPrompt(m.content) })),
+            ...messages.map(m => ({ ...m, content: compressContent(m.content) })),
           ],
           stream: true,
           max_tokens: options.maxTokens || 800,
@@ -668,7 +754,7 @@ async function fetchStreamUpstream(
       model,
       messages: [
         ...(options.system ? [{ role: 'system', content: compressPrompt(options.system) }] : []),
-        ...messages.map(m => ({ ...m, content: compressPrompt(m.content) })),
+        ...messages.map(m => ({ ...m, content: compressContent(m.content) })),
       ],
       stream: true,
       max_tokens: options.maxTokens || 800,
@@ -688,7 +774,7 @@ async function fetchStreamUpstream(
       model: cfModel,
       messages: [
         ...(options.system ? [{ role: 'system', content: compressPrompt(options.system) }] : []),
-        ...messages.map(m => ({ ...m, content: compressPrompt(m.content) })),
+        ...messages.map(m => ({ ...m, content: compressContent(m.content) })),
       ],
       stream: true,
       max_tokens: options.maxTokens || 800,
@@ -710,7 +796,7 @@ async function fetchStreamUpstream(
     body: JSON.stringify({
       model: anthropicModel,
       ...(options.system ? { system: compressPrompt(options.system) } : {}),
-      messages: userMessages.map(m => ({ ...m, content: compressPrompt(m.content) })),
+      messages: userMessages.map(m => ({ ...m, content: toAnthropicContent(m.content) })),
       stream: true,
       max_tokens: options.maxTokens || 800,
       temperature: options.temperature ?? 0.3,
@@ -780,9 +866,11 @@ export async function generateStreamCompletion(options: AICallOptions): Promise<
   }));
 
   const primary = resolveAIProvider(options.settings);
-  const chain = buildProviderChain(primary, options.settings);
+  const chain = filterChainForContent(buildProviderChain(primary, options.settings), messages);
   if (chain.length === 0) {
-    const message = `Clé API manquante pour le provider : ${primary.provider}`;
+    const message = hasImageContent(messages)
+      ? 'Aucun provider IA compatible avec les images n\'est configuré (Gemini ou Anthropic requis).'
+      : `Clé API manquante pour le provider : ${primary.provider}`;
     await notifyAiFailure(options.userId, options.workspaceId, message);
     throw new Error(message);
   }

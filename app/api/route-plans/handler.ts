@@ -11,12 +11,14 @@ export async function GET(request: NextRequest) {
     const id = searchParams.get('id');
     const workspaceId = searchParams.get('workspace_id');
     const campaignId = searchParams.get('campaign_id');
+    const channel = searchParams.get('channel'); // 'field' | 'call'
 
     let query = supabase.from('route_plans').select('*').order('created_at', { ascending: false });
 
     if (id) query = query.eq('id', id);
     if (workspaceId) query = query.eq('workspace_id', workspaceId);
     if (campaignId) query = query.eq('campaign_id', campaignId);
+    if (channel) query = query.eq('channel', channel);
 
     const { data, error } = id
       ? await query.maybeSingle()
@@ -43,6 +45,7 @@ export async function POST(request: NextRequest) {
       lead_ids, // already ordered array
       distance_km,
       duration_min,
+      channel, // 'field' (default) | 'call'
     } = body;
 
     if (!lead_ids || !Array.isArray(lead_ids)) {
@@ -59,6 +62,7 @@ export async function POST(request: NextRequest) {
         distance_km: distance_km ?? null,
         duration_min: duration_min ?? null,
         status: 'planned',
+        channel: channel === 'call' ? 'call' : 'field',
         created_at: new Date().toISOString(),
       })
       .select()
