@@ -65,8 +65,8 @@ export async function POST(req: NextRequest) {
     .maybeSingle();
 
   const aiSettings = {
-    ai_provider: dbSettings?.ai_provider,
-    ai_model: dbSettings?.ai_model,
+    ai_provider: dbSettings?.ai_provider || 'gemini',
+    ai_model: dbSettings?.ai_model || 'gemini-3.7-flash',
     openrouter_key: dbSettings?.openrouter_key,
   };
   const autonomy = dbSettings?.agent_autonomy ?? {};
@@ -97,20 +97,20 @@ Pipeline actuel:
 ${JSON.stringify(pipelineSummary, null, 2)}
 
 Leads prioritaires à relancer (${leadsToFollowUp.length}):
-${leadsToFollowUp.slice(0, 10).map((l: any) => `- ${l.business_name} (${l.niche}) | Score: ${l.score} | Statut: ${l.status} | Dernier contact: ${l.last_activity_at || 'jamais'} | Recommandation NBA: ${l.nba_action} via ${l.nba_channel} (urgence ${l.nba_urgency}) — ${l.nba_reason}`).join('\n')}
+${leadsToFollowUp.slice(0, 5).map((l: any) => `- ${l.business_name} (${l.niche}) | Score: ${l.score} | Statut: ${l.status} | Dernier contact: ${l.last_activity_at || 'jamais'} | Recommandation NBA: ${l.nba_action} via ${l.nba_channel} (urgence ${l.nba_urgency}) — ${l.nba_reason}`).join('\n')}
 
 Mémoire agent (apprentissages récents):
 ${recentMemory?.map((m: any) => `[${m.type}] ${m.key}: ${m.content}`).join('\n') || 'Aucune mémoire enregistrée.'}
 `;
 
-  // ── 2. Plan (Claude decides what to do) ─────────────────────────────────────
+  // ── 2. Plan (Gemini/Fast model decides what to do) ─────────────────────────
   let plan: { reasoning: string; actions: AgentAction[] };
   try {
     const raw = await generateCompletion({
       system: AGENT_SYSTEM,
-      messages: [{ role: 'user', content: `Contexte du workspace:\n${contextBlock}\n\nQue dois-je faire maintenant ?` }],
+      messages: [{ role: 'user', content: `Contexte du workspace:\n${contextBlock}\n\nQue dois-je faire maintenant ? Donne 3 actions prioritaires.` }],
       jsonMode: true,
-      maxTokens: 4000,
+      maxTokens: 1500,
       settings: aiSettings,
       userId: user.id,
       workspaceId,
@@ -129,9 +129,10 @@ ${recentMemory?.map((m: any) => `[${m.type}] ${m.key}: ${m.content}`).join('\n')
     return NextResponse.json({ error: `Agent planning failed: ${message}` }, { status: 500 });
   }
 
-  const actions: AgentAction[] = Array.isArray(plan?.actions) ? plan.actions.slice(0, 10) : [];
+  // Limit to top 3 actions max to avoid serverless timeouts
+  const actions: AgentAction[] = Array.isArray(plan?.actions) ? plan.actions.slice(0, 3) : [];
 
-  // ── 3. Act + Log ─────────────────────────────────────────────────────────────
+  // ── 3. Act + Log (Parallel / with strict 3s timeout) ───────────────────────
   const results: AgentActionResult[] = [];
   const admin = getAdminClient();
 
@@ -142,7 +143,10 @@ ${recentMemory?.map((m: any) => `[${m.type}] ${m.key}: ${m.content}`).join('\n')
 
     if (executed) {
       try {
-        result = await dispatchTool(action.tool, action.params, ctx);
+        const timeoutPromise = new Promise<{ error: string }>((resolve) =>
+          setTimeout(() => resolve({ error: 'Action timeout (3s limit)' }), 3000)
+        );
+        result = await Promise.race([dispatchTool(action.tool, action.params, ctx), timeoutPromise]);
       } catch (err: any) {
         result = { error: err.message };
       }

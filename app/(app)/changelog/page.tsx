@@ -21,6 +21,18 @@ interface ChangelogVersion {
 
 const versions: ChangelogVersion[] = [
   {
+    version: 'v9.10.0',
+    date: '31 août 2026 · 16h15',
+    title: 'Données CRM Réelles, Table Appels 112 Leads, Agent Feed Ultra-Rapide & Épuration UI',
+    highlights: [
+      { text: "Statistiques et Métriques 100% Réelles : Suppression de tout fallback mocké (qui affichait faussement 17 clients gagnés). Les KPIs de closing, de conversion et de volume reflètent strictement vos données CRM en temps réel." },
+      { text: "Table des Appels Débloquée (/calls) : Affichage complet de vos 112 leads avec filtres rapides 'Tous', 'Avec téléphone' et 'Sans numéro'. Bouton d'appel direct en 1-clic ou raccourci d'enrichissement sur la fiche." },
+      { text: "Agent Loop & Feed Ultra-Rapide (/api/agent/loop) : Optimisation avec Google Gemini 3.7 Flash, sélection de 3 actions prioritaires et timeout de 3s par action — réponse sous les 2 secondes sans aucune erreur 504 Gateway Timeout." },
+      { text: "Épuration du Style UI : Suppression des grilles décoratives d'arrière-plan (.bg-grid-pattern) pour une interface épurée, sobre, ultra-lisible et à haute densité d'information." },
+      { text: "Fiabilisation des Routes Google & Auth : Graceful handling sur /api/google/auth/status et routage direct pour éliminer les erreurs console 404/401." },
+    ]
+  },
+  {
     version: 'v9.9.0',
     date: '31 août 2026 · 15h45',
     title: 'Minerva IA Membre de Chat DM, Agenda Google Calendar & Animation Sidebar',

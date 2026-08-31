@@ -346,8 +346,8 @@ export function TodayRoot() {
     });
   }, [leads, tasks, aiSuggestions]);
 
-  // KPI Calculations
-  const effectiveLeads = leads.length > 0 ? leads : GOOGLE_SEEDED_LEADS;
+  // KPI Calculations — strictly real CRM data
+  const effectiveLeads = leads;
   const contactedLeads = useMemo(() => effectiveLeads.filter((l) => l.status !== 'New').length, [effectiveLeads]);
   const totalReplies = useMemo(() => effectiveLeads.filter((l) => l.replyStatus).length, [effectiveLeads]);
   const activeLeadsCount = useMemo(() => effectiveLeads.filter((l) => l.status !== 'Won' && l.status !== 'Lost').length, [effectiveLeads]);
@@ -367,12 +367,12 @@ export function TodayRoot() {
       return d.getFullYear() === prev.getFullYear() && d.getMonth() === prev.getMonth();
     }).length;
   }, [effectiveLeads]);
-  const leadsMonthDelta = leadsThisMonth - leadsLastMonth || 14;
-  const contactRate = useMemo(() => effectiveLeads.length > 0 ? Math.round((contactedLeads / effectiveLeads.length) * 100) : 62, [effectiveLeads.length, contactedLeads]);
+  const leadsMonthDelta = leadsThisMonth - leadsLastMonth;
+  const contactRate = useMemo(() => effectiveLeads.length > 0 ? Math.round((contactedLeads / effectiveLeads.length) * 100) : 0, [effectiveLeads.length, contactedLeads]);
   const activePipelineValue = useMemo(() => effectiveLeads
     .filter((l) => l.status !== 'Won' && l.status !== 'Lost')
     .reduce((sum, l) => sum + (l.dealAmount ?? 1800), 0), [effectiveLeads]);
-  const responseRate = useMemo(() => contactedLeads > 0 ? Math.round((totalReplies / contactedLeads) * 100) : 34, [contactedLeads, totalReplies]);
+  const responseRate = useMemo(() => contactedLeads > 0 ? Math.round((totalReplies / contactedLeads) * 100) : 0, [contactedLeads, totalReplies]);
 
   // Canonical 7-Phase Journey lead counts
   const phaseCounts = useMemo(() => {

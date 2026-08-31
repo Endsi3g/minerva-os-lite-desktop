@@ -8,14 +8,15 @@ import {
   Loader2, 
   Check, 
   MapPin, 
-  Building2, 
   ArrowRight, 
-  Calendar, 
   CheckSquare, 
   Square,
   ExternalLink,
   Search,
-  Filter
+  Filter,
+  Sparkles,
+  PhoneCall,
+  Plus
 } from 'lucide-react';
 import { useReach } from '@/lib/reach-context';
 import { getApiUrl } from '@/lib/api-helper';
@@ -33,25 +34,44 @@ export function CallsRoot() {
   const [creating, setCreating] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTemp, setSelectedTemp] = useState<string>('all');
+  const [phoneFilter, setPhoneFilter] = useState<'all' | 'with_phone' | 'without_phone'>('all');
 
-  const callableLeads = useMemo(() => {
-    return leads
-      .filter((l) => !!l.phone)
-      .sort((a, b) => (TEMP_ORDER[a.temperature] ?? 1) - (TEMP_ORDER[b.temperature] ?? 1));
+  const withPhoneCount = useMemo(() => leads.filter(l => Boolean(l.phone && l.phone.trim())).length, [leads]);
+  const withoutPhoneCount = useMemo(() => leads.length - withPhoneCount, [leads, withPhoneCount]);
+
+  const sortedLeads = useMemo(() => {
+    return [...leads].sort((a, b) => {
+      // 1. Leads with phone first
+      const hasPhoneA = Boolean(a.phone && a.phone.trim()) ? 0 : 1;
+      const hasPhoneB = Boolean(b.phone && b.phone.trim()) ? 0 : 1;
+      if (hasPhoneA !== hasPhoneB) return hasPhoneA - hasPhoneB;
+
+      // 2. Temperature order (Hot -> Warm -> Cold)
+      return (TEMP_ORDER[a.temperature] ?? 1) - (TEMP_ORDER[b.temperature] ?? 1);
+    });
   }, [leads]);
 
   const filteredLeads = useMemo(() => {
-    return callableLeads.filter((l) => {
+    return sortedLeads.filter((l) => {
+      // Search query filter
       const matchesSearch = !searchQuery || 
         l.businessName.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (l.niche && l.niche.toLowerCase().includes(searchQuery.toLowerCase())) ||
         (l.city && l.city.toLowerCase().includes(searchQuery.toLowerCase())) ||
         (l.phone && l.phone.includes(searchQuery));
       
+      // Temperature filter
       const matchesTemp = selectedTemp === 'all' || l.temperature === selectedTemp;
-      return matchesSearch && matchesTemp;
+
+      // Phone filter
+      const hasPhone = Boolean(l.phone && l.phone.trim());
+      const matchesPhone = phoneFilter === 'all' || 
+        (phoneFilter === 'with_phone' && hasPhone) || 
+        (phoneFilter === 'without_phone' && !hasPhone);
+
+      return matchesSearch && matchesTemp && matchesPhone;
     });
-  }, [callableLeads, searchQuery, selectedTemp]);
+  }, [sortedLeads, searchQuery, selectedTemp, phoneFilter]);
 
   const toggleSelectAll = () => {
     if (selected.size === filteredLeads.length) {
@@ -118,62 +138,108 @@ export function CallsRoot() {
         return <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-purple-50 text-purple-700 border border-purple-200">RDV Pris</span>;
       case 'Won':
         return <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">Gagné</span>;
+      case 'Lost':
+        return <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-red-50 text-red-700 border border-red-200">Perdu</span>;
       default:
-        return <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-neutral-50 text-neutral-600 border border-neutral-200">{status}</span>;
+        return <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-neutral-100 text-neutral-700">{status}</span>;
     }
   };
 
   return (
-    <div className="h-full overflow-y-auto bg-[#fafaf8] font-sans text-[#26251e] pb-24">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 space-y-6">
-        
-        {/* Header Title & Info */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-xl font-bold flex items-center gap-2">
+    <div className="flex h-full flex-col overflow-hidden bg-white">
+      <div className="flex-1 overflow-y-auto bg-white text-[#26251e] font-sans p-4 sm:p-6 md:p-8 space-y-6">
+        {/* Header Title */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#e5e5e0] pb-4">
+          <div className="space-y-1">
+            <h1 className="text-xl font-bold text-[#26251e] tracking-tight flex items-center gap-2">
               <Phone className="h-5 w-5 text-[#059669]" />
-              Session d&apos;Appels & Téléprospection
+              Sessions d&apos;Appels Commerciales
             </h1>
-            <p className="text-xs text-[#7a7a76] mt-1">
-              Sélectionnez vos prospects qualifiés pour lancer une session guidée avec script IA et prise de notes en direct.
+            <p className="text-xs text-[#7a7a76]">
+              {leads.length} prospects dans votre base — {withPhoneCount} prêts à être appelés
             </p>
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="text-xs font-bold bg-white border border-[#e5e5e0] px-3 py-1.5 rounded-lg text-[#26251e] shadow-2xs">
-              {callableLeads.length} prospects joignables
-            </span>
+            <button
+              onClick={handleCreate}
+              disabled={selected.size === 0 || creating}
+              className="flex items-center gap-1.5 px-4 h-9 rounded-lg bg-[#059669] hover:bg-[#047857] text-white text-xs font-bold transition-all disabled:opacity-50 border-0 cursor-pointer shadow-2xs"
+            >
+              {creating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <PhoneCall className="h-3.5 w-3.5" />}
+              <span>Lancer session ({selected.size})</span>
+            </button>
           </div>
         </div>
 
-        {/* Stats Panel */}
+        {/* Dense Team Stats Panel */}
         {activeWorkspace && <CallsStatsPanel workspaceId={activeWorkspace.id} />}
 
-        {/* Filter & Search Bar */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white p-3 rounded-xl border border-[#e5e5e0] shadow-2xs">
-          <div className="flex items-center gap-2 flex-1 relative">
-            <Search className="h-4 w-4 text-[#7a7a76] absolute left-3 pointer-events-none" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Rechercher par entreprise, secteur, ville ou téléphone..."
-              className="w-full pl-9 pr-3 py-1.5 text-xs bg-[#fafaf8] border border-[#e5e5e0] rounded-lg focus:outline-hidden focus:border-[#059669] text-[#26251e]"
-            />
+        {/* Filter Tabs & Search Bar */}
+        <div className="space-y-3">
+          {/* Quick Phone Filters */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              onClick={() => setPhoneFilter('all')}
+              className={cn(
+                "px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors border cursor-pointer",
+                phoneFilter === 'all'
+                  ? "bg-[#26251e] text-white border-[#26251e]"
+                  : "bg-white text-[#7a7a76] border-[#e5e5e0] hover:bg-[#fafaf8] hover:text-[#26251e]"
+              )}
+            >
+              Tous les prospects ({leads.length})
+            </button>
+            <button
+              onClick={() => setPhoneFilter('with_phone')}
+              className={cn(
+                "px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors border cursor-pointer flex items-center gap-1.5",
+                phoneFilter === 'with_phone'
+                  ? "bg-[#059669] text-white border-[#059669]"
+                  : "bg-white text-[#7a7a76] border-[#e5e5e0] hover:bg-[#fafaf8] hover:text-[#26251e]"
+              )}
+            >
+              <Phone className="h-3 w-3" /> Avec téléphone ({withPhoneCount})
+            </button>
+            <button
+              onClick={() => setPhoneFilter('without_phone')}
+              className={cn(
+                "px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors border cursor-pointer",
+                phoneFilter === 'without_phone'
+                  ? "bg-[#26251e] text-white border-[#26251e]"
+                  : "bg-white text-[#7a7a76] border-[#e5e5e0] hover:bg-[#fafaf8] hover:text-[#26251e]"
+              )}
+            >
+              Sans numéro ({withoutPhoneCount})
+            </button>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
-            <Filter className="h-3.5 w-3.5 text-[#7a7a76]" />
-            <select
-              value={selectedTemp}
-              onChange={(e) => setSelectedTemp(e.target.value)}
-              className="text-xs bg-[#fafaf8] border border-[#e5e5e0] rounded-lg px-2.5 py-1.5 focus:outline-hidden focus:border-[#059669] font-medium"
-            >
-              <option value="all">Toutes les températures</option>
-              <option value="Hot">🔥 Chauds uniquement</option>
-              <option value="Warm">🌤️ Tièdes</option>
-              <option value="Cold">❄️ Froids</option>
-            </select>
+          {/* Search + Temp */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white p-3 rounded-xl border border-[#e5e5e0] shadow-2xs">
+            <div className="flex items-center gap-2 flex-1 relative">
+              <Search className="h-4 w-4 text-[#7a7a76] absolute left-3 pointer-events-none" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Rechercher par entreprise, secteur, ville ou téléphone..."
+                className="w-full pl-9 pr-3 py-1.5 text-xs bg-[#fafaf8] border border-[#e5e5e0] rounded-lg focus:outline-hidden focus:border-[#059669] text-[#26251e]"
+              />
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              <Filter className="h-3.5 w-3.5 text-[#7a7a76]" />
+              <select
+                value={selectedTemp}
+                onChange={(e) => setSelectedTemp(e.target.value)}
+                className="text-xs bg-[#fafaf8] border border-[#e5e5e0] rounded-lg px-2.5 py-1.5 focus:outline-hidden focus:border-[#059669] font-medium"
+              >
+                <option value="all">Toutes les températures</option>
+                <option value="Hot">🔥 Chauds uniquement</option>
+                <option value="Warm">🌤️ Tièdes</option>
+                <option value="Cold">❄️ Froids</option>
+              </select>
+            </div>
           </div>
         </div>
 
@@ -182,8 +248,8 @@ export function CallsRoot() {
           {filteredLeads.length === 0 ? (
             <div className="p-12 text-center text-xs text-[#7a7a76]">
               <Phone className="h-8 w-8 mx-auto text-[#d4d4cb] mb-2" />
-              <p className="font-bold text-[#26251e]">Aucun prospect trouvé</p>
-              <p className="mt-1">Modifiez vos filtres ou enrichissez vos leads avec un numéro de téléphone.</p>
+              <p className="font-bold text-[#26251e]">Aucun prospect ne correspond à vos filtres</p>
+              <p className="mt-1">Modifiez vos critères de recherche ou réinitialisez les filtres.</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -191,7 +257,7 @@ export function CallsRoot() {
                 <thead>
                   <tr className="bg-[#fafaf8] border-b border-[#e5e5e0] text-[#7a7a76] font-bold select-none">
                     <th className="py-3 px-3 w-10 text-center">
-                      <button onClick={toggleSelectAll} className="p-0.5 hover:text-[#26251e] transition-colors">
+                      <button onClick={toggleSelectAll} className="p-0.5 hover:text-[#26251e] transition-colors cursor-pointer">
                         {selected.size === filteredLeads.length && filteredLeads.length > 0 ? (
                           <CheckSquare className="h-4 w-4 text-[#059669]" />
                         ) : (
@@ -199,8 +265,8 @@ export function CallsRoot() {
                         )}
                       </button>
                     </th>
-                    <th className="py-3 px-3">Entreprise & Description</th>
-                    <th className="py-3 px-3">Téléphone</th>
+                    <th className="py-3 px-3">Entreprise & Fiche</th>
+                    <th className="py-3 px-3">Numéro de Téléphone</th>
                     <th className="py-3 px-3">Ville</th>
                     <th className="py-3 px-3">Statut CRM</th>
                     <th className="py-3 px-3">Température</th>
@@ -210,6 +276,8 @@ export function CallsRoot() {
                 <tbody className="divide-y divide-[#e5e5e0]">
                   {filteredLeads.map((lead) => {
                     const isSelected = selected.has(lead.id);
+                    const hasPhone = Boolean(lead.phone && lead.phone.trim());
+
                     return (
                       <tr
                         key={lead.id}
@@ -245,20 +313,32 @@ export function CallsRoot() {
                           </div>
                           <p className="text-[11px] text-[#7a7a76] mt-0.5 line-clamp-1">
                             {lead.niche ? `${lead.niche} · ` : ''}{lead.contactName || 'Responsable'}
-                            {lead.notes ? ` — ${lead.notes}` : ''}
+                            {lead.notes && lead.notes.length > 0 ? ` — ${lead.notes[0].content}` : ''}
                           </p>
                         </td>
 
                         {/* Phone */}
                         <td className="py-3 px-3 whitespace-nowrap">
-                          <a
-                            href={`tel:${lead.phone}`}
-                            onClick={(e) => e.stopPropagation()}
-                            className="font-mono text-[11px] font-bold text-[#26251e] hover:text-[#059669] flex items-center gap-1"
-                          >
-                            <Phone className="h-3 w-3 text-[#059669] shrink-0" />
-                            <span>{lead.phone}</span>
-                          </a>
+                          {hasPhone ? (
+                            <a
+                              href={`tel:${lead.phone}`}
+                              onClick={(e) => e.stopPropagation()}
+                              className="font-mono text-[11px] font-bold text-[#26251e] hover:text-[#059669] flex items-center gap-1.5 py-0.5 px-2 rounded bg-[#fafaf8] border border-[#e5e5e0] hover:border-[#059669] transition-colors"
+                              title="Appeler directement"
+                            >
+                              <Phone className="h-3 w-3 text-[#059669] shrink-0" />
+                              <span>{lead.phone}</span>
+                            </a>
+                          ) : (
+                            <Link
+                              href={`/leads/${lead.id}`}
+                              onClick={(e) => e.stopPropagation()}
+                              className="text-[10px] text-amber-700 hover:text-amber-800 font-semibold bg-amber-50 px-2 py-0.5 rounded border border-amber-200/80 inline-flex items-center gap-1 hover:bg-amber-100/60 transition-colors"
+                              title="Ajouter un numéro sur la fiche"
+                            >
+                              <Plus className="h-2.5 w-2.5" /> Ajouter numéro
+                            </Link>
+                          )}
                         </td>
 
                         {/* City */}
@@ -301,36 +381,35 @@ export function CallsRoot() {
             </div>
           )}
         </div>
-
       </div>
 
-      {/* Floating Sticky Bottom Bar for Session Launch */}
+      {/* Sticky Bottom Floating Bar for Active Selection */}
       {selected.size > 0 && (
-        <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-40 bg-[#1e1e1e] text-white px-6 py-3 rounded-2xl shadow-2xl border border-neutral-700 flex items-center gap-6 animate-scale-up">
-          <div className="flex items-center gap-2 text-xs">
-            <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="font-bold">{selected.size} prospect{selected.size > 1 ? 's' : ''} sélectionné{selected.size > 1 ? 's' : ''}</span>
-          </div>
-
+        <div className="shrink-0 border-t border-[#e5e5e0] bg-[#fafaf8] px-4 py-3 flex items-center justify-between shadow-lg">
           <div className="flex items-center gap-2">
+            <span className="text-xs font-bold text-[#26251e]">
+              {selected.size} prospect{selected.size > 1 ? 's' : ''} sélectionné{selected.size > 1 ? 's' : ''}
+            </span>
             <button
               onClick={() => setSelected(new Set())}
-              className="px-3 py-1.5 text-xs text-neutral-400 hover:text-white font-medium transition-colors"
+              className="text-[11px] text-[#7a7a76] hover:text-[#26251e] underline cursor-pointer bg-transparent border-0"
             >
-              Désélectionner
-            </button>
-            <button
-              onClick={handleCreate}
-              disabled={creating}
-              className="flex items-center gap-2 px-4 py-2 bg-[#059669] hover:bg-[#047857] text-white text-xs font-bold rounded-xl transition-all shadow-md active:scale-95 disabled:opacity-50"
-            >
-              {creating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Phone className="h-3.5 w-3.5" />}
-              <span>Lancer la session d&apos;appels</span>
-              <ArrowRight className="h-3 w-3" />
+              Tout désélectionner
             </button>
           </div>
+
+          <button
+            onClick={handleCreate}
+            disabled={creating}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#059669] hover:bg-[#047857] text-white text-xs font-bold transition-colors cursor-pointer shadow-xs disabled:opacity-50"
+          >
+            {creating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ArrowRight className="h-3.5 w-3.5" />}
+            <span>Démarrer la session d&apos;appels</span>
+          </button>
         </div>
       )}
     </div>
   );
 }
+
+export default CallsRoot;

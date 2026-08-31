@@ -250,14 +250,10 @@
   transition: stroke-dasharray 0.5s ease-in-out;
 }
 
-/* Dynamic background grids */
-.bg-grid-pattern {
-  background-image: linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px);
-  background-size: 16px 16px;
-}
+/* Dynamic background grids disabled for clean high-contrast UI */
+.bg-grid-pattern,
 .bg-grid-pattern-20 {
-  background-image: linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px);
-  background-size: 20px 20px;
+  background-image: none !important;
 }
 
 /* 3D Laptop Mockup layout rules */

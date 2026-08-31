@@ -25,7 +25,7 @@ function stageLabel(status: string): string {
 
 export function TodayOverviewCharts() {
   const { leads } = useReach();
-  const effectiveLeads = leads.length > 0 ? leads : GOOGLE_SEEDED_LEADS;
+  const effectiveLeads = leads;
 
   const monthlyData = useMemo(() => {
     const months: { name: string; value: number; secondaryValue: number }[] = [];

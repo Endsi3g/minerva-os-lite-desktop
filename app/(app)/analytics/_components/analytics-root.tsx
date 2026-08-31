@@ -60,16 +60,16 @@ function InsightChip({ text, icon: Icon }: { text: string; icon: React.ElementTy
 
 function OverviewTab() {
   const { leads, tasks, projects, notifications } = useReach();
-  const effectiveLeads = leads.length > 0 ? leads : GOOGLE_SEEDED_LEADS;
+  const effectiveLeads = leads;
 
   const stats = useMemo(() => {
     const total = effectiveLeads.length;
     const contacted = effectiveLeads.filter(l => l.status !== 'New').length;
     const meeting = effectiveLeads.filter(l => l.status === 'Meeting Booked' || l.status === 'Won').length;
-    const won = effectiveLeads.filter(l => l.status === 'Won').length;
-    const lost = effectiveLeads.filter(l => l.status === 'Lost').length;
-    const convRate = total > 0 ? Math.round((won / total) * 100) : 10;
-    const contactRate = total > 0 ? Math.round((contacted / total) * 100) : 62;
+    const won = effectiveLeads.filter(l => l.status === 'Won' || (l.status as string) === 'Client').length;
+    const lost = effectiveLeads.filter(l => l.status === 'Lost' || (l.status as string) === 'Perdu').length;
+    const convRate = total > 0 ? Math.round((won / total) * 100) : 0;
+    const contactRate = total > 0 ? Math.round((contacted / total) * 100) : 0;
 
     const overdueTasks = tasks.filter(t => {
       if (t.completed) return false;
