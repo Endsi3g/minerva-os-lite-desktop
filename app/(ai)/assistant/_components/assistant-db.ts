@@ -1,5 +1,6 @@
 // Assistant Database Helpers
 import { createClient } from '@/lib/supabase/client';
+import { safeUUID, isValidUUID } from '@/lib/utils';
 
 export interface AssistantSession {
   id: string;
@@ -32,17 +33,10 @@ export interface AssistantCanvasDoc {
   updatedAt: string;
 }
 
-// Generate UUID safely client-side
-const getUUID = () => {
-  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
-    return crypto.randomUUID();
-  }
-  return Math.random().toString(36).substring(2) + Date.now().toString(36);
-};
-
 // ── SESSIONS ──
 
 export async function dbGetSessions(userId: string, workspaceId: string): Promise<AssistantSession[]> {
+  if (!isValidUUID(workspaceId)) return [];
   const supabase = createClient();
   const { data, error } = await supabase
     .from('assistant_sessions')
@@ -75,13 +69,15 @@ export async function dbGetSessions(userId: string, workspaceId: string): Promis
 
 export async function dbCreateSession(userId: string, workspaceId: string, title: string): Promise<AssistantSession> {
   const newSession: AssistantSession = {
-    id: getUUID(),
+    id: safeUUID(),
     userId,
     workspaceId,
     title,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };
+
+  if (!isValidUUID(workspaceId)) return newSession;
 
   const supabase = createClient();
   const { error } = await supabase.from('assistant_sessions').insert({
@@ -160,7 +156,7 @@ export async function dbSaveMessage(
   attachedFile?: { name: string; type: string }
 ): Promise<DBMessage> {
   const newMsg: DBMessage = {
-    id: getUUID(),
+    id: safeUUID(),
     sessionId,
     userId,
     role,
@@ -200,6 +196,7 @@ export async function dbSaveMessage(
 // ── CANVAS DOCUMENTS ──
 
 export async function dbGetCanvasDocs(userId: string, workspaceId: string): Promise<AssistantCanvasDoc[]> {
+  if (!isValidUUID(workspaceId)) return [];
   const supabase = createClient();
   const { data, error } = await supabase
     .from('assistant_canvas')
@@ -240,6 +237,8 @@ export async function dbSaveCanvasDoc(
     createdAt: now,
     updatedAt: now,
   };
+
+  if (!isValidUUID(workspaceId)) return doc;
 
   const supabase = createClient();
   const { error } = await supabase
@@ -321,6 +320,7 @@ export interface AssistantProjectDoc {
 }
 
 export async function dbGetProjectFolders(workspaceId: string): Promise<AssistantProject[]> {
+  if (!isValidUUID(workspaceId)) return [];
   const supabase = createClient();
   const { data, error } = await supabase
     .from('projects')
@@ -349,7 +349,7 @@ export async function dbCreateProjectFolder(
   name: string,
   description?: string
 ): Promise<AssistantProject> {
-  const id = getUUID();
+  const id = safeUUID();
   const now = new Date().toISOString();
   const newProj: AssistantProject = {
     id,
@@ -359,6 +359,8 @@ export async function dbCreateProjectFolder(
     createdAt: now,
     updatedAt: now,
   };
+
+  if (!isValidUUID(workspaceId)) return newProj;
 
   const supabase = createClient();
   await supabase.from('projects').insert({
@@ -375,6 +377,7 @@ export async function dbCreateProjectFolder(
 }
 
 export async function dbGetProjectDocs(workspaceId: string, projectId?: string | null): Promise<AssistantProjectDoc[]> {
+  if (!isValidUUID(workspaceId)) return [];
   const supabase = createClient();
   let query = supabase
     .from('documents')
@@ -409,7 +412,7 @@ export async function dbSaveProjectDoc(
   content: string,
   type = 'markdown'
 ): Promise<AssistantProjectDoc> {
-  const id = getUUID();
+  const id = safeUUID();
   const now = new Date().toISOString();
   const doc: AssistantProjectDoc = {
     id,
@@ -422,6 +425,8 @@ export async function dbSaveProjectDoc(
     createdAt: now,
     updatedAt: now,
   };
+
+  if (!isValidUUID(workspaceId)) return doc;
 
   const supabase = createClient();
   await supabase.from('documents').insert({

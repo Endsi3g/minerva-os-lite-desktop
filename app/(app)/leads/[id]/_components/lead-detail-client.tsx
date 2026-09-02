@@ -1019,11 +1019,20 @@ export function LeadDetailClient({ id }: { id: string }) {
   useEffect(() => {
     if (activeTab !== 'reviews' || reviewsGoogleConnected !== null) return;
     let cancelled = false;
-    fetch(getApiUrl('/api/google/auth/status'))
+    const controller = new AbortController();
+    const timer = setTimeout(() => {
+      if (!cancelled && reviewsGoogleConnected === null) setReviewsGoogleConnected(false);
+    }, 2500);
+    fetch(getApiUrl('/api/google/auth/status'), { signal: controller.signal })
       .then((r) => r.json())
       .then((data) => { if (!cancelled) setReviewsGoogleConnected(!!data.connected); })
-      .catch(() => { if (!cancelled) setReviewsGoogleConnected(false); });
-    return () => { cancelled = true; };
+      .catch(() => { if (!cancelled) setReviewsGoogleConnected(false); })
+      .finally(() => clearTimeout(timer));
+    return () => {
+      cancelled = true;
+      controller.abort();
+      clearTimeout(timer);
+    };
   }, [activeTab, reviewsGoogleConnected]);
 
   const handleCopyAllReviews = useCallback(() => {
@@ -2841,7 +2850,10 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                 /* Avis Google — reviews, photos, copier tout (Places API + complément Firecrawl best-effort) */
                 <div className="space-y-4">
                   {reviewsGoogleConnected === null ? (
-                    <div className="h-20 rounded-lg border border-[#e5e5e0] bg-[#f4f4f3]/50 animate-pulse" />
+                    <div className="flex items-center justify-center gap-2 py-8 text-xs text-[#8A9098]">
+                      <Loader2 className="w-4 h-4 animate-spin text-[#167f5b]" />
+                      <span>Vérification du statut Google...</span>
+                    </div>
                   ) : reviewsGoogleConnected === false ? (
                     <div className="flex flex-col items-center gap-3 py-6 text-center">
                       <p className="text-xs text-[#8A9098]">Connectez Google pour voir les avis Maps de ce lead.</p>

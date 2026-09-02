@@ -71,17 +71,23 @@ function MetricRow({
   );
 }
 
+import { isValidUUID } from '@/lib/utils';
+
 export function WorkloadBoard({ workspaceId }: { workspaceId: string }) {
   const [members, setMembers] = useState<MemberWorkload[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!workspaceId) return;
+    if (!workspaceId || !isValidUUID(workspaceId)) {
+      setMembers([]);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     fetch(getApiUrl(`/api/team/workload?workspace_id=${workspaceId}`))
-      .then((r) => r.json())
+      .then((r) => r.ok ? r.json() : { members: [] })
       .then((d) => setMembers(d.members ?? []))
-      .catch(() => {})
+      .catch(() => setMembers([]))
       .finally(() => setLoading(false));
   }, [workspaceId]);
 

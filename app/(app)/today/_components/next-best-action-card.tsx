@@ -23,12 +23,12 @@ interface NextAction {
 }
 
 const ACTION_META: Record<string, { label: string; icon: React.ElementType; color: string }> = {
-  generate_email_draft: { label: 'Rédiger un email de relance', icon: Mail, color: 'text-[#2563eb]' },
-  create_task: { label: 'Créer une tâche de relance', icon: ClipboardList, color: 'text-[#7c3aed]' },
-  update_pipeline_stage: { label: 'Mettre à jour le pipeline', icon: TrendingUp, color: 'text-[#059669]' },
-  enroll_in_sequence: { label: 'Inscrire dans une séquence', icon: Zap, color: 'text-[#d97706]' },
-  plan_field_route: { label: 'Planifier une visite terrain', icon: MapPin, color: 'text-[#dc2626]' },
-  update_agent_memory: { label: 'Mémoriser un apprentissage', icon: Brain, color: 'text-[#6b7280]' },
+  generate_email_draft: { label: 'Rédiger un email de relance', icon: Mail, color: 'text-blue-500' },
+  create_task: { label: 'Créer une tâche de relance', icon: ClipboardList, color: 'text-purple-500' },
+  update_pipeline_stage: { label: 'Mettre à jour le pipeline', icon: TrendingUp, color: 'text-brand-accent-emerald' },
+  enroll_in_sequence: { label: 'Inscrire dans une séquence', icon: Zap, color: 'text-amber-500' },
+  plan_field_route: { label: 'Planifier une visite terrain', icon: MapPin, color: 'text-destructive' },
+  update_agent_memory: { label: 'Mémoriser un apprentissage', icon: Brain, color: 'text-muted-foreground' },
 };
 
 export function NextBestActionCard() {
@@ -89,14 +89,14 @@ export function NextBestActionCard() {
   // Loading skeleton
   if (action === undefined) {
     return (
-      <div className="rounded-xl border border-[#e5e5e0] bg-white p-4 space-y-3 animate-pulse">
-        <div className="h-3 w-32 rounded bg-[#e5e5e0]" />
-        <div className="h-4 w-48 rounded bg-[#e5e5e0]" />
-        <div className="h-3 w-full rounded bg-[#e5e5e0]" />
-        <div className="h-3 w-4/5 rounded bg-[#e5e5e0]" />
+      <div className="rounded-xl border border-border bg-card p-3.5 space-y-2.5 animate-pulse">
+        <div className="h-3 w-32 rounded bg-muted" />
+        <div className="h-4 w-48 rounded bg-muted" />
+        <div className="h-3 w-full rounded bg-muted" />
+        <div className="h-3 w-4/5 rounded bg-muted" />
         <div className="flex gap-2">
-          <div className="h-8 flex-1 rounded-lg bg-[#e5e5e0]" />
-          <div className="h-8 w-20 rounded-lg bg-[#e5e5e0]" />
+          <div className="h-7 flex-1 rounded-lg bg-muted" />
+          <div className="h-7 w-20 rounded-lg bg-muted" />
         </div>
       </div>
     );
@@ -105,24 +105,24 @@ export function NextBestActionCard() {
   // Success state
   if (done) {
     return (
-      <div className="rounded-xl border border-[#bbf7d0] bg-[#f0fdf4] p-4 space-y-3">
+      <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3.5 space-y-2.5">
         <div className="flex items-center gap-2">
-          <CheckCircle2 className="h-4 w-4 text-[#059669] shrink-0" />
-          <p className="text-sm font-semibold text-[#059669]">Action exécutée</p>
+          <CheckCircle2 className="h-4 w-4 text-brand-accent-emerald shrink-0" />
+          <p className="text-sm font-semibold text-brand-accent-emerald">Action exécutée</p>
         </div>
-        <p className="text-xs text-[#15803d]">{done.message}</p>
+        <p className="text-xs text-foreground/80">{done.message}</p>
         <div className="flex gap-2">
           {done.redirect && (
             <button
               onClick={() => router.push(done.redirect!)}
-              className="flex items-center gap-1.5 text-xs font-semibold text-[#059669] hover:underline"
+              className="flex items-center gap-1.5 text-xs font-semibold text-brand-accent-emerald hover:underline cursor-pointer"
             >
               Voir le résultat <ChevronRight className="h-3 w-3" />
             </button>
           )}
           <button
             onClick={fetchAction}
-            className="ml-auto flex items-center gap-1 text-xs text-[#7a7a76] hover:text-[#26251e]"
+            className="ml-auto flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground cursor-pointer"
           >
             <RefreshCw className="h-3 w-3" /> Prochaine action
           </button>
@@ -134,17 +134,17 @@ export function NextBestActionCard() {
   // No action available
   if (!action || dismissed) {
     return (
-      <div className="rounded-xl border border-[#e5e5e0] bg-[#fafaf8] p-4 flex items-center gap-3">
-        <div className="h-8 w-8 flex items-center justify-center rounded-md bg-[#059669]/10 text-[#059669] shrink-0">
-          <Sparkles className="h-4 w-4" />
+      <div className="rounded-xl border border-border bg-muted/20 p-3.5 flex items-center gap-3">
+        <div className="h-7 w-7 flex items-center justify-center rounded-md bg-emerald-500/10 text-brand-accent-emerald shrink-0">
+          <Sparkles className="h-3.5 w-3.5" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-xs font-semibold text-[#26251e]">Aucune action en attente</p>
-          <p className="text-[11px] text-[#7a7a76]">Lancez un cycle agent pour générer des recommandations</p>
+          <p className="text-xs font-semibold text-foreground">Aucune action en attente</p>
+          <p className="text-[11px] text-muted-foreground">Lancez un cycle agent pour générer des recommandations</p>
         </div>
         <button
           onClick={fetchAction}
-          className="shrink-0 p-1.5 hover:bg-[#e5e5e0] rounded-md text-[#7a7a76] hover:text-[#26251e] transition-colors"
+          className="shrink-0 p-1.5 hover:bg-muted rounded-md text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
           title="Rafraîchir"
         >
           <RefreshCw className="h-3.5 w-3.5" />
@@ -153,22 +153,22 @@ export function NextBestActionCard() {
     );
   }
 
-  const meta = ACTION_META[action.action_type] ?? { label: action.action_type, icon: Zap, color: 'text-[#7a7a76]' };
+  const meta = ACTION_META[action.action_type] ?? { label: action.action_type, icon: Zap, color: 'text-muted-foreground' };
   const Icon = meta.icon;
 
   return (
-    <div className="rounded-xl border-l-[3px] border-l-[#059669] border border-[#e5e5e0] bg-white p-4 space-y-3 shadow-sm">
+    <div className="rounded-xl border-l-[3px] border-l-brand-accent-emerald border border-border bg-card p-3.5 space-y-2.5 shadow-2xs">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1.5">
-          <Zap className="h-3 w-3 text-[#059669] fill-[#059669]" />
-          <span className="text-[10px] font-bold uppercase tracking-wider text-[#059669]">
+          <Zap className="h-3 w-3 text-brand-accent-emerald fill-brand-accent-emerald" />
+          <span className="text-[10px] font-bold uppercase tracking-wider text-brand-accent-emerald">
             Prochaine action
           </span>
         </div>
         <button
           onClick={fetchAction}
-          className="p-1 hover:bg-[#f4f4f3] rounded text-[#a3a197] hover:text-[#26251e] transition-colors"
+          className="p-1 hover:bg-muted rounded text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
           title="Rafraîchir"
         >
           <RefreshCw className="h-3 w-3" />
@@ -179,20 +179,20 @@ export function NextBestActionCard() {
       <div className="space-y-0.5">
         <div className="flex items-center gap-2">
           <Icon className={cn('h-3.5 w-3.5 shrink-0', meta.color)} />
-          <span className="text-sm font-semibold text-[#26251e]">{meta.label}</span>
+          <span className="text-sm font-semibold text-foreground">{meta.label}</span>
         </div>
         {action.lead_name && (
-          <p className="text-xs text-[#555552] pl-5">
+          <p className="text-xs text-muted-foreground pl-5">
             {action.lead_name}
-            {action.lead_city && <span className="text-[#a3a197]"> — {action.lead_city}</span>}
+            {action.lead_city && <span className="opacity-70"> — {action.lead_city}</span>}
           </p>
         )}
       </div>
 
       {/* Reasoning */}
       {action.reasoning && (
-        <div className="rounded-lg bg-[#fafaf8] border border-[#e5e5e0] px-3 py-2">
-          <p className="text-[11px] text-[#555552] leading-relaxed italic">
+        <div className="rounded-lg bg-muted/40 border border-border px-2.5 py-1.5">
+          <p className="text-[11px] text-foreground/80 leading-relaxed italic">
             &ldquo;{action.reasoning}&rdquo;
           </p>
         </div>
@@ -200,18 +200,18 @@ export function NextBestActionCard() {
 
       {/* Data signals */}
       {action.data_signals && (
-        <p className="text-[10px] text-[#7a7a76] flex items-center gap-1">
-          <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#059669] shrink-0" />
+        <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+          <span className="inline-block w-1.5 h-1.5 rounded-full bg-brand-accent-emerald shrink-0" />
           {action.data_signals}
         </p>
       )}
 
       {/* Actions */}
-      <div className="flex gap-2 pt-1">
+      <div className="flex gap-2 pt-0.5">
         <button
           onClick={handleExecute}
           disabled={executing}
-          className="flex-1 flex items-center justify-center gap-1.5 rounded-lg bg-[#059669] hover:bg-[#047857] disabled:opacity-60 px-3 py-2 text-xs font-bold text-white transition-colors"
+          className="flex-1 flex items-center justify-center gap-1.5 rounded-lg bg-brand-accent-emerald hover:bg-brand-accent-emeraldHover disabled:opacity-60 px-3 py-1.5 text-xs font-bold text-white transition-colors cursor-pointer"
         >
           {executing ? (
             <><Loader2 className="h-3.5 w-3.5 animate-spin" /> En cours…</>
@@ -222,7 +222,7 @@ export function NextBestActionCard() {
         <button
           onClick={handleDismiss}
           disabled={executing}
-          className="flex items-center gap-1 rounded-lg border border-[#e5e5e0] bg-white hover:bg-[#f4f4f3] disabled:opacity-40 px-3 py-2 text-xs font-semibold text-[#7a7a76] hover:text-[#26251e] transition-colors"
+          className="flex items-center gap-1 rounded-lg border border-border bg-card hover:bg-muted disabled:opacity-40 px-3 py-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
         >
           <SkipForward className="h-3 w-3" /> Passer
         </button>

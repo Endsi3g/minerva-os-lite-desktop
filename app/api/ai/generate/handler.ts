@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
     const language = options?.language || 'fr';
     const format = options?.format || 'markdown';
 
-    const systemPrompt = `Tu es le copilote IA de productivité et de rédaction pour une agence moderne (Minerva OS).
+    const systemPrompt = `Tu es le copilote IA de productivité et de rédaction pour une agence moderne (Minerva).
 Tu rédiges du contenu de qualité supérieure (SOPs, briefs de projet, posts LinkedIn, emails de prospection, plans d'action, spécifications techniques).
 
 Consignes de rédaction :

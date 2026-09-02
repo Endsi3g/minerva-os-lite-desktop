@@ -4,6 +4,8 @@ import React, { useEffect, useState } from 'react';
 import { Reply, CalendarCheck2, ChevronRight } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
+import { isValidUUID } from '@/lib/utils';
+
 interface RevenueEvent {
   id: string;
   type: 'email_received' | 'calendar_event_created';
@@ -29,7 +31,11 @@ export function RevenueFeed({ workspaceId }: { workspaceId: string }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!workspaceId) return;
+    if (!workspaceId || !isValidUUID(workspaceId)) {
+      setEvents([]);
+      setLoading(false);
+      return;
+    }
     const supabase = createClient();
     supabase
       .from('notifications')
@@ -41,7 +47,9 @@ export function RevenueFeed({ workspaceId }: { workspaceId: string }) {
       .then(({ data }: { data: RevenueEvent[] | null }) => {
         setEvents(data ?? []);
       })
-      .catch(() => {})
+      .catch(() => {
+        setEvents([]);
+      })
       .finally(() => setLoading(false));
   }, [workspaceId]);
 

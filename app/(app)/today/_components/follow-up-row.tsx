@@ -90,48 +90,48 @@ export function FollowUpRow({ lead }: FollowUpRowProps) {
 
   return (
     <>
-      <TableRow className="hover:bg-[#f4f4f3]/80 transition-colors">
+      <TableRow className="hover:bg-accent/40 transition-colors border-b border-border/60">
         {/* Lead info */}
-        <TableCell className="py-3.5 font-medium">
+        <TableCell className="py-2.5 font-medium">
           <div className="flex flex-col gap-0.5">
-            <span className="text-xs font-semibold text-[#26251e]">{lead.businessName}</span>
-            <span className="text-[10px] text-[#7a7a76]">
+            <span className="text-xs font-semibold text-foreground truncate max-w-[140px]">{lead.businessName}</span>
+            <span className="text-[10px] text-muted-foreground truncate max-w-[140px]">
               {lead.contactName || 'Sans contact'} • {lead.city}
             </span>
           </div>
         </TableCell>
 
         {/* Channel */}
-        <TableCell className="py-3.5">
-          <span className="px-2 py-0.5 rounded text-[11px] font-semibold uppercase bg-gray-100 text-gray-700 inline-block">
+        <TableCell className="py-2.5">
+          <span className="px-2 py-0.5 rounded text-[10px] font-semibold uppercase bg-muted text-muted-foreground inline-block border border-border">
             {channel.label}
           </span>
         </TableCell>
 
         {/* Last contact */}
-        <TableCell className="py-3.5 text-xs text-gray-500 max-w-[150px] truncate">
+        <TableCell className="py-2.5 text-xs text-muted-foreground max-w-[120px] truncate">
           {lead.notes && lead.notes.length > 0
             ? lead.notes[lead.notes.length - 1].content
             : 'Aucun contact'}
         </TableCell>
 
         {/* Next action */}
-        <TableCell className="py-3.5 text-xs">
-          <div className="flex flex-col gap-0.5 max-w-[200px]">
-            <span className="font-medium text-gray-900 truncate">{lead.nextAction}</span>
-            <span className="text-[10px] text-red-600 font-medium">Aujourd'hui</span>
+        <TableCell className="py-2.5 text-xs">
+          <div className="flex flex-col gap-0.5 max-w-[160px]">
+            <span className="font-medium text-foreground truncate">{lead.nextAction}</span>
+            <span className="text-[10px] text-destructive font-medium">Aujourd'hui</span>
           </div>
         </TableCell>
 
         {/* Actions */}
-        <TableCell className="py-3.5 text-right">
-          <div className="flex items-center justify-end gap-1.5">
+        <TableCell className="py-2.5 text-right pr-3">
+          <div className="flex items-center justify-end gap-1">
             <button
               onClick={handleQuickDraft}
-              className="px-3 py-1 rounded-lg text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition-colors inline-flex items-center gap-1 cursor-pointer"
+              className="px-2.5 py-1 rounded-md text-[11px] font-medium bg-emerald-500/10 text-brand-accent-emerald border border-emerald-500/20 hover:bg-emerald-500/20 transition-colors inline-flex items-center gap-1 cursor-pointer"
             >
-              <Mail className="h-3.5 w-3.5" />
-              <span>Envoyer aujourd'hui</span>
+              <Mail className="h-3 w-3" />
+              <span className="hidden sm:inline">Rédiger</span>
             </button>
 
             <Tooltip>
@@ -139,10 +139,10 @@ export function FollowUpRow({ lead }: FollowUpRowProps) {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-7 w-7 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+                  className="h-7 w-7 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 cursor-pointer"
                   onClick={handleDone}
                 >
-                  <Check className="h-4 w-4" />
+                  <Check className="h-3.5 w-3.5" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
@@ -155,10 +155,10 @@ export function FollowUpRow({ lead }: FollowUpRowProps) {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-7 w-7 text-amber-600 hover:text-amber-700 hover:bg-amber-50"
+                  className="h-7 w-7 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10 cursor-pointer"
                   onClick={handleSnooze}
                 >
-                  <Clock className="h-4 w-4" />
+                  <Clock className="h-3.5 w-3.5" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
@@ -171,26 +171,26 @@ export function FollowUpRow({ lead }: FollowUpRowProps) {
 
       {/* Quick draft sheet */}
       <Sheet open={draftOpen} onOpenChange={setDraftOpen}>
-        <SheetContent className="w-[420px] sm:w-[500px] flex flex-col gap-0">
-          <SheetHeader className="pb-4 border-b border-[#e5e5e0]">
-            <SheetTitle className="text-base font-semibold">Brouillon de relance</SheetTitle>
-            <SheetDescription className="text-xs">
+        <SheetContent className="w-full max-w-[420px] sm:max-w-[500px] flex flex-col gap-0 bg-card text-card-foreground border-border">
+          <SheetHeader className="pb-3 border-b border-border">
+            <SheetTitle className="text-base font-semibold text-foreground">Brouillon de relance</SheetTitle>
+            <SheetDescription className="text-xs text-muted-foreground">
               {lead.businessName} — {lead.nextAction}
             </SheetDescription>
           </SheetHeader>
 
           <div className="flex-1 py-4 flex flex-col gap-3">
             {loadingDraft ? (
-              <div className="flex flex-col items-center justify-center gap-3 py-12 text-[#7a7a76]">
-                <Loader2 className="h-6 w-6 animate-spin text-[#059669]" />
-                <span className="text-xs">Génération en cours…</span>
+              <div className="flex flex-col items-center justify-center gap-3 py-12 text-muted-foreground">
+                <Loader2 className="h-6 w-6 animate-spin text-brand-accent-emerald" />
+                <span className="text-xs">Génération IA en cours…</span>
               </div>
             ) : (
               <>
                 <Textarea
                   value={draftText}
                   onChange={e => setDraftText(e.target.value)}
-                  className="flex-1 min-h-[320px] text-xs font-mono resize-none leading-relaxed"
+                  className="flex-1 min-h-[300px] text-xs font-mono resize-none leading-relaxed bg-background border-input text-foreground"
                   placeholder="Le brouillon apparaîtra ici…"
                 />
                 <Button
@@ -201,7 +201,7 @@ export function FollowUpRow({ lead }: FollowUpRowProps) {
                   disabled={!draftText}
                 >
                   {copied ? (
-                    <><CheckCheck className="h-3.5 w-3.5 text-emerald-600" /><span>Copié !</span></>
+                    <><CheckCheck className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" /><span>Copié !</span></>
                   ) : (
                     <><Copy className="h-3.5 w-3.5" /><span>Copier</span></>
                   )}

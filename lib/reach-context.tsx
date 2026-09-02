@@ -9,6 +9,7 @@ import { computeLeadScore } from './lead-scoring';
 import { createClient } from './supabase/client';
 import { sendDesktopNotification } from './notification-service';
 import { reportClientError } from './report-client-error';
+import { safeUUID, isValidUUID } from './utils';
 import { toast } from 'sonner';
 
 /**
@@ -850,7 +851,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
         }));
 
         if (mappedList.length === 0 && currentUser) {
-          const defaultId = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : Math.random().toString(36).substring(2) + Date.now().toString(36);
+          const defaultId = safeUUID();
           const nowStr = new Date().toISOString();
           await electronObj.dbRun(
             "INSERT INTO workspaces (id, name, owner_id, created_at, sync_status, custom_columns) VALUES (?, ?, ?, ?, 'pending_insert', '[]')",
@@ -1037,7 +1038,7 @@ export function ReachProvider({ children }: { children: React.ReactNode }) {
     const electronObj = getElectronSqlite();
     if (electronObj) {
       try {
-        const id = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : Math.random().toString(36).substring(2) + Date.now().toString(36);
+        const id = safeUUID();
         const nowStr = new Date().toISOString();
         await electronObj.dbRun(
           "INSERT INTO workspaces (id, name, owner_id, created_at, sync_status) VALUES (?, ?, ?, ?, 'pending_insert')",

@@ -734,6 +734,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
       else if (segment === 'website-builder') label = 'Site Web';
       else if (segment === 'client-reports') label = 'Rapports client';
       else if (segment === 'performance') label = 'Classement de performance';
+      else if (segment === 'composer') label = 'Studio Composer';
       else if (segment === 'webhooks') label = 'Webhooks';
 
       if (segments[index - 1] === 'leads' && segment !== 'leads') {
@@ -766,7 +767,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
       );
     }
     if (itemHref === '/outreach') {
-      return ['/outreach', '/inbox', '/campaigns', '/sequences', '/email-templates', '/playbooks', '/library', '/chat', '/messages'].some(
+      return ['/outreach', '/composer', '/inbox', '/campaigns', '/sequences', '/email-templates', '/playbooks', '/library', '/chat', '/messages'].some(
         p => pathname === p || pathname.startsWith(p + '/')
       );
     }

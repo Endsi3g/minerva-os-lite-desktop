@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useReach } from '@/lib/reach-context';
 import { useLanguage } from '@/lib/language-context';
 import { getApiUrl } from '@/lib/api-helper';
-import { cn } from '@/lib/utils';
+import { cn, safeUUID } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -48,8 +48,17 @@ import {
   AttachmentAction,
 } from '@/components/ui/attachment';
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
   Send, Search, Users, MessageCircle, Smile, ImageIcon, X, FileText, Mic, Square, Paperclip, Loader2,
-  MoreHorizontal, Pencil, Trash2, Check, Menu, Bot,
+  MoreHorizontal, Pencil, Trash2, Check, Menu, Bot, Plus, Hash, UserPlus,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
@@ -62,6 +71,14 @@ interface Member {
   email: string;
   name: string;
   avatarBase64?: string | null;
+}
+
+export interface CustomGroup {
+  id: string;
+  name: string;
+  description?: string;
+  memberIds: string[];
+  createdAt: string;
 }
 
 interface DmMessage {
@@ -219,6 +236,8 @@ function ConversationList({
   onSelect,
   members,
   filteredMembers,
+  groups,
+  onOpenCreateGroup,
 }: {
   t: (key: TranslationKey, fallback?: string) => string;
   searchQuery: string;
@@ -227,6 +246,8 @@ function ConversationList({
   onSelect: (id: 'group' | string) => void;
   members: Member[];
   filteredMembers: Member[];
+  groups: CustomGroup[];
+  onOpenCreateGroup: () => void;
 }) {
   return (
     <>
@@ -243,50 +264,91 @@ function ConversationList({
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-2 pb-4">
-        <button
-          onClick={() => onSelect('group')}
-          className={cn(
-            'w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left transition-colors mb-1',
-            selectedConversation === 'group' ? 'bg-[#059669]/10 text-[#059669]' : 'hover:bg-white/70 text-[#26251e]'
-          )}
-        >
-          <div className="w-9 h-9 rounded-full bg-[#059669]/15 flex items-center justify-center shrink-0">
-            <Users className="w-4 h-4 text-[#059669]" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-xs font-semibold truncate">{t('messages.group_chat')}</p>
-            <p className="text-[10px] text-[#7a7a76] truncate">Chat d'équipe</p>
-          </div>
-        </button>
-
-        {filteredMembers.length > 0 && (
-          <>
-            <Separator className="my-2 bg-[#e5e5e0]" />
-            <p className="text-[10px] font-semibold tracking-wider uppercase text-[#7a7a76] px-2.5 mb-1">Membres</p>
-          </>
-        )}
-
-        {filteredMembers.map((member) => (
+      <div className="flex-1 overflow-y-auto px-2 pb-4 space-y-3">
+        {/* Main team channel */}
+        <div>
           <button
-            key={member.id}
-            onClick={() => onSelect(member.id)}
+            onClick={() => onSelect('group')}
             className={cn(
-              'w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left transition-colors mb-0.5',
-              selectedConversation === member.id ? 'bg-[#059669]/10 text-[#059669]' : 'hover:bg-white/70 text-[#26251e]'
+              'w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left transition-colors',
+              selectedConversation === 'group' ? 'bg-[#059669]/10 text-[#059669]' : 'hover:bg-white/70 text-[#26251e]'
             )}
           >
-            <UserAvatar name={member.name} src={member.avatarBase64} />
+            <div className="w-8 h-8 rounded-full bg-[#059669]/15 flex items-center justify-center shrink-0">
+              <Users className="w-4 h-4 text-[#059669]" />
+            </div>
             <div className="min-w-0 flex-1">
-              <p className="text-xs font-semibold truncate">{member.name}</p>
-              <p className="text-[10px] text-[#7a7a76] truncate">{member.email}</p>
+              <p className="text-xs font-semibold truncate">{t('messages.group_chat')}</p>
+              <p className="text-[10px] text-[#7a7a76] truncate">Chat d'équipe général</p>
             </div>
           </button>
-        ))}
+        </div>
 
-        {members.length === 0 && (
-          <p className="text-[11px] text-[#7a7a76] px-2.5 py-3 text-center">Aucun membre actif</p>
-        )}
+        {/* Custom Groups */}
+        <div>
+          <div className="flex items-center justify-between px-2.5 mb-1">
+            <p className="text-[10px] font-semibold tracking-wider uppercase text-[#7a7a76]">Groupes d'équipe</p>
+            <button
+              onClick={onOpenCreateGroup}
+              title="Créer un groupe de discussion"
+              className="flex items-center gap-1 text-[10px] font-bold text-[#059669] hover:underline cursor-pointer"
+            >
+              <Plus className="w-3 h-3" />
+              <span>Nouveau</span>
+            </button>
+          </div>
+
+          <div className="space-y-0.5">
+            {groups.map((g) => (
+              <button
+                key={g.id}
+                onClick={() => onSelect(`group:${g.id}`)}
+                className={cn(
+                  'w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-left transition-colors',
+                  selectedConversation === `group:${g.id}` ? 'bg-[#059669]/10 text-[#059669]' : 'hover:bg-white/70 text-[#26251e]'
+                )}
+              >
+                <div className="w-7 h-7 rounded-lg bg-emerald-500/10 flex items-center justify-center shrink-0 text-[#059669]">
+                  <Hash className="w-3.5 h-3.5" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-semibold truncate">{g.name}</p>
+                  <p className="text-[10px] text-[#7a7a76] truncate">{g.memberIds.length} membre{g.memberIds.length !== 1 ? 's' : ''}</p>
+                </div>
+              </button>
+            ))}
+            {groups.length === 0 && (
+              <p className="text-[10px] text-[#7a7a76] px-2.5 py-1 italic">Aucun groupe créé</p>
+            )}
+          </div>
+        </div>
+
+        {/* Direct Messages */}
+        <div>
+          <p className="text-[10px] font-semibold tracking-wider uppercase text-[#7a7a76] px-2.5 mb-1">Messages directs</p>
+          <div className="space-y-0.5">
+            {filteredMembers.map((member) => (
+              <button
+                key={member.id}
+                onClick={() => onSelect(member.id)}
+                className={cn(
+                  'w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-left transition-colors',
+                  selectedConversation === member.id ? 'bg-[#059669]/10 text-[#059669]' : 'hover:bg-white/70 text-[#26251e]'
+                )}
+              >
+                <UserAvatar name={member.name} src={member.avatarBase64} size="sm" />
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-semibold truncate">{member.name}</p>
+                  <p className="text-[10px] text-[#7a7a76] truncate">{member.email}</p>
+                </div>
+              </button>
+            ))}
+
+            {members.length === 0 && (
+              <p className="text-[11px] text-[#7a7a76] px-2.5 py-2 text-center">Aucun membre actif</p>
+            )}
+          </div>
+        </div>
       </div>
     </>
   );
@@ -326,6 +388,46 @@ export default function MessagesRoot() {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordedChunksRef = useRef<Blob[]>([]);
   const recordingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const [groups, setGroups] = useState<CustomGroup[]>([]);
+  const [isCreateGroupOpen, setIsCreateGroupOpen] = useState(false);
+  const [newGroupName, setNewGroupName] = useState('');
+  const [selectedGroupMemberIds, setSelectedGroupMemberIds] = useState<string[]>([]);
+
+  // Load custom groups from localStorage
+  useEffect(() => {
+    if (!activeWorkspace?.id) return;
+    const stored = localStorage.getItem(`minerva_custom_groups_${activeWorkspace.id}`);
+    if (stored) {
+      try { setGroups(JSON.parse(stored)); } catch {}
+    } else {
+      setGroups([]);
+    }
+  }, [activeWorkspace?.id]);
+
+  const handleCreateGroup = () => {
+    if (!newGroupName.trim() || !activeWorkspace?.id) return;
+    const newGroup: CustomGroup = {
+      id: safeUUID(),
+      name: newGroupName.trim(),
+      memberIds: selectedGroupMemberIds,
+      createdAt: new Date().toISOString(),
+    };
+    const updated = [...groups, newGroup];
+    setGroups(updated);
+    localStorage.setItem(`minerva_custom_groups_${activeWorkspace.id}`, JSON.stringify(updated));
+    setSelectedConversation(`group:${newGroup.id}`);
+    setIsCreateGroupOpen(false);
+    setNewGroupName('');
+    setSelectedGroupMemberIds([]);
+    toast.success(`Groupe "${newGroup.name}" créé avec succès !`);
+  };
+
+  const handleToggleGroupMember = (memberId: string) => {
+    setSelectedGroupMemberIds((prev) =>
+      prev.includes(memberId) ? prev.filter((id) => id !== memberId) : [...prev, memberId]
+    );
+  };
 
   // Fetch current user
   useEffect(() => {
@@ -398,6 +500,8 @@ export default function MessagesRoot() {
 
       if (selectedConversation === 'group') {
         query = query.is('recipient_id', null);
+      } else if (selectedConversation.startsWith('group:')) {
+        query = query.eq('recipient_id', selectedConversation);
       } else {
         const theirId = selectedConversation;
         query = query.or(
@@ -778,6 +882,9 @@ export default function MessagesRoot() {
     m.email.toLowerCase().includes(searchQuery.toLowerCase())
   );
   const selectedMember = members.find((m) => m.id === selectedConversation);
+  const selectedGroup = selectedConversation.startsWith('group:')
+    ? groups.find((g) => `group:${g.id}` === selectedConversation)
+    : null;
 
   // Group messages by date
   const groupedMessages: Array<{ date: string; items: DmMessage[] }> = [];
@@ -800,6 +907,8 @@ export default function MessagesRoot() {
           onSelect={setSelectedConversation}
           members={members}
           filteredMembers={filteredMembers}
+          groups={groups}
+          onOpenCreateGroup={() => setIsCreateGroupOpen(true)}
         />
       </div>
 
@@ -817,6 +926,8 @@ export default function MessagesRoot() {
             onSelect={(id) => { setSelectedConversation(id); setMobileListOpen(false); }}
             members={members}
             filteredMembers={filteredMembers}
+            groups={groups}
+            onOpenCreateGroup={() => { setIsCreateGroupOpen(true); setMobileListOpen(false); }}
           />
         </SheetContent>
       </Sheet>
@@ -841,6 +952,16 @@ export default function MessagesRoot() {
               <div>
                 <p className="text-sm font-semibold text-[#26251e]">{t('messages.group_chat')}</p>
                 <p className="text-[10px] text-[#7a7a76]">{members.length} membre{members.length !== 1 ? 's' : ''}</p>
+              </div>
+            </>
+          ) : selectedGroup ? (
+            <>
+              <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-[#059669]">
+                <Hash className="w-4 h-4" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-[#26251e]">{selectedGroup.name}</p>
+                <p className="text-[10px] text-[#7a7a76]">Groupe · {selectedGroup.memberIds.length} membre{selectedGroup.memberIds.length !== 1 ? 's' : ''}</p>
               </div>
             </>
           ) : selectedMember ? (
@@ -1189,6 +1310,69 @@ export default function MessagesRoot() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Create Group Dialog */}
+      <Dialog open={isCreateGroupOpen} onOpenChange={setIsCreateGroupOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Créer un groupe de discussion</DialogTitle>
+            <DialogDescription>
+              Créez un canal dédié pour une équipe spécifique (SDR, Closers, Support...) afin d'échanger en groupe.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-3">
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-[#26251e]">Nom du groupe</label>
+              <Input
+                placeholder="ex: Pôle Prospection, Closers Q3, Direction..."
+                value={newGroupName}
+                onChange={(e) => setNewGroupName(e.target.value)}
+                className="text-xs h-9"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-semibold text-[#26251e]">Sélectionner les membres</label>
+              <div className="max-h-48 overflow-y-auto space-y-1 rounded-lg border border-[#e5e5e0] p-2">
+                {members.map((m) => {
+                  const isChecked = selectedGroupMemberIds.includes(m.id);
+                  return (
+                    <div
+                      key={m.id}
+                      onClick={() => handleToggleGroupMember(m.id)}
+                      className={cn(
+                        'flex items-center justify-between p-2 rounded-md text-xs cursor-pointer transition-colors',
+                        isChecked ? 'bg-[#059669]/10 text-[#059669] font-semibold' : 'hover:bg-muted text-[#26251e]'
+                      )}
+                    >
+                      <div className="flex items-center gap-2">
+                        <UserAvatar name={m.name} src={m.avatarBase64} size="sm" />
+                        <span>{m.name}</span>
+                      </div>
+                      <Checkbox checked={isChecked} />
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" size="sm" onClick={() => setIsCreateGroupOpen(false)}>
+              Annuler
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleCreateGroup}
+              disabled={!newGroupName.trim()}
+              className="bg-[#059669] hover:bg-[#047857] text-white"
+            >
+              Créer le groupe
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

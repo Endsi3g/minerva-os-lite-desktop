@@ -3,11 +3,12 @@
 import React from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { Send, Inbox, Megaphone, Mail, FileText, BookOpen } from 'lucide-react';
+import { Send, Inbox, Megaphone, Mail, FileText, SquarePen } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const TABS = [
   { label: 'Cockpit Outreach', href: '/outreach', icon: Send, exact: true },
+  { label: 'Studio Composer', href: '/composer', icon: SquarePen },
   { label: 'Boîte de réception', href: '/inbox', icon: Inbox },
   { label: 'Campagnes', href: '/campaigns', icon: Megaphone },
   { label: 'Séquences', href: '/sequences', icon: Mail },

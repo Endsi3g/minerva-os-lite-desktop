@@ -7,6 +7,7 @@ import { SettingsSectionWrapper } from './settings-section-wrapper';
 import { useTheme } from 'next-themes';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/lib/language-context';
+import { getApiUrl } from '@/lib/api-helper';
 import { Globe } from 'lucide-react';
 
 interface AppearanceData {
@@ -34,7 +35,7 @@ export function SettingsAppearanceSection({ data, onChange, isSaving }: Settings
     const localOpacity = localStorage.getItem('minerva_ui_grid_opacity');
     const localDensity = localStorage.getItem('minerva_ui_density');
 
-    fetch('/api/settings/user-prefs')
+    fetch(getApiUrl('/api/settings/user-prefs'))
       .then(r => {
         if (!r.ok) throw new Error();
         return r.json();
@@ -67,7 +68,7 @@ export function SettingsAppearanceSection({ data, onChange, isSaving }: Settings
             document.documentElement.classList.toggle('compact', dens === 'compact');
 
             // Migrate to DB
-            fetch('/api/settings/user-prefs', {
+            fetch(getApiUrl('/api/settings/user-prefs'), {
               method: 'PATCH',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -99,7 +100,7 @@ export function SettingsAppearanceSection({ data, onChange, isSaving }: Settings
   };
 
   const persistPrefs = (patch: Record<string, unknown>) => {
-    fetch('/api/settings/user-prefs', {
+    fetch(getApiUrl('/api/settings/user-prefs'), {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ui_preferences: patch }),

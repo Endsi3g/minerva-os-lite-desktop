@@ -33,24 +33,24 @@ export function FollowUpListCard() {
   const hiddenCount = followUpLeads.length - MAX_VISIBLE;
 
   return (
-    <Card className="border border-[#e5e5e0] bg-white shadow-none flex flex-col min-h-0">
-      <CardHeader className="flex flex-row items-center justify-between pb-3 shrink-0">
-        <div className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-[#059669]/10 text-[#059669]">
+    <Card className="border border-border bg-card shadow-none flex flex-col min-h-0">
+      <CardHeader className="flex flex-row items-center justify-between pb-3 shrink-0 border-b border-border/50">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-emerald-500/10 text-brand-accent-emerald shrink-0">
             <MessageSquareReply className="h-4 w-4" />
           </div>
-          <div>
-            <CardTitle className="font-heading font-sans text-sm font-bold text-gray-900">{t('today.follow_ups')}</CardTitle>
-            <CardDescription className="text-xs">{t('today.follow_ups_desc')}</CardDescription>
+          <div className="min-w-0">
+            <CardTitle className="font-heading font-sans text-sm font-bold text-foreground truncate">{t('today.follow_ups')}</CardTitle>
+            <CardDescription className="text-xs text-muted-foreground truncate">{t('today.follow_ups_desc')}</CardDescription>
           </div>
         </div>
         {followUpLeads.length > 0 && (
-          <Badge variant="destructive" className="text-[10px] font-bold px-2 py-0.5 rounded-full">
+          <Badge variant="destructive" className="text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0">
             {followUpLeads.length}
           </Badge>
         )}
       </CardHeader>
-      <CardContent className="flex-1 min-h-0 overflow-y-auto p-0 px-6 pb-4">
+      <CardContent className="flex-1 min-h-0 p-3 sm:p-4">
         <FollowUpList leads={visibleLeads} />
         {followUpLeads.length > MAX_VISIBLE && (
           <button

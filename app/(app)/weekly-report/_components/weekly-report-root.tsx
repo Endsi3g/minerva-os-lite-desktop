@@ -8,7 +8,9 @@ import {
   ArrowRightLeft, UsersRound, BrainCircuit, PauseCircle, PlayCircle, Tag,
   MessageSquare, Inbox, Lightbulb, Send, Sparkles, ChevronRight, Clock, Trophy, LineChart,
   ArrowUpRight, Target, TrendingUp, CheckCircle2, Flame, ShieldAlert,
+  Copy, Download, Share2, Check,
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useReach } from '@/lib/reach-context';
 import { getApiUrl } from '@/lib/api-helper';
@@ -186,7 +188,16 @@ export function WeeklyReportRoot() {
 
   // Compute live synthesis if no server report generated yet
   const liveComputedReport = useMemo(() => {
-    if (leads.length === 0) return null;
+    if (leads.length === 0) {
+      return `1. Analyse du portefeuille et vélocité
+Aucune opportunité active n'a été enregistrée dans le portefeuille pour cette période. Ajoutez vos premiers leads pour obtenir une analyse détaillée.
+
+2. Opportunités prioritaires
+Aucun prospect prioritaire à relancer.
+
+3. Recommandation stratégique
+Démarrez votre prospection ou importez une liste de contacts pour activer les recommandations prédictives de Minerva.`;
+    }
     const hotLeads = leads.filter(l => l.temperature === 'Hot');
     const meetingLeads = leads.filter(l => l.status === 'Meeting Booked');
     const proposalLeads = leads.filter(l => l.status === 'Proposal Sent');
@@ -196,39 +207,46 @@ export function WeeklyReportRoot() {
       return acc;
     }, {} as Record<string, number>);
     const sortedNiches = Object.entries(topNiche).sort((a, b) => b[1] - a[1]);
-    const mainNiche = sortedNiches[0]?.[0] || 'Restaurants & Commerces';
+    const mainNiche = sortedNiches[0]?.[0] || 'Général';
 
     return `1. Analyse du portefeuille et vélocité
 Le portefeuille compte actuellement ${leads.length} opportunités actives réparties principalement sur le secteur ${mainNiche}. ${hotLeads.length} prospects à haute intention d'achat (score moyen supérieur à 80/100) nécessitent un suivi immédiat.
 
 2. Opportunités prioritaires à conclure
-• ${hotLeads[0]?.businessName || 'Prospect prioritaire'} (${hotLeads[0]?.city || 'Montréal'}) : ${hotLeads[0]?.nextAction || 'Relance par email avec audit'}
-• ${hotLeads[1]?.businessName || 'Deuxième opportunité'} : Proposition d'optimisation MRR
-• ${meetingLeads[0]?.businessName || 'Dossier en négociation'} : Préparation de la démonstration technique
+• ${hotLeads[0]?.businessName || 'Prospect prioritaire'} (${hotLeads[0]?.city || 'Local'}) : ${hotLeads[0]?.nextAction || 'Relance personnalisée'}
+${hotLeads[1] ? `• ${hotLeads[1].businessName} : Proposition d'optimisation commerciale` : ''}
+${meetingLeads[0] ? `• ${meetingLeads[0].businessName} : Dossier en négociation / Démonstration` : ''}
 
 3. Recommandation stratégique Minerva
-Concentrez les efforts de prospection sur les ${sortedNiches.slice(0, 3).map(n => n[0]).join(', ')} qui présentent le taux d'avis le plus dense et le meilleur retour sur closing estimé.`;
+Concentrez les efforts de prospection sur les ${sortedNiches.slice(0, 3).map(n => n[0]).join(', ')} qui présentent le meilleur potentiel de conversion.`;
   }, [leads]);
 
   const liveMetrics = useMemo<WeeklyMetrics>(() => {
     const meeting = leads.filter(l => l.status === 'Meeting Booked' || l.status === 'Won').length;
     const hot = leads.filter(l => l.temperature === 'Hot').length;
+    const advanced = leads.filter(l => l.status !== 'New').length;
+    const executedActions = activity.filter(a => a.executed).length;
+    const suggestedActions = activity.length;
+    const acceptanceRate = suggestedActions > 0 
+      ? Math.round((executedActions / suggestedActions) * 100)
+      : (leads.length > 0 ? Math.min(100, Math.round((advanced / leads.length) * 100)) : 0);
+
     const nicheCounts = leads.reduce((acc, l) => {
       if (l.niche) acc[l.niche] = (acc[l.niche] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
-    const topNiche = Object.entries(nicheCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || 'Restaurant';
+    const topNiche = Object.entries(nicheCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || null;
 
     return {
-      nbaAcceptanceRate: 88,
-      nbaSuggested: leads.length,
-      nbaExecuted: Math.min(leads.length, 34),
-      bookingsThisWeek: Math.max(1, meeting),
-      positiveRepliesThisWeek: Math.max(2, hot),
-      leadsAdvanced: Math.max(3, leads.filter(l => l.status !== 'New').length),
+      nbaAcceptanceRate: acceptanceRate,
+      nbaSuggested: suggestedActions || leads.length,
+      nbaExecuted: executedActions || (leads.length > 0 ? Math.min(leads.length, advanced) : 0),
+      bookingsThisWeek: meeting,
+      positiveRepliesThisWeek: hot,
+      leadsAdvanced: advanced,
       topNiche: topNiche,
     };
-  }, [leads]);
+  }, [leads, activity]);
 
   const fetchHistory = useCallback(async () => {
     if (!activeWorkspace) return;
@@ -272,23 +290,10 @@ Concentrez les efforts de prospection sur les ${sortedNiches.slice(0, 3).map(n =
     fetchActivity();
   }, [fetchHistory, fetchActivity]);
 
-  // If no server activity items exist, generate rich timeline items from current leads & tasks
+  // Real activity timeline from server or real CRM actions
   const effectiveActivity = useMemo(() => {
-    if (activity.length > 0) return activity;
-    return leads.slice(0, 12).map((l, i) => ({
-      id: `act-seed-${l.id}`,
-      tool: i % 4 === 0 ? 'send_email' : i % 4 === 1 ? 'create_task' : i % 4 === 2 ? 'update_pipeline_stage' : 'suggest_follow_up',
-      label: i % 4 === 0 ? `Email envoyé à ${l.businessName}` : i % 4 === 1 ? `Tâche créée pour ${l.businessName}` : i % 4 === 2 ? `Avancement pipeline : ${l.status}` : `Recommandation IA pour ${l.businessName}`,
-      leadId: l.id,
-      leadName: l.businessName,
-      reasoning: `Score d'intention de ${l.intentScore || 75}/100 et ${l.reviewsCount || 200} avis Google recensés.`,
-      dataSignals: l.niche,
-      executed: i % 3 !== 0,
-      suggested: true,
-      approved: true,
-      createdAt: new Date(Date.now() - (i * 6 + 2) * 3600 * 1000).toISOString(),
-    }));
-  }, [activity, leads]);
+    return activity;
+  }, [activity]);
 
   const grouped = groupByDay(effectiveActivity);
   const activeReport = selectedWeek ? selectedWeek.report : (report || liveComputedReport);
@@ -296,6 +301,30 @@ Concentrez les efforts de prospection sur les ${sortedNiches.slice(0, 3).map(n =
   const activeRange = selectedWeek
     ? formatWeekLabel(selectedWeek.week_start, selectedWeek.week_end)
     : dateRange;
+
+  const [copied, setCopied] = useState(false);
+
+  const handleCopyReport = () => {
+    const textToCopy = `MINERVA OS REACH LITE - BILAN HEBDOMADAIRE (${activeRange})
+--------------------------------------------------
+Taux d'action IA : ${activeMetrics.nbaAcceptanceRate}%
+Rendez-vous / Gagnés : ${activeMetrics.bookingsThisWeek}
+Réponses positives / Chauds : ${activeMetrics.positiveRepliesThisWeek}
+Leads avancés dans le tunnel : ${activeMetrics.leadsAdvanced}
+Secteur clé : ${activeMetrics.topNiche || 'Tous'}
+
+SYNTHÈSE STRATÉGIQUE :
+${activeReport || 'Aucune synthèse disponible.'}
+`;
+    navigator.clipboard.writeText(textToCopy);
+    setCopied(true);
+    toast.success('Bilan hebdomadaire copié dans le presse-papier !');
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleDownloadPdf = () => {
+    window.print();
+  };
 
   return (
     <div className="flex h-full flex-col overflow-hidden bg-[#fafaf8] selection:bg-[#059669]/10 text-[#26251e] font-sans">
@@ -339,7 +368,23 @@ Concentrez les efforts de prospection sur les ${sortedNiches.slice(0, 3).map(n =
             </div>
 
             {mainTab === 'bilan' && (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center flex-wrap gap-2">
+                <button
+                  onClick={handleCopyReport}
+                  title="Copier le bilan dans le presse-papier"
+                  className="flex items-center gap-1.5 rounded-xl border border-[#e5e5e0] bg-white hover:bg-[#f4f4f3] px-3.5 py-2 text-xs font-bold text-[#26251e] transition-all shrink-0 shadow-xs hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
+                >
+                  {copied ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
+                  <span className="hidden sm:inline">{copied ? 'Copié !' : 'Copier'}</span>
+                </button>
+                <button
+                  onClick={handleDownloadPdf}
+                  title="Télécharger / Imprimer en PDF"
+                  className="flex items-center gap-1.5 rounded-xl border border-[#e5e5e0] bg-white hover:bg-[#f4f4f3] px-3.5 py-2 text-xs font-bold text-[#26251e] transition-all shrink-0 shadow-xs hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
+                >
+                  <Download className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">PDF</span>
+                </button>
                 <button
                   onClick={() => setHistoryOpen(v => !v)}
                   className={cn(

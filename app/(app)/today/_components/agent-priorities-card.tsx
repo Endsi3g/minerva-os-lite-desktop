@@ -22,10 +22,6 @@ export function AgentPrioritiesCard() {
   const [running, setRunning] = useState(false);
   const [lastResult, setLastResult] = useState<{ drafted: number; message: string } | null>(null);
 
-  // Top cold/warm leads eligible for an agent relance (max 5, not Won/Lost).
-  // Mirrors listLeadsToFollowUp's criteria (lib/agent-tools.ts) exactly — score >= 30
-  // AND inactive 7+ days (or never contacted) — so this list never shows leads the
-  // "Générer les relances" button can't actually find.
   const coldLeads = useMemo(() => {
     const cutoff = Date.now() - 7 * 86_400_000;
     return leads
@@ -78,34 +74,34 @@ export function AgentPrioritiesCard() {
   };
 
   const temperatureColor: Record<string, string> = {
-    Hot: 'bg-[#fef2f2] text-[#dc2626]',
-    Warm: 'bg-[#fff7ed] text-[#ea580c]',
-    Cold: 'bg-[#eff6ff] text-[#2563eb]',
+    Hot: 'bg-red-500/10 text-red-700 dark:text-red-300 border border-red-500/20',
+    Warm: 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20',
+    Cold: 'bg-blue-500/10 text-blue-700 dark:text-blue-300 border border-blue-500/20',
   };
 
   if (coldLeads.length === 0) return null;
 
   return (
-    <Card className="border border-[#e5e5e0] bg-white shadow-none">
-      <CardHeader className="flex flex-row items-center justify-between pb-3">
-        <div className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-[#059669]/10 text-[#059669]">
+    <Card className="border border-border bg-card shadow-none">
+      <CardHeader className="flex flex-row items-center justify-between pb-3 border-b border-border/50">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/10 text-brand-accent-emerald shrink-0">
             <Bot className="h-4 w-4" />
           </div>
-          <div>
-            <CardTitle className="text-base font-semibold font-sans">Priorités du jour</CardTitle>
-            <CardDescription className="text-xs">Leads tièdes/froids à relancer — recommandés par l&apos;agent</CardDescription>
+          <div className="min-w-0">
+            <CardTitle className="text-base font-semibold font-sans text-foreground truncate">Priorités du jour</CardTitle>
+            <CardDescription className="text-xs text-muted-foreground truncate">Leads tièdes/froids à relancer — recommandés par l&apos;agent</CardDescription>
           </div>
         </div>
         {pendingCount !== null && pendingCount > 0 && (
-          <Link href="/outreach" className="flex items-center gap-1 text-[10px] font-bold text-[#059669] hover:underline">
+          <Link href="/outreach" className="flex items-center gap-1 text-[10px] font-bold text-brand-accent-emerald hover:underline shrink-0">
             <CheckCircle2 className="h-3 w-3" />
             {pendingCount} en attente
           </Link>
         )}
       </CardHeader>
 
-      <CardContent className="px-6 pb-5 space-y-3">
+      <CardContent className="p-3.5 sm:p-4 space-y-3">
         {/* Lead list */}
         <div className="space-y-1.5">
           {coldLeads.map(lead => {
@@ -113,25 +109,25 @@ export function AgentPrioritiesCard() {
             return (
               <div
                 key={lead.id}
-                className="flex items-center gap-2.5 rounded-lg border border-[#e5e5e0] bg-[#fafaf8] px-3 py-2"
+                className="flex items-center gap-2.5 rounded-lg border border-border bg-card hover:bg-accent/40 px-3 py-2 transition-colors"
               >
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-semibold text-[#26251e] truncate">{lead.businessName}</p>
+                  <p className="text-xs font-semibold text-foreground truncate">{lead.businessName}</p>
                   {days !== null && (
-                    <p className="text-[10px] text-[#7a7a76]">
+                    <p className="text-[10px] text-muted-foreground">
                       {days === 0 ? 'Contact aujourd\'hui' : `Inactif depuis ${days}j`}
                     </p>
                   )}
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0">
-                  <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${temperatureColor[lead.temperature] ?? 'bg-[#f4f4f3] text-[#555552]'}`}>
+                  <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${temperatureColor[lead.temperature] ?? 'bg-muted text-muted-foreground'}`}>
                     {lead.temperature}
                   </span>
-                  <span className="text-[10px] font-bold text-[#26251e] w-7 text-right">{lead.score ?? 0}</span>
+                  <span className="text-[10px] font-bold text-foreground w-7 text-right">{lead.score ?? 0}</span>
                 </div>
                 <Link
                   href={`/leads/${lead.id}`}
-                  className="h-6 w-6 flex items-center justify-center rounded-md text-[#7a7a76] hover:bg-[#f4f4f3] transition-colors shrink-0"
+                  className="h-6 w-6 flex items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors shrink-0"
                 >
                   <ArrowRight className="h-3.5 w-3.5" />
                 </Link>
@@ -142,10 +138,10 @@ export function AgentPrioritiesCard() {
 
         {/* Result feedback */}
         {lastResult && lastResult.drafted > 0 && (
-          <div className="flex items-center gap-2 rounded-lg bg-[#f0fdf4] border border-[#bbf7d0] px-3 py-2">
-            <CheckCircle2 className="h-3.5 w-3.5 text-[#059669] shrink-0" />
-            <p className="text-[11px] text-[#059669] font-medium flex-1">{lastResult.message}</p>
-            <Link href="/outreach" className="text-[10px] font-bold text-[#059669] hover:underline shrink-0">
+          <div className="flex items-center gap-2 rounded-lg bg-emerald-500/10 border border-emerald-500/30 px-3 py-2">
+            <CheckCircle2 className="h-3.5 w-3.5 text-brand-accent-emerald shrink-0" />
+            <p className="text-[11px] text-brand-accent-emerald font-medium flex-1">{lastResult.message}</p>
+            <Link href="/outreach" className="text-[10px] font-bold text-brand-accent-emerald hover:underline shrink-0">
               Approuver →
             </Link>
           </div>
@@ -155,7 +151,7 @@ export function AgentPrioritiesCard() {
         <button
           onClick={handleRelance}
           disabled={running}
-          className="w-full bg-brand-accent-emerald hover:bg-brand-accent-emeraldHover text-white font-medium py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 transition-all shadow-sm disabled:opacity-60 cursor-pointer text-xs"
+          className="w-full bg-brand-accent-emerald hover:bg-brand-accent-emeraldHover text-white font-medium py-2 px-3 rounded-lg flex items-center justify-center gap-2 transition-all shadow-xs disabled:opacity-60 cursor-pointer text-xs"
         >
           {running ? (
             <>

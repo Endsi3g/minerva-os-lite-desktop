@@ -28,6 +28,8 @@ const AUTONOMY_LABELS: Record<string, string> = {
   auto: 'Autonome',
 };
 
+import { isValidUUID } from '@/lib/utils';
+
 // Phase 4 des Programmes de croissance — étiquette l'agent autonome unique
 // existant en 3 "équipes" nommées (Growth / Outreach & Inbox / Terrain) pour
 // répondre à : qui a fait quoi, dans quel programme, avec quel niveau
@@ -38,11 +40,14 @@ export function AgentTeamsOverview() {
   const [teams, setTeams] = useState<TeamOverview[] | null>(null);
 
   useEffect(() => {
-    if (!activeWorkspace?.id) return;
+    if (!activeWorkspace?.id || !isValidUUID(activeWorkspace.id)) {
+      setTeams([]);
+      return;
+    }
     let cancelled = false;
     fetch(getApiUrl(`/api/agents/team-overview?workspace_id=${activeWorkspace.id}`))
       .then((res) => res.ok ? res.json() : null)
-      .then((data) => { if (!cancelled && data?.teams) setTeams(data.teams); })
+      .then((data) => { if (!cancelled) setTeams(data?.teams || []); })
       .catch(() => { if (!cancelled) setTeams([]); });
     return () => { cancelled = true; };
   }, [activeWorkspace?.id]);

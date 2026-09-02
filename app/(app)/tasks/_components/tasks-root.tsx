@@ -43,6 +43,7 @@ import {
   Loader2,
   Users,
   User,
+  Bot,
   CheckCircle2,
   ChevronRight,
   Clock,
@@ -101,10 +102,27 @@ interface TeamMember {
   profile?: { full_name?: string | null; avatar_base64?: string | null } | null;
 }
 
+const MINERVA_AI_MEMBER: TeamMember = {
+  id: 'minerva-ai',
+  member_user_id: 'minerva-ai',
+  email: 'ia@minerva.reach',
+  profile: {
+    full_name: 'Minerva Copilote IA',
+  },
+};
+
 function MemberAvatar({ member, size = 'sm' }: { member: TeamMember; size?: 'sm' | 'md' }) {
+  const isAi = member.id === 'minerva-ai' || member.member_user_id === 'minerva-ai' || member.profile?.full_name?.toLowerCase().includes('minerva');
+  const sz = size === 'sm' ? 'w-5 h-5 text-[8px]' : 'w-7 h-7 text-xs';
+  if (isAi) {
+    return (
+      <div className={cn('rounded-full bg-[#059669]/15 border border-[#059669]/30 flex items-center justify-center text-[#059669] shrink-0', sz)}>
+        <Bot className={size === 'sm' ? 'w-3 h-3 text-[#059669]' : 'w-4 h-4 text-[#059669]'} />
+      </div>
+    );
+  }
   const name = member.profile?.full_name || member.email.split('@')[0];
   const avatar = member.profile?.avatar_base64;
-  const sz = size === 'sm' ? 'w-5 h-5 text-[8px]' : 'w-7 h-7 text-xs';
   return (
     <div className={cn('rounded-full overflow-hidden bg-[#e5e5e2] flex items-center justify-center shrink-0 border border-[#e5e5e0]', sz)}>
       {avatar ? (
@@ -392,6 +410,9 @@ export default function TasksRoot() {
     });
   }, [activeTasks, filter, categoryFilter, view, selectedDate, today]);
 
+  // All assignable members: Minerva AI + human team members
+  const allAssignableMembers = useMemo(() => [MINERVA_AI_MEMBER, ...teamMembers], [teamMembers]);
+
   // For team tab: group tasks by assignee
   const teamTasksByMember = useMemo(() => {
     if (taskTab !== 'team') return [];
@@ -402,10 +423,10 @@ export default function TasksRoot() {
     }
     return Object.entries(groups).map(([key, tasks]) => ({
       memberId: key,
-      member: key === 'unassigned' ? null : (teamMembers.find(m => m.member_user_id === key || m.id === key) ?? null),
+      member: key === 'unassigned' ? null : (allAssignableMembers.find(m => m.member_user_id === key || m.id === key) ?? null),
       tasks,
     }));
-  }, [taskTab, filteredTasks, teamMembers]);
+  }, [taskTab, filteredTasks, allAssignableMembers]);
 
   // Days that have tasks (for calendar indicators)
   const taskDays = useMemo(() => {
@@ -422,7 +443,7 @@ export default function TasksRoot() {
     let assignedToName: string | undefined;
 
     if (assignedMemberId && assignedMemberId !== 'none') {
-      const m = teamMembers.find(m => m.id === assignedMemberId);
+      const m = allAssignableMembers.find(m => m.id === assignedMemberId);
       if (m) {
         assignedTo = m.member_user_id ?? m.id;
         assignedToName = m.profile?.full_name || m.email.split('@')[0];
@@ -450,7 +471,7 @@ export default function TasksRoot() {
   const teamDoneCount = teamTasks.filter(t => t.completed).length;
 
   const selectedMember = assignedMemberId !== 'none'
-    ? teamMembers.find(m => m.id === assignedMemberId)
+    ? allAssignableMembers.find(m => m.id === assignedMemberId)
     : null;
 
   return (
@@ -649,57 +670,55 @@ export default function TasksRoot() {
             </Select>
 
             {/* Assign member */}
-            {teamMembers.length > 0 && (
-              <Popover open={assignMemberOpen} onOpenChange={setAssignMemberOpen}>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className="h-8 text-xs gap-1.5 min-w-[90px] justify-start shrink-0">
-                    {selectedMember ? (
-                      <>
-                        <MemberAvatar member={selectedMember} size="sm" />
-                        <span className="truncate max-w-[80px]">
-                          {selectedMember.profile?.full_name || selectedMember.email.split('@')[0]}
-                        </span>
-                      </>
-                    ) : (
-                      <>
-                        <Users className="h-3 w-3" />
-                        Assigner
-                      </>
+            <Popover open={assignMemberOpen} onOpenChange={setAssignMemberOpen}>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="h-8 text-xs gap-1.5 min-w-[90px] justify-start shrink-0">
+                  {selectedMember ? (
+                    <>
+                      <MemberAvatar member={selectedMember} size="sm" />
+                      <span className="truncate max-w-[90px]">
+                        {selectedMember.profile?.full_name || selectedMember.email.split('@')[0]}
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <Users className="h-3 w-3" />
+                      Assigner
+                    </>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-56 p-1.5" align="start">
+                <div className="space-y-0.5">
+                  <button
+                    onClick={() => { setAssignedMemberId('none'); setAssignMemberOpen(false); }}
+                    className={cn(
+                      'w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs font-medium transition-colors',
+                      assignedMemberId === 'none' ? 'bg-[#059669]/8 text-[#059669]' : 'hover:bg-muted'
                     )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-52 p-1.5" align="start">
-                  <div className="space-y-0.5">
-                    <button
-                      onClick={() => { setAssignedMemberId('none'); setAssignMemberOpen(false); }}
-                      className={cn(
-                        'w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs font-medium transition-colors',
-                        assignedMemberId === 'none' ? 'bg-[#059669]/8 text-[#059669]' : 'hover:bg-muted'
-                      )}
-                    >
-                      <User className="h-3.5 w-3.5" />
-                      Moi-même
-                    </button>
-                    {teamMembers.map(m => {
-                      const name = m.profile?.full_name || m.email.split('@')[0];
-                      return (
-                        <button
-                          key={m.id}
-                          onClick={() => { setAssignedMemberId(m.id); setAssignMemberOpen(false); }}
-                          className={cn(
-                            'w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs font-medium transition-colors',
-                            assignedMemberId === m.id ? 'bg-[#059669]/8 text-[#059669]' : 'hover:bg-muted'
-                          )}
-                        >
-                          <MemberAvatar member={m} size="sm" />
-                          <span className="truncate">{name}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </PopoverContent>
-              </Popover>
-            )}
+                  >
+                    <User className="h-3.5 w-3.5" />
+                    Moi-même
+                  </button>
+                  {allAssignableMembers.map(m => {
+                    const name = m.profile?.full_name || m.email.split('@')[0];
+                    return (
+                      <button
+                        key={m.id}
+                        onClick={() => { setAssignedMemberId(m.id); setAssignMemberOpen(false); }}
+                        className={cn(
+                          'w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs font-medium transition-colors',
+                          assignedMemberId === m.id ? 'bg-[#059669]/8 text-[#059669]' : 'hover:bg-muted'
+                        )}
+                      >
+                        <MemberAvatar member={m} size="sm" />
+                        <span className="truncate">{name}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </PopoverContent>
+            </Popover>
 
             <Button
               size="sm"

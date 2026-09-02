@@ -21,7 +21,8 @@ import {
   ChevronDown,
   Loader2,
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, isValidUUID } from '@/lib/utils';
+import { getApiUrl } from '@/lib/api-helper';
 import { createClient } from '@/lib/supabase/client';
 import { signout } from '@/app/login/actions';
 import { MinervaIcon } from '@/components/icons';
@@ -126,13 +127,13 @@ function AILayoutContent({ children }: { children: React.ReactNode }) {
   // Load assistant sessions with localStorage fallback
   const loadSessions = useCallback(async () => {
     const workspaceId = activeWorkspace?.id || localStorage.getItem('minerva_active_workspace_id') || '';
-    if (!workspaceId || !userId) return;
+    if (!workspaceId || !userId || !isValidUUID(workspaceId)) return;
     const sessions = await dbGetSessions(userId, workspaceId);
     setAssistantSessions(sessions);
     // Load active session from Supabase
     let loadedSessId: string | null = null;
     try {
-      const res = await fetch('/api/settings/user-prefs');
+      const res = await fetch(getApiUrl('/api/settings/user-prefs'));
       if (res.ok) {
         const prefs = await res.json();
         loadedSessId = prefs?.active_ai_sessions?.[workspaceId] ?? null;
@@ -261,8 +262,8 @@ function AILayoutContent({ children }: { children: React.ReactNode }) {
                   onClick={() => {
                     setSidebarOpen(false);
                     setActiveSessionId(null);
-                    if (activeWorkspace) {
-                      fetch('/api/settings/user-prefs', {
+                    if (activeWorkspace && isValidUUID(activeWorkspace.id)) {
+                      fetch(getApiUrl('/api/settings/user-prefs'), {
                         method: 'PATCH',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ active_ai_sessions: { [activeWorkspace.id]: null } }),
@@ -291,8 +292,8 @@ function AILayoutContent({ children }: { children: React.ReactNode }) {
                         onClick={() => {
                           setSidebarOpen(false);
                           setActiveSessionId(sess.id);
-                          if (activeWorkspace) {
-                            fetch('/api/settings/user-prefs', {
+                          if (activeWorkspace && isValidUUID(activeWorkspace.id)) {
+                            fetch(getApiUrl('/api/settings/user-prefs'), {
                               method: 'PATCH',
                               headers: { 'Content-Type': 'application/json' },
                               body: JSON.stringify({ active_ai_sessions: { [activeWorkspace.id]: sess.id } }),
@@ -318,8 +319,10 @@ function AILayoutContent({ children }: { children: React.ReactNode }) {
                         onClick={async (e) => {
                           e.preventDefault();
                           const wid = activeWorkspace?.id || localStorage.getItem('minerva_active_workspace_id') || '';
-                          await dbDeleteSession(wid, sess.id);
-                          loadSessions();
+                          if (isValidUUID(wid)) {
+                            await dbDeleteSession(wid, sess.id);
+                            loadSessions();
+                          }
                         }}
                         className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-red-100 hover:text-red-600 transition-all"
                       >

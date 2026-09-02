@@ -96,7 +96,7 @@ export function TodayTasksCard() {
       }
     };
     fetchTodoistTasks();
-  }, [user]); // Only re-run when user identity changes, not on every task mutation
+  }, [user]);
 
   // Toggle Todoist task completion (Close on Todoist)
   const handleToggleTodoist = async (id: string) => {
@@ -156,17 +156,17 @@ export function TodayTasksCard() {
   const completionPercentage = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
   return (
-    <Card className="border border-[#e5e5e0] bg-white shadow-none">
-      <CardHeader className="flex flex-row items-center justify-between pb-3">
-        <div className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-[#059669]/10 text-[#059669]">
+    <Card className="border border-border bg-card shadow-none">
+      <CardHeader className="flex flex-row items-center justify-between pb-3 border-b border-border/50">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/10 text-brand-accent-emerald shrink-0">
             <ListTodo className="h-4 w-4" />
           </div>
-          <div>
-            <CardTitle className="text-base font-semibold font-sans">{t('today.tasks_title')}</CardTitle>
-            <CardDescription className="text-xs">
+          <div className="min-w-0">
+            <CardTitle className="text-base font-semibold font-sans text-foreground truncate">{t('today.tasks_title')}</CardTitle>
+            <CardDescription className="text-xs text-muted-foreground truncate">
               {loadingTodoist ? (
-                <span className="flex items-center gap-1 text-[10px] text-[#059669]">
+                <span className="flex items-center gap-1 text-[10px] text-brand-accent-emerald">
                   <Loader2 className="w-3 h-3 animate-spin" />
                   Synchronisation Todoist...
                 </span>
@@ -177,14 +177,14 @@ export function TodayTasksCard() {
           </div>
         </div>
         {totalCount > 0 && (
-          <div className="text-right">
-            <span className="text-[10px] font-bold text-[#7a7a76] bg-[#fafaf8] border border-[#e5e5e0] px-2 py-0.5 rounded-full">
+          <div className="text-right shrink-0">
+            <span className="text-[10px] font-bold text-muted-foreground bg-muted/50 border border-border px-2 py-0.5 rounded-full">
               {completedCount}/{totalCount} ({completionPercentage}%)
             </span>
           </div>
         )}
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-3 sm:p-4">
         <TodayTasksList 
           tasks={allTasks} 
           onToggleTodoist={handleToggleTodoist}

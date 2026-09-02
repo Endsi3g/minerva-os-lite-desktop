@@ -26,10 +26,10 @@ const CHANNEL_ICONS: Record<string, React.ReactNode> = {
 };
 
 const CHANNEL_COLORS: Record<string, string> = {
-  Email: 'bg-blue-50 text-blue-700 border-blue-200',
-  Call: 'bg-green-50 text-green-700 border-green-200',
-  LinkedIn: 'bg-sky-50 text-sky-700 border-sky-200',
-  SMS: 'bg-purple-50 text-purple-700 border-purple-200',
+  Email: 'bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-500/20',
+  Call: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20',
+  LinkedIn: 'bg-sky-500/10 text-sky-700 dark:text-sky-300 border-sky-500/20',
+  SMS: 'bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-500/20',
 };
 
 function formatTime(isoStr: string): string {
@@ -91,52 +91,52 @@ export function TodaySequenceStepsCard() {
   }, [user]);
 
   return (
-    <Card className="border border-[#e5e5e0] bg-white shadow-none">
-      <CardHeader className="flex flex-row items-center justify-between pb-3">
-        <div className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-blue-50 text-blue-600">
+    <Card className="border border-border bg-card shadow-none">
+      <CardHeader className="flex flex-row items-center justify-between pb-3 border-b border-border/50">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 shrink-0">
             <Clock className="h-4 w-4" />
           </div>
-          <div>
-            <CardTitle className="text-base font-semibold font-sans">Emails planifiés</CardTitle>
-            <CardDescription className="text-xs">Étapes de séquences prévues aujourd'hui</CardDescription>
+          <div className="min-w-0">
+            <CardTitle className="text-base font-semibold font-sans text-foreground truncate">Emails planifiés</CardTitle>
+            <CardDescription className="text-xs text-muted-foreground truncate">Étapes de séquences prévues aujourd'hui</CardDescription>
           </div>
         </div>
         {steps.length > 0 && (
-          <Badge className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border-blue-200">
+          <Badge className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-500/20 shrink-0">
             {steps.length}
           </Badge>
         )}
       </CardHeader>
 
-      <CardContent className="px-6 pb-4">
+      <CardContent className="p-3 sm:p-4">
         {loading ? (
-          <p className="text-xs text-[#78716c] py-2">Chargement…</p>
+          <p className="text-xs text-muted-foreground py-2">Chargement…</p>
         ) : steps.length === 0 ? (
           <div className="flex flex-col items-center gap-2 py-4 text-center">
-            <Clock className="h-7 w-7 text-[#a8a29e] opacity-50" />
-            <p className="text-xs text-[#78716c]">Aucun envoi prévu aujourd'hui.</p>
-            <Link href="/sequences" className="text-[10px] font-semibold text-[#059669] hover:underline flex items-center gap-0.5 cursor-pointer">
+            <Clock className="h-6 w-6 text-muted-foreground opacity-50" />
+            <p className="text-xs text-muted-foreground">Aucun envoi prévu aujourd'hui.</p>
+            <Link href="/sequences" className="text-[10px] font-semibold text-brand-accent-emerald hover:underline flex items-center gap-0.5 cursor-pointer">
               Voir les séquences <ArrowRight className="h-3 w-3" />
             </Link>
           </div>
         ) : (
           <div className="space-y-2">
             {steps.map(step => (
-              <div key={step.id} className="flex items-start gap-3 rounded-lg border border-[#e5e5e0] bg-[#fafaf8] px-3 py-2.5">
-                <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-white border border-[#e5e5e0] text-[#78716c]">
+              <div key={step.id} className="flex items-start gap-3 rounded-lg border border-border bg-card hover:bg-accent/40 px-3 py-2.5 transition-colors">
+                <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-muted border border-border text-foreground">
                   {CHANNEL_ICONS[step.channel] ?? <Mail className="h-3 w-3" />}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="truncate text-xs font-semibold text-[#26251e]">{step.leadName}</span>
+                    <span className="truncate text-xs font-semibold text-foreground">{step.leadName}</span>
                     <Badge className={`text-[9px] px-1 py-0 h-4 border ${CHANNEL_COLORS[step.channel] ?? ''}`}>
                       {step.channel}
                     </Badge>
                   </div>
-                  <p className="mt-0.5 truncate text-[10px] text-[#78716c]">{step.subject}</p>
+                  <p className="mt-0.5 truncate text-[10px] text-muted-foreground">{step.subject}</p>
                 </div>
-                <span className="shrink-0 text-[10px] font-mono text-[#a8a29e]">{formatTime(step.scheduledAt)}</span>
+                <span className="shrink-0 text-[10px] font-mono text-muted-foreground">{formatTime(step.scheduledAt)}</span>
               </div>
             ))}
           </div>
@@ -145,3 +145,5 @@ export function TodaySequenceStepsCard() {
     </Card>
   );
 }
+
+export default TodaySequenceStepsCard;

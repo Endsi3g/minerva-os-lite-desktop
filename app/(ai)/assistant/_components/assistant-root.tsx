@@ -13,8 +13,9 @@ import { Button } from '@/components/ui/button';
 import { useReach } from '@/lib/reach-context';
 import { useSkills } from '@/lib/use-skills';
 import { getApiUrl } from '@/lib/api-helper';
+import { sendDesktopNotification } from '@/lib/notification-service';
 import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
+import { cn, safeUUID, isValidUUID } from '@/lib/utils';
 import { 
   X,
   Sparkles,
@@ -268,7 +269,7 @@ const AI_MODELS = [
 ];
 
 const generateUniqueId = () => {
-  return Math.random().toString(36).substring(2) + Date.now().toString(36);
+  return safeUUID();
 };
 
 function mdToHtml(md: string): string {
@@ -614,7 +615,7 @@ function RichMessageContent({
 // ────────────────────────────────────────────────────────────────────────────
 
 export function AssistantRoot() {
-  const { user, leads, tasks, activeWorkspace, addLead, addTask, updateLeadStatus, addNoteToLead } = useReach();
+  const { user, leads, tasks, activeWorkspace, addLead, addTask, updateLeadStatus, addNoteToLead, addNotification } = useReach();
   const router = useRouter();
   const { t, locale } = useLanguage();
   const { enabledSkills } = useSkills(activeWorkspace?.id);
@@ -763,7 +764,7 @@ export function AssistantRoot() {
   const isStreamingRef = useRef(false);
 
   const userId = user?.id || 'anonymous';
-  const workspaceId = activeWorkspace?.id || 'default_ws';
+  const workspaceId = activeWorkspace?.id || '';
 
   // ── CRM action executor — called by ActionCard confirm button ─────────────
   const executeAction = useCallback(async (
@@ -824,14 +825,14 @@ export function AssistantRoot() {
           return { success: true, message: `Email envoyé à ${p.to || p.recipient_email}` };
         }
         case 'search_gmail_sent': {
-          const res = await fetch(getApiUrl('/api/gmail/threads?folder=SENT&limit=10'));
+          const res = await fetch(getApiUrl('/api/inbox/threads?folder=SENT&limit=10'));
           if (!res.ok) return { success: false, message: 'Impossible de charger les emails envoyés' };
           const data = await res.json();
           const count = data.threads?.length || 0;
           return { success: true, message: `${count} email(s) envoyés récents chargés — consultez /inbox pour les détails` };
         }
         case 'search_gmail_replies': {
-          const res = await fetch(getApiUrl('/api/gmail/threads?folder=INBOX&hasReply=true&limit=10'));
+          const res = await fetch(getApiUrl('/api/inbox/threads?folder=INBOX&hasReply=true&limit=10'));
           if (!res.ok) return { success: false, message: 'Impossible de charger les réponses' };
           const data = await res.json();
           const count = data.threads?.length || 0;
@@ -926,15 +927,28 @@ export function AssistantRoot() {
           const path = p.path || p.url;
           if (!path) return { success: false, message: 'Chemin manquant' };
           router.push(path);
-          return { success: true, message: `Navigation vers ${path}` };
+          const res = { success: true, message: `Navigation vers ${path}` };
+          return res;
         }
         default:
           return { success: false, message: `Action inconnue : ${actionData.action}` };
       }
     } catch (e) {
       return { success: false, message: (e as Error).message };
+    } finally {
+      if (actionData.summary) {
+        addNotification({
+          userId,
+          workspaceId: workspaceId || '',
+          type: 'agent_action',
+          title: 'Action Assistant IA exécutée',
+          body: actionData.summary,
+          link: '/assistant',
+        });
+        sendDesktopNotification('Action IA', actionData.summary);
+      }
     }
-  }, [addLead, addTask, updateLeadStatus, addNoteToLead, activeWorkspace, router, userId, workspaceId]);
+  }, [addLead, addTask, updateLeadStatus, addNoteToLead, addNotification, activeWorkspace, router, userId, workspaceId]);
 
   // TipTap WYSIWYG editor
   const editor = useEditor({
@@ -1010,6 +1024,16 @@ export function AssistantRoot() {
   // Load database sessions, documents and project folders on mount or workspace change
   useEffect(() => {
     async function loadWorkspaceData() {
+      if (!workspaceId || !isValidUUID(workspaceId)) {
+        setSessions([]);
+        setCanvasDocs([]);
+        setProjectFolders([]);
+        setProjectDocs([]);
+        setCurrentSession(null);
+        setMessages([]);
+        return;
+      }
+
       const [sessList, docsList, projectsList, projDocsList] = await Promise.all([
         dbGetSessions(userId, workspaceId),
         dbGetCanvasDocs(userId, workspaceId),

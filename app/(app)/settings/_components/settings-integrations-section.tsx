@@ -9,6 +9,7 @@ import { SettingsSectionWrapper } from './settings-section-wrapper';
 import { Mail, Search, Globe, RefreshCw, Check, Key, Server, ChevronDown, ChevronUp, MessageSquare, Layers, Send, AlertCircle } from 'lucide-react';
 import { GmailIcon, SlackIcon, NotionIcon } from '@/components/icons';
 import { createClient } from '@/lib/supabase/client';
+import { getApiUrl } from '@/lib/api-helper';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
@@ -72,7 +73,7 @@ export function SettingsIntegrationsSection() {
     const fetchConnections = async () => {
       try {
         // Check Gmail via google_accounts table (v2.85.0+ modular OAuth)
-        const gmailRes = await fetch('/api/google/auth/status').catch(() => null);
+        const gmailRes = await fetch(getApiUrl('/api/google/auth/status')).catch(() => null);
         if (gmailRes?.ok) {
           const gmailStatus = await gmailRes.json();
           if (gmailStatus?.connected) {
@@ -156,7 +157,7 @@ export function SettingsIntegrationsSection() {
   const handleDisconnectGmail = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/google/auth/disconnect', { method: 'POST' });
+      const res = await fetch(getApiUrl('/api/google/auth/disconnect'), { method: 'POST' });
       if (res.ok) {
         setGmailConnected(false);
         setGmailEmail('');
@@ -316,7 +317,7 @@ export function SettingsIntegrationsSection() {
     if (!slackWebhookUrl) { toast.error('Entrez d\'abord une URL de webhook Slack.'); return; }
     setTestingSlack(true);
     try {
-      const res = await fetch('/api/integrations/slack', {
+      const res = await fetch(getApiUrl('/api/integrations/slack'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'test', webhookUrl: slackWebhookUrl }),
@@ -350,7 +351,7 @@ export function SettingsIntegrationsSection() {
     if (!notionToken) { toast.error('Entrez d\'abord un token d\'intégration Notion.'); return; }
     setTestingNotion(true);
     try {
-      const res = await fetch('/api/integrations/notion', {
+      const res = await fetch(getApiUrl('/api/integrations/notion'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'test', token: notionToken }),

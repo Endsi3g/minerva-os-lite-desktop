@@ -7,7 +7,7 @@ import {
   ChevronDown, ChevronUp, Check, X, Play, Sparkles,
 } from 'lucide-react';
 import Link from 'next/link';
-import { cn } from '@/lib/utils';
+import { cn, isValidUUID } from '@/lib/utils';
 import { getApiUrl } from '@/lib/api-helper';
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -85,21 +85,21 @@ function AgentActionCard({ item, onApprove, onReject }: {
   const Icon = conf.icon;
 
   const statusBadge = item.executed
-    ? <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200"><span className="w-1.5 h-1.5 rounded-full bg-[#10B981]" />Exécuté</span>
+    ? <span className="inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 shrink-0"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />Exécuté</span>
     : item.approved === false
-    ? <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-50 text-red-700 border border-red-200"><span className="w-1.5 h-1.5 rounded-full bg-red-500" />Rejeté</span>
-    : <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200"><span className="w-1.5 h-1.5 rounded-full bg-amber-500" />Suggéré</span>;
+    ? <span className="inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-red-500/10 text-red-700 dark:text-red-400 border border-red-500/20 shrink-0"><span className="w-1.5 h-1.5 rounded-full bg-red-500" />Rejeté</span>
+    : <span className="inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20 shrink-0"><span className="w-1.5 h-1.5 rounded-full bg-amber-500" />Suggéré</span>;
 
   const leadLabel = item.lead_name
     ? `${item.lead_name}${item.lead_company ? ` · ${item.lead_company}` : ''}`
     : null;
 
   return (
-    <div className="px-4 py-3 hover:bg-[#fafaf8] transition-colors">
-      <div className="flex items-start gap-3">
+    <div className="px-3.5 py-2.5 hover:bg-accent/40 transition-colors">
+      <div className="flex items-start gap-2.5">
         {/* icon */}
         <div
-          className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full"
+          className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full"
           style={{ backgroundColor: `${conf.color}18` }}
         >
           <Icon className="h-3 w-3" style={{ color: conf.color }} />
@@ -108,60 +108,60 @@ function AgentActionCard({ item, onApprove, onReject }: {
         {/* content */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <p className="text-xs font-semibold text-[#26251e] leading-snug">{conf.label}</p>
+            <p className="text-xs font-semibold text-foreground leading-tight">{conf.label}</p>
             {statusBadge}
           </div>
 
           {leadLabel && (
-            <p className="text-[10px] text-[#059669] font-semibold mt-0.5 truncate">{leadLabel}</p>
+            <p className="text-[10px] text-brand-accent-emerald font-semibold mt-0.5 truncate">{leadLabel}</p>
           )}
 
-          {/* reasoning — toujours visible */}
+          {/* reasoning */}
           {item.reasoning && (
-            <p className="text-[10px] text-[#26251e] mt-1 leading-relaxed line-clamp-2">{item.reasoning}</p>
+            <p className="text-[10px] text-foreground/80 mt-0.5 leading-relaxed line-clamp-2">{item.reasoning}</p>
           )}
 
           {/* expand toggle */}
           {(item.data_signals || item.result) && (
             <button
               onClick={() => setExpanded(e => !e)}
-              className="flex items-center gap-1 mt-1 text-[9px] font-bold text-[#7a7a76] hover:text-[#26251e] transition-colors"
+              className="flex items-center gap-1 mt-1 text-[9px] font-bold text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
             >
               {expanded ? <ChevronUp className="h-2.5 w-2.5" /> : <ChevronDown className="h-2.5 w-2.5" />}
-              {expanded ? 'Masquer les détails' : 'Voir les signaux'}
+              {expanded ? 'Masquer les signaux' : 'Voir les signaux'}
             </button>
           )}
 
           {/* expanded: data_signals + result */}
           {expanded && (
-            <div className="mt-2 space-y-1.5">
+            <div className="mt-1.5 space-y-1">
               {item.data_signals && (
-                <div className="rounded-lg bg-[#f4f4f3] px-3 py-2">
-                  <p className="text-[9px] font-black uppercase tracking-wider text-[#7a7a76] mb-1">Signaux utilisés</p>
-                  <p className="text-[10px] text-[#26251e] leading-relaxed">{item.data_signals}</p>
+                <div className="rounded-md bg-muted/60 px-2.5 py-1.5 border border-border">
+                  <p className="text-[8.5px] font-black uppercase tracking-wider text-muted-foreground mb-0.5">Signaux</p>
+                  <p className="text-[10px] text-foreground leading-relaxed">{item.data_signals}</p>
                 </div>
               )}
               {item.result && Object.keys(item.result).length > 0 && (
-                <div className="rounded-lg bg-[#f4f4f3] px-3 py-2">
-                  <p className="text-[9px] font-black uppercase tracking-wider text-[#7a7a76] mb-1">Résultat</p>
-                  <pre className="text-[9px] text-[#26251e] font-mono whitespace-pre-wrap overflow-x-auto">{JSON.stringify(item.result, null, 2)}</pre>
+                <div className="rounded-md bg-muted/60 px-2.5 py-1.5 border border-border">
+                  <p className="text-[8.5px] font-black uppercase tracking-wider text-muted-foreground mb-0.5">Résultat</p>
+                  <pre className="text-[9px] text-foreground font-mono whitespace-pre-wrap overflow-x-auto">{JSON.stringify(item.result, null, 2)}</pre>
                 </div>
               )}
             </div>
           )}
 
-          {/* approve / reject — only if suggested and not yet reviewed */}
+          {/* approve / reject */}
           {!item.executed && item.approved === null && (
-            <div className="flex items-center gap-2 mt-2">
+            <div className="flex items-center gap-1.5 mt-1.5">
               <button
                 onClick={() => onApprove(item.id)}
-                className="flex items-center gap-1 h-6 px-2.5 rounded-lg bg-[#059669] text-white text-[9px] font-bold hover:bg-[#047857] transition-colors"
+                className="flex items-center gap-1 h-5 px-2 rounded-md bg-brand-accent-emerald text-white text-[9px] font-bold hover:bg-brand-accent-emeraldHover transition-colors cursor-pointer"
               >
                 <Check className="h-2.5 w-2.5" />Approuver
               </button>
               <button
                 onClick={() => onReject(item.id)}
-                className="flex items-center gap-1 h-6 px-2.5 rounded-lg border border-[#e5e5e0] text-[#7a7a76] text-[9px] font-bold hover:border-[#dc2626] hover:text-[#dc2626] transition-colors"
+                className="flex items-center gap-1 h-5 px-2 rounded-md border border-border text-muted-foreground text-[9px] font-bold hover:border-destructive hover:text-destructive transition-colors cursor-pointer"
               >
                 <X className="h-2.5 w-2.5" />Rejeter
               </button>
@@ -169,7 +169,7 @@ function AgentActionCard({ item, onApprove, onReject }: {
           )}
         </div>
 
-        <span className="text-[9px] text-[#7a7a76] shrink-0 mt-0.5">{timeAgo(item.created_at)}</span>
+        <span className="text-[9px] text-muted-foreground shrink-0 mt-0.5">{timeAgo(item.created_at)}</span>
       </div>
     </div>
   );
@@ -190,7 +190,7 @@ export function AgentFeed() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    const workspaceId = localStorage.getItem('minerva_active_workspace_id');
+    const workspaceId = typeof window !== 'undefined' ? localStorage.getItem('minerva_active_workspace_id') : null;
 
     const [{ data: notifs }, actionsResult] = await Promise.all([
       supabase
@@ -199,7 +199,7 @@ export function AgentFeed() {
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
         .limit(15),
-      workspaceId
+      isValidUUID(workspaceId)
         ? supabase
             .from('agent_actions')
             .select('id, action_type, lead_id, reasoning, data_signals, result, autonomy_level, executed, suggested, approved, created_at, leads(business_name, niche)')
@@ -280,25 +280,25 @@ export function AgentFeed() {
   const pendingCount = items.filter(i => i.kind === 'agent' && !i.executed && (i as AgentActionItem).approved === null).length;
 
   if (loading) return (
-    <div className="rounded-xl border border-[#e5e5e0] bg-white p-4 space-y-2">
-      {[1,2,3].map(i => <div key={i} className="h-12 bg-[#f4f4f3] rounded animate-pulse" />)}
+    <div className="rounded-xl border border-border bg-card p-3 space-y-2">
+      {[1, 2, 3].map(i => <div key={i} className="h-10 bg-muted/60 rounded animate-pulse" />)}
     </div>
   );
 
   return (
-    <div className="rounded-xl border border-[#e5e5e0] bg-white overflow-hidden">
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-[#e5e5e0]">
+    <div className="rounded-xl border border-border bg-card overflow-hidden shadow-2xs">
+      {/* Compressed Header */}
+      <div className="flex items-center justify-between px-3.5 py-2.5 border-b border-border">
         <div className="flex items-center gap-2">
-          <Zap className="h-4 w-4 text-[#059669]" />
-          <span className="text-xs font-bold text-[#26251e]">Agent Feed</span>
+          <Zap className="h-4 w-4 text-brand-accent-emerald shrink-0" />
+          <span className="text-xs font-bold text-foreground">Agent Feed</span>
           {pendingCount > 0 && (
-            <span className="text-[9px] font-bold bg-[#fefce8] text-[#92400e] border border-[#fde68a] px-1.5 py-0.5 rounded-full">
+            <span className="text-[9px] font-bold bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded-full">
               {pendingCount} en attente
             </span>
           )}
           {agentCount > 0 && pendingCount === 0 && (
-            <span className="text-[9px] font-bold bg-[#059669]/10 text-[#059669] px-1.5 py-0.5 rounded-full">
+            <span className="text-[9px] font-bold bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">
               {items.length}
             </span>
           )}
@@ -309,33 +309,33 @@ export function AgentFeed() {
             disabled={runningLoop}
             title="Lancer un cycle agent"
             className={cn(
-              "flex items-center gap-1 h-6 px-2 rounded-lg text-[9px] font-bold border transition-all",
+              "flex items-center gap-1 h-6 px-2 rounded-lg text-[9px] font-bold border transition-all cursor-pointer",
               runningLoop
-                ? "border-[#e5e5e0] text-[#7a7a76] opacity-50 cursor-not-allowed"
-                : "border-[#059669]/30 text-[#059669] hover:bg-[#059669]/5"
+                ? "border-border text-muted-foreground opacity-50 cursor-not-allowed"
+                : "border-brand-accent-emerald/30 text-brand-accent-emerald hover:bg-brand-accent-emerald/10"
             )}
           >
             <Play className="h-2.5 w-2.5" />
             {runningLoop ? 'En cours…' : 'Lancer'}
           </button>
-          <button onClick={load} className="text-[#7a7a76] hover:text-[#26251e] transition-colors p-1">
+          <button onClick={load} className="text-muted-foreground hover:text-foreground transition-colors p-1 cursor-pointer">
             <RefreshCw className="h-3 w-3" />
           </button>
         </div>
       </div>
 
-      {/* Filters */}
+      {/* Compressed Filters */}
       {items.length > 0 && (
-        <div className="flex items-center gap-1 px-4 py-2 border-b border-[#e5e5e0] bg-[#fafaf8]">
+        <div className="flex items-center gap-1 px-3 py-1.5 border-b border-border bg-muted/30">
           {(['all', 'agent', 'notif'] as const).map(f => (
             <button
               key={f}
               onClick={() => setFilter(f)}
               className={cn(
-                "text-[9px] font-bold px-2 py-1 rounded-lg transition-all",
+                "text-[9px] font-bold px-2 py-0.5 rounded-md transition-all cursor-pointer",
                 filter === f
-                  ? "bg-[#26251e] text-white"
-                  : "text-[#7a7a76] hover:text-[#26251e]"
+                  ? "bg-foreground text-background shadow-xs"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
               )}
             >
               {f === 'all' ? 'Tout' : f === 'agent' ? 'Agent' : 'Système'}
@@ -346,35 +346,35 @@ export function AgentFeed() {
 
       {/* Migration warning */}
       {tableMissing && (
-        <div className="mx-4 mt-3 p-3 rounded-xl bg-amber-50 border border-amber-200 text-[10px] text-amber-800">
+        <div className="mx-3.5 mt-2.5 p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-[10px] text-amber-900 dark:text-amber-200">
           <p className="font-bold mb-0.5">⚠️ Migration requise</p>
-          <p>La table <code>agent_actions</code> n'existe pas encore. Exécutez <code>supabase_migration_v10_ensure_agent_tables.sql</code> dans votre projet Supabase pour activer l'agent.</p>
+          <p>La table <code>agent_actions</code> n'existe pas encore. Activez l'agent pour synchroniser les actions.</p>
         </div>
       )}
 
       {/* Loop error */}
       {loopError && (
-        <div className="mx-4 mt-2 p-2.5 rounded-xl bg-red-50 border border-red-200 text-[10px] text-red-700 font-medium">
+        <div className="mx-3.5 mt-2 p-2 rounded-lg bg-destructive/10 border border-destructive/30 text-[10px] text-destructive font-medium">
           {loopError}
         </div>
       )}
 
-      {/* Items */}
+      {/* Compressed Items list */}
       {filtered.length === 0 ? (
-        <div className="px-4 py-8 text-center">
-          <Bot className="h-6 w-6 text-[#e5e5e0] mx-auto mb-2" />
-          <p className="text-xs text-[#7a7a76]">Aucune activité récente.</p>
-          <p className="text-[10px] text-[#7a7a76] mt-1">L'agent analyse votre pipeline et propose des actions. Configurez son autonomie dans Paramètres → Agent.</p>
+        <div className="px-4 py-5 text-center">
+          <Bot className="h-5 w-5 text-muted-foreground/40 mx-auto mb-1.5" />
+          <p className="text-xs text-muted-foreground">Aucune activité récente.</p>
+          <p className="text-[10px] text-muted-foreground/80 mt-0.5">L'agent analyse votre pipeline et propose des actions adaptées.</p>
           <button
             onClick={handleRunLoop}
             disabled={runningLoop}
-            className="mt-3 text-[10px] font-bold text-[#059669] hover:underline disabled:opacity-50"
+            className="mt-2 text-[10px] font-bold text-brand-accent-emerald hover:underline disabled:opacity-50 cursor-pointer"
           >
             {runningLoop ? 'En cours…' : 'Lancer l\'agent maintenant →'}
           </button>
         </div>
       ) : (
-        <div className="divide-y divide-[#e5e5e0] max-h-[420px] overflow-y-auto">
+        <div className="divide-y divide-border max-h-[260px] overflow-y-auto">
           {filtered.map(item => {
             if (item.kind === 'agent') {
               return (
@@ -390,15 +390,15 @@ export function AgentFeed() {
             const conf = NOTIF_CONFIG[item.type] || { icon: Activity, color: '#7a7a76' };
             const Icon = conf.icon;
             const inner = (
-              <div className="flex items-start gap-3 px-4 py-3 hover:bg-[#fafaf8] transition-colors">
-                <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full" style={{ backgroundColor: `${conf.color}18` }}>
+              <div className="flex items-start gap-2.5 px-3.5 py-2 hover:bg-accent/40 transition-colors">
+                <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full" style={{ backgroundColor: `${conf.color}18` }}>
                   <Icon className="h-3 w-3" style={{ color: conf.color }} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-semibold text-[#26251e] leading-snug">{item.title}</p>
-                  {item.body && <p className="text-[10px] text-[#7a7a76] mt-0.5 line-clamp-1">{item.body}</p>}
+                  <p className="text-xs font-semibold text-foreground leading-tight">{item.title}</p>
+                  {item.body && <p className="text-[10px] text-muted-foreground mt-0.5 line-clamp-1">{item.body}</p>}
                 </div>
-                <span className="text-[9px] text-[#7a7a76] shrink-0 mt-0.5">{timeAgo(item.created_at)}</span>
+                <span className="text-[9px] text-muted-foreground shrink-0 mt-0.5">{timeAgo(item.created_at)}</span>
               </div>
             );
             return item.link
@@ -408,22 +408,22 @@ export function AgentFeed() {
         </div>
       )}
 
-      {/* Bottom CTA to trigger agent */}
-      <div className="p-3 border-t border-[#e5e5e0] bg-white">
+      {/* Compressed Bottom CTA to trigger agent */}
+      <div className="p-2.5 border-t border-border bg-card">
         <button
           onClick={handleRunLoop}
           disabled={runningLoop}
-          className="w-full bg-brand-accent-emerald hover:bg-brand-accent-emeraldHover text-white font-medium py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 transition-all shadow-sm disabled:opacity-60 cursor-pointer text-xs"
+          className="w-full bg-brand-accent-emerald hover:bg-brand-accent-emeraldHover text-white font-semibold py-1.5 px-3 rounded-lg flex items-center justify-center gap-2 transition-all shadow-xs disabled:opacity-60 cursor-pointer text-xs"
         >
           {runningLoop ? (
             <>
               <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-              <span>Analyse de l'agent en cours…</span>
+              <span>Analyse en cours…</span>
             </>
           ) : (
             <>
               <Bot className="h-3.5 w-3.5" />
-              <span>Lancer une analyse de l'agent</span>
+              <span>Lancer une analyse agent</span>
             </>
           )}
         </button>

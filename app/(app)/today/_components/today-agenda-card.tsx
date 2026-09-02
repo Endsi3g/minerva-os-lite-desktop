@@ -40,14 +40,14 @@ export function TodayAgendaCard() {
 
   if (totalItems === 0) {
     return (
-      <Card className="border border-[#e5e5e0] bg-white shadow-none">
-        <CardHeader className="flex flex-row items-center gap-2.5 pb-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-emerald-50 text-emerald-600">
+      <Card className="border border-border bg-card shadow-none">
+        <CardHeader className="flex flex-row items-center gap-2.5 p-3 sm:p-4">
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shrink-0">
             <CalendarCheck2 className="h-4 w-4" />
           </div>
-          <div>
-            <CardTitle className="text-base font-semibold font-sans">Agenda du jour</CardTitle>
-            <CardDescription className="text-xs">Rien à faire aujourd'hui — bonne journée !</CardDescription>
+          <div className="min-w-0">
+            <CardTitle className="text-sm font-semibold font-sans text-foreground">Agenda du jour</CardTitle>
+            <CardDescription className="text-xs text-muted-foreground truncate">Rien à faire aujourd'hui — journée libre !</CardDescription>
           </div>
         </CardHeader>
       </Card>
@@ -55,32 +55,32 @@ export function TodayAgendaCard() {
   }
 
   return (
-    <Card className="border border-[#e5e5e0] bg-white shadow-none">
-      <CardHeader className="flex flex-row items-center justify-between pb-3">
-        <div className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-emerald-50 text-emerald-600">
+    <Card className="border border-border bg-card shadow-none">
+      <CardHeader className="flex flex-row items-center justify-between p-3.5 pb-2 border-b border-border/50">
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shrink-0">
             <CalendarCheck2 className="h-4 w-4" />
           </div>
-          <div>
-            <CardTitle className="text-base font-semibold font-sans">Agenda du jour</CardTitle>
-            <CardDescription className="text-xs">
-              {totalItems} élément{totalItems > 1 ? 's' : ''} à traiter aujourd'hui
+          <div className="min-w-0">
+            <CardTitle className="text-sm font-semibold font-sans text-foreground">Agenda du jour</CardTitle>
+            <CardDescription className="text-[11px] text-muted-foreground truncate">
+              {totalItems} élément{totalItems > 1 ? 's' : ''} à traiter
             </CardDescription>
           </div>
         </div>
-        <span className="text-[10px] font-bold text-[#7a7a76] bg-[#f4f4f3] border border-[#e5e5e0] px-2 py-0.5 rounded-full">
+        <span className="text-[10px] font-bold text-muted-foreground bg-muted/50 border border-border px-2 py-0.5 rounded-full shrink-0">
           {dueTasks.length}t · {dueLeads.length}l
         </span>
       </CardHeader>
 
-      <CardContent className="flex flex-col gap-2">
+      <CardContent className="p-3 flex flex-col gap-1.5">
         {/* Tasks due today */}
         {dueTasks.map(task => (
           <div
             key={task.id}
-            className="flex items-center justify-between gap-3 p-2.5 rounded-lg border border-[#e5e5e0] bg-white/60 hover:bg-[#f4f4f3]/60 transition-colors"
+            className="flex items-center justify-between gap-2 p-2 rounded-lg border border-border bg-card hover:bg-accent/40 transition-colors"
           >
-            <div className="flex items-center gap-2.5 min-w-0">
+            <div className="flex items-center gap-2 min-w-0 flex-1">
               <Checkbox
                 id={`agenda-task-${task.id}`}
                 checked={task.completed}
@@ -89,7 +89,7 @@ export function TodayAgendaCard() {
               />
               <label
                 htmlFor={`agenda-task-${task.id}`}
-                className="text-xs font-medium text-[#26251e] cursor-pointer truncate select-none"
+                className="text-xs font-medium text-foreground cursor-pointer truncate select-none"
               >
                 {task.title}
               </label>
@@ -97,11 +97,11 @@ export function TodayAgendaCard() {
             <Badge
               variant="outline"
               className={cn(
-                'shrink-0 text-[9px] font-semibold tracking-wider uppercase px-2 py-0.5',
-                task.category === 'Follow-up' && 'bg-blue-50 text-blue-700 border-blue-200',
-                task.category === 'Preparation' && 'bg-amber-50 text-amber-700 border-amber-200',
-                task.category === 'Meeting' && 'bg-emerald-50 text-emerald-700 border-emerald-200',
-                task.category === 'General' && 'bg-slate-50 text-slate-700 border-slate-200',
+                'shrink-0 text-[8.5px] font-semibold tracking-wider uppercase px-1.5 py-0.2 rounded-md',
+                task.category === 'Follow-up' && 'bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-500/20',
+                task.category === 'Preparation' && 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20',
+                task.category === 'Meeting' && 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20',
+                task.category === 'General' && 'bg-slate-500/10 text-slate-700 dark:text-slate-300 border-slate-500/20',
               )}
             >
               {task.category === 'Follow-up' ? 'Relance' : task.category === 'Preparation' ? 'Prép.' : task.category === 'Meeting' ? 'RDV' : 'Général'}
@@ -111,9 +111,9 @@ export function TodayAgendaCard() {
 
         {/* Divider between tasks and leads */}
         {dueTasks.length > 0 && dueLeads.length > 0 && (
-          <div className="flex items-center gap-2 my-1">
+          <div className="flex items-center gap-2 my-0.5">
             <div className="flex-1 h-px bg-border" />
-            <span className="text-[9px] text-[#7a7a76] uppercase tracking-wider font-semibold">Relances</span>
+            <span className="text-[8.5px] text-muted-foreground uppercase tracking-wider font-bold">Relances leads</span>
             <div className="flex-1 h-px bg-border" />
           </div>
         )}
@@ -122,11 +122,11 @@ export function TodayAgendaCard() {
         {dueLeads.map(lead => (
           <div
             key={lead.id}
-            className="flex items-center justify-between gap-3 p-2.5 rounded-lg border border-[#e5e5e0] bg-white/60 hover:bg-[#f4f4f3]/60 transition-colors group"
+            className="flex items-center justify-between gap-2 p-2 rounded-lg border border-border bg-card hover:bg-accent/40 transition-colors group"
           >
             <Link href={`/leads/${lead.id}`} className="flex flex-col gap-0.5 min-w-0 flex-1">
-              <span className="text-xs font-semibold text-[#26251e] truncate">{lead.businessName}</span>
-              <span className="text-[10px] text-[#7a7a76] truncate">{lead.nextAction}</span>
+              <span className="text-xs font-semibold text-foreground truncate">{lead.businessName}</span>
+              <span className="text-[10px] text-muted-foreground truncate">{lead.nextAction}</span>
             </Link>
             <div className="flex items-center gap-1 shrink-0">
               <Tooltip>
@@ -134,10 +134,10 @@ export function TodayAgendaCard() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-7 w-7 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+                    className="h-6 w-6 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 cursor-pointer"
                     onClick={() => handleLeadDone(lead.id, lead.nextAction, lead.status)}
                   >
-                    <Check className="h-3.5 w-3.5" />
+                    <Check className="h-3 w-3" />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent><p className="text-xs">Fait — relance dans 7 jours</p></TooltipContent>
@@ -147,10 +147,10 @@ export function TodayAgendaCard() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-7 w-7 text-amber-600 hover:text-amber-700 hover:bg-amber-50"
+                    className="h-6 w-6 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10 cursor-pointer"
                     onClick={() => handleLeadSnooze(lead.id)}
                   >
-                    <Clock className="h-3.5 w-3.5" />
+                    <Clock className="h-3 w-3" />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent><p className="text-xs">Reporter de 3 jours</p></TooltipContent>
@@ -160,11 +160,11 @@ export function TodayAgendaCard() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-7 w-7 text-[#7a7a76] hover:text-[#26251e]"
+                    className="h-6 w-6 text-muted-foreground hover:text-foreground cursor-pointer"
                     asChild
                   >
                     <Link href={`/leads/${lead.id}`}>
-                      <ArrowRight className="h-3.5 w-3.5" />
+                      <ArrowRight className="h-3 w-3" />
                     </Link>
                   </Button>
                 </TooltipTrigger>

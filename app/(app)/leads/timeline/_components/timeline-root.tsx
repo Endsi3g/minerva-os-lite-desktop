@@ -7,7 +7,7 @@ import {
   Activity, RefreshCw, Bot, CalendarCheck, List,
   ChevronDown, ChevronUp, Send,
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, isValidUUID } from '@/lib/utils';
 import Link from 'next/link';
 import { CloturerSubNav } from '@/app/(app)/_components/hub-nav/cloturer-sub-nav';
 
@@ -294,7 +294,7 @@ export function TimelineRoot({ leadId: filterLeadId, hideSubNav }: TimelineRootP
         .select('id, action_type, lead_id, reasoning, data_signals, result, autonomy_level, executed, created_at')
         .order('created_at', { ascending: false })
         .limit(50);
-      if (agentWsId) q = (q as any).eq('workspace_id', agentWsId);
+      if (isValidUUID(agentWsId)) q = (q as any).eq('workspace_id', agentWsId);
       if (filterLeadId) q = q.eq('lead_id', filterLeadId);
 
       const { data: actions } = await q;
@@ -326,7 +326,7 @@ export function TimelineRoot({ leadId: filterLeadId, hideSubNav }: TimelineRootP
         .select('id, lead_id, status, current_step, paused_at, created_at, sequence_templates(name)')
         .order('created_at', { ascending: false })
         .limit(30);
-      if (wsId) q = q.eq('workspace_id', wsId);
+      if (isValidUUID(wsId)) q = q.eq('workspace_id', wsId);
       if (filterLeadId) q = q.eq('lead_id', filterLeadId);
 
       const { data: enrollments } = await q;
@@ -356,7 +356,7 @@ export function TimelineRoot({ leadId: filterLeadId, hideSubNav }: TimelineRootP
       if (filterLeadId) q = q.eq('lead_id', filterLeadId);
       else {
         const wsId = localStorage.getItem('minerva_active_workspace_id');
-        if (wsId) q = q.eq('workspace_id', wsId);
+        if (isValidUUID(wsId)) q = q.eq('workspace_id', wsId);
       }
 
       const { data: leadEvents } = await q;

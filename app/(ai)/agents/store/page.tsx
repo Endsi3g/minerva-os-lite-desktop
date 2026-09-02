@@ -54,18 +54,25 @@ export default function AgentsStorePage() {
 
   const fetchAgents = useCallback(async () => {
     setIsLoading(true);
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 4000);
     try {
       const params = new URLSearchParams();
       if (category !== 'all') params.set('category', category);
       params.set('sort', sortBy);
-      const res = await fetch(getApiUrl(`/api/agents?${params.toString()}`));
+      const res = await fetch(getApiUrl(`/api/agents?${params.toString()}`), { signal: controller.signal });
+      clearTimeout(timer);
       if (res.ok) {
         const data = await res.json();
         setAgents(data.agents || []);
+      } else {
+        setAgents([]);
       }
     } catch (err) {
-      console.error('Error fetching marketplace agents:', err);
+      console.warn('Marketplace agents fetch failed/timed out, using empty list:', err);
+      setAgents([]);
     } finally {
+      clearTimeout(timer);
       setIsLoading(false);
     }
   }, [category, sortBy]);

@@ -53,3 +53,4 @@ dist/
 scratch-*.cjs
 Apify/
 .claude/worktrees/
+.agents/
