@@ -101,8 +101,12 @@ export default function RootLayout({
           </ThemeProvider>
         </NuqsAdapter>
         <Toaster position="bottom-right" richColors closeButton />
-        <Analytics />
-        <SpeedInsights />
+        {process.env.NEXT_PUBLIC_VERCEL_ANALYTICS_ENABLED === 'true' && (
+          <>
+            <Analytics />
+            <SpeedInsights />
+          </>
+        )}
       </body>
     </html>
   )

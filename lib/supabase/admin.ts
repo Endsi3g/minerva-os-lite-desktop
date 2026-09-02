@@ -11,8 +11,9 @@ export function getAdminClient(): AdminClient {
   // privileged operations (e.g. team notification fan-out). Silently downgrading to the
   // anon key on a misconfigured env would make RLS-protected writes fail in a confusing,
   // hard-to-diagnose way instead of a clear crash at startup.
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || 'https://eqpoqksvdmyuqmiogsyk.supabase.co';
   g._supabaseAdminClient = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    url,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
     { auth: { autoRefreshToken: false, persistSession: false } }
   ) as AdminClient;

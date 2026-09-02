@@ -19,3 +19,7 @@ node_modules/
 npm-debug.log*
 yarn-debug.log*
 pnpm-debug.log*
+
+# Environment files — prevent local env files from overriding Vercel dashboard environment variables
+.env*
+!.env.example

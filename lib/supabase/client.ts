@@ -8,22 +8,11 @@ const g = globalThis as typeof globalThis & { _supabaseBrowserClient?: BrowserCl
 export function createClient(): BrowserClient {
   if (g._supabaseBrowserClient) return g._supabaseBrowserClient;
 
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const fallbackUrl = 'https://eqpoqksvdmyuqmiogsyk.supabase.co';
+  const fallbackKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVxcG9xa3N2ZG15dXFtaW9nc3lrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODExOTkyMzEsImV4cCI6MjA5Njc3NTIzMX0.fxAhX_HtBenZdccygLr09V4UmC1lsHKH34FOyui2mOU';
 
-  if (!url || !anonKey) {
-    if (typeof window !== 'undefined') {
-      console.warn(
-        'Supabase credentials missing (NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY). ' +
-        'Using placeholder client.'
-      );
-    }
-    g._supabaseBrowserClient = createBrowserClient(
-      url || 'https://placeholder.supabase.co',
-      anonKey || 'placeholder'
-    );
-    return g._supabaseBrowserClient;
-  }
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || fallbackUrl;
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || fallbackKey;
 
   // createBrowserClient stores the session in cookies (not just localStorage),
   // making it readable by the SSR middleware and server-side API routes.
