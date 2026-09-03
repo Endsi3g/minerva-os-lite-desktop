@@ -31,7 +31,6 @@ const nextConfig: NextConfig = {
       { source: '/email-templates', destination: '/settings/email-templates', permanent: true },
       { source: '/acquisition', destination: '/leads', permanent: true },
       { source: '/playbooks', destination: '/sequences', permanent: true },
-      { source: '/guide', destination: '/setup', permanent: true },
       { source: '/leverage-library', destination: '/library', permanent: true },
       { source: '/welcome', destination: '/today', permanent: true },
       { source: '/download', destination: '/today', permanent: true },

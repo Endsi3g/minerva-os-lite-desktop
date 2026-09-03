@@ -33,6 +33,10 @@ export async function proxy(request: NextRequest) {
   const isPublicPage =
     url.pathname === '/login' ||
     url.pathname === '/' ||
+    url.pathname === '/guide' ||
+    url.pathname.startsWith('/guide/') ||
+    url.pathname === '/sop' ||
+    url.pathname.startsWith('/sop/') ||
     url.pathname.startsWith('/invite/') ||
     url.pathname.startsWith('/join/') ||
     url.pathname.startsWith('/lead-preview/') ||
