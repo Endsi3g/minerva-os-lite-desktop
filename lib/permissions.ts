@@ -38,7 +38,7 @@ export const PERMISSION_MODULES: Record<PermissionModule, PermissionModuleConfig
   campaigns:   { label: 'Campagnes',           description: 'Campagnes multi-leads',                  routes: ['/campaigns'],        icon: '📣' },
   sequences:   { label: 'Séquences email',     description: 'Séquences automatisées',                 routes: ['/sequences'],        icon: '✉️' },
   analytics:   { label: 'Analytics',           description: 'Tableaux de bord et KPIs',               routes: ['/analytics'],        icon: '📈' },
-  team:        { label: 'Équipe',              description: 'Gestion des membres et rôles',           routes: ['/team'],             icon: '🫂' },
+  team:        { label: 'Équipe',              description: 'Gestion des membres et rôles',           routes: ['/team', '/leaderboard'], icon: '🫂' },
   settings:    { label: 'Paramètres',          description: 'Configuration du workspace',             routes: ['/settings'],         icon: '⚙️' },
   agents:      { label: 'Agents IA',           description: 'Agents personnalisés',                   routes: ['/agents'],           icon: '🤖' },
   assistant:   { label: 'Assistant IA',        description: 'Canvas et assistant chat',               routes: ['/assistant'],        icon: '🧠' },

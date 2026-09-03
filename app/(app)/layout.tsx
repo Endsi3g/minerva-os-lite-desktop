@@ -61,6 +61,7 @@ import {
   Brain,
   Bot,
   UserCog,
+  Trophy,
 } from 'lucide-react';
 import { BottomBlur } from '@/components/ui/edge-blur';
 import { cn } from '@/lib/utils';
@@ -821,6 +822,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
       label: 'Équipe & Intelligence',
       items: [
         { name: 'Équipe',          href: '/team',        icon: UsersRound },
+        { name: 'Leaderboard',     href: '/leaderboard', icon: Trophy },
         { name: 'Assistant IA',    href: '/assistant',   icon: Sparkles },
         { name: 'Agents IA',       href: '/agents',      icon: Bot },
       ],
@@ -1808,6 +1810,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                       { name: 'Pipeline',       href: '/pipeline',    icon: Kanban },
                       { name: 'Inbox',          href: '/inbox',       icon: Inbox },
                       { name: 'Équipe',         href: '/team',        icon: UsersRound },
+                      { name: 'Leaderboard',    href: '/leaderboard', icon: Trophy },
                     ],
                   },
                   {

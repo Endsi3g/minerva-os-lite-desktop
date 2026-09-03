@@ -9,7 +9,7 @@ import {
   MessageSquare, Send, Link2, Copy, Shield, Star, Eye,
   Smile, ImagePlus,
   Plus, Pencil, LogOut, Palette, ChevronRight,
-  UsersRound, BarChart2, TrendingUp, Users2, Share2,
+  UsersRound, BarChart2, TrendingUp, Users2, Share2, Trophy,
 } from 'lucide-react';
 import { WorkloadBoard } from './_components/workload-board';
 import { RevenueFeed } from './_components/revenue-feed';
@@ -791,6 +791,13 @@ export default function TeamPage() {
             <TrendingUp className="w-3.5 h-3.5" />
             Feed revenus
           </button>
+          <Link
+            href="/leaderboard"
+            className="px-4 py-2 text-xs font-bold rounded-t-lg border border-b-0 transition-colors flex items-center gap-1.5 bg-[#f4f4f3] border-transparent text-[#1E4B33] hover:bg-[#1E4B33]/10 ml-auto"
+          >
+            <Trophy className="w-3.5 h-3.5 text-amber-500" />
+            Classement & Leaderboard
+          </Link>
         </div>
 
         {/* ── Groups Panel (shown when activeTab === 'groups') ── */}

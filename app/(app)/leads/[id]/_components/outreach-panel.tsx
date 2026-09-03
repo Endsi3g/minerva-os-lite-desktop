@@ -3,10 +3,11 @@
 import React, { useState } from 'react';
 import { getApiUrl } from '@/lib/api-helper';
 import { toast } from 'sonner';
+import Link from 'next/link';
 import { Lead } from '@/lib/mock-data';
 import {
   Mail, Phone, Loader2, CheckCircle2, AlertCircle,
-  Zap, BookOpen,
+  Zap, BookOpen, ArrowRight,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { TemplateComposer } from './template-composer';
@@ -88,6 +89,41 @@ export function OutreachPanel({ lead }: OutreachPanelProps) {
 
   return (
     <div className="space-y-5 py-2">
+      {/* Native Minerva Multi-channel Sequence Card */}
+      <div className="rounded-xl border border-[#1E4B33]/30 bg-[#1E4B33]/5 p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="h-7 w-7 rounded-lg bg-[#1E4B33] text-white flex items-center justify-center">
+              <Zap className="h-4 w-4 text-emerald-300" />
+            </div>
+            <div>
+              <span className="text-xs font-bold text-[#111827]">Séquence Native Minerva OS</span>
+              <p className="text-[10px] text-[#6B7280]">Automatisez vos relances Email, SMS et LinkedIn pour ce prospect</p>
+            </div>
+          </div>
+          <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-[#10B981]/15 text-[#065F46]">
+            Recommandé
+          </span>
+        </div>
+
+        <div className="flex items-center gap-2 pt-1 flex-wrap">
+          <Link
+            href={`/sequences/new?leadId=${lead.id}`}
+            className="inline-flex items-center gap-1.5 h-8 px-3.5 rounded-lg bg-[#1E4B33] hover:bg-[#1E4B33]/90 text-white text-xs font-bold transition-all shadow-xs"
+          >
+            <Mail className="h-3.5 w-3.5" />
+            <span>Lancer la séquence</span>
+            <ArrowRight className="h-3.5 w-3.5 ml-0.5" />
+          </Link>
+          <Link
+            href={`/composer?leadId=${lead.id}`}
+            className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg border border-[#E5E7EB] bg-white hover:bg-[#F9FAFB] text-[#111827] text-xs font-semibold transition-all"
+          >
+            <span>Ouvrir dans le Studio Composer</span>
+          </Link>
+        </div>
+      </div>
+
       {/* Email composer with template picker */}
       <TemplateComposer lead={lead} />
 

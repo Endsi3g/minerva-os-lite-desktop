@@ -826,7 +826,7 @@ Bien cordialement,
       {/* Main Studio Body Layout */}
       <div className="flex-1 flex overflow-hidden min-h-0">
         {/* Central Editor & Preview Area */}
-        <div className="flex-1 flex flex-col overflow-y-auto p-4 sm:p-6 space-y-4 min-w-0">
+        <div className="flex-1 flex flex-col overflow-y-auto p-4 sm:p-6 pb-32 space-y-4 min-w-0">
           {/* Active Prospect Information Card */}
           {selectedLead && (
             <div className="flex items-center justify-between p-3 rounded-2xl bg-white border border-[#e5e5e0] shadow-xs flex-wrap gap-2">

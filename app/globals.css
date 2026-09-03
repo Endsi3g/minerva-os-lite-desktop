@@ -67,32 +67,32 @@
     --color-heatmap-zero: var(--heatmap-zero);
 }
 
-/* Base Theme — Minerva Studio v9: Forêt & Crème */
+/* Base Theme — Minerva Studio Pure White: Blanc & Vert Forêt */
 :root {
-    --background: #F0EDE0; /* Crème ivoire — canvas principal */
-    --foreground: #1a1f1c; /* Encre foncée */
-    --card: #FAFAF5;       /* Blanc chaud — surfaces cards */
-    --card-foreground: #1a1f1c;
-    --popover: #FAFAF5;
-    --popover-foreground: #1a1f1c;
+    --background: #FFFFFF; /* Blanc pur — canvas principal */
+    --foreground: #111827; /* Encre foncée */
+    --card: #FFFFFF;       /* Surfaces cartes blanches */
+    --card-foreground: #111827;
+    --popover: #FFFFFF;
+    --popover-foreground: #111827;
 
     --primary: #1E4B33;    /* Vert forêt — couleur de marque Minerva Studio */
-    --primary-foreground: #F0EDE0;
+    --primary-foreground: #FFFFFF;
 
-    --secondary: #FAFAF5;
-    --secondary-foreground: #1a1f1c;
+    --secondary: #F8FAFC;
+    --secondary-foreground: #111827;
 
-    --muted: #EAE7D9;      /* Crème assombrie */
-    --muted-foreground: #6b6b5e; /* Sous-texte */
+    --muted: #F3F4F6;      /* Gris très clair neutre */
+    --muted-foreground: #6B7280; /* Sous-texte lisible */
 
-    --accent: #EAE7D9;
+    --accent: #F3F4F6;
     --accent-foreground: #1E4B33;
 
     --destructive: #cf2d56; /* Rouge sémantique */
     --destructive-foreground: #ffffff;
 
-    --border: #DDD9CA;     /* Bordure ivoire */
-    --input: #DDD9CA;
+    --border: #E5E7EB;     /* Bordure nette grise claire */
+    --input: #E5E7EB;
     --ring: #1E4B33;       /* Ring vert forêt */
 
     --chart-1: #1E4B33;
@@ -103,13 +103,13 @@
 
     --radius: 0.625rem;    /* 10px base radius */
 
-    --sidebar: #FAFAF5;
-    --sidebar-foreground: #1a1f1c;
+    --sidebar: #FFFFFF;
+    --sidebar-foreground: #111827;
     --sidebar-primary: #1E4B33;
-    --sidebar-primary-foreground: #F0EDE0;
-    --sidebar-accent: #EAE7D9;
-    --sidebar-accent-foreground: #1a1f1c;
-    --sidebar-border: #DDD9CA;
+    --sidebar-primary-foreground: #FFFFFF;
+    --sidebar-accent: #F3F4F6;
+    --sidebar-accent-foreground: #111827;
+    --sidebar-border: #E5E7EB;
     --sidebar-ring: #1E4B33;
 
     /* Timeline Pills palette tokens */

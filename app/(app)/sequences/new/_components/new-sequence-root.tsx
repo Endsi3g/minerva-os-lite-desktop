@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useReach } from '@/lib/reach-context';
 import { getApiUrl } from '@/lib/api-helper';
 import { createClient } from '@/lib/supabase/client';
@@ -10,9 +10,10 @@ import { Input } from '@/components/ui/input';
 import {
   ChevronLeft, ChevronRight, Mail, CheckCircle2, Loader2, Plus, Trash2,
   Phone, Link2, MessageSquare, Send, Calendar, Sparkles, ChevronDown, ChevronUp,
-  User, Layers, Megaphone, X,
+  User, Layers, Megaphone, X, FileText,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { TemplatePickerDialog, type SelectedTemplateData } from '@/components/templates/template-picker-dialog';
 import { getSegmentMembers, SEGMENT_FIELDS, SEGMENT_OPERATORS, type SegmentRule, type LeadSegment } from '@/lib/lead-segments';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -107,7 +108,24 @@ function StepBuilder({
   leads: ReturnType<typeof useReach>['leads'];
 }) {
   const [generatingStep, setGeneratingStep] = useState<number | null>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [pickerStepIndex, setPickerStepIndex] = useState<number>(0);
+  const [pickerChannel, setPickerChannel] = useState<StepChannel>('Email');
+
   const selectedLead = leads.find((l) => l.id === selectedLeadId);
+
+  const openPicker = (index: number, channel: StepChannel) => {
+    setPickerStepIndex(index);
+    setPickerChannel(channel);
+    setPickerOpen(true);
+  };
+
+  const handleApplyTemplate = (tpl: SelectedTemplateData) => {
+    update(pickerStepIndex, {
+      subject: tpl.subject || steps[pickerStepIndex]?.subject || tpl.title,
+      body: tpl.body,
+    });
+  };
 
   const update = (i: number, patch: Partial<NewStep>) =>
     onChange(steps.map((s, idx) => (idx === i ? { ...s, ...patch } : s)));
@@ -207,6 +225,19 @@ function StepBuilder({
                   className="w-12 text-xs border border-[#e5e5e0] rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-[#059669]"
                   disabled={i === 0}
                 />
+                {/* Template picker button */}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  type="button"
+                  onClick={() => openPicker(i, step.channel)}
+                  className="h-7 text-[10px] gap-1 border-[#e5e5e0] text-[#111827] hover:bg-[#F3F4F6] font-semibold"
+                  title="Choisir un modèle dans la bibliothèque"
+                >
+                  <FileText className="h-3 w-3 text-[#059669]" />
+                  Modèle
+                </Button>
+
                 {step.channel === 'Email' && (
                   <Button
                     size="sm"
@@ -250,6 +281,22 @@ function StepBuilder({
               rows={step.channel === 'Call' ? 5 : 4}
               className="w-full text-xs border border-[#e5e5e0] rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-[#059669] resize-none"
             />
+
+            {/* Quick dynamic variable tokens */}
+            <div className="flex flex-wrap items-center gap-1 pt-0.5">
+              <span className="text-[10px] text-[#7a7a76] font-semibold mr-1">Variables :</span>
+              {['{{prenom}}', '{{entreprise}}', '{{ville}}', '{{niche}}', '{{signature}}'].map((v) => (
+                <button
+                  key={v}
+                  type="button"
+                  onClick={() => update(i, { body: (step.body ? step.body + ' ' : '') + v })}
+                  className="text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded bg-[#F3F4F6] text-[#1E4B33] hover:bg-[#E5E7EB] border border-[#E5E7EB] transition-colors"
+                >
+                  {v}
+                </button>
+              ))}
+            </div>
+
             {step.channel !== 'Email' && (
               <p className="text-[9px] text-amber-600 flex items-center gap-1">
                 ⚠ Cette étape est manuelle — un rappel de tâche sera créé automatiquement à J+{step.delayDays}.
@@ -258,6 +305,14 @@ function StepBuilder({
           </div>
         );
       })}
+
+      {/* Template picker modal */}
+      <TemplatePickerDialog
+        open={pickerOpen}
+        onOpenChange={setPickerOpen}
+        channelFilter={pickerChannel}
+        onSelectTemplate={handleApplyTemplate}
+      />
 
       <button
         type="button"
@@ -446,11 +501,13 @@ type TargetMode = 'lead' | 'segment' | 'campaign';
 
 export function NewSequenceRoot() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const paramLeadId = searchParams.get('leadId') || '';
   const { leads, campaigns, activeWorkspace, user } = useReach();
 
-  const [step, setStep] = useState(0);
+  const [step, setStep] = useState(() => (paramLeadId ? 1 : 0));
   const [targetMode, setTargetMode] = useState<TargetMode>('lead');
-  const [selectedLeadId, setSelectedLeadId] = useState('');
+  const [selectedLeadId, setSelectedLeadId] = useState(() => paramLeadId);
   const [selectedSegmentId, setSelectedSegmentId] = useState('');
   const [selectedCampaignId, setSelectedCampaignId] = useState('');
   const [steps, setSteps] = useState<NewStep[]>(DEFAULT_STEPS);
@@ -458,6 +515,13 @@ export function NewSequenceRoot() {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [leadSearch, setLeadSearch] = useState('');
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
+
+  useEffect(() => {
+    if (paramLeadId && !selectedLeadId) {
+      setSelectedLeadId(paramLeadId);
+      setStep(1);
+    }
+  }, [paramLeadId, selectedLeadId]);
 
   // Segments dynamiques (groupes de leads par règles)
   const [segments, setSegments] = useState<LeadSegment[]>([]);

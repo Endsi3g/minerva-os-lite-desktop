@@ -90,7 +90,7 @@ export function PreviewPanel({
       )}
 
       {/* Preview Canvas */}
-      <div className="flex-1 overflow-y-auto p-4 sm:p-6 flex flex-col justify-start items-center">
+      <div className="flex-1 overflow-y-auto p-4 sm:p-6 pb-32 flex flex-col justify-start items-center">
         {/* EMAIL MOCKUP */}
         {channel === 'email' && (
           <div className="w-full max-w-xl bg-white rounded-xl border border-[#e5e5e0] shadow-sm overflow-hidden flex flex-col">
@@ -143,26 +143,29 @@ export function PreviewPanel({
 
         {/* LINKEDIN MOCKUP */}
         {channel === 'linkedin' && (
-          <div className="w-full max-w-md bg-white rounded-xl border border-[#0a66c2]/30 shadow-sm overflow-hidden flex flex-col">
-            <div className="p-3 bg-[#0a66c2] text-white flex items-center justify-between text-xs">
+          <div className="w-full max-w-md bg-white rounded-xl border border-[#E5E7EB] shadow-sm overflow-hidden flex flex-col">
+            <div className="p-3 bg-white border-b border-[#E5E7EB] flex items-center justify-between text-xs">
               <div className="flex items-center gap-2">
-                <div className="h-6 w-6 rounded-full bg-white/20 flex items-center justify-center font-bold text-[10px]">
+                <div className="h-6 w-6 rounded-full bg-[#0a66c2] text-white flex items-center justify-center font-bold text-[10px]">
                   in
                 </div>
-                <span className="font-bold">Message LinkedIn</span>
+                <span className="font-bold text-[#111827]">Message direct LinkedIn</span>
               </div>
-              <span className="text-[10px] text-white/80">
-                {renderedBody.length} / 300 caractères (invitation)
+              <span className={cn(
+                "text-[10px] font-bold px-2 py-0.5 rounded-full",
+                renderedBody.length > 300 ? "bg-red-50 text-red-600 border border-red-200" : "bg-[#F3F4F6] text-[#6B7280]"
+              )}>
+                {renderedBody.length} / 300 car. (invitation)
               </span>
             </div>
 
-            <div className="p-4 bg-[#f3f2ef] flex-1 space-y-3">
+            <div className="p-4 bg-[#F9FAFB] flex-1 space-y-3 overflow-y-auto max-h-[380px]">
               <div className="flex items-start gap-2.5">
                 <div className="h-9 w-9 rounded-full bg-[#0a66c2]/10 text-[#0a66c2] flex items-center justify-center font-bold text-xs shrink-0 border border-[#0a66c2]/20">
                   {userFirstName.charAt(0)}{userLastName.charAt(0)}
                 </div>
-                <div className="bg-white p-3.5 rounded-2xl rounded-tl-none border border-[#e5e5e0] shadow-xs text-xs text-[#1a1f1c] leading-relaxed whitespace-pre-line max-w-[90%]">
-                  {renderedBody || <span className="text-[#9c9c96] italic">Texte LinkedIn…</span>}
+                <div className="bg-white p-3.5 rounded-2xl rounded-tl-none border border-[#E5E7EB] shadow-2xs text-xs text-[#111827] leading-relaxed whitespace-pre-line max-w-[90%] break-words">
+                  {renderedBody || <span className="text-[#9CA3AF] italic">Texte du message LinkedIn…</span>}
                 </div>
               </div>
             </div>
@@ -171,16 +174,18 @@ export function PreviewPanel({
 
         {/* SMS MOCKUP */}
         {channel === 'sms' && (
-          <div className="w-full max-w-sm bg-white rounded-3xl border-4 border-[#26251e] shadow-lg overflow-hidden flex flex-col">
-            <div className="p-3 bg-[#f4f4f3] border-b border-[#e5e5e0] text-center">
-              <p className="text-xs font-bold text-[#1a1f1c]">{lead?.contactName || lead?.businessName || 'Contact'}</p>
-              <p className="text-[10px] text-[#7a7a76]">{lead?.phone || 'Numéro non renseigné'}</p>
+          <div className="w-full max-w-sm bg-white rounded-3xl border-2 border-[#1E4B33] shadow-md overflow-hidden flex flex-col">
+            <div className="p-3 bg-[#F9FAFB] border-b border-[#E5E7EB] text-center">
+              <p className="text-xs font-bold text-[#111827]">{lead?.contactName || lead?.businessName || 'Destinataire SMS'}</p>
+              <p className="text-[10px] text-[#6B7280]">{lead?.phone || 'Numéro mobile'}</p>
             </div>
-            <div className="p-4 bg-[#fafaf8] min-h-[220px] flex flex-col justify-end space-y-2">
-              <div className="self-end bg-[#059669] text-white p-3 rounded-2xl rounded-br-none text-xs leading-relaxed max-w-[85%] whitespace-pre-line shadow-xs">
-                {renderedBody || <span className="text-white/60 italic">Message SMS…</span>}
+            <div className="p-4 bg-white max-h-[360px] overflow-y-auto flex flex-col justify-start space-y-3">
+              <div className="self-end bg-[#1E4B33] text-white p-3.5 rounded-2xl rounded-br-none text-xs leading-relaxed max-w-[90%] whitespace-pre-line shadow-2xs break-words">
+                {renderedBody || <span className="text-white/70 italic">Rédigez votre SMS…</span>}
               </div>
-              <p className="text-[9px] text-[#9c9c96] text-right">SMS direct · {renderedBody.length} car.</p>
+              <p className="text-[9px] text-[#9CA3AF] text-right">
+                {renderedBody.length} car. · {Math.max(1, Math.ceil(renderedBody.length / 160))} SMS
+              </p>
             </div>
           </div>
         )}
