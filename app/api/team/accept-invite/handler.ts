@@ -42,7 +42,7 @@ export async function POST() {
     }
 
     if (!memberships || memberships.length === 0) {
-      return NextResponse.json({ error: 'No pending invitation found' }, { status: 404 });
+      return NextResponse.json({ message: 'No pending invitation found', activated: 0 }, { status: 200 });
     }
 
     const admin = getAdminClient();

@@ -8,20 +8,23 @@ export async function POST(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { leadId } = await req.json();
+  const { leadId, leadData } = await req.json();
   if (!leadId) return NextResponse.json({ error: 'leadId required' }, { status: 400 });
 
-  // Fetch the lead
-  const { data: row, error } = await supabase
-    .from('leads')
-    .select('*')
-    .eq('id', leadId)
-    .maybeSingle();
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(leadId);
+  let row: any = null;
 
-  if (error || !row) return NextResponse.json({ error: 'Lead not found' }, { status: 404 });
+  if (isUuid) {
+    const { data } = await supabase
+      .from('leads')
+      .select('*')
+      .eq('id', leadId)
+      .maybeSingle();
+    row = data;
+  }
 
   // Map to Lead type for the scoring function
-  const lead: Partial<Lead> = {
+  const lead: Partial<Lead> = row ? {
     id: row.id,
     businessName: row.business_name || '',
     contactEmail: row.contact_email,
@@ -42,9 +45,27 @@ export async function POST(req: NextRequest) {
     websiteDescription: row.website_description,
     decisionMakerName: row.decision_maker_name,
     dealAmount: row.deal_amount,
+  } : {
+    id: leadId,
+    businessName: leadData?.businessName || leadData?.business_name || '',
+    contactEmail: leadData?.contactEmail || leadData?.contact_email,
+    phone: leadData?.phone,
+    website: leadData?.website,
+    niche: leadData?.niche,
+    city: leadData?.city,
+    temperature: leadData?.temperature || 'Warm',
+    status: leadData?.status || 'New',
+    createdAt: leadData?.createdAt || new Date().toISOString(),
+    rating: leadData?.rating,
+    reviewsCount: leadData?.reviewsCount,
+    dealAmount: leadData?.dealAmount || 1000,
   };
 
   const scores = computeLeadScoreV2(lead as Lead);
+
+  if (!isUuid || !row) {
+    return NextResponse.json({ ok: true, scores });
+  }
 
   // Save to DB
   const { error: updateErr } = await supabase

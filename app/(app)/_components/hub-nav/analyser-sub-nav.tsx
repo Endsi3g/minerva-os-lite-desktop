@@ -3,11 +3,12 @@
 import React from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { BarChart3, TrendingUp, FileText, Activity, ShieldCheck } from 'lucide-react';
+import { BarChart3, TrendingUp, FileText, Activity, ShieldCheck, Trophy } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const TABS = [
   { label: 'Bilan Hebdo', href: '/weekly-report', icon: BarChart3, exact: true },
+  { label: 'Leaderboard & Performance', href: '/leaderboard', icon: Trophy },
   { label: 'Analytics', href: '/analytics', icon: TrendingUp },
   { label: 'Rapports Clients', href: '/client-reports', icon: FileText },
   { label: 'Activités & Audit', href: '/activities', icon: Activity },

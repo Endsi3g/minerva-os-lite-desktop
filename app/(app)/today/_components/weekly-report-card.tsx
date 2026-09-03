@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { BarChart3, RefreshCw, Loader2, ChevronDown, ChevronUp, ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -40,9 +40,30 @@ function getISOWeekKey(d: Date = new Date()): string {
 }
 
 export function WeeklyReportCard() {
-  const { activeWorkspace } = useReach();
+  const { activeWorkspace, leads, tasks } = useReach();
   const weekKey = getISOWeekKey();
   const cacheKey = `minerva_weekly_cache_${weekKey}`;
+
+  // Métriques réelles calculées sans artifices
+  const realMetrics = useMemo(() => {
+    const now = new Date();
+    const weekStart = new Date(now);
+    weekStart.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+    weekStart.setHours(0, 0, 0, 0);
+
+    const bookings = leads.filter(l => l.status === 'Meeting Booked' && l.updatedAt && new Date(l.updatedAt) >= weekStart).length;
+    const completedTasks = tasks.filter(t => t.completed).length;
+    const hotLeads = leads.filter(l => l.temperature === 'Hot').length;
+    const advanced = leads.filter(l => l.status && !['New', 'Lost'].includes(l.status)).length;
+
+    return {
+      completedTasks,
+      totalTasks: tasks.length,
+      bookings,
+      hotLeads,
+      advanced,
+    };
+  }, [leads, tasks]);
 
   const [loading, setLoading] = useState(false);
   const [report, setReport] = useState<string | null>(null);
@@ -154,17 +175,16 @@ export function WeeklyReportCard() {
       {!collapsed && (
         <>
 
-      {metrics && (
         <div className="grid grid-cols-2 gap-2">
           {[
             {
-              label: 'NBA accepté',
-              value: `${metrics.nbaAcceptanceRate}%`,
-              accent: metrics.nbaAcceptanceRate > 50 ? '#059669' : '#d97706',
+              label: 'Tâches réalisées',
+              value: `${realMetrics.completedTasks} / ${realMetrics.totalTasks}`,
+              accent: realMetrics.completedTasks > 0 ? '#059669' : '#26251e',
             },
-            { label: 'Bookings', value: metrics.bookingsThisWeek, accent: '#26251e' },
-            { label: 'Réponses positives', value: metrics.positiveRepliesThisWeek, accent: '#26251e' },
-            { label: 'Leads avancés', value: metrics.leadsAdvanced, accent: '#26251e' },
+            { label: 'RDV Bookés', value: realMetrics.bookings, accent: '#26251e' },
+            { label: 'Prospects chauds', value: realMetrics.hotLeads, accent: '#d97706' },
+            { label: 'Leads avancés', value: realMetrics.advanced, accent: '#2563eb' },
           ].map(({ label, value, accent }) => (
             <div
               key={label}
@@ -177,7 +197,6 @@ export function WeeklyReportCard() {
             </div>
           ))}
         </div>
-      )}
 
       {metrics?.topNiche && (
         <div>

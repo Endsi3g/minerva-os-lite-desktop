@@ -1,12 +1,13 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useReach } from '@/lib/reach-context';
 import { useLanguage } from '@/lib/language-context';
-import { Plus, CheckSquare, Sparkles, Zap, ChevronDown } from 'lucide-react';
+import { Plus, CheckSquare, Sparkles, Zap, ChevronDown, Search, X } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -58,11 +59,96 @@ export function TodayHeader({ onAestheticToggle }: TodayHeaderProps) {
     notes: ''
   });
 
-  // Dialog states
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [taskForm, setTaskForm] = useState({
-    title: '',
-    category: 'Follow-up' as Task['category']
+  // Unified Action Menu & Raycast Palette states
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Global Keyboard Shortcuts (⌘K, ⌘N, ⌘T, ⌘E)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.tagName === 'SELECT' ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
+
+      const isMeta = e.metaKey || e.ctrlKey;
+
+      if (isMeta && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setMenuOpen((prev) => !prev);
+      } else if (isMeta && e.key.toLowerCase() === 'n') {
+        e.preventDefault();
+        setMenuOpen(false);
+        setSheetOpen(true);
+      } else if (isMeta && e.key.toLowerCase() === 't') {
+        e.preventDefault();
+        setMenuOpen(false);
+        setDialogOpen(true);
+      } else if (isMeta && e.key.toLowerCase() === 'e' && onAestheticToggle) {
+        e.preventDefault();
+        setMenuOpen(false);
+        onAestheticToggle();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onAestheticToggle]);
+
+  // Actions definitions for the command palette
+  const allActions = [
+    {
+      id: 'add-lead',
+      label: t('today.add_lead') || 'Ajouter un prospect',
+      description: 'Créer une opportunité commerciale',
+      shortcut: '⌘N',
+      icon: <Plus className="w-3.5 h-3.5 stroke-[2.5]" />,
+      iconBg: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400',
+      onClick: () => {
+        setSheetOpen(true);
+        setMenuOpen(false);
+      },
+    },
+    {
+      id: 'new-task',
+      label: t('today.new_task') || 'Nouvelle tâche',
+      description: 'Planifier une action ou relance',
+      shortcut: '⌘T',
+      icon: <CheckSquare className="w-3.5 h-3.5 stroke-[2]" />,
+      iconBg: 'bg-blue-500/15 text-blue-600 dark:text-blue-400',
+      onClick: () => {
+        setDialogOpen(true);
+        setMenuOpen(false);
+      },
+    },
+    ...(onAestheticToggle
+      ? [
+          {
+            id: 'aesthetic-mode',
+            label: 'Basculer Mode Esthétique',
+            description: 'Aperçu & partage visuel haute définition',
+            shortcut: '⌘E',
+            icon: <Sparkles className="w-3.5 h-3.5 stroke-[2]" />,
+            iconBg: 'bg-purple-500/15 text-purple-600 dark:text-purple-400',
+            onClick: () => {
+              onAestheticToggle();
+              setMenuOpen(false);
+            },
+          },
+        ]
+      : []),
+  ];
+
+  const filteredActions = allActions.filter(action => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase();
+    return action.label.toLowerCase().includes(q) || action.description.toLowerCase().includes(q);
   });
 
   const handleLeadSubmit = async (e: React.FormEvent) => {
@@ -116,62 +202,114 @@ export function TodayHeader({ onAestheticToggle }: TodayHeaderProps) {
 
       {/* Unified Action Button (Actions Rapides Dropdown) */}
       <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
-        <DropdownMenu>
+        <DropdownMenu
+          open={menuOpen}
+          onOpenChange={(open) => {
+            setMenuOpen(open);
+            if (!open) setSearchQuery('');
+          }}
+        >
           <DropdownMenuTrigger asChild>
             <button
               type="button"
-              className="inline-flex items-center gap-2 h-9 px-3.5 sm:px-4 rounded-xl text-xs sm:text-sm font-semibold bg-brand-accent-emerald text-white hover:bg-brand-accent-emeraldHover shadow-xs active:scale-[0.98] transition-all cursor-pointer shrink-0"
+              className={cn(
+                "group relative inline-flex items-center gap-2.5 h-9.5 px-3.5 sm:px-4 rounded-xl text-xs sm:text-sm font-semibold tracking-tight cursor-pointer shrink-0 select-none",
+                // Gradient & Rich Surface
+                "bg-gradient-to-b from-[#188c64] via-[#157c58] to-[#0f6244] text-white",
+                // Bevel Highlight & Shadow Depth
+                "border border-emerald-400/35 shadow-[inset_0_1px_0_rgba(255,255,255,0.28),0_2px_8px_rgba(15,98,68,0.30)]",
+                // Hover & Focus States
+                "hover:from-[#1ba173] hover:to-[#126f4e] hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.38),0_4px_14px_rgba(21,124,88,0.40)] hover:border-emerald-300/50",
+                "active:scale-[0.98] transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/50 focus-visible:ring-offset-2",
+                menuOpen && "from-[#147050] to-[#0d533a] shadow-[inset_0_2px_4px_rgba(0,0,0,0.25)] border-emerald-500/60"
+              )}
             >
-              <Zap className="w-4 h-4 text-white fill-white" />
-              <span>Actions Rapides</span>
-              <ChevronDown className="w-3.5 h-3.5 opacity-80" />
+              {/* Subtle ambient glow behind the button */}
+              <span className="absolute -inset-0.5 rounded-xl bg-emerald-500/20 blur-xs -z-10 group-hover:opacity-100 opacity-60 transition-opacity" />
+
+              <span className="flex items-center justify-center w-5 h-5 rounded-lg bg-white/15 shadow-[inset_0_1px_0_rgba(255,255,255,0.3)] text-emerald-100 group-hover:scale-105 transition-transform">
+                <Zap className="w-3.5 h-3.5 text-white fill-white drop-shadow-xs" />
+              </span>
+              <span className="font-medium text-[13px] tracking-tight drop-shadow-xs">Actions Rapides</span>
+              
+              {/* Keyboard shortcut pill */}
+              <kbd className="hidden sm:inline-flex items-center px-1.5 py-0.5 rounded-md bg-emerald-950/40 border border-emerald-400/20 text-[10px] font-mono font-medium text-emerald-100/90 shadow-2xs">
+                ⌘K
+              </kbd>
+
+              <ChevronDown className={cn("w-3.5 h-3.5 text-emerald-100/80 transition-transform duration-200", menuOpen && "rotate-180")} />
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56 p-1.5 rounded-xl bg-card border-border shadow-lg">
-            <DropdownMenuLabel className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider px-2 py-1">
-              Actions Rapides
-            </DropdownMenuLabel>
-            <DropdownMenuItem
-              onClick={() => setSheetOpen(true)}
-              className="flex items-center gap-2.5 px-2.5 py-2 text-xs font-medium text-foreground rounded-lg cursor-pointer hover:bg-accent focus:bg-accent"
-            >
-              <div className="flex items-center justify-center w-6 h-6 rounded-md bg-emerald-500/10 text-emerald-600 shrink-0">
-                <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
-              </div>
-              <div className="flex flex-col min-w-0">
-                <span className="font-semibold">{t('today.add_lead') || 'Nouveau Lead'}</span>
-                <span className="text-[10px] text-muted-foreground">Créer une opportunité</span>
-              </div>
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => setDialogOpen(true)}
-              className="flex items-center gap-2.5 px-2.5 py-2 text-xs font-medium text-foreground rounded-lg cursor-pointer hover:bg-accent focus:bg-accent"
-            >
-              <div className="flex items-center justify-center w-6 h-6 rounded-md bg-blue-500/10 text-blue-600 shrink-0">
-                <CheckSquare className="w-3.5 h-3.5" />
-              </div>
-              <div className="flex flex-col min-w-0">
-                <span className="font-semibold">{t('today.new_task') || 'Nouvelle Tâche'}</span>
-                <span className="text-[10px] text-muted-foreground">Planifier une action</span>
-              </div>
-            </DropdownMenuItem>
-            {onAestheticToggle && (
-              <>
-                <DropdownMenuSeparator className="my-1 bg-border" />
-                <DropdownMenuItem
-                  onClick={onAestheticToggle}
-                  className="flex items-center gap-2.5 px-2.5 py-2 text-xs font-medium text-foreground rounded-lg cursor-pointer hover:bg-accent focus:bg-accent"
+
+          <DropdownMenuContent
+            align="end"
+            sideOffset={8}
+            className="w-72 p-1.5 rounded-2xl bg-card/95 backdrop-blur-xl border border-border/80 shadow-2xl text-foreground animate-in fade-in-0 zoom-in-95 duration-150"
+          >
+            {/* Raycast-style instant search bar */}
+            <div className="relative flex items-center px-2 py-1.5 mb-1 border-b border-border/60">
+              <Search className="w-3.5 h-3.5 text-muted-foreground/80 shrink-0 mr-2" />
+              <input
+                type="text"
+                autoFocus
+                placeholder="Rechercher une action..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  e.stopPropagation();
+                  if (e.key === 'Escape') {
+                    setMenuOpen(false);
+                  }
+                }}
+                className="w-full bg-transparent text-xs text-foreground placeholder:text-muted-foreground/60 outline-none"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="text-muted-foreground hover:text-foreground text-[10px] px-1 py-0.5 rounded hover:bg-muted"
                 >
-                  <div className="flex items-center justify-center w-6 h-6 rounded-md bg-purple-500/10 text-purple-600 shrink-0">
-                    <Sparkles className="w-3.5 h-3.5" />
-                  </div>
-                  <div className="flex flex-col min-w-0">
-                    <span className="font-semibold">Basculer Mode Esthétique</span>
-                    <span className="text-[10px] text-muted-foreground">Aperçu & partage visuel</span>
-                  </div>
-                </DropdownMenuItem>
-              </>
-            )}
+                  <X className="w-3 h-3" />
+                </button>
+              )}
+            </div>
+
+            {/* Filtered actions list (Linear / Raycast high density) */}
+            <div className="space-y-0.5 py-0.5">
+              {filteredActions.length === 0 ? (
+                <div className="py-6 text-center text-xs text-muted-foreground">
+                  Aucune action trouvée pour "{searchQuery}"
+                </div>
+              ) : (
+                filteredActions.map((action) => (
+                  <DropdownMenuItem
+                    key={action.id}
+                    onClick={action.onClick}
+                    className="flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium cursor-pointer transition-colors focus:bg-accent/80 hover:bg-accent/80 text-foreground group"
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className={cn("flex items-center justify-center w-5 h-5 rounded-md text-foreground/80 group-hover:text-foreground transition-colors shrink-0", action.iconBg)}>
+                        {action.icon}
+                      </div>
+                      <span className="truncate text-[12px] font-medium text-foreground">{action.label}</span>
+                    </div>
+
+                    {/* Keyboard shortcut badge */}
+                    {action.shortcut && (
+                      <kbd className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-medium text-muted-foreground bg-muted/60 border border-border/50 group-hover:border-border transition-colors">
+                        {action.shortcut}
+                      </kbd>
+                    )}
+                  </DropdownMenuItem>
+                ))
+              )}
+            </div>
+
+            {/* Footer hint */}
+            <div className="mt-1 pt-1.5 border-t border-border/50 px-2 py-0.5 flex items-center justify-between text-[10px] text-muted-foreground/70">
+              <span>Commandes rapides</span>
+              <span className="font-mono">Esc pour fermer</span>
+            </div>
           </DropdownMenuContent>
         </DropdownMenu>
 

@@ -17,8 +17,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { LeadDealCommissionCard } from '@/components/lead-deal-commission-card';
 import {
   ChevronLeft,
+  ChevronDown,
+  ChevronUp,
   MapPin,
   Mail,
   Calendar,
@@ -69,7 +72,6 @@ import { GmailIcon, GoogleCalendarIcon, GoogleMapsIcon, InstagramIcon, FacebookI
 import { OutreachPanel } from './outreach-panel';
 import { GoogleConnectModal } from '@/components/google-connect-modal';
 import { TimelineRoot } from '@/app/(app)/leads/timeline/_components/timeline-root';
-import { LeadNbaCard } from './lead-nba-card';
 import { CadenceTimeline } from './cadence-timeline';
 import { LeadProgramsBadge } from './lead-programs-badge';
 import { LeadEnrichmentReviewBanner } from './lead-enrichment-review-banner';
@@ -601,6 +603,18 @@ export function LeadDetailClient({ id }: { id: string }) {
   const [deletingLocationIndex, setDeletingLocationIndex] = useState<number | null>(null);
   const [dragActive, setDragActive] = useState(false);
 
+  // Accordions for right hub
+  const [openAccordions, setOpenAccordions] = useState<Record<string, boolean>>({
+    actions: true,
+    properties: true,
+    intelligence: true,
+    field: false,
+  });
+
+  const toggleAccordion = (key: string) => {
+    setOpenAccordions(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -776,7 +790,11 @@ export function LeadDetailClient({ id }: { id: string }) {
     fetch(getApiUrl('/api/leads/enrich-google'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ leadId: lead.id }),
+      body: JSON.stringify({
+        leadId: lead.id,
+        businessName: lead.businessName,
+        city: lead.city,
+      }),
     })
       .then(r => r.json())
       .then(d => {
@@ -805,7 +823,7 @@ export function LeadDetailClient({ id }: { id: string }) {
     fetch(getApiUrl('/api/leads/score'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ leadId: lead.id }),
+      body: JSON.stringify({ leadId: lead.id, leadData: lead }),
     })
       .then(r => r.ok ? r.json() : null)
       .then(data => {
@@ -1631,6 +1649,11 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
   const fetchDrafts = useCallback(async () => {
     setLoadingDrafts(true);
     try {
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+      if (!isUuid) {
+        setLoadingDrafts(false);
+        return;
+      }
       const supabase = createClient();
       const { data } = await supabase
         .from('drafts')
@@ -1955,8 +1978,8 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
           </div>
         </div>
 
-        {/* Notion Document Canvas */}
-        <div className="grid grid-cols-1 xl:grid-cols-[1fr_300px] gap-6 bg-white border border-[#e5e5e0] rounded-lg shadow-sm p-4 sm:p-6">
+        {/* Notion Document Canvas & Sales Workspace */}
+        <div className="grid grid-cols-1 xl:grid-cols-[1fr_420px] 2xl:grid-cols-[1fr_450px] gap-8 bg-white border border-[#e5e5e0] rounded-xl shadow-sm p-4 sm:p-6">
 
           {/* Main Content Side (Document Body) */}
           <div className="space-y-8 min-w-0">
@@ -3009,66 +3032,108 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
             </div>
           </div>
 
-          {/* Right Sidebar (Notion Properties Panel) */}
-          <div className="border-t lg:border-t-0 lg:border-l border-[#e5e5e0] pt-6 lg:pt-0 lg:pl-6 space-y-6">
+          {/* Right Sidebar — Hub Commercial & Intelligence */}
+          <div className="border-t lg:border-t-0 lg:border-l border-[#e5e5e0] pt-6 lg:pt-0 lg:pl-6 space-y-4 min-w-0">
+            {/* Top Review Banner & Deal Commission */}
             <LeadEnrichmentReviewBanner lead={lead} />
-            <LeadNbaCard leadId={lead.id} workspaceId={activeWorkspace?.id ?? ''} />
-            <CadenceTimeline leadId={lead.id} workspaceId={activeWorkspace?.id ?? ''} />
-            <LeadProgramsBadge leadId={lead.id} />
+            <LeadDealCommissionCard
+              lead={lead}
+              onMarkWon={() => handleSaveProperty('status', 'Won')}
+            />
 
-            {/* Score v2 — multidimensionnel */}
-            {(() => {
-              const computed = computeLeadScoreV2(lead);
-              const scoreIcp = lead.scoreIcp ?? computed.icp;
-              const scoreEng = lead.scoreEngagement ?? computed.engagement;
-              const scoreUrg = lead.scoreUrgency ?? computed.urgency;
-              const scoreRev = lead.scoreRevenue ?? computed.revenue;
-              const total = lead.score ?? computed.total;
-              const totalColor = total >= 70 ? '#167f5b' : total >= 40 ? '#f59e0b' : '#8A9098';
-              const totalLabel = total >= 70 ? 'Forte opportunité' : total >= 40 ? 'Opportunité moyenne' : 'À qualifier';
-              const dims = [
-                { label: 'ICP', value: scoreIcp, max: 25, color: '#167f5b', tip: 'Complétude des données' },
-                { label: 'Engagement', value: scoreEng, max: 25, color: '#3b82f6', tip: 'Pipeline + température' },
-                { label: 'Urgence', value: scoreUrg, max: 25, color: '#f59e0b', tip: 'Prochaine action' },
-                { label: 'Revenu', value: scoreRev, max: 25, color: '#8b5cf6', tip: 'Potentiel business' },
-              ];
-              return (
-                <div className="rounded-xl border border-[#e5e5e0] bg-[#fafaf8] p-4 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-[#8A9098]">Score v2</p>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xl font-black" style={{ color: totalColor }}>{total}</span>
-                      <span className="text-[10px] text-[#8A9098]">/100</span>
-                    </div>
+            {/* ACCORDION 1: Actions Immédiates & Prospection */}
+            <div className="rounded-xl border border-[#e5e5e0] bg-white shadow-2xs overflow-hidden">
+              <button
+                type="button"
+                onClick={() => toggleAccordion('actions')}
+                className="w-full flex items-center justify-between p-3.5 bg-[#fafaf8] hover:bg-[#f4f4f3] transition-colors text-left cursor-pointer border-b border-[#e5e5e0]/60"
+              >
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 rounded-lg bg-[#167f5b] text-white">
+                    <Zap className="h-3.5 w-3.5" />
                   </div>
-                  <div className="space-y-2">
-                    {dims.map(({ label, value, max, color, tip }) => (
-                      <div key={label} title={tip}>
-                        <div className="flex items-center justify-between mb-0.5">
-                          <span className="text-[10px] font-medium text-[#8A9098]">{label}</span>
-                          <span className="text-[10px] font-bold" style={{ color }}>{value}/{max}</span>
-                        </div>
-                        <div className="h-1.5 bg-[#e5e5e0] rounded-full overflow-hidden">
-                          <div
-                            className="h-full rounded-full transition-all duration-500"
-                            style={{ width: `${Math.round((value / max) * 100)}%`, backgroundColor: color }}
-                          />
-                        </div>
-                      </div>
-                    ))}
+                  <div>
+                    <span className="text-xs font-bold text-[#14171A]">Actions & Prospection Immédiate</span>
+                    <p className="text-[10px] text-[#8A9098]">Recommandation IA, Cadence & Déclencheurs</p>
                   </div>
-                  <p className="text-[10px] font-semibold text-center mt-1" style={{ color: totalColor }}>{totalLabel}</p>
                 </div>
-              );
-            })()}
+                {openAccordions.actions ? <ChevronUp className="h-4 w-4 text-[#8A9098]" /> : <ChevronDown className="h-4 w-4 text-[#8A9098]" />}
+              </button>
 
-            {/* Qualification & Enrichissement */}
-            <QualificationPanel lead={lead} onSave={(fields) => { updateLead(lead.id, fields); fetchDrafts(); }} />
+              {openAccordions.actions && (
+                <div className="p-3.5 space-y-4 bg-white">
+                  {/* Quick Commercial Action Bar */}
+                  <div className="grid grid-cols-3 gap-2">
+                    {lead.phone ? (
+                      <a
+                        href={`tel:${lead.phone}`}
+                        className="flex items-center justify-center gap-1.5 h-8 rounded-lg bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200 text-xs font-bold transition-colors shadow-2xs"
+                        title={`Appeler ${lead.phone}`}
+                      >
+                        <Phone className="h-3.5 w-3.5 text-emerald-700" /> Appeler
+                      </a>
+                    ) : (
+                      <button
+                        type="button"
+                        disabled
+                        className="flex items-center justify-center gap-1.5 h-8 rounded-lg bg-gray-50 text-gray-400 border border-gray-200 text-xs font-medium cursor-not-allowed"
+                      >
+                        <Phone className="h-3.5 w-3.5" /> Pas de tél
+                      </button>
+                    )}
 
-            <div>
-              <h4 className="text-[10px] font-bold uppercase tracking-wider text-[#8A9098] mb-4">{t('lead.properties_title')}</h4>
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('composer')}
+                      className="flex items-center justify-center gap-1.5 h-8 rounded-lg bg-blue-50 text-blue-800 hover:bg-blue-100 border border-blue-200 text-xs font-bold transition-colors cursor-pointer shadow-2xs"
+                      title="Rédiger un email ou message"
+                    >
+                      <Mail className="h-3.5 w-3.5 text-blue-700" /> Écrire
+                    </button>
 
-              <div className="space-y-4">
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('agenda')}
+                      className="flex items-center justify-center gap-1.5 h-8 rounded-lg bg-purple-50 text-purple-800 hover:bg-purple-100 border border-purple-200 text-xs font-bold transition-colors cursor-pointer shadow-2xs"
+                      title="Prendre rendez-vous"
+                    >
+                      <Calendar className="h-3.5 w-3.5 text-purple-700" /> RDV
+                    </button>
+                  </div>
+
+                  <CadenceTimeline leadId={lead.id} workspaceId={activeWorkspace?.id ?? ''} />
+                </div>
+              )}
+            </div>
+
+            {/* ACCORDION 2: Fiche & Qualification du Prospect */}
+            <div className="rounded-xl border border-[#e5e5e0] bg-white shadow-2xs overflow-hidden">
+              <button
+                type="button"
+                onClick={() => toggleAccordion('properties')}
+                className="w-full flex items-center justify-between p-3.5 bg-[#fafaf8] hover:bg-[#f4f4f3] transition-colors text-left cursor-pointer border-b border-[#e5e5e0]/60"
+              >
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 rounded-lg bg-blue-600 text-white">
+                    <Activity className="h-3.5 w-3.5" />
+                  </div>
+                  <div>
+                    <span className="text-xs font-bold text-[#14171A]">Fiche & Propriétés du Prospect</span>
+                    <p className="text-[10px] text-[#8A9098]">Pipeline, contact, coordonnées & BANT</p>
+                  </div>
+                </div>
+                {openAccordions.properties ? <ChevronUp className="h-4 w-4 text-[#8A9098]" /> : <ChevronDown className="h-4 w-4 text-[#8A9098]" />}
+              </button>
+
+              {openAccordions.properties && (
+                <div className="p-3.5 space-y-4 bg-white">
+                  {/* Qualification & Enrichissement */}
+                  <QualificationPanel lead={lead} onSave={(fields) => { updateLead(lead.id, fields); fetchDrafts(); }} />
+
+                  <div>
+                    <h4 className="text-[10px] font-bold uppercase tracking-wider text-[#8A9098] mb-3">{t('lead.properties_title')}</h4>
+
+                    <div className="space-y-3.5">
                 {/* Status selector */}
                 <div className="grid grid-cols-[100px_1fr] items-center gap-1.5">
                   <span className="text-[11px] font-medium text-[#8A9098] flex items-center gap-1.5">
@@ -3608,178 +3673,279 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                 />
               </div>
 
-              {/* Script de Pitch IA */}
-              <ScriptPanel lead={lead} />
-
-              {/* Actions terrain */}
-              <div className="pt-4 border-t border-[#e5e5e0] mt-4 space-y-2">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-[#8A9098]">Actions terrain</span>
-                <div className="flex flex-col gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-8 text-xs gap-1.5 justify-start"
-                    onClick={() => {
-                      const url = lead.mapsUrl
-                        ? lead.mapsUrl
-                        : `https://www.google.com/maps/search/${encodeURIComponent((lead.businessName || '') + ' ' + (lead.city || ''))}`;
-                      if ((window as any).electron?.openExternal) {
-                        (window as any).electron.openExternal(url);
-                      } else {
-                        window.open(url, '_blank');
-                      }
-                    }}
-                  >
-                    <GoogleMapsIcon size={14} />
-                    Voir sur Google Maps
-                    <ExternalLink className="h-3 w-3 ml-auto text-[#8A9098]" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-8 text-xs gap-1.5 justify-start"
-                    onClick={() => { window.location.href = '/services'; }}
-                  >
-                    <Tag className="h-3.5 w-3.5 text-emerald-600" />
-                    Présenter une offre
-                    <ExternalLink className="h-3 w-3 ml-auto text-[#8A9098]" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-8 text-xs gap-1.5 justify-start bg-[#f0fdf4] border-[#167f5b]/30 hover:bg-[#dcfce7]"
-                    disabled={loadingProposalData}
-                    onClick={async () => {
-                      setLoadingProposalData(true);
-                      try {
-                        const supabase = createClient();
-                        const { data: { user } } = await supabase.auth.getUser();
-                        const [svcRes, settRes] = await Promise.all([
-                          supabase.from('services').select('*').eq('user_id', user?.id ?? ''),
-                          supabase.from('settings').select('full_name, company_name, phone').eq('user_id', user?.id ?? '').maybeSingle(),
-                        ]);
-                        const dbServices = svcRes.data ?? [];
-                        const userSettings = settRes.data;
-
-                        // Set values
-                        setProposalSenderCompany(userSettings?.company_name ?? 'Minerva OS');
-                        setProposalSenderName(userSettings?.full_name ?? 'Conseiller');
-                        setProposalRecipientName(lead.contactName || lead.businessName || '');
-                        
-                        // Set executive summary prefilled
-                        const defaultSummary = buildExecutiveSummary(lead);
-                        setProposalSummary(defaultSummary);
-
-                        // Merge DB services with defaults
-                        const mappedDbServices = dbServices.map((s: any) => ({
-                          name: s.name,
-                          description: s.description || '',
-                          price: Number(s.price || 0),
-                          selected: true
-                        }));
-                        if (mappedDbServices.length === 0) {
-                          setProposalServices(DEFAULT_SERVICES.map((s: any) => ({...s})));
-                        } else {
-                          setProposalServices(mappedDbServices);
-                        }
-                        setCustomServices([]);
-
-                        // Pre-populate multi-section proposal with dealAmount if available
-                        if (lead.dealAmount) {
-                          setProposalSections(p => ({
-                            ...p,
-                            pricing: { ...p.pricing, amount: lead.dealAmount! },
-                          }));
-                        }
-
-                        // Open modal!
-                        setShowProposalBuilder(true);
-                      } catch (err) {
-                        console.error('Proposal builder prep error:', err);
-                        toast.error("Erreur lors de la préparation du générateur.");
-                      } finally {
-                        setLoadingProposalData(false);
-                      }
-                    }}
-                  >
-                    {loadingProposalData ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    ) : (
-                      <FileOutput className="h-3.5 w-3.5 text-[#167f5b]" />
-                    )}
-                    {loadingProposalData ? 'Chargement…' : 'Générer une proposition PDF'}
-                  </Button>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              )}
+            </div>
 
-              {/* Storefront Photo Section */}
-              <div 
-                className="pt-5 border-t border-[#e5e5e0] mt-5 space-y-2"
-                onDragEnter={handleDrag}
-                onDragOver={handleDrag}
-                onDragLeave={handleDrag}
-                onDrop={handleDrop}
+            {/* ACCORDION 3: Score & Intelligence Commerciale */}
+            <div className="rounded-xl border border-[#e5e5e0] bg-white shadow-2xs overflow-hidden">
+              <button
+                type="button"
+                onClick={() => toggleAccordion('intelligence')}
+                className="w-full flex items-center justify-between p-3.5 bg-[#fafaf8] hover:bg-[#f4f4f3] transition-colors text-left cursor-pointer border-b border-[#e5e5e0]/60"
               >
-                <span className="text-[10px] font-bold uppercase tracking-wider text-[#8A9098] flex items-center gap-1.5">
-                  <Camera className="h-3 w-3" />
-                  {t('lead.photo_section')}
-                </span>
-                
-                {lead.imageUrl ? (
-                  <div className={cn(
-                    "relative rounded-lg overflow-hidden border group bg-[#f4f4f3] aspect-video flex items-center justify-center transition-all duration-200",
-                    dragActive ? "border-[#167f5b] bg-[#167f5b]/5" : "border-[#e5e5e0]"
-                  )}>
-                    <img 
-                      src={lead.imageUrl} 
-                      alt={t('lead.photo_alt')} 
-                      className="w-full h-full object-cover" 
-                    />
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                      <Button 
-                        type="button"
-                        variant="secondary" 
-                        size="xs" 
-                        onClick={handleCapturePhoto}
-                        className="h-7 text-[10px] font-semibold"
-                        disabled={isLocked}
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 rounded-lg bg-amber-500 text-white">
+                    <Target className="h-3.5 w-3.5" />
+                  </div>
+                  <div>
+                    <span className="text-xs font-bold text-[#14171A]">Score & Intelligence Commerciale</span>
+                    <p className="text-[10px] text-[#8A9098]">Score v2 multidimensionnel & Pitch IA</p>
+                  </div>
+                </div>
+                {openAccordions.intelligence ? <ChevronUp className="h-4 w-4 text-[#8A9098]" /> : <ChevronDown className="h-4 w-4 text-[#8A9098]" />}
+              </button>
+
+              {openAccordions.intelligence && (
+                <div className="p-3.5 space-y-4 bg-white">
+                  <LeadProgramsBadge leadId={lead.id} />
+
+                  {/* Score v2 — multidimensionnel */}
+                  {(() => {
+                    const computed = computeLeadScoreV2(lead);
+                    const scoreIcp = lead.scoreIcp ?? computed.icp;
+                    const scoreEng = lead.scoreEngagement ?? computed.engagement;
+                    const scoreUrg = lead.scoreUrgency ?? computed.urgency;
+                    const scoreRev = lead.scoreRevenue ?? computed.revenue;
+                    const total = lead.score ?? computed.total;
+                    const totalColor = total >= 70 ? '#167f5b' : total >= 40 ? '#f59e0b' : '#8A9098';
+                    const totalLabel = total >= 70 ? 'Forte opportunité' : total >= 40 ? 'Opportunité moyenne' : 'À qualifier';
+                    const dims = [
+                      { label: 'ICP', value: scoreIcp, max: 25, color: '#167f5b', tip: 'Complétude des données' },
+                      { label: 'Engagement', value: scoreEng, max: 25, color: '#3b82f6', tip: 'Pipeline + température' },
+                      { label: 'Urgence', value: scoreUrg, max: 25, color: '#f59e0b', tip: 'Prochaine action' },
+                      { label: 'Revenu', value: scoreRev, max: 25, color: '#8b5cf6', tip: 'Potentiel business' },
+                    ];
+                    return (
+                      <div className="rounded-xl border border-[#e5e5e0] bg-[#fafaf8] p-3.5 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <p className="text-[10px] font-bold uppercase tracking-wider text-[#8A9098]">Score v2</p>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xl font-black" style={{ color: totalColor }}>{total}</span>
+                            <span className="text-[10px] text-[#8A9098]">/100</span>
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          {dims.map(({ label, value, max, color, tip }) => (
+                            <div key={label} title={tip}>
+                              <div className="flex items-center justify-between mb-0.5">
+                                <span className="text-[10px] font-medium text-[#8A9098]">{label}</span>
+                                <span className="text-[10px] font-bold" style={{ color }}>{value}/{max}</span>
+                              </div>
+                              <div className="h-1.5 bg-[#e5e5e0] rounded-full overflow-hidden">
+                                <div
+                                  className="h-full rounded-full transition-all duration-500"
+                                  style={{ width: `${Math.round((value / max) * 100)}%`, backgroundColor: color }}
+                                />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                        <p className="text-[10px] font-semibold text-center mt-1" style={{ color: totalColor }}>{totalLabel}</p>
+                      </div>
+                    );
+                  })()}
+
+                  {/* Script de Pitch IA */}
+                  <ScriptPanel lead={lead} />
+                </div>
+              )}
+            </div>
+
+            {/* ACCORDION 4: Outils Terrain & Offres */}
+            <div className="rounded-xl border border-[#e5e5e0] bg-white shadow-2xs overflow-hidden">
+              <button
+                type="button"
+                onClick={() => toggleAccordion('field')}
+                className="w-full flex items-center justify-between p-3.5 bg-[#fafaf8] hover:bg-[#f4f4f3] transition-colors text-left cursor-pointer border-b border-[#e5e5e0]/60"
+              >
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 rounded-lg bg-purple-600 text-white">
+                    <MapPin className="h-3.5 w-3.5" />
+                  </div>
+                  <div>
+                    <span className="text-xs font-bold text-[#14171A]">Outils Terrain & Offres</span>
+                    <p className="text-[10px] text-[#8A9098]">Google Maps, Devis PDF & Photo devanture</p>
+                  </div>
+                </div>
+                {openAccordions.field ? <ChevronUp className="h-4 w-4 text-[#8A9098]" /> : <ChevronDown className="h-4 w-4 text-[#8A9098]" />}
+              </button>
+
+              {openAccordions.field && (
+                <div className="p-3.5 space-y-4 bg-white">
+                  {/* Actions terrain */}
+                  <div className="space-y-2">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-[#8A9098]">Actions terrain</span>
+                    <div className="flex flex-col gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-8 text-xs gap-1.5 justify-start"
+                        onClick={() => {
+                          const url = lead.mapsUrl
+                            ? lead.mapsUrl
+                            : `https://www.google.com/maps/search/${encodeURIComponent((lead.businessName || '') + ' ' + (lead.city || ''))}`;
+                          if ((window as any).electron?.openExternal) {
+                            (window as any).electron.openExternal(url);
+                          } else {
+                            window.open(url, '_blank');
+                          }
+                        }}
                       >
-                        {t('lead.change_photo')}
+                        <GoogleMapsIcon size={14} />
+                        Voir sur Google Maps
+                        <ExternalLink className="h-3 w-3 ml-auto text-[#8A9098]" />
                       </Button>
-                      <Button 
-                        type="button"
-                        variant="destructive" 
-                        size="xs" 
-                        onClick={() => handleSaveProperty('imageUrl', '')}
-                        className="h-7 text-[10px] font-semibold bg-red-600 hover:bg-red-700 text-white"
-                        disabled={isLocked}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-8 text-xs gap-1.5 justify-start"
+                        onClick={() => { window.location.href = '/services'; }}
                       >
-                        {t('lead.delete_photo')}
+                        <Tag className="h-3.5 w-3.5 text-emerald-600" />
+                        Présenter une offre
+                        <ExternalLink className="h-3 w-3 ml-auto text-[#8A9098]" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-8 text-xs gap-1.5 justify-start bg-[#f0fdf4] border-[#167f5b]/30 hover:bg-[#dcfce7]"
+                        disabled={loadingProposalData}
+                        onClick={async () => {
+                          setLoadingProposalData(true);
+                          try {
+                            const supabase = createClient();
+                            const { data: { user } } = await supabase.auth.getUser();
+                            const [svcRes, settRes] = await Promise.all([
+                              supabase.from('services').select('*').eq('user_id', user?.id ?? ''),
+                              supabase.from('settings').select('full_name, company_name, phone').eq('user_id', user?.id ?? '').maybeSingle(),
+                            ]);
+                            const dbServices = svcRes.data ?? [];
+                            const userSettings = settRes.data;
+
+                            // Set values
+                            setProposalSenderCompany(userSettings?.company_name ?? 'Minerva OS');
+                            setProposalSenderName(userSettings?.full_name ?? 'Conseiller');
+                            setProposalRecipientName(lead.contactName || lead.businessName || '');
+                            
+                            // Set executive summary prefilled
+                            const defaultSummary = buildExecutiveSummary(lead);
+                            setProposalSummary(defaultSummary);
+
+                            // Merge DB services with defaults
+                            const mappedDbServices = dbServices.map((s: any) => ({
+                              name: s.name,
+                              description: s.description || '',
+                              price: Number(s.price || 0),
+                              selected: true
+                            }));
+                            if (mappedDbServices.length === 0) {
+                              setProposalServices(DEFAULT_SERVICES.map((s: any) => ({...s})));
+                            } else {
+                              setProposalServices(mappedDbServices);
+                            }
+                            setCustomServices([]);
+
+                            // Pre-populate multi-section proposal with dealAmount if available
+                            if (lead.dealAmount) {
+                              setProposalSections(p => ({
+                                ...p,
+                                pricing: { ...p.pricing, amount: lead.dealAmount! },
+                              }));
+                            }
+
+                            // Open modal!
+                            setShowProposalBuilder(true);
+                          } catch (err) {
+                            console.error('Proposal builder prep error:', err);
+                            toast.error("Erreur lors de la préparation du générateur.");
+                          } finally {
+                            setLoadingProposalData(false);
+                          }
+                        }}
+                      >
+                        {loadingProposalData ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <FileOutput className="h-3.5 w-3.5 text-[#167f5b]" />
+                        )}
+                        {loadingProposalData ? 'Chargement…' : 'Générer une proposition PDF'}
                       </Button>
                     </div>
                   </div>
-                ) : (
+
+                  {/* Storefront Photo Section */}
                   <div 
-                    onClick={() => {
-                      if (!isLocked) {
-                        handleCapturePhoto();
-                      }
-                    }}
-                    className={cn(
-                      "border border-dashed rounded-lg p-6 flex flex-col items-center justify-center gap-1.5 cursor-pointer transition-all duration-200",
-                      dragActive 
-                        ? "border-[#167f5b] bg-[#167f5b]/5" 
-                        : "border-[#e5e5e0] hover:border-primary/50 hover:bg-secondary/10",
-                      isLocked && "cursor-not-allowed opacity-50 hover:bg-transparent hover:border-transparent"
-                    )}
+                    className="pt-4 border-t border-[#e5e5e0] space-y-2"
+                    onDragEnter={handleDrag}
+                    onDragOver={handleDrag}
+                    onDragLeave={handleDrag}
+                    onDrop={handleDrop}
                   >
-                    <Camera className="h-5 w-5 text-[#8A9098]" />
-                    <span className="text-[10px] font-medium text-[#8A9098]">
-                      {dragActive ? "Déposer l'image ici !" : t('lead.take_photo_btn')}
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-[#8A9098] flex items-center gap-1.5">
+                      <Camera className="h-3 w-3" />
+                      {t('lead.photo_section')}
                     </span>
+                    
+                    {lead.imageUrl ? (
+                      <div className={cn(
+                        "relative rounded-lg overflow-hidden border group bg-[#f4f4f3] aspect-video flex items-center justify-center transition-all duration-200",
+                        dragActive ? "border-[#167f5b] bg-[#167f5b]/5" : "border-[#e5e5e0]"
+                      )}>
+                        <img 
+                          src={lead.imageUrl} 
+                          alt={t('lead.photo_alt')} 
+                          className="w-full h-full object-cover" 
+                        />
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                          <Button 
+                            type="button"
+                            variant="secondary" 
+                            size="xs" 
+                            onClick={handleCapturePhoto}
+                            className="h-7 text-[10px] font-semibold"
+                            disabled={isLocked}
+                          >
+                            {t('lead.change_photo')}
+                          </Button>
+                          <Button 
+                            type="button"
+                            variant="destructive" 
+                            size="xs" 
+                            onClick={() => handleSaveProperty('imageUrl', '')}
+                            className="h-7 text-[10px] font-semibold bg-red-600 hover:bg-red-700 text-white"
+                            disabled={isLocked}
+                          >
+                            {t('lead.delete_photo')}
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div 
+                        onClick={() => {
+                          if (!isLocked) {
+                            handleCapturePhoto();
+                          }
+                        }}
+                        className={cn(
+                          "border border-dashed rounded-lg p-5 flex flex-col items-center justify-center gap-1.5 cursor-pointer transition-all duration-200",
+                          dragActive 
+                            ? "border-[#167f5b] bg-[#167f5b]/5" 
+                            : "border-[#e5e5e0] hover:border-primary/50 hover:bg-secondary/10",
+                          isLocked && "cursor-not-allowed opacity-50 hover:bg-transparent hover:border-transparent"
+                        )}
+                      >
+                        <Camera className="h-5 w-5 text-[#8A9098]" />
+                        <span className="text-[10px] font-medium text-[#8A9098]">
+                          {dragActive ? "Déposer l'image ici !" : t('lead.take_photo_btn')}
+                        </span>
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -4703,23 +4869,39 @@ function ComposerPanel({
       }
     }
 
-    // Always save to Supabase DB so it appears in Inbox → Brouillons
-    const { error } = await supabase.from('drafts').insert({
-      user_id: user.id,
-      lead_id: lead.id,
-      workspace_id: workspaceId,
-      content: body,
-      subject: type === 'email' ? subject : `DM ${dmPlatform} — ${lead.businessName}`,
-      channel: type === 'email' ? 'Email' : 'DM',
-      source: 'user',
-      draft_type: type,
-      created_at: new Date().toISOString(),
-    });
+    // Save to Supabase DB if UUID, or local state if seed lead
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(lead.id);
+    if (isUuid) {
+      const { error } = await supabase.from('drafts').insert({
+        user_id: user.id,
+        lead_id: lead.id,
+        workspace_id: workspaceId,
+        content: body,
+        subject: type === 'email' ? subject : `DM ${dmPlatform} — ${lead.businessName}`,
+        channel: type === 'email' ? 'Email' : 'DM',
+        source: 'user',
+        draft_type: type,
+        created_at: new Date().toISOString(),
+      });
 
-    if (error) {
-      toast.error('Erreur lors de la sauvegarde du brouillon.');
-      console.error('handleSaveDraft error:', error);
-      return;
+      if (error) {
+        toast.error('Erreur lors de la sauvegarde du brouillon.');
+        console.error('handleSaveDraft error:', error);
+        return;
+      }
+    } else {
+      const localDraft: any = {
+        id: `draft-local-${Date.now()}`,
+        user_id: user.id,
+        lead_id: lead.id,
+        content: body,
+        subject: type === 'email' ? subject : `DM ${dmPlatform} — ${lead.businessName}`,
+        channel: type === 'email' ? 'Email' : 'DM',
+        source: 'user',
+        draft_type: type,
+        created_at: new Date().toISOString(),
+      };
+      setDrafts(prev => [localDraft, ...prev]);
     }
 
 

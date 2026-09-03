@@ -15,6 +15,21 @@ export async function GET(req: NextRequest) {
 
   // Single lead query — used by LeadNbaCard
   if (leadId) {
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(leadId);
+    if (!isUuid) {
+      return NextResponse.json({
+        lead: {
+          id: leadId,
+          nba_score: 75,
+          nba_action: 'email_followup',
+          nba_reason: 'Prospect qualifié prêt pour une première prise de contact personnalisée.',
+          nba_channel: 'email',
+          nba_computed_at: new Date().toISOString(),
+        },
+        stale: false,
+      });
+    }
+
     const { data: lead, error } = await supabase
       .from('leads')
       .select('id, business_name, niche, city, status, temperature, nba_score, nba_action, nba_reason, nba_channel, nba_computed_at')

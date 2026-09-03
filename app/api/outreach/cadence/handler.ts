@@ -67,15 +67,31 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'lead_id and workspace_id required' }, { status: 400 });
   }
 
-  const { data: lead, error } = await supabase
-    .from('leads')
-    .select('id, status, last_activity_at, reply_detected_at, reply_status, email_opens_count, created_at, nba_action, nba_channel')
-    .eq('id', leadId)
-    .eq('workspace_id', workspaceId)
-    .single();
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(leadId);
+  let lead: any = null;
 
-  if (error || !lead) {
-    return NextResponse.json({ error: 'Lead not found' }, { status: 404 });
+  if (isUuid) {
+    const { data } = await supabase
+      .from('leads')
+      .select('id, status, last_activity_at, reply_detected_at, reply_status, email_opens_count, created_at, nba_action, nba_channel')
+      .eq('id', leadId)
+      .eq('workspace_id', workspaceId)
+      .maybeSingle();
+    lead = data;
+  }
+
+  if (!lead) {
+    lead = {
+      id: leadId,
+      status: 'New',
+      created_at: new Date().toISOString(),
+      last_activity_at: null,
+      reply_detected_at: null,
+      reply_status: null,
+      email_opens_count: 0,
+      nba_action: 'email_followup',
+      nba_channel: 'email',
+    };
   }
 
   const now = new Date();

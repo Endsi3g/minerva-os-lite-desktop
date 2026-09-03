@@ -106,19 +106,30 @@ export async function POST(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { leadId, force = false } = await req.json();
+  const { leadId, force = false, businessName, city } = await req.json();
   if (!leadId) return NextResponse.json({ error: 'leadId requis' }, { status: 400 });
 
-  const { data: lead } = await supabase
-    .from('leads')
-    .select('id, business_name, city, google_place_id, google_place_data, google_enriched_at, rating, reviews_count, website, phone, address')
-    .eq('id', leadId)
-    .maybeSingle();
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(leadId);
+  let lead: any = null;
 
-  if (!lead) return NextResponse.json({ error: 'Lead introuvable' }, { status: 404 });
+  if (isUuid) {
+    const { data } = await supabase
+      .from('leads')
+      .select('id, business_name, city, google_place_id, google_place_data, google_enriched_at, rating, reviews_count, website, phone, address')
+      .eq('id', leadId)
+      .maybeSingle();
+    lead = data;
+  }
+
+  const effectiveBusinessName = lead?.business_name || businessName;
+  const effectiveCity = lead?.city || city || '';
+
+  if (!lead && !effectiveBusinessName) {
+    return NextResponse.json({ ok: false, error: 'Lead introuvable' }, { status: 200 });
+  }
 
   // If already enriched in the last 7 days and not force-refreshing, return cached
-  if (!force && lead.google_enriched_at) {
+  if (!force && lead?.google_enriched_at) {
     const age = Date.now() - new Date(lead.google_enriched_at).getTime();
     if (age < 7 * 24 * 60 * 60 * 1000 && lead.google_place_data) {
       return NextResponse.json({ ok: true, cached: true, data: lead.google_place_data });
@@ -138,12 +149,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       ok: false,
       error: 'Clé Google Places API non configurée — ajoutez-la dans Paramètres > Intégrations.',
-    }, { status: 400 });
+    }, { status: 200 });
   }
 
-  const place = await searchPlace(lead.business_name, lead.city || '', apiKey);
+  const place = await searchPlace(effectiveBusinessName, effectiveCity, apiKey);
   if (!place) {
-    return NextResponse.json({ ok: false, error: 'Lieu introuvable sur Google Places' }, { status: 404 });
+    return NextResponse.json({ ok: false, error: 'Lieu introuvable sur Google Places' }, { status: 200 });
   }
 
   const placeData = {
@@ -181,16 +192,18 @@ export async function POST(req: NextRequest) {
     google_enriched_at: new Date().toISOString(),
   };
 
-  if (!lead.rating && place.rating) updatePayload.rating = place.rating;
-  if (!lead.reviews_count && place.userRatingCount) updatePayload.reviews_count = place.userRatingCount;
-  if (!lead.website && place.websiteUri) updatePayload.website = place.websiteUri;
-  if (!lead.phone && place.nationalPhoneNumber) updatePayload.phone = place.nationalPhoneNumber;
-  updatePayload.maps_url = `https://www.google.com/maps/place/?q=place_id:${place.id}`;
-  if (place.formattedAddress) {
-    updatePayload.address = place.formattedAddress;
-  }
+  if (isUuid && lead) {
+    if (!lead.rating && place.rating) updatePayload.rating = place.rating;
+    if (!lead.reviews_count && place.userRatingCount) updatePayload.reviews_count = place.userRatingCount;
+    if (!lead.website && place.websiteUri) updatePayload.website = place.websiteUri;
+    if (!lead.phone && place.nationalPhoneNumber) updatePayload.phone = place.nationalPhoneNumber;
+    updatePayload.maps_url = `https://www.google.com/maps/place/?q=place_id:${place.id}`;
+    if (place.formattedAddress) {
+      updatePayload.address = place.formattedAddress;
+    }
 
-  await supabase.from('leads').update(updatePayload).eq('id', leadId);
+    await supabase.from('leads').update(updatePayload).eq('id', leadId);
+  }
 
   return NextResponse.json({ ok: true, cached: false, data: placeData });
 }

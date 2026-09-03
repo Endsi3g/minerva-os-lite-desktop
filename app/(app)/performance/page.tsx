@@ -8,7 +8,7 @@ import { useRouter } from 'next/navigation';
 export default function PerformanceRedirect() {
   const router = useRouter();
   useEffect(() => {
-    router.replace('/weekly-report?tab=performance');
+    router.replace('/leaderboard');
   }, [router]);
   return null;
 }

@@ -21,13 +21,17 @@ import {
   Zap,
   Search,
   RefreshCw,
-  Share2
+  Share2,
+  Coins,
+  Bot,
 } from 'lucide-react';
 import { useReach } from '@/lib/reach-context';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { calculateMonthlyTeamChallenge, computeTeamRewards } from '@/lib/rewards-engine';
+import { TeamRewardsCard } from '@/components/team-rewards-card';
 
 type TimeRange = 'today' | 'week' | 'month' | 'all';
 
@@ -74,6 +78,21 @@ export default function LeaderboardPage() {
     };
     fetchTeam();
   }, []);
+
+  // Challenge & Récompenses d'équipe
+  const challenge = useMemo(() => {
+    return calculateMonthlyTeamChallenge(leads, Math.max(1, teamMembers.length || 2), 5);
+  }, [leads, teamMembers]);
+
+  const memberRewards = useMemo(() => {
+    const membersList = teamMembers.length > 0 
+      ? teamMembers.map(m => ({ id: m.id, name: m.email.split('@')[0].replace('.', ' '), email: m.email }))
+      : [
+          { id: 'usr-owner', name: 'Kael Belceus', email: 'kael@minerva.os' },
+          { id: 'usr-ai-sdr', name: 'Minerva AI SDR', email: 'ai.sdr@minerva.os' },
+        ];
+    return computeTeamRewards(leads, membersList, challenge);
+  }, [leads, teamMembers, challenge]);
 
   // Compute leaderboard performance from real CRM leads & team members
   const leaderboardData = useMemo<RepPerformance[]>(() => {
@@ -130,11 +149,12 @@ export default function LeaderboardPage() {
       const score = (repContacted * 2) + (repBooked * 25) + (repWon * 60) + Math.round(repRevenue / 100);
 
       // Determine badges
-      const badges: { title: string; icon: string; color: string }[] = [];
-      if (repWon >= 2) badges.push({ title: 'Top Closer', icon: '🏆', color: 'bg-amber-50 text-amber-800 border-amber-200' });
-      if (repBooked >= 4) badges.push({ title: 'Machine à RDV', icon: '⚡', color: 'bg-emerald-50 text-emerald-800 border-emerald-200' });
-      if (rate >= 20) badges.push({ title: 'Sniper', icon: '🎯', color: 'bg-blue-50 text-blue-800 border-blue-200' });
-      if (rep.isAi) badges.push({ title: '24/7 Autonome', icon: '🤖', color: 'bg-purple-50 text-purple-800 border-purple-200' });
+      const badges: { id: string; title: string; iconName: string; color: string }[] = [];
+      if (repWon >= 1) badges.push({ id: 'deal-100', title: 'Bonus 1er Deal (100% Commission)', iconName: 'Coins', color: 'bg-emerald-50 text-emerald-800 border-emerald-300 font-extrabold' });
+      if (repWon >= 2) badges.push({ id: 'top-closer', title: 'Top Closer', iconName: 'Trophy', color: 'bg-amber-50 text-amber-800 border-amber-200' });
+      if (repBooked >= 4) badges.push({ id: 'rdv-machine', title: 'Machine à RDV', iconName: 'Zap', color: 'bg-emerald-50 text-emerald-800 border-emerald-200' });
+      if (rate >= 20) badges.push({ id: 'sniper', title: 'Sniper', iconName: 'Target', color: 'bg-blue-50 text-blue-800 border-blue-200' });
+      if (rep.isAi) badges.push({ id: 'autonomous-ai', title: '24/7 Autonome', iconName: 'Bot', color: 'bg-purple-50 text-purple-800 border-purple-200' });
 
       return {
         id: rep.id,
@@ -175,8 +195,8 @@ export default function LeaderboardPage() {
         <div className="flex items-center justify-between flex-wrap gap-4 max-w-6xl mx-auto">
           <div>
             <div className="flex items-center gap-2.5">
-              <div className="h-9 w-9 rounded-xl bg-[#1E4B33] text-white flex items-center justify-center shadow-xs">
-                <Trophy className="h-5 w-5 text-amber-300" />
+              <div className="h-9 w-9 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-200/80 flex items-center justify-center shadow-xs">
+                <Trophy className="h-5 w-5 text-[#059669]" />
               </div>
               <div>
                 <h1 className="text-lg sm:text-xl font-black text-[#111827] tracking-tight">
@@ -229,6 +249,9 @@ export default function LeaderboardPage() {
       {/* Main Scrollable Canvas */}
       <div className="flex-1 overflow-y-auto px-4 sm:px-8 py-6 pb-32">
         <div className="max-w-6xl mx-auto space-y-8">
+          {/* Team Rewards & 1st Month Challenge Banner */}
+          <TeamRewardsCard challenge={challenge} memberRewards={memberRewards} />
+
           {/* Top 3 Podium Cards */}
           {top3.length > 0 && (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 items-end">
@@ -273,7 +296,7 @@ export default function LeaderboardPage() {
                     🥇 1
                   </div>
                   <div className="relative">
-                    <Crown className="h-6 w-6 text-amber-500 absolute -top-5 left-1/2 -translate-x-1/2 animate-bounce" />
+                    <Crown className="h-6 w-6 text-amber-500 absolute -top-5 left-1/2 -translate-x-1/2" />
                     <div className="h-20 w-20 rounded-3xl bg-gradient-to-br from-[#1E4B33] to-[#10B981] text-white font-black text-2xl flex items-center justify-center border-4 border-amber-200 shadow-sm">
                       {top3[0].name.charAt(0)}
                     </div>
@@ -372,12 +395,18 @@ export default function LeaderboardPage() {
                     <th className="py-3 px-4 text-center">RDV Fixés</th>
                     <th className="py-3 px-4 text-center">Contrats Gagnés</th>
                     <th className="py-3 px-4 text-center">Taux Conv.</th>
-                    <th className="py-3 px-4 text-right">Badges & Succès</th>
+                    <th className="py-3 px-4 text-right">
+                      <Link href="/leaderboard/badges" className="inline-flex items-center gap-1 font-bold hover:text-[#059669] transition-colors">
+                        Badges & Succès
+                        <ArrowUpRight className="h-3 w-3" />
+                      </Link>
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#E5E7EB]">
                   {filteredData.map((rep, index) => {
                     const isChampion = index === 0;
+                    const BADGE_ICONS: Record<string, React.ElementType> = { Coins, Trophy, Zap, Target, Bot };
                     return (
                       <tr 
                         key={rep.id} 
@@ -387,7 +416,15 @@ export default function LeaderboardPage() {
                         )}
                       >
                         <td className="py-3 px-4 text-center font-black">
-                          {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${index + 1}`}
+                          <span className={cn(
+                            'inline-flex items-center justify-center h-6 w-6 rounded-full text-[11px] font-black border',
+                            index === 0 ? 'bg-amber-100 text-amber-800 border-amber-300' :
+                            index === 1 ? 'bg-slate-100 text-slate-700 border-slate-200' :
+                            index === 2 ? 'bg-orange-50 text-orange-700 border-orange-200' :
+                            'bg-[#f4f4f3] text-[#6B7280] border-[#e5e5e0]'
+                          )}>
+                            #{index + 1}
+                          </span>
                         </td>
                         <td className="py-3 px-4">
                           <div className="flex items-center gap-2.5">
@@ -431,16 +468,20 @@ export default function LeaderboardPage() {
                         </td>
                         <td className="py-3 px-4 text-right">
                           <div className="flex items-center justify-end gap-1 flex-wrap">
-                            {rep.badges.map((b) => (
-                              <span 
-                                key={b.title} 
-                                className={cn('inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border', b.color)}
-                                title={b.title}
-                              >
-                                <span>{b.icon}</span>
-                                <span className="hidden sm:inline">{b.title}</span>
-                              </span>
-                            ))}
+                            {rep.badges.map((b) => {
+                              const IconComp = BADGE_ICONS[b.iconName] ?? Award;
+                              return (
+                                <Link
+                                  key={b.id}
+                                  href={`/leaderboard/badges?badge=${b.id}`}
+                                  className={cn('inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border hover:opacity-80 transition-opacity', b.color)}
+                                  title={b.title}
+                                >
+                                  <IconComp className="h-3 w-3 shrink-0" />
+                                  <span className="hidden sm:inline">{b.title}</span>
+                                </Link>
+                              );
+                            })}
                           </div>
                         </td>
                       </tr>

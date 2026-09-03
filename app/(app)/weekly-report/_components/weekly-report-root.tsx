@@ -2,13 +2,13 @@
 
 import React, { useCallback, useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import {
   BarChart3, RefreshCw, Loader2, ArrowLeft, Mail, ListTodo,
   ArrowRightLeft, UsersRound, BrainCircuit, PauseCircle, PlayCircle, Tag,
   MessageSquare, Inbox, Lightbulb, Send, Sparkles, ChevronRight, Clock, Trophy, LineChart,
   ArrowUpRight, Target, TrendingUp, CheckCircle2, Flame, ShieldAlert,
-  Copy, Download, Share2, Check,
+  Copy, Download, Share2, Check, CalendarCheck, CheckSquare,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -28,9 +28,13 @@ interface WeeklyMetrics {
   nbaSuggested: number;
   nbaExecuted: number;
   bookingsThisWeek: number;
+  wonThisWeek?: number;
   positiveRepliesThisWeek: number;
   leadsAdvanced: number;
   topNiche: string | null;
+  completedTasksCount?: number;
+  totalTasksCount?: number;
+  taskCompletionRate?: number;
 }
 
 interface ActivityItem {
@@ -157,10 +161,11 @@ function formatWeekLabel(weekStart: string, weekEnd: string): string {
 export function WeeklyReportRoot() {
   const { activeWorkspace, leads, tasks } = useReach();
 
+  const router = useRouter();
   const searchParamsUrl = useSearchParams();
   const [mainTab, setMainTab] = useState<MainTab>(() => {
     const t = searchParamsUrl?.get('tab');
-    return t === 'performance' || t === 'analytics' ? t : 'bilan';
+    return t === 'analytics' ? t : 'bilan';
   });
 
   const [loadingReport, setLoadingReport] = useState(false);
@@ -222,14 +227,33 @@ Concentrez les efforts de prospection sur les ${sortedNiches.slice(0, 3).map(n =
   }, [leads]);
 
   const liveMetrics = useMemo<WeeklyMetrics>(() => {
-    const meeting = leads.filter(l => l.status === 'Meeting Booked' || l.status === 'Won').length;
+    const now = new Date();
+    const weekStart = new Date(now);
+    weekStart.setDate(now.getDate() - ((now.getDay() + 6) % 7)); // Monday of current week
+    weekStart.setHours(0, 0, 0, 0);
+
+    // Strictly real bookings this week
+    const meeting = leads.filter(l => 
+      l.status === 'Meeting Booked' && 
+      l.updatedAt && 
+      new Date(l.updatedAt) >= weekStart
+    ).length;
+
+    // Strictly real deals won this week
+    const won = leads.filter(l => 
+      l.status === 'Won' && 
+      l.updatedAt && 
+      new Date(l.updatedAt) >= weekStart
+    ).length;
+
+    const completedTasksCount = tasks.filter(t => t.completed).length;
+    const totalTasksCount = tasks.length;
+    const taskCompletionRate = totalTasksCount > 0 
+      ? Math.round((completedTasksCount / totalTasksCount) * 100) 
+      : 0;
+
     const hot = leads.filter(l => l.temperature === 'Hot').length;
-    const advanced = leads.filter(l => l.status !== 'New').length;
-    const executedActions = activity.filter(a => a.executed).length;
-    const suggestedActions = activity.length;
-    const acceptanceRate = suggestedActions > 0 
-      ? Math.round((executedActions / suggestedActions) * 100)
-      : (leads.length > 0 ? Math.min(100, Math.round((advanced / leads.length) * 100)) : 0);
+    const advanced = leads.filter(l => l.status && !['New', 'Lost'].includes(l.status)).length;
 
     const nicheCounts = leads.reduce((acc, l) => {
       if (l.niche) acc[l.niche] = (acc[l.niche] || 0) + 1;
@@ -238,15 +262,19 @@ Concentrez les efforts de prospection sur les ${sortedNiches.slice(0, 3).map(n =
     const topNiche = Object.entries(nicheCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || null;
 
     return {
-      nbaAcceptanceRate: acceptanceRate,
-      nbaSuggested: suggestedActions || leads.length,
-      nbaExecuted: executedActions || (leads.length > 0 ? Math.min(leads.length, advanced) : 0),
+      nbaAcceptanceRate: taskCompletionRate,
+      nbaSuggested: totalTasksCount,
+      nbaExecuted: completedTasksCount,
+      completedTasksCount,
+      totalTasksCount,
+      taskCompletionRate,
       bookingsThisWeek: meeting,
+      wonThisWeek: won,
       positiveRepliesThisWeek: hot,
       leadsAdvanced: advanced,
       topNiche: topNiche,
     };
-  }, [leads, activity]);
+  }, [leads, tasks]);
 
   const fetchHistory = useCallback(async () => {
     if (!activeWorkspace) return;
@@ -297,7 +325,13 @@ Concentrez les efforts de prospection sur les ${sortedNiches.slice(0, 3).map(n =
 
   const grouped = groupByDay(effectiveActivity);
   const activeReport = selectedWeek ? selectedWeek.report : (report || liveComputedReport);
-  const activeMetrics = selectedWeek ? selectedWeek.metrics : (metrics || liveMetrics);
+  const activeMetrics = selectedWeek ? {
+    ...selectedWeek.metrics,
+    completedTasksCount: selectedWeek.metrics.completedTasksCount ?? 0,
+    totalTasksCount: selectedWeek.metrics.totalTasksCount ?? 0,
+    taskCompletionRate: selectedWeek.metrics.taskCompletionRate ?? 0,
+    wonThisWeek: selectedWeek.metrics.wonThisWeek ?? 0,
+  } : liveMetrics;
   const activeRange = selectedWeek
     ? formatWeekLabel(selectedWeek.week_start, selectedWeek.week_end)
     : dateRange;
@@ -307,9 +341,10 @@ Concentrez les efforts de prospection sur les ${sortedNiches.slice(0, 3).map(n =
   const handleCopyReport = () => {
     const textToCopy = `MINERVA OS REACH LITE - BILAN HEBDOMADAIRE (${activeRange})
 --------------------------------------------------
-Taux d'action IA : ${activeMetrics.nbaAcceptanceRate}%
-Rendez-vous / Gagnés : ${activeMetrics.bookingsThisWeek}
-Réponses positives / Chauds : ${activeMetrics.positiveRepliesThisWeek}
+Tâches réalisées : ${activeMetrics.completedTasksCount ?? 0} / ${activeMetrics.totalTasksCount ?? 0} (${activeMetrics.taskCompletionRate ?? 0}%)
+Rendez-vous planifiés : ${activeMetrics.bookingsThisWeek}
+Deals gagnés : ${activeMetrics.wonThisWeek ?? 0}
+Prospects chauds : ${activeMetrics.positiveRepliesThisWeek}
 Leads avancés dans le tunnel : ${activeMetrics.leadsAdvanced}
 Secteur clé : ${activeMetrics.topNiche || 'Tous'}
 
@@ -419,14 +454,20 @@ ${activeReport || 'Aucune synthèse disponible.'}
           <div className="flex items-center gap-2">
             {[
               { id: 'bilan' as const, label: 'Bilan IA', icon: BrainCircuit },
-              { id: 'performance' as const, label: 'Performance équipe', icon: Trophy },
+              { id: 'performance' as const, label: 'Leaderboard & Performance', icon: Trophy },
               { id: 'analytics' as const, label: 'Analytics', icon: LineChart },
             ].map(({ id, label, icon: Icon }) => (
               <button
                 key={id}
-                onClick={() => setMainTab(id)}
+                onClick={() => {
+                  if (id === 'performance') {
+                    router.push('/leaderboard');
+                  } else {
+                    setMainTab(id);
+                  }
+                }}
                 className={cn(
-                  'flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all',
+                  'flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer',
                   mainTab === id
                     ? 'bg-[#059669] text-white shadow-xs'
                     : 'bg-white border border-[#e5e5e0] text-[#7a7a76] hover:text-[#26251e] hover:bg-[#fafaf8]'
@@ -438,7 +479,6 @@ ${activeReport || 'Aucune synthèse disponible.'}
             ))}
           </div>
 
-          {mainTab === 'performance' && <PerformanceRoot />}
           {mainTab === 'analytics' && <AnalyticsRoot hideSubNav />}
 
           {mainTab === 'bilan' && (
@@ -510,12 +550,48 @@ ${activeReport || 'Aucune synthèse disponible.'}
                 {/* Metrics Grid */}
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3.5">
                   {[
-                    { label: 'Taux NBA accepté', value: `${activeMetrics.nbaAcceptanceRate}%`, icon: Target, accent: '#059669', sub: 'Suggestions validées' },
-                    { label: 'RDV & Bookings', value: activeMetrics.bookingsThisWeek, icon: Trophy, accent: '#26251e', sub: 'Semaine en cours' },
-                    { label: 'Réponses positives', value: activeMetrics.positiveRepliesThisWeek, icon: Flame, accent: '#059669', sub: 'Prospects chauds' },
-                    { label: 'Leads avancés', value: activeMetrics.leadsAdvanced, icon: TrendingUp, accent: '#26251e', sub: 'Dans le pipeline' },
-                    { label: 'Portefeuille actif', value: leads.length, icon: UsersRound, accent: '#26251e', sub: 'Leads Montréal' },
-                    { label: 'Actions exécutées', value: activeMetrics.nbaExecuted, icon: CheckCircle2, accent: '#059669', sub: 'Automatisations IA' },
+                    {
+                      label: 'Tâches Réalisées',
+                      value: `${activeMetrics.completedTasksCount ?? 0} / ${activeMetrics.totalTasksCount ?? 0}`,
+                      icon: CheckSquare,
+                      accent: '#059669',
+                      sub: `${activeMetrics.taskCompletionRate ?? 0}% complétées`,
+                    },
+                    {
+                      label: 'RDV Planifiés',
+                      value: activeMetrics.bookingsThisWeek,
+                      icon: CalendarCheck,
+                      accent: '#26251e',
+                      sub: 'Semaine en cours',
+                    },
+                    {
+                      label: 'Deals Gagnés',
+                      value: activeMetrics.wonThisWeek ?? 0,
+                      icon: Trophy,
+                      accent: '#059669',
+                      sub: 'Confirmés cette semaine',
+                    },
+                    {
+                      label: 'Prospects Chauds',
+                      value: activeMetrics.positiveRepliesThisWeek,
+                      icon: Flame,
+                      accent: '#d97706',
+                      sub: 'Haute intention',
+                    },
+                    {
+                      label: 'Portefeuille Actif',
+                      value: leads.length,
+                      icon: UsersRound,
+                      accent: '#26251e',
+                      sub: 'Prospects gérés',
+                    },
+                    {
+                      label: 'Leads Avancés',
+                      value: activeMetrics.leadsAdvanced,
+                      icon: TrendingUp,
+                      accent: '#2563eb',
+                      sub: 'Dans le tunnel',
+                    },
                   ].map(({ label, value, icon: Icon, accent, sub }) => (
                     <div
                       key={label}
@@ -545,37 +621,37 @@ ${activeReport || 'Aucune synthèse disponible.'}
                 {/* Interactive Recharts Visual Cards */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   <InteractiveChartCard
-                    title="Tendance d'Acceptation des Suggestions IA"
-                    subtitle="Évolution hebdomadaire de la vélocité commerciale"
+                    title="Activité Hebdomadaire & RDV"
+                    subtitle="Vélocité des tâches et rendez-vous réels"
                     type="area"
                     data={[
-                      { name: 'S-3', value: 74, secondaryValue: 8 },
-                      { name: 'S-2', value: 81, secondaryValue: 12 },
-                      { name: 'S-1', value: 85, secondaryValue: 15 },
-                      { name: 'En cours', value: activeMetrics?.nbaAcceptanceRate || 88, secondaryValue: activeMetrics?.bookingsThisWeek || 18 },
+                      { name: 'S-3', value: 0, secondaryValue: 0 },
+                      { name: 'S-2', value: 0, secondaryValue: 0 },
+                      { name: 'S-1', value: 0, secondaryValue: 0 },
+                      { name: 'En cours', value: activeMetrics.completedTasksCount ?? 0, secondaryValue: activeMetrics.bookingsThisWeek },
                     ]}
                     dataKeys={[
-                      { key: 'value', name: 'Taux NBA (%)', color: '#059669' },
-                      { key: 'secondaryValue', name: 'RDV Bookés', color: '#3b82f6' },
+                      { key: 'value', name: 'Tâches faites', color: '#059669' },
+                      { key: 'secondaryValue', name: 'RDV Planifiés', color: '#3b82f6' },
                     ]}
-                    deepLink={{ label: 'Voir dans Analytics', href: '/analytics' }}
+                    deepLink={{ label: 'Voir les Tâches', href: '/tasks' }}
                     height={210}
-                    valueSuffix="%"
+                    valueSuffix=""
                   />
 
                   <InteractiveChartCard
-                    title="Répartition des Actions Automatisées"
-                    subtitle={`${effectiveActivity.length} actions exécutées cette semaine`}
+                    title="Répartition Réelle des Prospects"
+                    subtitle={`${leads.length} prospects dans le portefeuille`}
                     type="donut"
                     data={[
-                      { name: 'Emails de prospection', value: Math.max(12, Math.floor(effectiveActivity.length * 0.4)), color: '#059669' },
-                      { name: 'Tâches de suivi', value: Math.max(8, Math.floor(effectiveActivity.length * 0.3)), color: '#3b82f6' },
-                      { name: 'Changements de statut', value: Math.max(5, Math.floor(effectiveActivity.length * 0.2)), color: '#d97706' },
-                      { name: 'Recommandations IA', value: Math.max(3, Math.floor(effectiveActivity.length * 0.1)), color: '#7c3aed' },
+                      { name: 'Nouveaux', value: leads.filter(l => l.status === 'New').length, color: '#7a7a76' },
+                      { name: 'Contactés', value: leads.filter(l => l.status === 'Contacted').length, color: '#3b82f6' },
+                      { name: 'En discussion / Proposition', value: leads.filter(l => ['Meeting Booked', 'Proposal Sent', 'Negotiation'].includes(l.status || '')).length, color: '#d97706' },
+                      { name: 'Gagnés', value: leads.filter(l => l.status === 'Won').length, color: '#059669' },
                     ]}
-                    deepLink={{ label: 'Journal des Activités', href: '/activities' }}
+                    deepLink={{ label: 'Voir le Pipeline', href: '/pipeline' }}
                     height={210}
-                    valueSuffix=" actions"
+                    valueSuffix=" leads"
                     showLegend={true}
                   />
                 </div>

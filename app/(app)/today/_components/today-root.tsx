@@ -22,7 +22,6 @@ import { TodayGoogleCalendarCard } from './today-google-calendar-card';
 import { InboxRoot } from '@/app/(app)/inbox/_components/inbox-root';
 import { AgentFeed } from './agent-feed';
 import { AgentPrioritiesCard } from './agent-priorities-card';
-import { NextBestActionCard } from './next-best-action-card';
 import { DailyDigestCard } from './daily-digest-card';
 import { SpeedRunOverlay } from '@/components/speed-run-overlay';
 import { PipelineStepper } from './pipeline-stepper';
@@ -34,6 +33,8 @@ import { WeeklyReportCard } from './weekly-report-card';
 import { SlaCard } from './sla-card';
 import { AgentJournal } from './agent-journal';
 import { BarChart2 } from 'lucide-react';
+import { TeamRewardsCard } from '@/components/team-rewards-card';
+import { calculateMonthlyTeamChallenge, computeTeamRewards } from '@/lib/rewards-engine';
 
 import {
   LayoutDashboard,
@@ -188,6 +189,18 @@ export function TodayRoot() {
   const [refreshing, setRefreshing] = useState(false);
   const [approvingId, setApprovingId] = useState<string | null>(null);
 
+  // Challenge d'équipe (Palier 5 clients du 1er mois) & Récompenses
+  const challenge = useMemo(() => {
+    return calculateMonthlyTeamChallenge(leads, 2, 5);
+  }, [leads]);
+
+  const memberRewards = useMemo(() => {
+    return computeTeamRewards(leads, [
+      { id: 'usr-owner', name: user?.email ? user.email.split('@')[0] : 'Kael Belceus', email: user?.email || 'kael@minerva.os' },
+      { id: 'usr-ai-sdr', name: 'Minerva AI SDR', email: 'ai.sdr@minerva.os' },
+    ], challenge);
+  }, [leads, user, challenge]);
+
   // Sync tab with query parameters
   useEffect(() => {
     const tabParam = searchParams.get('tab');
@@ -201,10 +214,18 @@ export function TodayRoot() {
   }, [searchParams]);
 
   useEffect(() => {
-    if (typeof window !== 'undefined' && !localStorage.getItem('minerva_guide_seen')) {
+    if (typeof window === 'undefined') return;
+    // If the user already has a workspace, they're past onboarding —
+    // mark the guide as seen so reloads never bounce them to /setup.
+    if (activeWorkspace) {
+      localStorage.setItem('minerva_guide_seen', '1');
+      return;
+    }
+    // Only send truly fresh users (no workspace, no flag) to /setup.
+    if (!localStorage.getItem('minerva_guide_seen')) {
       router.replace('/setup');
     }
-  }, [router]);
+  }, [router, activeWorkspace]);
 
   const guestSeededRef = useRef(false);
   useEffect(() => {
@@ -752,9 +773,11 @@ export function TodayRoot() {
                           <span className="inline-flex items-center text-xs font-medium text-emerald-800 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
                             {totalReplies} réponses enregistrées
                           </span>
-                        </div>
                       </div>
                     </div>
+
+                    {/* Team Rewards & 1st Month Challenge Banner */}
+                    <TeamRewardsCard challenge={challenge} memberRewards={memberRewards} compact className="mb-2" />
 
                     {/* Full-Format Interactive Recharts Overview */}
                     <TodayOverviewCharts />
@@ -900,8 +923,6 @@ export function TodayRoot() {
                       <div className="flex flex-col gap-5">
                         {/* Minerva Agent Feed */}
                         <AgentFeed />
-
-                        <NextBestActionCard />
                         <AgentPrioritiesCard />
                       </div>
                     </div>

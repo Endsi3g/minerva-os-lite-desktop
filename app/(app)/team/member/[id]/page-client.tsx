@@ -8,7 +8,7 @@ import {
   Users, Search, BarChart3, Inbox, Megaphone, Mail, LineChart,
   Bot, Brain, Map, Wrench, Tag, BookOpen, ListChecks, ShieldCheck,
   CreditCard, Plug, Compass, CalendarDays, TrendingUp, Trophy,
-  Target, Activity, CheckCircle2, Clock,
+  Target, Activity, CheckCircle2, Clock, Coins, Zap, MapPin, Award,
 } from 'lucide-react';
 import { getApiUrl } from '@/lib/api-helper';
 import { DEFAULT_ROLE_PERMISSIONS, PERMISSION_MODULES, type PermissionModule } from '@/lib/permissions';
@@ -104,6 +104,7 @@ export default function MemberProfilePage() {
   const [memberLeadCount, setMemberLeadCount] = useState<number>(0);
   const [dailyActivity, setDailyActivity] = useState<DailyCount[]>([]);
   const [loadingStats, setLoadingStats] = useState(false);
+  const [memberCrmStats, setMemberCrmStats] = useState({ booked: 0, won: 0, revenue: 0, rate: 0 });
 
   const fetchMember = useCallback(async () => {
     setLoading(true);
@@ -127,7 +128,7 @@ export default function MemberProfilePage() {
 
       const [
         { data: tasks },
-        { count: leadCount },
+        { data: allLeads },
         { data: recentLeads },
         { data: recentTasks },
       ] = await Promise.all([
@@ -138,9 +139,9 @@ export default function MemberProfilePage() {
           .order('created_at', { ascending: false })
           .limit(100),
 
-        // Lead count owned or modified by this member
+        // All leads owned by this member (with status for CRM metrics)
         supabase.from('leads')
-          .select('*', { count: 'exact', head: true })
+          .select('id, status, revenue, created_at')
           .eq('user_id', userId),
 
         // Leads created in last 14 days for activity chart
@@ -157,7 +158,16 @@ export default function MemberProfilePage() {
       ]);
 
       setMemberTasks(tasks ?? []);
-      setMemberLeadCount(leadCount ?? 0);
+      const leads = allLeads ?? [];
+      setMemberLeadCount(leads.length);
+
+      // Compute CRM stats
+      const booked = leads.filter(l => ['Call Booked', 'Meeting Booked', 'Demo', 'Proposal'].includes(l.status)).length;
+      const won = leads.filter(l => l.status === 'Won').length;
+      const revenue = leads.filter(l => l.status === 'Won').reduce((sum, l) => sum + (Number(l.revenue) || 0), 0);
+      const contacted = leads.filter(l => l.status !== 'New').length;
+      const rate = contacted > 0 ? Math.round(((booked + won) / contacted) * 100) : 0;
+      setMemberCrmStats({ booked, won, revenue, rate });
 
       // Build 14-day activity from real data
       const days = eachDayOfInterval({ start: subDays(new Date(), 13), end: new Date() });
@@ -379,28 +389,76 @@ export default function MemberProfilePage() {
           {/* ── OVERVIEW TAB ── */}
           {activeTab === 'overview' && (
             <div className="space-y-6 animate-in fade-in duration-200">
-              {/* Quick stat cards — real data only */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              {/* ── CRM KPI Cards ── */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {[
-                  { label: 'Leads',       value: memberLeadCount,        icon: Target,       color: '#059669', bg: 'from-emerald-50/40 to-transparent' },
-                  { label: 'Tâches',      value: memberTasks.length,     icon: ListChecks,   color: '#26251e', bg: 'from-stone-50/40 to-transparent' },
-                  { label: 'Complétées',  value: completedTasks.length,  icon: CheckCircle2, color: '#059669', bg: 'from-emerald-50/40 to-transparent' },
-                  { label: 'Complétion',  value: memberTasks.length > 0 ? `${completionRate}%` : '—', icon: TrendingUp, color: completionRate >= 70 ? '#059669' : '#d97706', bg: completionRate >= 70 ? 'from-emerald-50/40 to-transparent' : 'from-amber-50/40 to-transparent' },
-                ].map(({ label, value, icon: Icon, color, bg }) => (
-                  <div key={label} className={cn(
-                    "relative group overflow-hidden rounded-2xl border border-[#e5e5e0] bg-white p-5 flex flex-col justify-between transition-all duration-300 hover:shadow-md hover:border-[#059669]/20 hover:-translate-y-0.5",
-                    "bg-gradient-to-br"
-                  )} style={{ backgroundImage: bg ? undefined : `linear-gradient(to bottom right, ${color}04, transparent)` }}>
+                  { label: 'Leads',        value: memberLeadCount,           icon: Target,       color: '#059669' },
+                  { label: 'RDV Fixés',    value: memberCrmStats.booked,     icon: CalendarDays, color: '#3b82f6' },
+                  { label: 'Deals Gagnés', value: memberCrmStats.won,        icon: Trophy,       color: '#d97706' },
+                  { label: 'Revenus',      value: memberCrmStats.revenue > 0 ? `${memberCrmStats.revenue.toLocaleString('fr-FR')} \$` : '—', icon: TrendingUp, color: '#059669' },
+                  { label: 'Taux Conv.',   value: memberCrmStats.rate > 0 ? `${memberCrmStats.rate}%` : '—', icon: CheckCircle2, color: memberCrmStats.rate >= 20 ? '#059669' : '#d97706' },
+                  { label: 'Tâches',       value: memberTasks.length,        icon: ListChecks,   color: '#26251e' },
+                  { label: 'Complétées',   value: completedTasks.length,     icon: CheckCircle2, color: '#059669' },
+                  { label: 'Complétion',   value: memberTasks.length > 0 ? `${completionRate}%` : '—', icon: Activity, color: completionRate >= 70 ? '#059669' : '#d97706' },
+                ].map(({ label, value, icon: Icon, color }) => (
+                  <div key={label} className="relative group overflow-hidden rounded-2xl border border-[#e5e5e0] bg-white p-4 flex flex-col gap-2 transition-all duration-300 hover:shadow-md hover:border-[#059669]/20 hover:-translate-y-0.5">
                     <div className="flex items-center justify-between gap-2">
-                      <p className="text-[10px] font-black uppercase tracking-wider text-[#7a7a76]">{label}</p>
-                      <div className="w-6 h-6 rounded-lg flex items-center justify-center animate-in duration-300" style={{ background: `${color}10` }}>
+                      <p className="text-[9px] font-black uppercase tracking-wider text-[#7a7a76]">{label}</p>
+                      <div className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0" style={{ background: `${color}12` }}>
                         <Icon className="h-3.5 w-3.5" style={{ color }} />
                       </div>
                     </div>
-                    <p className="text-2xl font-black leading-none mt-3" style={{ color }}>{loadingStats ? '…' : value}</p>
+                    <p className="text-xl font-black leading-none" style={{ color }}>{loadingStats ? '…' : value}</p>
                   </div>
                 ))}
               </div>
+
+              {/* ── Badges & Succès ── */}
+              {!loadingStats && (
+                <div className="rounded-2xl border border-[#e5e5e0] bg-white p-5 shadow-sm hover:shadow-md transition-all duration-300">
+                  <div className="flex items-center justify-between mb-4 border-b border-[#f4f4f3] pb-2.5">
+                    <div className="flex items-center gap-2">
+                      <div className="h-7 w-7 rounded-lg bg-amber-50 border border-amber-200/60 flex items-center justify-center">
+                        <Award className="h-3.5 w-3.5 text-amber-600" />
+                      </div>
+                      <h3 className="text-xs font-black uppercase tracking-wider text-[#26251e]">Badges & Succès</h3>
+                    </div>
+                    <Link href="/leaderboard/badges" className="text-[10px] font-black text-[#059669] hover:underline">
+                      Voir tout →
+                    </Link>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {memberCrmStats.won >= 1 && (
+                      <Link href="/leaderboard/badges?badge=deal-100" className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 text-[10px] font-black hover:opacity-80 transition-opacity">
+                        <Coins className="h-3 w-3 text-amber-600" /> Bonus 1er Deal
+                      </Link>
+                    )}
+                    {memberCrmStats.won >= 2 && (
+                      <Link href="/leaderboard/badges?badge=top-closer" className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-amber-50 text-amber-800 border border-amber-200 text-[10px] font-black hover:opacity-80 transition-opacity">
+                        <Trophy className="h-3 w-3 text-amber-600" /> Top Closer
+                      </Link>
+                    )}
+                    {memberCrmStats.booked >= 4 && (
+                      <Link href="/leaderboard/badges?badge=rdv-machine" className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 text-[10px] font-black hover:opacity-80 transition-opacity">
+                        <Zap className="h-3 w-3 text-[#059669]" /> Machine à RDV
+                      </Link>
+                    )}
+                    {memberCrmStats.rate >= 20 && (
+                      <Link href="/leaderboard/badges?badge=sniper" className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-blue-50 text-blue-800 border border-blue-200 text-[10px] font-black hover:opacity-80 transition-opacity">
+                        <Target className="h-3 w-3 text-blue-600" /> Sniper
+                      </Link>
+                    )}
+                    {memberLeadCount >= 3 && (
+                      <Link href="/leaderboard/badges?badge=field-explorer" className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-orange-50 text-orange-800 border border-orange-200 text-[10px] font-black hover:opacity-80 transition-opacity">
+                        <MapPin className="h-3 w-3 text-orange-600" /> Explorateur Terrain
+                      </Link>
+                    )}
+                    {memberCrmStats.won === 0 && memberCrmStats.booked === 0 && memberCrmStats.rate === 0 && memberLeadCount < 3 && (
+                      <p className="text-xs text-[#7a7a76] font-semibold py-1">Aucun badge débloqué encore — continue à prospecter !</p>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {/* 14-day activity from real data */}
               <div className="rounded-2xl border border-[#e5e5e0] bg-white p-6 shadow-sm hover:shadow-md transition-all duration-300">

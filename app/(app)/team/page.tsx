@@ -792,6 +792,13 @@ export default function TeamPage() {
             Feed revenus
           </button>
           <Link
+            href="/team/members"
+            className="px-4 py-2 text-xs font-bold rounded-t-lg border border-b-0 transition-colors flex items-center gap-1.5 bg-[#f4f4f3] border-transparent text-[#7a7a76] hover:text-[#26251e] hover:bg-white"
+          >
+            <UsersRound className="w-3.5 h-3.5" />
+            Annuaire Profils
+          </Link>
+          <Link
             href="/leaderboard"
             className="px-4 py-2 text-xs font-bold rounded-t-lg border border-b-0 transition-colors flex items-center gap-1.5 bg-[#f4f4f3] border-transparent text-[#1E4B33] hover:bg-[#1E4B33]/10 ml-auto"
           >

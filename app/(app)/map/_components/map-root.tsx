@@ -17,8 +17,16 @@ import {
   Layers, Route, Plus, Trash2, CheckSquare, ExternalLink,
   ArrowRight, RefreshCw, Clock, Activity, Building2, Satellite,
   Brain, Play, Square, Camera, Globe, Pencil, Wifi, WifiOff,
-  MapPinOff, LocateFixed,
+  MapPinOff, LocateFixed, Check, ChevronDown,
 } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
 import { createClient } from '@/lib/supabase/client';
 
 // ── Constants ──────────────────────────────────────────────────────────────────
@@ -1495,54 +1503,85 @@ Retourne UNIQUEMENT un JSON valide (pas de texte autour) avec ces clés optionne
             />
           </div>
 
-          {/* Heatmap toggle */}
-          <button
-            onClick={() => setShowHeatmap(v => !v)}
-            className={cn('pointer-events-auto flex items-center gap-1.5 h-9 px-3 rounded-xl border text-xs font-bold shadow-md backdrop-blur-md transition-colors',
-              showHeatmap ? 'bg-[#059669] text-white border-[#059669]' : 'bg-white/80 text-[#26251e] border-white/40 hover:bg-white')}
-            title="Heatmap densité"
-          >
-            <Activity className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">Heatmap</span>
-          </button>
+          {/* Menu Calques / Affichage (Heatmap, 3D, Satellite) */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                className={cn(
+                  'pointer-events-auto flex items-center gap-1.5 h-9 px-3 rounded-xl border text-xs font-bold shadow-md backdrop-blur-md transition-all cursor-pointer',
+                  (showHeatmap || show3D || showSatellite)
+                    ? 'bg-[#167f5b] text-white border-[#167f5b] shadow-emerald-900/20'
+                    : 'bg-white/85 text-[#26251e] border-white/50 hover:bg-white'
+                )}
+                title="Options d'affichage et calques"
+              >
+                <Layers className="h-3.5 w-3.5" />
+                <span className="text-[12px]">Calques</span>
+                {(showHeatmap || show3D || showSatellite) && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-300 animate-pulse" />
+                )}
+                <ChevronDown className="h-3 w-3 opacity-60 ml-0.5" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-48 p-1.5 rounded-xl bg-white/95 backdrop-blur-xl border border-[#e5e5e0] shadow-xl text-xs z-30">
+              <DropdownMenuLabel className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76] px-2 py-1">
+                Modes d'affichage
+              </DropdownMenuLabel>
+              
+              <DropdownMenuItem
+                onClick={() => setShowHeatmap(v => !v)}
+                className="flex items-center justify-between px-2 py-1.5 rounded-lg cursor-pointer hover:bg-emerald-50 text-[#26251e] font-medium"
+              >
+                <div className="flex items-center gap-2">
+                  <Activity className={cn("h-3.5 w-3.5", showHeatmap ? "text-[#059669]" : "text-[#7a7a76]")} />
+                  <span>Densité Heatmap</span>
+                </div>
+                {showHeatmap && <Check className="h-3.5 w-3.5 text-[#059669]" />}
+              </DropdownMenuItem>
 
-          {/* 3D buildings toggle */}
-          <button
-            onClick={() => setShow3D(v => !v)}
-            className={cn('pointer-events-auto flex items-center gap-1.5 h-9 px-3 rounded-xl border text-xs font-bold shadow-md backdrop-blur-md transition-colors',
-              show3D ? 'bg-[#26251e] text-white border-[#26251e]' : 'bg-white/80 text-[#26251e] border-white/40 hover:bg-white')}
-            title="Bâtiments 3D"
-          >
-            <Building2 className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">3D</span>
-          </button>
+              <DropdownMenuItem
+                onClick={() => setShow3D(v => !v)}
+                className="flex items-center justify-between px-2 py-1.5 rounded-lg cursor-pointer hover:bg-emerald-50 text-[#26251e] font-medium"
+              >
+                <div className="flex items-center gap-2">
+                  <Building2 className={cn("h-3.5 w-3.5", show3D ? "text-[#059669]" : "text-[#7a7a76]")} />
+                  <span>Bâtiments 3D</span>
+                </div>
+                {show3D && <Check className="h-3.5 w-3.5 text-[#059669]" />}
+              </DropdownMenuItem>
 
-          {/* Satellite toggle */}
-          <button
-            onClick={() => setShowSatellite(v => !v)}
-            className={cn('pointer-events-auto flex items-center gap-1.5 h-9 px-3 rounded-xl border text-xs font-bold shadow-md backdrop-blur-md transition-colors',
-              showSatellite ? 'bg-[#0369a1] text-white border-[#0369a1]' : 'bg-white/80 text-[#26251e] border-white/40 hover:bg-white')}
-            title="Vue satellite Esri"
-          >
-            <Satellite className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">Satellite</span>
-          </button>
+              <DropdownMenuItem
+                onClick={() => setShowSatellite(v => !v)}
+                className="flex items-center justify-between px-2 py-1.5 rounded-lg cursor-pointer hover:bg-emerald-50 text-[#26251e] font-medium"
+              >
+                <div className="flex items-center gap-2">
+                  <Satellite className={cn("h-3.5 w-3.5", showSatellite ? "text-[#0369a1]" : "text-[#7a7a76]")} />
+                  <span>Vue Satellite Esri</span>
+                </div>
+                {showSatellite && <Check className="h-3.5 w-3.5 text-[#0369a1]" />}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
 
-          {/* AI spatial query */}
+          {/* AI spatial query (Bouton compact) */}
           <button
             onClick={() => setShowAiQueryBar(v => !v)}
-            className={cn('pointer-events-auto flex items-center gap-1.5 h-9 px-3 rounded-xl border text-xs font-bold shadow-md backdrop-blur-md transition-colors',
-              showAiQueryBar ? 'bg-[#059669] text-white border-[#059669]' : 'bg-white/80 text-[#26251e] border-white/40 hover:bg-white')}
+            className={cn(
+              'pointer-events-auto flex items-center justify-center h-9 w-9 rounded-xl border shadow-md backdrop-blur-md transition-all cursor-pointer shrink-0',
+              showAiQueryBar
+                ? 'bg-[#059669] text-white border-[#059669]'
+                : 'bg-white/85 text-[#26251e] border-white/50 hover:bg-white'
+            )}
             title="Filtrage IA — langage naturel"
           >
             <Brain className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">IA</span>
           </button>
 
-          <div className="pointer-events-auto flex items-center gap-1.5 h-9 px-3 rounded-xl bg-white/80 backdrop-blur-md border border-white/45 shadow-md">
+          {/* Compteur de leads compact */}
+          <div className="pointer-events-auto flex items-center gap-1.5 h-9 px-2.5 rounded-xl bg-white/85 backdrop-blur-md border border-white/50 shadow-md shrink-0">
             <Users className="h-3.5 w-3.5 text-[#059669]" />
             <span className="text-xs font-bold text-[#26251e]">{filteredLeads.length}</span>
-            <span className="text-xs text-[#7a7a76]">leads</span>
           </div>
 
           {prospResults.length > 0 && (
