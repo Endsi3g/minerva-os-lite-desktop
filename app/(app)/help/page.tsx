@@ -210,6 +210,31 @@ export default function HelpPage() {
           ))}
         </div>
 
+        {/* Banner SOP Guide */}
+        <Link
+          href="/guide"
+          className="flex items-center justify-between gap-4 p-4 rounded-xl border border-[#1E4B33]/20 bg-[#1E4B33]/5 hover:bg-[#1E4B33]/10 transition-colors group"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-[#1E4B33] text-white flex items-center justify-center shrink-0">
+              <BookOpen className="w-4 h-4" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-[#1a1f1c]">Manuel Opérationnel & SOPs Complets</span>
+                <span className="px-1.5 py-0.2 text-[9px] font-bold bg-[#10B981]/15 text-[#065F46] rounded">Nouveau</span>
+              </div>
+              <p className="text-[11px] text-[#6b6b5e]">
+                Accédez aux 8 procédures standardisées avec captures d&apos;écran détaillées, routine matinale, délivrabilité et fiches réflexes.
+              </p>
+            </div>
+          </div>
+          <span className="text-xs font-bold text-[#1E4B33] flex items-center gap-1 group-hover:translate-x-0.5 transition-transform shrink-0">
+            Ouvrir le guide
+            <ExternalLink className="w-3.5 h-3.5" />
+          </span>
+        </Link>
+
         {/* Tab switcher */}
         <div className="flex gap-1 p-1 rounded-lg bg-[#f4f4f3] border border-[#e5e5e0] w-fit">
           {tabs.map((t) => (

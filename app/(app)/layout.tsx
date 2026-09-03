@@ -1367,6 +1367,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                         { href: '/today?tab=pilotage', icon: Gauge, label: 'Revenue OS' },
                         { href: '/platform', icon: Layers, label: 'Plateforme & packs' },
                         { href: '/billing', icon: CreditCard, label: 'Facturation' },
+                        { href: '/guide', icon: BookOpen, label: 'Guide & SOPs Complet' },
                         { href: '/help', icon: HelpCircle, label: 'Aide & Docs' },
                         { href: '/changelog', icon: Megaphone, label: t('nav.changelog') },
                         { href: '/roadmap', icon: Flag, label: 'Roadmap' },
