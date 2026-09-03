@@ -85,10 +85,10 @@ function AgentActionCard({ item, onApprove, onReject }: {
   const Icon = conf.icon;
 
   const statusBadge = item.executed
-    ? <span className="inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 shrink-0"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />Exécuté</span>
+    ? <span className="inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-emerald-500/10 text-emerald-700 border border-emerald-500/20 shrink-0"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />Exécuté</span>
     : item.approved === false
-    ? <span className="inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-red-500/10 text-red-700 dark:text-red-400 border border-red-500/20 shrink-0"><span className="w-1.5 h-1.5 rounded-full bg-red-500" />Rejeté</span>
-    : <span className="inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20 shrink-0"><span className="w-1.5 h-1.5 rounded-full bg-amber-500" />Suggéré</span>;
+    ? <span className="inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-red-500/10 text-red-700 border border-red-500/20 shrink-0"><span className="w-1.5 h-1.5 rounded-full bg-red-500" />Rejeté</span>
+    : <span className="inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-amber-500/10 text-amber-700 border border-amber-500/20 shrink-0"><span className="w-1.5 h-1.5 rounded-full bg-amber-500" />Suggéré</span>;
 
   const leadLabel = item.lead_name
     ? `${item.lead_name}${item.lead_company ? ` · ${item.lead_company}` : ''}`
@@ -293,7 +293,7 @@ export function AgentFeed() {
           <Zap className="h-4 w-4 text-brand-accent-emerald shrink-0" />
           <span className="text-xs font-bold text-foreground">Agent Feed</span>
           {pendingCount > 0 && (
-            <span className="text-[9px] font-bold bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded-full">
+            <span className="text-[9px] font-bold bg-amber-500/15 text-amber-800 border border-amber-500/30 px-1.5 py-0.5 rounded-full">
               {pendingCount} en attente
             </span>
           )}
@@ -346,7 +346,7 @@ export function AgentFeed() {
 
       {/* Migration warning */}
       {tableMissing && (
-        <div className="mx-3.5 mt-2.5 p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-[10px] text-amber-900 dark:text-amber-200">
+        <div className="mx-3.5 mt-2.5 p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-[10px] text-amber-900">
           <p className="font-bold mb-0.5">⚠️ Migration requise</p>
           <p>La table <code>agent_actions</code> n'existe pas encore. Activez l'agent pour synchroniser les actions.</p>
         </div>

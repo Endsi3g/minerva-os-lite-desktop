@@ -4,7 +4,6 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SettingsSectionWrapper } from './settings-section-wrapper';
-import { useTheme } from 'next-themes';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/lib/language-context';
 import { getApiUrl } from '@/lib/api-helper';
@@ -12,7 +11,7 @@ import { Globe } from 'lucide-react';
 
 interface AppearanceData {
   density: 'comfortable' | 'compact';
-  theme: 'system' | 'light' | 'dark';
+  theme: 'light';
 }
 
 interface SettingsAppearanceSectionProps {
@@ -22,7 +21,6 @@ interface SettingsAppearanceSectionProps {
 }
 
 export function SettingsAppearanceSection({ data, onChange, isSaving }: SettingsAppearanceSectionProps) {
-  const { setTheme } = useTheme();
   const { locale, setLocale } = useLanguage();
 
   // Local states for custom properties
@@ -93,11 +91,6 @@ export function SettingsAppearanceSection({ data, onChange, isSaving }: Settings
         }
       });
   }, []);
-
-  const handleThemeChange = (val: 'system' | 'light' | 'dark') => {
-    onChange({ theme: val });
-    setTheme(val);
-  };
 
   const persistPrefs = (patch: Record<string, unknown>) => {
     fetch(getApiUrl('/api/settings/user-prefs'), {
@@ -178,34 +171,6 @@ export function SettingsAppearanceSection({ data, onChange, isSaving }: Settings
           </CardContent>
         </Card>
 
-        {/* Theme Card Selector */}
-        <Card className="border border-[#e5e5e0] bg-white">
-          <CardContent className="p-5 space-y-4">
-            <h3 className="text-xs font-bold text-[#26251e] uppercase tracking-wider font-sans">Thème visuel</h3>
-            <p className="text-[11px] text-[#7a7a76] leading-normal">
-              Bascule l'interface en mode clair, sombre, ou laisse le système choisir.
-            </p>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
-              <div className="grid gap-1.5">
-                <label htmlFor="theme-select" className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a76]">Thème de l'application</label>
-                <Select 
-                  value={data.theme} 
-                  onValueChange={(val: 'system' | 'light' | 'dark') => handleThemeChange(val)}
-                >
-                  <SelectTrigger id="theme-select" className="text-xs bg-white">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="system" className="text-xs">Identique au système (Automatique)</SelectItem>
-                    <SelectItem value="light" className="text-xs">Clair (Light Mode)</SelectItem>
-                    <SelectItem value="dark" className="text-xs">Sombre (Dark Mode)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
 
         {/* Language Card */}
         <Card className="border border-[#e5e5e0] bg-white">

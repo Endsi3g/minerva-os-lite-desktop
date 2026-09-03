@@ -69,8 +69,9 @@ export default function RootLayout({
   return (
     <html
       lang="fr"
+      data-theme="light"
       suppressHydrationWarning
-      className={cn("antialiased", fontMono.variable, "font-sans", plusJakartaSans.variable, playfairDisplay.variable)}
+      className={cn("light", "antialiased", fontMono.variable, "font-sans", plusJakartaSans.variable, playfairDisplay.variable)}
     >
       <head>
         {/* Critical resource hints — establish connections before scripts parse */}

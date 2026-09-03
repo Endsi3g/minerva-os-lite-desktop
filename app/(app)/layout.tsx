@@ -1567,7 +1567,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
             {syncPending > 0 && (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <div className="flex items-center gap-1 px-2 py-1 rounded-md bg-amber-50 border border-amber-200 dark:bg-amber-950/30 dark:border-amber-800/40 text-amber-600 dark:text-amber-400 cursor-default select-none">
+                  <div className="flex items-center gap-1 px-2 py-1 rounded-md bg-amber-50 border border-amber-200 text-amber-600 cursor-default select-none">
                     <RefreshCw className="h-3 w-3 animate-spin" />
                     <span className="text-[10px] font-bold">{syncPending}</span>
                   </div>

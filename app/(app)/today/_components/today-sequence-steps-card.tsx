@@ -26,10 +26,10 @@ const CHANNEL_ICONS: Record<string, React.ReactNode> = {
 };
 
 const CHANNEL_COLORS: Record<string, string> = {
-  Email: 'bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-500/20',
-  Call: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20',
-  LinkedIn: 'bg-sky-500/10 text-sky-700 dark:text-sky-300 border-sky-500/20',
-  SMS: 'bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-500/20',
+  Email: 'bg-blue-500/10 text-blue-700 border-blue-500/20',
+  Call: 'bg-emerald-500/10 text-emerald-700 border-emerald-500/20',
+  LinkedIn: 'bg-sky-500/10 text-sky-700 border-sky-500/20',
+  SMS: 'bg-purple-500/10 text-purple-700 border-purple-500/20',
 };
 
 function formatTime(isoStr: string): string {
@@ -94,7 +94,7 @@ export function TodaySequenceStepsCard() {
     <Card className="border border-border bg-card shadow-none">
       <CardHeader className="flex flex-row items-center justify-between pb-3 border-b border-border/50">
         <div className="flex items-center gap-2.5 min-w-0">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 shrink-0">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/10 text-blue-600 shrink-0">
             <Clock className="h-4 w-4" />
           </div>
           <div className="min-w-0">
@@ -103,7 +103,7 @@ export function TodaySequenceStepsCard() {
           </div>
         </div>
         {steps.length > 0 && (
-          <Badge className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-500/20 shrink-0">
+          <Badge className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-700 border-blue-500/20 shrink-0">
             {steps.length}
           </Badge>
         )}

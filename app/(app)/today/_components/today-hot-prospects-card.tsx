@@ -35,7 +35,7 @@ export function TodayHotProspectsCard() {
             </div>
           </div>
           {allLeads.length > 0 && (
-            <span className="text-xs font-semibold text-emerald-800 dark:text-emerald-300 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 rounded-full shrink-0">
+            <span className="text-xs font-semibold text-emerald-800 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 rounded-full shrink-0">
               {allLeads.length} prospects
             </span>
           )}
@@ -60,7 +60,7 @@ export function TodayHotProspectsCard() {
                       <span className="text-xs font-semibold text-foreground truncate group-hover:text-brand-accent-emerald transition-colors">
                         {lead.businessName}
                       </span>
-                      <span className="text-xs font-semibold text-emerald-800 dark:text-emerald-300 bg-emerald-500/10 px-2 py-0.5 rounded-full shrink-0 tabular-nums">
+                      <span className="text-xs font-semibold text-emerald-800 bg-emerald-500/10 px-2 py-0.5 rounded-full shrink-0 tabular-nums">
                         {score} pts
                       </span>
                     </div>

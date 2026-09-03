@@ -349,7 +349,7 @@ export function AnalyticsDashboard() {
 
         <div className="flex flex-wrap items-center gap-2.5">
           {/* Grouping switcher */}
-          <div className="flex items-center bg-[#e5e5e2]/50 dark:bg-neutral-800/80 p-0.5 rounded-lg border border-border/60">
+          <div className="flex items-center bg-[#e5e5e2]/50 p-0.5 rounded-lg border border-border/60">
             {(['day', 'week', 'month'] as const).map(mode => (
               <button
                 key={mode}
@@ -357,7 +357,7 @@ export function AnalyticsDashboard() {
                 className={cn(
                   "px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider rounded-md transition-all",
                   groupBy === mode 
-                    ? "bg-white dark:bg-neutral-900 text-foreground shadow-xs" 
+                    ? "bg-white text-foreground shadow-xs" 
                     : "text-muted-foreground hover:text-foreground"
                 )}
               >
@@ -549,7 +549,7 @@ export function AnalyticsDashboard() {
                                   y={100 - agentPercent - chatPercent}
                                   height={agentPercent}
                                   width="24"
-                                  className="fill-[#e5e5e2] dark:fill-neutral-800 hover:brightness-95 transition-all"
+                                  className="fill-[#e5e5e2] hover:brightness-95 transition-all"
                                   rx="1"
                                 />
                               )}

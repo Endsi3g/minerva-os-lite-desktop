@@ -139,7 +139,7 @@ export function FollowUpRow({ lead }: FollowUpRowProps) {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-7 w-7 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 cursor-pointer"
+                  className="h-7 w-7 text-emerald-600 hover:bg-emerald-500/10 cursor-pointer"
                   onClick={handleDone}
                 >
                   <Check className="h-3.5 w-3.5" />
@@ -155,7 +155,7 @@ export function FollowUpRow({ lead }: FollowUpRowProps) {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-7 w-7 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10 cursor-pointer"
+                  className="h-7 w-7 text-amber-600 hover:bg-amber-500/10 cursor-pointer"
                   onClick={handleSnooze}
                 >
                   <Clock className="h-3.5 w-3.5" />
@@ -201,7 +201,7 @@ export function FollowUpRow({ lead }: FollowUpRowProps) {
                   disabled={!draftText}
                 >
                   {copied ? (
-                    <><CheckCheck className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" /><span>Copié !</span></>
+                    <><CheckCheck className="h-3.5 w-3.5 text-emerald-600" /><span>Copié !</span></>
                   ) : (
                     <><Copy className="h-3.5 w-3.5" /><span>Copier</span></>
                   )}

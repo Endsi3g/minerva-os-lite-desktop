@@ -74,9 +74,9 @@ export function AgentPrioritiesCard() {
   };
 
   const temperatureColor: Record<string, string> = {
-    Hot: 'bg-red-500/10 text-red-700 dark:text-red-300 border border-red-500/20',
-    Warm: 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20',
-    Cold: 'bg-blue-500/10 text-blue-700 dark:text-blue-300 border border-blue-500/20',
+    Hot: 'bg-red-500/10 text-red-700 border border-red-500/20',
+    Warm: 'bg-amber-500/10 text-amber-700 border border-amber-500/20',
+    Cold: 'bg-blue-500/10 text-blue-700 border border-blue-500/20',
   };
 
   if (coldLeads.length === 0) return null;

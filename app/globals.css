@@ -3,8 +3,6 @@
 @import "shadcn/tailwind.css";
 @import "maplibre-gl/dist/maplibre-gl.css";
 
-@custom-variant dark (&:is(.dark *));
-
 @theme inline {
     --font-heading: var(--font-playfair);
     --font-sans: var(--font-sans);
@@ -138,56 +136,6 @@
     --minerva-state-error: #D64545;
 }
 
-/* Dark variant — Minerva Studio v9 dark */
-.dark {
-    --background: #111810; /* Forêt nocturne */
-    --foreground: #EAE7D9; /* Crème sombre */
-    --card: #1a2318;       /* Surface sombre élevée */
-    --card-foreground: #EAE7D9;
-    --popover: #1a2318;
-    --popover-foreground: #EAE7D9;
-
-    --primary: #4a9e6e;    /* Vert forêt éclairci pour dark mode */
-    --primary-foreground: #0d1f13;
-
-    --secondary: #232e28;
-    --secondary-foreground: #EAE7D9;
-
-    --muted: #1e2a22;
-    --muted-foreground: #7a8478;
-
-    --accent: #232e28;
-    --accent-foreground: #EAE7D9;
-
-    --destructive: #e0395c;
-    --destructive-foreground: #ffffff;
-
-    --border: #2a3a2e;
-    --input: #2a3a2e;
-    --ring: #4a9e6e;
-
-    --chart-1: #1E4B33;
-    --chart-2: #3d7a5a;
-    --chart-3: #6ba585;
-    --chart-4: #a8c9b8;
-    --chart-5: #c08532;
-
-    --sidebar: #141f18;
-    --sidebar-foreground: #EAE7D9;
-    --sidebar-primary: #4a9e6e;
-    --sidebar-primary-foreground: #0d1f13;
-    --sidebar-accent: #1e2a22;
-    --sidebar-accent-foreground: #EAE7D9;
-    --sidebar-border: #2a3a2e;
-    --sidebar-ring: #4a9e6e;
-
-    --timeline-thinking: #dfa88f;
-    --timeline-grep: #9fc9a2;
-    --timeline-read: #9fbbe0;
-    --timeline-edit: #c0a8dd;
-    --timeline-done: #c08532;
-    --heatmap-zero: rgb(51, 51, 51);
-}
 
 @layer base {
   * {

@@ -135,7 +135,7 @@ export function TodayHeader({ onAestheticToggle }: TodayHeaderProps) {
               onClick={() => setSheetOpen(true)}
               className="flex items-center gap-2.5 px-2.5 py-2 text-xs font-medium text-foreground rounded-lg cursor-pointer hover:bg-accent focus:bg-accent"
             >
-              <div className="flex items-center justify-center w-6 h-6 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shrink-0">
+              <div className="flex items-center justify-center w-6 h-6 rounded-md bg-emerald-500/10 text-emerald-600 shrink-0">
                 <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
               </div>
               <div className="flex flex-col min-w-0">
@@ -147,7 +147,7 @@ export function TodayHeader({ onAestheticToggle }: TodayHeaderProps) {
               onClick={() => setDialogOpen(true)}
               className="flex items-center gap-2.5 px-2.5 py-2 text-xs font-medium text-foreground rounded-lg cursor-pointer hover:bg-accent focus:bg-accent"
             >
-              <div className="flex items-center justify-center w-6 h-6 rounded-md bg-blue-500/10 text-blue-600 dark:text-blue-400 shrink-0">
+              <div className="flex items-center justify-center w-6 h-6 rounded-md bg-blue-500/10 text-blue-600 shrink-0">
                 <CheckSquare className="w-3.5 h-3.5" />
               </div>
               <div className="flex flex-col min-w-0">
@@ -162,7 +162,7 @@ export function TodayHeader({ onAestheticToggle }: TodayHeaderProps) {
                   onClick={onAestheticToggle}
                   className="flex items-center gap-2.5 px-2.5 py-2 text-xs font-medium text-foreground rounded-lg cursor-pointer hover:bg-accent focus:bg-accent"
                 >
-                  <div className="flex items-center justify-center w-6 h-6 rounded-md bg-purple-500/10 text-purple-600 dark:text-purple-400 shrink-0">
+                  <div className="flex items-center justify-center w-6 h-6 rounded-md bg-purple-500/10 text-purple-600 shrink-0">
                     <Sparkles className="w-3.5 h-3.5" />
                   </div>
                   <div className="flex flex-col min-w-0">

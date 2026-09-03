@@ -42,7 +42,7 @@ export function TodayAgendaCard() {
     return (
       <Card className="border border-border bg-card shadow-none">
         <CardHeader className="flex flex-row items-center gap-2.5 p-3 sm:p-4">
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shrink-0">
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600 shrink-0">
             <CalendarCheck2 className="h-4 w-4" />
           </div>
           <div className="min-w-0">
@@ -58,7 +58,7 @@ export function TodayAgendaCard() {
     <Card className="border border-border bg-card shadow-none">
       <CardHeader className="flex flex-row items-center justify-between p-3.5 pb-2 border-b border-border/50">
         <div className="flex items-center gap-2 min-w-0">
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shrink-0">
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600 shrink-0">
             <CalendarCheck2 className="h-4 w-4" />
           </div>
           <div className="min-w-0">
@@ -98,10 +98,10 @@ export function TodayAgendaCard() {
               variant="outline"
               className={cn(
                 'shrink-0 text-[8.5px] font-semibold tracking-wider uppercase px-1.5 py-0.2 rounded-md',
-                task.category === 'Follow-up' && 'bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-500/20',
-                task.category === 'Preparation' && 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20',
-                task.category === 'Meeting' && 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20',
-                task.category === 'General' && 'bg-slate-500/10 text-slate-700 dark:text-slate-300 border-slate-500/20',
+                task.category === 'Follow-up' && 'bg-blue-500/10 text-blue-700 border-blue-500/20',
+                task.category === 'Preparation' && 'bg-amber-500/10 text-amber-700 border-amber-500/20',
+                task.category === 'Meeting' && 'bg-emerald-500/10 text-emerald-700 border-emerald-500/20',
+                task.category === 'General' && 'bg-slate-500/10 text-slate-700 border-slate-500/20',
               )}
             >
               {task.category === 'Follow-up' ? 'Relance' : task.category === 'Preparation' ? 'Prép.' : task.category === 'Meeting' ? 'RDV' : 'Général'}
@@ -134,7 +134,7 @@ export function TodayAgendaCard() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-6 w-6 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 cursor-pointer"
+                    className="h-6 w-6 text-emerald-600 hover:bg-emerald-500/10 cursor-pointer"
                     onClick={() => handleLeadDone(lead.id, lead.nextAction, lead.status)}
                   >
                     <Check className="h-3 w-3" />
@@ -147,7 +147,7 @@ export function TodayAgendaCard() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-6 w-6 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10 cursor-pointer"
+                    className="h-6 w-6 text-amber-600 hover:bg-amber-500/10 cursor-pointer"
                     onClick={() => handleLeadSnooze(lead.id)}
                   >
                     <Clock className="h-3 w-3" />

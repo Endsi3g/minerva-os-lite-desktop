@@ -35,7 +35,7 @@ export function PipelineStepper() {
     <div className="bg-card border border-border rounded-xl p-4 shadow-2xs">
       <div className="flex items-center justify-between mb-4">
         <h4 className="text-xs font-bold text-muted-foreground tracking-wider uppercase">Progression du Pipeline</h4>
-        <span className="text-xs font-bold text-brand-accent-emerald bg-brand-accent-emeraldLight dark:bg-emerald-950 px-2 py-0.5 rounded-md border border-brand-accent-emeraldBorder/40">
+        <span className="text-xs font-bold text-brand-accent-emerald bg-brand-accent-emeraldLight px-2 py-0.5 rounded-md border border-brand-accent-emeraldBorder/40">
           {leads.length} opportunités
         </span>
       </div>

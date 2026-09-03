@@ -444,7 +444,7 @@ export function TodayRoot() {
               }}
               className={`flex items-center gap-2 px-3 sm:px-4 py-2.5 text-xs sm:text-sm transition-all cursor-pointer ${
                 activeTab === 'dashboard'
-                  ? 'text-brand-accent-emerald border-b-2 border-brand-accent-emerald bg-brand-accent-emeraldLight/40 dark:bg-emerald-950/40 font-semibold'
+                  ? 'text-brand-accent-emerald border-b-2 border-brand-accent-emerald bg-brand-accent-emeraldLight/40 font-semibold'
                   : 'text-muted-foreground hover:text-foreground border-b-2 border-transparent font-medium'
               }`}
             >
@@ -458,7 +458,7 @@ export function TodayRoot() {
               }}
               className={`flex items-center gap-2 px-3 sm:px-4 py-2.5 text-xs sm:text-sm transition-all cursor-pointer ${
                 activeTab === 'inbox'
-                  ? 'text-brand-accent-emerald border-b-2 border-brand-accent-emerald bg-brand-accent-emeraldLight/40 dark:bg-emerald-950/40 font-semibold'
+                  ? 'text-brand-accent-emerald border-b-2 border-brand-accent-emerald bg-brand-accent-emeraldLight/40 font-semibold'
                   : 'text-muted-foreground hover:text-foreground border-b-2 border-transparent font-medium'
               }`}
             >
@@ -472,7 +472,7 @@ export function TodayRoot() {
               }}
               className={`flex items-center gap-2 px-3 sm:px-4 py-2.5 text-xs sm:text-sm transition-all cursor-pointer ${
                 activeTab === 'pilotage'
-                  ? 'text-brand-accent-emerald border-b-2 border-brand-accent-emerald bg-brand-accent-emeraldLight/40 dark:bg-emerald-950/40 font-semibold'
+                  ? 'text-brand-accent-emerald border-b-2 border-brand-accent-emerald bg-brand-accent-emeraldLight/40 font-semibold'
                   : 'text-muted-foreground hover:text-foreground border-b-2 border-transparent font-medium'
               }`}
             >
@@ -677,7 +677,7 @@ export function TodayRoot() {
                           </div>
                         </div>
                         <div className="mt-2">
-                          <span className="inline-flex items-center text-xs font-medium text-emerald-800 dark:text-emerald-300 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
+                          <span className="inline-flex items-center text-xs font-medium text-emerald-800 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
                             {leadsMonthDelta >= 0 ? `+${leadsMonthDelta}` : leadsMonthDelta} vs mois dernier
                           </span>
                         </div>
@@ -701,7 +701,7 @@ export function TodayRoot() {
                           </div>
                         </div>
                         <div className="mt-2">
-                          <span className="inline-flex items-center text-xs font-medium text-emerald-800 dark:text-emerald-300 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
+                          <span className="inline-flex items-center text-xs font-medium text-emerald-800 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
                             {contactedLeads} prospects contactés
                           </span>
                         </div>
@@ -725,7 +725,7 @@ export function TodayRoot() {
                           </div>
                         </div>
                         <div className="mt-2">
-                          <span className="inline-flex items-center text-xs font-medium text-emerald-800 dark:text-emerald-300 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
+                          <span className="inline-flex items-center text-xs font-medium text-emerald-800 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
                             {activeLeadsCount} opportunités actives
                           </span>
                         </div>
@@ -749,7 +749,7 @@ export function TodayRoot() {
                           </div>
                         </div>
                         <div className="mt-2">
-                          <span className="inline-flex items-center text-xs font-medium text-emerald-800 dark:text-emerald-300 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
+                          <span className="inline-flex items-center text-xs font-medium text-emerald-800 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
                             {totalReplies} réponses enregistrées
                           </span>
                         </div>
@@ -867,7 +867,7 @@ export function TodayRoot() {
                             >
                               <div className="flex items-center justify-between gap-2">
                                 <span className="text-xs font-bold text-foreground truncate">{campaign.name}</span>
-                                <span className="text-[9px] font-bold uppercase text-brand-accent-emerald bg-brand-accent-emeraldLight dark:bg-emerald-950 px-1.5 py-0.5 rounded-full shrink-0 border border-brand-accent-emeraldBorder/30">
+                                <span className="text-[9px] font-bold uppercase text-brand-accent-emerald bg-brand-accent-emeraldLight px-1.5 py-0.5 rounded-full shrink-0 border border-brand-accent-emeraldBorder/30">
                                   {GOAL_TYPE_LABELS[campaign.goalType!]}
                                 </span>
                               </div>

@@ -62,10 +62,10 @@ type CategoryType = Task['category'] | 'All';
 type TaskTab = 'mine' | 'team';
 
 const CATEGORY_COLORS: Record<Task['category'], string> = {
-  'Follow-up': 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/30 dark:text-blue-300 dark:border-blue-800',
-  'Preparation': 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-300 dark:border-amber-800',
-  'Meeting': 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-300 dark:border-emerald-800',
-  'General': 'bg-slate-50 text-slate-700 border-slate-200 dark:bg-slate-900 dark:text-slate-300 dark:border-slate-800',
+  'Follow-up': 'bg-blue-50 text-blue-700 border-blue-200',
+  'Preparation': 'bg-amber-50 text-amber-700 border-amber-200',
+  'Meeting': 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  'General': 'bg-slate-50 text-slate-700 border-slate-200',
 };
 
 const CATEGORY_LABELS: Record<Task['category'], string> = {

@@ -24,13 +24,13 @@ export function TodayTaskItem({ task, onToggle, onDelete }: TodayTaskItemProps) 
   const getCategoryColor = (cat: Task['category']) => {
     switch (cat) {
       case 'Follow-up':
-        return 'bg-blue-500/10 text-blue-700 dark:text-blue-300 border border-blue-500/20';
+        return 'bg-blue-500/10 text-blue-700 border border-blue-500/20';
       case 'Preparation':
-        return 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20';
+        return 'bg-amber-500/10 text-amber-700 border border-amber-500/20';
       case 'Meeting':
-        return 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20';
+        return 'bg-emerald-500/10 text-emerald-700 border border-emerald-500/20';
       default:
-        return 'bg-slate-500/10 text-slate-700 dark:text-slate-300 border border-slate-500/20';
+        return 'bg-slate-500/10 text-slate-700 border border-slate-500/20';
     }
   };
 
@@ -87,7 +87,7 @@ export function TodayTaskItem({ task, onToggle, onDelete }: TodayTaskItemProps) 
           )}
 
           {task.dueDate && (
-            <span className="text-[9px] text-amber-600 dark:text-amber-400 font-bold flex items-center gap-1 mt-0.5 text-left">
+            <span className="text-[9px] text-amber-600 font-bold flex items-center gap-1 mt-0.5 text-left">
               <Calendar className="w-2.5 h-2.5" />
               Échéance : {task.dueDate}
             </span>
@@ -99,7 +99,7 @@ export function TodayTaskItem({ task, onToggle, onDelete }: TodayTaskItemProps) 
         {task.isTodoist && (
           <Badge 
             variant="outline" 
-            className="text-[8px] bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/20 px-1.5 py-0.5 rounded font-bold"
+            className="text-[8px] bg-red-500/10 text-red-700 border-red-500/20 px-1.5 py-0.5 rounded font-bold"
           >
             Todoist
           </Badge>

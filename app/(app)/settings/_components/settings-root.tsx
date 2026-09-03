@@ -50,7 +50,7 @@ interface AiData {
 
 interface AppearanceData {
   density: 'comfortable' | 'compact';
-  theme: 'system' | 'light' | 'dark';
+  theme: 'light';
 }
 
 interface WorkspaceGeneralData {
@@ -94,7 +94,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   },
   appearance: {
     density: 'comfortable',
-    theme: 'system',
+    theme: 'light',
   },
   workspaceGeneral: {
     workspaceName: '',
