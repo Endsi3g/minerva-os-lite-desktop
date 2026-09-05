@@ -59,6 +59,13 @@ export function TodayHeader({ onAestheticToggle }: TodayHeaderProps) {
     notes: ''
   });
 
+  // New Task dialog states
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [taskForm, setTaskForm] = useState<{ title: string; category: Task['category'] }>({
+    title: '',
+    category: 'Follow-up'
+  });
+
   // Unified Action Menu & Raycast Palette states
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');

@@ -162,10 +162,10 @@ export default function MemberProfilePage() {
       setMemberLeadCount(leads.length);
 
       // Compute CRM stats
-      const booked = leads.filter(l => ['Call Booked', 'Meeting Booked', 'Demo', 'Proposal'].includes(l.status)).length;
-      const won = leads.filter(l => l.status === 'Won').length;
-      const revenue = leads.filter(l => l.status === 'Won').reduce((sum, l) => sum + (Number(l.revenue) || 0), 0);
-      const contacted = leads.filter(l => l.status !== 'New').length;
+      const booked = leads.filter((l: { status: string }) => ['Call Booked', 'Meeting Booked', 'Demo', 'Proposal'].includes(l.status)).length;
+      const won = leads.filter((l: { status: string }) => l.status === 'Won').length;
+      const revenue = leads.filter((l: { status: string }) => l.status === 'Won').reduce((sum: number, l: { revenue: number | null }) => sum + (Number(l.revenue) || 0), 0);
+      const contacted = leads.filter((l: { status: string }) => l.status !== 'New').length;
       const rate = contacted > 0 ? Math.round(((booked + won) / contacted) * 100) : 0;
       setMemberCrmStats({ booked, won, revenue, rate });
 
