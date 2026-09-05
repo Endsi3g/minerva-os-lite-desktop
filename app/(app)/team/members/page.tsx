@@ -103,10 +103,10 @@ export default function TeamMembersPage() {
 
               const allLeads = leads ?? [];
               const leadCount = allLeads.length;
-              const booked = allLeads.filter(l => ['Call Booked', 'Meeting Booked', 'Demo', 'Proposal'].includes(l.status)).length;
-              const won = allLeads.filter(l => l.status === 'Won').length;
-              const revenue = allLeads.filter(l => l.status === 'Won').reduce((s, l) => s + (Number(l.revenue) || 0), 0);
-              const contacted = allLeads.filter(l => l.status !== 'New').length;
+              const booked = allLeads.filter((l: { status: string }) => ['Call Booked', 'Meeting Booked', 'Demo', 'Proposal'].includes(l.status)).length;
+              const won = allLeads.filter((l: { status: string }) => l.status === 'Won').length;
+              const revenue = allLeads.filter((l: { status: string }) => l.status === 'Won').reduce((s: number, l: { revenue: number | null }) => s + (Number(l.revenue) || 0), 0);
+              const contacted = allLeads.filter((l: { status: string }) => l.status !== 'New').length;
               const rate = contacted > 0 ? Math.round(((booked + won) / contacted) * 100) : 0;
               const score = (leadCount * 2) + (booked * 25) + (won * 60) + Math.round(revenue / 100);
 
