@@ -3675,7 +3675,6 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
 
                     </div>
                   </div>
-                </div>
               )}
             </div>
 

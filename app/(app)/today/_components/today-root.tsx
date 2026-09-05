@@ -773,6 +773,7 @@ export function TodayRoot() {
                           <span className="inline-flex items-center text-xs font-medium text-emerald-800 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
                             {totalReplies} réponses enregistrées
                           </span>
+                        </div>
                       </div>
                     </div>
 
