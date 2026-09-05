@@ -48,7 +48,7 @@ interface RepPerformance {
   revenueWon: number;
   conversionRate: number;
   score: number;
-  badges: { title: string; icon: string; color: string }[];
+  badges: { id: string; title: string; iconName: string; color: string }[];
 }
 
 export default function LeaderboardPage() {

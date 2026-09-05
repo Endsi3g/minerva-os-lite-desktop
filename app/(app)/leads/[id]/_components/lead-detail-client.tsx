@@ -2708,7 +2708,7 @@ ${proposalSections.terms ? `<h2>Modalités</h2><p>${proposalSections.terms.repla
                 </div>
               ) : activeTab === 'composer' ? (
                 /* ── Composer unifié ── */
-                <ComposerPanel lead={lead} addNoteToLead={addNoteToLead} addTask={addTask} workspaceId={activeWorkspace?.id || ''} />
+                <ComposerPanel lead={lead} addNoteToLead={addNoteToLead} addTask={addTask} workspaceId={activeWorkspace?.id || ''} onDraftSaved={(draft) => setDrafts(prev => [draft, ...prev])} />
               ) : activeTab === 'timeline' ? (
                 /* Timeline Panel — unified timeline for this lead */
                 <div className="-mx-4 -mb-4 h-[500px] overflow-hidden">
@@ -4758,11 +4758,13 @@ function ComposerPanel({
   addNoteToLead,
   addTask,
   workspaceId,
+  onDraftSaved,
 }: {
   lead: Lead;
   addNoteToLead: (leadId: string, content: string, type: Note['type']) => void;
   addTask: (title: string, category: 'Follow-up' | 'Preparation' | 'General' | 'Meeting', dueDate?: string) => void;
   workspaceId: string;
+  onDraftSaved: (draft: any) => void;
 }) {
   const { t } = useLanguage();
   const [tab, setTab] = useState<ComposerTab>('email');
@@ -4900,7 +4902,7 @@ function ComposerPanel({
         draft_type: type,
         created_at: new Date().toISOString(),
       };
-      setDrafts(prev => [localDraft, ...prev]);
+      onDraftSaved(localDraft);
     }
 
 
