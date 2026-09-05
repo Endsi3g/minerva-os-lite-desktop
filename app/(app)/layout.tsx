@@ -581,19 +581,55 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    const checkUserAndSettings = async () => {
+    let cancelled = false;
+
+    // Un accroc réseau/session (cold start Supabase, reconnexion après un
+    // reload, etc.) ne veut jamais dire "onboarding incomplet". Avant ce
+    // garde, la moindre erreur de requête (ignorée silencieusement) faisait
+    // passer `settings` à null et renvoyait l'utilisateur vers /onboarding —
+    // et comme /onboarding est hors de ce layout, chaque tentative de
+    // revenir dans l'app remontait ce composant et relançait la même
+    // vérification bancale, bloquant tout le monde sur la page de
+    // configuration. On retente donc avant d'abandonner, et on ne redirige
+    // que lorsqu'on peut confirmer — sans erreur — que le profil est
+    // réellement incomplet.
+    const checkUserAndSettings = async (attempt = 0) => {
       const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (cancelled) return;
+
+      if (userError) {
+        if (attempt < 2) {
+          setTimeout(() => { if (!cancelled) checkUserAndSettings(attempt + 1); }, 1000 * (attempt + 1));
+          return;
+        }
+        console.error('Auth check failed after retries, staying put:', userError.message);
+        setCheckingWelcome(false);
+        return;
+      }
+
       if (!user) {
         router.push('/login');
         return;
       }
 
-      const { data: settings } = await supabase
+      const { data: settings, error: settingsError } = await supabase
         .from('settings')
         .select('full_name, company_name, avatar_base64')
         .eq('user_id', user.id)
         .maybeSingle();
+
+      if (cancelled) return;
+
+      if (settingsError) {
+        if (attempt < 2) {
+          setTimeout(() => { if (!cancelled) checkUserAndSettings(attempt + 1); }, 1000 * (attempt + 1));
+          return;
+        }
+        console.error('Settings check failed after retries, staying put:', settingsError.message);
+        setCheckingWelcome(false);
+        return;
+      }
 
       if (!settings || !settings.full_name || !settings.company_name) {
         router.push('/onboarding');
@@ -616,6 +652,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
       }
     };
     checkUserAndSettings();
+    return () => { cancelled = true; };
   }, [router]);
 
   // Fetch user permissions for role-based sidebar filtering (cached for 60 s)
